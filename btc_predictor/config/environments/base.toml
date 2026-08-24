@@ -1,0 +1,6 @@
+[app]
+name = "bitcoin-swing-predictor"
+
+[logging]
+level = "INFO"
+format = "json"

@@ -29,7 +29,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   ├── reporting/
   └── tests/
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Installable Python package
   - Central configuration loader
