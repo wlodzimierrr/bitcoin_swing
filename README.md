@@ -27,3 +27,14 @@ python -m pytest
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
+
+Strategy parameters are loaded from the versioned TOML file at
+`btc_predictor/config/strategy/default.toml`. Startup code can load runtime and
+strategy config together, validating both before returning:
+
+```python
+from btc_predictor.config import load_application_config
+
+config = load_application_config()
+run_metadata = config.strategy.run_metadata()
+```

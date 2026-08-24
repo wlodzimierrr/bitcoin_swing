@@ -19,7 +19,7 @@ dev = [
 include = ["btc_predictor*"]
 
 [tool.setuptools.package-data]
-btc_predictor = ["config/environments/*.toml"]
+btc_predictor = ["config/environments/*.toml", "config/strategy/*.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["btc_predictor/tests"]

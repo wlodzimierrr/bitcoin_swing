@@ -56,7 +56,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - Regime thresholds
   - Price-level parameters
   - Backtest assumptions
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Strategy parameters are externalized
   - Config validated at startup
