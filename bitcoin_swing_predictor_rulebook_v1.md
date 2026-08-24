@@ -302,6 +302,27 @@ FlowRaw =
 
 Map the result to 0–100.
 
+### Phase 1 fallback
+
+If spot/perp participation or CVD data is unavailable in Phase 1, compute a
+core ETF-only flow score using re-normalized weights:
+
+\[
+FlowRaw_{core} =
+0.40z(ETFNorm_5)
++0.35z(ETFNorm_{20})
++0.25z(FlowAccel)
+\]
+
+The output must record which flow model was used:
+
+```text
+FLOW_MODEL = ETF_CORE
+FLOW_MODEL = ETF_SPOT_PERP_FULL
+```
+
+Do not silently substitute zeroes for missing flow inputs.
+
 ### Interpretation
 
 | Flow Score | Meaning |
@@ -532,6 +553,20 @@ w_4Volume+
 w_5Confluence
 \]
 
+Initial Phase 1 weights:
+
+\[
+LevelStrength =
+0.30Timeframe+
+0.25Touches+
+0.25ReactionMagnitude+
+0.20Confluence
+\]
+
+Volume-profile and AVWAP confluence are optional Phase 1 enhancements. If they
+are not implemented, do not score them as zero; omit them and use the core
+weights above.
+
 ### Timeframe Score
 
 | Timeframe | Score |
@@ -601,6 +636,11 @@ StructureScore=
 +0.10Confluence
 \]
 
+Phase 1 should compute `EntryLocation`, `RRQuality`, and `Confluence` from
+confirmed weekly/monthly levels, breakout/reclaim levels, and level clusters
+only. Volume-profile and AVWAP evidence may improve the score later but must
+not be required for the first deterministic implementation.
+
 ### Initial rules
 
 New long:
@@ -632,6 +672,26 @@ RegimeScore =
 +0.10Volatility
 +0.10Liquidity
 \]
+
+### Phase 1 fallback
+
+If macro, on-chain, or liquidity inputs are unavailable in Phase 1, use a
+reweighted core regime score:
+
+\[
+RegimeScore_{core} =
+0.45Trend
++0.25Flow
++0.15Volatility
++0.15Positioning
+\]
+
+The recommendation output must identify the regime model used:
+
+```text
+REGIME_MODEL = CORE_MARKET_ONLY
+REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY
+```
 
 Smooth the score:
 
@@ -731,6 +791,21 @@ Useful v1 correction range:
 \]
 
 from local high, but this should later be volatility-normalized.
+
+Initial deterministic thresholds:
+
+```text
+RegimeScore >= 55
+TrendScore >= 55
+CorrectionFromLocalHigh between 8% and 25%
+FundingHealth improving over 7 trading days
+OIHealth improving or stable over 7 trading days
+FlowAccel improving over 5 trading days
+StructureScore >= 70
+Entry trigger confirmed
+Entry Conviction >= 80
+Initial R/R >= 2
+```
 
 Key signal is **improvement**:
 
@@ -898,6 +973,16 @@ Before entry:
 RR=
 \frac{PotentialReward}{RiskToInvalidation}
 \]
+
+For Phase 1, `PotentialReward` should be measured to the nearest credible
+upside structural reference, selected in this order:
+
+1. Nearest major weekly/monthly resistance cluster
+2. Prior local swing high
+3. Prior range high
+4. Conservative measured move from the active setup
+
+If no credible upside reference exists, the R/R filter fails.
 
 Initial minimum:
 
@@ -1180,8 +1265,8 @@ Primary reasons:
 
 | Hold Conviction | Action |
 |---:|---|
-| 80+ | Hold / potential add |
-| 65–80 | Hold |
+| ≥85 | Hold / potential add |
+| 70–85 | Hold |
 | 55–65 | Stop adding; tighten risk |
 | 45–55 | Trim |
 | <45 | Exit |

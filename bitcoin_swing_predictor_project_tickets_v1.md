@@ -1027,7 +1027,20 @@ FlowRaw =
 +0.10z(SpotDominance)
 \]
 
-Missing P1 inputs must be handled transparently until implemented.
+Until P1 spot/perp inputs are implemented, use the Phase 1 ETF-core fallback:
+
+\[
+FlowRaw_{core} =
+0.40z(ETFNorm_5)
++0.35z(ETFNorm_{20})
++0.25z(FlowAccel)
+\]
+
+### Acceptance Criteria
+
+- Missing P1 inputs are not silently filled with zero
+- Output records `FLOW_MODEL = ETF_CORE` or `FLOW_MODEL = ETF_SPOT_PERP_FULL`
+- Formula weights are loaded from versioned strategy config
 
 ---
 
@@ -1268,6 +1281,17 @@ StructureScore=
 +0.10Confluence
 \]
 
+Phase 1 scope:
+
+- Weekly/monthly swing levels
+- Breakout/reclaim levels
+- Level clusters
+- Entry distance to support/resistance cluster
+- R/R quality based on nearest credible structural target
+
+AVWAP and volume-profile evidence are optional P1 enhancements and must not be
+required for the Phase 1 score.
+
 ---
 
 # EPIC K — Regime Engine
@@ -1289,7 +1313,21 @@ RegimeScore=
 0.10Liquidity
 \]
 
-Phase 1 may use simplified macro/on-chain placeholders if needed.
+Until macro, on-chain, and liquidity models are implemented, use:
+
+\[
+RegimeScore_{core} =
+0.45Trend+
+0.25Flow+
+0.15Volatility+
+0.15Positioning
+\]
+
+### Acceptance Criteria
+
+- Output records `REGIME_MODEL = CORE_MARKET_ONLY` or `REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY`
+- Missing P1 inputs are not silently filled with zero
+- Formula weights are loaded from versioned strategy config
 
 ---
 
@@ -1357,6 +1395,21 @@ Detect:
 - strong support cluster
 - improving flow
 - improving structure
+
+Initial deterministic thresholds:
+
+```text
+RegimeScore >= 55
+TrendScore >= 55
+CorrectionFromLocalHigh between 8% and 25%
+FundingHealth improving over 7 trading days
+OIHealth improving or stable over 7 trading days
+FlowAccel improving over 5 trading days
+StructureScore >= 70
+Entry trigger confirmed
+Entry Conviction >= 80
+Initial R/R >= 2
+```
 
 ---
 
@@ -1564,6 +1617,20 @@ Minimum:
 R/R \ge 2
 \]
 
+For Phase 1, measure potential reward to the nearest credible upside structural
+reference, selected in this order:
+
+1. Nearest major weekly/monthly resistance cluster
+2. Prior local swing high
+3. Prior range high
+4. Conservative measured move from the active setup
+
+### Acceptance Criteria
+
+- If no credible structural reward reference exists, the R/R filter fails
+- Selected reward reference is persisted with the recommendation
+- R/R calculation is reproducible from stored levels and entry/stop values
+
 ---
 
 ## BTC-144 — Implement conviction-based risk budget
@@ -1734,7 +1801,7 @@ STOP MAY NEVER MOVE LOWER FOR A LONG
 
 ## BTC-157 — Implement trim rules
 
-**Priority:** P1  
+**Priority:** P0  
 **Estimate:** 3
 
 Based on:
@@ -1743,6 +1810,12 @@ Based on:
 - EUPHORIA
 - CROWDING
 - Flow deterioration
+
+### Acceptance Criteria
+
+- Trim signals include reason codes
+- Trim signals are distinct from full exits
+- Paper trader can simulate partial reductions once BTC-164 is complete
 
 ---
 
@@ -1817,7 +1890,7 @@ Handle:
 
 ## BTC-164 — Implement simulated trims
 
-**Priority:** P1  
+**Priority:** P0  
 **Estimate:** 2
 
 ---
@@ -2359,9 +2432,9 @@ BTC-130 → BTC-131 → BTC-132 → BTC-133
                   ↓
 BTC-140 → BTC-141 → BTC-142 → BTC-143 → BTC-144 → BTC-145 → BTC-146
                   ↓
-BTC-150 → BTC-151 → BTC-152 → BTC-153 → BTC-154 → BTC-155 → BTC-156 → BTC-158
+BTC-150 → BTC-151 → BTC-152 → BTC-153 → BTC-154 → BTC-155 → BTC-156 → BTC-157 → BTC-158
                   ↓
-BTC-160 → BTC-161 → BTC-162 → BTC-163 → BTC-165 → BTC-166
+BTC-160 → BTC-161 → BTC-162 → BTC-163 → BTC-164 → BTC-165 → BTC-166
                   ↓
 BTC-170 → BTC-171
                   ↓
@@ -2459,6 +2532,7 @@ Phase 1 is complete when:
 - [ ] Add Score works
 - [ ] Pyramiding rules work
 - [ ] Trailing structural stop works
+- [ ] Trim rules and simulated trims work
 - [ ] Paper trader runs autonomously
 - [ ] Paper trade results persist to PostgreSQL
 - [ ] Recommendation report is generated
@@ -2597,7 +2671,8 @@ BTC-022  ETF flow collector
 BTC-031  Derivatives data quality
 
 BTC-050..055  Trend Engine
-BTC-060..062  Core Flow Engine
+BTC-060..062  Core Flow Features
+BTC-065       Core Flow Score
 BTC-070..074  Positioning Engine
 BTC-080..085  Volatility Engine
 BTC-100..102  Regime Engine
@@ -2679,8 +2754,7 @@ Add capital protection and full position lifecycle management.
 
 ```text
 BTC-140..146
-BTC-150..156
-BTC-158
+BTC-150..158
 ```
 
 ### Sprint Exit Criteria
