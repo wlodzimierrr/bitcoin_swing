@@ -25,6 +25,20 @@ Run tests:
 python -m pytest
 ```
 
+Run database migrations against a database URL:
+
+```bash
+alembic -x database_url=postgresql+psycopg://user:password@localhost/dbname upgrade head
+```
+
+The application also exposes migration helpers for tests and scripts:
+
+```python
+from btc_predictor.db import upgrade_database
+
+upgrade_database("postgresql+psycopg://user:password@localhost/dbname")
+```
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

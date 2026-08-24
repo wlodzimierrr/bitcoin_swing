@@ -70,7 +70,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-003 Add database migration framework
 - **Description:**
   Use Alembic.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Fresh database can be built from migrations
   - Upgrade and downgrade tested

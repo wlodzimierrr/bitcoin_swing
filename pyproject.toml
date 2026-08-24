@@ -8,7 +8,11 @@ version = "0.1.0"
 description = "Low-frequency Bitcoin swing trading decision-support system."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.13",
+    "SQLAlchemy>=2.0",
+    "psycopg[binary]>=3.1",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -19,7 +23,12 @@ dev = [
 include = ["btc_predictor*"]
 
 [tool.setuptools.package-data]
-btc_predictor = ["config/environments/*.toml", "config/strategy/*.toml"]
+btc_predictor = [
+    "config/environments/*.toml",
+    "config/strategy/*.toml",
+    "db/migrations/*.mako",
+    "db/migrations/*.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["btc_predictor/tests"]
