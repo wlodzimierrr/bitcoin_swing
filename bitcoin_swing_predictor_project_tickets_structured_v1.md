@@ -160,7 +160,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - AUM if available
   - source
   - available_at
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Historical revisions can be represented
   - Signal jobs query only data available at signal time

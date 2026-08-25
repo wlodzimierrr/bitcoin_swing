@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import (
     CheckConstraint,
     Column,
+    Date,
     DateTime,
     Index,
     MetaData,
@@ -62,6 +63,13 @@ PERP_VOLUME_PRIMARY_KEY = (
     "symbol",
     "timeframe",
     "provider",
+)
+ETF_FLOWS_PRIMARY_KEY = (
+    "fund",
+    "observation_date",
+    "provider",
+    "revision",
+    "available_at",
 )
 
 raw_metadata = MetaData(schema=RAW_SCHEMA, naming_convention=NAMING_CONVENTION)
@@ -279,3 +287,52 @@ perp_volume = Table(
     comment="Point-in-time raw perpetual futures volume observations.",
 )
 Index("ix_raw_perp_volume_available_at", perp_volume.c.available_at)
+
+etf_flows = Table(
+    "etf_flows",
+    raw_metadata,
+    Column(
+        "fund",
+        String(length=64),
+        nullable=False,
+        comment="ETF ticker or fund identifier reported by the provider.",
+    ),
+    Column(
+        "observation_date",
+        Date,
+        nullable=False,
+        comment="Fund flow observation date in the fund's reporting calendar.",
+    ),
+    Column(
+        "flow_usd",
+        Numeric(precision=38, scale=18),
+        nullable=False,
+        comment="Net fund flow in USD; positive is inflow, negative is outflow.",
+    ),
+    Column(
+        "aum_usd",
+        Numeric(precision=38, scale=18),
+        nullable=True,
+        comment="Assets under management in USD when reported by the source.",
+    ),
+    Column("provider", String(length=64), nullable=False),
+    Column("source", String(length=255), nullable=False),
+    Column(
+        "revision",
+        String(length=64),
+        nullable=False,
+        comment="Provider revision identifier; use initial when no explicit revision exists.",
+    ),
+    Column(
+        "available_at",
+        DateTime(timezone=True),
+        nullable=False,
+        comment="UTC time this specific flow revision first became available.",
+    ),
+    Column("ingested_at", DateTime(timezone=True), nullable=False),
+    PrimaryKeyConstraint(*ETF_FLOWS_PRIMARY_KEY, name="pk_raw_etf_flows"),
+    CheckConstraint("aum_usd is null or aum_usd >= 0", name="etf_flows_aum_usd_non_negative"),
+    comment="Point-in-time raw ETF flow observations with historical revisions preserved.",
+)
+Index("ix_raw_etf_flows_available_at", etf_flows.c.available_at)
+Index("ix_raw_etf_flows_observation_date", etf_flows.c.observation_date)

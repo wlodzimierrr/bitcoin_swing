@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0012_create_derivatives_raw_schemas"
+HEAD_REVISION = "0013_create_raw_etf_flows"
 
 
 def sqlite_url(path: Path) -> str:
@@ -119,6 +119,34 @@ def test_derivatives_raw_migration_documents_units_and_timestamp_semantics() -> 
     assert "COMMENT ON COLUMN raw.futures_basis.expiry" in sql
     assert "COMMENT ON COLUMN raw.liquidations.quantity_unit" in sql
     assert "COMMENT ON COLUMN raw.perp_volume.volume_unit" in sql
+
+
+def test_raw_etf_flows_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE raw.etf_flows" in sql
+    assert "fund VARCHAR(64) NOT NULL" in sql
+    assert "observation_date DATE NOT NULL" in sql
+    assert "flow_usd NUMERIC(38, 18) NOT NULL" in sql
+    assert "aum_usd NUMERIC(38, 18)" in sql
+    assert "source VARCHAR(255) NOT NULL" in sql
+    assert "revision VARCHAR(64) NOT NULL" in sql
+    assert "available_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "CONSTRAINT pk_raw_etf_flows PRIMARY KEY" in sql
+    assert "CREATE INDEX ix_raw_etf_flows_available_at" in sql
+    assert "CREATE INDEX ix_raw_etf_flows_observation_date" in sql
+
+
+def test_raw_etf_flows_migration_documents_revision_and_timestamp_semantics() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "COMMENT ON TABLE raw.etf_flows" in sql
+    assert "historical revisions preserved" in sql
+    assert "COMMENT ON COLUMN raw.etf_flows.observation_date" in sql
+    assert "COMMENT ON COLUMN raw.etf_flows.flow_usd" in sql
+    assert "COMMENT ON COLUMN raw.etf_flows.aum_usd" in sql
+    assert "COMMENT ON COLUMN raw.etf_flows.revision" in sql
+    assert "COMMENT ON COLUMN raw.etf_flows.available_at" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:
