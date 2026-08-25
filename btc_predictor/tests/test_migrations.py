@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0014_create_raw_generic_series"
+HEAD_REVISION = "0015_create_predictor_recommendation_schemas"
 
 
 def sqlite_url(path: Path) -> str:
@@ -178,6 +178,48 @@ def test_raw_generic_series_migration_documents_scope_and_revisions() -> None:
     assert "COMMENT ON COLUMN raw.generic_series.unit" in sql
     assert "COMMENT ON COLUMN raw.generic_series.revision" in sql
     assert "COMMENT ON COLUMN raw.generic_series.available_at" in sql
+
+
+def test_predictor_recommendation_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE signals.predictor_runs" in sql
+    assert "CREATE TABLE signals.recommendations" in sql
+    assert "CREATE TABLE signals.recommendation_reason_codes" in sql
+    assert "config_version VARCHAR(64) NOT NULL" in sql
+    assert "strategy_version VARCHAR(64) NOT NULL" in sql
+    assert "feature_version VARCHAR(64) NOT NULL" in sql
+    assert "parameter_set_id VARCHAR(128) NOT NULL" in sql
+    assert "code_commit VARCHAR(64) NOT NULL" in sql
+    assert "regime VARCHAR(32) NOT NULL" in sql
+    assert "setup VARCHAR(64)" in sql
+    assert "direction VARCHAR(16) NOT NULL" in sql
+    assert "entry_conviction NUMERIC(6, 3) NOT NULL" in sql
+    assert "hold_score NUMERIC(6, 3)" in sql
+    assert "add_score NUMERIC(6, 3)" in sql
+    assert "entry_zone_lower NUMERIC(38, 18)" in sql
+    assert "invalidation_level NUMERIC(38, 18)" in sql
+    assert "initial_stop NUMERIC(38, 18)" in sql
+    assert "rr_ratio NUMERIC(12, 6)" in sql
+    assert "risk_fraction_nav NUMERIC(12, 8)" in sql
+    assert "suggested_notional NUMERIC(38, 18)" in sql
+    assert "action VARCHAR(32) NOT NULL" in sql
+    assert "CONSTRAINT pk_signals_predictor_runs PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_signals_recommendations PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_signals_recommendation_reason_codes PRIMARY KEY" in sql
+
+
+def test_predictor_recommendation_migration_documents_reconstructability() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "COMMENT ON TABLE signals.predictor_runs" in sql
+    assert "reconstructing recommendations" in sql
+    assert "COMMENT ON COLUMN signals.predictor_runs.data_available_at" in sql
+    assert "point-in-time reconstruction" in sql
+    assert "COMMENT ON TABLE signals.recommendations" in sql
+    assert "full score and risk payload" in sql
+    assert "COMMENT ON TABLE signals.recommendation_reason_codes" in sql
+    assert "Ordered reason codes explaining each persisted recommendation" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:

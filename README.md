@@ -44,6 +44,12 @@ upgrade_database("postgresql+psycopg://user:password@localhost/dbname")
 verify_research_connection("postgresql+psycopg://user:password@localhost/dbname")
 ```
 
+Predictor output is persisted through `signals.predictor_runs`,
+`signals.recommendations`, and `signals.recommendation_reason_codes`. Together
+these tables carry the strategy/config/code identity, point-in-time data cutoff,
+scores, levels, risk payload, action, and ordered reason codes needed to
+reconstruct a historical recommendation.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

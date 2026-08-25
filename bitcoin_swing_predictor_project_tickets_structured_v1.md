@@ -211,7 +211,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - Reason codes
   - Strategy version
   - Parameter set
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   Every recommendation is reconstructable later.
 - **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`

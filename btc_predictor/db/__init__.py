@@ -36,6 +36,16 @@ from btc_predictor.db.raw import (
     open_interest,
     perp_volume,
 )
+from btc_predictor.db.signals import (
+    PREDICTOR_RUNS_PRIMARY_KEY,
+    RECOMMENDATIONS_PRIMARY_KEY,
+    RECOMMENDATION_REASON_CODES_PRIMARY_KEY,
+    RECONSTRUCTABLE_RECOMMENDATION_COLUMNS,
+    predictor_runs,
+    recommendation_reason_codes,
+    recommendations,
+    signals_metadata,
+)
 
 __all__ = [
     "Base",
@@ -49,7 +59,11 @@ __all__ = [
     "LIQUIDATIONS_PRIMARY_KEY",
     "OPEN_INTEREST_PRIMARY_KEY",
     "PERP_VOLUME_PRIMARY_KEY",
+    "PREDICTOR_RUNS_PRIMARY_KEY",
     "RESEARCH_SCHEMAS",
+    "RECOMMENDATIONS_PRIMARY_KEY",
+    "RECOMMENDATION_REASON_CODES_PRIMARY_KEY",
+    "RECONSTRUCTABLE_RECOMMENDATION_COLUMNS",
     "RUNTIME_SCHEMAS",
     "alembic_config",
     "current_database_revision",
@@ -64,8 +78,12 @@ __all__ = [
     "liquidations",
     "open_interest",
     "perp_volume",
+    "predictor_runs",
     "raw_metadata",
+    "recommendation_reason_codes",
+    "recommendations",
     "schema_fingerprint",
+    "signals_metadata",
     "target_metadata",
     "upgrade_database",
     "verify_connection",
