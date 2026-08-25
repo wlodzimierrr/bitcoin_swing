@@ -139,7 +139,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - Futures basis
   - Liquidations
   - Perp volume
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Exchange/source preserved
   - Units documented

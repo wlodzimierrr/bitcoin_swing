@@ -20,12 +20,29 @@ from btc_predictor.db.connections import (
     verify_runtime_connection,
 )
 from btc_predictor.db.raw import BTC_OHLCV_PRIMARY_KEY, btc_ohlcv, raw_metadata
+from btc_predictor.db.raw import (
+    FUNDING_RATES_PRIMARY_KEY,
+    FUTURES_BASIS_PRIMARY_KEY,
+    LIQUIDATIONS_PRIMARY_KEY,
+    OPEN_INTEREST_PRIMARY_KEY,
+    PERP_VOLUME_PRIMARY_KEY,
+    funding_rates,
+    futures_basis,
+    liquidations,
+    open_interest,
+    perp_volume,
+)
 
 __all__ = [
     "Base",
     "BTC_OHLCV_PRIMARY_KEY",
     "CORE_SCHEMAS",
     "ConnectionVerification",
+    "FUNDING_RATES_PRIMARY_KEY",
+    "FUTURES_BASIS_PRIMARY_KEY",
+    "LIQUIDATIONS_PRIMARY_KEY",
+    "OPEN_INTEREST_PRIMARY_KEY",
+    "PERP_VOLUME_PRIMARY_KEY",
     "RESEARCH_SCHEMAS",
     "RUNTIME_SCHEMAS",
     "alembic_config",
@@ -34,6 +51,11 @@ __all__ = [
     "render_downgrade_sql",
     "render_upgrade_sql",
     "btc_ohlcv",
+    "funding_rates",
+    "futures_basis",
+    "liquidations",
+    "open_interest",
+    "perp_volume",
     "raw_metadata",
     "schema_fingerprint",
     "target_metadata",

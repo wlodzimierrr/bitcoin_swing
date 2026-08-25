@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0011_create_raw_btc_ohlcv"
+HEAD_REVISION = "0012_create_derivatives_raw_schemas"
 
 
 def sqlite_url(path: Path) -> str:
@@ -78,6 +78,47 @@ def test_raw_btc_ohlcv_migration_renders_postgresql_sql() -> None:
     assert "open NUMERIC(38, 18) NOT NULL" in sql
     assert "ingested_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
     assert "CONSTRAINT pk_raw_btc_ohlcv PRIMARY KEY" in sql
+
+
+def test_derivatives_raw_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    for table_name in (
+        "funding_rates",
+        "open_interest",
+        "futures_basis",
+        "liquidations",
+        "perp_volume",
+    ):
+        assert f"CREATE TABLE raw.{table_name}" in sql
+        assert "exchange VARCHAR(64) NOT NULL" in sql
+        assert "provider VARCHAR(64) NOT NULL" in sql
+        assert "source VARCHAR(255) NOT NULL" in sql
+        assert "available_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+        assert "ingested_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+
+    assert "funding_rate NUMERIC(38, 18) NOT NULL" in sql
+    assert "open_interest NUMERIC(38, 18) NOT NULL" in sql
+    assert "basis_rate NUMERIC(38, 18) NOT NULL" in sql
+    assert "side VARCHAR(8) NOT NULL" in sql
+    assert "volume_unit VARCHAR(32) NOT NULL" in sql
+    assert "CONSTRAINT pk_raw_funding_rates PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_raw_open_interest PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_raw_futures_basis PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_raw_liquidations PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_raw_perp_volume PRIMARY KEY" in sql
+
+
+def test_derivatives_raw_migration_documents_units_and_timestamp_semantics() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "COMMENT ON TABLE raw.funding_rates" in sql
+    assert "COMMENT ON COLUMN raw.funding_rates.observation_time" in sql
+    assert "COMMENT ON COLUMN raw.funding_rates.funding_rate" in sql
+    assert "COMMENT ON COLUMN raw.open_interest.open_interest_unit" in sql
+    assert "COMMENT ON COLUMN raw.futures_basis.expiry" in sql
+    assert "COMMENT ON COLUMN raw.liquidations.quantity_unit" in sql
+    assert "COMMENT ON COLUMN raw.perp_volume.volume_unit" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:
