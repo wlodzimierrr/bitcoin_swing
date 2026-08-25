@@ -181,7 +181,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   provider
   revision
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Can store VIX, yields, DXY proxies, liquidity measures, and on-chain metrics
   - Revisions do not overwrite historical availability state

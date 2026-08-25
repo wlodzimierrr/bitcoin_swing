@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0013_create_raw_etf_flows"
+HEAD_REVISION = "0014_create_raw_generic_series"
 
 
 def sqlite_url(path: Path) -> str:
@@ -147,6 +147,37 @@ def test_raw_etf_flows_migration_documents_revision_and_timestamp_semantics() ->
     assert "COMMENT ON COLUMN raw.etf_flows.aum_usd" in sql
     assert "COMMENT ON COLUMN raw.etf_flows.revision" in sql
     assert "COMMENT ON COLUMN raw.etf_flows.available_at" in sql
+
+
+def test_raw_generic_series_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE raw.generic_series" in sql
+    assert "series_id VARCHAR(128) NOT NULL" in sql
+    assert "series_type VARCHAR(32) NOT NULL" in sql
+    assert "observation_time TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "value NUMERIC(38, 18) NOT NULL" in sql
+    assert "unit VARCHAR(64) NOT NULL" in sql
+    assert "provider VARCHAR(64) NOT NULL" in sql
+    assert "source VARCHAR(255) NOT NULL" in sql
+    assert "revision VARCHAR(64) NOT NULL" in sql
+    assert "available_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "CONSTRAINT pk_raw_generic_series PRIMARY KEY" in sql
+    assert "CREATE INDEX ix_raw_generic_series_available_at" in sql
+    assert "CREATE INDEX ix_raw_generic_series_observation_time" in sql
+
+
+def test_raw_generic_series_migration_documents_scope_and_revisions() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "COMMENT ON TABLE raw.generic_series" in sql
+    assert "macro, liquidity, market-proxy, and on-chain" in sql
+    assert "COMMENT ON COLUMN raw.generic_series.series_id" in sql
+    assert "COMMENT ON COLUMN raw.generic_series.series_type" in sql
+    assert "COMMENT ON COLUMN raw.generic_series.observation_time" in sql
+    assert "COMMENT ON COLUMN raw.generic_series.unit" in sql
+    assert "COMMENT ON COLUMN raw.generic_series.revision" in sql
+    assert "COMMENT ON COLUMN raw.generic_series.available_at" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:

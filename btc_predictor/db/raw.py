@@ -71,6 +71,13 @@ ETF_FLOWS_PRIMARY_KEY = (
     "revision",
     "available_at",
 )
+GENERIC_SERIES_PRIMARY_KEY = (
+    "series_id",
+    "observation_time",
+    "provider",
+    "revision",
+    "available_at",
+)
 
 raw_metadata = MetaData(schema=RAW_SCHEMA, naming_convention=NAMING_CONVENTION)
 
@@ -336,3 +343,59 @@ etf_flows = Table(
 )
 Index("ix_raw_etf_flows_available_at", etf_flows.c.available_at)
 Index("ix_raw_etf_flows_observation_date", etf_flows.c.observation_date)
+
+generic_series = Table(
+    "generic_series",
+    raw_metadata,
+    Column(
+        "series_id",
+        String(length=128),
+        nullable=False,
+        comment="Stable provider or application identifier, e.g. VIX, DXY, M2_GLOBAL, BTC_ACTIVE_ADDRESSES.",
+    ),
+    Column(
+        "series_type",
+        String(length=32),
+        nullable=False,
+        comment="Series family: macro, liquidity, onchain, or market_proxy.",
+    ),
+    Column(
+        "observation_time",
+        DateTime(timezone=True),
+        nullable=False,
+        comment="UTC timestamp for the economic, liquidity, or on-chain observation.",
+    ),
+    Column("value", Numeric(precision=38, scale=18), nullable=False),
+    Column(
+        "unit",
+        String(length=64),
+        nullable=False,
+        comment="Measurement unit, e.g. index_points, percent, usd, btc, count.",
+    ),
+    Column("provider", String(length=64), nullable=False),
+    Column("source", String(length=255), nullable=False),
+    Column(
+        "revision",
+        String(length=64),
+        nullable=False,
+        comment="Provider revision identifier; use initial when no explicit revision exists.",
+    ),
+    Column(
+        "available_at",
+        DateTime(timezone=True),
+        nullable=False,
+        comment="UTC time this specific revision first became available to the system.",
+    ),
+    Column("ingested_at", DateTime(timezone=True), nullable=False),
+    PrimaryKeyConstraint(*GENERIC_SERIES_PRIMARY_KEY, name="pk_raw_generic_series"),
+    CheckConstraint(
+        "series_type in ('macro', 'liquidity', 'onchain', 'market_proxy')",
+        name="generic_series_type_valid",
+    ),
+    comment=(
+        "Point-in-time generic macro, liquidity, market-proxy, and on-chain "
+        "series observations with revisions preserved."
+    ),
+)
+Index("ix_raw_generic_series_available_at", generic_series.c.available_at)
+Index("ix_raw_generic_series_observation_time", generic_series.c.observation_time)
