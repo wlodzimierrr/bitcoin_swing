@@ -50,6 +50,11 @@ these tables carry the strategy/config/code identity, point-in-time data cutoff,
 scores, levels, risk payload, action, and ordered reason codes needed to
 reconstruct a historical recommendation.
 
+Paper trading state is persisted through `portfolio.paper_accounts`,
+`portfolio.positions`, `portfolio.tranches`, `portfolio.paper_orders`,
+`portfolio.stops`, `portfolio.position_events`, and
+`portfolio.completed_trades`.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

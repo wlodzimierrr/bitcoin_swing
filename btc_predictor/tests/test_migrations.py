@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0015_create_predictor_recommendation_schemas"
+HEAD_REVISION = "0016_create_paper_portfolio_schemas"
 
 
 def sqlite_url(path: Path) -> str:
@@ -220,6 +220,44 @@ def test_predictor_recommendation_migration_documents_reconstructability() -> No
     assert "full score and risk payload" in sql
     assert "COMMENT ON TABLE signals.recommendation_reason_codes" in sql
     assert "Ordered reason codes explaining each persisted recommendation" in sql
+
+
+def test_paper_portfolio_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    for table_name in (
+        "paper_accounts",
+        "positions",
+        "tranches",
+        "paper_orders",
+        "stops",
+        "position_events",
+        "completed_trades",
+    ):
+        assert f"CREATE TABLE portfolio.{table_name}" in sql
+
+    assert "account_name VARCHAR(128) NOT NULL" in sql
+    assert "opening_recommendation_id BIGINT" in sql
+    assert "tranche_number BIGINT NOT NULL" in sql
+    assert "order_type VARCHAR(16) NOT NULL" in sql
+    assert "stop_price NUMERIC(38, 18) NOT NULL" in sql
+    assert "event_time TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "realized_pnl NUMERIC(38, 18) NOT NULL" in sql
+    assert "CONSTRAINT pk_portfolio_paper_accounts PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_portfolio_positions PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_portfolio_tranches PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_portfolio_paper_orders PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_portfolio_stops PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_portfolio_position_events PRIMARY KEY" in sql
+    assert "CONSTRAINT pk_portfolio_completed_trades PRIMARY KEY" in sql
+
+
+def test_paper_portfolio_migration_supports_required_actions() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "action in ('ENTER', 'HOLD', 'ADD', 'STOP_MOVE', 'TRIM', 'EXIT', 'MISSED')" in sql
+    assert "action in ('ENTER', 'ADD', 'TRIM', 'EXIT', 'MISSED')" in sql
+    assert "Chronological paper position events supporting full lifecycle replay" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:

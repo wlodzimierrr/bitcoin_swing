@@ -230,7 +230,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - Stop
   - Position event
   - Completed trade
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   Support:
 
