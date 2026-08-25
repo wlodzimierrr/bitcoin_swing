@@ -282,7 +282,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - derive daily
   - derive weekly
   - derive monthly
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Idempotent ingestion
   - UTC normalization
@@ -294,6 +294,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added provider-injected BTC OHLCV collection with retry support.
+  - Collected canonical raw `1h` bars with UTC validation and conflict-do-nothing inserts.
+  - Derived complete daily, weekly, and monthly bars from available `1h` source bars.
+  - Reported missing source intervals and skipped incomplete derived periods.
 
 #### BTC-021 Implement derivatives collector
 - **Description:**

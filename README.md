@@ -55,6 +55,12 @@ Paper trading state is persisted through `portfolio.paper_accounts`,
 `portfolio.stops`, `portfolio.position_events`, and
 `portfolio.completed_trades`.
 
+BTC OHLCV collection is provider-injected through
+`OhlcvCollectionRequest` and `collect_btc_ohlcv`. The collector fetches raw
+`1h` bars, writes them with conflict-do-nothing semantics so existing raw
+records are not silently changed, and derives complete daily, weekly, and
+monthly bars from the same point-in-time source data.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 
