@@ -21,6 +21,8 @@ from btc_predictor.db.connections import (
 )
 from btc_predictor.db.portfolio import (
     COMPLETED_TRADES_PRIMARY_KEY,
+    MANUAL_DECISIONS,
+    MANUAL_TRADE_JOURNAL_PRIMARY_KEY,
     PAPER_ACCOUNTS_PRIMARY_KEY,
     PAPER_ACTIONS,
     PAPER_ORDERS_PRIMARY_KEY,
@@ -29,6 +31,7 @@ from btc_predictor.db.portfolio import (
     STOPS_PRIMARY_KEY,
     TRANCHES_PRIMARY_KEY,
     completed_trades,
+    manual_trade_journal,
     paper_accounts,
     paper_orders,
     portfolio_metadata,
@@ -76,6 +79,8 @@ __all__ = [
     "FUTURES_BASIS_PRIMARY_KEY",
     "GENERIC_SERIES_PRIMARY_KEY",
     "LIQUIDATIONS_PRIMARY_KEY",
+    "MANUAL_DECISIONS",
+    "MANUAL_TRADE_JOURNAL_PRIMARY_KEY",
     "OPEN_INTEREST_PRIMARY_KEY",
     "PAPER_ACCOUNTS_PRIMARY_KEY",
     "PAPER_ACTIONS",
@@ -95,6 +100,7 @@ __all__ = [
     "current_database_revision",
     "downgrade_database",
     "completed_trades",
+    "manual_trade_journal",
     "render_downgrade_sql",
     "render_upgrade_sql",
     "btc_ohlcv",

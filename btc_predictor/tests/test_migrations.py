@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0016_create_paper_portfolio_schemas"
+HEAD_REVISION = "0017_create_manual_trade_journal_schema"
 
 
 def sqlite_url(path: Path) -> str:
@@ -258,6 +258,29 @@ def test_paper_portfolio_migration_supports_required_actions() -> None:
     assert "action in ('ENTER', 'HOLD', 'ADD', 'STOP_MOVE', 'TRIM', 'EXIT', 'MISSED')" in sql
     assert "action in ('ENTER', 'ADD', 'TRIM', 'EXIT', 'MISSED')" in sql
     assert "Chronological paper position events supporting full lifecycle replay" in sql
+
+
+def test_manual_trade_journal_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE portfolio.manual_trade_journal" in sql
+    assert "recommendation_id BIGINT" in sql
+    assert "actual_entry_time TIMESTAMP WITH TIME ZONE" in sql
+    assert "actual_entry_price NUMERIC(38, 18)" in sql
+    assert "actual_size NUMERIC(38, 18)" in sql
+    assert "actual_size_unit VARCHAR(16)" in sql
+    assert "actual_stop NUMERIC(38, 18)" in sql
+    assert "actual_exit_time TIMESTAMP WITH TIME ZONE" in sql
+    assert "actual_exit_price NUMERIC(38, 18)" in sql
+    assert "manual_decision VARCHAR(32) NOT NULL" in sql
+    assert "override_reason TEXT" in sql
+    assert "notes TEXT" in sql
+    assert "CONSTRAINT pk_portfolio_manual_trade_journal PRIMARY KEY" in sql
+    assert "CONSTRAINT fk_portfolio_manual_trade_recommendation FOREIGN KEY" in sql
+    assert "manual_decision in ('FOLLOWED', 'OVERRIDDEN', 'SKIPPED', 'MANUAL_ONLY')" in sql
+    assert "manual_decision = 'MANUAL_ONLY' or recommendation_id is not null" in sql
+    assert "manual_decision != 'OVERRIDDEN' or override_reason is not null" in sql
+    assert "Manual execution journal linked to model recommendations" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:

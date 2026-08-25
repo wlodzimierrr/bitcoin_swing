@@ -260,13 +260,17 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - override reason
   - actual exit
   - notes
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   Can compare recommendation vs actual execution.
 - **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `portfolio.manual_trade_journal` in Alembic revision `0017_create_manual_trade_journal_schema`.
+  - Linked journal entries to `signals.recommendations` for suggested-versus-actual execution comparison.
+  - Captured actual entry, size, stop, exit, manual decision, override reason, and notes.
 
 ## EPIC C — Data Ingestion
 

@@ -26,6 +26,7 @@ from btc_predictor.db.base import NAMING_CONVENTION
 PORTFOLIO_SCHEMA = "portfolio"
 
 PAPER_ACTIONS = ("ENTER", "HOLD", "ADD", "STOP_MOVE", "TRIM", "EXIT", "MISSED")
+MANUAL_DECISIONS = ("FOLLOWED", "OVERRIDDEN", "SKIPPED", "MANUAL_ONLY")
 
 PAPER_ACCOUNTS_PRIMARY_KEY = ("account_id",)
 POSITIONS_PRIMARY_KEY = ("position_id",)
@@ -34,6 +35,7 @@ PAPER_ORDERS_PRIMARY_KEY = ("order_id",)
 STOPS_PRIMARY_KEY = ("stop_id",)
 POSITION_EVENTS_PRIMARY_KEY = ("event_id",)
 COMPLETED_TRADES_PRIMARY_KEY = ("completed_trade_id",)
+MANUAL_TRADE_JOURNAL_PRIMARY_KEY = ("manual_trade_id",)
 
 portfolio_metadata = MetaData(schema=PORTFOLIO_SCHEMA, naming_convention=NAMING_CONVENTION)
 
@@ -299,3 +301,66 @@ completed_trades = Table(
     comment="Finalized paper trade outcomes for research and reporting.",
 )
 Index("ix_portfolio_completed_trades_account_closed_at", completed_trades.c.account_id, completed_trades.c.closed_at)
+
+manual_trade_journal = Table(
+    "manual_trade_journal",
+    portfolio_metadata,
+    Column("manual_trade_id", BigInteger, Identity(always=True), nullable=False),
+    Column("recommendation_id", BigInteger, nullable=True),
+    Column("symbol", String(length=32), nullable=False),
+    Column("direction", String(length=16), nullable=False),
+    Column("journaled_at", DateTime(timezone=True), nullable=False),
+    Column("manual_decision", String(length=32), nullable=False),
+    Column("override_reason", Text, nullable=True),
+    Column("actual_entry_time", DateTime(timezone=True), nullable=True),
+    Column("actual_entry_price", Numeric(precision=38, scale=18), nullable=True),
+    Column("actual_size", Numeric(precision=38, scale=18), nullable=True),
+    Column("actual_size_unit", String(length=16), nullable=True),
+    Column("actual_stop", Numeric(precision=38, scale=18), nullable=True),
+    Column("actual_exit_time", DateTime(timezone=True), nullable=True),
+    Column("actual_exit_price", Numeric(precision=38, scale=18), nullable=True),
+    Column("notes", Text, nullable=True),
+    ForeignKeyConstraint(
+        ["recommendation_id"],
+        ["signals.recommendations.recommendation_id"],
+        name="fk_portfolio_manual_trade_recommendation",
+        ondelete="RESTRICT",
+    ),
+    PrimaryKeyConstraint(*MANUAL_TRADE_JOURNAL_PRIMARY_KEY, name="pk_portfolio_manual_trade_journal"),
+    CheckConstraint("direction in ('long', 'short', 'flat')", name="manual_trade_journal_direction_valid"),
+    CheckConstraint(
+        "manual_decision in ('FOLLOWED', 'OVERRIDDEN', 'SKIPPED', 'MANUAL_ONLY')",
+        name="manual_trade_journal_decision_valid",
+    ),
+    CheckConstraint(
+        "manual_decision = 'MANUAL_ONLY' or recommendation_id is not null",
+        name="manual_trade_journal_recommendation_required",
+    ),
+    CheckConstraint(
+        "manual_decision != 'OVERRIDDEN' or override_reason is not null",
+        name="manual_trade_journal_override_reason_required",
+    ),
+    CheckConstraint(
+        "actual_entry_price is null or actual_entry_price > 0",
+        name="manual_trade_journal_actual_entry_price_positive",
+    ),
+    CheckConstraint(
+        "actual_size is null or actual_size >= 0",
+        name="manual_trade_journal_actual_size_non_negative",
+    ),
+    CheckConstraint(
+        "actual_stop is null or actual_stop > 0",
+        name="manual_trade_journal_actual_stop_positive",
+    ),
+    CheckConstraint(
+        "actual_exit_price is null or actual_exit_price > 0",
+        name="manual_trade_journal_actual_exit_price_positive",
+    ),
+    CheckConstraint(
+        "actual_entry_time is null or actual_exit_time is null or actual_exit_time >= actual_entry_time",
+        name="manual_trade_journal_actual_time_order",
+    ),
+    comment="Manual execution journal linked to model recommendations for suggested-versus-actual comparison.",
+)
+Index("ix_portfolio_manual_trade_journal_recommendation", manual_trade_journal.c.recommendation_id)
+Index("ix_portfolio_manual_trade_journal_symbol_time", manual_trade_journal.c.symbol, manual_trade_journal.c.journaled_at)
