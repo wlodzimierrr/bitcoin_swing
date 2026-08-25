@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
+from typing import TextIO
 
 from alembic import command
 from alembic.config import Config
@@ -12,10 +15,23 @@ from sqlalchemy import create_engine, inspect, text
 MIGRATION_SCRIPT_LOCATION = Path(__file__).resolve().parent / "migrations"
 
 
-def alembic_config(database_url: str, config_path: Path | None = None) -> Config:
+def alembic_config(
+    database_url: str,
+    config_path: Path | None = None,
+    output_buffer: TextIO | None = None,
+    x_arguments: dict[str, str] | None = None,
+) -> Config:
     """Build an Alembic config for a specific database URL."""
 
-    config = Config(str(config_path)) if config_path is not None else Config()
+    config = (
+        Config(str(config_path), output_buffer=output_buffer)
+        if config_path is not None
+        else Config(output_buffer=output_buffer)
+    )
+    if x_arguments:
+        config.cmd_opts = SimpleNamespace(
+            x=[f"{key}={value}" for key, value in x_arguments.items()],
+        )
     config.set_main_option("script_location", str(MIGRATION_SCRIPT_LOCATION))
     config.set_main_option("sqlalchemy.url", database_url)
     return config
@@ -27,6 +43,42 @@ def upgrade_database(database_url: str, revision: str = "head") -> None:
 
 def downgrade_database(database_url: str, revision: str = "base") -> None:
     command.downgrade(alembic_config(database_url), revision)
+
+
+def render_upgrade_sql(
+    database_url: str,
+    revision: str = "head",
+    x_arguments: dict[str, str] | None = None,
+) -> str:
+    output = StringIO()
+    command.upgrade(
+        alembic_config(
+            database_url,
+            output_buffer=output,
+            x_arguments=x_arguments,
+        ),
+        revision,
+        sql=True,
+    )
+    return output.getvalue()
+
+
+def render_downgrade_sql(
+    database_url: str,
+    revision: str = "base",
+    x_arguments: dict[str, str] | None = None,
+) -> str:
+    output = StringIO()
+    command.downgrade(
+        alembic_config(
+            database_url,
+            output_buffer=output,
+            x_arguments=x_arguments,
+        ),
+        revision,
+        sql=True,
+    )
+    return output.getvalue()
 
 
 def schema_fingerprint(database_url: str) -> tuple[str, ...]:

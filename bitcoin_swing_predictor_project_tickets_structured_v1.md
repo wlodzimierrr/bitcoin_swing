@@ -94,7 +94,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   research
   system
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Schemas created through migration
   - Application DB user has correct permissions
