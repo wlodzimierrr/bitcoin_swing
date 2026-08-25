@@ -119,7 +119,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - volume
   - provider
   - ingestion timestamp
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Unique primary key
   - UTC timestamps

@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0010_create_core_postgresql_schemas"
+HEAD_REVISION = "0011_create_raw_btc_ohlcv"
 
 
 def sqlite_url(path: Path) -> str:
@@ -65,6 +65,19 @@ def test_core_schema_migration_renders_postgresql_sql() -> None:
     assert "GRANT USAGE ON SCHEMA raw TO btc_predictor_runtime" in sql
     assert "GRANT USAGE ON SCHEMA research TO btc_predictor_research" in sql
     assert "GRANT CREATE ON SCHEMA research TO btc_predictor_research" in sql
+
+
+def test_raw_btc_ohlcv_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE raw.btc_ohlcv" in sql
+    assert "timestamp TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "exchange VARCHAR(64) NOT NULL" in sql
+    assert "symbol VARCHAR(32) NOT NULL" in sql
+    assert "timeframe VARCHAR(16) NOT NULL" in sql
+    assert "open NUMERIC(38, 18) NOT NULL" in sql
+    assert "ingested_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "CONSTRAINT pk_raw_btc_ohlcv PRIMARY KEY" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:
