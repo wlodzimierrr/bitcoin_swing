@@ -706,6 +706,7 @@ Collect at minimum:
 - 1h data
 - derive daily
 - derive weekly
+- derive monthly
 
 ### Acceptance Criteria
 
@@ -713,6 +714,7 @@ Collect at minimum:
 - UTC normalization
 - Retry support
 - Missing interval detection
+- Daily, weekly, and monthly bars derive from point-in-time source data
 - Raw records never silently changed
 
 ---
@@ -853,17 +855,18 @@ NO ADD
 
 # EPIC E — Derived Market Data
 
-## BTC-040 — Build daily and weekly market bars
+## BTC-040 — Build daily, weekly, and monthly market bars
 
 **Priority:** P0  
 **Estimate:** 3
 
-Generate canonical BTC daily and weekly bars.
+Generate canonical BTC daily, weekly, and monthly bars.
 
 ### Acceptance Criteria
 
 - Consistent session definition
 - Weekly boundaries documented
+- Monthly boundaries documented
 - Reproducible aggregation
 - Point-in-time correct
 
@@ -2464,7 +2467,7 @@ To avoid overbuilding, the first full end-to-end version can omit:
 The first version should support:
 
 ```text
-BTC daily + weekly OHLCV
+BTC daily + weekly + monthly OHLCV
 Funding
 Open Interest
 Futures Basis
@@ -2508,7 +2511,7 @@ Phase 1 is complete when:
 - [ ] Raw BTC market data is stored reproducibly
 - [ ] Derivatives data is stored point-in-time correctly
 - [ ] ETF flows are stored with availability timestamps
-- [ ] Daily and weekly canonical bars are generated
+- [ ] Daily, weekly, and monthly canonical bars are generated
 - [ ] Trend Score works
 - [ ] Flow Score works
 - [ ] Positioning Score works
@@ -2633,7 +2636,7 @@ BTC-016  Paper portfolio tables
 BTC-020  BTC OHLCV collector
 BTC-025  Ingestion audit log
 BTC-030  OHLCV data quality
-BTC-040  Daily/weekly canonical bars
+BTC-040  Daily/weekly/monthly canonical bars
 BTC-041  Rolling statistics framework
 ```
 
@@ -2650,7 +2653,7 @@ PostgreSQL raw schema
     ↓
 Quality checks
     ↓
-Canonical daily/weekly BTC dataset
+Canonical daily/weekly/monthly BTC dataset
 ```
 
 must run reproducibly from scratch.

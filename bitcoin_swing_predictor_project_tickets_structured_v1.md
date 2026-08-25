@@ -281,12 +281,14 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - 1h data
   - derive daily
   - derive weekly
+  - derive monthly
 - **Status:** TODO
 - **Acceptance Criteria:**
   - Idempotent ingestion
   - UTC normalization
   - Retry support
   - Missing interval detection
+  - Daily, weekly, and monthly bars derive from point-in-time source data
   - Raw records never silently changed
 - **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
 - **Priority:** P0
@@ -445,13 +447,14 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 
 ## EPIC E — Derived Market Data
 
-#### BTC-040 Build daily and weekly market bars
+#### BTC-040 Build daily, weekly, and monthly market bars
 - **Description:**
-  Generate canonical BTC daily and weekly bars.
+  Generate canonical BTC daily, weekly, and monthly bars.
 - **Status:** TODO
 - **Acceptance Criteria:**
   - Consistent session definition
   - Weekly boundaries documented
+  - Monthly boundaries documented
   - Reproducible aggregation
   - Point-in-time correct
 - **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
