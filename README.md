@@ -80,6 +80,12 @@ Observations are persisted as immutable `raw.generic_series` revisions with
 deterministic series IDs, UTC availability timestamps, and explicit missing
 observation dates.
 
+On-chain data collection is provider-injected through
+`OnchainDataCollectionRequest` and `collect_onchain_data`. The initial candidate
+set covers SOPR, MVRV, realized P/L, short-term holder realized price, and
+exchange flows. Observations use deterministic `raw.generic_series` IDs,
+preserve provider revisions, and report missing calendar-day observations.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

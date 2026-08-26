@@ -6,14 +6,20 @@ from sqlalchemy.dialects import postgresql
 
 from btc_predictor.data import (
     MACRO_SERIES_IDS,
+    ONCHAIN_SERIES_IDS,
     SUPPORTED_SERIES_TYPES,
     MacroDataCollectionRequest,
+    OnchainDataCollectionRequest,
     build_generic_series_insert_ignore,
     collect_macro_data,
+    collect_onchain_data,
     expected_macro_observation_dates,
+    expected_onchain_observation_dates,
     latest_generic_series_available_at,
     latest_macro_series_available_at,
+    latest_onchain_series_available_at,
     missing_macro_observation_dates,
+    missing_onchain_observation_dates,
 )
 from btc_predictor.db import GENERIC_SERIES_PRIMARY_KEY, generic_series
 
@@ -47,10 +53,41 @@ class FlakyMacroProvider(StaticMacroProvider):
         return self.rows
 
 
+class StaticOnchainProvider:
+    def __init__(self, rows):
+        self.rows = rows
+        self.calls = 0
+
+    def fetch_onchain_series(self, **kwargs):
+        self.calls += 1
+        assert kwargs["series_ids"] == ONCHAIN_SERIES_IDS
+        assert kwargs["start"] == datetime(2026, 8, 24, tzinfo=UTC)
+        assert kwargs["end"] == datetime(2026, 8, 26, tzinfo=UTC)
+        return self.rows
+
+
+class FlakyOnchainProvider(StaticOnchainProvider):
+    def fetch_onchain_series(self, **kwargs):
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("temporary on-chain provider outage")
+        return self.rows
+
+
 def macro_request() -> MacroDataCollectionRequest:
     return MacroDataCollectionRequest(
         provider="fred",
         source="fred-api",
+        start=datetime(2026, 8, 24, tzinfo=UTC),
+        end=datetime(2026, 8, 26, tzinfo=UTC),
+        max_attempts=2,
+    )
+
+
+def onchain_request() -> OnchainDataCollectionRequest:
+    return OnchainDataCollectionRequest(
+        provider="glassnode",
+        source="glassnode-api",
         start=datetime(2026, 8, 24, tzinfo=UTC),
         end=datetime(2026, 8, 26, tzinfo=UTC),
         max_attempts=2,
@@ -95,6 +132,42 @@ def macro_rows():
     )
 
 
+def onchain_rows():
+    return (
+        {
+            "series_id": "SOPR",
+            "observation_time": datetime(2026, 8, 24, 1, tzinfo=timezone(timedelta(hours=1))),
+            "value": "1.02",
+            "available_at": datetime(2026, 8, 24, 22, tzinfo=UTC),
+        },
+        {
+            "series_id": "MVRV",
+            "observation_time": datetime(2026, 8, 24, tzinfo=UTC),
+            "value": "2.1",
+            "available_at": datetime(2026, 8, 24, 22, tzinfo=UTC),
+        },
+        {
+            "series_id": "REALIZED_PL",
+            "observation_time": datetime(2026, 8, 24, tzinfo=UTC),
+            "value": "-125000000",
+            "available_at": datetime(2026, 8, 24, 22, tzinfo=UTC),
+        },
+        {
+            "series_id": "STH_REALIZED_PRICE",
+            "observation_time": datetime(2026, 8, 24, tzinfo=UTC),
+            "value": "82000",
+            "available_at": datetime(2026, 8, 24, 22, tzinfo=UTC),
+        },
+        {
+            "series_id": "EXCHANGE_FLOWS",
+            "observation_time": datetime(2026, 8, 26, tzinfo=UTC),
+            "value": "3500",
+            "revision": "v2",
+            "available_at": datetime(2026, 8, 26, 22, tzinfo=UTC),
+        },
+    )
+
+
 def test_generic_series_primary_key_preserves_historical_revisions() -> None:
     assert GENERIC_SERIES_PRIMARY_KEY == (
         "series_id",
@@ -132,6 +205,16 @@ def test_macro_candidate_series_are_configured() -> None:
         "NASDAQ_PROXY",
         "US_2Y_YIELD",
         "REAL_YIELD_PROXY",
+    )
+
+
+def test_onchain_candidate_series_are_configured() -> None:
+    assert ONCHAIN_SERIES_IDS == (
+        "SOPR",
+        "MVRV",
+        "REALIZED_PL",
+        "STH_REALIZED_PRICE",
+        "EXCHANGE_FLOWS",
     )
 
 
@@ -181,6 +264,16 @@ def test_latest_macro_series_query_filters_to_candidate_series() -> None:
     assert "observation_time <= " in compiled
 
 
+def test_latest_onchain_series_query_filters_to_candidate_series() -> None:
+    query = latest_onchain_series_available_at(datetime(2026, 8, 25, 16, tzinfo=UTC))
+    compiled = str(query.compile(dialect=postgresql.dialect()))
+
+    assert "series_id IN" in compiled
+    assert "series_type IN" in compiled
+    assert "available_at <= " in compiled
+    assert "observation_time <= " in compiled
+
+
 def test_collect_macro_data_loads_candidate_series_and_normalizes_provider_rows() -> None:
     provider = FlakyMacroProvider(macro_rows())
     connection = RecordingConnection()
@@ -206,11 +299,53 @@ def test_collect_macro_data_loads_candidate_series_and_normalizes_provider_rows(
     assert len(connection.statements) == 1
 
 
+def test_collect_onchain_data_loads_candidate_series_and_normalizes_provider_rows() -> None:
+    provider = FlakyOnchainProvider(onchain_rows())
+    connection = RecordingConnection()
+
+    result = collect_onchain_data(
+        provider,
+        connection,
+        onchain_request(),
+        ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
+    )
+
+    assert provider.calls == 2
+    assert result.provider_attempts == 2
+    assert len(result.observations) == 5
+    assert result.observations[0].series_id == "MVRV"
+    assert result.observations[0].series_type == "onchain"
+    assert result.observations[0].unit == "ratio"
+    assert result.observations[1].series_id == "REALIZED_PL"
+    assert result.observations[1].value == Decimal("-125000000")
+    assert result.observations[2].series_id == "SOPR"
+    assert result.observations[2].observation_time == datetime(2026, 8, 24, tzinfo=UTC)
+    assert result.observations[3].series_id == "STH_REALIZED_PRICE"
+    assert result.observations[4].series_id == "EXCHANGE_FLOWS"
+    assert result.observations[4].revision == "v2"
+    assert len(connection.statements) == 1
+
+
 def test_generic_series_insert_ignore_is_idempotent_without_changing_existing_raw_records() -> None:
     result = collect_macro_data(
         StaticMacroProvider(macro_rows()),
         RecordingConnection(),
         macro_request(),
+        ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
+    )
+    statement = build_generic_series_insert_ignore(result.observations)
+    compiled = str(statement.compile(dialect=postgresql.dialect()))
+
+    assert "INSERT INTO raw.generic_series" in compiled
+    assert "ON CONFLICT (series_id, observation_time, provider, revision, available_at) DO NOTHING" in compiled
+    assert "DO UPDATE SET" not in compiled
+
+
+def test_onchain_series_insert_ignore_uses_generic_series_raw_table() -> None:
+    result = collect_onchain_data(
+        StaticOnchainProvider(onchain_rows()),
+        RecordingConnection(),
+        onchain_request(),
         ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
     )
     statement = build_generic_series_insert_ignore(result.observations)
@@ -233,6 +368,18 @@ def test_expected_macro_observation_dates_excludes_weekends_and_known_holidays()
     )
 
 
+def test_expected_onchain_observation_dates_includes_weekends() -> None:
+    assert expected_onchain_observation_dates(
+        start=date(2026, 8, 21),
+        end=date(2026, 8, 24),
+    ) == (
+        date(2026, 8, 21),
+        date(2026, 8, 22),
+        date(2026, 8, 23),
+        date(2026, 8, 24),
+    )
+
+
 def test_collect_macro_data_reports_missing_observation_dates_by_series() -> None:
     result = collect_macro_data(
         StaticMacroProvider(macro_rows()),
@@ -251,6 +398,24 @@ def test_collect_macro_data_reports_missing_observation_dates_by_series() -> Non
     )
 
 
+def test_collect_onchain_data_reports_missing_calendar_observation_dates_by_series() -> None:
+    result = collect_onchain_data(
+        StaticOnchainProvider(onchain_rows()),
+        RecordingConnection(),
+        onchain_request(),
+        ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
+    )
+
+    assert result.missing_observation_dates["SOPR"] == (
+        date(2026, 8, 25),
+        date(2026, 8, 26),
+    )
+    assert result.missing_observation_dates["EXCHANGE_FLOWS"] == (
+        date(2026, 8, 24),
+        date(2026, 8, 25),
+    )
+
+
 def test_missing_macro_observation_dates_handles_empty_provider_response_explicitly() -> None:
     assert missing_macro_observation_dates(
         (),
@@ -258,6 +423,15 @@ def test_missing_macro_observation_dates_handles_empty_provider_response_explici
         start=date(2026, 8, 24),
         end=date(2026, 8, 25),
     ) == {"VIX": (date(2026, 8, 24), date(2026, 8, 25))}
+
+
+def test_missing_onchain_observation_dates_handles_empty_provider_response_explicitly() -> None:
+    assert missing_onchain_observation_dates(
+        (),
+        series_ids=("SOPR",),
+        start=date(2026, 8, 24),
+        end=date(2026, 8, 25),
+    ) == {"SOPR": (date(2026, 8, 24), date(2026, 8, 25))}
 
 
 def test_collect_macro_data_rejects_unexpected_series() -> None:
@@ -272,11 +446,32 @@ def test_collect_macro_data_rejects_unexpected_series() -> None:
         },
     )
 
-    with pytest.raises(ValueError, match="unexpected macro series"):
+    with pytest.raises(ValueError, match="unexpected series"):
         collect_macro_data(
             StaticMacroProvider(rows),
             RecordingConnection(),
             macro_request(),
+            ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
+        )
+
+
+def test_collect_onchain_data_rejects_unexpected_series() -> None:
+    rows = (
+        {
+            "series_id": "UNREQUESTED",
+            "observation_time": datetime(2026, 8, 24, tzinfo=UTC),
+            "value": "1",
+            "series_type": "onchain",
+            "unit": "ratio",
+            "available_at": datetime(2026, 8, 24, 22, tzinfo=UTC),
+        },
+    )
+
+    with pytest.raises(ValueError, match="unexpected series"):
+        collect_onchain_data(
+            StaticOnchainProvider(rows),
+            RecordingConnection(),
+            onchain_request(),
             ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
         )
 
@@ -296,5 +491,24 @@ def test_macro_observations_reject_future_availability_state() -> None:
             StaticMacroProvider(rows),
             RecordingConnection(),
             macro_request(),
+            ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
+        )
+
+
+def test_onchain_observations_reject_future_availability_state() -> None:
+    rows = (
+        {
+            "series_id": "SOPR",
+            "observation_time": datetime(2026, 8, 25, 22, tzinfo=UTC),
+            "value": "1.01",
+            "available_at": datetime(2026, 8, 25, 21, tzinfo=UTC),
+        },
+    )
+
+    with pytest.raises(ValueError, match="available_at"):
+        collect_onchain_data(
+            StaticOnchainProvider(rows),
+            RecordingConnection(),
+            onchain_request(),
             ingested_at=datetime(2026, 8, 27, 12, tzinfo=UTC),
         )

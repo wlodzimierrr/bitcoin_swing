@@ -379,7 +379,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - realized P/L
   - short-term holder realized price
   - exchange flows
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -388,6 +388,13 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added provider-injected on-chain data collection with retry support.
+  - Configured deterministic initial series IDs for SOPR, MVRV, realized P/L, short-term holder realized price, and exchange flows.
+  - Persisted observations as immutable `raw.generic_series` revisions with series type, unit, provider, source, revision, `available_at`, and `ingested_at`.
+  - Added missing calendar-day observation reporting because on-chain metrics are not business-day-only.
+  - Reused point-in-time generic-series queries that require both `available_at` and `observation_time` at or before signal time.
+  - Reason codes are not applicable at the raw on-chain collector stage.
 
 #### BTC-025 Build ingestion audit log
 - **Description:**
