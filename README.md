@@ -114,6 +114,13 @@ recommendations to `NO_TRADE` and veto `ADD` recommendations to `HOLD`, while
 preserving existing-position state and ordered failure reason codes for
 `signals.recommendation_reason_codes`.
 
+Feature generation includes a past-only rolling statistics framework in
+`btc_predictor.features`. It provides rolling means, rolling volatility,
+z-scores, percentiles, ATR, and historical normalization. Mean, volatility, and
+ATR use trailing windows through the current completed observation; z-scores,
+percentiles, and historical normalization compare the current observation only
+against prior history.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

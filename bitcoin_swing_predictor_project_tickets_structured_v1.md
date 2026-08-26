@@ -527,13 +527,18 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - percentiles
   - ATR
   - historical normalization
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   All rolling calculations use only past information.
 - **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added pure-Python rolling statistics helpers for rolling means, volatility, z-scores, percentiles, ATR, and historical normalization.
+  - Kept rolling means, volatility, and ATR on trailing windows through the current completed observation.
+  - Kept z-scores, percentiles, and historical normalization on prior-history windows that exclude the current value from the baseline.
+  - Added lookahead-safety tests proving earlier outputs do not change when future values or bars are appended.
 
 ## EPIC F — Trend Engine
 
