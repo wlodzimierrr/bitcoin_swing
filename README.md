@@ -102,6 +102,12 @@ Derivatives quality checks are available through `DerivativesQualityConfig` and
 interest, provider discontinuities, missing exchange snapshots, and provider
 unit changes with stable reason codes for audit persistence.
 
+Predictor decisions can apply the `DATA_QUALITY_FAIL` gate through
+`apply_data_quality_gate`. Critical data-quality failures veto new `ENTER`
+recommendations to `NO_TRADE` and veto `ADD` recommendations to `HOLD`, while
+preserving existing-position state and ordered failure reason codes for
+`signals.recommendation_reason_codes`.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

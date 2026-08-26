@@ -481,7 +481,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   NO NEW TRADE
   NO ADD
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Predictor can still report existing position state
   - Failure reasons are persisted
@@ -489,6 +489,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added a `DATA_QUALITY_FAIL` recommendation gate that converts failed OHLCV and derivatives quality reports into ordered predictor reason codes.
+  - Vetoed new `ENTER` recommendations to `NO_TRADE` and `ADD` recommendations to `HOLD` so no new risk is introduced when critical inputs fail.
+  - Preserved existing-position state on gated recommendations so HOLD/TRIM/EXIT reporting can still continue.
+  - Added helpers to build ordered `signals.recommendation_reason_codes` records for persisting the fail flag and underlying data-quality reasons.
 
 ## EPIC E — Derived Market Data
 
