@@ -81,21 +81,32 @@ from btc_predictor.data.ohlcv import (
     timeframe_interval,
 )
 from btc_predictor.data.quality import (
+    DERIVATIVES_QUALITY_REASON_CODES,
     OHLCV_QUALITY_REASON_CODES,
+    DerivativesQualityConfig,
+    DerivativesQualityIssue,
+    DerivativesQualityRecord,
+    DerivativesQualityReport,
     OhlcvQualityConfig,
     OhlcvQualityIssue,
     OhlcvQualityReport,
+    validate_derivatives_quality,
     validate_ohlcv_quality,
 )
 
 __all__ = [
     "DERIVED_TIMEFRAMES",
     "DERIVATIVES_FEEDS",
+    "DERIVATIVES_QUALITY_REASON_CODES",
     "BtcDerivativesAggregate",
     "DerivativesCollectionError",
     "DerivativesCollectionRequest",
     "DerivativesCollectionResult",
     "DerivativesProvider",
+    "DerivativesQualityConfig",
+    "DerivativesQualityIssue",
+    "DerivativesQualityRecord",
+    "DerivativesQualityReport",
     "EtfFlow",
     "EtfFlowCollectionError",
     "EtfFlowCollectionRequest",
@@ -163,5 +174,6 @@ __all__ = [
     "records_from_mappings",
     "require_utc_datetime",
     "timeframe_interval",
+    "validate_derivatives_quality",
     "validate_ohlcv_quality",
 ]

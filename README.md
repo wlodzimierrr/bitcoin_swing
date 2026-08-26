@@ -97,6 +97,11 @@ OHLCV quality checks are available through `OhlcvQualityConfig` and
 missing periods, stale data, and extreme malformed values with stable reason
 codes that can be persisted to the ingestion audit log.
 
+Derivatives quality checks are available through `DerivativesQualityConfig` and
+`validate_derivatives_quality`. They detect stale funding, negative open
+interest, provider discontinuities, missing exchange snapshots, and provider
+unit changes with stable reason codes for audit persistence.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

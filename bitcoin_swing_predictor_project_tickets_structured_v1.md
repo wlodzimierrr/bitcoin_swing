@@ -456,7 +456,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - sudden provider discontinuities
   - missing exchange snapshots
   - unit changes
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -465,6 +465,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added deterministic derivatives quality reporting with stable reason codes for stale funding, negative open interest, provider discontinuities, missing exchange snapshots, and unit changes.
+  - Added typed quality configuration for expected exchanges, required snapshot feeds, funding staleness, snapshot freshness, and provider gap thresholds.
+  - Treated open interest and perpetual volume as required exchange snapshot feeds by default while avoiding false failures for liquidation feeds that can legitimately be empty.
+  - Verified ordered reason codes can be persisted through the existing ingestion audit log.
 
 #### BTC-032 Implement DATA_QUALITY_FAIL flag
 - **Description:**
