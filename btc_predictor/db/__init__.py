@@ -67,6 +67,12 @@ from btc_predictor.db.signals import (
     recommendations,
     signals_metadata,
 )
+from btc_predictor.db.system import (
+    INGESTION_AUDIT_LOG_PRIMARY_KEY,
+    INGESTION_AUDIT_STATUSES,
+    ingestion_audit_log,
+    system_metadata,
+)
 
 __all__ = [
     "Base",
@@ -78,6 +84,8 @@ __all__ = [
     "FUNDING_RATES_PRIMARY_KEY",
     "FUTURES_BASIS_PRIMARY_KEY",
     "GENERIC_SERIES_PRIMARY_KEY",
+    "INGESTION_AUDIT_LOG_PRIMARY_KEY",
+    "INGESTION_AUDIT_STATUSES",
     "LIQUIDATIONS_PRIMARY_KEY",
     "MANUAL_DECISIONS",
     "MANUAL_TRADE_JOURNAL_PRIMARY_KEY",
@@ -108,6 +116,7 @@ __all__ = [
     "funding_rates",
     "futures_basis",
     "generic_series",
+    "ingestion_audit_log",
     "liquidations",
     "open_interest",
     "perp_volume",
@@ -123,6 +132,7 @@ __all__ = [
     "schema_fingerprint",
     "signals_metadata",
     "stops",
+    "system_metadata",
     "target_metadata",
     "tranches",
     "upgrade_database",

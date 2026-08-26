@@ -12,7 +12,7 @@ from btc_predictor.db import (
 )
 
 
-HEAD_REVISION = "0017_create_manual_trade_journal_schema"
+HEAD_REVISION = "0018_create_ingestion_audit_log"
 
 
 def sqlite_url(path: Path) -> str:
@@ -281,6 +281,33 @@ def test_manual_trade_journal_migration_renders_postgresql_sql() -> None:
     assert "manual_decision = 'MANUAL_ONLY' or recommendation_id is not null" in sql
     assert "manual_decision != 'OVERRIDDEN' or override_reason is not null" in sql
     assert "Manual execution journal linked to model recommendations" in sql
+
+
+def test_ingestion_audit_log_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE system.ingestion_audit_log" in sql
+    assert "job_run_id VARCHAR(128) NOT NULL" in sql
+    assert "job_name VARCHAR(128) NOT NULL" in sql
+    assert "feed_name VARCHAR(64) NOT NULL" in sql
+    assert "provider VARCHAR(64) NOT NULL" in sql
+    assert "source VARCHAR(255) NOT NULL" in sql
+    assert "started_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "ended_at TIMESTAMP WITH TIME ZONE" in sql
+    assert "records_fetched BIGINT NOT NULL" in sql
+    assert "records_inserted BIGINT NOT NULL" in sql
+    assert "failure_count BIGINT NOT NULL" in sql
+    assert "gap_count BIGINT NOT NULL" in sql
+    assert "provider_response_metadata JSON NOT NULL" in sql
+    assert "config_version VARCHAR(64)" in sql
+    assert "reason_codes JSON NOT NULL" in sql
+    assert "CONSTRAINT pk_system_ingestion_audit_log PRIMARY KEY" in sql
+    assert "CONSTRAINT uq_system_ingestion_audit_log_job_run_id UNIQUE" in sql
+    assert "status in ('started', 'succeeded', 'failed', 'partial')" in sql
+    assert "ended_at is null or ended_at >= started_at" in sql
+    assert "records_fetched >= 0" in sql
+    assert "records_inserted >= 0" in sql
+    assert "Ingestion job audit log with counters, gaps, failures, and provider metadata" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:

@@ -406,7 +406,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - failures
   - gaps
   - provider response metadata
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -415,6 +415,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added migration-controlled `system.ingestion_audit_log`.
+  - Captured job start/end, fetched and inserted record counts, failures, gaps, provider response metadata, config version, and collector-level reason codes where applicable.
+  - Added deterministic `IngestionAuditRecord` helpers with validation for status, UTC timestamps, non-negative counts, and job time order.
+  - Persisted audit rows with conflict-do-nothing inserts keyed by stable `job_run_id`.
 
 ## EPIC D — Data Quality
 

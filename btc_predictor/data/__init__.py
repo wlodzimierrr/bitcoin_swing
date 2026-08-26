@@ -1,5 +1,9 @@
 """Market data ingestion and access."""
 
+from btc_predictor.data.audit import (
+    IngestionAuditRecord,
+    build_ingestion_audit_insert_ignore,
+)
 from btc_predictor.data.derivatives import (
     DERIVATIVES_FEEDS,
     BtcDerivativesAggregate,
@@ -93,6 +97,7 @@ __all__ = [
     "FundingRate",
     "FuturesBasis",
     "GenericSeriesObservation",
+    "IngestionAuditRecord",
     "Liquidation",
     "MACRO_SERIES_DEFINITIONS",
     "MACRO_SERIES_IDS",
@@ -122,6 +127,7 @@ __all__ = [
     "build_derivatives_insert_ignore",
     "build_etf_flows_insert_ignore",
     "build_generic_series_insert_ignore",
+    "build_ingestion_audit_insert_ignore",
     "collect_btc_derivatives",
     "collect_btc_ohlcv",
     "collect_etf_flows",

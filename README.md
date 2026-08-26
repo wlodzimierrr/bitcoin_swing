@@ -86,6 +86,12 @@ set covers SOPR, MVRV, realized P/L, short-term holder realized price, and
 exchange flows. Observations use deterministic `raw.generic_series` IDs,
 preserve provider revisions, and report missing calendar-day observations.
 
+Ingestion jobs can be audited through `IngestionAuditRecord` and
+`build_ingestion_audit_insert_ignore`. Audit rows live in
+`system.ingestion_audit_log` and capture job timing, fetched/inserted counts,
+failures, gaps, provider response metadata, config version, and collector-level
+reason codes when applicable.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 
