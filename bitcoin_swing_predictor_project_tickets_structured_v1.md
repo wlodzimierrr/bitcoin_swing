@@ -500,7 +500,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-040 Build daily, weekly, and monthly market bars
 - **Description:**
   Generate canonical BTC daily, weekly, and monthly bars.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Consistent session definition
   - Weekly boundaries documented
@@ -511,6 +511,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added a canonical BTC market-bar session definition using UTC daily, Monday-start weekly, and first-calendar-day monthly boundaries.
+  - Added `build_canonical_market_bars` to generate daily, weekly, and monthly bars only from closed `1h` source bars ingested by the point-in-time `data_available_at` cutoff.
+  - Reused the existing complete-bucket OHLCV aggregation logic for reproducible open/high/low/close/volume calculations.
+  - Documented daily, weekly, and monthly session boundaries in the README and pinned them with focused tests.
 
 #### BTC-041 Build rolling statistics framework
 - **Description:**

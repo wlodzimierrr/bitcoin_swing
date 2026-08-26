@@ -22,6 +22,44 @@ FIXED_TIMEFRAME_INTERVALS = {
 CALENDAR_TIMEFRAMES = ("1mo",)
 SUPPORTED_TIMEFRAMES = tuple(sorted((*FIXED_TIMEFRAME_INTERVALS, *CALENDAR_TIMEFRAMES)))
 DERIVED_TIMEFRAMES = ("1d", "1w", "1mo")
+CANONICAL_MARKET_BAR_TIMEFRAMES = DERIVED_TIMEFRAMES
+
+
+@dataclass(frozen=True)
+class MarketBarSessionDefinition:
+    """Canonical UTC market-bar session boundaries for derived BTC bars."""
+
+    name: str = "btc_utc"
+    source_timeframe: str = "1h"
+    daily_session_start_hour_utc: int = 0
+    weekly_session_start_weekday_utc: int = 0
+    monthly_session_start_day_utc: int = 1
+    timezone: str = "UTC"
+
+    def __post_init__(self) -> None:
+        if self.source_timeframe != "1h":
+            raise ValueError("canonical market bars require source_timeframe='1h'")
+        if self.daily_session_start_hour_utc != 0:
+            raise ValueError("canonical daily BTC bars start at 00:00 UTC")
+        if self.weekly_session_start_weekday_utc != 0:
+            raise ValueError("canonical weekly BTC bars start on Monday 00:00 UTC")
+        if self.monthly_session_start_day_utc != 1:
+            raise ValueError("canonical monthly BTC bars start on the first day at 00:00 UTC")
+        if self.timezone != "UTC":
+            raise ValueError("canonical market bars use UTC")
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "source_timeframe": self.source_timeframe,
+            "daily_session_start_hour_utc": self.daily_session_start_hour_utc,
+            "weekly_session_start_weekday_utc": self.weekly_session_start_weekday_utc,
+            "monthly_session_start_day_utc": self.monthly_session_start_day_utc,
+            "timezone": self.timezone,
+        }
+
+
+CANONICAL_BTC_MARKET_BAR_SESSION = MarketBarSessionDefinition()
 
 
 @dataclass(frozen=True)
@@ -219,6 +257,42 @@ def derive_ohlcv_bars(
     return tuple(derived)
 
 
+def build_canonical_market_bars(
+    source_bars: Sequence[OhlcvBar],
+    *,
+    data_available_at: datetime,
+    timeframes: Sequence[str] = CANONICAL_MARKET_BAR_TIMEFRAMES,
+    session: MarketBarSessionDefinition = CANONICAL_BTC_MARKET_BAR_SESSION,
+) -> tuple[OhlcvBar, ...]:
+    """Build canonical BTC market bars from point-in-time available 1h bars.
+
+    Sessions are UTC based:
+    daily bars start at 00:00 UTC, weekly bars start Monday 00:00 UTC, and
+    monthly bars start on the first calendar day at 00:00 UTC.
+    """
+
+    cutoff = require_utc_datetime(data_available_at, "data_available_at")
+    for timeframe in timeframes:
+        if timeframe not in CANONICAL_MARKET_BAR_TIMEFRAMES:
+            raise ValueError(
+                f"Unsupported canonical market-bar timeframe {timeframe!r}; "
+                f"expected one of: {CANONICAL_MARKET_BAR_TIMEFRAMES}"
+            )
+
+    available_source_bars = tuple(
+        sorted(
+            (
+                bar
+                for bar in source_bars
+                if _source_bar_is_point_in_time_available(bar, cutoff, session.source_timeframe)
+            ),
+            key=lambda bar: bar.timestamp,
+        )
+    )
+    _validate_single_source_series(available_source_bars)
+    return derive_ohlcv_bars(available_source_bars, timeframes, ingested_at=cutoff)
+
+
 def missing_bar_timestamps(
     observed_timestamps: Iterable[datetime],
     *,
@@ -373,6 +447,28 @@ def _validate_unique_source_hours(source_bars: Sequence[OhlcvBar]) -> None:
         if bar.timestamp in seen:
             raise ValueError(f"Duplicate OHLCV source timestamp: {bar.timestamp.isoformat()}")
         seen.add(bar.timestamp)
+
+
+def _validate_single_source_series(source_bars: Sequence[OhlcvBar]) -> None:
+    identities = {
+        (bar.exchange, bar.symbol, bar.provider, bar.timeframe)
+        for bar in source_bars
+    }
+    if len(identities) > 1:
+        raise ValueError("canonical market bars require one exchange/symbol/provider/source timeframe")
+
+
+def _source_bar_is_point_in_time_available(
+    bar: OhlcvBar,
+    data_available_at: datetime,
+    source_timeframe: str,
+) -> bool:
+    if bar.timeframe != source_timeframe:
+        return False
+    timestamp = require_utc_datetime(bar.timestamp, "timestamp")
+    ingested_at = require_utc_datetime(bar.ingested_at, "ingested_at")
+    bar_closed_at = next_bar_timestamp(timestamp, source_timeframe)
+    return bar_closed_at <= data_available_at and ingested_at <= data_available_at
 
 
 def _group_bars_by_timeframe(

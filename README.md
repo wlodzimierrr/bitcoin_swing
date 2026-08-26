@@ -61,6 +61,12 @@ BTC OHLCV collection is provider-injected through
 records are not silently changed, and derives complete daily, weekly, and
 monthly bars from the same point-in-time source data.
 
+Canonical market bars can be generated with `build_canonical_market_bars`.
+They use `1h` BTC source bars that were closed and ingested by the
+`data_available_at` cutoff. The canonical session is UTC: daily bars start at
+00:00 UTC, weekly bars start Monday 00:00 UTC, and monthly bars start on the
+first calendar day at 00:00 UTC.
+
 BTC derivatives collection is provider-injected through
 `DerivativesCollectionRequest` and `collect_btc_derivatives`. Funding, open
 interest, futures basis, liquidations, and perpetual volume are normalized into
