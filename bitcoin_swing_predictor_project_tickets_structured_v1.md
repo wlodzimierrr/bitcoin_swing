@@ -309,7 +309,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - futures basis
   - liquidations
   - perp volume
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Provider-specific raw data normalized
   - Aggregate BTC view can be generated
@@ -318,6 +318,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added provider-injected derivatives collection with retry support across funding, open interest, futures basis, liquidations, and perpetual volume.
+  - Normalized provider rows into typed raw records with UTC timestamps and point-in-time availability validation.
+  - Persisted each feed with conflict-do-nothing inserts to keep raw records immutable.
+  - Added point-in-time raw feed queries and an aggregate BTC derivatives view that excludes future or unavailable observations.
 
 #### BTC-022 Implement ETF flow collector
 - **Description:**

@@ -61,6 +61,13 @@ BTC OHLCV collection is provider-injected through
 records are not silently changed, and derives complete daily, weekly, and
 monthly bars from the same point-in-time source data.
 
+BTC derivatives collection is provider-injected through
+`DerivativesCollectionRequest` and `collect_btc_derivatives`. Funding, open
+interest, futures basis, liquidations, and perpetual volume are normalized into
+raw point-in-time records, persisted idempotently, and can be aggregated through
+`aggregate_btc_derivatives_available_at` without using observations unavailable
+at the signal timestamp.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 
