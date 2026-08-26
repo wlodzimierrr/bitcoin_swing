@@ -327,7 +327,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-022 Implement ETF flow collector
 - **Description:**
   Complete the ticket scope for implement etf flow collector.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Daily flow loaded
   - AUM normalization supported where available
@@ -337,6 +337,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added provider-injected ETF flow collection with retry support.
+  - Loaded daily fund flows into typed records with UTC `available_at` capture.
+  - Normalized flow and optional AUM values to USD while rejecting unsupported currencies.
+  - Persisted ETF flow revisions with conflict-do-nothing inserts.
+  - Reported missing expected publication days by fund, excluding weekends and configured holidays.
 
 #### BTC-023 Implement macro data collector
 - **Description:**

@@ -68,6 +68,11 @@ raw point-in-time records, persisted idempotently, and can be aggregated through
 `aggregate_btc_derivatives_available_at` without using observations unavailable
 at the signal timestamp.
 
+ETF flow collection is provider-injected through `EtfFlowCollectionRequest` and
+`collect_etf_flows`. Daily fund flows and optional AUM values are normalized to
+USD, persisted as immutable raw revisions, and checked against expected
+publication dates so missing flow days are explicit.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 
