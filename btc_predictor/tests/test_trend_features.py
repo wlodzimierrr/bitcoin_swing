@@ -1,17 +1,23 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from math import erf, sqrt
 
 import pytest
 
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features import (
+    DEFAULT_TREND_SCORE_WEIGHTS,
     FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID,
     FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS,
     TWENTY_WEEK_MA_DISTANCE_FEATURE_ID,
     TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS,
+    TREND_SCORE_COMPONENT_IDS,
+    TREND_SCORE_FEATURE_ID,
     WEEKLY_STRUCTURE_FEATURE_ID,
     WEEKLY_STRUCTURE_LABELS,
     WEEKLY_STRUCTURE_SCORES,
+    TrendScoreInput,
+    calculate_trend_score,
     classify_weekly_structure,
     classify_weekly_structure_from_weekly_bars,
     fifty_two_week_high_distance,
@@ -66,6 +72,158 @@ def test_weekly_structure_metadata_is_stable() -> None:
 def test_fifty_two_week_high_distance_metadata_is_stable() -> None:
     assert FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID == "HIGH_DISTANCE_52W"
     assert FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS == 52
+
+
+def test_trend_score_metadata_is_stable() -> None:
+    assert TREND_SCORE_FEATURE_ID == "TREND_SCORE"
+    assert TREND_SCORE_COMPONENT_IDS == ("Z_M4", "Z_M12", "Z_20W", "S_STRUCTURE", "Z_52H")
+    assert DEFAULT_TREND_SCORE_WEIGHTS == {
+        "Z_M4": Decimal("0.30"),
+        "Z_M12": Decimal("0.30"),
+        "Z_20W": Decimal("0.20"),
+        "S_STRUCTURE": Decimal("0.15"),
+        "Z_52H": Decimal("0.05"),
+    }
+
+
+def test_calculate_trend_score_applies_rulebook_formula_and_cdf() -> None:
+    inputs = TrendScoreInput(
+        z_m4=Decimal("1"),
+        z_m12=Decimal("0.5"),
+        z_20w=Decimal("-0.25"),
+        structure_score=Decimal("1"),
+        z_52h=Decimal("-0.5"),
+    )
+
+    result = calculate_trend_score(inputs)
+    expected_score = Decimal(str(100 * (0.5 * (1.0 + erf(float(Decimal("0.525")) / sqrt(2.0))))))
+
+    assert result.raw_score == Decimal("0.525")
+    assert result.score == expected_score
+    assert Decimal("0") <= result.score <= Decimal("100")
+    assert result.interpretation == "BULLISH"
+    assert result.contributions == {
+        "Z_M4": Decimal("0.30"),
+        "Z_M12": Decimal("0.150"),
+        "Z_20W": Decimal("-0.050"),
+        "S_STRUCTURE": Decimal("0.15"),
+        "Z_52H": Decimal("-0.025"),
+    }
+
+
+def test_calculate_trend_score_exposes_persistable_explanation_payload() -> None:
+    inputs = TrendScoreInput(
+        z_m4=Decimal("0"),
+        z_m12=Decimal("0"),
+        z_20w=Decimal("0"),
+        structure_score=Decimal("0"),
+        z_52h=Decimal("0"),
+    )
+
+    result = calculate_trend_score(inputs)
+
+    assert result.reason_code == "TREND_SCORE_MIXED"
+    assert result.as_record() == {
+        "feature_id": "TREND_SCORE",
+        "raw_score": "0.00",
+        "score": "50.0",
+        "interpretation": "MIXED",
+        "reason_code": "TREND_SCORE_MIXED",
+        "inputs": {
+            "Z_M4": "0",
+            "Z_M12": "0",
+            "Z_20W": "0",
+            "S_STRUCTURE": "0",
+            "Z_52H": "0",
+        },
+        "weights": {
+            "Z_M4": "0.30",
+            "Z_M12": "0.30",
+            "Z_20W": "0.20",
+            "S_STRUCTURE": "0.15",
+            "Z_52H": "0.05",
+        },
+        "contributions": {
+            "Z_M4": "0.00",
+            "Z_M12": "0.00",
+            "Z_20W": "0.00",
+            "S_STRUCTURE": "0.00",
+            "Z_52H": "0.00",
+        },
+    }
+
+
+def test_calculate_trend_score_is_deterministic_for_historical_recompute() -> None:
+    inputs = TrendScoreInput(
+        z_m4=Decimal("-1.25"),
+        z_m12=Decimal("-0.75"),
+        z_20w=Decimal("-0.5"),
+        structure_score=Decimal("-1.0"),
+        z_52h=Decimal("-0.25"),
+    )
+
+    first = calculate_trend_score(inputs).as_record()
+    second = calculate_trend_score(inputs).as_record()
+
+    assert first == second
+    recomputed_inputs = TrendScoreInput(
+        z_m4=Decimal(first["inputs"]["Z_M4"]),
+        z_m12=Decimal(first["inputs"]["Z_M12"]),
+        z_20w=Decimal(first["inputs"]["Z_20W"]),
+        structure_score=Decimal(first["inputs"]["S_STRUCTURE"]),
+        z_52h=Decimal(first["inputs"]["Z_52H"]),
+    )
+    recomputed_weights = {
+        component_id: Decimal(value)
+        for component_id, value in first["weights"].items()
+    }
+    assert calculate_trend_score(recomputed_inputs, weights=recomputed_weights).as_record() == first
+
+
+def test_calculate_trend_score_interprets_score_bands() -> None:
+    assert calculate_trend_score(
+        TrendScoreInput(
+            z_m4=Decimal("3"),
+            z_m12=Decimal("3"),
+            z_20w=Decimal("3"),
+            structure_score=Decimal("1"),
+            z_52h=Decimal("3"),
+        )
+    ).interpretation == "STRONG_BULLISH"
+    assert calculate_trend_score(
+        TrendScoreInput(
+            z_m4=Decimal("-3"),
+            z_m12=Decimal("-3"),
+            z_20w=Decimal("-3"),
+            structure_score=Decimal("-1"),
+            z_52h=Decimal("-3"),
+        )
+    ).interpretation == "STRONG_BEARISH"
+
+
+def test_calculate_trend_score_rejects_invalid_weights() -> None:
+    inputs = TrendScoreInput(
+        z_m4=Decimal("0"),
+        z_m12=Decimal("0"),
+        z_20w=Decimal("0"),
+        structure_score=Decimal("0"),
+        z_52h=Decimal("0"),
+    )
+
+    with pytest.raises(ValueError, match="exactly match"):
+        calculate_trend_score(inputs, weights={"Z_M4": 1})
+
+    with pytest.raises(ValueError, match="non-negative"):
+        calculate_trend_score(
+            inputs,
+            weights={
+                "Z_M4": Decimal("-1"),
+                "Z_M12": Decimal("0"),
+                "Z_20W": Decimal("0"),
+                "S_STRUCTURE": Decimal("0"),
+                "Z_52H": Decimal("0"),
+            },
+        )
 
 
 def test_twenty_week_ma_distance_calculates_price_minus_ma_over_ma() -> None:

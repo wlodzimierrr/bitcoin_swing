@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
+from math import erf, sqrt
+from typing import Any
 
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features.rolling import NumericValue, OptionalDecimalSeries, rolling_mean
@@ -14,6 +16,8 @@ TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS = 20
 TWENTY_WEEK_MA_DISTANCE_FEATURE_ID = "MA_DISTANCE_20W"
 FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS = 52
 FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID = "HIGH_DISTANCE_52W"
+TREND_SCORE_FEATURE_ID = "TREND_SCORE"
+TREND_SCORE_COMPONENT_IDS = ("Z_M4", "Z_M12", "Z_20W", "S_STRUCTURE", "Z_52H")
 WEEKLY_STRUCTURE_FEATURE_ID = "WEEKLY_STRUCTURE"
 WEEKLY_STRUCTURE_LABELS = ("HH_HL", "HL_ONLY", "MIXED", "LH_ONLY", "LH_LL")
 WEEKLY_STRUCTURE_SCORES = {
@@ -22,6 +26,13 @@ WEEKLY_STRUCTURE_SCORES = {
     "MIXED": Decimal("0.0"),
     "LH_ONLY": Decimal("-0.5"),
     "LH_LL": Decimal("-1.0"),
+}
+DEFAULT_TREND_SCORE_WEIGHTS = {
+    "Z_M4": Decimal("0.30"),
+    "Z_M12": Decimal("0.30"),
+    "Z_20W": Decimal("0.20"),
+    "S_STRUCTURE": Decimal("0.15"),
+    "Z_52H": Decimal("0.05"),
 }
 
 
@@ -40,6 +51,51 @@ class WeeklyStructureClassification:
         return f"{WEEKLY_STRUCTURE_FEATURE_ID}_{self.label}"
 
 
+@dataclass(frozen=True)
+class TrendScoreInput:
+    z_m4: Decimal
+    z_m12: Decimal
+    z_20w: Decimal
+    structure_score: Decimal
+    z_52h: Decimal
+
+    def as_record(self) -> dict[str, str]:
+        return {
+            "Z_M4": str(self.z_m4),
+            "Z_M12": str(self.z_m12),
+            "Z_20W": str(self.z_20w),
+            "S_STRUCTURE": str(self.structure_score),
+            "Z_52H": str(self.z_52h),
+        }
+
+
+@dataclass(frozen=True)
+class TrendScoreResult:
+    feature_id: str
+    raw_score: Decimal
+    score: Decimal
+    interpretation: str
+    inputs: TrendScoreInput
+    weights: dict[str, Decimal]
+    contributions: dict[str, Decimal]
+
+    @property
+    def reason_code(self) -> str:
+        return f"{self.feature_id}_{self.interpretation}"
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "raw_score": str(self.raw_score),
+            "score": str(self.score),
+            "interpretation": self.interpretation,
+            "reason_code": self.reason_code,
+            "inputs": self.inputs.as_record(),
+            "weights": {key: str(value) for key, value in self.weights.items()},
+            "contributions": {key: str(value) for key, value in self.contributions.items()},
+        }
+
+
 def moving_average_distance(
     prices: Sequence[NumericValue],
     *,
@@ -53,6 +109,32 @@ def moving_average_distance(
     for price, average in zip(decimal_prices, moving_average):
         distances.append(None if average is None or average == 0 else (price - average) / average)
     return tuple(distances)
+
+
+def calculate_trend_score(
+    inputs: TrendScoreInput,
+    *,
+    weights: dict[str, NumericValue] | None = None,
+) -> TrendScoreResult:
+    """Calculate the rulebook trend score as 100 * Phi(weighted trend raw)."""
+
+    selected_weights = _trend_score_weights(weights)
+    input_values = _trend_score_input_values(inputs)
+    contributions = {
+        component_id: selected_weights[component_id] * input_values[component_id]
+        for component_id in TREND_SCORE_COMPONENT_IDS
+    }
+    raw_score = sum(contributions.values(), Decimal("0"))
+    score = _standard_normal_score(raw_score)
+    return TrendScoreResult(
+        feature_id=TREND_SCORE_FEATURE_ID,
+        raw_score=raw_score,
+        score=score,
+        interpretation=_trend_score_interpretation(score),
+        inputs=inputs,
+        weights=selected_weights,
+        contributions=contributions,
+    )
 
 
 def twenty_week_ma_distance(
@@ -189,6 +271,52 @@ def classify_weekly_structure_from_weekly_bars(
         highs=[bar.high for bar in ordered],
         lows=[bar.low for bar in ordered],
     )
+
+
+def _trend_score_weights(weights: dict[str, NumericValue] | None) -> dict[str, Decimal]:
+    if weights is None:
+        return dict(DEFAULT_TREND_SCORE_WEIGHTS)
+
+    missing = set(TREND_SCORE_COMPONENT_IDS) - set(weights)
+    extra = set(weights) - set(TREND_SCORE_COMPONENT_IDS)
+    if missing or extra:
+        raise ValueError(
+            f"trend score weights must exactly match {TREND_SCORE_COMPONENT_IDS}; "
+            f"missing={sorted(missing)}, extra={sorted(extra)}"
+        )
+    decimal_weights = {component_id: _decimal(weights[component_id]) for component_id in TREND_SCORE_COMPONENT_IDS}
+    if any(weight < 0 for weight in decimal_weights.values()):
+        raise ValueError("trend score weights must be non-negative")
+    if sum(decimal_weights.values(), Decimal("0")) == 0:
+        raise ValueError("trend score weights must have positive total weight")
+    return decimal_weights
+
+
+def _trend_score_input_values(inputs: TrendScoreInput) -> dict[str, Decimal]:
+    return {
+        "Z_M4": inputs.z_m4,
+        "Z_M12": inputs.z_m12,
+        "Z_20W": inputs.z_20w,
+        "S_STRUCTURE": inputs.structure_score,
+        "Z_52H": inputs.z_52h,
+    }
+
+
+def _standard_normal_score(raw_score: Decimal) -> Decimal:
+    cdf = Decimal(str(0.5 * (1.0 + erf(float(raw_score) / sqrt(2.0)))))
+    return Decimal("100") * cdf
+
+
+def _trend_score_interpretation(score: Decimal) -> str:
+    if score >= Decimal("80"):
+        return "STRONG_BULLISH"
+    if score >= Decimal("65"):
+        return "BULLISH"
+    if score >= Decimal("45"):
+        return "MIXED"
+    if score >= Decimal("25"):
+        return "BEARISH"
+    return "STRONG_BEARISH"
 
 
 def _weekly_structure_label(

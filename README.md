@@ -133,6 +133,10 @@ completed weekly bar.
 Weekly market structure classification compares each weekly high/low against
 the prior week and emits the rulebook labels `HH_HL`, `HL_ONLY`, `MIXED`,
 `LH_ONLY`, and `LH_LL` with stable raw scores and reason codes.
+`calculate_trend_score` combines normalized trend components with the rulebook
+weights and converts the raw composite to a 0-100 score using the standard
+normal CDF. Its result includes inputs, weights, contributions, interpretation,
+and a stable reason code for deterministic recomputation.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

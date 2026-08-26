@@ -652,7 +652,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   +0.15S_{structure}
   +0.05Z_{52H}
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Output 0–100
   - Inputs persisted
@@ -662,6 +662,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `calculate_trend_score` implementing the rulebook weighted composite and `100 * Phi(TrendRaw)` conversion.
+  - Added typed `TrendScoreInput` and `TrendScoreResult` payloads that expose component inputs, weights, contributions, interpretation, and stable reason code.
+  - Added deterministic serialization through `TrendScoreResult.as_record()` for historical recomputation and persistence.
+  - Added focused tests for formula output, score bounds, explainability, weight validation, score-band interpretation, and recomputation from persisted inputs.
 
 ## EPIC G — Flow Engine
 
