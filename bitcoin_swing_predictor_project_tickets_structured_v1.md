@@ -608,7 +608,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   LH only
   LH + LL
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -617,6 +617,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added weekly structure classification for `HH_HL`, `HL_ONLY`, `MIXED`, `LH_ONLY`, and `LH_LL`.
+  - Mapped labels to rulebook raw scores from +1.0 to -1.0 and exposed stable `WEEKLY_STRUCTURE_*` reason codes for later persistence.
+  - Added canonical weekly-bar wrapper that sorts by timestamp before comparing each completed week to the prior week.
+  - Added focused tests for every classification, deterministic ordering, invalid inputs, and no-lookahead behavior.
 
 #### BTC-054 Implement 52-week-high distance
 - **Description:**

@@ -127,6 +127,9 @@ They also include `twelve_week_momentum`, which implements `MOMENTUM_12W` as
 `P_t / P_t-84 - 1`.
 The `twenty_week_ma_distance` helper implements `MA_DISTANCE_20W` as
 `(P_t - MA_20W) / MA_20W` for canonical weekly closes.
+Weekly market structure classification compares each weekly high/low against
+the prior week and emits the rulebook labels `HH_HL`, `HL_ONLY`, `MIXED`,
+`LH_ONLY`, and `LH_LL` with stable raw scores and reason codes.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
