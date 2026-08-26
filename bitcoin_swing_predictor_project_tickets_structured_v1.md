@@ -353,7 +353,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - Nasdaq proxy
   - US 2Y yield
   - real yield proxy
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -362,6 +362,13 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added provider-injected macro data collection with retry support.
+  - Configured deterministic initial series IDs for VIX, DXY, Nasdaq proxy, US 2Y yield, and real-yield proxy.
+  - Persisted observations as immutable `raw.generic_series` revisions with series type, unit, provider, source, revision, `available_at`, and `ingested_at`.
+  - Added missing business-day observation reporting with configurable holiday exclusions.
+  - Tightened point-in-time generic-series queries to require both `available_at` and `observation_time` at or before signal time.
+  - Reason codes are not applicable at the raw macro collector stage.
 
 #### BTC-024 Implement on-chain collector
 - **Description:**

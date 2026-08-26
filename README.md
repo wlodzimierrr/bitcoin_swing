@@ -73,6 +73,13 @@ ETF flow collection is provider-injected through `EtfFlowCollectionRequest` and
 USD, persisted as immutable raw revisions, and checked against expected
 publication dates so missing flow days are explicit.
 
+Macro data collection is provider-injected through `MacroDataCollectionRequest`
+and `collect_macro_data`. The initial candidate set covers VIX, DXY or an
+equivalent dollar proxy, a Nasdaq proxy, US 2Y yield, and a real-yield proxy.
+Observations are persisted as immutable `raw.generic_series` revisions with
+deterministic series IDs, UTC availability timestamps, and explicit missing
+observation dates.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 
