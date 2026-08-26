@@ -566,7 +566,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   \[
   M_{12}=P_t/P_{t-84}-1
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -575,6 +575,10 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `MOMENTUM_12W` helpers implementing `P_t / P_t-84 - 1` for price series and canonical daily close bars.
+  - Shared the generic price-momentum calculation with the 4-week momentum helper while preserving the existing public API.
+  - Added focused tests for exact 84-day math, no-lookahead behavior, and timestamp-ordered daily-bar inputs.
 
 #### BTC-052 Implement 20-week MA distance
 - **Description:**

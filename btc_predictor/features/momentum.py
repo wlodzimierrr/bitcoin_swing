@@ -11,6 +11,8 @@ from btc_predictor.features.rolling import NumericValue, OptionalDecimalSeries
 
 FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS = 28
 FOUR_WEEK_MOMENTUM_FEATURE_ID = "MOMENTUM_4W"
+TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS = 84
+TWELVE_WEEK_MOMENTUM_FEATURE_ID = "MOMENTUM_12W"
 
 
 def four_week_momentum(
@@ -19,6 +21,26 @@ def four_week_momentum(
     lookback_periods: int = FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS,
 ) -> OptionalDecimalSeries:
     """Calculate 4-week momentum as P_t / P_t-28 - 1."""
+
+    return price_momentum(prices, lookback_periods=lookback_periods)
+
+
+def twelve_week_momentum(
+    prices: Sequence[NumericValue],
+    *,
+    lookback_periods: int = TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS,
+) -> OptionalDecimalSeries:
+    """Calculate 12-week momentum as P_t / P_t-84 - 1."""
+
+    return price_momentum(prices, lookback_periods=lookback_periods)
+
+
+def price_momentum(
+    prices: Sequence[NumericValue],
+    *,
+    lookback_periods: int,
+) -> OptionalDecimalSeries:
+    """Calculate price momentum as P_t / P_t-lookback - 1."""
 
     if lookback_periods < 1:
         raise ValueError("lookback_periods must be >= 1")
@@ -39,11 +61,29 @@ def four_week_momentum_from_daily_bars(
 ) -> OptionalDecimalSeries:
     """Calculate 4-week momentum from canonical daily close prices."""
 
+    return price_momentum_from_daily_bars(bars, lookback_periods=FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS)
+
+
+def twelve_week_momentum_from_daily_bars(
+    bars: Sequence[OhlcvBar],
+) -> OptionalDecimalSeries:
+    """Calculate 12-week momentum from canonical daily close prices."""
+
+    return price_momentum_from_daily_bars(bars, lookback_periods=TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS)
+
+
+def price_momentum_from_daily_bars(
+    bars: Sequence[OhlcvBar],
+    *,
+    lookback_periods: int,
+) -> OptionalDecimalSeries:
+    """Calculate lookback momentum from canonical daily close prices."""
+
     ordered = tuple(sorted(bars, key=lambda bar: bar.timestamp))
     for bar in ordered:
         if bar.timeframe != "1d":
-            raise ValueError("four_week_momentum_from_daily_bars requires 1d bars")
-    return four_week_momentum([bar.close for bar in ordered])
+            raise ValueError("price_momentum_from_daily_bars requires 1d bars")
+    return price_momentum([bar.close for bar in ordered], lookback_periods=lookback_periods)
 
 
 def _decimal(value: NumericValue) -> Decimal:
