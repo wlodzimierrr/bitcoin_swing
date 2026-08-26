@@ -547,7 +547,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   \[
   M_4=P_t/P_{t-28}-1
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -556,6 +556,10 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `MOMENTUM_4W` helpers implementing `P_t / P_t-28 - 1` for price series and canonical daily close bars.
+  - Kept outputs deterministic by sorting daily bars by timestamp before reading closes.
+  - Added focused tests for exact 28-day math, no-lookahead behavior, zero prior-price handling, and daily-bar validation.
 
 #### BTC-051 Implement 12-week momentum
 - **Description:**
