@@ -92,6 +92,11 @@ Ingestion jobs can be audited through `IngestionAuditRecord` and
 failures, gaps, provider response metadata, config version, and collector-level
 reason codes when applicable.
 
+OHLCV quality checks are available through `OhlcvQualityConfig` and
+`validate_ohlcv_quality`. They detect duplicate bars, impossible OHLC values,
+missing periods, stale data, and extreme malformed values with stable reason
+codes that can be persisted to the ingestion audit log.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

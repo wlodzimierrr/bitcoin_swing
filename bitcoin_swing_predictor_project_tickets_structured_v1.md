@@ -432,7 +432,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - missing periods
   - stale data
   - extreme malformed values
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -441,6 +441,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added deterministic OHLCV quality reporting with stable reason codes for duplicate bars, impossible OHLC, missing periods, stale data, and extreme malformed values.
+  - Added typed quality configuration for staleness, close-change, bar-range, and volume thresholds with fast validation of invalid thresholds.
+  - Kept extreme-value checks scoped per exchange/symbol/timeframe/provider series so multi-provider inputs are reproducible.
+  - Verified ordered reason codes can be persisted through the existing ingestion audit log.
 
 #### BTC-031 Implement derivatives quality checks
 - **Description:**
