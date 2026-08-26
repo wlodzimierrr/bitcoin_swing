@@ -583,7 +583,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-052 Implement 20-week MA distance
 - **Description:**
   Complete the ticket scope for implement 20-week ma distance.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -592,6 +592,10 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `MA_DISTANCE_20W` helpers implementing `(P_t - MA_20W) / MA_20W` for price series and canonical weekly close bars.
+  - Used the past-only rolling mean framework for the trailing 20-week moving average.
+  - Added focused tests for exact formula output, deterministic timestamp ordering, zero-MA handling, and no-lookahead behavior.
 
 #### BTC-053 Implement weekly structure classifier
 - **Description:**

@@ -23,6 +23,13 @@ from btc_predictor.features.rolling import (
     rolling_zscore,
     true_ranges,
 )
+from btc_predictor.features.trend import (
+    TWENTY_WEEK_MA_DISTANCE_FEATURE_ID,
+    TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS,
+    moving_average_distance,
+    twenty_week_ma_distance,
+    twenty_week_ma_distance_from_weekly_bars,
+)
 
 __all__ = [
     "FOUR_WEEK_MOMENTUM_FEATURE_ID",
@@ -31,10 +38,13 @@ __all__ = [
     "OptionalDecimalSeries",
     "TWELVE_WEEK_MOMENTUM_FEATURE_ID",
     "TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS",
+    "TWENTY_WEEK_MA_DISTANCE_FEATURE_ID",
+    "TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS",
     "average_true_range",
     "four_week_momentum",
     "four_week_momentum_from_daily_bars",
     "historical_normalize",
+    "moving_average_distance",
     "price_momentum",
     "price_momentum_from_daily_bars",
     "rolling_mean",
@@ -43,5 +53,7 @@ __all__ = [
     "rolling_zscore",
     "twelve_week_momentum",
     "twelve_week_momentum_from_daily_bars",
+    "twenty_week_ma_distance",
+    "twenty_week_ma_distance_from_weekly_bars",
     "true_ranges",
 ]

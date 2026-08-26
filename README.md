@@ -125,6 +125,8 @@ The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.
 They also include `twelve_week_momentum`, which implements `MOMENTUM_12W` as
 `P_t / P_t-84 - 1`.
+The `twenty_week_ma_distance` helper implements `MA_DISTANCE_20W` as
+`(P_t - MA_20W) / MA_20W` for canonical weekly closes.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
