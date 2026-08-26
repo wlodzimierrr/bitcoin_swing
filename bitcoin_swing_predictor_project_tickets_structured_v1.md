@@ -626,7 +626,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-054 Implement 52-week-high distance
 - **Description:**
   Complete the ticket scope for implement 52-week-high distance.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -635,6 +635,10 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `HIGH_DISTANCE_52W` helpers implementing `(P_t - H_52W) / H_52W` for price/high series and canonical weekly bars.
+  - Used the trailing 52-week high through the current completed weekly bar for point-in-time-safe calculations.
+  - Added focused tests for exact formula output, deterministic timestamp ordering, zero-high handling, invalid inputs, and no-lookahead behavior.
 
 #### BTC-055 Implement Trend Score
 - **Description:**

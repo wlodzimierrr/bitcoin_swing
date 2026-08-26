@@ -24,6 +24,8 @@ from btc_predictor.features.rolling import (
     true_ranges,
 )
 from btc_predictor.features.trend import (
+    FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID,
+    FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS,
     TWENTY_WEEK_MA_DISTANCE_FEATURE_ID,
     TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS,
     WEEKLY_STRUCTURE_FEATURE_ID,
@@ -32,7 +34,10 @@ from btc_predictor.features.trend import (
     WeeklyStructureClassification,
     classify_weekly_structure,
     classify_weekly_structure_from_weekly_bars,
+    fifty_two_week_high_distance,
+    fifty_two_week_high_distance_from_weekly_bars,
     moving_average_distance,
+    rolling_high_distance,
     twenty_week_ma_distance,
     twenty_week_ma_distance_from_weekly_bars,
 )
@@ -40,6 +45,8 @@ from btc_predictor.features.trend import (
 __all__ = [
     "FOUR_WEEK_MOMENTUM_FEATURE_ID",
     "FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS",
+    "FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID",
+    "FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS",
     "NumericValue",
     "OptionalDecimalSeries",
     "TWELVE_WEEK_MOMENTUM_FEATURE_ID",
@@ -53,6 +60,8 @@ __all__ = [
     "average_true_range",
     "classify_weekly_structure",
     "classify_weekly_structure_from_weekly_bars",
+    "fifty_two_week_high_distance",
+    "fifty_two_week_high_distance_from_weekly_bars",
     "four_week_momentum",
     "four_week_momentum_from_daily_bars",
     "historical_normalize",
@@ -60,6 +69,7 @@ __all__ = [
     "price_momentum",
     "price_momentum_from_daily_bars",
     "rolling_mean",
+    "rolling_high_distance",
     "rolling_percentile",
     "rolling_volatility",
     "rolling_zscore",

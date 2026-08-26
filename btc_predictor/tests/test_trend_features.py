@@ -5,6 +5,8 @@ import pytest
 
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features import (
+    FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID,
+    FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS,
     TWENTY_WEEK_MA_DISTANCE_FEATURE_ID,
     TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS,
     WEEKLY_STRUCTURE_FEATURE_ID,
@@ -12,7 +14,10 @@ from btc_predictor.features import (
     WEEKLY_STRUCTURE_SCORES,
     classify_weekly_structure,
     classify_weekly_structure_from_weekly_bars,
+    fifty_two_week_high_distance,
+    fifty_two_week_high_distance_from_weekly_bars,
     moving_average_distance,
+    rolling_high_distance,
     twenty_week_ma_distance,
     twenty_week_ma_distance_from_weekly_bars,
 )
@@ -56,6 +61,11 @@ def test_weekly_structure_metadata_is_stable() -> None:
         "LH_ONLY": Decimal("-0.5"),
         "LH_LL": Decimal("-1.0"),
     }
+
+
+def test_fifty_two_week_high_distance_metadata_is_stable() -> None:
+    assert FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID == "HIGH_DISTANCE_52W"
+    assert FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS == 52
 
 
 def test_twenty_week_ma_distance_calculates_price_minus_ma_over_ma() -> None:
@@ -109,6 +119,75 @@ def test_twenty_week_ma_distance_from_weekly_bars_rejects_non_weekly_bars() -> N
 def test_twenty_week_ma_distance_rejects_invalid_windows() -> None:
     with pytest.raises(ValueError, match="window"):
         twenty_week_ma_distance([1, 2, 3], window=0)
+
+
+def test_fifty_two_week_high_distance_calculates_price_minus_high_over_high() -> None:
+    prices = [Decimal("100")] * 51 + [Decimal("90")]
+    highs = [Decimal("100")] * 51 + [Decimal("110")]
+
+    distance = fifty_two_week_high_distance(prices, highs)
+
+    assert distance[:51] == (None,) * 51
+    assert distance[51] == Decimal("-0.1818181818181818181818181818")
+
+
+def test_rolling_high_distance_supports_custom_windows() -> None:
+    assert rolling_high_distance([10, 20, 15], [11, 22, 18], window=2) == (
+        None,
+        Decimal("-0.09090909090909090909090909091"),
+        Decimal("-0.3181818181818181818181818182"),
+    )
+
+
+def test_fifty_two_week_high_distance_defaults_to_price_series_highs() -> None:
+    prices = [Decimal("100")] * 51 + [Decimal("120")]
+
+    assert fifty_two_week_high_distance(prices)[51] == Decimal("0")
+
+
+def test_fifty_two_week_high_distance_returns_none_when_trailing_high_is_zero() -> None:
+    prices = [Decimal("0")] * 52
+
+    assert fifty_two_week_high_distance(prices)[51] is None
+
+
+def test_fifty_two_week_high_distance_uses_only_past_and_current_values() -> None:
+    prices = [Decimal("100")] * 51 + [Decimal("90"), Decimal("1000000")]
+    highs = [Decimal("100")] * 51 + [Decimal("110"), Decimal("1000000")]
+
+    assert fifty_two_week_high_distance(prices, highs)[:-1] == fifty_two_week_high_distance(
+        prices[:-1],
+        highs[:-1],
+    )
+
+
+def test_fifty_two_week_high_distance_from_weekly_bars_uses_timestamp_order() -> None:
+    start = datetime(2026, 1, 5, tzinfo=UTC)
+    bars = tuple(
+        weekly_bar(start + timedelta(weeks=offset), "100", high="100")
+        for offset in range(51)
+    ) + (weekly_bar(start + timedelta(weeks=51), "90", high="110"),)
+
+    assert fifty_two_week_high_distance_from_weekly_bars(tuple(reversed(bars)))[51] == Decimal(
+        "-0.1818181818181818181818181818"
+    )
+
+
+def test_fifty_two_week_high_distance_from_weekly_bars_rejects_non_weekly_bars() -> None:
+    daily = OhlcvBar(**{**weekly_bar(datetime(2026, 1, 5, tzinfo=UTC), "100").as_record(), "timeframe": "1d"})
+
+    with pytest.raises(ValueError, match="requires 1w bars"):
+        fifty_two_week_high_distance_from_weekly_bars([daily])
+
+
+def test_fifty_two_week_high_distance_rejects_mismatched_inputs() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        fifty_two_week_high_distance([1, 2], [1])
+
+
+def test_fifty_two_week_high_distance_rejects_invalid_windows() -> None:
+    with pytest.raises(ValueError, match="window"):
+        fifty_two_week_high_distance([1, 2, 3], window=0)
 
 
 def test_classify_weekly_structure_covers_all_rulebook_labels() -> None:

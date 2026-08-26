@@ -127,6 +127,9 @@ They also include `twelve_week_momentum`, which implements `MOMENTUM_12W` as
 `P_t / P_t-84 - 1`.
 The `twenty_week_ma_distance` helper implements `MA_DISTANCE_20W` as
 `(P_t - MA_20W) / MA_20W` for canonical weekly closes.
+The `fifty_two_week_high_distance` helper implements `HIGH_DISTANCE_52W` as
+`(P_t - H_52W) / H_52W` using the trailing 52-week high through the current
+completed weekly bar.
 Weekly market structure classification compares each weekly high/low against
 the prior week and emits the rulebook labels `HH_HL`, `HL_ONLY`, `MIXED`,
 `LH_ONLY`, and `LH_LL` with stable raw scores and reason codes.

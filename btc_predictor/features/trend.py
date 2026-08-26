@@ -12,6 +12,8 @@ from btc_predictor.features.rolling import NumericValue, OptionalDecimalSeries, 
 
 TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS = 20
 TWENTY_WEEK_MA_DISTANCE_FEATURE_ID = "MA_DISTANCE_20W"
+FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS = 52
+FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID = "HIGH_DISTANCE_52W"
 WEEKLY_STRUCTURE_FEATURE_ID = "WEEKLY_STRUCTURE"
 WEEKLY_STRUCTURE_LABELS = ("HH_HL", "HL_ONLY", "MIXED", "LH_ONLY", "LH_LL")
 WEEKLY_STRUCTURE_SCORES = {
@@ -73,6 +75,58 @@ def twenty_week_ma_distance_from_weekly_bars(
         if bar.timeframe != "1w":
             raise ValueError("twenty_week_ma_distance_from_weekly_bars requires 1w bars")
     return twenty_week_ma_distance([bar.close for bar in ordered])
+
+
+def rolling_high_distance(
+    prices: Sequence[NumericValue],
+    highs: Sequence[NumericValue],
+    *,
+    window: int,
+) -> OptionalDecimalSeries:
+    """Calculate distance from trailing high as (P_t - H) / H."""
+
+    if len(prices) != len(highs):
+        raise ValueError("prices and highs must have the same length")
+    if window < 1:
+        raise ValueError("window must be >= 1")
+
+    decimal_prices = tuple(_decimal(price) for price in prices)
+    decimal_highs = tuple(_decimal(high) for high in highs)
+    distances = []
+    for index, price in enumerate(decimal_prices):
+        if index < window - 1:
+            distances.append(None)
+            continue
+        trailing_high = max(decimal_highs[index - window + 1 : index + 1])
+        distances.append(None if trailing_high == 0 else (price - trailing_high) / trailing_high)
+    return tuple(distances)
+
+
+def fifty_two_week_high_distance(
+    prices: Sequence[NumericValue],
+    highs: Sequence[NumericValue] | None = None,
+    *,
+    window: int = FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS,
+) -> OptionalDecimalSeries:
+    """Calculate 52-week high distance as (P_t - H_52W) / H_52W."""
+
+    high_values = prices if highs is None else highs
+    return rolling_high_distance(prices, high_values, window=window)
+
+
+def fifty_two_week_high_distance_from_weekly_bars(
+    bars: Sequence[OhlcvBar],
+) -> OptionalDecimalSeries:
+    """Calculate 52-week high distance from canonical weekly bars."""
+
+    ordered = tuple(sorted(bars, key=lambda bar: bar.timestamp))
+    for bar in ordered:
+        if bar.timeframe != "1w":
+            raise ValueError("fifty_two_week_high_distance_from_weekly_bars requires 1w bars")
+    return fifty_two_week_high_distance(
+        prices=[bar.close for bar in ordered],
+        highs=[bar.high for bar in ordered],
+    )
 
 
 def classify_weekly_structure(
