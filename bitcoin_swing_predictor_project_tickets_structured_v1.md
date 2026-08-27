@@ -809,7 +809,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 
   - 7d funding average
   - 180d rolling z-score
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -818,6 +818,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `FUNDING_HEALTH` from the current 7-day average funding rate and 180-day rolling z-score.
+  - Implemented the rulebook Gaussian health curve centered on mildly positive funding z-score.
+  - Filtered funding rows by point-in-time `available_at` and `observation_time`.
+  - Persisted average/z-score feature IDs, windows, health-curve parameters, counts, score, and reason codes through `FundingHealthResult.as_record()`.
+  - Emitted stable reason codes for missing funding input, insufficient history, and zero-variance history.
 
 #### BTC-071 Implement OI growth health
 - **Description:**

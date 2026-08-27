@@ -155,6 +155,12 @@ and records either `FLOW_MODEL = ETF_CORE` or
 `FLOW_MODEL = ETF_SPOT_PERP_FULL`; missing P1 inputs trigger the ETF-core
 fallback without zero-filling.
 
+Positioning feature helpers include `funding_health`, which implements
+`FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day
+rolling z-score. The result records the health-curve parameters and emits stable
+reason codes for missing funding input, insufficient history, or zero-variance
+history.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 
