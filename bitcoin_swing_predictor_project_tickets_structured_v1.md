@@ -730,7 +730,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-063 Implement spot vs perp participation
 - **Description:**
   Complete the ticket scope for implement spot vs perp participation.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -739,6 +739,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `SPOT_DOMINANCE` as `z(SpotVolumeGrowth) - z(PerpVolumeGrowth)`.
+  - Defined volume growth as current trailing notional-volume window versus the previous equal-length window.
+  - Added typed `VolumeParticipationObservation` inputs plus an adapter from spot OHLCV and perp volume rows.
+  - Emitted stable reason codes for missing spot volume, missing perp volume, or insufficient history instead of zero-filling.
+  - Added deterministic serialization through `SpotPerpParticipationResult.as_record()` for persistence and recomputation.
 
 #### BTC-064 Implement spot vs perp CVD spread
 - **Description:**

@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from btc_predictor.data import EtfFlow, require_utc_datetime
+from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume, require_utc_datetime
 
 
 FIVE_DAY_ETF_FLOW_FEATURE_ID = "ETF_FLOW_5D"
@@ -18,6 +18,9 @@ TWENTY_DAY_ETF_FLOW_FEATURE_ID = "ETF_FLOW_20D"
 TWENTY_DAY_ETF_NORM_FEATURE_ID = "ETF_NORM_20D"
 TWENTY_DAY_ETF_FLOW_WINDOW_DAYS = 20
 ETF_FLOW_ACCELERATION_FEATURE_ID = "FLOW_ACCEL"
+SPOT_PERP_PARTICIPATION_FEATURE_ID = "SPOT_DOMINANCE"
+SPOT_VOLUME_GROWTH_FEATURE_ID = "SPOT_VOLUME_GROWTH"
+PERP_VOLUME_GROWTH_FEATURE_ID = "PERP_VOLUME_GROWTH"
 ETF_FLOW_FEATURE_REASON_CODES = (
     "ETF_FLOW_INPUT_MISSING",
     "ETF_FLOW_AUM_MISSING",
@@ -25,6 +28,36 @@ ETF_FLOW_FEATURE_REASON_CODES = (
 ETF_FLOW_ACCELERATION_REASON_CODES = (
     "ETF_FLOW_ACCEL_INPUT_MISSING",
 )
+SPOT_PERP_PARTICIPATION_REASON_CODES = (
+    "SPOT_VOLUME_INPUT_MISSING",
+    "PERP_VOLUME_INPUT_MISSING",
+    "SPOT_PERP_PARTICIPATION_INSUFFICIENT_HISTORY",
+)
+
+
+@dataclass(frozen=True)
+class VolumeParticipationObservation:
+    observation_time: datetime
+    market_type: str
+    notional_usd: Decimal
+    provider: str
+    available_at: datetime
+
+    def as_record(self) -> dict[str, Any]:
+        if self.market_type not in {"spot", "perp"}:
+            raise ValueError("market_type must be spot or perp")
+        if self.notional_usd < 0:
+            raise ValueError("notional_usd must be >= 0")
+        return {
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ),
+            "market_type": self.market_type,
+            "notional_usd": self.notional_usd,
+            "provider": self.provider,
+            "available_at": require_utc_datetime(self.available_at, "available_at"),
+        }
 
 
 @dataclass(frozen=True)
@@ -93,6 +126,67 @@ class EtfFlowAccelerationResult:
                 else None
             ),
             "acceleration": str(self.acceleration) if self.acceleration is not None else None,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class SpotPerpParticipationResult:
+    feature_id: str
+    observation_time: datetime
+    spot_volume_growth_feature_id: str
+    perp_volume_growth_feature_id: str
+    growth_window_periods: int
+    zscore_window_periods: int
+    min_zscore_periods: int
+    spot_volume_growth: Decimal | None
+    perp_volume_growth: Decimal | None
+    spot_volume_growth_zscore: Decimal | None
+    perp_volume_growth_zscore: Decimal | None
+    spot_dominance: Decimal | None
+    source_record_count: int
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ).isoformat(),
+            "spot_volume_growth_feature_id": self.spot_volume_growth_feature_id,
+            "perp_volume_growth_feature_id": self.perp_volume_growth_feature_id,
+            "growth_window_periods": self.growth_window_periods,
+            "zscore_window_periods": self.zscore_window_periods,
+            "min_zscore_periods": self.min_zscore_periods,
+            "spot_volume_growth": (
+                str(self.spot_volume_growth)
+                if self.spot_volume_growth is not None
+                else None
+            ),
+            "perp_volume_growth": (
+                str(self.perp_volume_growth)
+                if self.perp_volume_growth is not None
+                else None
+            ),
+            "spot_volume_growth_zscore": (
+                str(self.spot_volume_growth_zscore)
+                if self.spot_volume_growth_zscore is not None
+                else None
+            ),
+            "perp_volume_growth_zscore": (
+                str(self.perp_volume_growth_zscore)
+                if self.perp_volume_growth_zscore is not None
+                else None
+            ),
+            "spot_dominance": (
+                str(self.spot_dominance)
+                if self.spot_dominance is not None
+                else None
+            ),
+            "source_record_count": self.source_record_count,
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
         }
@@ -185,6 +279,141 @@ def etf_flow_acceleration(
         acceleration=acceleration,
         complete=not reason_codes,
         reason_codes=reason_codes,
+    )
+
+
+def spot_perp_participation_from_rows(
+    spot_bars: Sequence[OhlcvBar],
+    perp_volumes: Sequence[PerpVolume],
+    *,
+    as_of: datetime,
+    growth_window_periods: int = 5,
+    zscore_window_periods: int = 20,
+    min_zscore_periods: int | None = None,
+) -> SpotPerpParticipationResult:
+    """Calculate spot-vs-perp participation from spot OHLCV and perp volume rows."""
+
+    observations = []
+    for bar in spot_bars:
+        observations.append(
+            VolumeParticipationObservation(
+                observation_time=bar.timestamp,
+                market_type="spot",
+                notional_usd=bar.close * bar.volume,
+                provider=bar.provider,
+                available_at=bar.ingested_at,
+            )
+        )
+    for volume in perp_volumes:
+        if volume.notional_usd is None:
+            continue
+        observations.append(
+            VolumeParticipationObservation(
+                observation_time=volume.observation_time,
+                market_type="perp",
+                notional_usd=volume.notional_usd,
+                provider=volume.provider,
+                available_at=volume.available_at,
+            )
+        )
+
+    return spot_perp_participation(
+        observations,
+        as_of=as_of,
+        growth_window_periods=growth_window_periods,
+        zscore_window_periods=zscore_window_periods,
+        min_zscore_periods=min_zscore_periods,
+    )
+
+
+def spot_perp_participation(
+    observations: Sequence[VolumeParticipationObservation],
+    *,
+    as_of: datetime,
+    growth_window_periods: int = 5,
+    zscore_window_periods: int = 20,
+    min_zscore_periods: int | None = None,
+) -> SpotPerpParticipationResult:
+    """Calculate SpotDominance = z(spot volume growth) - z(perp volume growth)."""
+
+    signal_time = require_utc_datetime(as_of, "as_of")
+    _validate_participation_windows(
+        growth_window_periods,
+        zscore_window_periods,
+        min_zscore_periods,
+    )
+    required_zscore_periods = (
+        zscore_window_periods if min_zscore_periods is None else min_zscore_periods
+    )
+    available_observations = tuple(
+        observation
+        for observation in observations
+        if observation.as_record()["available_at"] <= signal_time
+        and observation.as_record()["observation_time"] <= signal_time
+    )
+    by_market_time = _aggregate_participation_observations(available_observations)
+    spot_by_time = by_market_time["spot"]
+    perp_by_time = by_market_time["perp"]
+    common_times = tuple(sorted(set(spot_by_time) & set(perp_by_time)))
+    observation_time = common_times[-1] if common_times else signal_time
+
+    reason_codes = []
+    if not spot_by_time:
+        reason_codes.append("SPOT_VOLUME_INPUT_MISSING")
+    if not perp_by_time:
+        reason_codes.append("PERP_VOLUME_INPUT_MISSING")
+
+    spot_growth = None
+    perp_growth = None
+    spot_growth_zscore = None
+    perp_growth_zscore = None
+    spot_dominance = None
+    if common_times:
+        spot_values = tuple(spot_by_time[time] for time in common_times)
+        perp_values = tuple(perp_by_time[time] for time in common_times)
+        spot_growth_series = _trailing_volume_growth(
+            spot_values,
+            window=growth_window_periods,
+        )
+        perp_growth_series = _trailing_volume_growth(
+            perp_values,
+            window=growth_window_periods,
+        )
+        spot_growth = spot_growth_series[-1]
+        perp_growth = perp_growth_series[-1]
+        spot_growth_zscore = _latest_zscore(
+            spot_growth_series,
+            window=zscore_window_periods,
+            min_periods=required_zscore_periods,
+        )
+        perp_growth_zscore = _latest_zscore(
+            perp_growth_series,
+            window=zscore_window_periods,
+            min_periods=required_zscore_periods,
+        )
+        if spot_growth_zscore is not None and perp_growth_zscore is not None:
+            spot_dominance = spot_growth_zscore - perp_growth_zscore
+
+    if spot_dominance is None:
+        reason_codes.append("SPOT_PERP_PARTICIPATION_INSUFFICIENT_HISTORY")
+
+    reason_codes = list(_dedupe_reason_codes(reason_codes))
+    return SpotPerpParticipationResult(
+        feature_id=SPOT_PERP_PARTICIPATION_FEATURE_ID,
+        observation_time=observation_time,
+        spot_volume_growth_feature_id=SPOT_VOLUME_GROWTH_FEATURE_ID,
+        perp_volume_growth_feature_id=PERP_VOLUME_GROWTH_FEATURE_ID,
+        growth_window_periods=growth_window_periods,
+        zscore_window_periods=zscore_window_periods,
+        min_zscore_periods=required_zscore_periods,
+        spot_volume_growth=spot_growth,
+        perp_volume_growth=perp_growth,
+        spot_volume_growth_zscore=spot_growth_zscore,
+        perp_volume_growth_zscore=perp_growth_zscore,
+        spot_dominance=spot_dominance,
+        source_record_count=len(available_observations),
+        complete=not reason_codes,
+        reason_codes=tuple(reason_codes),
     )
 
 
@@ -363,6 +592,80 @@ def _latest_aum_by_fund(
         ):
             latest[flow.fund] = flow
     return {fund: flow.aum_usd for fund, flow in latest.items() if flow.aum_usd is not None}
+
+
+def _validate_participation_windows(
+    growth_window_periods: int,
+    zscore_window_periods: int,
+    min_zscore_periods: int | None,
+) -> None:
+    if growth_window_periods < 1:
+        raise ValueError("growth_window_periods must be >= 1")
+    if zscore_window_periods < 1:
+        raise ValueError("zscore_window_periods must be >= 1")
+    if min_zscore_periods is not None:
+        if min_zscore_periods < 1:
+            raise ValueError("min_zscore_periods must be >= 1")
+        if min_zscore_periods > zscore_window_periods:
+            raise ValueError("min_zscore_periods must be <= zscore_window_periods")
+
+
+def _aggregate_participation_observations(
+    observations: Sequence[VolumeParticipationObservation],
+) -> dict[str, dict[datetime, Decimal]]:
+    aggregated: dict[str, dict[datetime, Decimal]] = {"spot": {}, "perp": {}}
+    for observation in observations:
+        record = observation.as_record()
+        market_type = record["market_type"]
+        observation_time = record["observation_time"]
+        notional_usd = record["notional_usd"]
+        aggregated[market_type][observation_time] = (
+            aggregated[market_type].get(observation_time, Decimal("0"))
+            + notional_usd
+        )
+    return aggregated
+
+
+def _trailing_volume_growth(
+    values: Sequence[Decimal],
+    *,
+    window: int,
+) -> tuple[Decimal | None, ...]:
+    growth_values = []
+    for index in range(len(values)):
+        if index < (window * 2) - 1:
+            growth_values.append(None)
+            continue
+        current_window = values[index - window + 1 : index + 1]
+        prior_window = values[index - (window * 2) + 1 : index - window + 1]
+        prior_sum = sum(prior_window, Decimal("0"))
+        if prior_sum == 0:
+            growth_values.append(None)
+            continue
+        current_sum = sum(current_window, Decimal("0"))
+        growth_values.append((current_sum / prior_sum) - Decimal("1"))
+    return tuple(growth_values)
+
+
+def _latest_zscore(
+    values: Sequence[Decimal | None],
+    *,
+    window: int,
+    min_periods: int,
+) -> Decimal | None:
+    if not values or values[-1] is None:
+        return None
+    history = tuple(value for value in values[:-1] if value is not None)[-window:]
+    if len(history) < min_periods:
+        return None
+    mean = sum(history, Decimal("0")) / Decimal(len(history))
+    variance = sum(((value - mean) ** 2 for value in history), Decimal("0")) / Decimal(
+        len(history)
+    )
+    volatility = variance.sqrt()
+    if volatility == 0:
+        return None
+    return (values[-1] - mean) / volatility
 
 
 def _dedupe_reason_codes(reason_codes: Iterable[str]) -> tuple[str, ...]:

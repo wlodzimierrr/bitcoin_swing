@@ -145,7 +145,9 @@ They use publication-day windows, report normalized values when latest fund AUM
 is available, and emit reason codes instead of silently filling missing inputs
 or denominators. `etf_flow_acceleration` implements `FLOW_ACCEL` as
 `ETF_NORM_5D - ETF_NORM_20D / 4` and records the normalized inputs used in the
-calculation.
+calculation. `spot_perp_participation` implements `SPOT_DOMINANCE` as
+`z(SpotVolumeGrowth) - z(PerpVolumeGrowth)` using available spot and perpetual
+volume observations, with a row adapter for spot OHLCV and perp volume records.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

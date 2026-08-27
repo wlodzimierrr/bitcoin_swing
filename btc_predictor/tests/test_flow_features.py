@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from btc_predictor.data import EtfFlow
+from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume
 from btc_predictor.features import (
     ETF_FLOW_ACCELERATION_FEATURE_ID,
     ETF_FLOW_ACCELERATION_REASON_CODES,
@@ -11,13 +11,20 @@ from btc_predictor.features import (
     FIVE_DAY_ETF_FLOW_FEATURE_ID,
     FIVE_DAY_ETF_FLOW_WINDOW_DAYS,
     FIVE_DAY_ETF_NORM_FEATURE_ID,
+    PERP_VOLUME_GROWTH_FEATURE_ID,
+    SPOT_PERP_PARTICIPATION_FEATURE_ID,
+    SPOT_PERP_PARTICIPATION_REASON_CODES,
+    SPOT_VOLUME_GROWTH_FEATURE_ID,
     TWENTY_DAY_ETF_FLOW_FEATURE_ID,
     TWENTY_DAY_ETF_FLOW_WINDOW_DAYS,
     TWENTY_DAY_ETF_NORM_FEATURE_ID,
+    VolumeParticipationObservation,
     EtfFlowFeatureResult,
     etf_flow_acceleration,
     etf_flow_window,
     five_day_etf_flow,
+    spot_perp_participation,
+    spot_perp_participation_from_rows,
     twenty_day_etf_flow,
 )
 
@@ -77,6 +84,54 @@ def publication_dates_ending(
     return tuple(reversed(publication_dates))
 
 
+def participation_observation(
+    observation_time: datetime,
+    *,
+    market_type: str,
+    notional_usd: str,
+    available_at: datetime | None = None,
+) -> VolumeParticipationObservation:
+    return VolumeParticipationObservation(
+        observation_time=observation_time,
+        market_type=market_type,
+        notional_usd=Decimal(notional_usd),
+        provider="fixture",
+        available_at=available_at or observation_time + timedelta(minutes=1),
+    )
+
+
+def spot_bar(timestamp: datetime, *, close: str, volume: str) -> OhlcvBar:
+    return OhlcvBar(
+        timestamp=timestamp,
+        exchange="coinbase",
+        symbol="BTC-USD",
+        timeframe="1h",
+        open=Decimal(close),
+        high=Decimal(close),
+        low=Decimal(close),
+        close=Decimal(close),
+        volume=Decimal(volume),
+        provider="coinbase",
+        ingested_at=timestamp + timedelta(minutes=1),
+    )
+
+
+def perp_volume(timestamp: datetime, *, notional_usd: str | None) -> PerpVolume:
+    return PerpVolume(
+        observation_time=timestamp,
+        exchange="binance",
+        symbol="BTCUSDT",
+        timeframe="1h",
+        volume=Decimal("1"),
+        volume_unit="contracts",
+        notional_usd=Decimal(notional_usd) if notional_usd is not None else None,
+        provider="binance",
+        source="binance-api",
+        available_at=timestamp + timedelta(minutes=1),
+        ingested_at=timestamp + timedelta(minutes=2),
+    )
+
+
 def test_five_day_etf_flow_metadata_is_stable() -> None:
     assert FIVE_DAY_ETF_FLOW_FEATURE_ID == "ETF_FLOW_5D"
     assert FIVE_DAY_ETF_NORM_FEATURE_ID == "ETF_NORM_5D"
@@ -96,6 +151,17 @@ def test_twenty_day_etf_flow_metadata_is_stable() -> None:
 def test_etf_flow_acceleration_metadata_is_stable() -> None:
     assert ETF_FLOW_ACCELERATION_FEATURE_ID == "FLOW_ACCEL"
     assert ETF_FLOW_ACCELERATION_REASON_CODES == ("ETF_FLOW_ACCEL_INPUT_MISSING",)
+
+
+def test_spot_perp_participation_metadata_is_stable() -> None:
+    assert SPOT_PERP_PARTICIPATION_FEATURE_ID == "SPOT_DOMINANCE"
+    assert SPOT_VOLUME_GROWTH_FEATURE_ID == "SPOT_VOLUME_GROWTH"
+    assert PERP_VOLUME_GROWTH_FEATURE_ID == "PERP_VOLUME_GROWTH"
+    assert SPOT_PERP_PARTICIPATION_REASON_CODES == (
+        "SPOT_VOLUME_INPUT_MISSING",
+        "PERP_VOLUME_INPUT_MISSING",
+        "SPOT_PERP_PARTICIPATION_INSUFFICIENT_HISTORY",
+    )
 
 
 def test_five_day_etf_flow_sums_latest_five_publication_days_and_normalizes_by_aum() -> None:
@@ -265,6 +331,188 @@ def test_etf_flow_acceleration_reports_missing_normalized_inputs() -> None:
         "ETF_FLOW_AUM_MISSING",
         "ETF_FLOW_ACCEL_INPUT_MISSING",
     )
+
+
+def test_spot_perp_participation_calculates_spot_dominance_from_volume_growth_zscores() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(5))
+    spot_values = ("100", "110", "132", "171.6", "240.24")
+    perp_values = ("100", "120", "132", "132", "138.6")
+    observations = tuple(
+        participation_observation(time, market_type=market_type, notional_usd=value)
+        for time, spot_value, perp_value in zip(times, spot_values, perp_values, strict=True)
+        for market_type, value in (("spot", spot_value), ("perp", perp_value))
+    )
+
+    result = spot_perp_participation(
+        observations,
+        as_of=times[-1] + timedelta(minutes=2),
+        growth_window_periods=1,
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "SPOT_DOMINANCE"
+    assert result.observation_time == times[-1]
+    assert result.spot_volume_growth == Decimal("0.4")
+    assert result.perp_volume_growth == Decimal("0.05")
+    assert result.spot_volume_growth_zscore is not None
+    assert result.perp_volume_growth_zscore is not None
+    assert result.spot_dominance is not None
+    assert result.spot_volume_growth_zscore.quantize(Decimal("0.000001")) == Decimal("2.449490")
+    assert result.perp_volume_growth_zscore.quantize(Decimal("0.000001")) == Decimal("-0.612372")
+    assert result.spot_dominance.quantize(Decimal("0.000001")) == Decimal("3.061862")
+    assert result.source_record_count == 10
+    assert result.reason_codes == ()
+
+
+def test_spot_perp_participation_filters_unavailable_future_inputs() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(5))
+    observations = tuple(
+        participation_observation(time, market_type=market_type, notional_usd=value)
+        for time, spot_value, perp_value in zip(
+            times,
+            ("100", "110", "132", "171.6", "240.24"),
+            ("100", "120", "132", "132", "138.6"),
+            strict=True,
+        )
+        for market_type, value in (("spot", spot_value), ("perp", perp_value))
+    )
+    unavailable_future = participation_observation(
+        times[-1],
+        market_type="spot",
+        notional_usd="999999",
+        available_at=times[-1] + timedelta(days=1),
+    )
+
+    baseline = spot_perp_participation(
+        observations,
+        as_of=times[-1] + timedelta(minutes=2),
+        growth_window_periods=1,
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    ).as_record()
+    with_future = spot_perp_participation(
+        (*observations, unavailable_future),
+        as_of=times[-1] + timedelta(minutes=2),
+        growth_window_periods=1,
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    ).as_record()
+
+    assert with_future == baseline
+
+
+def test_spot_perp_participation_reports_missing_inputs_without_zero_fill() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    observations = tuple(
+        participation_observation(
+            start + timedelta(hours=offset),
+            market_type="spot",
+            notional_usd="100",
+        )
+        for offset in range(5)
+    )
+
+    result = spot_perp_participation(
+        observations,
+        as_of=start + timedelta(hours=5),
+        growth_window_periods=1,
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    assert result.complete is False
+    assert result.spot_dominance is None
+    assert result.reason_codes == (
+        "PERP_VOLUME_INPUT_MISSING",
+        "SPOT_PERP_PARTICIPATION_INSUFFICIENT_HISTORY",
+    )
+
+
+def test_spot_perp_participation_exposes_persistable_payload() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(5))
+    observations = tuple(
+        participation_observation(time, market_type=market_type, notional_usd=value)
+        for time, spot_value, perp_value in zip(
+            times,
+            ("100", "110", "132", "171.6", "240.24"),
+            ("100", "120", "132", "132", "138.6"),
+            strict=True,
+        )
+        for market_type, value in (("spot", spot_value), ("perp", perp_value))
+    )
+
+    result = spot_perp_participation(
+        observations,
+        as_of=times[-1] + timedelta(minutes=2),
+        growth_window_periods=1,
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "SPOT_DOMINANCE"
+    assert record["observation_time"] == "2026-08-24T04:00:00+00:00"
+    assert record["spot_volume_growth_feature_id"] == "SPOT_VOLUME_GROWTH"
+    assert record["perp_volume_growth_feature_id"] == "PERP_VOLUME_GROWTH"
+    assert record["spot_volume_growth"] == "0.4"
+    assert record["perp_volume_growth"] == "0.05"
+    assert record["source_record_count"] == 10
+    assert record["complete"] is True
+    assert record["reason_codes"] == []
+
+
+def test_spot_perp_participation_from_rows_uses_spot_close_volume_and_perp_notional() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(5))
+
+    result = spot_perp_participation_from_rows(
+        tuple(
+            spot_bar(time, close="10", volume=volume)
+            for time, volume in zip(
+                times,
+                ("10", "11", "13.2", "17.16", "24.024"),
+                strict=True,
+            )
+        ),
+        tuple(
+            perp_volume(time, notional_usd=notional)
+            for time, notional in zip(
+                times,
+                ("100", "120", "132", "132", "138.6"),
+                strict=True,
+            )
+        ),
+        as_of=times[-1] + timedelta(minutes=2),
+        growth_window_periods=1,
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    assert result.complete is True
+    assert result.spot_volume_growth == Decimal("0.4")
+    assert result.perp_volume_growth == Decimal("0.05")
+    assert result.source_record_count == 10
+
+
+def test_spot_perp_participation_rejects_invalid_observations_and_windows() -> None:
+    with pytest.raises(ValueError, match="market_type"):
+        participation_observation(
+            datetime(2026, 8, 24, tzinfo=UTC),
+            market_type="futures",
+            notional_usd="100",
+        ).as_record()
+
+    with pytest.raises(ValueError, match="growth_window_periods"):
+        spot_perp_participation(
+            (),
+            as_of=datetime(2026, 8, 24, tzinfo=UTC),
+            growth_window_periods=0,
+        )
 
 
 def test_five_day_etf_flow_uses_latest_revision_available_at_signal_time() -> None:
