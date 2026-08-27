@@ -14,6 +14,9 @@ from btc_predictor.data import EtfFlow, require_utc_datetime
 FIVE_DAY_ETF_FLOW_FEATURE_ID = "ETF_FLOW_5D"
 FIVE_DAY_ETF_NORM_FEATURE_ID = "ETF_NORM_5D"
 FIVE_DAY_ETF_FLOW_WINDOW_DAYS = 5
+TWENTY_DAY_ETF_FLOW_FEATURE_ID = "ETF_FLOW_20D"
+TWENTY_DAY_ETF_NORM_FEATURE_ID = "ETF_NORM_20D"
+TWENTY_DAY_ETF_FLOW_WINDOW_DAYS = 20
 ETF_FLOW_FEATURE_REASON_CODES = (
     "ETF_FLOW_INPUT_MISSING",
     "ETF_FLOW_AUM_MISSING",
@@ -76,6 +79,28 @@ def five_day_etf_flow(
         end_date=end_date,
         feature_id=FIVE_DAY_ETF_FLOW_FEATURE_ID,
         normalized_feature_id=FIVE_DAY_ETF_NORM_FEATURE_ID,
+    )
+
+
+def twenty_day_etf_flow(
+    flows: Sequence[EtfFlow],
+    *,
+    as_of: datetime,
+    funds: Sequence[str] = (),
+    market_holidays: Iterable[date] = (),
+    end_date: date | None = None,
+) -> EtfFlowFeatureResult:
+    """Calculate ETF_20 and ETFNorm_20 from point-in-time available flow rows."""
+
+    return etf_flow_window(
+        flows,
+        as_of=as_of,
+        window_days=TWENTY_DAY_ETF_FLOW_WINDOW_DAYS,
+        funds=funds,
+        market_holidays=market_holidays,
+        end_date=end_date,
+        feature_id=TWENTY_DAY_ETF_FLOW_FEATURE_ID,
+        normalized_feature_id=TWENTY_DAY_ETF_NORM_FEATURE_ID,
     )
 
 

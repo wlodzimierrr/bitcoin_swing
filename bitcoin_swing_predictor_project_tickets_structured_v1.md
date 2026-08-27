@@ -691,7 +691,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-061 Implement 20-day ETF flow feature
 - **Description:**
   Complete the ticket scope for implement 20-day etf flow feature.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -700,6 +700,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `ETF_FLOW_20D` and `ETF_NORM_20D` helpers using the shared point-in-time ETF flow window engine.
+  - Summed complete twenty-publication-day windows across the configured fund universe and normalized by latest available fund AUM.
+  - Reused stable ETF flow reason codes for missing flow inputs or missing AUM.
+  - Covered deterministic serialization for persistence and historical recomputation.
 
 #### BTC-062 Implement ETF flow acceleration
 - **Description:**

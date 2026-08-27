@@ -9,8 +9,12 @@ from btc_predictor.features import (
     FIVE_DAY_ETF_FLOW_FEATURE_ID,
     FIVE_DAY_ETF_FLOW_WINDOW_DAYS,
     FIVE_DAY_ETF_NORM_FEATURE_ID,
+    TWENTY_DAY_ETF_FLOW_FEATURE_ID,
+    TWENTY_DAY_ETF_FLOW_WINDOW_DAYS,
+    TWENTY_DAY_ETF_NORM_FEATURE_ID,
     etf_flow_window,
     five_day_etf_flow,
+    twenty_day_etf_flow,
 )
 
 
@@ -42,11 +46,31 @@ def etf_flow(
 
 def five_weekday_flows() -> tuple[EtfFlow, ...]:
     dates = tuple(date(2026, 8, 24) + timedelta(days=offset) for offset in range(5))
+    return flow_rows_for_publication_dates(dates)
+
+
+def flow_rows_for_publication_dates(dates: tuple[date, ...]) -> tuple[EtfFlow, ...]:
     flows = []
     for observation_date in dates:
         flows.append(etf_flow("IBIT", observation_date, "100", aum_usd="10000"))
         flows.append(etf_flow("FBTC", observation_date, "-20", aum_usd="5000"))
     return tuple(flows)
+
+
+def publication_dates_ending(
+    end_date: date,
+    *,
+    count: int,
+    market_holidays: set[date] | None = None,
+) -> tuple[date, ...]:
+    holidays = market_holidays or set()
+    publication_dates = []
+    current = end_date
+    while len(publication_dates) < count:
+        if current.weekday() < 5 and current not in holidays:
+            publication_dates.append(current)
+        current -= timedelta(days=1)
+    return tuple(reversed(publication_dates))
 
 
 def test_five_day_etf_flow_metadata_is_stable() -> None:
@@ -57,6 +81,12 @@ def test_five_day_etf_flow_metadata_is_stable() -> None:
         "ETF_FLOW_INPUT_MISSING",
         "ETF_FLOW_AUM_MISSING",
     )
+
+
+def test_twenty_day_etf_flow_metadata_is_stable() -> None:
+    assert TWENTY_DAY_ETF_FLOW_FEATURE_ID == "ETF_FLOW_20D"
+    assert TWENTY_DAY_ETF_NORM_FEATURE_ID == "ETF_NORM_20D"
+    assert TWENTY_DAY_ETF_FLOW_WINDOW_DAYS == 20
 
 
 def test_five_day_etf_flow_sums_latest_five_publication_days_and_normalizes_by_aum() -> None:
@@ -80,6 +110,46 @@ def test_five_day_etf_flow_sums_latest_five_publication_days_and_normalizes_by_a
     assert result.normalized_flow == Decimal("0.02666666666666666666666666667")
     assert result.source_record_count == 10
     assert result.reason_codes == ()
+
+
+def test_twenty_day_etf_flow_sums_latest_twenty_publication_days_and_normalizes() -> None:
+    dates = publication_dates_ending(date(2026, 8, 28), count=20)
+
+    result = twenty_day_etf_flow(
+        flow_rows_for_publication_dates(dates),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "ETF_FLOW_20D"
+    assert result.normalized_feature_id == "ETF_NORM_20D"
+    assert result.window_days == 20
+    assert result.observation_date == date(2026, 8, 28)
+    assert result.included_observation_dates == dates
+    assert result.flow_sum_usd == Decimal("1600")
+    assert result.total_aum_usd == Decimal("15000")
+    assert result.normalized_flow == Decimal("0.1066666666666666666666666667")
+    assert result.source_record_count == 40
+    assert result.reason_codes == ()
+
+
+def test_twenty_day_etf_flow_reports_missing_inputs_without_zero_fill() -> None:
+    dates = publication_dates_ending(date(2026, 8, 28), count=20)
+    flows = flow_rows_for_publication_dates(dates)[:-1]
+
+    result = twenty_day_etf_flow(
+        flows,
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+        end_date=date(2026, 8, 28),
+    )
+
+    assert result.complete is False
+    assert result.flow_sum_usd is None
+    assert result.normalized_flow is None
+    assert result.source_record_count == 39
+    assert result.reason_codes == ("ETF_FLOW_INPUT_MISSING",)
 
 
 def test_five_day_etf_flow_uses_latest_revision_available_at_signal_time() -> None:
@@ -220,6 +290,33 @@ def test_five_day_etf_flow_exposes_persistable_payload() -> None:
         "total_aum_usd": "15000",
         "normalized_flow": "0.02666666666666666666666666667",
         "source_record_count": 10,
+        "complete": True,
+        "reason_codes": [],
+    }
+
+
+def test_twenty_day_etf_flow_exposes_persistable_payload() -> None:
+    dates = publication_dates_ending(date(2026, 8, 28), count=20)
+
+    result = twenty_day_etf_flow(
+        flow_rows_for_publication_dates(dates),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+
+    assert result.as_record() == {
+        "feature_id": "ETF_FLOW_20D",
+        "normalized_feature_id": "ETF_NORM_20D",
+        "window_days": 20,
+        "observation_date": "2026-08-28",
+        "included_observation_dates": [
+            observation_date.isoformat() for observation_date in dates
+        ],
+        "funds": ["FBTC", "IBIT"],
+        "flow_sum_usd": "1600",
+        "total_aum_usd": "15000",
+        "normalized_flow": "0.1066666666666666666666666667",
+        "source_record_count": 40,
         "complete": True,
         "reason_codes": [],
     }
