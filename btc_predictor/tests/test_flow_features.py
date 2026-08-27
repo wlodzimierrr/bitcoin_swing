@@ -5,6 +5,8 @@ import pytest
 
 from btc_predictor.data import EtfFlow
 from btc_predictor.features import (
+    ETF_FLOW_ACCELERATION_FEATURE_ID,
+    ETF_FLOW_ACCELERATION_REASON_CODES,
     ETF_FLOW_FEATURE_REASON_CODES,
     FIVE_DAY_ETF_FLOW_FEATURE_ID,
     FIVE_DAY_ETF_FLOW_WINDOW_DAYS,
@@ -12,6 +14,8 @@ from btc_predictor.features import (
     TWENTY_DAY_ETF_FLOW_FEATURE_ID,
     TWENTY_DAY_ETF_FLOW_WINDOW_DAYS,
     TWENTY_DAY_ETF_NORM_FEATURE_ID,
+    EtfFlowFeatureResult,
+    etf_flow_acceleration,
     etf_flow_window,
     five_day_etf_flow,
     twenty_day_etf_flow,
@@ -89,6 +93,11 @@ def test_twenty_day_etf_flow_metadata_is_stable() -> None:
     assert TWENTY_DAY_ETF_FLOW_WINDOW_DAYS == 20
 
 
+def test_etf_flow_acceleration_metadata_is_stable() -> None:
+    assert ETF_FLOW_ACCELERATION_FEATURE_ID == "FLOW_ACCEL"
+    assert ETF_FLOW_ACCELERATION_REASON_CODES == ("ETF_FLOW_ACCEL_INPUT_MISSING",)
+
+
 def test_five_day_etf_flow_sums_latest_five_publication_days_and_normalizes_by_aum() -> None:
     result = five_day_etf_flow(
         five_weekday_flows(),
@@ -150,6 +159,112 @@ def test_twenty_day_etf_flow_reports_missing_inputs_without_zero_fill() -> None:
     assert result.normalized_flow is None
     assert result.source_record_count == 39
     assert result.reason_codes == ("ETF_FLOW_INPUT_MISSING",)
+
+
+def test_etf_flow_acceleration_compares_five_day_flow_to_twenty_day_average() -> None:
+    dates = publication_dates_ending(date(2026, 8, 28), count=20)
+    flows = []
+    for observation_date in dates[:15]:
+        flows.append(etf_flow("IBIT", observation_date, "20", aum_usd="10000"))
+        flows.append(etf_flow("FBTC", observation_date, "0", aum_usd="5000"))
+    for observation_date in dates[15:]:
+        flows.append(etf_flow("IBIT", observation_date, "100", aum_usd="10000"))
+        flows.append(etf_flow("FBTC", observation_date, "-20", aum_usd="5000"))
+
+    five_day = five_day_etf_flow(
+        tuple(flows),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+    twenty_day = twenty_day_etf_flow(
+        tuple(reversed(flows)),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+
+    result = etf_flow_acceleration(five_day, twenty_day)
+
+    assert result.complete is True
+    assert result.feature_id == "FLOW_ACCEL"
+    assert result.observation_date == date(2026, 8, 28)
+    assert result.five_day_normalized_feature_id == "ETF_NORM_5D"
+    assert result.twenty_day_normalized_feature_id == "ETF_NORM_20D"
+    assert result.five_day_normalized_flow == Decimal("0.02666666666666666666666666667")
+    assert result.twenty_day_normalized_flow == Decimal("0.04666666666666666666666666667")
+    assert result.acceleration == Decimal("0.01500000000000000000000000000")
+    assert result.reason_codes == ()
+
+
+def test_etf_flow_acceleration_exposes_persistable_payload() -> None:
+    five_day = EtfFlowFeatureResult(
+        feature_id="ETF_FLOW_5D",
+        normalized_feature_id="ETF_NORM_5D",
+        window_days=5,
+        observation_date=date(2026, 8, 28),
+        included_observation_dates=(),
+        funds=("IBIT",),
+        flow_sum_usd=Decimal("200"),
+        total_aum_usd=Decimal("10000"),
+        normalized_flow=Decimal("0.02"),
+        source_record_count=5,
+        complete=True,
+    )
+    twenty_day = EtfFlowFeatureResult(
+        feature_id="ETF_FLOW_20D",
+        normalized_feature_id="ETF_NORM_20D",
+        window_days=20,
+        observation_date=date(2026, 8, 28),
+        included_observation_dates=(),
+        funds=("IBIT",),
+        flow_sum_usd=Decimal("400"),
+        total_aum_usd=Decimal("10000"),
+        normalized_flow=Decimal("0.04"),
+        source_record_count=20,
+        complete=True,
+    )
+
+    result = etf_flow_acceleration(five_day, twenty_day)
+
+    assert result.as_record() == {
+        "feature_id": "FLOW_ACCEL",
+        "observation_date": "2026-08-28",
+        "five_day_normalized_feature_id": "ETF_NORM_5D",
+        "twenty_day_normalized_feature_id": "ETF_NORM_20D",
+        "five_day_normalized_flow": "0.02",
+        "twenty_day_normalized_flow": "0.04",
+        "acceleration": "0.01",
+        "complete": True,
+        "reason_codes": [],
+    }
+
+
+def test_etf_flow_acceleration_reports_missing_normalized_inputs() -> None:
+    dates = publication_dates_ending(date(2026, 8, 28), count=20)
+    five_day_flows = tuple(
+        flow
+        if flow.fund == "IBIT"
+        else EtfFlow(**{**flow.as_record(), "aum_usd": None})
+        for flow in flow_rows_for_publication_dates(dates[15:])
+    )
+    five_day = five_day_etf_flow(
+        five_day_flows,
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+    twenty_day = twenty_day_etf_flow(
+        flow_rows_for_publication_dates(dates),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+
+    result = etf_flow_acceleration(five_day, twenty_day)
+
+    assert result.complete is False
+    assert result.acceleration is None
+    assert result.reason_codes == (
+        "ETF_FLOW_AUM_MISSING",
+        "ETF_FLOW_ACCEL_INPUT_MISSING",
+    )
 
 
 def test_five_day_etf_flow_uses_latest_revision_available_at_signal_time() -> None:
@@ -336,3 +451,41 @@ def test_five_day_etf_flow_rejects_invalid_window() -> None:
             feature_id="ETF_FLOW_0D",
             normalized_feature_id="ETF_NORM_0D",
         )
+
+
+def test_etf_flow_acceleration_rejects_mismatched_observation_dates() -> None:
+    five_day = five_day_etf_flow(
+        five_weekday_flows(),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+    twenty_dates = publication_dates_ending(date(2026, 8, 27), count=20)
+    twenty_day = twenty_day_etf_flow(
+        flow_rows_for_publication_dates(twenty_dates),
+        as_of=datetime(2026, 8, 28, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+
+    with pytest.raises(ValueError, match="observation_date"):
+        etf_flow_acceleration(five_day, twenty_day)
+
+
+def test_etf_flow_acceleration_rejects_wrong_windows() -> None:
+    dates = publication_dates_ending(date(2026, 8, 28), count=20)
+    five_day = etf_flow_window(
+        flow_rows_for_publication_dates(dates[1:]),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        window_days=19,
+        funds=("IBIT", "FBTC"),
+        end_date=date(2026, 8, 28),
+        feature_id="ETF_FLOW_19D",
+        normalized_feature_id="ETF_NORM_19D",
+    )
+    twenty_day = twenty_day_etf_flow(
+        flow_rows_for_publication_dates(dates),
+        as_of=datetime(2026, 8, 29, tzinfo=UTC),
+        funds=("IBIT", "FBTC"),
+    )
+
+    with pytest.raises(ValueError, match="5-day window"):
+        etf_flow_acceleration(five_day, twenty_day)

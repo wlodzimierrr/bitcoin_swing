@@ -143,7 +143,9 @@ which implement `ETF_FLOW_5D`, `ETF_NORM_5D`, `ETF_FLOW_20D`, and
 `ETF_NORM_20D` from the latest ETF flow revisions available at signal time.
 They use publication-day windows, report normalized values when latest fund AUM
 is available, and emit reason codes instead of silently filling missing inputs
-or denominators.
+or denominators. `etf_flow_acceleration` implements `FLOW_ACCEL` as
+`ETF_NORM_5D - ETF_NORM_20D / 4` and records the normalized inputs used in the
+calculation.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

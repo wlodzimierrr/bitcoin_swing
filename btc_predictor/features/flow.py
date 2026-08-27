@@ -17,9 +17,13 @@ FIVE_DAY_ETF_FLOW_WINDOW_DAYS = 5
 TWENTY_DAY_ETF_FLOW_FEATURE_ID = "ETF_FLOW_20D"
 TWENTY_DAY_ETF_NORM_FEATURE_ID = "ETF_NORM_20D"
 TWENTY_DAY_ETF_FLOW_WINDOW_DAYS = 20
+ETF_FLOW_ACCELERATION_FEATURE_ID = "FLOW_ACCEL"
 ETF_FLOW_FEATURE_REASON_CODES = (
     "ETF_FLOW_INPUT_MISSING",
     "ETF_FLOW_AUM_MISSING",
+)
+ETF_FLOW_ACCELERATION_REASON_CODES = (
+    "ETF_FLOW_ACCEL_INPUT_MISSING",
 )
 
 
@@ -55,6 +59,40 @@ class EtfFlowFeatureResult:
                 str(self.normalized_flow) if self.normalized_flow is not None else None
             ),
             "source_record_count": self.source_record_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class EtfFlowAccelerationResult:
+    feature_id: str
+    observation_date: date
+    five_day_normalized_feature_id: str
+    twenty_day_normalized_feature_id: str
+    five_day_normalized_flow: Decimal | None
+    twenty_day_normalized_flow: Decimal | None
+    acceleration: Decimal | None
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "observation_date": self.observation_date.isoformat(),
+            "five_day_normalized_feature_id": self.five_day_normalized_feature_id,
+            "twenty_day_normalized_feature_id": self.twenty_day_normalized_feature_id,
+            "five_day_normalized_flow": (
+                str(self.five_day_normalized_flow)
+                if self.five_day_normalized_flow is not None
+                else None
+            ),
+            "twenty_day_normalized_flow": (
+                str(self.twenty_day_normalized_flow)
+                if self.twenty_day_normalized_flow is not None
+                else None
+            ),
+            "acceleration": str(self.acceleration) if self.acceleration is not None else None,
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
         }
@@ -101,6 +139,52 @@ def twenty_day_etf_flow(
         end_date=end_date,
         feature_id=TWENTY_DAY_ETF_FLOW_FEATURE_ID,
         normalized_feature_id=TWENTY_DAY_ETF_NORM_FEATURE_ID,
+    )
+
+
+def etf_flow_acceleration(
+    five_day_flow: EtfFlowFeatureResult,
+    twenty_day_flow: EtfFlowFeatureResult,
+) -> EtfFlowAccelerationResult:
+    """Calculate FlowAccel = ETFNorm_5 - ETFNorm_20 / 4."""
+
+    if five_day_flow.observation_date != twenty_day_flow.observation_date:
+        raise ValueError("flow acceleration inputs must share observation_date")
+    if five_day_flow.window_days != FIVE_DAY_ETF_FLOW_WINDOW_DAYS:
+        raise ValueError("five_day_flow must use a 5-day window")
+    if twenty_day_flow.window_days != TWENTY_DAY_ETF_FLOW_WINDOW_DAYS:
+        raise ValueError("twenty_day_flow must use a 20-day window")
+
+    reason_codes = _dedupe_reason_codes(
+        (
+            *five_day_flow.reason_codes,
+            *twenty_day_flow.reason_codes,
+        )
+    )
+    if (
+        five_day_flow.normalized_flow is None
+        or twenty_day_flow.normalized_flow is None
+    ):
+        reason_codes = _dedupe_reason_codes(
+            (*reason_codes, "ETF_FLOW_ACCEL_INPUT_MISSING")
+        )
+
+    acceleration = (
+        five_day_flow.normalized_flow - (twenty_day_flow.normalized_flow / Decimal("4"))
+        if five_day_flow.normalized_flow is not None
+        and twenty_day_flow.normalized_flow is not None
+        else None
+    )
+    return EtfFlowAccelerationResult(
+        feature_id=ETF_FLOW_ACCELERATION_FEATURE_ID,
+        observation_date=five_day_flow.observation_date,
+        five_day_normalized_feature_id=five_day_flow.normalized_feature_id,
+        twenty_day_normalized_feature_id=twenty_day_flow.normalized_feature_id,
+        five_day_normalized_flow=five_day_flow.normalized_flow,
+        twenty_day_normalized_flow=twenty_day_flow.normalized_flow,
+        acceleration=acceleration,
+        complete=not reason_codes,
+        reason_codes=reason_codes,
     )
 
 
@@ -279,3 +363,11 @@ def _latest_aum_by_fund(
         ):
             latest[flow.fund] = flow
     return {fund: flow.aum_usd for fund, flow in latest.items() if flow.aum_usd is not None}
+
+
+def _dedupe_reason_codes(reason_codes: Iterable[str]) -> tuple[str, ...]:
+    deduped = []
+    for reason_code in reason_codes:
+        if reason_code not in deduped:
+            deduped.append(reason_code)
+    return tuple(deduped)

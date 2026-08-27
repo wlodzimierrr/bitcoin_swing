@@ -712,7 +712,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   FlowAccel=
   ETFNorm_5-\frac{ETFNorm_{20}}{4}
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -721,6 +721,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `FLOW_ACCEL` calculation as `ETF_NORM_5D - ETF_NORM_20D / 4`.
+  - Persisted source normalized feature IDs and values through `EtfFlowAccelerationResult.as_record()`.
+  - Propagated upstream ETF flow reason codes and emitted `ETF_FLOW_ACCEL_INPUT_MISSING` when acceleration cannot be calculated.
+  - Added fail-fast validation for mismatched observation dates or incorrect input windows.
 
 #### BTC-063 Implement spot vs perp participation
 - **Description:**
