@@ -1148,8 +1148,15 @@ thresholds, effects, config metadata, completion state, and reason codes.
 
 ## BTC-080 — Implement RV7 / RV20 / RV60
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 1
+
+Implemented as annualized close-to-close realized volatility from
+point-in-time canonical daily bars, with default RV7, RV20, and RV60 helpers.
+Each result persists feature ID, observation time, window, annualization
+periods, realized volatility, source counts, completion state, and stable
+reason codes.
 
 ---
 

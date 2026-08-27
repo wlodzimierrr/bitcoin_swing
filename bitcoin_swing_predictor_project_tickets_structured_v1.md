@@ -944,7 +944,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-080 Implement RV7 / RV20 / RV60
 - **Description:**
   Complete the ticket scope for implement rv7 / rv20 / rv60.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -953,6 +953,16 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added annualized close-to-close realized volatility helpers for RV7, RV20,
+    and RV60 from point-in-time canonical daily bars.
+  - Used trailing daily return windows through the current completed observation
+    and annualized by the configured periods count.
+  - Persisted feature ID, observation time, window, annualization periods,
+    realized volatility, source counts, completion state, and reason codes
+    through `RealizedVolatilityResult.as_record()`.
+  - Emitted stable reason codes for missing input, insufficient history, and
+    non-positive closes instead of silently zero-filling invalid outputs.
 
 #### BTC-081 Implement compression ratio
 - **Description:**

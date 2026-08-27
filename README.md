@@ -119,7 +119,10 @@ Feature generation includes a past-only rolling statistics framework in
 z-scores, percentiles, ATR, and historical normalization. Mean, volatility, and
 ATR use trailing windows through the current completed observation; z-scores,
 percentiles, and historical normalization compare the current observation only
-against prior history.
+against prior history. Volatility feature helpers include
+`rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
+realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
+daily bars.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.
