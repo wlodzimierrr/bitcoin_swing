@@ -15,6 +15,8 @@ from btc_predictor.features import (
     DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS,
     DEFAULT_OI_GROWTH_WINDOW_DAYS,
     DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS,
+    DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS,
+    DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS,
     FUNDING_7D_AVG_FEATURE_ID,
     FUNDING_HEALTH_FEATURE_ID,
     FUNDING_HEALTH_REASON_CODES,
@@ -23,8 +25,13 @@ from btc_predictor.features import (
     OI_GROWTH_HEALTH_FEATURE_ID,
     OI_GROWTH_HEALTH_REASON_CODES,
     OI_GROWTH_ZSCORE_FEATURE_ID,
+    OI_INTENSITY_FEATURE_ID,
+    OI_INTENSITY_PERCENTILE_FEATURE_ID,
+    OI_INTENSITY_REASON_CODES,
+    MarketCapObservation,
     funding_health,
     open_interest_growth_health,
+    open_interest_intensity,
 )
 
 
@@ -87,6 +94,29 @@ def daily_open_interest(values: tuple[str, ...], *, unit: str = "USD") -> tuple[
     )
 
 
+def market_cap(
+    observation_time: datetime,
+    *,
+    market_cap_usd: str,
+    available_at: datetime | None = None,
+    provider: str = "coinmetrics",
+) -> MarketCapObservation:
+    return MarketCapObservation(
+        observation_time=observation_time,
+        market_cap_usd=Decimal(market_cap_usd),
+        provider=provider,
+        available_at=available_at or observation_time + timedelta(minutes=1),
+    )
+
+
+def daily_market_caps(values: tuple[str, ...]) -> tuple[MarketCapObservation, ...]:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    return tuple(
+        market_cap(start + timedelta(days=index), market_cap_usd=value)
+        for index, value in enumerate(values)
+    )
+
+
 def test_funding_health_metadata_is_stable() -> None:
     assert FUNDING_HEALTH_FEATURE_ID == "FUNDING_HEALTH"
     assert FUNDING_7D_AVG_FEATURE_ID == "FUNDING_7D_AVG"
@@ -117,6 +147,18 @@ def test_open_interest_growth_health_metadata_is_stable() -> None:
         "OI_GROWTH_PRIOR_INPUT_MISSING",
         "OI_GROWTH_INSUFFICIENT_HISTORY",
         "OI_GROWTH_ZERO_VARIANCE",
+    )
+
+
+def test_open_interest_intensity_metadata_is_stable() -> None:
+    assert OI_INTENSITY_FEATURE_ID == "OI_INTENSITY"
+    assert OI_INTENSITY_PERCENTILE_FEATURE_ID == "OI_INTENSITY_PERCENTILE_180D"
+    assert DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS == 180
+    assert DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS == 30
+    assert OI_INTENSITY_REASON_CODES == (
+        "OI_INTENSITY_OI_INPUT_MISSING",
+        "OI_INTENSITY_MARKET_CAP_INPUT_MISSING",
+        "OI_INTENSITY_INSUFFICIENT_HISTORY",
     )
 
 
@@ -177,6 +219,34 @@ def test_open_interest_growth_health_uses_rolling_normalized_growth() -> None:
     assert result.reason_codes == ()
 
 
+def test_open_interest_intensity_uses_rolling_percentile() -> None:
+    rows = daily_open_interest(("100", "120", "80", "110", "90", "105"))
+    caps = daily_market_caps(("1000", "1000", "1000", "1000", "1000", "1000"))
+
+    result = open_interest_intensity(
+        tuple(reversed(rows)),
+        tuple(reversed(caps)),
+        as_of=datetime(2026, 1, 6, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_percentile_observations=5,
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "OI_INTENSITY"
+    assert result.observation_time == datetime(2026, 1, 6, tzinfo=UTC)
+    assert result.open_interest_unit == "USD"
+    assert result.percentile_window_days == 180
+    assert result.aggregate_open_interest == Decimal("105")
+    assert result.market_cap_usd == Decimal("1000")
+    assert result.oi_intensity == Decimal("0.105")
+    assert result.oi_intensity_percentile == Decimal("60.0")
+    assert result.health_score == Decimal("40.0")
+    assert result.history_observation_count == 5
+    assert result.open_interest_record_count == 6
+    assert result.market_cap_record_count == 6
+    assert result.reason_codes == ()
+
+
 def test_funding_health_filters_unavailable_future_rows() -> None:
     rows = daily_funding_rates(
         ("0.01", "0.02", "0.03", "0.04", "0.05", "0.06", "0.07", "0.08", "0.09", "0.10")
@@ -229,6 +299,40 @@ def test_open_interest_growth_health_filters_unavailable_future_rows() -> None:
     assert with_future == baseline
 
 
+def test_open_interest_intensity_filters_unavailable_future_rows() -> None:
+    rows = daily_open_interest(("100", "120", "80", "110", "90", "105"))
+    caps = daily_market_caps(("1000", "1000", "1000", "1000", "1000", "1000"))
+    unavailable_oi = open_interest(
+        datetime(2026, 1, 6, tzinfo=UTC),
+        open_interest_value="9999",
+        available_at=datetime(2026, 1, 7, tzinfo=UTC),
+        exchange="okx",
+    )
+    unavailable_cap = market_cap(
+        datetime(2026, 1, 6, tzinfo=UTC),
+        market_cap_usd="1",
+        available_at=datetime(2026, 1, 7, tzinfo=UTC),
+        provider="late-provider",
+    )
+
+    baseline = open_interest_intensity(
+        rows,
+        caps,
+        as_of=datetime(2026, 1, 6, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_percentile_observations=5,
+    ).as_record()
+    with_future = open_interest_intensity(
+        (*rows, unavailable_oi),
+        (*caps, unavailable_cap),
+        as_of=datetime(2026, 1, 6, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_percentile_observations=5,
+    ).as_record()
+
+    assert with_future == baseline
+
+
 def test_funding_health_averages_multiple_exchange_rows_per_timestamp() -> None:
     rows = (
         funding_rate(datetime(2026, 1, 1, tzinfo=UTC), funding_rate_value="0.01"),
@@ -271,6 +375,38 @@ def test_open_interest_growth_health_aggregates_multiple_exchanges_and_filters_u
     assert result.source_record_count == 4
 
 
+def test_open_interest_intensity_aggregates_exchanges_and_filters_units() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    rows = (
+        open_interest(start, open_interest_value="100"),
+        open_interest(start, open_interest_value="50", exchange="okx"),
+        open_interest(start, open_interest_value="999", exchange="bybit", unit="contracts"),
+        open_interest(start + timedelta(days=1), open_interest_value="300"),
+    )
+    caps = (
+        market_cap(start, market_cap_usd="1000"),
+        market_cap(start, market_cap_usd="2000", provider="second-provider"),
+        market_cap(start + timedelta(days=1), market_cap_usd="1500"),
+    )
+
+    result = open_interest_intensity(
+        rows,
+        caps,
+        as_of=start + timedelta(days=1, hours=1),
+        open_interest_unit="USD",
+        percentile_window_days=10,
+        min_percentile_observations=1,
+    )
+
+    assert result.complete is True
+    assert result.aggregate_open_interest == Decimal("300")
+    assert result.market_cap_usd == Decimal("1500")
+    assert result.oi_intensity == Decimal("0.2")
+    assert result.oi_intensity_percentile == Decimal("100")
+    assert result.open_interest_record_count == 3
+    assert result.market_cap_record_count == 3
+
+
 def test_funding_health_reports_missing_input_without_zero_fill() -> None:
     result = funding_health((), as_of=datetime(2026, 1, 10, tzinfo=UTC))
 
@@ -294,6 +430,42 @@ def test_open_interest_growth_health_reports_missing_input_without_zero_fill() -
     assert result.oi_growth is None
     assert result.health_score is None
     assert result.reason_codes == ("OI_GROWTH_INPUT_MISSING",)
+
+
+def test_open_interest_intensity_reports_missing_inputs_without_zero_fill() -> None:
+    result = open_interest_intensity(
+        (),
+        (),
+        as_of=datetime(2026, 1, 10, tzinfo=UTC),
+        open_interest_unit="USD",
+    )
+
+    assert result.complete is False
+    assert result.aggregate_open_interest is None
+    assert result.market_cap_usd is None
+    assert result.oi_intensity is None
+    assert result.health_score is None
+    assert result.reason_codes == (
+        "OI_INTENSITY_OI_INPUT_MISSING",
+        "OI_INTENSITY_MARKET_CAP_INPUT_MISSING",
+    )
+
+
+def test_open_interest_intensity_reports_missing_market_cap() -> None:
+    rows = daily_open_interest(("100", "120"))
+
+    result = open_interest_intensity(
+        rows,
+        (),
+        as_of=datetime(2026, 1, 2, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+    )
+
+    assert result.complete is False
+    assert result.aggregate_open_interest == Decimal("120")
+    assert result.market_cap_usd is None
+    assert result.oi_intensity is None
+    assert result.reason_codes == ("OI_INTENSITY_MARKET_CAP_INPUT_MISSING",)
 
 
 def test_open_interest_growth_health_reports_missing_prior_input() -> None:
@@ -350,6 +522,26 @@ def test_open_interest_growth_health_reports_insufficient_history() -> None:
     assert result.health_score is None
     assert result.history_observation_count == 1
     assert result.reason_codes == ("OI_GROWTH_INSUFFICIENT_HISTORY",)
+
+
+def test_open_interest_intensity_reports_insufficient_history() -> None:
+    rows = daily_open_interest(("100", "120"))
+    caps = daily_market_caps(("1000", "1000"))
+
+    result = open_interest_intensity(
+        rows,
+        caps,
+        as_of=datetime(2026, 1, 2, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_percentile_observations=2,
+    )
+
+    assert result.complete is False
+    assert result.oi_intensity == Decimal("0.12")
+    assert result.oi_intensity_percentile is None
+    assert result.health_score is None
+    assert result.history_observation_count == 1
+    assert result.reason_codes == ("OI_INTENSITY_INSUFFICIENT_HISTORY",)
 
 
 def test_funding_health_reports_zero_variance_history() -> None:
@@ -453,6 +645,37 @@ def test_open_interest_growth_health_exposes_persistable_payload() -> None:
     assert record["reason_codes"] == []
 
 
+def test_open_interest_intensity_exposes_persistable_payload() -> None:
+    rows = daily_open_interest(("100", "120", "80", "110", "90", "105"))
+    caps = daily_market_caps(("1000", "1000", "1000", "1000", "1000", "1000"))
+
+    result = open_interest_intensity(
+        rows,
+        caps,
+        as_of=datetime(2026, 1, 6, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_percentile_observations=5,
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "OI_INTENSITY"
+    assert record["observation_time"] == "2026-01-06T00:00:00+00:00"
+    assert record["percentile_feature_id"] == "OI_INTENSITY_PERCENTILE_180D"
+    assert record["open_interest_unit"] == "USD"
+    assert record["percentile_window_days"] == 180
+    assert record["min_percentile_observations"] == 5
+    assert record["aggregate_open_interest"] == "105"
+    assert record["market_cap_usd"] == "1000"
+    assert record["oi_intensity"] == "0.105"
+    assert record["oi_intensity_percentile"] == "60.0"
+    assert record["health_score"] == "40.0"
+    assert record["history_observation_count"] == 5
+    assert record["open_interest_record_count"] == 6
+    assert record["market_cap_record_count"] == 6
+    assert record["complete"] is True
+    assert record["reason_codes"] == []
+
+
 def test_funding_health_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
         funding_health((), as_of=datetime(2026, 1, 10))
@@ -493,4 +716,39 @@ def test_open_interest_growth_health_rejects_invalid_inputs() -> None:
             as_of=datetime(2026, 1, 10, tzinfo=UTC),
             open_interest_unit="USD",
             growth_zscore_width=Decimal("0"),
+        )
+
+
+def test_open_interest_intensity_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
+        open_interest_intensity((), (), as_of=datetime(2026, 1, 10), open_interest_unit="USD")
+
+    with pytest.raises(ValueError, match="open_interest_unit"):
+        open_interest_intensity(
+            (),
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            open_interest_unit="",
+        )
+
+    with pytest.raises(ValueError, match="percentile_window_days"):
+        open_interest_intensity(
+            (),
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            open_interest_unit="USD",
+            percentile_window_days=0,
+        )
+
+    with pytest.raises(ValueError, match="market_cap_usd"):
+        open_interest_intensity(
+            (),
+            (
+                market_cap(
+                    datetime(2026, 1, 10, tzinfo=UTC),
+                    market_cap_usd="0",
+                ),
+            ),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            open_interest_unit="USD",
         )

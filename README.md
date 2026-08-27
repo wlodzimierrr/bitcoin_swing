@@ -162,6 +162,9 @@ reason codes for missing funding input, insufficient history, or zero-variance
 history. `open_interest_growth_health` implements `OI_GROWTH_HEALTH` from
 `OI_GROWTH_7D = OI_t / OI_t-7 - 1`, using rolling normalization rather than
 fixed permanent thresholds and keeping the selected OI unit explicit.
+`open_interest_intensity` implements `OI_INTENSITY = AggregateOI / BTCMarketCap`
+and converts the point-in-time ratio into a 180-day historical percentile, with
+high percentile readings mapped to lower health scores.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

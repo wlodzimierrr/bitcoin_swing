@@ -1072,12 +1072,18 @@ Use rolling normalization rather than fixed permanent thresholds.
 
 ## BTC-072 — Implement OI intensity
 
-**Priority:** P0  
+**Status:** DONE
+**Priority:** P0
 **Estimate:** 2
 
 \[
 OIIntensity=AggregateOI/BTCMarketCap
 \]
+
+Implemented as a point-in-time feature with explicit market-cap observations,
+selected OI unit filtering, 180-day rolling percentile normalization, inverse
+health scoring for crowded leverage, and stable reason codes for missing inputs
+or insufficient history.
 
 ---
 

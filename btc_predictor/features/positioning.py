@@ -18,6 +18,8 @@ FUNDING_ZSCORE_FEATURE_ID = "FUNDING_ZSCORE_180D"
 OI_GROWTH_HEALTH_FEATURE_ID = "OI_GROWTH_HEALTH"
 OI_GROWTH_FEATURE_ID = "OI_GROWTH_7D"
 OI_GROWTH_ZSCORE_FEATURE_ID = "OI_GROWTH_ZSCORE_180D"
+OI_INTENSITY_FEATURE_ID = "OI_INTENSITY"
+OI_INTENSITY_PERCENTILE_FEATURE_ID = "OI_INTENSITY_PERCENTILE_180D"
 FUNDING_HEALTH_REASON_CODES = (
     "FUNDING_RATE_INPUT_MISSING",
     "FUNDING_HEALTH_INSUFFICIENT_HISTORY",
@@ -29,6 +31,11 @@ OI_GROWTH_HEALTH_REASON_CODES = (
     "OI_GROWTH_INSUFFICIENT_HISTORY",
     "OI_GROWTH_ZERO_VARIANCE",
 )
+OI_INTENSITY_REASON_CODES = (
+    "OI_INTENSITY_OI_INPUT_MISSING",
+    "OI_INTENSITY_MARKET_CAP_INPUT_MISSING",
+    "OI_INTENSITY_INSUFFICIENT_HISTORY",
+)
 DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS = 7
 DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS = 180
 DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS = 30
@@ -39,6 +46,33 @@ DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS = 180
 DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS = 30
 DEFAULT_OI_GROWTH_HEALTH_PREFERRED_ZSCORE = Decimal("0.25")
 DEFAULT_OI_GROWTH_HEALTH_ZSCORE_WIDTH = Decimal("1.25")
+DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS = 180
+DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS = 30
+
+
+@dataclass(frozen=True)
+class MarketCapObservation:
+    observation_time: datetime
+    market_cap_usd: Decimal
+    provider: str
+    available_at: datetime
+
+    def as_record(self) -> dict[str, Any]:
+        observation_time = require_utc_datetime(
+            self.observation_time,
+            "observation_time",
+        )
+        available_at = require_utc_datetime(self.available_at, "available_at")
+        if self.market_cap_usd <= 0:
+            raise ValueError("market_cap_usd must be > 0")
+        if not self.provider.strip():
+            raise ValueError("provider must be non-empty")
+        return {
+            "observation_time": observation_time,
+            "market_cap_usd": self.market_cap_usd,
+            "provider": self.provider,
+            "available_at": available_at,
+        }
 
 
 @dataclass(frozen=True)
@@ -150,6 +184,61 @@ class OpenInterestGrowthHealthResult:
             "health_score": str(self.health_score) if self.health_score is not None else None,
             "history_observation_count": self.history_observation_count,
             "source_record_count": self.source_record_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class OpenInterestIntensityResult:
+    feature_id: str
+    observation_time: datetime
+    percentile_feature_id: str
+    open_interest_unit: str
+    percentile_window_days: int
+    min_percentile_observations: int
+    aggregate_open_interest: Decimal | None
+    market_cap_usd: Decimal | None
+    oi_intensity: Decimal | None
+    oi_intensity_percentile: Decimal | None
+    health_score: Decimal | None
+    history_observation_count: int
+    open_interest_record_count: int
+    market_cap_record_count: int
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ).isoformat(),
+            "percentile_feature_id": self.percentile_feature_id,
+            "open_interest_unit": self.open_interest_unit,
+            "percentile_window_days": self.percentile_window_days,
+            "min_percentile_observations": self.min_percentile_observations,
+            "aggregate_open_interest": (
+                str(self.aggregate_open_interest)
+                if self.aggregate_open_interest is not None
+                else None
+            ),
+            "market_cap_usd": (
+                str(self.market_cap_usd) if self.market_cap_usd is not None else None
+            ),
+            "oi_intensity": (
+                str(self.oi_intensity) if self.oi_intensity is not None else None
+            ),
+            "oi_intensity_percentile": (
+                str(self.oi_intensity_percentile)
+                if self.oi_intensity_percentile is not None
+                else None
+            ),
+            "health_score": str(self.health_score) if self.health_score is not None else None,
+            "history_observation_count": self.history_observation_count,
+            "open_interest_record_count": self.open_interest_record_count,
+            "market_cap_record_count": self.market_cap_record_count,
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
         }
@@ -344,6 +433,96 @@ def open_interest_growth_health(
     )
 
 
+def open_interest_intensity(
+    open_interest_rows: Sequence[OpenInterest],
+    market_caps: Sequence[MarketCapObservation],
+    *,
+    as_of: datetime,
+    open_interest_unit: str,
+    percentile_window_days: int = DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS,
+    min_percentile_observations: int = DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS,
+) -> OpenInterestIntensityResult:
+    """Calculate OI intensity and its rolling historical percentile."""
+
+    signal_time = require_utc_datetime(as_of, "as_of")
+    _validate_oi_intensity_parameters(
+        open_interest_unit=open_interest_unit,
+        percentile_window_days=percentile_window_days,
+        min_percentile_observations=min_percentile_observations,
+    )
+    available_oi_rows = tuple(
+        row
+        for row in open_interest_rows
+        if row.open_interest_unit == open_interest_unit
+        and row.as_record()["available_at"] <= signal_time
+        and row.as_record()["observation_time"] <= signal_time
+    )
+    available_market_caps = tuple(
+        row
+        for row in market_caps
+        if row.as_record()["available_at"] <= signal_time
+        and row.as_record()["observation_time"] <= signal_time
+    )
+    aggregate_by_time = _aggregate_open_interest_by_time(available_oi_rows)
+    market_cap_by_time = _market_cap_by_time(available_market_caps)
+    intensity_by_time = _open_interest_intensity_by_time(
+        aggregate_by_time,
+        market_cap_by_time,
+    )
+    observation_time = _latest_intensity_observation_time(
+        intensity_by_time,
+        aggregate_by_time,
+        market_cap_by_time,
+        signal_time=signal_time,
+    )
+    aggregate_open_interest = aggregate_by_time.get(observation_time)
+    market_cap_usd = market_cap_by_time.get(observation_time)
+    oi_intensity = intensity_by_time.get(observation_time)
+    history = _oi_intensity_history(
+        intensity_by_time,
+        observation_time=observation_time,
+        percentile_window_days=percentile_window_days,
+    )
+
+    reason_codes = []
+    if aggregate_open_interest is None:
+        reason_codes.append("OI_INTENSITY_OI_INPUT_MISSING")
+    if market_cap_usd is None:
+        reason_codes.append("OI_INTENSITY_MARKET_CAP_INPUT_MISSING")
+
+    oi_intensity_percentile = None
+    if oi_intensity is not None:
+        if len(history) < min_percentile_observations:
+            reason_codes.append("OI_INTENSITY_INSUFFICIENT_HISTORY")
+        else:
+            oi_intensity_percentile = _percentile_rank(oi_intensity, history)
+
+    health_score = (
+        Decimal("100") - oi_intensity_percentile
+        if oi_intensity_percentile is not None
+        else None
+    )
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    return OpenInterestIntensityResult(
+        feature_id=OI_INTENSITY_FEATURE_ID,
+        observation_time=observation_time,
+        percentile_feature_id=OI_INTENSITY_PERCENTILE_FEATURE_ID,
+        open_interest_unit=open_interest_unit,
+        percentile_window_days=percentile_window_days,
+        min_percentile_observations=min_percentile_observations,
+        aggregate_open_interest=aggregate_open_interest,
+        market_cap_usd=market_cap_usd,
+        oi_intensity=oi_intensity,
+        oi_intensity_percentile=oi_intensity_percentile,
+        health_score=health_score,
+        history_observation_count=len(history),
+        open_interest_record_count=len(available_oi_rows),
+        market_cap_record_count=len(available_market_caps),
+        complete=not reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
 def _validate_funding_health_parameters(
     *,
     average_window_days: int,
@@ -379,6 +558,20 @@ def _validate_oi_growth_health_parameters(
         raise ValueError("min_zscore_observations must be >= 1")
     if growth_zscore_width <= 0:
         raise ValueError("growth_zscore_width must be > 0")
+
+
+def _validate_oi_intensity_parameters(
+    *,
+    open_interest_unit: str,
+    percentile_window_days: int,
+    min_percentile_observations: int,
+) -> None:
+    if not open_interest_unit.strip():
+        raise ValueError("open_interest_unit must be non-empty")
+    if percentile_window_days < 1:
+        raise ValueError("percentile_window_days must be >= 1")
+    if min_percentile_observations < 1:
+        raise ValueError("min_percentile_observations must be >= 1")
 
 
 def _funding_averages_by_time(
@@ -458,6 +651,47 @@ def _aggregate_open_interest_by_time(
     return aggregate_by_time
 
 
+def _market_cap_by_time(
+    market_caps: Sequence[MarketCapObservation],
+) -> dict[datetime, Decimal]:
+    values_by_time: dict[datetime, list[Decimal]] = {}
+    for row in market_caps:
+        record = row.as_record()
+        observation_time = record["observation_time"]
+        values_by_time.setdefault(observation_time, []).append(record["market_cap_usd"])
+    return {
+        observation_time: _average(tuple(values))
+        for observation_time, values in values_by_time.items()
+    }
+
+
+def _open_interest_intensity_by_time(
+    aggregate_by_time: dict[datetime, Decimal],
+    market_cap_by_time: dict[datetime, Decimal],
+) -> dict[datetime, Decimal]:
+    return {
+        observation_time: aggregate_by_time[observation_time]
+        / market_cap_by_time[observation_time]
+        for observation_time in sorted(set(aggregate_by_time) & set(market_cap_by_time))
+    }
+
+
+def _latest_intensity_observation_time(
+    intensity_by_time: dict[datetime, Decimal],
+    aggregate_by_time: dict[datetime, Decimal],
+    market_cap_by_time: dict[datetime, Decimal],
+    *,
+    signal_time: datetime,
+) -> datetime:
+    if intensity_by_time:
+        return max(intensity_by_time)
+    if aggregate_by_time:
+        return max(aggregate_by_time)
+    if market_cap_by_time:
+        return max(market_cap_by_time)
+    return signal_time
+
+
 def _prior_open_interest(
     aggregate_by_time: dict[datetime, Decimal],
     *,
@@ -505,6 +739,20 @@ def _oi_growth_history(
     )
 
 
+def _oi_intensity_history(
+    intensity_by_time: dict[datetime, Decimal],
+    *,
+    observation_time: datetime,
+    percentile_window_days: int,
+) -> tuple[Decimal, ...]:
+    window_start = observation_time - timedelta(days=percentile_window_days)
+    return tuple(
+        intensity
+        for historical_time, intensity in sorted(intensity_by_time.items())
+        if window_start <= historical_time < observation_time
+    )
+
+
 def _zscore(value: Decimal, history: Sequence[Decimal]) -> Decimal | None:
     mean = _average(history)
     variance = sum(((item - mean) ** 2 for item in history), Decimal("0")) / Decimal(
@@ -514,6 +762,15 @@ def _zscore(value: Decimal, history: Sequence[Decimal]) -> Decimal | None:
     if volatility == 0:
         return None
     return (value - mean) / volatility
+
+
+def _percentile_rank(value: Decimal, history: Sequence[Decimal]) -> Decimal:
+    if not history:
+        raise ValueError("history must contain at least one observation")
+    less_count = sum(1 for item in history if item < value)
+    equal_count = sum(1 for item in history if item == value)
+    rank = Decimal(less_count) + (Decimal("0.5") * Decimal(equal_count))
+    return (rank / Decimal(len(history))) * Decimal("100")
 
 
 def _funding_health_score(
