@@ -849,7 +849,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   \[
   OIIntensity=AggregateOI/BTCMarketCap
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -858,11 +858,17 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `OI_INTENSITY = AggregateOI / BTCMarketCap` as a point-in-time positioning feature.
+  - Introduced explicit `MarketCapObservation` inputs so recomputation does not depend on hidden live data.
+  - Aggregated OI by timestamp for the selected unit and converted the ratio into a 180-day rolling historical percentile.
+  - Mapped high OI-intensity percentile readings to lower leverage health scores.
+  - Persisted aggregate OI, market cap, intensity, percentile, health score, counts, and stable reason codes through `OpenInterestIntensityResult.as_record()`.
 
 #### BTC-073 Implement futures-basis health
 - **Description:**
   Complete the ticket scope for implement futures-basis health.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -871,6 +877,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `FUTURES_BASIS_HEALTH` using point-in-time futures-basis rows.
+  - Averaged raw and annualized basis per timestamp across available contracts/exchanges.
+  - Rolling-normalized annualized basis with a 180-day prior-history z-score.
+  - Applied a configurable Gaussian health curve that prefers moderately positive basis and penalizes unusually weak or crowded readings.
+  - Persisted basis averages, z-score, health-curve parameters, counts, and reason codes through `FuturesBasisHealthResult.as_record()`.
 
 #### BTC-074 Implement Positioning Score
 - **Description:**
@@ -881,7 +893,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   +0.20BasisHealth
   +0.15LeverageHealth
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -890,6 +902,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `POSITIONING_SCORE` as the rulebook weighted composite of funding, OI, basis, and leverage health components.
+  - Added versioned `[scoring_weights.positioning]` config with exact component-key validation at startup.
+  - Persisted inputs, weights, per-component contributions, config metadata, interpretation, and reason codes through `PositioningScoreResult.as_record()`.
+  - Missing component inputs are not zero-filled; incomplete scores emit `POSITIONING_SCORE_INPUT_MISSING`.
+  - In Phase 1, `OIHealth` maps to OI growth health and `LeverageHealth` maps to OI intensity health.
 
 #### BTC-075 Implement CROWDING flag
 - **Description:**
