@@ -167,7 +167,10 @@ and converts the point-in-time ratio into a 180-day historical percentile, with
 high percentile readings mapped to lower health scores. `futures_basis_health`
 implements `FUTURES_BASIS_HEALTH` from average annualized futures basis and its
 180-day rolling z-score, preferring moderately positive basis while penalizing
-unusually weak or crowded readings.
+unusually weak or crowded readings. `calculate_positioning_score` implements the
+rulebook composite from funding, OI, basis, and leverage health components,
+using versioned strategy-config weights and persisting contributions plus config
+metadata.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

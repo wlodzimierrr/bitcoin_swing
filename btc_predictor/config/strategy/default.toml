@@ -140,6 +140,12 @@ flow = 0.25
 volatility = 0.15
 positioning = 0.15
 
+[scoring_weights.positioning]
+funding_health = 0.35
+oi_health = 0.30
+basis_health = 0.20
+leverage_health = 0.15
+
 [backtest]
 initial_cash = 100000
 fee_bps = 10

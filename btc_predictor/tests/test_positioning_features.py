@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 
+from btc_predictor.config import load_strategy_config
 from btc_predictor.data import FundingRate, FuturesBasis, OpenInterest
 from btc_predictor.features import (
     DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS,
@@ -21,6 +22,7 @@ from btc_predictor.features import (
     DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS,
     DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS,
     DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS,
+    DEFAULT_POSITIONING_SCORE_WEIGHTS,
     FUNDING_7D_AVG_FEATURE_ID,
     FUNDING_HEALTH_FEATURE_ID,
     FUNDING_HEALTH_REASON_CODES,
@@ -36,7 +38,12 @@ from btc_predictor.features import (
     OI_INTENSITY_FEATURE_ID,
     OI_INTENSITY_PERCENTILE_FEATURE_ID,
     OI_INTENSITY_REASON_CODES,
+    POSITIONING_SCORE_COMPONENT_IDS,
+    POSITIONING_SCORE_FEATURE_ID,
+    POSITIONING_SCORE_REASON_CODES,
     MarketCapObservation,
+    PositioningScoreInput,
+    calculate_positioning_score,
     futures_basis_health,
     funding_health,
     open_interest_growth_health,
@@ -221,6 +228,23 @@ def test_open_interest_intensity_metadata_is_stable() -> None:
         "OI_INTENSITY_MARKET_CAP_INPUT_MISSING",
         "OI_INTENSITY_INSUFFICIENT_HISTORY",
     )
+
+
+def test_positioning_score_metadata_is_stable() -> None:
+    assert POSITIONING_SCORE_FEATURE_ID == "POSITIONING_SCORE"
+    assert POSITIONING_SCORE_COMPONENT_IDS == (
+        "funding_health",
+        "oi_health",
+        "basis_health",
+        "leverage_health",
+    )
+    assert DEFAULT_POSITIONING_SCORE_WEIGHTS == {
+        "funding_health": Decimal("0.35"),
+        "oi_health": Decimal("0.30"),
+        "basis_health": Decimal("0.20"),
+        "leverage_health": Decimal("0.15"),
+    }
+    assert POSITIONING_SCORE_REASON_CODES == ("POSITIONING_SCORE_INPUT_MISSING",)
 
 
 def test_funding_health_uses_seven_day_average_and_rolling_zscore() -> None:
@@ -932,6 +956,165 @@ def test_open_interest_intensity_exposes_persistable_payload() -> None:
     assert record["reason_codes"] == []
 
 
+def test_calculate_positioning_score_uses_rulebook_weights() -> None:
+    result = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("80"),
+            oi_health=Decimal("70"),
+            basis_health=Decimal("60"),
+            leverage_health=Decimal("40"),
+        ),
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "POSITIONING_SCORE"
+    assert result.score == Decimal("67.00")
+    assert result.interpretation == "TRADE_SUPPORTIVE"
+    assert result.reason_code == "POSITIONING_SCORE_TRADE_SUPPORTIVE"
+    assert result.weights == {
+        "funding_health": Decimal("0.35"),
+        "oi_health": Decimal("0.30"),
+        "basis_health": Decimal("0.20"),
+        "leverage_health": Decimal("0.15"),
+    }
+    assert result.contributions == {
+        "funding_health": Decimal("28.00"),
+        "oi_health": Decimal("21.00"),
+        "basis_health": Decimal("12.00"),
+        "leverage_health": Decimal("6.00"),
+    }
+    assert result.reason_codes == ()
+
+
+def test_calculate_positioning_score_interprets_rulebook_thresholds() -> None:
+    add_supportive = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("70"),
+            oi_health=Decimal("70"),
+            basis_health=Decimal("70"),
+            leverage_health=Decimal("70"),
+        ),
+    )
+    weak = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("40"),
+            oi_health=Decimal("40"),
+            basis_health=Decimal("40"),
+            leverage_health=Decimal("40"),
+        ),
+    )
+    stressed = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("39"),
+            oi_health=Decimal("39"),
+            basis_health=Decimal("39"),
+            leverage_health=Decimal("39"),
+        ),
+    )
+
+    assert add_supportive.interpretation == "ADD_SUPPORTIVE"
+    assert weak.interpretation == "WEAK_POSITIONING"
+    assert stressed.interpretation == "STRESSED_POSITIONING"
+
+
+def test_calculate_positioning_score_does_not_fill_missing_inputs() -> None:
+    result = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("80"),
+            oi_health=None,
+            basis_health=Decimal("60"),
+            leverage_health=Decimal("40"),
+        ),
+    )
+
+    assert result.complete is False
+    assert result.score is None
+    assert result.interpretation is None
+    assert result.reason_code is None
+    assert result.contributions == {
+        "funding_health": Decimal("28.00"),
+        "oi_health": None,
+        "basis_health": Decimal("12.00"),
+        "leverage_health": Decimal("6.00"),
+    }
+    assert result.reason_codes == ("POSITIONING_SCORE_INPUT_MISSING",)
+
+
+def test_calculate_positioning_score_exposes_persistable_payload() -> None:
+    result = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("80"),
+            oi_health=Decimal("70"),
+            basis_health=Decimal("60"),
+            leverage_health=Decimal("40"),
+        ),
+        config_metadata={
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "POSITIONING_SCORE"
+    assert record["score"] == "67.00"
+    assert record["interpretation"] == "TRADE_SUPPORTIVE"
+    assert record["reason_code"] == "POSITIONING_SCORE_TRADE_SUPPORTIVE"
+    assert record["inputs"] == {
+        "funding_health": "80",
+        "oi_health": "70",
+        "basis_health": "60",
+        "leverage_health": "40",
+    }
+    assert record["weights"] == {
+        "funding_health": "0.35",
+        "oi_health": "0.30",
+        "basis_health": "0.20",
+        "leverage_health": "0.15",
+    }
+    assert record["contributions"] == {
+        "funding_health": "28.00",
+        "oi_health": "21.00",
+        "basis_health": "12.00",
+        "leverage_health": "6.00",
+    }
+    assert record["config_metadata"] == {
+        "config_version": "strategy_config_v1",
+        "strategy_version": "swing_v1.0",
+        "parameter_set_id": "default_phase1",
+    }
+    assert record["complete"] is True
+    assert record["reason_codes"] == []
+
+
+def test_calculate_positioning_score_uses_weights_from_versioned_strategy_config() -> None:
+    config = load_strategy_config()
+
+    result = calculate_positioning_score(
+        PositioningScoreInput(
+            funding_health=Decimal("80"),
+            oi_health=Decimal("70"),
+            basis_health=Decimal("60"),
+            leverage_health=Decimal("40"),
+        ),
+        weights=config.scoring_weights.positioning,
+        config_metadata=config.run_metadata(),
+    )
+
+    assert result.score == Decimal("67.00")
+    assert result.weights == {
+        "funding_health": Decimal("0.35"),
+        "oi_health": Decimal("0.3"),
+        "basis_health": Decimal("0.2"),
+        "leverage_health": Decimal("0.15"),
+    }
+    assert result.config_metadata == {
+        "config_version": "strategy_config_v1",
+        "strategy_version": "swing_v1.0",
+        "parameter_set_id": "default_phase1",
+    }
+
+
 def test_funding_health_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
         funding_health((), as_of=datetime(2026, 1, 10))
@@ -1026,4 +1209,49 @@ def test_open_interest_intensity_rejects_invalid_inputs() -> None:
             ),
             as_of=datetime(2026, 1, 10, tzinfo=UTC),
             open_interest_unit="USD",
+        )
+
+
+def test_calculate_positioning_score_rejects_invalid_weights() -> None:
+    with pytest.raises(ValueError, match="positioning"):
+        calculate_positioning_score(
+            PositioningScoreInput(
+                funding_health=Decimal("80"),
+                oi_health=Decimal("70"),
+                basis_health=Decimal("60"),
+                leverage_health=Decimal("40"),
+            ),
+            weights={
+                "funding_health": 0.35,
+                "oi_health": 0.30,
+                "basis_health": 0.20,
+            },
+        )
+
+    with pytest.raises(ValueError, match="sum to 1"):
+        calculate_positioning_score(
+            PositioningScoreInput(
+                funding_health=Decimal("80"),
+                oi_health=Decimal("70"),
+                basis_health=Decimal("60"),
+                leverage_health=Decimal("40"),
+            ),
+            weights={
+                "funding_health": 0.35,
+                "oi_health": 0.30,
+                "basis_health": 0.20,
+                "leverage_health": 0.10,
+            },
+        )
+
+
+def test_calculate_positioning_score_rejects_out_of_range_inputs() -> None:
+    with pytest.raises(ValueError, match="funding_health"):
+        calculate_positioning_score(
+            PositioningScoreInput(
+                funding_health=Decimal("101"),
+                oi_health=Decimal("70"),
+                basis_health=Decimal("60"),
+                leverage_health=Decimal("40"),
+            ),
         )

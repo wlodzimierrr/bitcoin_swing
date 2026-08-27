@@ -21,6 +21,12 @@ FULL_FLOW_WEIGHT_KEYS = (
     "spot_dominance",
 )
 CORE_FLOW_WEIGHT_KEYS = ("etf_norm_5", "etf_norm_20", "flow_accel")
+POSITIONING_WEIGHT_KEYS = (
+    "funding_health",
+    "oi_health",
+    "basis_health",
+    "leverage_health",
+)
 
 
 class StrategyConfigError(ValueError):
@@ -369,6 +375,7 @@ class ScoringWeights:
     full_flow: dict[str, float]
     core_flow: dict[str, float]
     core_regime: dict[str, float]
+    positioning: dict[str, float]
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -387,6 +394,11 @@ class ScoringWeights:
                 expected_keys=CORE_FLOW_WEIGHT_KEYS,
             ),
             core_regime=_required_weight_mapping(data, "core_regime"),
+            positioning=_required_weight_mapping(
+                data,
+                "positioning",
+                expected_keys=POSITIONING_WEIGHT_KEYS,
+            ),
         )
 
 

@@ -1103,6 +1103,7 @@ history.
 
 ## BTC-074 — Implement Positioning Score
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
 
@@ -1113,6 +1114,12 @@ PositioningScore=
 +0.20BasisHealth
 +0.15LeverageHealth
 \]
+
+Implemented as `POSITIONING_SCORE` using versioned strategy-config weights,
+explicit 0-100 health inputs, per-component contributions, no missing-input
+zero filling, stable reason codes, and persisted config metadata. In Phase 1,
+`OIHealth` maps to OI growth health and `LeverageHealth` maps to OI intensity
+health.
 
 ---
 

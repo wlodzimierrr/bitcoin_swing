@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from btc_predictor.config import StrategyConfigError, load_strategy_config
+from btc_predictor.config.strategy import DEFAULT_STRATEGY_CONFIG_PATH
 
 
 def test_loads_default_strategy_config() -> None:
@@ -26,6 +27,8 @@ def test_loads_default_strategy_config() -> None:
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
     assert config.scoring_weights.core_flow["etf_norm_5"] == 0.4
+    assert config.scoring_weights.positioning["funding_health"] == 0.35
+    assert config.scoring_weights.positioning["leverage_health"] == 0.15
     assert config.backtest.max_trades_per_year == 24
 
 
@@ -205,4 +208,18 @@ execution_timing = "next_bar"
     )
 
     with pytest.raises(StrategyConfigError, match="full_flow"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_positioning_weight_keys_fail_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_positioning_weights.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "leverage_health = 0.15",
+            "leverage_heath = 0.15",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="positioning"):
         load_strategy_config(config_path)

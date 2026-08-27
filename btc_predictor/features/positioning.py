@@ -28,6 +28,19 @@ OI_GROWTH_FEATURE_ID = "OI_GROWTH_7D"
 OI_GROWTH_ZSCORE_FEATURE_ID = "OI_GROWTH_ZSCORE_180D"
 OI_INTENSITY_FEATURE_ID = "OI_INTENSITY"
 OI_INTENSITY_PERCENTILE_FEATURE_ID = "OI_INTENSITY_PERCENTILE_180D"
+POSITIONING_SCORE_FEATURE_ID = "POSITIONING_SCORE"
+POSITIONING_SCORE_COMPONENT_IDS = (
+    "funding_health",
+    "oi_health",
+    "basis_health",
+    "leverage_health",
+)
+DEFAULT_POSITIONING_SCORE_WEIGHTS = {
+    "funding_health": Decimal("0.35"),
+    "oi_health": Decimal("0.30"),
+    "basis_health": Decimal("0.20"),
+    "leverage_health": Decimal("0.15"),
+}
 FUNDING_HEALTH_REASON_CODES = (
     "FUNDING_RATE_INPUT_MISSING",
     "FUNDING_HEALTH_INSUFFICIENT_HISTORY",
@@ -48,6 +61,9 @@ OI_INTENSITY_REASON_CODES = (
     "OI_INTENSITY_OI_INPUT_MISSING",
     "OI_INTENSITY_MARKET_CAP_INPUT_MISSING",
     "OI_INTENSITY_INSUFFICIENT_HISTORY",
+)
+POSITIONING_SCORE_REASON_CODES = (
+    "POSITIONING_SCORE_INPUT_MISSING",
 )
 DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS = 7
 DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS = 180
@@ -309,6 +325,64 @@ class OpenInterestIntensityResult:
             "history_observation_count": self.history_observation_count,
             "open_interest_record_count": self.open_interest_record_count,
             "market_cap_record_count": self.market_cap_record_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class PositioningScoreInput:
+    funding_health: Decimal | None
+    oi_health: Decimal | None
+    basis_health: Decimal | None
+    leverage_health: Decimal | None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "funding_health": (
+                str(self.funding_health) if self.funding_health is not None else None
+            ),
+            "oi_health": str(self.oi_health) if self.oi_health is not None else None,
+            "basis_health": (
+                str(self.basis_health) if self.basis_health is not None else None
+            ),
+            "leverage_health": (
+                str(self.leverage_health) if self.leverage_health is not None else None
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class PositioningScoreResult:
+    feature_id: str
+    score: Decimal | None
+    interpretation: str | None
+    inputs: PositioningScoreInput
+    weights: dict[str, Decimal]
+    contributions: dict[str, Decimal | None]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    @property
+    def reason_code(self) -> str | None:
+        if self.interpretation is None:
+            return None
+        return f"{self.feature_id}_{self.interpretation}"
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "score": str(self.score) if self.score is not None else None,
+            "interpretation": self.interpretation,
+            "reason_code": self.reason_code,
+            "inputs": self.inputs.as_record(),
+            "weights": {key: str(value) for key, value in self.weights.items()},
+            "contributions": {
+                key: str(value) if value is not None else None
+                for key, value in self.contributions.items()
+            },
+            "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
         }
@@ -674,6 +748,51 @@ def open_interest_intensity(
     )
 
 
+def calculate_positioning_score(
+    inputs: PositioningScoreInput,
+    *,
+    weights: dict[str, Any] | None = None,
+    config_metadata: dict[str, str] | None = None,
+) -> PositioningScoreResult:
+    """Calculate the rulebook positioning score from health components."""
+
+    selected_weights = _positioning_score_weights(weights)
+    input_values = _positioning_score_input_values(inputs)
+    missing_components = [
+        component_id
+        for component_id in POSITIONING_SCORE_COMPONENT_IDS
+        if input_values[component_id] is None
+    ]
+    reason_codes = []
+    if missing_components:
+        reason_codes.append("POSITIONING_SCORE_INPUT_MISSING")
+
+    contributions = {
+        component_id: (
+            selected_weights[component_id] * input_values[component_id]
+            if input_values[component_id] is not None
+            else None
+        )
+        for component_id in POSITIONING_SCORE_COMPONENT_IDS
+    }
+    score = (
+        sum((value for value in contributions.values() if value is not None), Decimal("0"))
+        if not missing_components
+        else None
+    )
+    return PositioningScoreResult(
+        feature_id=POSITIONING_SCORE_FEATURE_ID,
+        score=score,
+        interpretation=_positioning_score_interpretation(score),
+        inputs=inputs,
+        weights=selected_weights,
+        contributions=contributions,
+        config_metadata=dict(config_metadata or {}),
+        complete=score is not None,
+        reason_codes=tuple(reason_codes),
+    )
+
+
 def _validate_funding_health_parameters(
     *,
     average_window_days: int,
@@ -737,6 +856,46 @@ def _validate_oi_intensity_parameters(
         raise ValueError("percentile_window_days must be >= 1")
     if min_percentile_observations < 1:
         raise ValueError("min_percentile_observations must be >= 1")
+
+
+def _positioning_score_weights(weights: dict[str, Any] | None) -> dict[str, Decimal]:
+    if weights is None:
+        return dict(DEFAULT_POSITIONING_SCORE_WEIGHTS)
+
+    missing = set(POSITIONING_SCORE_COMPONENT_IDS) - set(weights)
+    extra = set(weights) - set(POSITIONING_SCORE_COMPONENT_IDS)
+    if missing or extra:
+        raise ValueError(
+            "positioning weights must exactly match "
+            f"{POSITIONING_SCORE_COMPONENT_IDS}; "
+            f"missing={sorted(missing)}, extra={sorted(extra)}"
+        )
+    decimal_weights = {
+        component_id: _decimal(weights[component_id])
+        for component_id in POSITIONING_SCORE_COMPONENT_IDS
+    }
+    if any(weight < 0 for weight in decimal_weights.values()):
+        raise ValueError("positioning weights must be non-negative")
+    if sum(decimal_weights.values(), Decimal("0")) != Decimal("1"):
+        raise ValueError("positioning weights must sum to 1")
+    return decimal_weights
+
+
+def _positioning_score_input_values(
+    inputs: PositioningScoreInput,
+) -> dict[str, Decimal | None]:
+    values = {
+        "funding_health": inputs.funding_health,
+        "oi_health": inputs.oi_health,
+        "basis_health": inputs.basis_health,
+        "leverage_health": inputs.leverage_health,
+    }
+    return {
+        component_id: (
+            _score_decimal(value, component_id) if value is not None else None
+        )
+        for component_id, value in values.items()
+    }
 
 
 def _funding_averages_by_time(
@@ -969,6 +1128,29 @@ def _percentile_rank(value: Decimal, history: Sequence[Decimal]) -> Decimal:
     equal_count = sum(1 for item in history if item == value)
     rank = Decimal(less_count) + (Decimal("0.5") * Decimal(equal_count))
     return (rank / Decimal(len(history))) * Decimal("100")
+
+
+def _positioning_score_interpretation(score: Decimal | None) -> str | None:
+    if score is None:
+        return None
+    if score >= Decimal("70"):
+        return "ADD_SUPPORTIVE"
+    if score >= Decimal("60"):
+        return "TRADE_SUPPORTIVE"
+    if score >= Decimal("40"):
+        return "WEAK_POSITIONING"
+    return "STRESSED_POSITIONING"
+
+
+def _score_decimal(value: Any, name: str) -> Decimal:
+    decimal_value = _decimal(value)
+    if decimal_value < 0 or decimal_value > 100:
+        raise ValueError(f"{name} must be between 0 and 100")
+    return decimal_value
+
+
+def _decimal(value: Any) -> Decimal:
+    return Decimal(str(value))
 
 
 def _funding_health_score(
