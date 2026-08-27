@@ -146,6 +146,12 @@ oi_health = 0.30
 basis_health = 0.20
 leverage_health = 0.15
 
+[positioning_flags.crowding]
+funding_zscore_min = 2.0
+basis_zscore_min = 2.0
+oi_intensity_percentile_min = 90
+entry_quality_penalty = 10
+
 [backtest]
 initial_cash = 100000
 fee_bps = 10

@@ -29,6 +29,10 @@ def test_loads_default_strategy_config() -> None:
     assert config.scoring_weights.core_flow["etf_norm_5"] == 0.4
     assert config.scoring_weights.positioning["funding_health"] == 0.35
     assert config.scoring_weights.positioning["leverage_health"] == 0.15
+    assert config.positioning_flags.crowding.funding_zscore_min == 2.0
+    assert config.positioning_flags.crowding.basis_zscore_min == 2.0
+    assert config.positioning_flags.crowding.oi_intensity_percentile_min == 90
+    assert config.positioning_flags.crowding.entry_quality_penalty == 10
     assert config.backtest.max_trades_per_year == 24
 
 
@@ -222,4 +226,18 @@ def test_invalid_positioning_weight_keys_fail_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="positioning"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_crowding_flag_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_crowding_flag.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "oi_intensity_percentile_min = 90",
+            "oi_intensity_percentile_min = 120",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="oi_intensity_percentile_min"):
         load_strategy_config(config_path)

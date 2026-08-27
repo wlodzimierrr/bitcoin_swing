@@ -1125,6 +1125,7 @@ health.
 
 ## BTC-075 — Implement CROWDING flag
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 2
 
@@ -1135,6 +1136,11 @@ NO ADD
 REDUCE ENTRY QUALITY
 OPTIONAL TIGHTER PROFIT PROTECTION
 ```
+
+Implemented as `CROWDING`, triggered by excessive funding z-score,
+futures-basis z-score, or OI-intensity percentile. Thresholds and entry-quality
+penalty are loaded from versioned strategy config. The result persists inputs,
+thresholds, effects, config metadata, completion state, and reason codes.
 
 ---
 

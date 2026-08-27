@@ -170,7 +170,10 @@ implements `FUTURES_BASIS_HEALTH` from average annualized futures basis and its
 unusually weak or crowded readings. `calculate_positioning_score` implements the
 rulebook composite from funding, OI, basis, and leverage health components,
 using versioned strategy-config weights and persisting contributions plus config
-metadata.
+metadata. `calculate_crowding_flag` emits the `CROWDING` flag from excessive
+funding, basis, or leverage readings, with configured thresholds and persisted
+effects for blocking adds, reducing entry quality, and optional profit
+protection tightening.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

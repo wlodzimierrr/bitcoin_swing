@@ -29,6 +29,12 @@ OI_GROWTH_ZSCORE_FEATURE_ID = "OI_GROWTH_ZSCORE_180D"
 OI_INTENSITY_FEATURE_ID = "OI_INTENSITY"
 OI_INTENSITY_PERCENTILE_FEATURE_ID = "OI_INTENSITY_PERCENTILE_180D"
 POSITIONING_SCORE_FEATURE_ID = "POSITIONING_SCORE"
+CROWDING_FLAG_FEATURE_ID = "CROWDING"
+CROWDING_FLAG_EFFECTS = (
+    "NO_ADD",
+    "REDUCE_ENTRY_QUALITY",
+    "OPTIONAL_TIGHTER_PROFIT_PROTECTION",
+)
 POSITIONING_SCORE_COMPONENT_IDS = (
     "funding_health",
     "oi_health",
@@ -65,6 +71,12 @@ OI_INTENSITY_REASON_CODES = (
 POSITIONING_SCORE_REASON_CODES = (
     "POSITIONING_SCORE_INPUT_MISSING",
 )
+CROWDING_FLAG_REASON_CODES = (
+    "CROWDING_FUNDING_EXCESS",
+    "CROWDING_BASIS_EXCESS",
+    "CROWDING_LEVERAGE_EXCESS",
+    "CROWDING_INPUT_MISSING",
+)
 DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS = 7
 DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS = 180
 DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS = 30
@@ -81,6 +93,10 @@ DEFAULT_OI_GROWTH_HEALTH_PREFERRED_ZSCORE = Decimal("0.25")
 DEFAULT_OI_GROWTH_HEALTH_ZSCORE_WIDTH = Decimal("1.25")
 DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS = 180
 DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS = 30
+DEFAULT_CROWDING_FUNDING_ZSCORE_MIN = Decimal("2")
+DEFAULT_CROWDING_BASIS_ZSCORE_MIN = Decimal("2")
+DEFAULT_CROWDING_OI_INTENSITY_PERCENTILE_MIN = Decimal("90")
+DEFAULT_CROWDING_ENTRY_QUALITY_PENALTY = Decimal("10")
 
 
 @dataclass(frozen=True)
@@ -382,6 +398,58 @@ class PositioningScoreResult:
                 key: str(value) if value is not None else None
                 for key, value in self.contributions.items()
             },
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class CrowdingFlagInput:
+    funding_zscore: Decimal | None
+    basis_zscore: Decimal | None
+    oi_intensity_percentile: Decimal | None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "funding_zscore": (
+                str(self.funding_zscore) if self.funding_zscore is not None else None
+            ),
+            "basis_zscore": (
+                str(self.basis_zscore) if self.basis_zscore is not None else None
+            ),
+            "oi_intensity_percentile": (
+                str(self.oi_intensity_percentile)
+                if self.oi_intensity_percentile is not None
+                else None
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class CrowdingFlagResult:
+    feature_id: str
+    flagged: bool
+    effects: tuple[str, ...]
+    entry_quality_penalty: Decimal
+    funding_zscore_min: Decimal
+    basis_zscore_min: Decimal
+    oi_intensity_percentile_min: Decimal
+    inputs: CrowdingFlagInput
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "flagged": self.flagged,
+            "effects": list(self.effects),
+            "entry_quality_penalty": str(self.entry_quality_penalty),
+            "funding_zscore_min": str(self.funding_zscore_min),
+            "basis_zscore_min": str(self.basis_zscore_min),
+            "oi_intensity_percentile_min": str(self.oi_intensity_percentile_min),
+            "inputs": self.inputs.as_record(),
             "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
@@ -793,6 +861,65 @@ def calculate_positioning_score(
     )
 
 
+def calculate_crowding_flag(
+    inputs: CrowdingFlagInput,
+    *,
+    funding_zscore_min: Any = DEFAULT_CROWDING_FUNDING_ZSCORE_MIN,
+    basis_zscore_min: Any = DEFAULT_CROWDING_BASIS_ZSCORE_MIN,
+    oi_intensity_percentile_min: Any = DEFAULT_CROWDING_OI_INTENSITY_PERCENTILE_MIN,
+    entry_quality_penalty: Any = DEFAULT_CROWDING_ENTRY_QUALITY_PENALTY,
+    config_metadata: dict[str, str] | None = None,
+) -> CrowdingFlagResult:
+    """Flag excessive leverage, funding, or futures-basis crowding."""
+
+    funding_threshold = _non_negative_decimal(
+        funding_zscore_min,
+        "funding_zscore_min",
+    )
+    basis_threshold = _non_negative_decimal(basis_zscore_min, "basis_zscore_min")
+    oi_threshold = _score_decimal(
+        oi_intensity_percentile_min,
+        "oi_intensity_percentile_min",
+    )
+    penalty = _score_decimal(entry_quality_penalty, "entry_quality_penalty")
+
+    input_values = _crowding_input_values(inputs)
+    reason_codes = []
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("CROWDING_INPUT_MISSING")
+    if (
+        input_values["funding_zscore"] is not None
+        and input_values["funding_zscore"] >= funding_threshold
+    ):
+        reason_codes.append("CROWDING_FUNDING_EXCESS")
+    if (
+        input_values["basis_zscore"] is not None
+        and input_values["basis_zscore"] >= basis_threshold
+    ):
+        reason_codes.append("CROWDING_BASIS_EXCESS")
+    if (
+        input_values["oi_intensity_percentile"] is not None
+        and input_values["oi_intensity_percentile"] >= oi_threshold
+    ):
+        reason_codes.append("CROWDING_LEVERAGE_EXCESS")
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    flagged = any(reason_code.endswith("_EXCESS") for reason_code in reason_codes)
+    return CrowdingFlagResult(
+        feature_id=CROWDING_FLAG_FEATURE_ID,
+        flagged=flagged,
+        effects=CROWDING_FLAG_EFFECTS if flagged else (),
+        entry_quality_penalty=penalty if flagged else Decimal("0"),
+        funding_zscore_min=funding_threshold,
+        basis_zscore_min=basis_threshold,
+        oi_intensity_percentile_min=oi_threshold,
+        inputs=inputs,
+        config_metadata=dict(config_metadata or {}),
+        complete="CROWDING_INPUT_MISSING" not in reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
 def _validate_funding_health_parameters(
     *,
     average_window_days: int,
@@ -895,6 +1022,27 @@ def _positioning_score_input_values(
             _score_decimal(value, component_id) if value is not None else None
         )
         for component_id, value in values.items()
+    }
+
+
+def _crowding_input_values(inputs: CrowdingFlagInput) -> dict[str, Decimal | None]:
+    return {
+        "funding_zscore": (
+            _decimal(inputs.funding_zscore)
+            if inputs.funding_zscore is not None
+            else None
+        ),
+        "basis_zscore": (
+            _decimal(inputs.basis_zscore) if inputs.basis_zscore is not None else None
+        ),
+        "oi_intensity_percentile": (
+            _score_decimal(
+                inputs.oi_intensity_percentile,
+                "oi_intensity_percentile",
+            )
+            if inputs.oi_intensity_percentile is not None
+            else None
+        ),
     }
 
 
@@ -1146,6 +1294,13 @@ def _score_decimal(value: Any, name: str) -> Decimal:
     decimal_value = _decimal(value)
     if decimal_value < 0 or decimal_value > 100:
         raise ValueError(f"{name} must be between 0 and 100")
+    return decimal_value
+
+
+def _non_negative_decimal(value: Any, name: str) -> Decimal:
+    decimal_value = _decimal(value)
+    if decimal_value < 0:
+        raise ValueError(f"{name} must be >= 0")
     return decimal_value
 
 

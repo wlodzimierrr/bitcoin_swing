@@ -6,6 +6,13 @@ import pytest
 from btc_predictor.config import load_strategy_config
 from btc_predictor.data import FundingRate, FuturesBasis, OpenInterest
 from btc_predictor.features import (
+    CROWDING_FLAG_EFFECTS,
+    CROWDING_FLAG_FEATURE_ID,
+    CROWDING_FLAG_REASON_CODES,
+    DEFAULT_CROWDING_BASIS_ZSCORE_MIN,
+    DEFAULT_CROWDING_ENTRY_QUALITY_PENALTY,
+    DEFAULT_CROWDING_FUNDING_ZSCORE_MIN,
+    DEFAULT_CROWDING_OI_INTENSITY_PERCENTILE_MIN,
     DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS,
     DEFAULT_FUNDING_HEALTH_PREFERRED_ZSCORE,
     DEFAULT_FUNDING_HEALTH_ZSCORE_WIDTH,
@@ -41,8 +48,10 @@ from btc_predictor.features import (
     POSITIONING_SCORE_COMPONENT_IDS,
     POSITIONING_SCORE_FEATURE_ID,
     POSITIONING_SCORE_REASON_CODES,
+    CrowdingFlagInput,
     MarketCapObservation,
     PositioningScoreInput,
+    calculate_crowding_flag,
     calculate_positioning_score,
     futures_basis_health,
     funding_health,
@@ -245,6 +254,25 @@ def test_positioning_score_metadata_is_stable() -> None:
         "leverage_health": Decimal("0.15"),
     }
     assert POSITIONING_SCORE_REASON_CODES == ("POSITIONING_SCORE_INPUT_MISSING",)
+
+
+def test_crowding_flag_metadata_is_stable() -> None:
+    assert CROWDING_FLAG_FEATURE_ID == "CROWDING"
+    assert CROWDING_FLAG_EFFECTS == (
+        "NO_ADD",
+        "REDUCE_ENTRY_QUALITY",
+        "OPTIONAL_TIGHTER_PROFIT_PROTECTION",
+    )
+    assert DEFAULT_CROWDING_FUNDING_ZSCORE_MIN == Decimal("2")
+    assert DEFAULT_CROWDING_BASIS_ZSCORE_MIN == Decimal("2")
+    assert DEFAULT_CROWDING_OI_INTENSITY_PERCENTILE_MIN == Decimal("90")
+    assert DEFAULT_CROWDING_ENTRY_QUALITY_PENALTY == Decimal("10")
+    assert CROWDING_FLAG_REASON_CODES == (
+        "CROWDING_FUNDING_EXCESS",
+        "CROWDING_BASIS_EXCESS",
+        "CROWDING_LEVERAGE_EXCESS",
+        "CROWDING_INPUT_MISSING",
+    )
 
 
 def test_funding_health_uses_seven_day_average_and_rolling_zscore() -> None:
@@ -1115,6 +1143,132 @@ def test_calculate_positioning_score_uses_weights_from_versioned_strategy_config
     }
 
 
+def test_calculate_crowding_flag_triggers_from_excess_inputs() -> None:
+    result = calculate_crowding_flag(
+        CrowdingFlagInput(
+            funding_zscore=Decimal("2.1"),
+            basis_zscore=Decimal("1.5"),
+            oi_intensity_percentile=Decimal("95"),
+        ),
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "CROWDING"
+    assert result.flagged is True
+    assert result.effects == CROWDING_FLAG_EFFECTS
+    assert result.entry_quality_penalty == Decimal("10")
+    assert result.reason_codes == (
+        "CROWDING_FUNDING_EXCESS",
+        "CROWDING_LEVERAGE_EXCESS",
+    )
+
+
+def test_calculate_crowding_flag_stays_clear_for_normal_inputs() -> None:
+    result = calculate_crowding_flag(
+        CrowdingFlagInput(
+            funding_zscore=Decimal("1.9"),
+            basis_zscore=Decimal("1.5"),
+            oi_intensity_percentile=Decimal("89.9"),
+        ),
+    )
+
+    assert result.complete is True
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.entry_quality_penalty == Decimal("0")
+    assert result.reason_codes == ()
+
+
+def test_calculate_crowding_flag_does_not_clear_missing_inputs_silently() -> None:
+    result = calculate_crowding_flag(
+        CrowdingFlagInput(
+            funding_zscore=None,
+            basis_zscore=Decimal("2.5"),
+            oi_intensity_percentile=None,
+        ),
+    )
+
+    assert result.complete is False
+    assert result.flagged is True
+    assert result.effects == CROWDING_FLAG_EFFECTS
+    assert result.reason_codes == (
+        "CROWDING_INPUT_MISSING",
+        "CROWDING_BASIS_EXCESS",
+    )
+
+
+def test_calculate_crowding_flag_uses_versioned_strategy_config() -> None:
+    config = load_strategy_config()
+    crowding_config = config.positioning_flags.crowding
+
+    result = calculate_crowding_flag(
+        CrowdingFlagInput(
+            funding_zscore=Decimal("2.1"),
+            basis_zscore=Decimal("1.5"),
+            oi_intensity_percentile=Decimal("95"),
+        ),
+        funding_zscore_min=crowding_config.funding_zscore_min,
+        basis_zscore_min=crowding_config.basis_zscore_min,
+        oi_intensity_percentile_min=crowding_config.oi_intensity_percentile_min,
+        entry_quality_penalty=crowding_config.entry_quality_penalty,
+        config_metadata=config.run_metadata(),
+    )
+
+    assert result.flagged is True
+    assert result.funding_zscore_min == Decimal("2.0")
+    assert result.basis_zscore_min == Decimal("2.0")
+    assert result.oi_intensity_percentile_min == Decimal("90.0")
+    assert result.entry_quality_penalty == Decimal("10.0")
+    assert result.config_metadata == {
+        "config_version": "strategy_config_v1",
+        "strategy_version": "swing_v1.0",
+        "parameter_set_id": "default_phase1",
+    }
+
+
+def test_calculate_crowding_flag_exposes_persistable_payload() -> None:
+    result = calculate_crowding_flag(
+        CrowdingFlagInput(
+            funding_zscore=Decimal("2.1"),
+            basis_zscore=Decimal("1.5"),
+            oi_intensity_percentile=Decimal("95"),
+        ),
+        config_metadata={
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "CROWDING"
+    assert record["flagged"] is True
+    assert record["effects"] == [
+        "NO_ADD",
+        "REDUCE_ENTRY_QUALITY",
+        "OPTIONAL_TIGHTER_PROFIT_PROTECTION",
+    ]
+    assert record["entry_quality_penalty"] == "10"
+    assert record["funding_zscore_min"] == "2"
+    assert record["basis_zscore_min"] == "2"
+    assert record["oi_intensity_percentile_min"] == "90"
+    assert record["inputs"] == {
+        "funding_zscore": "2.1",
+        "basis_zscore": "1.5",
+        "oi_intensity_percentile": "95",
+    }
+    assert record["config_metadata"] == {
+        "config_version": "strategy_config_v1",
+        "strategy_version": "swing_v1.0",
+        "parameter_set_id": "default_phase1",
+    }
+    assert record["complete"] is True
+    assert record["reason_codes"] == [
+        "CROWDING_FUNDING_EXCESS",
+        "CROWDING_LEVERAGE_EXCESS",
+    ]
+
+
 def test_funding_health_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
         funding_health((), as_of=datetime(2026, 1, 10))
@@ -1254,4 +1408,35 @@ def test_calculate_positioning_score_rejects_out_of_range_inputs() -> None:
                 basis_health=Decimal("60"),
                 leverage_health=Decimal("40"),
             ),
+        )
+
+
+def test_calculate_crowding_flag_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="funding_zscore_min"):
+        calculate_crowding_flag(
+            CrowdingFlagInput(
+                funding_zscore=Decimal("1"),
+                basis_zscore=Decimal("1"),
+                oi_intensity_percentile=Decimal("50"),
+            ),
+            funding_zscore_min=Decimal("-1"),
+        )
+
+    with pytest.raises(ValueError, match="oi_intensity_percentile"):
+        calculate_crowding_flag(
+            CrowdingFlagInput(
+                funding_zscore=Decimal("1"),
+                basis_zscore=Decimal("1"),
+                oi_intensity_percentile=Decimal("101"),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="entry_quality_penalty"):
+        calculate_crowding_flag(
+            CrowdingFlagInput(
+                funding_zscore=Decimal("1"),
+                basis_zscore=Decimal("1"),
+                oi_intensity_percentile=Decimal("50"),
+            ),
+            entry_quality_penalty=Decimal("101"),
         )

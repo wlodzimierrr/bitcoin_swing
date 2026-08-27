@@ -368,6 +368,42 @@ class PriceLevelParameters:
 
 
 @dataclass(frozen=True)
+class CrowdingFlagConfig:
+    funding_zscore_min: float
+    basis_zscore_min: float
+    oi_intensity_percentile_min: float
+    entry_quality_penalty: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            funding_zscore_min=_required_non_negative_float(
+                data,
+                "funding_zscore_min",
+            ),
+            basis_zscore_min=_required_non_negative_float(data, "basis_zscore_min"),
+            oi_intensity_percentile_min=_required_score(
+                data,
+                "oi_intensity_percentile_min",
+            ),
+            entry_quality_penalty=_required_score(data, "entry_quality_penalty"),
+        )
+
+
+@dataclass(frozen=True)
+class PositioningFlagConfig:
+    crowding: CrowdingFlagConfig
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            crowding=CrowdingFlagConfig.from_mapping(
+                _required_mapping(data, "crowding"),
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class ScoringWeights:
     entry_conviction: dict[str, float]
     hold_score: dict[str, float]
@@ -440,6 +476,7 @@ class StrategyConfig:
     regime_thresholds: RegimeThresholds
     price_levels: PriceLevelParameters
     scoring_weights: ScoringWeights
+    positioning_flags: PositioningFlagConfig
     backtest: BacktestAssumptions
 
     @classmethod
@@ -470,6 +507,9 @@ class StrategyConfig:
             ),
             scoring_weights=ScoringWeights.from_mapping(
                 _required_mapping(data, "scoring_weights"),
+            ),
+            positioning_flags=PositioningFlagConfig.from_mapping(
+                _required_mapping(data, "positioning_flags"),
             ),
             backtest=BacktestAssumptions.from_mapping(_required_mapping(data, "backtest")),
         )

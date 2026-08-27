@@ -918,7 +918,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   REDUCE ENTRY QUALITY
   OPTIONAL TIGHTER PROFIT PROTECTION
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -927,6 +927,17 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `CROWDING` as a deterministic positioning flag triggered by excessive
+    funding z-score, futures-basis z-score, or OI-intensity percentile.
+  - Added versioned `[positioning_flags.crowding]` config for funding threshold,
+    basis threshold, OI-intensity percentile threshold, and entry-quality penalty.
+  - Persisted inputs, thresholds, effects, config metadata, completion state, and
+    reason codes through `CrowdingFlagResult.as_record()`.
+  - Missing flag inputs are not silently treated as normal; incomplete
+    evaluations emit `CROWDING_INPUT_MISSING`.
+  - Flagged evaluations emit `NO_ADD`, `REDUCE_ENTRY_QUALITY`, and
+    `OPTIONAL_TIGHTER_PROFIT_PROTECTION` effects.
 
 ## EPIC I — Volatility Engine
 
