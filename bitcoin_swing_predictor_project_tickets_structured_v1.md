@@ -828,7 +828,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-071 Implement OI growth health
 - **Description:**
   Use rolling normalization rather than fixed permanent thresholds.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -837,6 +837,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `OI_GROWTH_HEALTH` from `OI_GROWTH_7D = OI_t / OI_t-7 - 1`.
+  - Aggregated open interest by timestamp for a selected unit and avoided mixing incompatible provider units.
+  - Rolling-normalized OI growth with a 180-day prior-history z-score instead of fixed permanent percentage thresholds.
+  - Applied a configurable Gaussian health curve to reward modest expansion while penalizing extreme crowded growth.
+  - Persisted unit, current/prior OI, growth, z-score, health-curve parameters, counts, and reason codes through `OpenInterestGrowthHealthResult.as_record()`.
 
 #### BTC-072 Implement OI intensity
 - **Description:**

@@ -3,18 +3,28 @@ from decimal import Decimal
 
 import pytest
 
-from btc_predictor.data import FundingRate
+from btc_predictor.data import FundingRate, OpenInterest
 from btc_predictor.features import (
     DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS,
     DEFAULT_FUNDING_HEALTH_PREFERRED_ZSCORE,
     DEFAULT_FUNDING_HEALTH_ZSCORE_WIDTH,
     DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS,
     DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS,
+    DEFAULT_OI_GROWTH_HEALTH_PREFERRED_ZSCORE,
+    DEFAULT_OI_GROWTH_HEALTH_ZSCORE_WIDTH,
+    DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS,
+    DEFAULT_OI_GROWTH_WINDOW_DAYS,
+    DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS,
     FUNDING_7D_AVG_FEATURE_ID,
     FUNDING_HEALTH_FEATURE_ID,
     FUNDING_HEALTH_REASON_CODES,
     FUNDING_ZSCORE_FEATURE_ID,
+    OI_GROWTH_FEATURE_ID,
+    OI_GROWTH_HEALTH_FEATURE_ID,
+    OI_GROWTH_HEALTH_REASON_CODES,
+    OI_GROWTH_ZSCORE_FEATURE_ID,
     funding_health,
+    open_interest_growth_health,
 )
 
 
@@ -47,6 +57,36 @@ def daily_funding_rates(values: tuple[str, ...]) -> tuple[FundingRate, ...]:
     )
 
 
+def open_interest(
+    observation_time: datetime,
+    *,
+    open_interest_value: str,
+    available_at: datetime | None = None,
+    exchange: str = "binance",
+    unit: str = "USD",
+) -> OpenInterest:
+    return OpenInterest(
+        observation_time=observation_time,
+        exchange=exchange,
+        symbol="BTCUSDT",
+        instrument="BTCUSDT-PERP",
+        open_interest=Decimal(open_interest_value),
+        open_interest_unit=unit,
+        provider=exchange,
+        source=f"{exchange}-api",
+        available_at=available_at or observation_time + timedelta(minutes=1),
+        ingested_at=observation_time + timedelta(minutes=2),
+    )
+
+
+def daily_open_interest(values: tuple[str, ...], *, unit: str = "USD") -> tuple[OpenInterest, ...]:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    return tuple(
+        open_interest(start + timedelta(days=index), open_interest_value=value, unit=unit)
+        for index, value in enumerate(values)
+    )
+
+
 def test_funding_health_metadata_is_stable() -> None:
     assert FUNDING_HEALTH_FEATURE_ID == "FUNDING_HEALTH"
     assert FUNDING_7D_AVG_FEATURE_ID == "FUNDING_7D_AVG"
@@ -60,6 +100,23 @@ def test_funding_health_metadata_is_stable() -> None:
         "FUNDING_RATE_INPUT_MISSING",
         "FUNDING_HEALTH_INSUFFICIENT_HISTORY",
         "FUNDING_HEALTH_ZERO_VARIANCE",
+    )
+
+
+def test_open_interest_growth_health_metadata_is_stable() -> None:
+    assert OI_GROWTH_HEALTH_FEATURE_ID == "OI_GROWTH_HEALTH"
+    assert OI_GROWTH_FEATURE_ID == "OI_GROWTH_7D"
+    assert OI_GROWTH_ZSCORE_FEATURE_ID == "OI_GROWTH_ZSCORE_180D"
+    assert DEFAULT_OI_GROWTH_WINDOW_DAYS == 7
+    assert DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS == 180
+    assert DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS == 30
+    assert DEFAULT_OI_GROWTH_HEALTH_PREFERRED_ZSCORE == Decimal("0.25")
+    assert DEFAULT_OI_GROWTH_HEALTH_ZSCORE_WIDTH == Decimal("1.25")
+    assert OI_GROWTH_HEALTH_REASON_CODES == (
+        "OI_GROWTH_INPUT_MISSING",
+        "OI_GROWTH_PRIOR_INPUT_MISSING",
+        "OI_GROWTH_INSUFFICIENT_HISTORY",
+        "OI_GROWTH_ZERO_VARIANCE",
     )
 
 
@@ -90,6 +147,36 @@ def test_funding_health_uses_seven_day_average_and_rolling_zscore() -> None:
     assert result.reason_codes == ()
 
 
+def test_open_interest_growth_health_uses_rolling_normalized_growth() -> None:
+    rows = daily_open_interest(
+        ("100", "105", "110", "118", "125", "133", "140", "148", "160", "175", "190", "210")
+    )
+
+    result = open_interest_growth_health(
+        tuple(reversed(rows)),
+        as_of=datetime(2026, 1, 12, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_zscore_observations=4,
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "OI_GROWTH_HEALTH"
+    assert result.observation_time == datetime(2026, 1, 12, tzinfo=UTC)
+    assert result.open_interest_unit == "USD"
+    assert result.growth_window_days == 7
+    assert result.zscore_window_days == 180
+    assert result.aggregate_open_interest == Decimal("210")
+    assert result.prior_open_interest == Decimal("125")
+    assert result.oi_growth == Decimal("0.68")
+    assert result.oi_growth_zscore is not None
+    assert result.oi_growth_zscore.quantize(Decimal("0.000001")) == Decimal("2.469899")
+    assert result.health_score is not None
+    assert result.health_score.quantize(Decimal("0.001")) == Decimal("20.661")
+    assert result.history_observation_count == 4
+    assert result.source_record_count == 12
+    assert result.reason_codes == ()
+
+
 def test_funding_health_filters_unavailable_future_rows() -> None:
     rows = daily_funding_rates(
         ("0.01", "0.02", "0.03", "0.04", "0.05", "0.06", "0.07", "0.08", "0.09", "0.10")
@@ -115,6 +202,33 @@ def test_funding_health_filters_unavailable_future_rows() -> None:
     assert with_future == baseline
 
 
+def test_open_interest_growth_health_filters_unavailable_future_rows() -> None:
+    rows = daily_open_interest(
+        ("100", "105", "110", "118", "125", "133", "140", "148", "160", "175", "190", "210")
+    )
+    unavailable_revision = open_interest(
+        datetime(2026, 1, 12, tzinfo=UTC),
+        open_interest_value="9999",
+        available_at=datetime(2026, 1, 13, tzinfo=UTC),
+        exchange="okx",
+    )
+
+    baseline = open_interest_growth_health(
+        rows,
+        as_of=datetime(2026, 1, 12, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_zscore_observations=4,
+    ).as_record()
+    with_future = open_interest_growth_health(
+        (*rows, unavailable_revision),
+        as_of=datetime(2026, 1, 12, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_zscore_observations=4,
+    ).as_record()
+
+    assert with_future == baseline
+
+
 def test_funding_health_averages_multiple_exchange_rows_per_timestamp() -> None:
     rows = (
         funding_rate(datetime(2026, 1, 1, tzinfo=UTC), funding_rate_value="0.01"),
@@ -133,6 +247,30 @@ def test_funding_health_averages_multiple_exchange_rows_per_timestamp() -> None:
     assert result.source_record_count == 2
 
 
+def test_open_interest_growth_health_aggregates_multiple_exchanges_and_filters_units() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    rows = (
+        open_interest(start, open_interest_value="100"),
+        open_interest(start, open_interest_value="50", exchange="okx"),
+        open_interest(start, open_interest_value="999", exchange="bybit", unit="contracts"),
+        open_interest(start + timedelta(days=1), open_interest_value="165"),
+        open_interest(start + timedelta(days=1), open_interest_value="15", exchange="okx"),
+    )
+
+    result = open_interest_growth_health(
+        rows,
+        as_of=start + timedelta(days=1, hours=1),
+        open_interest_unit="USD",
+        growth_window_days=1,
+        min_zscore_observations=1,
+    )
+
+    assert result.aggregate_open_interest == Decimal("180")
+    assert result.prior_open_interest == Decimal("150")
+    assert result.oi_growth == Decimal("0.2")
+    assert result.source_record_count == 4
+
+
 def test_funding_health_reports_missing_input_without_zero_fill() -> None:
     result = funding_health((), as_of=datetime(2026, 1, 10, tzinfo=UTC))
 
@@ -141,6 +279,38 @@ def test_funding_health_reports_missing_input_without_zero_fill() -> None:
     assert result.funding_zscore is None
     assert result.health_score is None
     assert result.reason_codes == ("FUNDING_RATE_INPUT_MISSING",)
+
+
+def test_open_interest_growth_health_reports_missing_input_without_zero_fill() -> None:
+    result = open_interest_growth_health(
+        (),
+        as_of=datetime(2026, 1, 10, tzinfo=UTC),
+        open_interest_unit="USD",
+    )
+
+    assert result.complete is False
+    assert result.aggregate_open_interest is None
+    assert result.prior_open_interest is None
+    assert result.oi_growth is None
+    assert result.health_score is None
+    assert result.reason_codes == ("OI_GROWTH_INPUT_MISSING",)
+
+
+def test_open_interest_growth_health_reports_missing_prior_input() -> None:
+    rows = daily_open_interest(("100", "110"))
+
+    result = open_interest_growth_health(
+        rows,
+        as_of=datetime(2026, 1, 2, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_zscore_observations=1,
+    )
+
+    assert result.complete is False
+    assert result.aggregate_open_interest == Decimal("110")
+    assert result.prior_open_interest is None
+    assert result.oi_growth is None
+    assert result.reason_codes == ("OI_GROWTH_PRIOR_INPUT_MISSING",)
 
 
 def test_funding_health_reports_insufficient_history() -> None:
@@ -160,6 +330,28 @@ def test_funding_health_reports_insufficient_history() -> None:
     assert result.reason_codes == ("FUNDING_HEALTH_INSUFFICIENT_HISTORY",)
 
 
+def test_open_interest_growth_health_reports_insufficient_history() -> None:
+    rows = daily_open_interest(
+        ("100", "105", "110", "118", "125", "133", "140", "148", "160")
+    )
+
+    result = open_interest_growth_health(
+        rows,
+        as_of=datetime(2026, 1, 9, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_zscore_observations=3,
+    )
+
+    assert result.complete is False
+    assert result.aggregate_open_interest == Decimal("160")
+    assert result.prior_open_interest == Decimal("105")
+    assert result.oi_growth == Decimal("0.523809523809523809523809524")
+    assert result.oi_growth_zscore is None
+    assert result.health_score is None
+    assert result.history_observation_count == 1
+    assert result.reason_codes == ("OI_GROWTH_INSUFFICIENT_HISTORY",)
+
+
 def test_funding_health_reports_zero_variance_history() -> None:
     rows = daily_funding_rates(("0.01", "0.01", "0.01", "0.01"))
 
@@ -174,6 +366,26 @@ def test_funding_health_reports_zero_variance_history() -> None:
     assert result.funding_zscore is None
     assert result.health_score is None
     assert result.reason_codes == ("FUNDING_HEALTH_ZERO_VARIANCE",)
+
+
+def test_open_interest_growth_health_reports_zero_variance_history() -> None:
+    rows = daily_open_interest(
+        ("100", "100", "100", "100", "100", "100", "100", "100", "100", "100", "100")
+    )
+
+    result = open_interest_growth_health(
+        rows,
+        as_of=datetime(2026, 1, 11, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        growth_window_days=1,
+        min_zscore_observations=3,
+    )
+
+    assert result.complete is False
+    assert result.oi_growth is not None
+    assert result.oi_growth_zscore is None
+    assert result.health_score is None
+    assert result.reason_codes == ("OI_GROWTH_ZERO_VARIANCE",)
 
 
 def test_funding_health_exposes_persistable_payload() -> None:
@@ -207,6 +419,40 @@ def test_funding_health_exposes_persistable_payload() -> None:
     assert record["reason_codes"] == []
 
 
+def test_open_interest_growth_health_exposes_persistable_payload() -> None:
+    rows = daily_open_interest(
+        ("100", "105", "110", "118", "125", "133", "140", "148", "160", "175", "190", "210")
+    )
+
+    result = open_interest_growth_health(
+        rows,
+        as_of=datetime(2026, 1, 12, 1, tzinfo=UTC),
+        open_interest_unit="USD",
+        min_zscore_observations=4,
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "OI_GROWTH_HEALTH"
+    assert record["observation_time"] == "2026-01-12T00:00:00+00:00"
+    assert record["growth_feature_id"] == "OI_GROWTH_7D"
+    assert record["zscore_feature_id"] == "OI_GROWTH_ZSCORE_180D"
+    assert record["open_interest_unit"] == "USD"
+    assert record["growth_window_days"] == 7
+    assert record["zscore_window_days"] == 180
+    assert record["min_zscore_observations"] == 4
+    assert record["preferred_growth_zscore"] == "0.25"
+    assert record["growth_zscore_width"] == "1.25"
+    assert record["aggregate_open_interest"] == "210"
+    assert record["prior_open_interest"] == "125"
+    assert record["oi_growth"] == "0.68"
+    assert record["oi_growth_zscore"] == str(result.oi_growth_zscore)
+    assert record["health_score"] == str(result.health_score)
+    assert record["history_observation_count"] == 4
+    assert record["source_record_count"] == 12
+    assert record["complete"] is True
+    assert record["reason_codes"] == []
+
+
 def test_funding_health_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
         funding_health((), as_of=datetime(2026, 1, 10))
@@ -219,4 +465,32 @@ def test_funding_health_rejects_invalid_inputs() -> None:
             (),
             as_of=datetime(2026, 1, 10, tzinfo=UTC),
             zscore_width=Decimal("0"),
+        )
+
+
+def test_open_interest_growth_health_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
+        open_interest_growth_health((), as_of=datetime(2026, 1, 10), open_interest_unit="USD")
+
+    with pytest.raises(ValueError, match="open_interest_unit"):
+        open_interest_growth_health(
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            open_interest_unit="",
+        )
+
+    with pytest.raises(ValueError, match="growth_window_days"):
+        open_interest_growth_health(
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            open_interest_unit="USD",
+            growth_window_days=0,
+        )
+
+    with pytest.raises(ValueError, match="growth_zscore_width"):
+        open_interest_growth_health(
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            open_interest_unit="USD",
+            growth_zscore_width=Decimal("0"),
         )

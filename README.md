@@ -159,7 +159,9 @@ Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day
 rolling z-score. The result records the health-curve parameters and emits stable
 reason codes for missing funding input, insufficient history, or zero-variance
-history.
+history. `open_interest_growth_health` implements `OI_GROWTH_HEALTH` from
+`OI_GROWTH_7D = OI_t / OI_t-7 - 1`, using rolling normalization rather than
+fixed permanent thresholds and keeping the selected OI unit explicit.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
