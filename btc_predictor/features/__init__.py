@@ -1,5 +1,14 @@
 """Feature generation helpers."""
 
+from btc_predictor.features.flow import (
+    ETF_FLOW_FEATURE_REASON_CODES,
+    FIVE_DAY_ETF_FLOW_FEATURE_ID,
+    FIVE_DAY_ETF_FLOW_WINDOW_DAYS,
+    FIVE_DAY_ETF_NORM_FEATURE_ID,
+    EtfFlowFeatureResult,
+    etf_flow_window,
+    five_day_etf_flow,
+)
 from btc_predictor.features.momentum import (
     FOUR_WEEK_MOMENTUM_FEATURE_ID,
     FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS,
@@ -49,8 +58,12 @@ from btc_predictor.features.trend import (
 )
 
 __all__ = [
+    "ETF_FLOW_FEATURE_REASON_CODES",
     "FOUR_WEEK_MOMENTUM_FEATURE_ID",
     "FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS",
+    "FIVE_DAY_ETF_FLOW_FEATURE_ID",
+    "FIVE_DAY_ETF_FLOW_WINDOW_DAYS",
+    "FIVE_DAY_ETF_NORM_FEATURE_ID",
     "FIFTY_TWO_WEEK_HIGH_DISTANCE_FEATURE_ID",
     "FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS",
     "DEFAULT_TREND_SCORE_WEIGHTS",
@@ -66,6 +79,7 @@ __all__ = [
     "WEEKLY_STRUCTURE_LABELS",
     "WEEKLY_STRUCTURE_SCORES",
     "WeeklyStructureClassification",
+    "EtfFlowFeatureResult",
     "average_true_range",
     "TrendScoreInput",
     "TrendScoreResult",
@@ -74,6 +88,8 @@ __all__ = [
     "classify_weekly_structure_from_weekly_bars",
     "fifty_two_week_high_distance",
     "fifty_two_week_high_distance_from_weekly_bars",
+    "etf_flow_window",
+    "five_day_etf_flow",
     "four_week_momentum",
     "four_week_momentum_from_daily_bars",
     "historical_normalize",

@@ -138,6 +138,12 @@ weights and converts the raw composite to a 0-100 score using the standard
 normal CDF. Its result includes inputs, weights, contributions, interpretation,
 and a stable reason code for deterministic recomputation.
 
+Flow feature helpers include `five_day_etf_flow`, which implements `ETF_FLOW_5D`
+as the point-in-time sum of the latest available ETF flow revisions over the
+latest five publication days. It also reports `ETF_NORM_5D` when latest fund AUM
+is available, and emits reason codes instead of silently filling missing inputs
+or denominators.
+
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.
 

@@ -673,7 +673,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-060 Implement 5-day ETF flow feature
 - **Description:**
   Complete the ticket scope for implement 5-day etf flow feature.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -682,6 +682,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `ETF_FLOW_5D` and `ETF_NORM_5D` feature helpers using latest ETF flow revisions available at the signal timestamp.
+  - Summed complete five-publication-day windows across the configured fund universe and normalized by latest available fund AUM.
+  - Emitted stable reason codes for missing flow inputs or missing AUM instead of silently substituting zeroes.
+  - Added deterministic serialization through `EtfFlowFeatureResult.as_record()` for persistence and historical recomputation.
 
 #### BTC-061 Implement 20-day ETF flow feature
 - **Description:**
