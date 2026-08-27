@@ -786,7 +786,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   +0.35z(ETFNorm_{20})
   +0.25z(FlowAccel)
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Missing P1 inputs are not silently filled with zero
   - Output records `FLOW_MODEL = ETF_CORE` or `FLOW_MODEL = ETF_SPOT_PERP_FULL`
@@ -795,6 +795,11 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `FLOW_SCORE` using the full model when ETF, acceleration, CVD spread, and spot dominance z-score inputs are available.
+  - Added the `ETF_CORE` fallback using ETF-only weights when P1 spot/perp inputs are missing, without zero-filling missing P1 components.
+  - Persisted selected flow model, inputs, weights, contributions, score, interpretation, reason codes, and config metadata through `FlowScoreResult.as_record()`.
+  - Added `full_flow` weights to the versioned strategy config and validated exact full/core flow weight keys at startup.
 
 ## EPIC H — Positioning Engine
 

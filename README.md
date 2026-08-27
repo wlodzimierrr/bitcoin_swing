@@ -149,7 +149,11 @@ calculation. `spot_perp_participation` implements `SPOT_DOMINANCE` as
 `z(SpotVolumeGrowth) - z(PerpVolumeGrowth)` using available spot and perpetual
 volume observations, with a row adapter for spot OHLCV and perp volume records.
 `spot_perp_cvd_spread` implements `CVD_SPREAD` as
-`z(SPOT_CVD) - z(PERP_CVD)` over point-in-time CVD observations.
+`z(SPOT_CVD) - z(PERP_CVD)` over point-in-time CVD observations. Flow Score
+combines z-normalized flow components using versioned strategy-config weights
+and records either `FLOW_MODEL = ETF_CORE` or
+`FLOW_MODEL = ETF_SPOT_PERP_FULL`; missing P1 inputs trigger the ETF-core
+fallback without zero-filling.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

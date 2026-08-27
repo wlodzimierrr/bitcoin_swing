@@ -3,15 +3,24 @@ from decimal import Decimal
 
 import pytest
 
+from btc_predictor.config import load_strategy_config
 from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume
 from btc_predictor.features import (
+    CORE_FLOW_SCORE_COMPONENT_IDS,
     CvdObservation,
+    DEFAULT_CORE_FLOW_SCORE_WEIGHTS,
+    DEFAULT_FULL_FLOW_SCORE_WEIGHTS,
     ETF_FLOW_ACCELERATION_FEATURE_ID,
     ETF_FLOW_ACCELERATION_REASON_CODES,
     ETF_FLOW_FEATURE_REASON_CODES,
     FIVE_DAY_ETF_FLOW_FEATURE_ID,
     FIVE_DAY_ETF_FLOW_WINDOW_DAYS,
     FIVE_DAY_ETF_NORM_FEATURE_ID,
+    FLOW_MODEL_ETF_CORE,
+    FLOW_MODEL_ETF_SPOT_PERP_FULL,
+    FLOW_SCORE_FEATURE_ID,
+    FLOW_SCORE_REASON_CODES,
+    FULL_FLOW_SCORE_COMPONENT_IDS,
     PERP_VOLUME_GROWTH_FEATURE_ID,
     PERP_CVD_FEATURE_ID,
     SPOT_PERP_PARTICIPATION_FEATURE_ID,
@@ -25,6 +34,8 @@ from btc_predictor.features import (
     TWENTY_DAY_ETF_NORM_FEATURE_ID,
     VolumeParticipationObservation,
     EtfFlowFeatureResult,
+    FlowScoreInput,
+    calculate_flow_score,
     etf_flow_acceleration,
     etf_flow_window,
     five_day_etf_flow,
@@ -194,6 +205,40 @@ def test_spot_perp_cvd_spread_metadata_is_stable() -> None:
         "SPOT_CVD_INPUT_MISSING",
         "PERP_CVD_INPUT_MISSING",
         "SPOT_PERP_CVD_SPREAD_INSUFFICIENT_HISTORY",
+    )
+
+
+def test_flow_score_metadata_is_stable() -> None:
+    assert FLOW_SCORE_FEATURE_ID == "FLOW_SCORE"
+    assert FLOW_MODEL_ETF_CORE == "ETF_CORE"
+    assert FLOW_MODEL_ETF_SPOT_PERP_FULL == "ETF_SPOT_PERP_FULL"
+    assert CORE_FLOW_SCORE_COMPONENT_IDS == (
+        "etf_norm_5",
+        "etf_norm_20",
+        "flow_accel",
+    )
+    assert FULL_FLOW_SCORE_COMPONENT_IDS == (
+        "etf_norm_5",
+        "etf_norm_20",
+        "flow_accel",
+        "cvd_spread",
+        "spot_dominance",
+    )
+    assert DEFAULT_CORE_FLOW_SCORE_WEIGHTS == {
+        "etf_norm_5": Decimal("0.40"),
+        "etf_norm_20": Decimal("0.35"),
+        "flow_accel": Decimal("0.25"),
+    }
+    assert DEFAULT_FULL_FLOW_SCORE_WEIGHTS == {
+        "etf_norm_5": Decimal("0.30"),
+        "etf_norm_20": Decimal("0.25"),
+        "flow_accel": Decimal("0.20"),
+        "cvd_spread": Decimal("0.15"),
+        "spot_dominance": Decimal("0.10"),
+    }
+    assert FLOW_SCORE_REASON_CODES == (
+        "FLOW_SCORE_CORE_INPUT_MISSING",
+        "FLOW_SCORE_P1_INPUT_MISSING",
     )
 
 
@@ -691,6 +736,219 @@ def test_spot_perp_cvd_spread_rejects_invalid_observations_and_windows() -> None
             (),
             as_of=datetime(2026, 8, 24, tzinfo=UTC),
             zscore_window_periods=0,
+        )
+
+
+def test_calculate_flow_score_uses_full_model_when_p1_inputs_are_available() -> None:
+    result = calculate_flow_score(
+        FlowScoreInput(
+            etf_norm_5_zscore=Decimal("1"),
+            etf_norm_20_zscore=Decimal("0.5"),
+            flow_accel_zscore=Decimal("0.2"),
+            cvd_spread_zscore=Decimal("1.5"),
+            spot_dominance_zscore=Decimal("-0.5"),
+        ),
+        full_weights={
+            "etf_norm_5": 0.30,
+            "etf_norm_20": 0.25,
+            "flow_accel": 0.20,
+            "cvd_spread": 0.15,
+            "spot_dominance": 0.10,
+        },
+        core_weights={
+            "etf_norm_5": 0.40,
+            "etf_norm_20": 0.35,
+            "flow_accel": 0.25,
+        },
+        config_metadata={
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+    )
+
+    assert result.complete is True
+    assert result.flow_model == "ETF_SPOT_PERP_FULL"
+    assert result.raw_score == Decimal("0.640")
+    assert result.score is not None
+    assert result.score.quantize(Decimal("0.001")) == Decimal("73.891")
+    assert result.interpretation == "SUPPORTIVE_FLOW"
+    assert result.reason_code == "FLOW_SCORE_SUPPORTIVE_FLOW"
+    assert result.weights == {
+        "etf_norm_5": Decimal("0.3"),
+        "etf_norm_20": Decimal("0.25"),
+        "flow_accel": Decimal("0.2"),
+        "cvd_spread": Decimal("0.15"),
+        "spot_dominance": Decimal("0.1"),
+    }
+    assert result.contributions == {
+        "etf_norm_5": Decimal("0.3"),
+        "etf_norm_20": Decimal("0.125"),
+        "flow_accel": Decimal("0.04"),
+        "cvd_spread": Decimal("0.225"),
+        "spot_dominance": Decimal("-0.05"),
+    }
+    assert result.reason_codes == ()
+
+
+def test_calculate_flow_score_uses_core_model_when_p1_inputs_are_missing() -> None:
+    result = calculate_flow_score(
+        FlowScoreInput(
+            etf_norm_5_zscore=Decimal("1"),
+            etf_norm_20_zscore=Decimal("0.5"),
+            flow_accel_zscore=Decimal("0.2"),
+        ),
+        core_weights={
+            "etf_norm_5": 0.40,
+            "etf_norm_20": 0.35,
+            "flow_accel": 0.25,
+        },
+    )
+
+    assert result.complete is True
+    assert result.flow_model == "ETF_CORE"
+    assert result.raw_score == Decimal("0.625")
+    assert result.score is not None
+    assert result.score.quantize(Decimal("0.001")) == Decimal("73.401")
+    assert tuple(result.weights) == CORE_FLOW_SCORE_COMPONENT_IDS
+    assert tuple(result.contributions) == CORE_FLOW_SCORE_COMPONENT_IDS
+    assert result.reason_codes == ("FLOW_SCORE_P1_INPUT_MISSING",)
+
+
+def test_calculate_flow_score_does_not_fill_missing_core_inputs() -> None:
+    result = calculate_flow_score(
+        FlowScoreInput(
+            etf_norm_5_zscore=Decimal("1"),
+            etf_norm_20_zscore=None,
+            flow_accel_zscore=Decimal("0.2"),
+            cvd_spread_zscore=Decimal("1.5"),
+            spot_dominance_zscore=Decimal("-0.5"),
+        )
+    )
+
+    assert result.complete is False
+    assert result.flow_model == "ETF_SPOT_PERP_FULL"
+    assert result.raw_score is None
+    assert result.score is None
+    assert result.interpretation is None
+    assert result.reason_code is None
+    assert result.contributions == {
+        "etf_norm_5": Decimal("0.30"),
+        "etf_norm_20": None,
+        "flow_accel": Decimal("0.040"),
+        "cvd_spread": Decimal("0.225"),
+        "spot_dominance": Decimal("-0.050"),
+    }
+    assert result.reason_codes == ("FLOW_SCORE_CORE_INPUT_MISSING",)
+
+
+def test_calculate_flow_score_exposes_persistable_payload() -> None:
+    result = calculate_flow_score(
+        FlowScoreInput(
+            etf_norm_5_zscore=Decimal("1"),
+            etf_norm_20_zscore=Decimal("0.5"),
+            flow_accel_zscore=Decimal("0.2"),
+        ),
+        config_metadata={
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "FLOW_SCORE"
+    assert record["flow_model"] == "ETF_CORE"
+    assert record["raw_score"] == "0.625"
+    assert record["score"] == str(result.score)
+    assert record["inputs"] == {
+        "etf_norm_5": "1",
+        "etf_norm_20": "0.5",
+        "flow_accel": "0.2",
+        "cvd_spread": None,
+        "spot_dominance": None,
+    }
+    assert record["weights"] == {
+        "etf_norm_5": "0.40",
+        "etf_norm_20": "0.35",
+        "flow_accel": "0.25",
+    }
+    assert record["contributions"] == {
+        "etf_norm_5": "0.40",
+        "etf_norm_20": "0.175",
+        "flow_accel": "0.050",
+    }
+    assert record["config_metadata"] == {
+        "config_version": "strategy_config_v1",
+        "strategy_version": "swing_v1.0",
+        "parameter_set_id": "default_phase1",
+    }
+    assert record["complete"] is True
+    assert record["reason_codes"] == ["FLOW_SCORE_P1_INPUT_MISSING"]
+
+
+def test_calculate_flow_score_uses_weights_from_versioned_strategy_config() -> None:
+    config = load_strategy_config()
+
+    result = calculate_flow_score(
+        FlowScoreInput(
+            etf_norm_5_zscore=Decimal("1"),
+            etf_norm_20_zscore=Decimal("0.5"),
+            flow_accel_zscore=Decimal("0.2"),
+            cvd_spread_zscore=Decimal("1.5"),
+            spot_dominance_zscore=Decimal("-0.5"),
+        ),
+        full_weights=config.scoring_weights.full_flow,
+        core_weights=config.scoring_weights.core_flow,
+        config_metadata=config.run_metadata(),
+    )
+
+    assert result.flow_model == "ETF_SPOT_PERP_FULL"
+    assert result.raw_score == Decimal("0.640")
+    assert result.weights == {
+        "etf_norm_5": Decimal("0.3"),
+        "etf_norm_20": Decimal("0.25"),
+        "flow_accel": Decimal("0.2"),
+        "cvd_spread": Decimal("0.15"),
+        "spot_dominance": Decimal("0.1"),
+    }
+    assert result.config_metadata == {
+        "config_version": "strategy_config_v1",
+        "strategy_version": "swing_v1.0",
+        "parameter_set_id": "default_phase1",
+    }
+
+
+def test_calculate_flow_score_rejects_invalid_weights() -> None:
+    with pytest.raises(ValueError, match="full_flow"):
+        calculate_flow_score(
+            FlowScoreInput(
+                etf_norm_5_zscore=Decimal("1"),
+                etf_norm_20_zscore=Decimal("1"),
+                flow_accel_zscore=Decimal("1"),
+                cvd_spread_zscore=Decimal("1"),
+                spot_dominance_zscore=Decimal("1"),
+            ),
+            full_weights={
+                "etf_norm_5": 0.30,
+                "etf_norm_20": 0.25,
+                "flow_accel": 0.20,
+                "cvd_spread": 0.15,
+            },
+        )
+
+    with pytest.raises(ValueError, match="core_flow"):
+        calculate_flow_score(
+            FlowScoreInput(
+                etf_norm_5_zscore=Decimal("1"),
+                etf_norm_20_zscore=Decimal("1"),
+                flow_accel_zscore=Decimal("1"),
+            ),
+            core_weights={
+                "etf_norm_5": 0.40,
+                "etf_norm_20": 0.35,
+                "flow_accel": 0.10,
+            },
         )
 
 

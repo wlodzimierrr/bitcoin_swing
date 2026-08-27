@@ -13,6 +13,14 @@ PERCENT_FRACTION_MIN = 0.0
 PERCENT_FRACTION_MAX = 1.0
 SCORE_MIN = 0.0
 SCORE_MAX = 100.0
+FULL_FLOW_WEIGHT_KEYS = (
+    "etf_norm_5",
+    "etf_norm_20",
+    "flow_accel",
+    "cvd_spread",
+    "spot_dominance",
+)
+CORE_FLOW_WEIGHT_KEYS = ("etf_norm_5", "etf_norm_20", "flow_accel")
 
 
 class StrategyConfigError(ValueError):
@@ -358,6 +366,7 @@ class ScoringWeights:
     entry_conviction: dict[str, float]
     hold_score: dict[str, float]
     add_score: dict[str, float]
+    full_flow: dict[str, float]
     core_flow: dict[str, float]
     core_regime: dict[str, float]
 
@@ -367,7 +376,16 @@ class ScoringWeights:
             entry_conviction=_required_weight_mapping(data, "entry_conviction"),
             hold_score=_required_weight_mapping(data, "hold_score"),
             add_score=_required_weight_mapping(data, "add_score"),
-            core_flow=_required_weight_mapping(data, "core_flow"),
+            full_flow=_required_weight_mapping(
+                data,
+                "full_flow",
+                expected_keys=FULL_FLOW_WEIGHT_KEYS,
+            ),
+            core_flow=_required_weight_mapping(
+                data,
+                "core_flow",
+                expected_keys=CORE_FLOW_WEIGHT_KEYS,
+            ),
             core_regime=_required_weight_mapping(data, "core_regime"),
         )
 
@@ -522,8 +540,21 @@ def _required_bool(data: dict[str, Any], key: str) -> bool:
     return value
 
 
-def _required_weight_mapping(data: dict[str, Any], key: str) -> dict[str, float]:
+def _required_weight_mapping(
+    data: dict[str, Any],
+    key: str,
+    *,
+    expected_keys: tuple[str, ...] | None = None,
+) -> dict[str, float]:
     mapping = _required_mapping(data, key)
+    if expected_keys is not None:
+        missing = set(expected_keys) - set(mapping)
+        extra = set(mapping) - set(expected_keys)
+        if missing or extra:
+            raise StrategyConfigError(
+                f"{key} weights must exactly match {expected_keys}; "
+                f"missing={sorted(missing)}, extra={sorted(extra)}"
+            )
     weights: dict[str, float] = {}
     for weight_name, value in mapping.items():
         weights[weight_name] = _required_fraction(mapping, weight_name)

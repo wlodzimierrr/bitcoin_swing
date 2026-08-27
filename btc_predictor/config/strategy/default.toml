@@ -122,6 +122,13 @@ positioning = 0.15
 momentum = 0.10
 risk_improvement = 0.10
 
+[scoring_weights.full_flow]
+etf_norm_5 = 0.30
+etf_norm_20 = 0.25
+flow_accel = 0.20
+cvd_spread = 0.15
+spot_dominance = 0.10
+
 [scoring_weights.core_flow]
 etf_norm_5 = 0.40
 etf_norm_20 = 0.35

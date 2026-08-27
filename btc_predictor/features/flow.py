@@ -6,6 +6,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from math import erf, sqrt
 from typing import Any
 
 from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume, require_utc_datetime
@@ -24,6 +25,29 @@ PERP_VOLUME_GROWTH_FEATURE_ID = "PERP_VOLUME_GROWTH"
 SPOT_PERP_CVD_SPREAD_FEATURE_ID = "CVD_SPREAD"
 SPOT_CVD_FEATURE_ID = "SPOT_CVD"
 PERP_CVD_FEATURE_ID = "PERP_CVD"
+FLOW_SCORE_FEATURE_ID = "FLOW_SCORE"
+FLOW_MODEL_ETF_CORE = "ETF_CORE"
+FLOW_MODEL_ETF_SPOT_PERP_FULL = "ETF_SPOT_PERP_FULL"
+CORE_FLOW_SCORE_COMPONENT_IDS = ("etf_norm_5", "etf_norm_20", "flow_accel")
+FULL_FLOW_SCORE_COMPONENT_IDS = (
+    "etf_norm_5",
+    "etf_norm_20",
+    "flow_accel",
+    "cvd_spread",
+    "spot_dominance",
+)
+DEFAULT_CORE_FLOW_SCORE_WEIGHTS = {
+    "etf_norm_5": Decimal("0.40"),
+    "etf_norm_20": Decimal("0.35"),
+    "flow_accel": Decimal("0.25"),
+}
+DEFAULT_FULL_FLOW_SCORE_WEIGHTS = {
+    "etf_norm_5": Decimal("0.30"),
+    "etf_norm_20": Decimal("0.25"),
+    "flow_accel": Decimal("0.20"),
+    "cvd_spread": Decimal("0.15"),
+    "spot_dominance": Decimal("0.10"),
+}
 ETF_FLOW_FEATURE_REASON_CODES = (
     "ETF_FLOW_INPUT_MISSING",
     "ETF_FLOW_AUM_MISSING",
@@ -40,6 +64,10 @@ SPOT_PERP_CVD_SPREAD_REASON_CODES = (
     "SPOT_CVD_INPUT_MISSING",
     "PERP_CVD_INPUT_MISSING",
     "SPOT_PERP_CVD_SPREAD_INSUFFICIENT_HISTORY",
+)
+FLOW_SCORE_REASON_CODES = (
+    "FLOW_SCORE_CORE_INPUT_MISSING",
+    "FLOW_SCORE_P1_INPUT_MISSING",
 )
 
 
@@ -265,6 +293,84 @@ class SpotPerpCvdSpreadResult:
             ),
             "cvd_spread": str(self.cvd_spread) if self.cvd_spread is not None else None,
             "source_record_count": self.source_record_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class FlowScoreInput:
+    etf_norm_5_zscore: Decimal | None
+    etf_norm_20_zscore: Decimal | None
+    flow_accel_zscore: Decimal | None
+    cvd_spread_zscore: Decimal | None = None
+    spot_dominance_zscore: Decimal | None = None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "etf_norm_5": (
+                str(self.etf_norm_5_zscore)
+                if self.etf_norm_5_zscore is not None
+                else None
+            ),
+            "etf_norm_20": (
+                str(self.etf_norm_20_zscore)
+                if self.etf_norm_20_zscore is not None
+                else None
+            ),
+            "flow_accel": (
+                str(self.flow_accel_zscore)
+                if self.flow_accel_zscore is not None
+                else None
+            ),
+            "cvd_spread": (
+                str(self.cvd_spread_zscore)
+                if self.cvd_spread_zscore is not None
+                else None
+            ),
+            "spot_dominance": (
+                str(self.spot_dominance_zscore)
+                if self.spot_dominance_zscore is not None
+                else None
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class FlowScoreResult:
+    feature_id: str
+    flow_model: str
+    raw_score: Decimal | None
+    score: Decimal | None
+    interpretation: str | None
+    inputs: FlowScoreInput
+    weights: dict[str, Decimal]
+    contributions: dict[str, Decimal | None]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    @property
+    def reason_code(self) -> str | None:
+        if self.interpretation is None:
+            return None
+        return f"{self.feature_id}_{self.interpretation}"
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "flow_model": self.flow_model,
+            "raw_score": str(self.raw_score) if self.raw_score is not None else None,
+            "score": str(self.score) if self.score is not None else None,
+            "interpretation": self.interpretation,
+            "reason_code": self.reason_code,
+            "inputs": self.inputs.as_record(),
+            "weights": {key: str(value) for key, value in self.weights.items()},
+            "contributions": {
+                key: str(value) if value is not None else None
+                for key, value in self.contributions.items()
+            },
+            "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
         }
@@ -572,6 +678,90 @@ def spot_perp_cvd_spread(
     )
 
 
+def calculate_flow_score(
+    inputs: FlowScoreInput,
+    *,
+    core_weights: dict[str, Any] | None = None,
+    full_weights: dict[str, Any] | None = None,
+    config_metadata: dict[str, str] | None = None,
+) -> FlowScoreResult:
+    """Calculate the configured flow score and record the selected flow model."""
+
+    core_score_weights = _flow_score_weights(
+        core_weights,
+        component_ids=CORE_FLOW_SCORE_COMPONENT_IDS,
+        default_weights=DEFAULT_CORE_FLOW_SCORE_WEIGHTS,
+        name="core_flow",
+    )
+    full_score_weights = _flow_score_weights(
+        full_weights,
+        component_ids=FULL_FLOW_SCORE_COMPONENT_IDS,
+        default_weights=DEFAULT_FULL_FLOW_SCORE_WEIGHTS,
+        name="full_flow",
+    )
+    input_values = _flow_score_input_values(inputs)
+    core_missing = [
+        component_id
+        for component_id in CORE_FLOW_SCORE_COMPONENT_IDS
+        if input_values[component_id] is None
+    ]
+    p1_missing = [
+        component_id
+        for component_id in ("cvd_spread", "spot_dominance")
+        if input_values[component_id] is None
+    ]
+
+    reason_codes = []
+    if core_missing:
+        reason_codes.append("FLOW_SCORE_CORE_INPUT_MISSING")
+    if p1_missing:
+        reason_codes.append("FLOW_SCORE_P1_INPUT_MISSING")
+
+    flow_model = FLOW_MODEL_ETF_CORE if p1_missing else FLOW_MODEL_ETF_SPOT_PERP_FULL
+    selected_component_ids = (
+        FULL_FLOW_SCORE_COMPONENT_IDS
+        if flow_model == FLOW_MODEL_ETF_SPOT_PERP_FULL
+        else CORE_FLOW_SCORE_COMPONENT_IDS
+    )
+    selected_weights = (
+        full_score_weights
+        if flow_model == FLOW_MODEL_ETF_SPOT_PERP_FULL
+        else core_score_weights
+    )
+    contributions = {
+        component_id: (
+            selected_weights[component_id] * input_values[component_id]
+            if input_values[component_id] is not None
+            else None
+        )
+        for component_id in selected_component_ids
+    }
+    selected_missing = [
+        component_id
+        for component_id in selected_component_ids
+        if input_values[component_id] is None
+    ]
+    raw_score = (
+        sum((value for value in contributions.values() if value is not None), Decimal("0"))
+        if not selected_missing
+        else None
+    )
+    score = _standard_normal_score(raw_score) if raw_score is not None else None
+    return FlowScoreResult(
+        feature_id=FLOW_SCORE_FEATURE_ID,
+        flow_model=flow_model,
+        raw_score=raw_score,
+        score=score,
+        interpretation=_flow_score_interpretation(score),
+        inputs=inputs,
+        weights=selected_weights,
+        contributions=contributions,
+        config_metadata=dict(config_metadata or {}),
+        complete=raw_score is not None,
+        reason_codes=tuple(reason_codes),
+    )
+
+
 def etf_flow_window(
     flows: Sequence[EtfFlow],
     *,
@@ -846,6 +1036,69 @@ def _latest_zscore(
     if volatility == 0:
         return None
     return (values[-1] - mean) / volatility
+
+
+def _flow_score_weights(
+    weights: dict[str, Any] | None,
+    *,
+    component_ids: tuple[str, ...],
+    default_weights: dict[str, Decimal],
+    name: str,
+) -> dict[str, Decimal]:
+    if weights is None:
+        return dict(default_weights)
+
+    missing = set(component_ids) - set(weights)
+    extra = set(weights) - set(component_ids)
+    if missing or extra:
+        raise ValueError(
+            f"{name} weights must exactly match {component_ids}; "
+            f"missing={sorted(missing)}, extra={sorted(extra)}"
+        )
+    decimal_weights = {
+        component_id: _decimal(weights[component_id])
+        for component_id in component_ids
+    }
+    if any(weight < 0 for weight in decimal_weights.values()):
+        raise ValueError(f"{name} weights must be non-negative")
+    if sum(decimal_weights.values(), Decimal("0")) != Decimal("1"):
+        raise ValueError(f"{name} weights must sum to 1")
+    return decimal_weights
+
+
+def _flow_score_input_values(inputs: FlowScoreInput) -> dict[str, Decimal | None]:
+    return {
+        "etf_norm_5": inputs.etf_norm_5_zscore,
+        "etf_norm_20": inputs.etf_norm_20_zscore,
+        "flow_accel": inputs.flow_accel_zscore,
+        "cvd_spread": inputs.cvd_spread_zscore,
+        "spot_dominance": inputs.spot_dominance_zscore,
+    }
+
+
+def _standard_normal_score(raw_score: Decimal) -> Decimal:
+    cdf = Decimal(str(0.5 * (1.0 + erf(float(raw_score) / sqrt(2.0)))))
+    return Decimal("100") * cdf
+
+
+def _flow_score_interpretation(score: Decimal | None) -> str | None:
+    if score is None:
+        return None
+    if score >= Decimal("80"):
+        return "STRONG_INFLOW"
+    if score >= Decimal("65"):
+        return "SUPPORTIVE_FLOW"
+    if score >= Decimal("45"):
+        return "MIXED_FLOW"
+    if score >= Decimal("30"):
+        return "WEAK_FLOW"
+    return "DISTRIBUTION"
+
+
+def _decimal(value: Any) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value))
 
 
 def _dedupe_reason_codes(reason_codes: Iterable[str]) -> tuple[str, ...]:
