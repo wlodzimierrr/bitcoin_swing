@@ -164,7 +164,10 @@ history. `open_interest_growth_health` implements `OI_GROWTH_HEALTH` from
 fixed permanent thresholds and keeping the selected OI unit explicit.
 `open_interest_intensity` implements `OI_INTENSITY = AggregateOI / BTCMarketCap`
 and converts the point-in-time ratio into a 180-day historical percentile, with
-high percentile readings mapped to lower health scores.
+high percentile readings mapped to lower health scores. `futures_basis_health`
+implements `FUTURES_BASIS_HEALTH` from average annualized futures basis and its
+180-day rolling z-score, preferring moderately positive basis while penalizing
+unusually weak or crowded readings.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

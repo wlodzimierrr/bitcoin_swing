@@ -3,13 +3,17 @@ from decimal import Decimal
 
 import pytest
 
-from btc_predictor.data import FundingRate, OpenInterest
+from btc_predictor.data import FundingRate, FuturesBasis, OpenInterest
 from btc_predictor.features import (
     DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS,
     DEFAULT_FUNDING_HEALTH_PREFERRED_ZSCORE,
     DEFAULT_FUNDING_HEALTH_ZSCORE_WIDTH,
     DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS,
     DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS,
+    DEFAULT_FUTURES_BASIS_HEALTH_PREFERRED_ZSCORE,
+    DEFAULT_FUTURES_BASIS_HEALTH_ZSCORE_WIDTH,
+    DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS,
+    DEFAULT_FUTURES_BASIS_ZSCORE_WINDOW_DAYS,
     DEFAULT_OI_GROWTH_HEALTH_PREFERRED_ZSCORE,
     DEFAULT_OI_GROWTH_HEALTH_ZSCORE_WIDTH,
     DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS,
@@ -21,6 +25,10 @@ from btc_predictor.features import (
     FUNDING_HEALTH_FEATURE_ID,
     FUNDING_HEALTH_REASON_CODES,
     FUNDING_ZSCORE_FEATURE_ID,
+    FUTURES_BASIS_AVG_FEATURE_ID,
+    FUTURES_BASIS_HEALTH_FEATURE_ID,
+    FUTURES_BASIS_HEALTH_REASON_CODES,
+    FUTURES_BASIS_ZSCORE_FEATURE_ID,
     OI_GROWTH_FEATURE_ID,
     OI_GROWTH_HEALTH_FEATURE_ID,
     OI_GROWTH_HEALTH_REASON_CODES,
@@ -29,6 +37,7 @@ from btc_predictor.features import (
     OI_INTENSITY_PERCENTILE_FEATURE_ID,
     OI_INTENSITY_REASON_CODES,
     MarketCapObservation,
+    futures_basis_health,
     funding_health,
     open_interest_growth_health,
     open_interest_intensity,
@@ -61,6 +70,43 @@ def daily_funding_rates(values: tuple[str, ...]) -> tuple[FundingRate, ...]:
     return tuple(
         funding_rate(start + timedelta(days=index), funding_rate_value=value)
         for index, value in enumerate(values)
+    )
+
+
+def futures_basis(
+    observation_time: datetime,
+    *,
+    basis_rate: str,
+    annualized_basis_rate: str,
+    available_at: datetime | None = None,
+    exchange: str = "binance",
+) -> FuturesBasis:
+    return FuturesBasis(
+        observation_time=observation_time,
+        exchange=exchange,
+        symbol="BTCUSDT",
+        instrument="BTCUSDT-QUARTERLY",
+        expiry=observation_time + timedelta(days=90),
+        basis_rate=Decimal(basis_rate),
+        annualized_basis_rate=Decimal(annualized_basis_rate),
+        provider=exchange,
+        source=f"{exchange}-api",
+        available_at=available_at or observation_time + timedelta(minutes=1),
+        ingested_at=observation_time + timedelta(minutes=2),
+    )
+
+
+def daily_futures_basis(
+    values: tuple[tuple[str, str], ...],
+) -> tuple[FuturesBasis, ...]:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    return tuple(
+        futures_basis(
+            start + timedelta(days=index),
+            basis_rate=basis_rate,
+            annualized_basis_rate=annualized_basis_rate,
+        )
+        for index, (basis_rate, annualized_basis_rate) in enumerate(values)
     )
 
 
@@ -133,6 +179,21 @@ def test_funding_health_metadata_is_stable() -> None:
     )
 
 
+def test_futures_basis_health_metadata_is_stable() -> None:
+    assert FUTURES_BASIS_HEALTH_FEATURE_ID == "FUTURES_BASIS_HEALTH"
+    assert FUTURES_BASIS_AVG_FEATURE_ID == "FUTURES_BASIS_AVG"
+    assert FUTURES_BASIS_ZSCORE_FEATURE_ID == "FUTURES_BASIS_ZSCORE_180D"
+    assert DEFAULT_FUTURES_BASIS_ZSCORE_WINDOW_DAYS == 180
+    assert DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS == 30
+    assert DEFAULT_FUTURES_BASIS_HEALTH_PREFERRED_ZSCORE == Decimal("0.25")
+    assert DEFAULT_FUTURES_BASIS_HEALTH_ZSCORE_WIDTH == Decimal("1.25")
+    assert FUTURES_BASIS_HEALTH_REASON_CODES == (
+        "FUTURES_BASIS_INPUT_MISSING",
+        "FUTURES_BASIS_INSUFFICIENT_HISTORY",
+        "FUTURES_BASIS_ZERO_VARIANCE",
+    )
+
+
 def test_open_interest_growth_health_metadata_is_stable() -> None:
     assert OI_GROWTH_HEALTH_FEATURE_ID == "OI_GROWTH_HEALTH"
     assert OI_GROWTH_FEATURE_ID == "OI_GROWTH_7D"
@@ -184,6 +245,43 @@ def test_funding_health_uses_seven_day_average_and_rolling_zscore() -> None:
     assert result.health_score is not None
     assert result.health_score.quantize(Decimal("0.001")) == Decimal("20.361")
     assert result.average_window_record_count == 7
+    assert result.history_observation_count == 9
+    assert result.source_record_count == 10
+    assert result.reason_codes == ()
+
+
+def test_futures_basis_health_uses_annualized_basis_rolling_zscore() -> None:
+    rows = daily_futures_basis(
+        (
+            ("0.001", "0.01"),
+            ("0.002", "0.02"),
+            ("0.003", "0.03"),
+            ("0.004", "0.04"),
+            ("0.005", "0.05"),
+            ("0.006", "0.06"),
+            ("0.007", "0.07"),
+            ("0.008", "0.08"),
+            ("0.009", "0.09"),
+            ("0.010", "0.10"),
+        )
+    )
+
+    result = futures_basis_health(
+        tuple(reversed(rows)),
+        as_of=datetime(2026, 1, 10, 1, tzinfo=UTC),
+        min_zscore_observations=3,
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "FUTURES_BASIS_HEALTH"
+    assert result.observation_time == datetime(2026, 1, 10, tzinfo=UTC)
+    assert result.zscore_window_days == 180
+    assert result.basis_rate_avg == Decimal("0.010")
+    assert result.annualized_basis_rate_avg == Decimal("0.10")
+    assert result.annualized_basis_zscore is not None
+    assert result.annualized_basis_zscore.quantize(Decimal("0.000001")) == Decimal("1.936492")
+    assert result.health_score is not None
+    assert result.health_score.quantize(Decimal("0.001")) == Decimal("40.246")
     assert result.history_observation_count == 9
     assert result.source_record_count == 10
     assert result.reason_codes == ()
@@ -272,6 +370,43 @@ def test_funding_health_filters_unavailable_future_rows() -> None:
     assert with_future == baseline
 
 
+def test_futures_basis_health_filters_unavailable_future_rows() -> None:
+    rows = daily_futures_basis(
+        (
+            ("0.001", "0.01"),
+            ("0.002", "0.02"),
+            ("0.003", "0.03"),
+            ("0.004", "0.04"),
+            ("0.005", "0.05"),
+            ("0.006", "0.06"),
+            ("0.007", "0.07"),
+            ("0.008", "0.08"),
+            ("0.009", "0.09"),
+            ("0.010", "0.10"),
+        )
+    )
+    unavailable_revision = futures_basis(
+        datetime(2026, 1, 10, tzinfo=UTC),
+        basis_rate="1.00",
+        annualized_basis_rate="1.00",
+        available_at=datetime(2026, 1, 11, tzinfo=UTC),
+        exchange="okx",
+    )
+
+    baseline = futures_basis_health(
+        rows,
+        as_of=datetime(2026, 1, 10, 1, tzinfo=UTC),
+        min_zscore_observations=3,
+    ).as_record()
+    with_future = futures_basis_health(
+        (*rows, unavailable_revision),
+        as_of=datetime(2026, 1, 10, 1, tzinfo=UTC),
+        min_zscore_observations=3,
+    ).as_record()
+
+    assert with_future == baseline
+
+
 def test_open_interest_growth_health_filters_unavailable_future_rows() -> None:
     rows = daily_open_interest(
         ("100", "105", "110", "118", "125", "133", "140", "148", "160", "175", "190", "210")
@@ -351,6 +486,40 @@ def test_funding_health_averages_multiple_exchange_rows_per_timestamp() -> None:
     assert result.source_record_count == 2
 
 
+def test_futures_basis_health_averages_multiple_exchange_rows_per_timestamp() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    rows = (
+        futures_basis(start, basis_rate="0.001", annualized_basis_rate="0.01"),
+        futures_basis(
+            start + timedelta(days=1),
+            basis_rate="0.002",
+            annualized_basis_rate="0.02",
+        ),
+        futures_basis(
+            start + timedelta(days=2),
+            basis_rate="0.003",
+            annualized_basis_rate="0.03",
+        ),
+        futures_basis(
+            start + timedelta(days=2),
+            basis_rate="0.009",
+            annualized_basis_rate="0.09",
+            exchange="okx",
+        ),
+    )
+
+    result = futures_basis_health(
+        rows,
+        as_of=start + timedelta(days=2, hours=1),
+        min_zscore_observations=2,
+    )
+
+    assert result.basis_rate_avg == Decimal("0.006")
+    assert result.annualized_basis_rate_avg == Decimal("0.06")
+    assert result.source_record_count == 4
+    assert result.history_observation_count == 2
+
+
 def test_open_interest_growth_health_aggregates_multiple_exchanges_and_filters_units() -> None:
     start = datetime(2026, 1, 1, tzinfo=UTC)
     rows = (
@@ -415,6 +584,17 @@ def test_funding_health_reports_missing_input_without_zero_fill() -> None:
     assert result.funding_zscore is None
     assert result.health_score is None
     assert result.reason_codes == ("FUNDING_RATE_INPUT_MISSING",)
+
+
+def test_futures_basis_health_reports_missing_input_without_zero_fill() -> None:
+    result = futures_basis_health((), as_of=datetime(2026, 1, 10, tzinfo=UTC))
+
+    assert result.complete is False
+    assert result.basis_rate_avg is None
+    assert result.annualized_basis_rate_avg is None
+    assert result.annualized_basis_zscore is None
+    assert result.health_score is None
+    assert result.reason_codes == ("FUTURES_BASIS_INPUT_MISSING",)
 
 
 def test_open_interest_growth_health_reports_missing_input_without_zero_fill() -> None:
@@ -502,6 +682,23 @@ def test_funding_health_reports_insufficient_history() -> None:
     assert result.reason_codes == ("FUNDING_HEALTH_INSUFFICIENT_HISTORY",)
 
 
+def test_futures_basis_health_reports_insufficient_history() -> None:
+    rows = daily_futures_basis((("0.001", "0.01"), ("0.002", "0.02")))
+
+    result = futures_basis_health(
+        rows,
+        as_of=datetime(2026, 1, 2, 1, tzinfo=UTC),
+        min_zscore_observations=3,
+    )
+
+    assert result.complete is False
+    assert result.annualized_basis_rate_avg == Decimal("0.02")
+    assert result.annualized_basis_zscore is None
+    assert result.health_score is None
+    assert result.history_observation_count == 1
+    assert result.reason_codes == ("FUTURES_BASIS_INSUFFICIENT_HISTORY",)
+
+
 def test_open_interest_growth_health_reports_insufficient_history() -> None:
     rows = daily_open_interest(
         ("100", "105", "110", "118", "125", "133", "140", "148", "160")
@@ -560,6 +757,24 @@ def test_funding_health_reports_zero_variance_history() -> None:
     assert result.reason_codes == ("FUNDING_HEALTH_ZERO_VARIANCE",)
 
 
+def test_futures_basis_health_reports_zero_variance_history() -> None:
+    rows = daily_futures_basis(
+        (("0.001", "0.01"), ("0.001", "0.01"), ("0.001", "0.01"), ("0.001", "0.01"))
+    )
+
+    result = futures_basis_health(
+        rows,
+        as_of=datetime(2026, 1, 4, 1, tzinfo=UTC),
+        min_zscore_observations=3,
+    )
+
+    assert result.complete is False
+    assert result.annualized_basis_rate_avg == Decimal("0.01")
+    assert result.annualized_basis_zscore is None
+    assert result.health_score is None
+    assert result.reason_codes == ("FUTURES_BASIS_ZERO_VARIANCE",)
+
+
 def test_open_interest_growth_health_reports_zero_variance_history() -> None:
     rows = daily_open_interest(
         ("100", "100", "100", "100", "100", "100", "100", "100", "100", "100", "100")
@@ -605,6 +820,47 @@ def test_funding_health_exposes_persistable_payload() -> None:
     assert record["funding_zscore"] == str(result.funding_zscore)
     assert record["health_score"] == str(result.health_score)
     assert record["average_window_record_count"] == 7
+    assert record["history_observation_count"] == 9
+    assert record["source_record_count"] == 10
+    assert record["complete"] is True
+    assert record["reason_codes"] == []
+
+
+def test_futures_basis_health_exposes_persistable_payload() -> None:
+    rows = daily_futures_basis(
+        (
+            ("0.001", "0.01"),
+            ("0.002", "0.02"),
+            ("0.003", "0.03"),
+            ("0.004", "0.04"),
+            ("0.005", "0.05"),
+            ("0.006", "0.06"),
+            ("0.007", "0.07"),
+            ("0.008", "0.08"),
+            ("0.009", "0.09"),
+            ("0.010", "0.10"),
+        )
+    )
+
+    result = futures_basis_health(
+        rows,
+        as_of=datetime(2026, 1, 10, 1, tzinfo=UTC),
+        min_zscore_observations=3,
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "FUTURES_BASIS_HEALTH"
+    assert record["observation_time"] == "2026-01-10T00:00:00+00:00"
+    assert record["average_feature_id"] == "FUTURES_BASIS_AVG"
+    assert record["zscore_feature_id"] == "FUTURES_BASIS_ZSCORE_180D"
+    assert record["zscore_window_days"] == 180
+    assert record["min_zscore_observations"] == 3
+    assert record["preferred_basis_zscore"] == "0.25"
+    assert record["basis_zscore_width"] == "1.25"
+    assert record["basis_rate_avg"] == "0.010"
+    assert record["annualized_basis_rate_avg"] == "0.10"
+    assert record["annualized_basis_zscore"] == str(result.annualized_basis_zscore)
+    assert record["health_score"] == str(result.health_score)
     assert record["history_observation_count"] == 9
     assert record["source_record_count"] == 10
     assert record["complete"] is True
@@ -688,6 +944,25 @@ def test_funding_health_rejects_invalid_inputs() -> None:
             (),
             as_of=datetime(2026, 1, 10, tzinfo=UTC),
             zscore_width=Decimal("0"),
+        )
+
+
+def test_futures_basis_health_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="as_of must be timezone-aware UTC"):
+        futures_basis_health((), as_of=datetime(2026, 1, 10))
+
+    with pytest.raises(ValueError, match="zscore_window_days"):
+        futures_basis_health(
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            zscore_window_days=0,
+        )
+
+    with pytest.raises(ValueError, match="basis_zscore_width"):
+        futures_basis_health(
+            (),
+            as_of=datetime(2026, 1, 10, tzinfo=UTC),
+            basis_zscore_width=Decimal("0"),
         )
 
 

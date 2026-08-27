@@ -9,12 +9,20 @@ from decimal import Decimal
 from math import exp
 from typing import Any
 
-from btc_predictor.data import FundingRate, OpenInterest, require_utc_datetime
+from btc_predictor.data import (
+    FundingRate,
+    FuturesBasis,
+    OpenInterest,
+    require_utc_datetime,
+)
 
 
 FUNDING_HEALTH_FEATURE_ID = "FUNDING_HEALTH"
 FUNDING_7D_AVG_FEATURE_ID = "FUNDING_7D_AVG"
 FUNDING_ZSCORE_FEATURE_ID = "FUNDING_ZSCORE_180D"
+FUTURES_BASIS_HEALTH_FEATURE_ID = "FUTURES_BASIS_HEALTH"
+FUTURES_BASIS_AVG_FEATURE_ID = "FUTURES_BASIS_AVG"
+FUTURES_BASIS_ZSCORE_FEATURE_ID = "FUTURES_BASIS_ZSCORE_180D"
 OI_GROWTH_HEALTH_FEATURE_ID = "OI_GROWTH_HEALTH"
 OI_GROWTH_FEATURE_ID = "OI_GROWTH_7D"
 OI_GROWTH_ZSCORE_FEATURE_ID = "OI_GROWTH_ZSCORE_180D"
@@ -24,6 +32,11 @@ FUNDING_HEALTH_REASON_CODES = (
     "FUNDING_RATE_INPUT_MISSING",
     "FUNDING_HEALTH_INSUFFICIENT_HISTORY",
     "FUNDING_HEALTH_ZERO_VARIANCE",
+)
+FUTURES_BASIS_HEALTH_REASON_CODES = (
+    "FUTURES_BASIS_INPUT_MISSING",
+    "FUTURES_BASIS_INSUFFICIENT_HISTORY",
+    "FUTURES_BASIS_ZERO_VARIANCE",
 )
 OI_GROWTH_HEALTH_REASON_CODES = (
     "OI_GROWTH_INPUT_MISSING",
@@ -41,6 +54,10 @@ DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS = 180
 DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS = 30
 DEFAULT_FUNDING_HEALTH_PREFERRED_ZSCORE = Decimal("0.25")
 DEFAULT_FUNDING_HEALTH_ZSCORE_WIDTH = Decimal("1.25")
+DEFAULT_FUTURES_BASIS_ZSCORE_WINDOW_DAYS = 180
+DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS = 30
+DEFAULT_FUTURES_BASIS_HEALTH_PREFERRED_ZSCORE = Decimal("0.25")
+DEFAULT_FUTURES_BASIS_HEALTH_ZSCORE_WIDTH = Decimal("1.25")
 DEFAULT_OI_GROWTH_WINDOW_DAYS = 7
 DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS = 180
 DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS = 30
@@ -121,6 +138,59 @@ class FundingHealthResult:
             ),
             "health_score": str(self.health_score) if self.health_score is not None else None,
             "average_window_record_count": self.average_window_record_count,
+            "history_observation_count": self.history_observation_count,
+            "source_record_count": self.source_record_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class FuturesBasisHealthResult:
+    feature_id: str
+    observation_time: datetime
+    average_feature_id: str
+    zscore_feature_id: str
+    zscore_window_days: int
+    min_zscore_observations: int
+    preferred_basis_zscore: Decimal
+    basis_zscore_width: Decimal
+    basis_rate_avg: Decimal | None
+    annualized_basis_rate_avg: Decimal | None
+    annualized_basis_zscore: Decimal | None
+    health_score: Decimal | None
+    history_observation_count: int
+    source_record_count: int
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ).isoformat(),
+            "average_feature_id": self.average_feature_id,
+            "zscore_feature_id": self.zscore_feature_id,
+            "zscore_window_days": self.zscore_window_days,
+            "min_zscore_observations": self.min_zscore_observations,
+            "preferred_basis_zscore": str(self.preferred_basis_zscore),
+            "basis_zscore_width": str(self.basis_zscore_width),
+            "basis_rate_avg": (
+                str(self.basis_rate_avg) if self.basis_rate_avg is not None else None
+            ),
+            "annualized_basis_rate_avg": (
+                str(self.annualized_basis_rate_avg)
+                if self.annualized_basis_rate_avg is not None
+                else None
+            ),
+            "annualized_basis_zscore": (
+                str(self.annualized_basis_zscore)
+                if self.annualized_basis_zscore is not None
+                else None
+            ),
+            "health_score": str(self.health_score) if self.health_score is not None else None,
             "history_observation_count": self.history_observation_count,
             "source_record_count": self.source_record_count,
             "complete": self.complete,
@@ -334,6 +404,87 @@ def funding_health(
     )
 
 
+def futures_basis_health(
+    futures_basis_rows: Sequence[FuturesBasis],
+    *,
+    as_of: datetime,
+    zscore_window_days: int = DEFAULT_FUTURES_BASIS_ZSCORE_WINDOW_DAYS,
+    min_zscore_observations: int = DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS,
+    preferred_basis_zscore: Decimal = DEFAULT_FUTURES_BASIS_HEALTH_PREFERRED_ZSCORE,
+    basis_zscore_width: Decimal = DEFAULT_FUTURES_BASIS_HEALTH_ZSCORE_WIDTH,
+) -> FuturesBasisHealthResult:
+    """Calculate futures-basis health from annualized basis rolling z-score."""
+
+    signal_time = require_utc_datetime(as_of, "as_of")
+    _validate_futures_basis_health_parameters(
+        zscore_window_days=zscore_window_days,
+        min_zscore_observations=min_zscore_observations,
+        basis_zscore_width=basis_zscore_width,
+    )
+    available_rows = tuple(
+        row
+        for row in futures_basis_rows
+        if row.as_record()["available_at"] <= signal_time
+        and row.as_record()["observation_time"] <= signal_time
+    )
+    observation_time = (
+        max(row.observation_time for row in available_rows)
+        if available_rows
+        else signal_time
+    )
+    averages_by_time = _futures_basis_averages_by_time(available_rows)
+    current_average = averages_by_time.get(observation_time)
+    basis_rate_avg = current_average[0] if current_average is not None else None
+    annualized_basis_rate_avg = current_average[1] if current_average is not None else None
+
+    reason_codes = []
+    if not available_rows or annualized_basis_rate_avg is None:
+        reason_codes.append("FUTURES_BASIS_INPUT_MISSING")
+
+    history = _futures_basis_history(
+        averages_by_time,
+        observation_time=observation_time,
+        zscore_window_days=zscore_window_days,
+    )
+    annualized_basis_zscore = None
+    if annualized_basis_rate_avg is not None:
+        if len(history) < min_zscore_observations:
+            reason_codes.append("FUTURES_BASIS_INSUFFICIENT_HISTORY")
+        else:
+            annualized_basis_zscore = _zscore(annualized_basis_rate_avg, history)
+            if annualized_basis_zscore is None:
+                reason_codes.append("FUTURES_BASIS_ZERO_VARIANCE")
+
+    health_score = (
+        _gaussian_health_score(
+            annualized_basis_zscore,
+            preferred_zscore=preferred_basis_zscore,
+            zscore_width=basis_zscore_width,
+        )
+        if annualized_basis_zscore is not None
+        else None
+    )
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    return FuturesBasisHealthResult(
+        feature_id=FUTURES_BASIS_HEALTH_FEATURE_ID,
+        observation_time=observation_time,
+        average_feature_id=FUTURES_BASIS_AVG_FEATURE_ID,
+        zscore_feature_id=FUTURES_BASIS_ZSCORE_FEATURE_ID,
+        zscore_window_days=zscore_window_days,
+        min_zscore_observations=min_zscore_observations,
+        preferred_basis_zscore=preferred_basis_zscore,
+        basis_zscore_width=basis_zscore_width,
+        basis_rate_avg=basis_rate_avg,
+        annualized_basis_rate_avg=annualized_basis_rate_avg,
+        annualized_basis_zscore=annualized_basis_zscore,
+        health_score=health_score,
+        history_observation_count=len(history),
+        source_record_count=len(available_rows),
+        complete=not reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
 def open_interest_growth_health(
     open_interest_rows: Sequence[OpenInterest],
     *,
@@ -540,6 +691,20 @@ def _validate_funding_health_parameters(
         raise ValueError("zscore_width must be > 0")
 
 
+def _validate_futures_basis_health_parameters(
+    *,
+    zscore_window_days: int,
+    min_zscore_observations: int,
+    basis_zscore_width: Decimal,
+) -> None:
+    if zscore_window_days < 1:
+        raise ValueError("zscore_window_days must be >= 1")
+    if min_zscore_observations < 1:
+        raise ValueError("min_zscore_observations must be >= 1")
+    if basis_zscore_width <= 0:
+        raise ValueError("basis_zscore_width must be > 0")
+
+
 def _validate_oi_growth_health_parameters(
     *,
     open_interest_unit: str,
@@ -635,6 +800,39 @@ def _in_trailing_day_window(
 ) -> bool:
     window_start = observation_time - timedelta(days=window_days)
     return window_start < candidate_time <= observation_time
+
+
+def _futures_basis_averages_by_time(
+    futures_basis_rows: Sequence[FuturesBasis],
+) -> dict[datetime, tuple[Decimal, Decimal]]:
+    values_by_time: dict[datetime, list[tuple[Decimal, Decimal]]] = {}
+    for row in futures_basis_rows:
+        record = row.as_record()
+        observation_time = record["observation_time"]
+        values_by_time.setdefault(observation_time, []).append(
+            (record["basis_rate"], record["annualized_basis_rate"])
+        )
+    return {
+        observation_time: (
+            _average(tuple(value[0] for value in values)),
+            _average(tuple(value[1] for value in values)),
+        )
+        for observation_time, values in values_by_time.items()
+    }
+
+
+def _futures_basis_history(
+    averages_by_time: dict[datetime, tuple[Decimal, Decimal]],
+    *,
+    observation_time: datetime,
+    zscore_window_days: int,
+) -> tuple[Decimal, ...]:
+    window_start = observation_time - timedelta(days=zscore_window_days)
+    return tuple(
+        annualized_average
+        for historical_time, (_, annualized_average) in sorted(averages_by_time.items())
+        if window_start <= historical_time < observation_time
+    )
 
 
 def _aggregate_open_interest_by_time(

@@ -1089,8 +1089,15 @@ or insufficient history.
 
 ## BTC-073 — Implement futures-basis health
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 2
+
+Implemented as `FUTURES_BASIS_HEALTH` using point-in-time futures-basis rows,
+per-timestamp averages across available contracts/exchanges, 180-day rolling
+normalization of annualized basis, configurable health-curve parameters, and
+stable reason codes for missing input, insufficient history, or zero-variance
+history.
 
 ---
 
