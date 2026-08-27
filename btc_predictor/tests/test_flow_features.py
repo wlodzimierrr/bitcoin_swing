@@ -5,6 +5,7 @@ import pytest
 
 from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume
 from btc_predictor.features import (
+    CvdObservation,
     ETF_FLOW_ACCELERATION_FEATURE_ID,
     ETF_FLOW_ACCELERATION_REASON_CODES,
     ETF_FLOW_FEATURE_REASON_CODES,
@@ -12,8 +13,12 @@ from btc_predictor.features import (
     FIVE_DAY_ETF_FLOW_WINDOW_DAYS,
     FIVE_DAY_ETF_NORM_FEATURE_ID,
     PERP_VOLUME_GROWTH_FEATURE_ID,
+    PERP_CVD_FEATURE_ID,
     SPOT_PERP_PARTICIPATION_FEATURE_ID,
     SPOT_PERP_PARTICIPATION_REASON_CODES,
+    SPOT_PERP_CVD_SPREAD_FEATURE_ID,
+    SPOT_PERP_CVD_SPREAD_REASON_CODES,
+    SPOT_CVD_FEATURE_ID,
     SPOT_VOLUME_GROWTH_FEATURE_ID,
     TWENTY_DAY_ETF_FLOW_FEATURE_ID,
     TWENTY_DAY_ETF_FLOW_WINDOW_DAYS,
@@ -23,6 +28,7 @@ from btc_predictor.features import (
     etf_flow_acceleration,
     etf_flow_window,
     five_day_etf_flow,
+    spot_perp_cvd_spread,
     spot_perp_participation,
     spot_perp_participation_from_rows,
     twenty_day_etf_flow,
@@ -100,6 +106,22 @@ def participation_observation(
     )
 
 
+def cvd_observation(
+    observation_time: datetime,
+    *,
+    market_type: str,
+    cvd_usd: str,
+    available_at: datetime | None = None,
+) -> CvdObservation:
+    return CvdObservation(
+        observation_time=observation_time,
+        market_type=market_type,
+        cvd_usd=Decimal(cvd_usd),
+        provider="fixture",
+        available_at=available_at or observation_time + timedelta(minutes=1),
+    )
+
+
 def spot_bar(timestamp: datetime, *, close: str, volume: str) -> OhlcvBar:
     return OhlcvBar(
         timestamp=timestamp,
@@ -161,6 +183,17 @@ def test_spot_perp_participation_metadata_is_stable() -> None:
         "SPOT_VOLUME_INPUT_MISSING",
         "PERP_VOLUME_INPUT_MISSING",
         "SPOT_PERP_PARTICIPATION_INSUFFICIENT_HISTORY",
+    )
+
+
+def test_spot_perp_cvd_spread_metadata_is_stable() -> None:
+    assert SPOT_PERP_CVD_SPREAD_FEATURE_ID == "CVD_SPREAD"
+    assert SPOT_CVD_FEATURE_ID == "SPOT_CVD"
+    assert PERP_CVD_FEATURE_ID == "PERP_CVD"
+    assert SPOT_PERP_CVD_SPREAD_REASON_CODES == (
+        "SPOT_CVD_INPUT_MISSING",
+        "PERP_CVD_INPUT_MISSING",
+        "SPOT_PERP_CVD_SPREAD_INSUFFICIENT_HISTORY",
     )
 
 
@@ -512,6 +545,152 @@ def test_spot_perp_participation_rejects_invalid_observations_and_windows() -> N
             (),
             as_of=datetime(2026, 8, 24, tzinfo=UTC),
             growth_window_periods=0,
+        )
+
+
+def test_spot_perp_cvd_spread_calculates_spread_from_cvd_zscores() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(4))
+    spot_values = ("100", "110", "120", "160")
+    perp_values = ("100", "120", "140", "145")
+    observations = tuple(
+        cvd_observation(time, market_type=market_type, cvd_usd=value)
+        for time, spot_value, perp_value in zip(times, spot_values, perp_values, strict=True)
+        for market_type, value in (("spot", spot_value), ("perp", perp_value))
+    )
+
+    result = spot_perp_cvd_spread(
+        observations,
+        as_of=times[-1] + timedelta(minutes=2),
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "CVD_SPREAD"
+    assert result.observation_time == times[-1]
+    assert result.spot_cvd == Decimal("160")
+    assert result.perp_cvd == Decimal("145")
+    assert result.spot_cvd_zscore is not None
+    assert result.perp_cvd_zscore is not None
+    assert result.cvd_spread is not None
+    assert result.spot_cvd_zscore.quantize(Decimal("0.000001")) == Decimal("6.123724")
+    assert result.perp_cvd_zscore.quantize(Decimal("0.000001")) == Decimal("1.530931")
+    assert result.cvd_spread.quantize(Decimal("0.000001")) == Decimal("4.592793")
+    assert result.source_record_count == 8
+    assert result.reason_codes == ()
+
+
+def test_spot_perp_cvd_spread_filters_unavailable_future_inputs() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(4))
+    observations = tuple(
+        cvd_observation(time, market_type=market_type, cvd_usd=value)
+        for time, spot_value, perp_value in zip(
+            times,
+            ("100", "110", "120", "160"),
+            ("100", "120", "140", "145"),
+            strict=True,
+        )
+        for market_type, value in (("spot", spot_value), ("perp", perp_value))
+    )
+    unavailable_future = cvd_observation(
+        times[-1],
+        market_type="spot",
+        cvd_usd="999999",
+        available_at=times[-1] + timedelta(days=1),
+    )
+
+    baseline = spot_perp_cvd_spread(
+        observations,
+        as_of=times[-1] + timedelta(minutes=2),
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    ).as_record()
+    with_future = spot_perp_cvd_spread(
+        (*observations, unavailable_future),
+        as_of=times[-1] + timedelta(minutes=2),
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    ).as_record()
+
+    assert with_future == baseline
+
+
+def test_spot_perp_cvd_spread_reports_missing_inputs_without_zero_fill() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    observations = tuple(
+        cvd_observation(
+            start + timedelta(hours=offset),
+            market_type="spot",
+            cvd_usd="100",
+        )
+        for offset in range(4)
+    )
+
+    result = spot_perp_cvd_spread(
+        observations,
+        as_of=start + timedelta(hours=4),
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    assert result.complete is False
+    assert result.cvd_spread is None
+    assert result.reason_codes == (
+        "PERP_CVD_INPUT_MISSING",
+        "SPOT_PERP_CVD_SPREAD_INSUFFICIENT_HISTORY",
+    )
+
+
+def test_spot_perp_cvd_spread_exposes_persistable_payload() -> None:
+    start = datetime(2026, 8, 24, tzinfo=UTC)
+    times = tuple(start + timedelta(hours=offset) for offset in range(4))
+    observations = tuple(
+        cvd_observation(time, market_type=market_type, cvd_usd=value)
+        for time, spot_value, perp_value in zip(
+            times,
+            ("100", "110", "120", "160"),
+            ("100", "120", "140", "145"),
+            strict=True,
+        )
+        for market_type, value in (("spot", spot_value), ("perp", perp_value))
+    )
+
+    result = spot_perp_cvd_spread(
+        observations,
+        as_of=times[-1] + timedelta(minutes=2),
+        zscore_window_periods=3,
+        min_zscore_periods=3,
+    )
+
+    record = result.as_record()
+    assert record["feature_id"] == "CVD_SPREAD"
+    assert record["observation_time"] == "2026-08-24T03:00:00+00:00"
+    assert record["spot_cvd_feature_id"] == "SPOT_CVD"
+    assert record["perp_cvd_feature_id"] == "PERP_CVD"
+    assert record["zscore_window_periods"] == 3
+    assert record["min_zscore_periods"] == 3
+    assert record["spot_cvd"] == "160"
+    assert record["perp_cvd"] == "145"
+    assert record["source_record_count"] == 8
+    assert record["complete"] is True
+    assert record["reason_codes"] == []
+
+
+def test_spot_perp_cvd_spread_rejects_invalid_observations_and_windows() -> None:
+    with pytest.raises(ValueError, match="market_type"):
+        cvd_observation(
+            datetime(2026, 8, 24, tzinfo=UTC),
+            market_type="futures",
+            cvd_usd="100",
+        ).as_record()
+
+    with pytest.raises(ValueError, match="zscore_window_periods"):
+        spot_perp_cvd_spread(
+            (),
+            as_of=datetime(2026, 8, 24, tzinfo=UTC),
+            zscore_window_periods=0,
         )
 
 

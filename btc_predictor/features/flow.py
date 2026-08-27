@@ -21,6 +21,9 @@ ETF_FLOW_ACCELERATION_FEATURE_ID = "FLOW_ACCEL"
 SPOT_PERP_PARTICIPATION_FEATURE_ID = "SPOT_DOMINANCE"
 SPOT_VOLUME_GROWTH_FEATURE_ID = "SPOT_VOLUME_GROWTH"
 PERP_VOLUME_GROWTH_FEATURE_ID = "PERP_VOLUME_GROWTH"
+SPOT_PERP_CVD_SPREAD_FEATURE_ID = "CVD_SPREAD"
+SPOT_CVD_FEATURE_ID = "SPOT_CVD"
+PERP_CVD_FEATURE_ID = "PERP_CVD"
 ETF_FLOW_FEATURE_REASON_CODES = (
     "ETF_FLOW_INPUT_MISSING",
     "ETF_FLOW_AUM_MISSING",
@@ -32,6 +35,11 @@ SPOT_PERP_PARTICIPATION_REASON_CODES = (
     "SPOT_VOLUME_INPUT_MISSING",
     "PERP_VOLUME_INPUT_MISSING",
     "SPOT_PERP_PARTICIPATION_INSUFFICIENT_HISTORY",
+)
+SPOT_PERP_CVD_SPREAD_REASON_CODES = (
+    "SPOT_CVD_INPUT_MISSING",
+    "PERP_CVD_INPUT_MISSING",
+    "SPOT_PERP_CVD_SPREAD_INSUFFICIENT_HISTORY",
 )
 
 
@@ -55,6 +63,29 @@ class VolumeParticipationObservation:
             ),
             "market_type": self.market_type,
             "notional_usd": self.notional_usd,
+            "provider": self.provider,
+            "available_at": require_utc_datetime(self.available_at, "available_at"),
+        }
+
+
+@dataclass(frozen=True)
+class CvdObservation:
+    observation_time: datetime
+    market_type: str
+    cvd_usd: Decimal
+    provider: str
+    available_at: datetime
+
+    def as_record(self) -> dict[str, Any]:
+        if self.market_type not in {"spot", "perp"}:
+            raise ValueError("market_type must be spot or perp")
+        return {
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ),
+            "market_type": self.market_type,
+            "cvd_usd": self.cvd_usd,
             "provider": self.provider,
             "available_at": require_utc_datetime(self.available_at, "available_at"),
         }
@@ -186,6 +217,53 @@ class SpotPerpParticipationResult:
                 if self.spot_dominance is not None
                 else None
             ),
+            "source_record_count": self.source_record_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class SpotPerpCvdSpreadResult:
+    feature_id: str
+    observation_time: datetime
+    spot_cvd_feature_id: str
+    perp_cvd_feature_id: str
+    zscore_window_periods: int
+    min_zscore_periods: int
+    spot_cvd: Decimal | None
+    perp_cvd: Decimal | None
+    spot_cvd_zscore: Decimal | None
+    perp_cvd_zscore: Decimal | None
+    cvd_spread: Decimal | None
+    source_record_count: int
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ).isoformat(),
+            "spot_cvd_feature_id": self.spot_cvd_feature_id,
+            "perp_cvd_feature_id": self.perp_cvd_feature_id,
+            "zscore_window_periods": self.zscore_window_periods,
+            "min_zscore_periods": self.min_zscore_periods,
+            "spot_cvd": str(self.spot_cvd) if self.spot_cvd is not None else None,
+            "perp_cvd": str(self.perp_cvd) if self.perp_cvd is not None else None,
+            "spot_cvd_zscore": (
+                str(self.spot_cvd_zscore)
+                if self.spot_cvd_zscore is not None
+                else None
+            ),
+            "perp_cvd_zscore": (
+                str(self.perp_cvd_zscore)
+                if self.perp_cvd_zscore is not None
+                else None
+            ),
+            "cvd_spread": str(self.cvd_spread) if self.cvd_spread is not None else None,
             "source_record_count": self.source_record_count,
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
@@ -417,6 +495,83 @@ def spot_perp_participation(
     )
 
 
+def spot_perp_cvd_spread(
+    observations: Sequence[CvdObservation],
+    *,
+    as_of: datetime,
+    zscore_window_periods: int = 20,
+    min_zscore_periods: int | None = None,
+) -> SpotPerpCvdSpreadResult:
+    """Calculate CVDSpread = z(SpotCVD) - z(PerpCVD)."""
+
+    signal_time = require_utc_datetime(as_of, "as_of")
+    _validate_zscore_window(zscore_window_periods, min_zscore_periods)
+    required_zscore_periods = (
+        zscore_window_periods if min_zscore_periods is None else min_zscore_periods
+    )
+    available_observations = tuple(
+        observation
+        for observation in observations
+        if observation.as_record()["available_at"] <= signal_time
+        and observation.as_record()["observation_time"] <= signal_time
+    )
+    by_market_time = _aggregate_cvd_observations(available_observations)
+    spot_by_time = by_market_time["spot"]
+    perp_by_time = by_market_time["perp"]
+    common_times = tuple(sorted(set(spot_by_time) & set(perp_by_time)))
+    observation_time = common_times[-1] if common_times else signal_time
+
+    reason_codes = []
+    if not spot_by_time:
+        reason_codes.append("SPOT_CVD_INPUT_MISSING")
+    if not perp_by_time:
+        reason_codes.append("PERP_CVD_INPUT_MISSING")
+
+    spot_cvd = None
+    perp_cvd = None
+    spot_cvd_zscore = None
+    perp_cvd_zscore = None
+    cvd_spread = None
+    if common_times:
+        spot_values = tuple(spot_by_time[time] for time in common_times)
+        perp_values = tuple(perp_by_time[time] for time in common_times)
+        spot_cvd = spot_values[-1]
+        perp_cvd = perp_values[-1]
+        spot_cvd_zscore = _latest_zscore(
+            spot_values,
+            window=zscore_window_periods,
+            min_periods=required_zscore_periods,
+        )
+        perp_cvd_zscore = _latest_zscore(
+            perp_values,
+            window=zscore_window_periods,
+            min_periods=required_zscore_periods,
+        )
+        if spot_cvd_zscore is not None and perp_cvd_zscore is not None:
+            cvd_spread = spot_cvd_zscore - perp_cvd_zscore
+
+    if cvd_spread is None:
+        reason_codes.append("SPOT_PERP_CVD_SPREAD_INSUFFICIENT_HISTORY")
+
+    reason_codes = list(_dedupe_reason_codes(reason_codes))
+    return SpotPerpCvdSpreadResult(
+        feature_id=SPOT_PERP_CVD_SPREAD_FEATURE_ID,
+        observation_time=observation_time,
+        spot_cvd_feature_id=SPOT_CVD_FEATURE_ID,
+        perp_cvd_feature_id=PERP_CVD_FEATURE_ID,
+        zscore_window_periods=zscore_window_periods,
+        min_zscore_periods=required_zscore_periods,
+        spot_cvd=spot_cvd,
+        perp_cvd=perp_cvd,
+        spot_cvd_zscore=spot_cvd_zscore,
+        perp_cvd_zscore=perp_cvd_zscore,
+        cvd_spread=cvd_spread,
+        source_record_count=len(available_observations),
+        complete=not reason_codes,
+        reason_codes=tuple(reason_codes),
+    )
+
+
 def etf_flow_window(
     flows: Sequence[EtfFlow],
     *,
@@ -603,6 +758,15 @@ def _validate_participation_windows(
         raise ValueError("growth_window_periods must be >= 1")
     if zscore_window_periods < 1:
         raise ValueError("zscore_window_periods must be >= 1")
+    _validate_zscore_window(zscore_window_periods, min_zscore_periods)
+
+
+def _validate_zscore_window(
+    zscore_window_periods: int,
+    min_zscore_periods: int | None,
+) -> None:
+    if zscore_window_periods < 1:
+        raise ValueError("zscore_window_periods must be >= 1")
     if min_zscore_periods is not None:
         if min_zscore_periods < 1:
             raise ValueError("min_zscore_periods must be >= 1")
@@ -622,6 +786,22 @@ def _aggregate_participation_observations(
         aggregated[market_type][observation_time] = (
             aggregated[market_type].get(observation_time, Decimal("0"))
             + notional_usd
+        )
+    return aggregated
+
+
+def _aggregate_cvd_observations(
+    observations: Sequence[CvdObservation],
+) -> dict[str, dict[datetime, Decimal]]:
+    aggregated: dict[str, dict[datetime, Decimal]] = {"spot": {}, "perp": {}}
+    for observation in observations:
+        record = observation.as_record()
+        market_type = record["market_type"]
+        observation_time = record["observation_time"]
+        cvd_usd = record["cvd_usd"]
+        aggregated[market_type][observation_time] = (
+            aggregated[market_type].get(observation_time, Decimal("0"))
+            + cvd_usd
         )
     return aggregated
 

@@ -148,6 +148,8 @@ or denominators. `etf_flow_acceleration` implements `FLOW_ACCEL` as
 calculation. `spot_perp_participation` implements `SPOT_DOMINANCE` as
 `z(SpotVolumeGrowth) - z(PerpVolumeGrowth)` using available spot and perpetual
 volume observations, with a row adapter for spot OHLCV and perp volume records.
+`spot_perp_cvd_spread` implements `CVD_SPREAD` as
+`z(SPOT_CVD) - z(PERP_CVD)` over point-in-time CVD observations.
 
 Runtime environment can be selected with `BTC_PREDICTOR_ENV`. The default is
 `dev`.

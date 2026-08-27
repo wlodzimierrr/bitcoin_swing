@@ -749,7 +749,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-064 Implement spot vs perp CVD spread
 - **Description:**
   Complete the ticket scope for implement spot vs perp cvd spread.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -758,6 +758,12 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `CVD_SPREAD` as `z(SPOT_CVD) - z(PERP_CVD)`.
+  - Added typed `CvdObservation` inputs with point-in-time `available_at` filtering.
+  - Aggregated spot and perp CVD observations on common timestamps and z-scored using prior history only.
+  - Emitted stable reason codes for missing spot CVD, missing perp CVD, or insufficient history instead of zero-filling.
+  - Added deterministic serialization through `SpotPerpCvdSpreadResult.as_record()` for persistence and recomputation.
 
 #### BTC-065 Implement Flow Score
 - **Description:**
