@@ -1233,7 +1233,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-095 Implement level clustering
 - **Description:**
   Combine nearby levels into support/resistance zones.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Cluster boundaries persisted
   - Member levels linked
@@ -1243,6 +1243,20 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor.levels.clustering` with `cluster_price_levels`,
+    `LevelClusterMember`, `LevelCluster`, and `LevelClusterResult`.
+  - Clustering accepts persisted level records or objects with `as_record()`,
+    expands `VOLUME_PROFILE_LEVELS` result records into member levels, and
+    treats completed `ANCHORED_VWAP` results as level members.
+  - Levels are filtered by `as_of`; future sources, incomplete sources, and
+    exact duplicate member IDs are counted and reported through reason codes.
+  - Nearby prices are grouped using versioned `cluster_distance_fraction` and
+    classified as support/resistance relative to the reference price.
+  - Cluster records persist deterministic boundaries, weighted center price,
+    stable cluster ID, linked member records, source/timeframe counts,
+    `minimum_level_strength`, confluence score, completion state, and reason
+    codes.
 
 #### BTC-096 Implement level-strength score
 - **Description:**

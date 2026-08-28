@@ -22,6 +22,8 @@ def test_loads_default_strategy_config() -> None:
         "bullish_reset",
     )
     assert config.regime_thresholds.bull_min == 65
+    assert config.price_levels.cluster_distance_fraction == 0.025
+    assert config.price_levels.minimum_level_strength == 60
     assert config.price_levels.rr_minimum == 2
     assert config.price_levels.breakout_close_buffer_fraction == 0
     assert config.price_levels.reclaim_close_buffer_fraction == 0

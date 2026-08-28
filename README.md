@@ -169,7 +169,10 @@ the configured HLC3/close price source and only bars closed and ingested by the
 signal time. `calculate_volume_profile_levels` builds POC, HVN, VAH, and VAL
 records from deterministic price bins, with bin size, value-area coverage, HVN
 thresholds, minimum bars, and price source controlled by versioned
-`price_levels` config.
+`price_levels` config. `cluster_price_levels` combines nearby level records
+into support/resistance zones using the configured cluster-distance fraction,
+persists member links, and assigns a confluence score from distinct source
+families, timeframes, and repeated touches without counting exact duplicates.
 
 Flow feature helpers include `five_day_etf_flow` and `twenty_day_etf_flow`,
 which implement `ETF_FLOW_5D`, `ETF_NORM_5D`, `ETF_FLOW_20D`, and

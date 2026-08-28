@@ -1356,6 +1356,7 @@ of producing silent fallback levels.
 
 ## BTC-095 — Implement level clustering
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 5
 
@@ -1367,6 +1368,20 @@ Combine nearby levels into support/resistance zones.
 - Member levels linked
 - Confluence score available
 - No double-counting of nearby lines
+
+Implemented `cluster_price_levels` in `btc_predictor.levels.clustering`.
+The clustering pass accepts persisted level records or objects with
+`as_record()`, expands volume-profile result records into their member levels,
+and treats completed anchored VWAP results as level members. Sources not
+available at `as_of`, incomplete level outputs, and exact duplicate members are
+reported explicitly.
+
+Clusters are formed from sorted nearby prices using the versioned
+`cluster_distance_fraction`, then classified as support or resistance relative
+to the signal reference price. Each cluster persists deterministic boundaries,
+a weighted center price, stable cluster ID, member links, source counts,
+timeframe counts, `minimum_level_strength`, confluence score, completion state,
+and reason codes.
 
 ---
 
