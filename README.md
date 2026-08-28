@@ -206,7 +206,9 @@ missing core inputs. `calculate_regime_smoothing` then persists
 `REGIME_SMOOTHED_SCORE` as
 `0.70 * previous_smoothed_score + 0.30 * new_regime_score` using versioned
 `regime_smoothing` config. First-run bootstrap uses the raw regime score and
-records the missing previous value explicitly.
+records the missing previous value explicitly. `calculate_regime_classification`
+persists `REGIME_CLASSIFICATION` from the configured regime thresholds, covering
+Strong Bull through Strong Bear without relying on hard-coded runtime buckets.
 
 Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day

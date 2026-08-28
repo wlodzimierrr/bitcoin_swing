@@ -5,11 +5,16 @@ import pytest
 from btc_predictor.config import load_strategy_config
 from btc_predictor.features import (
     CORE_REGIME_SCORE_COMPONENT_IDS,
+    DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS,
     DEFAULT_CORE_REGIME_SCORE_WEIGHTS,
     DEFAULT_FULL_REGIME_SCORE_WEIGHTS,
     DEFAULT_REGIME_SMOOTHING_NEW_WEIGHT,
     DEFAULT_REGIME_SMOOTHING_PREVIOUS_WEIGHT,
     FULL_REGIME_SCORE_COMPONENT_IDS,
+    REGIME_CLASSIFICATION_FEATURE_ID,
+    REGIME_CLASSIFICATION_LABELS,
+    REGIME_CLASSIFICATION_REASON_CODES,
+    REGIME_CLASSIFICATION_THRESHOLD_IDS,
     REGIME_MODEL_CORE_MARKET_ONLY,
     REGIME_MODEL_FULL_MACRO_ONCHAIN_LIQUIDITY,
     REGIME_SCORE_FEATURE_ID,
@@ -18,6 +23,7 @@ from btc_predictor.features import (
     REGIME_SMOOTHING_REASON_CODES,
     RegimeScoreInput,
     RegimeSmoothingInput,
+    calculate_regime_classification,
     calculate_regime_score,
     calculate_regime_smoothing,
 )
@@ -26,6 +32,7 @@ from btc_predictor.features import (
 def test_regime_score_metadata_is_stable() -> None:
     assert REGIME_SCORE_FEATURE_ID == "REGIME_SCORE"
     assert REGIME_SMOOTHED_SCORE_FEATURE_ID == "REGIME_SMOOTHED_SCORE"
+    assert REGIME_CLASSIFICATION_FEATURE_ID == "REGIME_CLASSIFICATION"
     assert REGIME_MODEL_CORE_MARKET_ONLY == "CORE_MARKET_ONLY"
     assert REGIME_MODEL_FULL_MACRO_ONCHAIN_LIQUIDITY == (
         "FULL_MACRO_ONCHAIN_LIQUIDITY"
@@ -64,9 +71,37 @@ def test_regime_score_metadata_is_stable() -> None:
     )
     assert DEFAULT_REGIME_SMOOTHING_PREVIOUS_WEIGHT == Decimal("0.70")
     assert DEFAULT_REGIME_SMOOTHING_NEW_WEIGHT == Decimal("0.30")
+    assert REGIME_CLASSIFICATION_THRESHOLD_IDS == (
+        "strong_bull",
+        "bull",
+        "mild_bull",
+        "neutral",
+        "mild_bear",
+        "bear",
+    )
+    assert DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS == {
+        "strong_bull": Decimal("80"),
+        "bull": Decimal("65"),
+        "mild_bull": Decimal("55"),
+        "neutral": Decimal("45"),
+        "mild_bear": Decimal("35"),
+        "bear": Decimal("20"),
+    }
+    assert REGIME_CLASSIFICATION_LABELS == (
+        "STRONG_BULL",
+        "BULL",
+        "MILD_BULL",
+        "NEUTRAL",
+        "MILD_BEAR",
+        "BEAR",
+        "STRONG_BEAR",
+    )
     assert REGIME_SMOOTHING_REASON_CODES == (
         "REGIME_SMOOTHING_NEW_SCORE_MISSING",
         "REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING",
+    )
+    assert REGIME_CLASSIFICATION_REASON_CODES == (
+        "REGIME_CLASSIFICATION_SCORE_MISSING",
     )
 
 
@@ -388,4 +423,107 @@ def test_calculate_regime_smoothing_rejects_invalid_inputs_and_weights() -> None
             ),
             previous_weight=Decimal("0.50"),
             new_weight=Decimal("0.30"),
+        )
+
+
+@pytest.mark.parametrize(
+    ("score", "expected_regime"),
+    [
+        (Decimal("100"), "STRONG_BULL"),
+        (Decimal("80"), "STRONG_BULL"),
+        (Decimal("79.999"), "BULL"),
+        (Decimal("65"), "BULL"),
+        (Decimal("64.999"), "MILD_BULL"),
+        (Decimal("55"), "MILD_BULL"),
+        (Decimal("54.999"), "NEUTRAL"),
+        (Decimal("45"), "NEUTRAL"),
+        (Decimal("44.999"), "MILD_BEAR"),
+        (Decimal("35"), "MILD_BEAR"),
+        (Decimal("34.999"), "BEAR"),
+        (Decimal("20"), "BEAR"),
+        (Decimal("19.999"), "STRONG_BEAR"),
+        (Decimal("0"), "STRONG_BEAR"),
+    ],
+)
+def test_calculate_regime_classification_uses_rulebook_buckets(
+    score: Decimal,
+    expected_regime: str,
+) -> None:
+    result = calculate_regime_classification(score)
+
+    assert result.complete is True
+    assert result.score == score
+    assert result.regime == expected_regime
+    assert result.reason_code == f"REGIME_CLASSIFICATION_{expected_regime}"
+    assert result.thresholds == DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS
+    assert result.reason_codes == ()
+
+
+def test_calculate_regime_classification_uses_versioned_strategy_config() -> None:
+    config = load_strategy_config()
+
+    result = calculate_regime_classification(
+        Decimal("72.25"),
+        thresholds=config.regime_thresholds,
+        config_metadata=config.run_metadata(),
+    )
+
+    assert result.as_record() == {
+        "feature_id": "REGIME_CLASSIFICATION",
+        "score": "72.25",
+        "regime": "BULL",
+        "reason_code": "REGIME_CLASSIFICATION_BULL",
+        "thresholds": {
+            "strong_bull": "80.0",
+            "bull": "65.0",
+            "mild_bull": "55.0",
+            "neutral": "45.0",
+            "mild_bear": "35.0",
+            "bear": "20.0",
+        },
+        "config_metadata": {
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+        "complete": True,
+        "reason_codes": [],
+    }
+
+
+def test_calculate_regime_classification_reports_missing_score() -> None:
+    result = calculate_regime_classification(None)
+
+    assert result.complete is False
+    assert result.score is None
+    assert result.regime is None
+    assert result.reason_code is None
+    assert result.thresholds == DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS
+    assert result.reason_codes == ("REGIME_CLASSIFICATION_SCORE_MISSING",)
+
+
+def test_calculate_regime_classification_rejects_invalid_score_and_thresholds() -> None:
+    with pytest.raises(ValueError, match="score"):
+        calculate_regime_classification(Decimal("100.01"))
+
+    with pytest.raises(ValueError, match="thresholds"):
+        calculate_regime_classification(
+            Decimal("70"),
+            thresholds={
+                "strong_bull": Decimal("80"),
+                "bull": Decimal("65"),
+            },
+        )
+
+    with pytest.raises(ValueError, match="decrease"):
+        calculate_regime_classification(
+            Decimal("70"),
+            thresholds={
+                "strong_bull": Decimal("80"),
+                "bull": Decimal("65"),
+                "mild_bull": Decimal("65"),
+                "neutral": Decimal("45"),
+                "mild_bear": Decimal("35"),
+                "bear": Decimal("20"),
+            },
         )

@@ -1554,6 +1554,17 @@ completion state, and reason codes.
 0–20   Strong Bear
 ```
 
+Implemented `calculate_regime_classification` in
+`btc_predictor.features.regime`. The classifier persists
+`REGIME_CLASSIFICATION`, applies the versioned `regime_thresholds` configuration,
+and uses lower-bound inclusive buckets: `80` is `STRONG_BULL`, `65` is `BULL`,
+`55` is `MILD_BULL`, `45` is `NEUTRAL`, `35` is `MILD_BEAR`, and `20` is
+`BEAR`; scores below `20` are `STRONG_BEAR`.
+
+Missing score input prevents completion and records
+`REGIME_CLASSIFICATION_SCORE_MISSING`. Results persist score, selected regime,
+thresholds, config metadata, reason code, completion state, and reason codes.
+
 ---
 
 # EPIC L — Setup Detector

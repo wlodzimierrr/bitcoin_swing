@@ -10,6 +10,7 @@ from typing import Any
 
 REGIME_SCORE_FEATURE_ID = "REGIME_SCORE"
 REGIME_SMOOTHED_SCORE_FEATURE_ID = "REGIME_SMOOTHED_SCORE"
+REGIME_CLASSIFICATION_FEATURE_ID = "REGIME_CLASSIFICATION"
 REGIME_MODEL_CORE_MARKET_ONLY = "CORE_MARKET_ONLY"
 REGIME_MODEL_FULL_MACRO_ONCHAIN_LIQUIDITY = "FULL_MACRO_ONCHAIN_LIQUIDITY"
 CORE_REGIME_SCORE_COMPONENT_IDS = (
@@ -42,6 +43,31 @@ DEFAULT_FULL_REGIME_SCORE_WEIGHTS = {
 }
 DEFAULT_REGIME_SMOOTHING_PREVIOUS_WEIGHT = Decimal("0.70")
 DEFAULT_REGIME_SMOOTHING_NEW_WEIGHT = Decimal("0.30")
+REGIME_CLASSIFICATION_THRESHOLD_IDS = (
+    "strong_bull",
+    "bull",
+    "mild_bull",
+    "neutral",
+    "mild_bear",
+    "bear",
+)
+DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS = {
+    "strong_bull": Decimal("80"),
+    "bull": Decimal("65"),
+    "mild_bull": Decimal("55"),
+    "neutral": Decimal("45"),
+    "mild_bear": Decimal("35"),
+    "bear": Decimal("20"),
+}
+REGIME_CLASSIFICATION_LABELS = (
+    "STRONG_BULL",
+    "BULL",
+    "MILD_BULL",
+    "NEUTRAL",
+    "MILD_BEAR",
+    "BEAR",
+    "STRONG_BEAR",
+)
 REGIME_SCORE_REASON_CODES = (
     "REGIME_SCORE_CORE_INPUT_MISSING",
     "REGIME_SCORE_P1_INPUT_MISSING",
@@ -49,6 +75,9 @@ REGIME_SCORE_REASON_CODES = (
 REGIME_SMOOTHING_REASON_CODES = (
     "REGIME_SMOOTHING_NEW_SCORE_MISSING",
     "REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING",
+)
+REGIME_CLASSIFICATION_REASON_CODES = (
+    "REGIME_CLASSIFICATION_SCORE_MISSING",
 )
 
 
@@ -217,6 +246,46 @@ class RegimeSmoothingResult:
         }
 
 
+@dataclass(frozen=True)
+class RegimeClassificationResult:
+    feature_id: str
+    score: Decimal | None
+    regime: str | None
+    thresholds: dict[str, Decimal]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    @property
+    def reason_code(self) -> str | None:
+        if self.regime is None:
+            return None
+        return f"{self.feature_id}_{self.regime}"
+
+    def as_record(self) -> dict[str, Any]:
+        if self.feature_id != REGIME_CLASSIFICATION_FEATURE_ID:
+            raise ValueError("feature_id must be REGIME_CLASSIFICATION")
+        if self.score is not None:
+            _score(self.score, "score")
+        if self.complete and self.regime is None:
+            raise ValueError("complete regime classification requires regime")
+        _validate_regime_thresholds(self.thresholds)
+        if self.regime is not None and self.regime not in REGIME_CLASSIFICATION_LABELS:
+            raise ValueError("regime is not supported")
+        return {
+            "feature_id": self.feature_id,
+            "score": str(self.score) if self.score is not None else None,
+            "regime": self.regime,
+            "reason_code": self.reason_code,
+            "thresholds": {
+                key: str(value) for key, value in self.thresholds.items()
+            },
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
 def calculate_regime_score(
     inputs: RegimeScoreInput,
     *,
@@ -297,6 +366,38 @@ def calculate_regime_score(
         config_metadata=dict(config_metadata or {}),
         complete=score is not None,
         reason_codes=tuple(reason_codes),
+    )
+
+
+def calculate_regime_classification(
+    score: Decimal | None,
+    *,
+    thresholds: Any | None = None,
+    config_metadata: Mapping[str, str] | None = None,
+) -> RegimeClassificationResult:
+    """Classify a raw or smoothed regime score into the rulebook regime bucket."""
+
+    normalized_thresholds = _normalize_regime_thresholds(thresholds)
+    if score is None:
+        return RegimeClassificationResult(
+            feature_id=REGIME_CLASSIFICATION_FEATURE_ID,
+            score=None,
+            regime=None,
+            thresholds=normalized_thresholds,
+            config_metadata=dict(config_metadata or {}),
+            complete=False,
+            reason_codes=("REGIME_CLASSIFICATION_SCORE_MISSING",),
+        )
+
+    regime_score = _score(score, "score")
+    return RegimeClassificationResult(
+        feature_id=REGIME_CLASSIFICATION_FEATURE_ID,
+        score=regime_score,
+        regime=_classify_regime(regime_score, normalized_thresholds),
+        thresholds=normalized_thresholds,
+        config_metadata=dict(config_metadata or {}),
+        complete=True,
+        reason_codes=(),
     )
 
 
@@ -387,19 +488,72 @@ def _input_values(inputs: RegimeScoreInput) -> dict[str, Decimal | None]:
 def _interpret_score(score: Decimal | None) -> str | None:
     if score is None:
         return None
-    if score >= Decimal("80"):
-        return "strong_bull"
-    if score >= Decimal("65"):
-        return "bull"
-    if score >= Decimal("55"):
-        return "mild_bull"
-    if score >= Decimal("45"):
-        return "neutral"
-    if score >= Decimal("35"):
-        return "mild_bear"
-    if score >= Decimal("20"):
-        return "bear"
-    return "strong_bear"
+    return _classify_regime(score, DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS).lower()
+
+
+def _classify_regime(score: Decimal, thresholds: Mapping[str, Decimal]) -> str:
+    if score >= thresholds["strong_bull"]:
+        return "STRONG_BULL"
+    if score >= thresholds["bull"]:
+        return "BULL"
+    if score >= thresholds["mild_bull"]:
+        return "MILD_BULL"
+    if score >= thresholds["neutral"]:
+        return "NEUTRAL"
+    if score >= thresholds["mild_bear"]:
+        return "MILD_BEAR"
+    if score >= thresholds["bear"]:
+        return "BEAR"
+    return "STRONG_BEAR"
+
+
+def _normalize_regime_thresholds(
+    thresholds: Any | None,
+) -> dict[str, Decimal]:
+    if thresholds is None:
+        normalized = dict(DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS)
+    elif isinstance(thresholds, Mapping):
+        missing = set(REGIME_CLASSIFICATION_THRESHOLD_IDS) - set(thresholds)
+        extra = set(thresholds) - set(REGIME_CLASSIFICATION_THRESHOLD_IDS)
+        if missing or extra:
+            raise ValueError(
+                "regime classification thresholds must exactly match "
+                f"{REGIME_CLASSIFICATION_THRESHOLD_IDS}; "
+                f"missing={sorted(missing)}, extra={sorted(extra)}",
+            )
+        normalized = {
+            threshold_id: Decimal(str(thresholds[threshold_id]))
+            for threshold_id in REGIME_CLASSIFICATION_THRESHOLD_IDS
+        }
+    else:
+        try:
+            normalized = {
+                threshold_id: Decimal(str(getattr(thresholds, f"{threshold_id}_min")))
+                for threshold_id in REGIME_CLASSIFICATION_THRESHOLD_IDS
+            }
+        except AttributeError as exc:
+            raise ValueError(
+                "regime classification thresholds must expose *_min attributes",
+            ) from exc
+    _validate_regime_thresholds(normalized)
+    return normalized
+
+
+def _validate_regime_thresholds(thresholds: Mapping[str, Decimal]) -> None:
+    missing = set(REGIME_CLASSIFICATION_THRESHOLD_IDS) - set(thresholds)
+    extra = set(thresholds) - set(REGIME_CLASSIFICATION_THRESHOLD_IDS)
+    if missing or extra:
+        raise ValueError(
+            "regime classification thresholds must exactly match "
+            f"{REGIME_CLASSIFICATION_THRESHOLD_IDS}; "
+            f"missing={sorted(missing)}, extra={sorted(extra)}",
+        )
+    previous: Decimal | None = None
+    for threshold_id in REGIME_CLASSIFICATION_THRESHOLD_IDS:
+        threshold = _score(thresholds[threshold_id], threshold_id)
+        if previous is not None and threshold >= previous:
+            raise ValueError("regime classification thresholds must decrease")
+        previous = threshold
 
 
 def _normalize_weights(

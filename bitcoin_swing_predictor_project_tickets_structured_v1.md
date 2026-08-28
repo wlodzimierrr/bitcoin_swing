@@ -1430,7 +1430,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   20–35  Bear
   0–20   Strong Bear
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1439,6 +1439,18 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `RegimeClassificationResult` and `calculate_regime_classification`
+    in `btc_predictor.features.regime`.
+  - Persists `REGIME_CLASSIFICATION` using the versioned `regime_thresholds`
+    configuration.
+  - Uses lower-bound inclusive buckets: `80` is `STRONG_BULL`, `65` is `BULL`,
+    `55` is `MILD_BULL`, `45` is `NEUTRAL`, `35` is `MILD_BEAR`, `20` is
+    `BEAR`, and scores below `20` are `STRONG_BEAR`.
+  - Missing score input prevents completion and records
+    `REGIME_CLASSIFICATION_SCORE_MISSING`.
+  - Results persist score, selected regime, thresholds, config metadata,
+    reason code, completion state, and reason codes.
 
 ## EPIC L — Setup Detector
 
