@@ -18,6 +18,8 @@ BULLISH_RESET_SETUP = "BULLISH_RESET"
 BULLISH_RESET_FEATURE_ID = "SETUP_BULLISH_RESET"
 CAPITULATION_REVERSAL_SETUP = "CAPITULATION_REVERSAL"
 CAPITULATION_REVERSAL_FEATURE_ID = "SETUP_CAPITULATION_REVERSAL"
+BEARISH_DISTRIBUTION_SETUP = "BEARISH_DISTRIBUTION"
+BEARISH_DISTRIBUTION_FEATURE_ID = "SETUP_BEARISH_DISTRIBUTION"
 BULL_TREND_CONTINUATION_REQUIREMENT_KEYS = (
     "regime_min",
     "trend_min",
@@ -111,6 +113,31 @@ CAPITULATION_REVERSAL_REASON_CODES = (
     "CAPITULATION_REVERSAL_ENTRY_CONVICTION_TOO_LOW",
     "CAPITULATION_REVERSAL_RR_TOO_LOW",
 )
+BEARISH_DISTRIBUTION_REQUIREMENT_KEYS = (
+    "regime_max",
+    "trend_max",
+    "flow_max",
+    "positioning_max",
+    "structure_max",
+    "entry_conviction_min",
+    "minimum_rr",
+    "distribution_required",
+    "short_trigger_required",
+    "require_no_stress",
+)
+BEARISH_DISTRIBUTION_REASON_CODES = (
+    "BEARISH_DISTRIBUTION_INPUT_MISSING",
+    "BEARISH_DISTRIBUTION_REGIME_TOO_HIGH",
+    "BEARISH_DISTRIBUTION_TREND_TOO_HIGH",
+    "BEARISH_DISTRIBUTION_FLOW_TOO_HIGH",
+    "BEARISH_DISTRIBUTION_POSITIONING_TOO_HIGH",
+    "BEARISH_DISTRIBUTION_STRUCTURE_TOO_HIGH",
+    "BEARISH_DISTRIBUTION_ENTRY_CONVICTION_TOO_LOW",
+    "BEARISH_DISTRIBUTION_RR_TOO_LOW",
+    "BEARISH_DISTRIBUTION_NOT_ACTIVE",
+    "BEARISH_DISTRIBUTION_SHORT_TRIGGER_NOT_CONFIRMED",
+    "BEARISH_DISTRIBUTION_STRESS_ACTIVE",
+)
 DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS = {
     "capitulation_required": True,
     "confirmation_required": True,
@@ -119,6 +146,18 @@ DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS = {
     "structure_min": Decimal("60"),
     "entry_conviction_min": Decimal("80"),
     "minimum_rr": Decimal("2"),
+}
+DEFAULT_BEARISH_DISTRIBUTION_REQUIREMENTS = {
+    "regime_max": Decimal("45"),
+    "trend_max": Decimal("45"),
+    "flow_max": Decimal("45"),
+    "positioning_max": Decimal("45"),
+    "structure_max": Decimal("50"),
+    "entry_conviction_min": Decimal("85"),
+    "minimum_rr": Decimal("2.5"),
+    "distribution_required": True,
+    "short_trigger_required": True,
+    "require_no_stress": True,
 }
 
 
@@ -266,6 +305,56 @@ class CapitulationReversalInput:
 
 
 @dataclass(frozen=True)
+class BearishDistributionInput:
+    regime_score: Decimal | None
+    trend_score: Decimal | None
+    flow_score: Decimal | None
+    positioning_score: Decimal | None
+    structure_score: Decimal | None
+    entry_conviction_score: Decimal | None
+    risk_reward: Decimal | None
+    distribution_flagged: bool | None
+    short_trigger_confirmed: bool | None
+    stress_flagged: bool | None
+
+    def as_record(self) -> dict[str, str | bool | None]:
+        return {
+            "regime_score": _optional_score_record(self.regime_score, "regime_score"),
+            "trend_score": _optional_score_record(self.trend_score, "trend_score"),
+            "flow_score": _optional_score_record(self.flow_score, "flow_score"),
+            "positioning_score": _optional_score_record(
+                self.positioning_score,
+                "positioning_score",
+            ),
+            "structure_score": _optional_score_record(
+                self.structure_score,
+                "structure_score",
+            ),
+            "entry_conviction_score": _optional_score_record(
+                self.entry_conviction_score,
+                "entry_conviction_score",
+            ),
+            "risk_reward": (
+                str(_non_negative_decimal(self.risk_reward, "risk_reward"))
+                if self.risk_reward is not None
+                else None
+            ),
+            "distribution_flagged": _optional_bool_record(
+                self.distribution_flagged,
+                "distribution_flagged",
+            ),
+            "short_trigger_confirmed": _optional_bool_record(
+                self.short_trigger_confirmed,
+                "short_trigger_confirmed",
+            ),
+            "stress_flagged": _optional_bool_record(
+                self.stress_flagged,
+                "stress_flagged",
+            ),
+        }
+
+
+@dataclass(frozen=True)
 class BullTrendContinuationResult:
     feature_id: str
     setup: str
@@ -397,6 +486,50 @@ class CapitulationReversalResult:
                 if self.confirmation_lag_days is not None
                 else None
             ),
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class BearishDistributionResult:
+    feature_id: str
+    setup: str
+    detected: bool
+    inputs: BearishDistributionInput
+    requirements: dict[str, Decimal | bool]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    @property
+    def reason_code(self) -> str | None:
+        if self.detected:
+            return f"{self.feature_id}_VALID"
+        if self.reason_codes:
+            return self.reason_codes[0]
+        return None
+
+    def as_record(self) -> dict[str, Any]:
+        if self.feature_id != BEARISH_DISTRIBUTION_FEATURE_ID:
+            raise ValueError("feature_id must be SETUP_BEARISH_DISTRIBUTION")
+        if self.setup != BEARISH_DISTRIBUTION_SETUP:
+            raise ValueError("setup must be BEARISH_DISTRIBUTION")
+        normalized_requirements = _normalize_bearish_distribution_requirements(
+            self.requirements,
+        )
+        self.inputs.as_record()
+        return {
+            "feature_id": self.feature_id,
+            "setup": self.setup,
+            "detected": self.detected,
+            "reason_code": self.reason_code,
+            "inputs": self.inputs.as_record(),
+            "requirements": {
+                key: str(value) if isinstance(value, Decimal) else value
+                for key, value in normalized_requirements.items()
+            },
             "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
@@ -673,6 +806,91 @@ def detect_capitulation_reversal(
     )
 
 
+def detect_bearish_distribution(
+    inputs: BearishDistributionInput,
+    *,
+    requirements: Mapping[str, Any] | None = None,
+    config_metadata: Mapping[str, str] | None = None,
+) -> BearishDistributionResult:
+    """Evaluate stricter requirements for a bearish distribution short setup."""
+
+    normalized_requirements = _normalize_bearish_distribution_requirements(
+        requirements
+        if requirements is not None
+        else DEFAULT_BEARISH_DISTRIBUTION_REQUIREMENTS,
+    )
+    input_values = _bearish_distribution_input_values(inputs)
+    reason_codes = []
+
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("BEARISH_DISTRIBUTION_INPUT_MISSING")
+    _append_score_ceiling_failure(
+        reason_codes,
+        value=inputs.regime_score,
+        maximum=normalized_requirements["regime_max"],
+        reason_code="BEARISH_DISTRIBUTION_REGIME_TOO_HIGH",
+    )
+    _append_score_ceiling_failure(
+        reason_codes,
+        value=inputs.trend_score,
+        maximum=normalized_requirements["trend_max"],
+        reason_code="BEARISH_DISTRIBUTION_TREND_TOO_HIGH",
+    )
+    _append_score_ceiling_failure(
+        reason_codes,
+        value=inputs.flow_score,
+        maximum=normalized_requirements["flow_max"],
+        reason_code="BEARISH_DISTRIBUTION_FLOW_TOO_HIGH",
+    )
+    _append_score_ceiling_failure(
+        reason_codes,
+        value=inputs.positioning_score,
+        maximum=normalized_requirements["positioning_max"],
+        reason_code="BEARISH_DISTRIBUTION_POSITIONING_TOO_HIGH",
+    )
+    _append_score_ceiling_failure(
+        reason_codes,
+        value=inputs.structure_score,
+        maximum=normalized_requirements["structure_max"],
+        reason_code="BEARISH_DISTRIBUTION_STRUCTURE_TOO_HIGH",
+    )
+    _append_score_failure(
+        reason_codes,
+        value=inputs.entry_conviction_score,
+        minimum=normalized_requirements["entry_conviction_min"],
+        reason_code="BEARISH_DISTRIBUTION_ENTRY_CONVICTION_TOO_LOW",
+    )
+    if (
+        inputs.risk_reward is not None
+        and inputs.risk_reward < normalized_requirements["minimum_rr"]
+    ):
+        reason_codes.append("BEARISH_DISTRIBUTION_RR_TOO_LOW")
+    if (
+        normalized_requirements["distribution_required"]
+        and inputs.distribution_flagged is False
+    ):
+        reason_codes.append("BEARISH_DISTRIBUTION_NOT_ACTIVE")
+    if (
+        normalized_requirements["short_trigger_required"]
+        and inputs.short_trigger_confirmed is False
+    ):
+        reason_codes.append("BEARISH_DISTRIBUTION_SHORT_TRIGGER_NOT_CONFIRMED")
+    if normalized_requirements["require_no_stress"] and inputs.stress_flagged is True:
+        reason_codes.append("BEARISH_DISTRIBUTION_STRESS_ACTIVE")
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    return BearishDistributionResult(
+        feature_id=BEARISH_DISTRIBUTION_FEATURE_ID,
+        setup=BEARISH_DISTRIBUTION_SETUP,
+        detected=not reason_codes,
+        inputs=inputs,
+        requirements=normalized_requirements,
+        config_metadata=dict(config_metadata or {}),
+        complete="BEARISH_DISTRIBUTION_INPUT_MISSING" not in reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
 def _normalize_bull_trend_requirements(
     requirements: Mapping[str, Any],
 ) -> dict[str, Decimal | bool]:
@@ -784,6 +1002,41 @@ def _normalize_capitulation_reversal_requirements(
     }
 
 
+def _normalize_bearish_distribution_requirements(
+    requirements: Mapping[str, Any],
+) -> dict[str, Decimal | bool]:
+    missing = set(BEARISH_DISTRIBUTION_REQUIREMENT_KEYS) - set(requirements)
+    if missing:
+        raise ValueError(f"bearish distribution requirements missing {sorted(missing)}")
+    return {
+        "regime_max": _score(requirements["regime_max"], "regime_max"),
+        "trend_max": _score(requirements["trend_max"], "trend_max"),
+        "flow_max": _score(requirements["flow_max"], "flow_max"),
+        "positioning_max": _score(
+            requirements["positioning_max"],
+            "positioning_max",
+        ),
+        "structure_max": _score(requirements["structure_max"], "structure_max"),
+        "entry_conviction_min": _score(
+            requirements["entry_conviction_min"],
+            "entry_conviction_min",
+        ),
+        "minimum_rr": _positive_decimal(requirements["minimum_rr"], "minimum_rr"),
+        "distribution_required": _bool(
+            requirements["distribution_required"],
+            "distribution_required",
+        ),
+        "short_trigger_required": _bool(
+            requirements["short_trigger_required"],
+            "short_trigger_required",
+        ),
+        "require_no_stress": _bool(
+            requirements["require_no_stress"],
+            "require_no_stress",
+        ),
+    }
+
+
 def _bull_trend_input_values(
     inputs: BullTrendContinuationInput,
 ) -> dict[str, Decimal | bool | None]:
@@ -835,6 +1088,24 @@ def _capitulation_reversal_input_values(
     }
 
 
+def _bearish_distribution_input_values(
+    inputs: BearishDistributionInput,
+) -> dict[str, Decimal | bool | None]:
+    inputs.as_record()
+    return {
+        "regime_score": inputs.regime_score,
+        "trend_score": inputs.trend_score,
+        "flow_score": inputs.flow_score,
+        "positioning_score": inputs.positioning_score,
+        "structure_score": inputs.structure_score,
+        "entry_conviction_score": inputs.entry_conviction_score,
+        "risk_reward": inputs.risk_reward,
+        "distribution_flagged": inputs.distribution_flagged,
+        "short_trigger_confirmed": inputs.short_trigger_confirmed,
+        "stress_flagged": inputs.stress_flagged,
+    }
+
+
 def _append_score_failure(
     reason_codes: list[str],
     *,
@@ -845,6 +1116,19 @@ def _append_score_failure(
     if not isinstance(minimum, Decimal):
         raise ValueError("minimum must be decimal")
     if value is not None and value < minimum:
+        reason_codes.append(reason_code)
+
+
+def _append_score_ceiling_failure(
+    reason_codes: list[str],
+    *,
+    value: Decimal | None,
+    maximum: Decimal | bool,
+    reason_code: str,
+) -> None:
+    if not isinstance(maximum, Decimal):
+        raise ValueError("maximum must be decimal")
+    if value is not None and value > maximum:
         reason_codes.append(reason_code)
 
 

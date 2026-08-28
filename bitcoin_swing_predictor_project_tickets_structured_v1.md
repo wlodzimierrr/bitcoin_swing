@@ -1583,7 +1583,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-113 Implement Bearish Distribution setup
 - **Description:**
   Use stricter short requirements.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1592,6 +1592,21 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `BEARISH_DISTRIBUTION` / `SETUP_BEARISH_DISTRIBUTION` with
+    `BearishDistributionInput`, `BearishDistributionResult`, and
+    `detect_bearish_distribution` in `btc_predictor.features.setup`.
+  - Added versioned `setup_requirements.bearish_distribution` config for
+    stricter short filters: Regime <= 45, Trend <= 45, Flow <= 45,
+    Positioning <= 45, Structure <= 50, Entry Conviction >= 85, initial R/R >=
+    2.5, active distribution flag, confirmed short trigger, and no STRESS.
+  - Missing inputs prevent completion with
+    `BEARISH_DISTRIBUTION_INPUT_MISSING`.
+  - Failed filters persist specific reason codes for scores above bearish
+    ceilings, weak Entry Conviction, insufficient R/R, inactive distribution,
+    missing short trigger, or active STRESS.
+  - Results persist inputs, requirements, config metadata, setup label,
+    detected state, reason code, completion state, and reason codes.
 
 #### BTC-114 Implement CAPITULATION flag
 - **Description:**

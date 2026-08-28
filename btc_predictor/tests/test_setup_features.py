@@ -5,6 +5,10 @@ import pytest
 
 from btc_predictor.config import load_strategy_config
 from btc_predictor.features import (
+    BEARISH_DISTRIBUTION_FEATURE_ID,
+    BEARISH_DISTRIBUTION_REASON_CODES,
+    BEARISH_DISTRIBUTION_REQUIREMENT_KEYS,
+    BEARISH_DISTRIBUTION_SETUP,
     BULLISH_RESET_FEATURE_ID,
     BULLISH_RESET_REASON_CODES,
     BULLISH_RESET_REQUIREMENT_KEYS,
@@ -17,12 +21,15 @@ from btc_predictor.features import (
     CAPITULATION_REVERSAL_REASON_CODES,
     CAPITULATION_REVERSAL_REQUIREMENT_KEYS,
     CAPITULATION_REVERSAL_SETUP,
+    DEFAULT_BEARISH_DISTRIBUTION_REQUIREMENTS,
     DEFAULT_BULLISH_RESET_REQUIREMENTS,
     DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS,
     DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS,
+    BearishDistributionInput,
     BullishResetInput,
     BullTrendContinuationInput,
     CapitulationReversalInput,
+    detect_bearish_distribution,
     detect_bullish_reset,
     detect_bull_trend_continuation,
     detect_capitulation_reversal,
@@ -143,6 +150,48 @@ def test_capitulation_reversal_metadata_is_stable() -> None:
         "CAPITULATION_REVERSAL_STRUCTURE_TOO_LOW",
         "CAPITULATION_REVERSAL_ENTRY_CONVICTION_TOO_LOW",
         "CAPITULATION_REVERSAL_RR_TOO_LOW",
+    )
+
+
+def test_bearish_distribution_metadata_is_stable() -> None:
+    assert BEARISH_DISTRIBUTION_SETUP == "BEARISH_DISTRIBUTION"
+    assert BEARISH_DISTRIBUTION_FEATURE_ID == "SETUP_BEARISH_DISTRIBUTION"
+    assert BEARISH_DISTRIBUTION_REQUIREMENT_KEYS == (
+        "regime_max",
+        "trend_max",
+        "flow_max",
+        "positioning_max",
+        "structure_max",
+        "entry_conviction_min",
+        "minimum_rr",
+        "distribution_required",
+        "short_trigger_required",
+        "require_no_stress",
+    )
+    assert DEFAULT_BEARISH_DISTRIBUTION_REQUIREMENTS == {
+        "regime_max": Decimal("45"),
+        "trend_max": Decimal("45"),
+        "flow_max": Decimal("45"),
+        "positioning_max": Decimal("45"),
+        "structure_max": Decimal("50"),
+        "entry_conviction_min": Decimal("85"),
+        "minimum_rr": Decimal("2.5"),
+        "distribution_required": True,
+        "short_trigger_required": True,
+        "require_no_stress": True,
+    }
+    assert BEARISH_DISTRIBUTION_REASON_CODES == (
+        "BEARISH_DISTRIBUTION_INPUT_MISSING",
+        "BEARISH_DISTRIBUTION_REGIME_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_TREND_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_FLOW_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_POSITIONING_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_STRUCTURE_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_ENTRY_CONVICTION_TOO_LOW",
+        "BEARISH_DISTRIBUTION_RR_TOO_LOW",
+        "BEARISH_DISTRIBUTION_NOT_ACTIVE",
+        "BEARISH_DISTRIBUTION_SHORT_TRIGGER_NOT_CONFIRMED",
+        "BEARISH_DISTRIBUTION_STRESS_ACTIVE",
     )
 
 
@@ -972,6 +1021,251 @@ def test_detect_capitulation_reversal_rejects_invalid_inputs_and_config() -> Non
                 structure_score=Decimal("70"),
                 entry_conviction_score=Decimal("90"),
                 risk_reward=Decimal("3"),
+            ),
+            requirements=requirements,
+        )
+
+
+def test_detect_bearish_distribution_passes_on_strict_boundaries() -> None:
+    result = detect_bearish_distribution(
+        BearishDistributionInput(
+            regime_score=Decimal("45"),
+            trend_score=Decimal("45"),
+            flow_score=Decimal("45"),
+            positioning_score=Decimal("45"),
+            structure_score=Decimal("50"),
+            entry_conviction_score=Decimal("85"),
+            risk_reward=Decimal("2.5"),
+            distribution_flagged=True,
+            short_trigger_confirmed=True,
+            stress_flagged=False,
+        ),
+    )
+
+    assert result.detected is True
+    assert result.complete is True
+    assert result.reason_code == "SETUP_BEARISH_DISTRIBUTION_VALID"
+    assert result.reason_codes == ()
+    assert result.as_record()["inputs"] == {
+        "regime_score": "45",
+        "trend_score": "45",
+        "flow_score": "45",
+        "positioning_score": "45",
+        "structure_score": "50",
+        "entry_conviction_score": "85",
+        "risk_reward": "2.5",
+        "distribution_flagged": True,
+        "short_trigger_confirmed": True,
+        "stress_flagged": False,
+    }
+
+
+def test_detect_bearish_distribution_reports_all_failed_filters() -> None:
+    result = detect_bearish_distribution(
+        BearishDistributionInput(
+            regime_score=Decimal("46"),
+            trend_score=Decimal("50"),
+            flow_score=Decimal("60"),
+            positioning_score=Decimal("70"),
+            structure_score=Decimal("65"),
+            entry_conviction_score=Decimal("84"),
+            risk_reward=Decimal("2.49"),
+            distribution_flagged=False,
+            short_trigger_confirmed=False,
+            stress_flagged=True,
+        ),
+    )
+
+    assert result.detected is False
+    assert result.complete is True
+    assert result.reason_code == "BEARISH_DISTRIBUTION_REGIME_TOO_HIGH"
+    assert result.reason_codes == (
+        "BEARISH_DISTRIBUTION_REGIME_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_TREND_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_FLOW_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_POSITIONING_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_STRUCTURE_TOO_HIGH",
+        "BEARISH_DISTRIBUTION_ENTRY_CONVICTION_TOO_LOW",
+        "BEARISH_DISTRIBUTION_RR_TOO_LOW",
+        "BEARISH_DISTRIBUTION_NOT_ACTIVE",
+        "BEARISH_DISTRIBUTION_SHORT_TRIGGER_NOT_CONFIRMED",
+        "BEARISH_DISTRIBUTION_STRESS_ACTIVE",
+    )
+
+
+def test_detect_bearish_distribution_reports_missing_inputs() -> None:
+    result = detect_bearish_distribution(
+        BearishDistributionInput(
+            regime_score=None,
+            trend_score=Decimal("40"),
+            flow_score=Decimal("40"),
+            positioning_score=Decimal("40"),
+            structure_score=Decimal("45"),
+            entry_conviction_score=Decimal("90"),
+            risk_reward=Decimal("3"),
+            distribution_flagged=True,
+            short_trigger_confirmed=True,
+            stress_flagged=False,
+        ),
+    )
+
+    assert result.detected is False
+    assert result.complete is False
+    assert result.reason_code == "BEARISH_DISTRIBUTION_INPUT_MISSING"
+    assert result.reason_codes == ("BEARISH_DISTRIBUTION_INPUT_MISSING",)
+
+
+def test_detect_bearish_distribution_uses_versioned_strategy_config() -> None:
+    config = load_strategy_config()
+
+    result = detect_bearish_distribution(
+        BearishDistributionInput(
+            regime_score=Decimal("35"),
+            trend_score=Decimal("30"),
+            flow_score=Decimal("25"),
+            positioning_score=Decimal("35"),
+            structure_score=Decimal("45"),
+            entry_conviction_score=Decimal("90"),
+            risk_reward=Decimal("3"),
+            distribution_flagged=True,
+            short_trigger_confirmed=True,
+            stress_flagged=False,
+        ),
+        requirements=config.setup_requirements.bearish_distribution,
+        config_metadata=config.run_metadata(),
+    )
+
+    assert result.detected is True
+    assert result.as_record() == {
+        "feature_id": "SETUP_BEARISH_DISTRIBUTION",
+        "setup": "BEARISH_DISTRIBUTION",
+        "detected": True,
+        "reason_code": "SETUP_BEARISH_DISTRIBUTION_VALID",
+        "inputs": {
+            "regime_score": "35",
+            "trend_score": "30",
+            "flow_score": "25",
+            "positioning_score": "35",
+            "structure_score": "45",
+            "entry_conviction_score": "90",
+            "risk_reward": "3",
+            "distribution_flagged": True,
+            "short_trigger_confirmed": True,
+            "stress_flagged": False,
+        },
+        "requirements": {
+            "regime_max": "45.0",
+            "trend_max": "45.0",
+            "flow_max": "45.0",
+            "positioning_max": "45.0",
+            "structure_max": "50.0",
+            "entry_conviction_min": "85.0",
+            "minimum_rr": "2.5",
+            "distribution_required": True,
+            "short_trigger_required": True,
+            "require_no_stress": True,
+        },
+        "config_metadata": {
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+        "complete": True,
+        "reason_codes": [],
+    }
+
+
+def test_detect_bearish_distribution_allows_disabled_flag_filters() -> None:
+    requirements = dict(DEFAULT_BEARISH_DISTRIBUTION_REQUIREMENTS)
+    requirements["distribution_required"] = False
+    requirements["short_trigger_required"] = False
+    requirements["require_no_stress"] = False
+
+    result = detect_bearish_distribution(
+        BearishDistributionInput(
+            regime_score=Decimal("40"),
+            trend_score=Decimal("40"),
+            flow_score=Decimal("40"),
+            positioning_score=Decimal("40"),
+            structure_score=Decimal("40"),
+            entry_conviction_score=Decimal("90"),
+            risk_reward=Decimal("3"),
+            distribution_flagged=False,
+            short_trigger_confirmed=False,
+            stress_flagged=True,
+        ),
+        requirements=requirements,
+    )
+
+    assert result.detected is True
+    assert result.reason_codes == ()
+
+
+def test_detect_bearish_distribution_rejects_invalid_inputs_and_config() -> None:
+    with pytest.raises(ValueError, match="trend_score"):
+        detect_bearish_distribution(
+            BearishDistributionInput(
+                regime_score=Decimal("40"),
+                trend_score=Decimal("101"),
+                flow_score=Decimal("40"),
+                positioning_score=Decimal("40"),
+                structure_score=Decimal("40"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+                distribution_flagged=True,
+                short_trigger_confirmed=True,
+                stress_flagged=False,
+            ),
+        )
+
+    with pytest.raises(ValueError, match="distribution_flagged"):
+        detect_bearish_distribution(
+            BearishDistributionInput(
+                regime_score=Decimal("40"),
+                trend_score=Decimal("40"),
+                flow_score=Decimal("40"),
+                positioning_score=Decimal("40"),
+                structure_score=Decimal("40"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+                distribution_flagged="true",  # type: ignore[arg-type]
+                short_trigger_confirmed=True,
+                stress_flagged=False,
+            ),
+        )
+
+    with pytest.raises(ValueError, match="bearish distribution requirements missing"):
+        detect_bearish_distribution(
+            BearishDistributionInput(
+                regime_score=Decimal("40"),
+                trend_score=Decimal("40"),
+                flow_score=Decimal("40"),
+                positioning_score=Decimal("40"),
+                structure_score=Decimal("40"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+                distribution_flagged=True,
+                short_trigger_confirmed=True,
+                stress_flagged=False,
+            ),
+            requirements={"regime_max": Decimal("45")},
+        )
+
+    requirements = dict(DEFAULT_BEARISH_DISTRIBUTION_REQUIREMENTS)
+    requirements["minimum_rr"] = Decimal("0")
+    with pytest.raises(ValueError, match="minimum_rr"):
+        detect_bearish_distribution(
+            BearishDistributionInput(
+                regime_score=Decimal("40"),
+                trend_score=Decimal("40"),
+                flow_score=Decimal("40"),
+                positioning_score=Decimal("40"),
+                structure_score=Decimal("40"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+                distribution_flagged=True,
+                short_trigger_confirmed=True,
+                stress_flagged=False,
             ),
             requirements=requirements,
         )

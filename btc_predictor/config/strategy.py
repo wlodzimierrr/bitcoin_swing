@@ -248,6 +248,7 @@ class SetupRequirements:
     bull_trend_continuation: dict[str, float | bool]
     bullish_reset: dict[str, float | int | bool]
     capitulation_reversal: dict[str, float | int | bool]
+    bearish_distribution: dict[str, float | bool]
     supported_setups: tuple[str, ...]
 
     @classmethod
@@ -259,6 +260,7 @@ class SetupRequirements:
         bull_trend = _required_mapping(data, "bull_trend_continuation")
         bullish_reset = _required_mapping(data, "bullish_reset")
         capitulation_reversal = _required_mapping(data, "capitulation_reversal")
+        bearish_distribution = _required_mapping(data, "bearish_distribution")
         requirements = cls(
             supported_setups=supported_setups,
             bull_trend_continuation={
@@ -340,6 +342,39 @@ class SetupRequirements:
                 "minimum_rr": _required_positive_float(
                     capitulation_reversal,
                     "minimum_rr",
+                ),
+            },
+            bearish_distribution={
+                "regime_max": _required_score(bearish_distribution, "regime_max"),
+                "trend_max": _required_score(bearish_distribution, "trend_max"),
+                "flow_max": _required_score(bearish_distribution, "flow_max"),
+                "positioning_max": _required_score(
+                    bearish_distribution,
+                    "positioning_max",
+                ),
+                "structure_max": _required_score(
+                    bearish_distribution,
+                    "structure_max",
+                ),
+                "entry_conviction_min": _required_score(
+                    bearish_distribution,
+                    "entry_conviction_min",
+                ),
+                "minimum_rr": _required_positive_float(
+                    bearish_distribution,
+                    "minimum_rr",
+                ),
+                "distribution_required": _required_bool(
+                    bearish_distribution,
+                    "distribution_required",
+                ),
+                "short_trigger_required": _required_bool(
+                    bearish_distribution,
+                    "short_trigger_required",
+                ),
+                "require_no_stress": _required_bool(
+                    bearish_distribution,
+                    "require_no_stress",
                 ),
             },
         )

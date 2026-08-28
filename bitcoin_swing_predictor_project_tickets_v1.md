@@ -1688,6 +1688,24 @@ reason code, completion state, and reason codes.
 
 Use stricter short requirements.
 
+Implemented `detect_bearish_distribution` in `btc_predictor.features.setup`.
+The Phase 1 detector treats Bearish Distribution as the stricter short-side
+setup and loads all thresholds from versioned
+`setup_requirements.bearish_distribution` config.
+
+Default requirements are Regime Score <= 45, Trend Score <= 45, Flow Score <=
+45, Positioning Score <= 45, Structure Score <= 50, Entry Conviction >= 85,
+initial R/R >= 2.5, active distribution flag, confirmed short trigger, and no
+STRESS flag. This intentionally requires stronger proof than long continuation
+or reset setups because shorting BTC carries asymmetric squeeze and timing risk.
+
+Missing inputs prevent completion with `BEARISH_DISTRIBUTION_INPUT_MISSING`.
+Failed filters persist specific reason codes for scores that are too high,
+weak Entry Conviction, insufficient R/R, inactive distribution, missing short
+trigger, or active STRESS. Results persist inputs, requirements, config
+metadata, setup label, detected state, reason code, completion state, and reason
+codes.
+
 ---
 
 ## BTC-114 — Implement CAPITULATION flag

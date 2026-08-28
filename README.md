@@ -221,7 +221,10 @@ structure, a confirmed entry trigger, sufficient entry conviction, and R/R.
 `detect_capitulation_reversal` persists `SETUP_CAPITULATION_REVERSAL` by
 requiring an upstream capitulation flag plus a later confirmation trigger within
 the configured freshness window, with Structure, Entry Conviction, and R/R
-checks kept explicit.
+checks kept explicit. `detect_bearish_distribution` persists
+`SETUP_BEARISH_DISTRIBUTION` as the stricter short-side setup, requiring bearish
+Regime, Trend, Flow, Positioning, and Structure ceilings, a distribution flag, a
+confirmed short trigger, no STRESS, stronger Entry Conviction, and higher R/R.
 
 Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day

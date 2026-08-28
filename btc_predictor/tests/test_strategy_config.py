@@ -21,6 +21,7 @@ def test_loads_default_strategy_config() -> None:
         "bull_trend_continuation",
         "bullish_reset",
         "capitulation_reversal",
+        "bearish_distribution",
     )
     assert config.setup_requirements.bullish_reset == {
         "regime_min": 55,
@@ -43,6 +44,18 @@ def test_loads_default_strategy_config() -> None:
         "structure_min": 60,
         "entry_conviction_min": 80,
         "minimum_rr": 2.0,
+    }
+    assert config.setup_requirements.bearish_distribution == {
+        "regime_max": 45,
+        "trend_max": 45,
+        "flow_max": 45,
+        "positioning_max": 45,
+        "structure_max": 50,
+        "entry_conviction_min": 85,
+        "minimum_rr": 2.5,
+        "distribution_required": True,
+        "short_trigger_required": True,
+        "require_no_stress": True,
     }
     assert config.regime_thresholds.bull_min == 65
     assert config.price_levels.cluster_distance_fraction == 0.025
@@ -215,6 +228,7 @@ supported_setups = [
     "bull_trend_continuation",
     "bullish_reset",
     "capitulation_reversal",
+    "bearish_distribution",
 ]
 
 [setup_requirements.bull_trend_continuation]
@@ -249,6 +263,18 @@ max_confirmation_lag_days = 14
 structure_min = 60
 entry_conviction_min = 80
 minimum_rr = 2.0
+
+[setup_requirements.bearish_distribution]
+regime_max = 45
+trend_max = 45
+flow_max = 45
+positioning_max = 45
+structure_max = 50
+entry_conviction_min = 85
+minimum_rr = 2.5
+distribution_required = true
+short_trigger_required = true
+require_no_stress = true
 
 [regime_thresholds]
 strong_bull_min = 80
@@ -564,6 +590,34 @@ def test_invalid_capitulation_reversal_bool_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="confirmation_required"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_bearish_distribution_score_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_bearish_distribution_score.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "regime_max = 45",
+            "regime_max = 145",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="regime_max"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_bearish_distribution_bool_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_bearish_distribution_bool.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "short_trigger_required = true",
+            'short_trigger_required = "true"',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="short_trigger_required"):
         load_strategy_config(config_path)
 
 

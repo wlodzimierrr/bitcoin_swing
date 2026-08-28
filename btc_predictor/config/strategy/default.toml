@@ -53,6 +53,7 @@ supported_setups = [
     "bull_trend_continuation",
     "bullish_reset",
     "capitulation_reversal",
+    "bearish_distribution",
 ]
 
 [setup_requirements.bull_trend_continuation]
@@ -87,6 +88,18 @@ max_confirmation_lag_days = 14
 structure_min = 60
 entry_conviction_min = 80
 minimum_rr = 2.0
+
+[setup_requirements.bearish_distribution]
+regime_max = 45
+trend_max = 45
+flow_max = 45
+positioning_max = 45
+structure_max = 50
+entry_conviction_min = 85
+minimum_rr = 2.5
+distribution_required = true
+short_trigger_required = true
+require_no_stress = true
 
 [regime_thresholds]
 strong_bull_min = 80
