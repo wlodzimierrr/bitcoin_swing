@@ -1662,6 +1662,23 @@ state, reason code, completion state, and reason codes.
 
 Require confirmation after capitulation.
 
+Implemented `detect_capitulation_reversal` in `btc_predictor.features.setup`.
+The detector persists `SETUP_CAPITULATION_REVERSAL` and intentionally consumes
+an upstream `capitulation_flagged` input rather than implementing BTC-114 early.
+
+The versioned `setup_requirements.capitulation_reversal` config requires a
+capitulation flag, a confirmation trigger, confirmation after the capitulation
+detection timestamp, confirmation within 14 days, Structure Score >= 60, Entry
+Conviction >= 80, and initial R/R >= 2. Inputs include UTC capitulation and
+confirmation timestamps; results persist confirmation lag in days.
+
+Missing inputs prevent completion with `CAPITULATION_REVERSAL_INPUT_MISSING`.
+Failed filters persist specific reason codes for inactive capitulation, missing
+confirmation, confirmation before capitulation, stale confirmation, weak
+Structure, weak Entry Conviction, or insufficient R/R. Results persist inputs,
+requirements, confirmation lag, config metadata, setup label, detected state,
+reason code, completion state, and reason codes.
+
 ---
 
 ## BTC-113 — Implement Bearish Distribution setup

@@ -20,6 +20,7 @@ def test_loads_default_strategy_config() -> None:
     assert config.setup_requirements.supported_setups == (
         "bull_trend_continuation",
         "bullish_reset",
+        "capitulation_reversal",
     )
     assert config.setup_requirements.bullish_reset == {
         "regime_min": 55,
@@ -31,6 +32,15 @@ def test_loads_default_strategy_config() -> None:
         "flow_accel_improving_days": 5,
         "structure_min": 70,
         "entry_trigger_required": True,
+        "entry_conviction_min": 80,
+        "minimum_rr": 2.0,
+    }
+    assert config.setup_requirements.capitulation_reversal == {
+        "capitulation_required": True,
+        "confirmation_required": True,
+        "confirmation_must_follow_capitulation": True,
+        "max_confirmation_lag_days": 14,
+        "structure_min": 60,
         "entry_conviction_min": 80,
         "minimum_rr": 2.0,
     }
@@ -201,7 +211,11 @@ minimum_level_noise_multiplier = 1.0
 sweep_atr_multipliers = [0.3]
 
 [setup_requirements]
-supported_setups = ["bull_trend_continuation", "bullish_reset"]
+supported_setups = [
+    "bull_trend_continuation",
+    "bullish_reset",
+    "capitulation_reversal",
+]
 
 [setup_requirements.bull_trend_continuation]
 regime_min = 65
@@ -224,6 +238,15 @@ oi_health_stable_days = 7
 flow_accel_improving_days = 5
 structure_min = 70
 entry_trigger_required = true
+entry_conviction_min = 80
+minimum_rr = 2.0
+
+[setup_requirements.capitulation_reversal]
+capitulation_required = true
+confirmation_required = true
+confirmation_must_follow_capitulation = true
+max_confirmation_lag_days = 14
+structure_min = 60
 entry_conviction_min = 80
 minimum_rr = 2.0
 
@@ -513,6 +536,34 @@ def test_invalid_regime_smoothing_fraction_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="previous_weight"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_capitulation_reversal_lag_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_capitulation_reversal_lag.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "max_confirmation_lag_days = 14",
+            "max_confirmation_lag_days = 0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="max_confirmation_lag_days"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_capitulation_reversal_bool_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_capitulation_reversal_bool.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "confirmation_required = true",
+            'confirmation_required = "true"',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="confirmation_required"):
         load_strategy_config(config_path)
 
 

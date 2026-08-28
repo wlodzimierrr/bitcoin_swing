@@ -247,6 +247,7 @@ class StopBufferConfig:
 class SetupRequirements:
     bull_trend_continuation: dict[str, float | bool]
     bullish_reset: dict[str, float | int | bool]
+    capitulation_reversal: dict[str, float | int | bool]
     supported_setups: tuple[str, ...]
 
     @classmethod
@@ -257,6 +258,7 @@ class SetupRequirements:
 
         bull_trend = _required_mapping(data, "bull_trend_continuation")
         bullish_reset = _required_mapping(data, "bullish_reset")
+        capitulation_reversal = _required_mapping(data, "capitulation_reversal")
         requirements = cls(
             supported_setups=supported_setups,
             bull_trend_continuation={
@@ -309,6 +311,36 @@ class SetupRequirements:
                     "entry_conviction_min",
                 ),
                 "minimum_rr": _required_positive_float(bullish_reset, "minimum_rr"),
+            },
+            capitulation_reversal={
+                "capitulation_required": _required_bool(
+                    capitulation_reversal,
+                    "capitulation_required",
+                ),
+                "confirmation_required": _required_bool(
+                    capitulation_reversal,
+                    "confirmation_required",
+                ),
+                "confirmation_must_follow_capitulation": _required_bool(
+                    capitulation_reversal,
+                    "confirmation_must_follow_capitulation",
+                ),
+                "max_confirmation_lag_days": _required_positive_int(
+                    capitulation_reversal,
+                    "max_confirmation_lag_days",
+                ),
+                "structure_min": _required_score(
+                    capitulation_reversal,
+                    "structure_min",
+                ),
+                "entry_conviction_min": _required_score(
+                    capitulation_reversal,
+                    "entry_conviction_min",
+                ),
+                "minimum_rr": _required_positive_float(
+                    capitulation_reversal,
+                    "minimum_rr",
+                ),
             },
         )
         if (

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -12,12 +13,19 @@ from btc_predictor.features import (
     BULL_TREND_CONTINUATION_REASON_CODES,
     BULL_TREND_CONTINUATION_REQUIREMENT_KEYS,
     BULL_TREND_CONTINUATION_SETUP,
+    CAPITULATION_REVERSAL_FEATURE_ID,
+    CAPITULATION_REVERSAL_REASON_CODES,
+    CAPITULATION_REVERSAL_REQUIREMENT_KEYS,
+    CAPITULATION_REVERSAL_SETUP,
     DEFAULT_BULLISH_RESET_REQUIREMENTS,
     DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS,
+    DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS,
     BullishResetInput,
     BullTrendContinuationInput,
+    CapitulationReversalInput,
     detect_bullish_reset,
     detect_bull_trend_continuation,
+    detect_capitulation_reversal,
 )
 
 
@@ -33,6 +41,27 @@ def test_bull_trend_continuation_metadata_is_stable() -> None:
         "minimum_rr",
         "require_no_stress",
         "require_no_severe_crowding",
+    )
+    assert DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS == {
+        "regime_min": Decimal("65"),
+        "trend_min": Decimal("70"),
+        "flow_min": Decimal("55"),
+        "positioning_min": Decimal("60"),
+        "structure_min": Decimal("70"),
+        "minimum_rr": Decimal("2"),
+        "require_no_stress": True,
+        "require_no_severe_crowding": True,
+    }
+    assert BULL_TREND_CONTINUATION_REASON_CODES == (
+        "BULL_TREND_CONTINUATION_INPUT_MISSING",
+        "BULL_TREND_CONTINUATION_REGIME_TOO_LOW",
+        "BULL_TREND_CONTINUATION_TREND_TOO_LOW",
+        "BULL_TREND_CONTINUATION_FLOW_TOO_LOW",
+        "BULL_TREND_CONTINUATION_POSITIONING_TOO_LOW",
+        "BULL_TREND_CONTINUATION_STRUCTURE_TOO_LOW",
+        "BULL_TREND_CONTINUATION_STRESS_ACTIVE",
+        "BULL_TREND_CONTINUATION_SEVERE_CROWDING_ACTIVE",
+        "BULL_TREND_CONTINUATION_RR_TOO_LOW",
     )
 
 
@@ -82,26 +111,38 @@ def test_bullish_reset_metadata_is_stable() -> None:
         "BULLISH_RESET_ENTRY_CONVICTION_TOO_LOW",
         "BULLISH_RESET_RR_TOO_LOW",
     )
-    assert DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS == {
-        "regime_min": Decimal("65"),
-        "trend_min": Decimal("70"),
-        "flow_min": Decimal("55"),
-        "positioning_min": Decimal("60"),
-        "structure_min": Decimal("70"),
+
+
+def test_capitulation_reversal_metadata_is_stable() -> None:
+    assert CAPITULATION_REVERSAL_SETUP == "CAPITULATION_REVERSAL"
+    assert CAPITULATION_REVERSAL_FEATURE_ID == "SETUP_CAPITULATION_REVERSAL"
+    assert CAPITULATION_REVERSAL_REQUIREMENT_KEYS == (
+        "capitulation_required",
+        "confirmation_required",
+        "confirmation_must_follow_capitulation",
+        "max_confirmation_lag_days",
+        "structure_min",
+        "entry_conviction_min",
+        "minimum_rr",
+    )
+    assert DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS == {
+        "capitulation_required": True,
+        "confirmation_required": True,
+        "confirmation_must_follow_capitulation": True,
+        "max_confirmation_lag_days": 14,
+        "structure_min": Decimal("60"),
+        "entry_conviction_min": Decimal("80"),
         "minimum_rr": Decimal("2"),
-        "require_no_stress": True,
-        "require_no_severe_crowding": True,
     }
-    assert BULL_TREND_CONTINUATION_REASON_CODES == (
-        "BULL_TREND_CONTINUATION_INPUT_MISSING",
-        "BULL_TREND_CONTINUATION_REGIME_TOO_LOW",
-        "BULL_TREND_CONTINUATION_TREND_TOO_LOW",
-        "BULL_TREND_CONTINUATION_FLOW_TOO_LOW",
-        "BULL_TREND_CONTINUATION_POSITIONING_TOO_LOW",
-        "BULL_TREND_CONTINUATION_STRUCTURE_TOO_LOW",
-        "BULL_TREND_CONTINUATION_STRESS_ACTIVE",
-        "BULL_TREND_CONTINUATION_SEVERE_CROWDING_ACTIVE",
-        "BULL_TREND_CONTINUATION_RR_TOO_LOW",
+    assert CAPITULATION_REVERSAL_REASON_CODES == (
+        "CAPITULATION_REVERSAL_INPUT_MISSING",
+        "CAPITULATION_REVERSAL_CAPITULATION_NOT_ACTIVE",
+        "CAPITULATION_REVERSAL_CONFIRMATION_MISSING",
+        "CAPITULATION_REVERSAL_CONFIRMATION_BEFORE_CAPITULATION",
+        "CAPITULATION_REVERSAL_CONFIRMATION_TOO_STALE",
+        "CAPITULATION_REVERSAL_STRUCTURE_TOO_LOW",
+        "CAPITULATION_REVERSAL_ENTRY_CONVICTION_TOO_LOW",
+        "CAPITULATION_REVERSAL_RR_TOO_LOW",
     )
 
 
@@ -700,6 +741,237 @@ def test_detect_bullish_reset_rejects_invalid_inputs_and_config() -> None:
                 entry_trigger_confirmed=True,
                 entry_conviction_score=Decimal("80"),
                 risk_reward=Decimal("2.3"),
+            ),
+            requirements=requirements,
+        )
+
+
+def test_detect_capitulation_reversal_passes_after_confirmed_capitulation() -> None:
+    capitulation_at = datetime(2026, 8, 1, tzinfo=UTC)
+    confirmation_at = capitulation_at + timedelta(days=2)
+
+    result = detect_capitulation_reversal(
+        CapitulationReversalInput(
+            capitulation_flagged=True,
+            capitulation_detected_at=capitulation_at,
+            confirmation_triggered=True,
+            confirmation_at=confirmation_at,
+            structure_score=Decimal("60"),
+            entry_conviction_score=Decimal("80"),
+            risk_reward=Decimal("2"),
+        ),
+    )
+
+    assert result.complete is True
+    assert result.detected is True
+    assert result.setup == "CAPITULATION_REVERSAL"
+    assert result.reason_code == "SETUP_CAPITULATION_REVERSAL_VALID"
+    assert result.confirmation_lag_days == Decimal("2")
+    assert result.reason_codes == ()
+
+
+def test_detect_capitulation_reversal_reports_all_failed_filters() -> None:
+    capitulation_at = datetime(2026, 8, 10, tzinfo=UTC)
+    confirmation_at = capitulation_at - timedelta(days=1)
+
+    result = detect_capitulation_reversal(
+        CapitulationReversalInput(
+            capitulation_flagged=False,
+            capitulation_detected_at=capitulation_at,
+            confirmation_triggered=False,
+            confirmation_at=confirmation_at,
+            structure_score=Decimal("59.99"),
+            entry_conviction_score=Decimal("79.99"),
+            risk_reward=Decimal("1.99"),
+        ),
+    )
+
+    assert result.complete is True
+    assert result.detected is False
+    assert result.reason_code == "CAPITULATION_REVERSAL_CAPITULATION_NOT_ACTIVE"
+    assert result.confirmation_lag_days == Decimal("-1")
+    assert result.reason_codes == (
+        "CAPITULATION_REVERSAL_CAPITULATION_NOT_ACTIVE",
+        "CAPITULATION_REVERSAL_CONFIRMATION_MISSING",
+        "CAPITULATION_REVERSAL_CONFIRMATION_BEFORE_CAPITULATION",
+        "CAPITULATION_REVERSAL_STRUCTURE_TOO_LOW",
+        "CAPITULATION_REVERSAL_ENTRY_CONVICTION_TOO_LOW",
+        "CAPITULATION_REVERSAL_RR_TOO_LOW",
+    )
+
+
+def test_detect_capitulation_reversal_rejects_stale_confirmation() -> None:
+    capitulation_at = datetime(2026, 8, 1, tzinfo=UTC)
+    confirmation_at = capitulation_at + timedelta(days=15)
+
+    result = detect_capitulation_reversal(
+        CapitulationReversalInput(
+            capitulation_flagged=True,
+            capitulation_detected_at=capitulation_at,
+            confirmation_triggered=True,
+            confirmation_at=confirmation_at,
+            structure_score=Decimal("70"),
+            entry_conviction_score=Decimal("90"),
+            risk_reward=Decimal("3"),
+        ),
+    )
+
+    assert result.complete is True
+    assert result.detected is False
+    assert result.confirmation_lag_days == Decimal("15")
+    assert result.reason_codes == ("CAPITULATION_REVERSAL_CONFIRMATION_TOO_STALE",)
+
+
+def test_detect_capitulation_reversal_reports_missing_inputs() -> None:
+    result = detect_capitulation_reversal(
+        CapitulationReversalInput(
+            capitulation_flagged=None,
+            capitulation_detected_at=None,
+            confirmation_triggered=True,
+            confirmation_at=datetime(2026, 8, 3, tzinfo=UTC),
+            structure_score=Decimal("70"),
+            entry_conviction_score=Decimal("90"),
+            risk_reward=Decimal("3"),
+        ),
+    )
+
+    assert result.complete is False
+    assert result.detected is False
+    assert result.reason_code == "CAPITULATION_REVERSAL_INPUT_MISSING"
+    assert result.confirmation_lag_days is None
+    assert result.reason_codes == ("CAPITULATION_REVERSAL_INPUT_MISSING",)
+
+
+def test_detect_capitulation_reversal_uses_versioned_strategy_config() -> None:
+    config = load_strategy_config()
+    capitulation_at = datetime(2026, 8, 1, 12, tzinfo=UTC)
+    confirmation_at = datetime(2026, 8, 4, 12, tzinfo=UTC)
+
+    result = detect_capitulation_reversal(
+        CapitulationReversalInput(
+            capitulation_flagged=True,
+            capitulation_detected_at=capitulation_at,
+            confirmation_triggered=True,
+            confirmation_at=confirmation_at,
+            structure_score=Decimal("72"),
+            entry_conviction_score=Decimal("84"),
+            risk_reward=Decimal("2.5"),
+        ),
+        requirements=config.setup_requirements.capitulation_reversal,
+        config_metadata=config.run_metadata(),
+    )
+
+    assert result.as_record() == {
+        "feature_id": "SETUP_CAPITULATION_REVERSAL",
+        "setup": "CAPITULATION_REVERSAL",
+        "detected": True,
+        "reason_code": "SETUP_CAPITULATION_REVERSAL_VALID",
+        "inputs": {
+            "capitulation_flagged": True,
+            "capitulation_detected_at": "2026-08-01T12:00:00+00:00",
+            "confirmation_triggered": True,
+            "confirmation_at": "2026-08-04T12:00:00+00:00",
+            "structure_score": "72",
+            "entry_conviction_score": "84",
+            "risk_reward": "2.5",
+        },
+        "requirements": {
+            "capitulation_required": True,
+            "confirmation_required": True,
+            "confirmation_must_follow_capitulation": True,
+            "max_confirmation_lag_days": 14,
+            "structure_min": "60.0",
+            "entry_conviction_min": "80.0",
+            "minimum_rr": "2.0",
+        },
+        "confirmation_lag_days": "3",
+        "config_metadata": {
+            "config_version": "strategy_config_v1",
+            "strategy_version": "swing_v1.0",
+            "parameter_set_id": "default_phase1",
+        },
+        "complete": True,
+        "reason_codes": [],
+    }
+
+
+def test_detect_capitulation_reversal_allows_disabled_capitulation_and_confirmation() -> None:
+    requirements = dict(DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS)
+    requirements["capitulation_required"] = False
+    requirements["confirmation_required"] = False
+    requirements["confirmation_must_follow_capitulation"] = False
+
+    result = detect_capitulation_reversal(
+        CapitulationReversalInput(
+            capitulation_flagged=False,
+            capitulation_detected_at=datetime(2026, 8, 10, tzinfo=UTC),
+            confirmation_triggered=False,
+            confirmation_at=datetime(2026, 8, 9, tzinfo=UTC),
+            structure_score=Decimal("70"),
+            entry_conviction_score=Decimal("90"),
+            risk_reward=Decimal("3"),
+        ),
+        requirements=requirements,
+    )
+
+    assert result.detected is True
+    assert result.confirmation_lag_days == Decimal("-1")
+    assert result.reason_codes == ()
+
+
+def test_detect_capitulation_reversal_rejects_invalid_inputs_and_config() -> None:
+    with pytest.raises(ValueError, match="confirmation_at"):
+        detect_capitulation_reversal(
+            CapitulationReversalInput(
+                capitulation_flagged=True,
+                capitulation_detected_at=datetime(2026, 8, 1, tzinfo=UTC),
+                confirmation_triggered=True,
+                confirmation_at=datetime(2026, 8, 3),
+                structure_score=Decimal("70"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="structure_score"):
+        detect_capitulation_reversal(
+            CapitulationReversalInput(
+                capitulation_flagged=True,
+                capitulation_detected_at=datetime(2026, 8, 1, tzinfo=UTC),
+                confirmation_triggered=True,
+                confirmation_at=datetime(2026, 8, 3, tzinfo=UTC),
+                structure_score=Decimal("101"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="capitulation reversal requirements missing"):
+        detect_capitulation_reversal(
+            CapitulationReversalInput(
+                capitulation_flagged=True,
+                capitulation_detected_at=datetime(2026, 8, 1, tzinfo=UTC),
+                confirmation_triggered=True,
+                confirmation_at=datetime(2026, 8, 3, tzinfo=UTC),
+                structure_score=Decimal("70"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
+            ),
+            requirements={"capitulation_required": True},
+        )
+
+    requirements = dict(DEFAULT_CAPITULATION_REVERSAL_REQUIREMENTS)
+    requirements["max_confirmation_lag_days"] = 0
+    with pytest.raises(ValueError, match="max_confirmation_lag_days"):
+        detect_capitulation_reversal(
+            CapitulationReversalInput(
+                capitulation_flagged=True,
+                capitulation_detected_at=datetime(2026, 8, 1, tzinfo=UTC),
+                confirmation_triggered=True,
+                confirmation_at=datetime(2026, 8, 3, tzinfo=UTC),
+                structure_score=Decimal("70"),
+                entry_conviction_score=Decimal("90"),
+                risk_reward=Decimal("3"),
             ),
             requirements=requirements,
         )

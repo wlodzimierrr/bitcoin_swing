@@ -49,7 +49,11 @@ minimum_level_noise_multiplier = 1.0
 sweep_atr_multipliers = [0.25, 0.3, 0.5, 0.75]
 
 [setup_requirements]
-supported_setups = ["bull_trend_continuation", "bullish_reset"]
+supported_setups = [
+    "bull_trend_continuation",
+    "bullish_reset",
+    "capitulation_reversal",
+]
 
 [setup_requirements.bull_trend_continuation]
 regime_min = 65
@@ -72,6 +76,15 @@ oi_health_stable_days = 7
 flow_accel_improving_days = 5
 structure_min = 70
 entry_trigger_required = true
+entry_conviction_min = 80
+minimum_rr = 2.0
+
+[setup_requirements.capitulation_reversal]
+capitulation_required = true
+confirmation_required = true
+confirmation_must_follow_capitulation = true
+max_confirmation_lag_days = 14
+structure_min = 60
 entry_conviction_min = 80
 minimum_rr = 2.0
 
