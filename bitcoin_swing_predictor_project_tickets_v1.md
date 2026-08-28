@@ -1270,8 +1270,16 @@ series identity, swing type, window parameters, and source count.
 
 ## BTC-091 — Detect monthly swing highs/lows
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
+
+Implemented `detect_monthly_swing_levels` for confirmed canonical `1mo` swing
+highs/lows. Detection uses configurable left/right monthly confirmation windows,
+filters to bars closed and ingested by `as_of`, and emits no level until the
+right-side confirmation month is available. `MonthlySwingLevel.as_record()`
+persists level timestamp separately from detected timestamp, along with price,
+series identity, swing type, window parameters, and source count.
 
 ---
 

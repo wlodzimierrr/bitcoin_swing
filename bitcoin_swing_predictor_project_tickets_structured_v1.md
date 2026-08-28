@@ -1119,7 +1119,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-091 Detect monthly swing highs/lows
 - **Description:**
   Complete the ticket scope for detect monthly swing highs/lows.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1128,6 +1128,17 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `detect_monthly_swing_levels` for confirmed canonical `1mo` swing
+    highs and lows.
+  - Uses configurable left/right monthly confirmation windows with defaults from
+    the phase-1 `swing_window_months` convention.
+  - Filters source bars to observations closed and ingested by `as_of`, and does
+    not emit a level before the right-side confirmation month is available.
+  - Persists level timestamp separately from detected timestamp through
+    `MonthlySwingLevel.as_record()`.
+  - Records swing type, price, exchange, symbol, timeframe, provider, window
+    parameters, and source count for deterministic replay.
 
 #### BTC-092 Detect breakout/reclaim levels
 - **Description:**
