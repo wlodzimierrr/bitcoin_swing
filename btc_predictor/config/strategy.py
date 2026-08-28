@@ -27,6 +27,7 @@ POSITIONING_WEIGHT_KEYS = (
     "basis_health",
     "leverage_health",
 )
+ANCHORED_VWAP_PRICE_SOURCES = ("hlc3", "close")
 
 
 class StrategyConfigError(ValueError):
@@ -338,6 +339,7 @@ class PriceLevelParameters:
     minimum_level_strength: float
     breakout_close_buffer_fraction: float
     reclaim_close_buffer_fraction: float
+    anchored_vwap_price_source: str
     rr_minimum: float
     rr_preferred_min: float
     rr_preferred_max: float
@@ -357,6 +359,11 @@ class PriceLevelParameters:
             reclaim_close_buffer_fraction=_required_fraction(
                 data,
                 "reclaim_close_buffer_fraction",
+            ),
+            anchored_vwap_price_source=_required_choice(
+                data,
+                "anchored_vwap_price_source",
+                ANCHORED_VWAP_PRICE_SOURCES,
             ),
             rr_minimum=_required_positive_float(data, "rr_minimum"),
             rr_preferred_min=_required_positive_float(data, "rr_preferred_min"),
@@ -641,6 +648,13 @@ def _required_string(data: dict[str, Any], key: str) -> str:
     value = data.get(key)
     if not isinstance(value, str) or not value.strip():
         raise StrategyConfigError(f"{key} must be a non-empty string")
+    return value
+
+
+def _required_choice(data: dict[str, Any], key: str, choices: tuple[str, ...]) -> str:
+    value = _required_string(data, key)
+    if value not in choices:
+        raise StrategyConfigError(f"{key} must be one of {choices}")
     return value
 
 

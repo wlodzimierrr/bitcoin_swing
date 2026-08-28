@@ -163,7 +163,10 @@ to canonical monthly bars, using calendar-month close times and persisting each
 detects breakout levels from confirmed swing highs and reclaim levels from
 confirmed swing lows, using only source levels and confirmation bars available
 at signal time. Breakout/reclaim close buffers are loaded from versioned
-`price_levels` config.
+`price_levels` config. `calculate_anchored_vwap` builds anchored VWAP records
+from major swing lows/highs, breakout levels, and capitulation events, using
+the configured HLC3/close price source and only bars closed and ingested by the
+signal time.
 
 Flow feature helpers include `five_day_etf_flow` and `twenty_day_etf_flow`,
 which implement `ETF_FLOW_5D`, `ETF_NORM_5D`, `ETF_FLOW_20D`, and

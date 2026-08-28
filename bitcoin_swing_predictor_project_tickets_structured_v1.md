@@ -1175,7 +1175,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - major swing high
   - breakout
   - capitulation event
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1184,6 +1184,21 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor.levels.anchored_vwap` with explicit anchors for
+    `major_swing_low`, `major_swing_high`, `breakout`, and
+    `capitulation_event`.
+  - Swing anchors preserve original level timestamp separately from detection
+    time; breakout anchors use the confirmation timestamp; capitulation anchors
+    use explicit event metadata.
+  - `calculate_anchored_vwap` includes only OHLCV bars matching the anchor
+    series that are closed and ingested by `as_of`, and it does not emit a
+    complete result before the anchor is detectable.
+  - Results persist anchor provenance, configured price source, source
+    timeframe, bar count, volume sum, price-volume sum, completion state, and
+    reason codes.
+  - Added `anchored_vwap_price_source` to versioned `price_levels` config with
+    startup validation for `hlc3` and `close`.
 
 #### BTC-094 Implement volume-profile levels
 - **Description:**

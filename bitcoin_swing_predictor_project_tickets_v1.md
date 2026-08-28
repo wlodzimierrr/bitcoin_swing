@@ -1301,6 +1301,7 @@ level provenance, and uses versioned `price_levels` close-buffer parameters.
 
 ## BTC-093 — Implement anchored VWAP support
 
+**Status:** DONE
 **Priority:** P1  
 **Estimate:** 5
 
@@ -1310,6 +1311,19 @@ Anchor types:
 - major swing high
 - breakout
 - capitulation event
+
+Implemented anchored VWAP support in `btc_predictor.levels.anchored_vwap`.
+Confirmed weekly/monthly swing lows and highs become `major_swing_low` and
+`major_swing_high` anchors, confirmed breakout levels become `breakout`
+anchors, and explicit capitulation events can become `capitulation_event`
+anchors. VWAP uses bars from the anchor timestamp onward but only emits after
+the anchor's detection time, and only from OHLCV bars closed and ingested by
+`as_of`.
+
+Results persist anchor provenance, configured price source, source timeframe,
+bar count, volume sum, price-volume sum, completion state, and reason codes.
+Added `anchored_vwap_price_source` to versioned `price_levels` config with
+startup validation for `hlc3` and `close`.
 
 ---
 

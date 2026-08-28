@@ -25,6 +25,7 @@ def test_loads_default_strategy_config() -> None:
     assert config.price_levels.rr_minimum == 2
     assert config.price_levels.breakout_close_buffer_fraction == 0
     assert config.price_levels.reclaim_close_buffer_fraction == 0
+    assert config.price_levels.anchored_vwap_price_source == "hlc3"
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -181,6 +182,7 @@ cluster_distance_fraction = 0.025
 minimum_level_strength = 60
 breakout_close_buffer_fraction = 0
 reclaim_close_buffer_fraction = 0
+anchored_vwap_price_source = "hlc3"
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
@@ -265,6 +267,20 @@ def test_invalid_price_level_breakout_config_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="breakout_close_buffer_fraction"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_anchored_vwap_price_source_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_anchored_vwap.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            'anchored_vwap_price_source = "hlc3"',
+            'anchored_vwap_price_source = "ohlc4"',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="anchored_vwap_price_source"):
         load_strategy_config(config_path)
 
 
