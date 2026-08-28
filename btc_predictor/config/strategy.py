@@ -21,6 +21,15 @@ FULL_FLOW_WEIGHT_KEYS = (
     "spot_dominance",
 )
 CORE_FLOW_WEIGHT_KEYS = ("etf_norm_5", "etf_norm_20", "flow_accel")
+CORE_REGIME_WEIGHT_KEYS = ("trend", "flow", "volatility", "positioning")
+FULL_REGIME_WEIGHT_KEYS = (
+    "trend",
+    "flow",
+    "macro",
+    "onchain",
+    "volatility",
+    "liquidity",
+)
 POSITIONING_WEIGHT_KEYS = (
     "funding_health",
     "oi_health",
@@ -563,6 +572,7 @@ class ScoringWeights:
     full_flow: dict[str, float]
     core_flow: dict[str, float]
     core_regime: dict[str, float]
+    full_regime: dict[str, float]
     positioning: dict[str, float]
     structure_score: dict[str, float]
 
@@ -582,7 +592,16 @@ class ScoringWeights:
                 "core_flow",
                 expected_keys=CORE_FLOW_WEIGHT_KEYS,
             ),
-            core_regime=_required_weight_mapping(data, "core_regime"),
+            core_regime=_required_weight_mapping(
+                data,
+                "core_regime",
+                expected_keys=CORE_REGIME_WEIGHT_KEYS,
+            ),
+            full_regime=_required_weight_mapping(
+                data,
+                "full_regime",
+                expected_keys=FULL_REGIME_WEIGHT_KEYS,
+            ),
             positioning=_required_weight_mapping(
                 data,
                 "positioning",

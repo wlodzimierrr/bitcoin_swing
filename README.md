@@ -198,6 +198,12 @@ and records either `FLOW_MODEL = ETF_CORE` or
 `FLOW_MODEL = ETF_SPOT_PERP_FULL`; missing P1 inputs trigger the ETF-core
 fallback without zero-filling.
 
+Regime Score combines Trend, Flow, Macro, On-chain, Volatility, and Liquidity
+inputs when the full model is available. Until those P1 models exist,
+`calculate_regime_score` records `REGIME_MODEL = CORE_MARKET_ONLY` and uses the
+configured Trend/Flow/Volatility/Positioning fallback without zero-filling
+missing core inputs.
+
 Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day
 rolling z-score. The result records the health-curve parameters and emits stable

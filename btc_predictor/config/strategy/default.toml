@@ -166,6 +166,14 @@ flow = 0.25
 volatility = 0.15
 positioning = 0.15
 
+[scoring_weights.full_regime]
+trend = 0.35
+flow = 0.20
+macro = 0.15
+onchain = 0.10
+volatility = 0.10
+liquidity = 0.10
+
 [scoring_weights.positioning]
 funding_health = 0.35
 oi_health = 0.30

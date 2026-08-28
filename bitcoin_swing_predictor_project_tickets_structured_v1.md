@@ -1368,7 +1368,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   0.15Volatility+
   0.15Positioning
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Output records `REGIME_MODEL = CORE_MARKET_ONLY` or `REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY`
   - Missing P1 inputs are not silently filled with zero
@@ -1377,6 +1377,20 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.features.regime` with `RegimeScoreInput`,
+    `RegimeScoreResult`, and `calculate_regime_score`.
+  - Uses `REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY` when macro, on-chain,
+    and liquidity inputs are present, applying versioned
+    `scoring_weights.full_regime`.
+  - Falls back to `REGIME_MODEL = CORE_MARKET_ONLY` while P1 inputs are missing,
+    using versioned `scoring_weights.core_regime`.
+  - Missing P1 inputs emit `REGIME_SCORE_P1_INPUT_MISSING` instead of being
+    zero-filled; missing core inputs prevent completion and emit
+    `REGIME_SCORE_CORE_INPUT_MISSING`.
+  - Results persist model selection, component inputs, selected weights,
+    contributions, config metadata, interpretation, reason code, completion
+    state, and reason codes.
 
 #### BTC-101 Add regime smoothing
 - **Description:**

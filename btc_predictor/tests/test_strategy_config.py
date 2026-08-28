@@ -55,6 +55,20 @@ def test_loads_default_strategy_config() -> None:
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
     assert config.scoring_weights.core_flow["etf_norm_5"] == 0.4
+    assert config.scoring_weights.core_regime == {
+        "trend": 0.45,
+        "flow": 0.25,
+        "volatility": 0.15,
+        "positioning": 0.15,
+    }
+    assert config.scoring_weights.full_regime == {
+        "trend": 0.35,
+        "flow": 0.20,
+        "macro": 0.15,
+        "onchain": 0.10,
+        "volatility": 0.10,
+        "liquidity": 0.10,
+    }
     assert config.scoring_weights.positioning["funding_health"] == 0.35
     assert config.scoring_weights.positioning["leverage_health"] == 0.15
     assert config.scoring_weights.structure_score == {
@@ -266,6 +280,14 @@ flow_accel = 0.25
 [scoring_weights.core_regime]
 trend = 1.0
 
+[scoring_weights.full_regime]
+trend = 0.35
+flow = 0.20
+macro = 0.15
+onchain = 0.10
+volatility = 0.10
+liquidity = 0.10
+
 [scoring_weights.positioning]
 funding_health = 0.35
 oi_health = 0.30
@@ -434,6 +456,20 @@ def test_invalid_structure_score_weights_fail_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="structure_score"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_full_regime_weights_fail_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_full_regime_weights.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "liquidity = 0.10",
+            "liquidity = 0.05",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="full_regime"):
         load_strategy_config(config_path)
 
 

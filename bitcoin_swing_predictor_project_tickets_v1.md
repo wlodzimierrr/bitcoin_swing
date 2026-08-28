@@ -1469,6 +1469,7 @@ explicitly instead of silently filling component scores.
 
 ## BTC-100 — Implement base Regime Score
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
 
@@ -1499,6 +1500,19 @@ RegimeScore_{core} =
 - Output records `REGIME_MODEL = CORE_MARKET_ONLY` or `REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY`
 - Missing P1 inputs are not silently filled with zero
 - Formula weights are loaded from versioned strategy config
+
+Implemented `calculate_regime_score` in `btc_predictor.features.regime`.
+The scorer uses `REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY` when macro,
+on-chain, and liquidity inputs are present, applying the full formula from
+versioned `scoring_weights.full_regime`. While those P1 inputs are missing it
+records `REGIME_MODEL = CORE_MARKET_ONLY` and applies the configured
+Trend/Flow/Volatility/Positioning fallback from `scoring_weights.core_regime`.
+
+Missing P1 inputs are explicitly reported with `REGIME_SCORE_P1_INPUT_MISSING`
+instead of being filled with zero. Missing core inputs prevent completion and
+emit `REGIME_SCORE_CORE_INPUT_MISSING`. Results persist model selection,
+component inputs, selected weights, contributions, config metadata,
+interpretation, reason code, completion state, and reason codes.
 
 ---
 
