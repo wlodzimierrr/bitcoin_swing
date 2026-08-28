@@ -1587,6 +1587,19 @@ No severe CROWDING
 R/R >= 2
 ```
 
+Implemented `detect_bull_trend_continuation` in
+`btc_predictor.features.setup`. The detector persists
+`SETUP_BULL_TREND_CONTINUATION` and evaluates the hard filters from versioned
+`setup_requirements.bull_trend_continuation`: Regime, Trend, Flow, Positioning,
+Structure, no STRESS, no severe CROWDING, and minimum R/R.
+
+Passing boundary values are accepted (`Regime = 65`, `Trend = 70`, `Flow = 55`,
+`Positioning = 60`, `Structure = 70`, `R/R = 2`). Missing inputs prevent
+completion with `BULL_TREND_CONTINUATION_INPUT_MISSING`; failed filters persist
+specific reason codes for low component scores, active STRESS, severe CROWDING,
+or insufficient R/R. Results persist inputs, requirements, config metadata,
+setup label, detected state, reason code, completion state, and reason codes.
+
 ---
 
 ## BTC-111 — Implement Bullish Reset setup

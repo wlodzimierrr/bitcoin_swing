@@ -210,6 +210,12 @@ records the missing previous value explicitly. `calculate_regime_classification`
 persists `REGIME_CLASSIFICATION` from the configured regime thresholds, covering
 Strong Bull through Strong Bear without relying on hard-coded runtime buckets.
 
+Setup detector helpers include `detect_bull_trend_continuation`, which persists
+`SETUP_BULL_TREND_CONTINUATION` from the configured hard filters for Regime,
+Trend, Flow, Positioning, Structure, STRESS, severe CROWDING, and R/R. Missing
+inputs block completion, while failed filters are kept as deterministic reason
+codes.
+
 Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day
 rolling z-score. The result records the health-curve parameters and emits stable

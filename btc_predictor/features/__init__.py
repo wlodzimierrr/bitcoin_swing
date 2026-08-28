@@ -152,6 +152,16 @@ from btc_predictor.features.rolling import (
     rolling_zscore,
     true_ranges,
 )
+from btc_predictor.features.setup import (
+    BULL_TREND_CONTINUATION_FEATURE_ID,
+    BULL_TREND_CONTINUATION_REASON_CODES,
+    BULL_TREND_CONTINUATION_REQUIREMENT_KEYS,
+    BULL_TREND_CONTINUATION_SETUP,
+    DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS,
+    BullTrendContinuationInput,
+    BullTrendContinuationResult,
+    detect_bull_trend_continuation,
+)
 from btc_predictor.features.structure import (
     DEFAULT_ENTRY_LOCATION_FULL_SCORE_DISTANCE_FRACTION,
     DEFAULT_ENTRY_LOCATION_ZERO_SCORE_DISTANCE_FRACTION,
@@ -243,6 +253,10 @@ from btc_predictor.features.volatility import (
 
 __all__ = [
     "CvdObservation",
+    "BULL_TREND_CONTINUATION_FEATURE_ID",
+    "BULL_TREND_CONTINUATION_REASON_CODES",
+    "BULL_TREND_CONTINUATION_REQUIREMENT_KEYS",
+    "BULL_TREND_CONTINUATION_SETUP",
     "CROWDING_FLAG_EFFECTS",
     "CROWDING_FLAG_FEATURE_ID",
     "CROWDING_FLAG_REASON_CODES",
@@ -303,6 +317,7 @@ __all__ = [
     "DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN",
     "DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS",
     "DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS",
+    "DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS",
     "DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS",
     "DEFAULT_FULL_FLOW_SCORE_WEIGHTS",
     "DEFAULT_FULL_REGIME_SCORE_WEIGHTS",
@@ -384,6 +399,8 @@ __all__ = [
     "WEEKLY_STRUCTURE_LABELS",
     "WEEKLY_STRUCTURE_SCORES",
     "WeeklyStructureClassification",
+    "BullTrendContinuationInput",
+    "BullTrendContinuationResult",
     "CrowdingFlagInput",
     "CrowdingFlagResult",
     "EtfFlowAccelerationResult",
@@ -430,6 +447,7 @@ __all__ = [
     "calculate_structure_score",
     "calculate_structure_score_from_clusters",
     "calculate_trend_score",
+    "detect_bull_trend_continuation",
     "classify_weekly_structure",
     "classify_weekly_structure_from_weekly_bars",
     "etf_flow_acceleration",
