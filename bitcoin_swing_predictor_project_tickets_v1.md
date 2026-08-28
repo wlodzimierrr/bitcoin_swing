@@ -1285,8 +1285,17 @@ series identity, swing type, window parameters, and source count.
 
 ## BTC-092 — Detect breakout/reclaim levels
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 5
+
+Implemented `detect_breakout_reclaim_levels` for structural breakout and
+reclaim levels from confirmed weekly/monthly swing levels. Breakouts require a
+canonical confirmation bar close above a prior swing high; reclaims require a
+bar trading through a prior swing low and closing back above it. Detection only
+uses source levels and confirmation bars available by `as_of`, records
+confirmation timestamp separately from detection timestamp, persists source
+level provenance, and uses versioned `price_levels` close-buffer parameters.
 
 ---
 

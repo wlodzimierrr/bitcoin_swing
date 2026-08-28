@@ -159,7 +159,11 @@ have closed and been ingested. Each `WeeklySwingLevel` persists the original
 level timestamp separately from the later detection timestamp.
 `detect_monthly_swing_levels` applies the same point-in-time confirmation model
 to canonical monthly bars, using calendar-month close times and persisting each
-`MonthlySwingLevel` for deterministic replay.
+`MonthlySwingLevel` for deterministic replay. `detect_breakout_reclaim_levels`
+detects breakout levels from confirmed swing highs and reclaim levels from
+confirmed swing lows, using only source levels and confirmation bars available
+at signal time. Breakout/reclaim close buffers are loaded from versioned
+`price_levels` config.
 
 Flow feature helpers include `five_day_etf_flow` and `twenty_day_etf_flow`,
 which implement `ETF_FLOW_5D`, `ETF_NORM_5D`, `ETF_FLOW_20D`, and

@@ -1143,7 +1143,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-092 Detect breakout/reclaim levels
 - **Description:**
   Complete the ticket scope for detect breakout/reclaim levels.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1152,6 +1152,20 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `detect_breakout_reclaim_levels` for structural breakout/reclaim
+    levels from confirmed weekly/monthly swing levels.
+  - Breakouts require a canonical confirmation bar close above a prior swing
+    high; reclaims require a bar trading through a prior swing low and closing
+    back above it.
+  - Uses only source levels and confirmation bars available by `as_of`, and
+    waits for confirmation bars to close and be ingested.
+  - Persists confirmation timestamp, detection timestamp, source swing
+    provenance, close buffer, confirming close/low, series identity, and stable
+    reason codes through `BreakoutReclaimLevel.as_record()`.
+  - Added `breakout_close_buffer_fraction` and
+    `reclaim_close_buffer_fraction` to versioned `price_levels` config with
+    startup validation.
 
 #### BTC-093 Implement anchored VWAP support
 - **Description:**

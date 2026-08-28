@@ -336,6 +336,8 @@ class PriceLevelParameters:
     swing_window_months: int
     cluster_distance_fraction: float
     minimum_level_strength: float
+    breakout_close_buffer_fraction: float
+    reclaim_close_buffer_fraction: float
     rr_minimum: float
     rr_preferred_min: float
     rr_preferred_max: float
@@ -348,6 +350,14 @@ class PriceLevelParameters:
             swing_window_months=_required_positive_int(data, "swing_window_months"),
             cluster_distance_fraction=_required_fraction(data, "cluster_distance_fraction"),
             minimum_level_strength=_required_score(data, "minimum_level_strength"),
+            breakout_close_buffer_fraction=_required_fraction(
+                data,
+                "breakout_close_buffer_fraction",
+            ),
+            reclaim_close_buffer_fraction=_required_fraction(
+                data,
+                "reclaim_close_buffer_fraction",
+            ),
             rr_minimum=_required_positive_float(data, "rr_minimum"),
             rr_preferred_min=_required_positive_float(data, "rr_preferred_min"),
             rr_preferred_max=_required_positive_float(data, "rr_preferred_max"),

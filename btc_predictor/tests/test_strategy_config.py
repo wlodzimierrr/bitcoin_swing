@@ -23,6 +23,8 @@ def test_loads_default_strategy_config() -> None:
     )
     assert config.regime_thresholds.bull_min == 65
     assert config.price_levels.rr_minimum == 2
+    assert config.price_levels.breakout_close_buffer_fraction == 0
+    assert config.price_levels.reclaim_close_buffer_fraction == 0
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -177,6 +179,8 @@ swing_window_weeks = 3
 swing_window_months = 2
 cluster_distance_fraction = 0.025
 minimum_level_strength = 60
+breakout_close_buffer_fraction = 0
+reclaim_close_buffer_fraction = 0
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
@@ -247,6 +251,20 @@ def test_invalid_crowding_flag_config_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="oi_intensity_percentile_min"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_price_level_breakout_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_price_level_breakout.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "breakout_close_buffer_fraction = 0",
+            "breakout_close_buffer_fraction = -0.01",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="breakout_close_buffer_fraction"):
         load_strategy_config(config_path)
 
 
