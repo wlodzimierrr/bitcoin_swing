@@ -13,6 +13,12 @@ from btc_predictor.features import (
     DEFAULT_CAPITULATION_LIQUIDATION_PERCENTILE_MIN,
     DEFAULT_CAPITULATION_RANGE_PERCENTILE_MIN,
     DEFAULT_CAPITULATION_VOLATILITY_PERCENTILE_MIN,
+    DEFAULT_EUPHORIA_BASIS_ZSCORE_MIN,
+    DEFAULT_EUPHORIA_FUNDING_ZSCORE_MIN,
+    DEFAULT_EUPHORIA_OI_INTENSITY_PERCENTILE_MIN,
+    DEFAULT_EUPHORIA_RANGE_PERCENTILE_MIN,
+    DEFAULT_EUPHORIA_UPSIDE_RETURN_MIN,
+    DEFAULT_EUPHORIA_VOLATILITY_PERCENTILE_MIN,
     DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN,
     DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX,
     DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX,
@@ -28,6 +34,9 @@ from btc_predictor.features import (
     DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN,
     DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS,
     DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS,
+    EUPHORIA_FLAG_EFFECTS,
+    EUPHORIA_FLAG_FEATURE_ID,
+    EUPHORIA_FLAG_REASON_CODES,
     ORDERLINESS_SCORE_COMPONENT_IDS,
     ORDERLINESS_SCORE_FEATURE_ID,
     ORDERLINESS_SCORE_REASON_CODES,
@@ -45,11 +54,13 @@ from btc_predictor.features import (
     VOLATILITY_PERCENTILE_FEATURE_ID,
     VOLATILITY_PERCENTILE_REASON_CODES,
     CapitulationFlagInput,
+    EuphoriaFlagInput,
     OrderlinessScoreInput,
     RealizedVolatilityResult,
     StressFlagInput,
     VolatilityCompressionRatioInput,
     calculate_capitulation_flag,
+    calculate_euphoria_flag,
     calculate_orderliness_score,
     calculate_stress_flag,
     realized_volatility_from_daily_bars,
@@ -239,6 +250,32 @@ def test_capitulation_flag_metadata_is_stable() -> None:
         "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
         "CAPITULATION_SYSTEMIC_MARKET_SHOCK",
         "CAPITULATION_CONFIRMATION_MISSING",
+    )
+
+
+def test_euphoria_flag_metadata_is_stable() -> None:
+    assert EUPHORIA_FLAG_FEATURE_ID == "EUPHORIA"
+    assert EUPHORIA_FLAG_EFFECTS == (
+        "NO_ADD",
+        "REDUCE_ENTRY_QUALITY",
+        "TIGHTEN_PROFIT_PROTECTION",
+    )
+    assert DEFAULT_EUPHORIA_RANGE_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_EUPHORIA_UPSIDE_RETURN_MIN == Decimal("0.12")
+    assert DEFAULT_EUPHORIA_FUNDING_ZSCORE_MIN == Decimal("2")
+    assert DEFAULT_EUPHORIA_BASIS_ZSCORE_MIN == Decimal("2")
+    assert DEFAULT_EUPHORIA_OI_INTENSITY_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_EUPHORIA_VOLATILITY_PERCENTILE_MIN == Decimal("95")
+    assert EUPHORIA_FLAG_REASON_CODES == (
+        "EUPHORIA_INPUT_MISSING",
+        "EUPHORIA_UPSIDE_EXTENSION",
+        "EUPHORIA_EXTREME_RANGE",
+        "EUPHORIA_FUNDING_OVERHEATED",
+        "EUPHORIA_BASIS_OVERHEATED",
+        "EUPHORIA_OI_INTENSITY_EXTREME",
+        "EUPHORIA_VOLATILITY_SPIKE",
+        "EUPHORIA_SYSTEMIC_MARKET_EUPHORIA",
+        "EUPHORIA_CONFIRMATION_MISSING",
     )
 
 
@@ -1013,6 +1050,201 @@ def test_capitulation_flag_exposes_persistable_payload() -> None:
     }
 
 
+def test_euphoria_flag_is_clear_when_inputs_are_below_thresholds() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=Decimal("70"),
+            upside_return=Decimal("0.04"),
+            funding_zscore=Decimal("0.5"),
+            basis_zscore=Decimal("0.7"),
+            oi_intensity_percentile=Decimal("70"),
+            volatility_percentile=Decimal("65"),
+            systemic_euphoria=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.reason_codes == ()
+
+
+def test_euphoria_flag_requires_upside_plus_confirmation() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=Decimal("96"),
+            upside_return=Decimal("0.12"),
+            funding_zscore=Decimal("2.2"),
+            basis_zscore=Decimal("2.1"),
+            oi_intensity_percentile=Decimal("98"),
+            volatility_percentile=Decimal("96"),
+            systemic_euphoria=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is True
+    assert result.effects == EUPHORIA_FLAG_EFFECTS
+    assert result.reason_codes == (
+        "EUPHORIA_UPSIDE_EXTENSION",
+        "EUPHORIA_EXTREME_RANGE",
+        "EUPHORIA_FUNDING_OVERHEATED",
+        "EUPHORIA_BASIS_OVERHEATED",
+        "EUPHORIA_OI_INTENSITY_EXTREME",
+        "EUPHORIA_VOLATILITY_SPIKE",
+    )
+
+
+def test_euphoria_flag_reports_missing_confirmation() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=Decimal("80"),
+            upside_return=Decimal("0.13"),
+            funding_zscore=Decimal("1"),
+            basis_zscore=Decimal("1"),
+            oi_intensity_percentile=Decimal("70"),
+            volatility_percentile=Decimal("75"),
+            systemic_euphoria=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.reason_codes == (
+        "EUPHORIA_UPSIDE_EXTENSION",
+        "EUPHORIA_CONFIRMATION_MISSING",
+    )
+
+
+def test_euphoria_flag_allows_systemic_euphoria_to_flag_directly() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=Decimal("50"),
+            upside_return=Decimal("0.02"),
+            funding_zscore=Decimal("0"),
+            basis_zscore=Decimal("0"),
+            oi_intensity_percentile=Decimal("50"),
+            volatility_percentile=Decimal("50"),
+            systemic_euphoria=True,
+        )
+    )
+
+    assert result.flagged is True
+    assert result.reason_codes == ("EUPHORIA_SYSTEMIC_MARKET_EUPHORIA",)
+
+
+def test_euphoria_flag_reports_missing_inputs_without_zero_fill() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=None,
+            upside_return=Decimal("0.13"),
+            funding_zscore=Decimal("2.1"),
+            basis_zscore=Decimal("1"),
+            oi_intensity_percentile=Decimal("80"),
+            volatility_percentile=Decimal("70"),
+            systemic_euphoria=False,
+        )
+    )
+
+    assert result.complete is False
+    assert result.flagged is True
+    assert result.reason_codes == (
+        "EUPHORIA_INPUT_MISSING",
+        "EUPHORIA_UPSIDE_EXTENSION",
+        "EUPHORIA_FUNDING_OVERHEATED",
+    )
+
+
+def test_euphoria_flag_uses_custom_thresholds_and_config_metadata() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=Decimal("91"),
+            upside_return=Decimal("0.09"),
+            funding_zscore=Decimal("1.6"),
+            basis_zscore=Decimal("1.4"),
+            oi_intensity_percentile=Decimal("88"),
+            volatility_percentile=Decimal("80"),
+            systemic_euphoria=False,
+        ),
+        range_percentile_min=Decimal("90"),
+        upside_return_min=Decimal("0.08"),
+        funding_zscore_min=Decimal("1.5"),
+        basis_zscore_min=Decimal("2"),
+        oi_intensity_percentile_min=Decimal("90"),
+        volatility_percentile_min=Decimal("90"),
+        config_metadata={"parameter_set_id": "default_phase1"},
+    )
+
+    assert result.flagged is True
+    assert result.thresholds == {
+        "range_percentile_min": Decimal("90"),
+        "upside_return_min": Decimal("0.08"),
+        "funding_zscore_min": Decimal("1.5"),
+        "basis_zscore_min": Decimal("2"),
+        "oi_intensity_percentile_min": Decimal("90"),
+        "volatility_percentile_min": Decimal("90"),
+    }
+    assert result.config_metadata == {"parameter_set_id": "default_phase1"}
+    assert result.reason_codes == (
+        "EUPHORIA_UPSIDE_EXTENSION",
+        "EUPHORIA_EXTREME_RANGE",
+        "EUPHORIA_FUNDING_OVERHEATED",
+    )
+
+
+def test_euphoria_flag_exposes_persistable_payload() -> None:
+    result = calculate_euphoria_flag(
+        EuphoriaFlagInput(
+            range_percentile=Decimal("96"),
+            upside_return=Decimal("0.14"),
+            funding_zscore=Decimal("2.3"),
+            basis_zscore=Decimal("2.2"),
+            oi_intensity_percentile=Decimal("97"),
+            volatility_percentile=Decimal("96"),
+            systemic_euphoria=False,
+        ),
+        config_metadata={"config_version": "strategy_config_v1"},
+    )
+
+    assert result.as_record() == {
+        "feature_id": "EUPHORIA",
+        "flagged": True,
+        "effects": [
+            "NO_ADD",
+            "REDUCE_ENTRY_QUALITY",
+            "TIGHTEN_PROFIT_PROTECTION",
+        ],
+        "inputs": {
+            "range_percentile": "96",
+            "upside_return": "0.14",
+            "funding_zscore": "2.3",
+            "basis_zscore": "2.2",
+            "oi_intensity_percentile": "97",
+            "volatility_percentile": "96",
+            "systemic_euphoria": False,
+        },
+        "thresholds": {
+            "range_percentile_min": "95",
+            "upside_return_min": "0.12",
+            "funding_zscore_min": "2",
+            "basis_zscore_min": "2",
+            "oi_intensity_percentile_min": "95",
+            "volatility_percentile_min": "95",
+        },
+        "config_metadata": {"config_version": "strategy_config_v1"},
+        "complete": True,
+        "reason_codes": [
+            "EUPHORIA_UPSIDE_EXTENSION",
+            "EUPHORIA_EXTREME_RANGE",
+            "EUPHORIA_FUNDING_OVERHEATED",
+            "EUPHORIA_BASIS_OVERHEATED",
+            "EUPHORIA_OI_INTENSITY_EXTREME",
+            "EUPHORIA_VOLATILITY_SPIKE",
+        ],
+    }
+
+
 def test_realized_volatility_filters_unavailable_future_bars() -> None:
     rows = daily_bars(("100", "110", "99", "108.9"))
     future_revision = daily_bar(
@@ -1286,6 +1518,79 @@ def test_capitulation_flag_rejects_invalid_inputs() -> None:
                 volatility_percentile=Decimal("50"),
                 funding_zscore=Decimal("0"),
                 systemic_shock=False,
+            )
+        )
+
+
+def test_euphoria_flag_rejects_invalid_inputs() -> None:
+    valid_input = EuphoriaFlagInput(
+        range_percentile=Decimal("50"),
+        upside_return=Decimal("0.03"),
+        funding_zscore=Decimal("0"),
+        basis_zscore=Decimal("0"),
+        oi_intensity_percentile=Decimal("50"),
+        volatility_percentile=Decimal("50"),
+        systemic_euphoria=False,
+    )
+
+    with pytest.raises(ValueError, match="range_percentile"):
+        calculate_euphoria_flag(
+            EuphoriaFlagInput(
+                range_percentile=Decimal("101"),
+                upside_return=Decimal("0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                oi_intensity_percentile=Decimal("50"),
+                volatility_percentile=Decimal("50"),
+                systemic_euphoria=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="oi_intensity_percentile"):
+        calculate_euphoria_flag(
+            EuphoriaFlagInput(
+                range_percentile=Decimal("50"),
+                upside_return=Decimal("0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                oi_intensity_percentile=Decimal("-1"),
+                volatility_percentile=Decimal("50"),
+                systemic_euphoria=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="volatility_percentile"):
+        calculate_euphoria_flag(
+            EuphoriaFlagInput(
+                range_percentile=Decimal("50"),
+                upside_return=Decimal("0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                oi_intensity_percentile=Decimal("50"),
+                volatility_percentile=Decimal("101"),
+                systemic_euphoria=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="upside_return_min"):
+        calculate_euphoria_flag(valid_input, upside_return_min=Decimal("0"))
+
+    with pytest.raises(ValueError, match="funding_zscore_min"):
+        calculate_euphoria_flag(valid_input, funding_zscore_min=Decimal("-1"))
+
+    with pytest.raises(ValueError, match="basis_zscore_min"):
+        calculate_euphoria_flag(valid_input, basis_zscore_min=Decimal("-1"))
+
+    with pytest.raises(ValueError, match="systemic_euphoria"):
+        calculate_euphoria_flag(
+            EuphoriaFlagInput(
+                range_percentile=Decimal("50"),
+                upside_return=Decimal("0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                oi_intensity_percentile=Decimal("50"),
+                volatility_percentile=Decimal("50"),
+                systemic_euphoria="yes",  # type: ignore[arg-type]
             )
         )
 

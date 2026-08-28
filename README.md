@@ -137,7 +137,10 @@ settings and optional new-trade blocking loaded from the versioned strategy
 config. `calculate_capitulation_flag` emits `CAPITULATION` for confirmed
 downside washouts: either an explicit systemic shock, or a severe downside
 return plus confirmation from extreme range, liquidation cascade, volatility
-spike, or negative funding flush.
+spike, or negative funding flush. `calculate_euphoria_flag` emits `EUPHORIA`
+for confirmed upside excess: either an explicit systemic euphoria input, or a
+large upside return plus confirmation from extreme range, overheated funding,
+overheated basis, extreme OI intensity, or volatility spike.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.

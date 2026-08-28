@@ -650,9 +650,46 @@ class CapitulationFlagConfig:
 
 
 @dataclass(frozen=True)
+class EuphoriaFlagConfig:
+    range_percentile_min: float
+    upside_return_min: float
+    funding_zscore_min: float
+    basis_zscore_min: float
+    oi_intensity_percentile_min: float
+    volatility_percentile_min: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        upside_return_min = _required_float(data, "upside_return_min")
+        if upside_return_min <= 0:
+            raise StrategyConfigError("upside_return_min must be positive")
+        return cls(
+            range_percentile_min=_required_score(data, "range_percentile_min"),
+            upside_return_min=upside_return_min,
+            funding_zscore_min=_required_non_negative_float(
+                data,
+                "funding_zscore_min",
+            ),
+            basis_zscore_min=_required_non_negative_float(
+                data,
+                "basis_zscore_min",
+            ),
+            oi_intensity_percentile_min=_required_score(
+                data,
+                "oi_intensity_percentile_min",
+            ),
+            volatility_percentile_min=_required_score(
+                data,
+                "volatility_percentile_min",
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class VolatilityFlagConfig:
     stress: StressFlagConfig
     capitulation: CapitulationFlagConfig
+    euphoria: EuphoriaFlagConfig
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -662,6 +699,9 @@ class VolatilityFlagConfig:
             ),
             capitulation=CapitulationFlagConfig.from_mapping(
                 _required_mapping(data, "capitulation"),
+            ),
+            euphoria=EuphoriaFlagConfig.from_mapping(
+                _required_mapping(data, "euphoria"),
             ),
         )
 

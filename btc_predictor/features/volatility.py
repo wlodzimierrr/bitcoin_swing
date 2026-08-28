@@ -19,6 +19,7 @@ VOLATILITY_PERCENTILE_FEATURE_ID = "VOL_PERCENTILE_2Y"
 ORDERLINESS_SCORE_FEATURE_ID = "ORDERLINESS_SCORE"
 STRESS_FLAG_FEATURE_ID = "STRESS"
 CAPITULATION_FLAG_FEATURE_ID = "CAPITULATION"
+EUPHORIA_FLAG_FEATURE_ID = "EUPHORIA"
 STRESS_FLAG_EFFECTS = (
     "NO_ADD",
     "REDUCE_MAX_EXPOSURE",
@@ -27,6 +28,11 @@ STRESS_FLAG_EFFECTS = (
 CAPITULATION_FLAG_EFFECTS = (
     "REQUIRE_REVERSAL_CONFIRMATION",
     "NO_ADD_UNTIL_CONFIRMATION",
+)
+EUPHORIA_FLAG_EFFECTS = (
+    "NO_ADD",
+    "REDUCE_ENTRY_QUALITY",
+    "TIGHTEN_PROFIT_PROTECTION",
 )
 ORDERLINESS_SCORE_COMPONENT_IDS = (
     "extreme_range",
@@ -80,6 +86,17 @@ CAPITULATION_FLAG_REASON_CODES = (
     "CAPITULATION_SYSTEMIC_MARKET_SHOCK",
     "CAPITULATION_CONFIRMATION_MISSING",
 )
+EUPHORIA_FLAG_REASON_CODES = (
+    "EUPHORIA_INPUT_MISSING",
+    "EUPHORIA_UPSIDE_EXTENSION",
+    "EUPHORIA_EXTREME_RANGE",
+    "EUPHORIA_FUNDING_OVERHEATED",
+    "EUPHORIA_BASIS_OVERHEATED",
+    "EUPHORIA_OI_INTENSITY_EXTREME",
+    "EUPHORIA_VOLATILITY_SPIKE",
+    "EUPHORIA_SYSTEMIC_MARKET_EUPHORIA",
+    "EUPHORIA_CONFIRMATION_MISSING",
+)
 REALIZED_VOLATILITY_REASON_CODES = (
     "REALIZED_VOLATILITY_INPUT_MISSING",
     "REALIZED_VOLATILITY_INSUFFICIENT_HISTORY",
@@ -104,6 +121,12 @@ DEFAULT_CAPITULATION_DOWNSIDE_RETURN_MIN = Decimal("-0.12")
 DEFAULT_CAPITULATION_LIQUIDATION_PERCENTILE_MIN = Decimal("95")
 DEFAULT_CAPITULATION_VOLATILITY_PERCENTILE_MIN = Decimal("95")
 DEFAULT_CAPITULATION_FUNDING_ZSCORE_MAX = Decimal("-2")
+DEFAULT_EUPHORIA_RANGE_PERCENTILE_MIN = Decimal("95")
+DEFAULT_EUPHORIA_UPSIDE_RETURN_MIN = Decimal("0.12")
+DEFAULT_EUPHORIA_FUNDING_ZSCORE_MIN = Decimal("2")
+DEFAULT_EUPHORIA_BASIS_ZSCORE_MIN = Decimal("2")
+DEFAULT_EUPHORIA_OI_INTENSITY_PERCENTILE_MIN = Decimal("95")
+DEFAULT_EUPHORIA_VOLATILITY_PERCENTILE_MIN = Decimal("95")
 
 
 @dataclass(frozen=True)
@@ -356,6 +379,46 @@ class CapitulationFlagInput:
 
 
 @dataclass(frozen=True)
+class EuphoriaFlagInput:
+    range_percentile: Decimal | None
+    upside_return: Decimal | None
+    funding_zscore: Decimal | None
+    basis_zscore: Decimal | None
+    oi_intensity_percentile: Decimal | None
+    volatility_percentile: Decimal | None
+    systemic_euphoria: bool | None
+
+    def as_record(self) -> dict[str, str | bool | None]:
+        return {
+            "range_percentile": (
+                str(self.range_percentile)
+                if self.range_percentile is not None
+                else None
+            ),
+            "upside_return": (
+                str(self.upside_return) if self.upside_return is not None else None
+            ),
+            "funding_zscore": (
+                str(self.funding_zscore) if self.funding_zscore is not None else None
+            ),
+            "basis_zscore": (
+                str(self.basis_zscore) if self.basis_zscore is not None else None
+            ),
+            "oi_intensity_percentile": (
+                str(self.oi_intensity_percentile)
+                if self.oi_intensity_percentile is not None
+                else None
+            ),
+            "volatility_percentile": (
+                str(self.volatility_percentile)
+                if self.volatility_percentile is not None
+                else None
+            ),
+            "systemic_euphoria": self.systemic_euphoria,
+        }
+
+
+@dataclass(frozen=True)
 class StressFlagResult:
     feature_id: str
     flagged: bool
@@ -389,6 +452,30 @@ class CapitulationFlagResult:
     flagged: bool
     effects: tuple[str, ...]
     inputs: CapitulationFlagInput
+    thresholds: dict[str, Decimal]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "flagged": self.flagged,
+            "effects": list(self.effects),
+            "inputs": self.inputs.as_record(),
+            "thresholds": {key: str(value) for key, value in self.thresholds.items()},
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class EuphoriaFlagResult:
+    feature_id: str
+    flagged: bool
+    effects: tuple[str, ...]
+    inputs: EuphoriaFlagInput
     thresholds: dict[str, Decimal]
     config_metadata: dict[str, str]
     complete: bool
@@ -622,6 +709,96 @@ def calculate_capitulation_flag(
         thresholds=thresholds,
         config_metadata=dict(config_metadata or {}),
         complete="CAPITULATION_INPUT_MISSING" not in reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
+def calculate_euphoria_flag(
+    inputs: EuphoriaFlagInput,
+    *,
+    range_percentile_min: Any = DEFAULT_EUPHORIA_RANGE_PERCENTILE_MIN,
+    upside_return_min: Any = DEFAULT_EUPHORIA_UPSIDE_RETURN_MIN,
+    funding_zscore_min: Any = DEFAULT_EUPHORIA_FUNDING_ZSCORE_MIN,
+    basis_zscore_min: Any = DEFAULT_EUPHORIA_BASIS_ZSCORE_MIN,
+    oi_intensity_percentile_min: Any = DEFAULT_EUPHORIA_OI_INTENSITY_PERCENTILE_MIN,
+    volatility_percentile_min: Any = DEFAULT_EUPHORIA_VOLATILITY_PERCENTILE_MIN,
+    config_metadata: dict[str, str] | None = None,
+) -> EuphoriaFlagResult:
+    """Flag upside euphoria only after extension has overheating confirmation."""
+
+    thresholds = _euphoria_flag_thresholds(
+        range_percentile_min=range_percentile_min,
+        upside_return_min=upside_return_min,
+        funding_zscore_min=funding_zscore_min,
+        basis_zscore_min=basis_zscore_min,
+        oi_intensity_percentile_min=oi_intensity_percentile_min,
+        volatility_percentile_min=volatility_percentile_min,
+    )
+    input_values = _euphoria_flag_input_values(inputs)
+
+    reason_codes = []
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("EUPHORIA_INPUT_MISSING")
+    if (
+        input_values["upside_return"] is not None
+        and input_values["upside_return"] >= thresholds["upside_return_min"]
+    ):
+        reason_codes.append("EUPHORIA_UPSIDE_EXTENSION")
+    if (
+        input_values["range_percentile"] is not None
+        and input_values["range_percentile"] >= thresholds["range_percentile_min"]
+    ):
+        reason_codes.append("EUPHORIA_EXTREME_RANGE")
+    if (
+        input_values["funding_zscore"] is not None
+        and input_values["funding_zscore"] >= thresholds["funding_zscore_min"]
+    ):
+        reason_codes.append("EUPHORIA_FUNDING_OVERHEATED")
+    if (
+        input_values["basis_zscore"] is not None
+        and input_values["basis_zscore"] >= thresholds["basis_zscore_min"]
+    ):
+        reason_codes.append("EUPHORIA_BASIS_OVERHEATED")
+    if (
+        input_values["oi_intensity_percentile"] is not None
+        and input_values["oi_intensity_percentile"]
+        >= thresholds["oi_intensity_percentile_min"]
+    ):
+        reason_codes.append("EUPHORIA_OI_INTENSITY_EXTREME")
+    if (
+        input_values["volatility_percentile"] is not None
+        and input_values["volatility_percentile"]
+        >= thresholds["volatility_percentile_min"]
+    ):
+        reason_codes.append("EUPHORIA_VOLATILITY_SPIKE")
+    if input_values["systemic_euphoria"] is True:
+        reason_codes.append("EUPHORIA_SYSTEMIC_MARKET_EUPHORIA")
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    systemic_euphoria = "EUPHORIA_SYSTEMIC_MARKET_EUPHORIA" in reason_codes
+    upside_triggered = "EUPHORIA_UPSIDE_EXTENSION" in reason_codes
+    confirmation_triggered = any(
+        reason_code in reason_codes
+        for reason_code in (
+            "EUPHORIA_EXTREME_RANGE",
+            "EUPHORIA_FUNDING_OVERHEATED",
+            "EUPHORIA_BASIS_OVERHEATED",
+            "EUPHORIA_OI_INTENSITY_EXTREME",
+            "EUPHORIA_VOLATILITY_SPIKE",
+        )
+    )
+    flagged = systemic_euphoria or (upside_triggered and confirmation_triggered)
+    if upside_triggered and not confirmation_triggered and not systemic_euphoria:
+        reason_codes = (*reason_codes, "EUPHORIA_CONFIRMATION_MISSING")
+
+    return EuphoriaFlagResult(
+        feature_id=EUPHORIA_FLAG_FEATURE_ID,
+        flagged=flagged,
+        effects=EUPHORIA_FLAG_EFFECTS if flagged else (),
+        inputs=inputs,
+        thresholds=thresholds,
+        config_metadata=dict(config_metadata or {}),
+        complete="EUPHORIA_INPUT_MISSING" not in reason_codes,
         reason_codes=reason_codes,
     )
 
@@ -997,6 +1174,89 @@ def _capitulation_flag_input_values(
             else None
         ),
         "systemic_shock": inputs.systemic_shock,
+    }
+
+
+def _euphoria_flag_thresholds(
+    *,
+    range_percentile_min: Any,
+    upside_return_min: Any,
+    funding_zscore_min: Any,
+    basis_zscore_min: Any,
+    oi_intensity_percentile_min: Any,
+    volatility_percentile_min: Any,
+) -> dict[str, Decimal]:
+    upside_threshold = Decimal(str(upside_return_min))
+    if upside_threshold <= 0:
+        raise ValueError("upside_return_min must be > 0")
+    return {
+        "range_percentile_min": _score_decimal(
+            range_percentile_min,
+            "range_percentile_min",
+        ),
+        "upside_return_min": upside_threshold,
+        "funding_zscore_min": _non_negative_decimal(
+            funding_zscore_min,
+            "funding_zscore_min",
+        ),
+        "basis_zscore_min": _non_negative_decimal(
+            basis_zscore_min,
+            "basis_zscore_min",
+        ),
+        "oi_intensity_percentile_min": _score_decimal(
+            oi_intensity_percentile_min,
+            "oi_intensity_percentile_min",
+        ),
+        "volatility_percentile_min": _score_decimal(
+            volatility_percentile_min,
+            "volatility_percentile_min",
+        ),
+    }
+
+
+def _euphoria_flag_input_values(
+    inputs: EuphoriaFlagInput,
+) -> dict[str, Decimal | bool | None]:
+    if inputs.systemic_euphoria is not None and not isinstance(
+        inputs.systemic_euphoria,
+        bool,
+    ):
+        raise ValueError("systemic_euphoria must be bool")
+    return {
+        "range_percentile": (
+            _score_decimal(inputs.range_percentile, "range_percentile")
+            if inputs.range_percentile is not None
+            else None
+        ),
+        "upside_return": (
+            Decimal(str(inputs.upside_return))
+            if inputs.upside_return is not None
+            else None
+        ),
+        "funding_zscore": (
+            Decimal(str(inputs.funding_zscore))
+            if inputs.funding_zscore is not None
+            else None
+        ),
+        "basis_zscore": (
+            Decimal(str(inputs.basis_zscore))
+            if inputs.basis_zscore is not None
+            else None
+        ),
+        "oi_intensity_percentile": (
+            _score_decimal(
+                inputs.oi_intensity_percentile,
+                "oi_intensity_percentile",
+            )
+            if inputs.oi_intensity_percentile is not None
+            else None
+        ),
+        "volatility_percentile": (
+            _score_decimal(inputs.volatility_percentile, "volatility_percentile")
+            if inputs.volatility_percentile is not None
+            else None
+        ),
+        "systemic_euphoria": inputs.systemic_euphoria,
     }
 
 

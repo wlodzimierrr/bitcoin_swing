@@ -1639,7 +1639,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-115 Implement EUPHORIA flag
 - **Description:**
   Complete the ticket scope for implement euphoria flag.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1648,6 +1648,22 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `EUPHORIA` / `calculate_euphoria_flag` in
+    `btc_predictor.features.volatility`.
+  - Added versioned `[volatility_flags.euphoria]` config with startup
+    validation for range percentile, upside return, funding z-score, basis
+    z-score, OI intensity percentile, and volatility percentile thresholds.
+  - The flag triggers on an explicit systemic euphoria input, or on a large
+    upside return confirmed by at least one overheating component: extreme
+    range, overheated funding, overheated basis, extreme OI intensity, or
+    volatility spike.
+  - Missing inputs are reported with `EUPHORIA_INPUT_MISSING` instead of being
+    silently treated as normal market conditions.
+  - A large upside move without confirmation records
+    `EUPHORIA_CONFIRMATION_MISSING`.
+  - Results persist inputs, thresholds, config metadata, flag state, effects,
+    completion state, and reason codes.
 
 ## EPIC M — Entry Trigger Engine
 

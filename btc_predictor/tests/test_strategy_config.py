@@ -131,6 +131,12 @@ def test_loads_default_strategy_config() -> None:
     assert config.volatility_flags.capitulation.liquidation_percentile_min == 95
     assert config.volatility_flags.capitulation.volatility_percentile_min == 95
     assert config.volatility_flags.capitulation.funding_zscore_max == -2.0
+    assert config.volatility_flags.euphoria.range_percentile_min == 95
+    assert config.volatility_flags.euphoria.upside_return_min == 0.12
+    assert config.volatility_flags.euphoria.funding_zscore_min == 2.0
+    assert config.volatility_flags.euphoria.basis_zscore_min == 2.0
+    assert config.volatility_flags.euphoria.oi_intensity_percentile_min == 95
+    assert config.volatility_flags.euphoria.volatility_percentile_min == 95
     assert config.backtest.max_trades_per_year == 24
 
 
@@ -679,4 +685,38 @@ def test_invalid_capitulation_funding_threshold_fails_fast(tmp_path: Path) -> No
     )
 
     with pytest.raises(StrategyConfigError, match="funding_zscore_max"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_euphoria_upside_threshold_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_euphoria_upside.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "upside_return_min = 0.12",
+            "upside_return_min = 0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="upside_return_min"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_euphoria_funding_threshold_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_euphoria_funding.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "funding_zscore_min = 2.0\n"
+            "basis_zscore_min = 2.0\n"
+            "oi_intensity_percentile_min = 95\n"
+            "volatility_percentile_min = 95",
+            "funding_zscore_min = -1\n"
+            "basis_zscore_min = 2.0\n"
+            "oi_intensity_percentile_min = 95\n"
+            "volatility_percentile_min = 95",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="funding_zscore_min"):
         load_strategy_config(config_path)

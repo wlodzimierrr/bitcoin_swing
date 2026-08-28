@@ -1740,6 +1740,26 @@ severe downside return without confirming panic evidence records
 **Priority:** P1  
 **Estimate:** 2
 
+**Status:** DONE
+
+Implemented `calculate_euphoria_flag` in `btc_predictor.features.volatility` as
+a dedicated `EUPHORIA` flag for upside excess that can later feed trim rules,
+entry-quality reductions, and profit-protection logic.
+
+The default rule flags euphoria when either an explicit systemic euphoria input
+is present, or a large upside return is confirmed by at least one overheating
+component: extreme range percentile, overheated funding z-score, overheated
+basis z-score, extreme OI intensity percentile, or volatility spike percentile.
+Defaults are configured under `[volatility_flags.euphoria]`: range percentile
+>= 95, upside return >= 12%, funding z-score >= 2, basis z-score >= 2, OI
+intensity percentile >= 95, and volatility percentile >= 95.
+
+Results persist inputs, thresholds, config metadata, flag state, effects,
+completion state, and reason codes. Missing inputs are reported with
+`EUPHORIA_INPUT_MISSING` instead of being treated as normal conditions. A large
+upside move without confirming overheating evidence records
+`EUPHORIA_CONFIRMATION_MISSING`.
+
 ---
 
 # EPIC M — Entry Trigger Engine

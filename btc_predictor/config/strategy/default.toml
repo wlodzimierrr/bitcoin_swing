@@ -238,6 +238,14 @@ liquidation_percentile_min = 95
 volatility_percentile_min = 95
 funding_zscore_max = -2.0
 
+[volatility_flags.euphoria]
+range_percentile_min = 95
+upside_return_min = 0.12
+funding_zscore_min = 2.0
+basis_zscore_min = 2.0
+oi_intensity_percentile_min = 95
+volatility_percentile_min = 95
+
 [backtest]
 initial_cash = 100000
 fee_bps = 10
