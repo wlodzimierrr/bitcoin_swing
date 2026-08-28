@@ -28,6 +28,7 @@ POSITIONING_WEIGHT_KEYS = (
     "leverage_health",
 )
 ANCHORED_VWAP_PRICE_SOURCES = ("hlc3", "close")
+VOLUME_PROFILE_PRICE_SOURCES = ("hlc3", "close")
 
 
 class StrategyConfigError(ValueError):
@@ -340,6 +341,11 @@ class PriceLevelParameters:
     breakout_close_buffer_fraction: float
     reclaim_close_buffer_fraction: float
     anchored_vwap_price_source: str
+    volume_profile_price_source: str
+    volume_profile_bin_size_fraction: float
+    volume_profile_value_area_fraction: float
+    volume_profile_hvn_volume_fraction: float
+    volume_profile_min_bars: int
     rr_minimum: float
     rr_preferred_min: float
     rr_preferred_max: float
@@ -364,6 +370,27 @@ class PriceLevelParameters:
                 data,
                 "anchored_vwap_price_source",
                 ANCHORED_VWAP_PRICE_SOURCES,
+            ),
+            volume_profile_price_source=_required_choice(
+                data,
+                "volume_profile_price_source",
+                VOLUME_PROFILE_PRICE_SOURCES,
+            ),
+            volume_profile_bin_size_fraction=_required_positive_fraction(
+                data,
+                "volume_profile_bin_size_fraction",
+            ),
+            volume_profile_value_area_fraction=_required_positive_fraction(
+                data,
+                "volume_profile_value_area_fraction",
+            ),
+            volume_profile_hvn_volume_fraction=_required_positive_fraction(
+                data,
+                "volume_profile_hvn_volume_fraction",
+            ),
+            volume_profile_min_bars=_required_positive_int(
+                data,
+                "volume_profile_min_bars",
             ),
             rr_minimum=_required_positive_float(data, "rr_minimum"),
             rr_preferred_min=_required_positive_float(data, "rr_preferred_min"),
@@ -749,6 +776,13 @@ def _required_fraction(data: dict[str, Any], key: str) -> float:
     if not PERCENT_FRACTION_MIN <= numeric_value <= PERCENT_FRACTION_MAX:
         raise StrategyConfigError(f"{key} must be between 0 and 1")
     return numeric_value
+
+
+def _required_positive_fraction(data: dict[str, Any], key: str) -> float:
+    value = _required_fraction(data, key)
+    if value <= 0:
+        raise StrategyConfigError(f"{key} must be > 0 and <= 1")
+    return value
 
 
 def _required_positive_float_tuple(data: dict[str, Any], key: str) -> tuple[float, ...]:

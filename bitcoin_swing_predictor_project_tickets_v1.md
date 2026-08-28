@@ -1329,6 +1329,7 @@ startup validation for `hlc3` and `close`.
 
 ## BTC-094 — Implement volume-profile levels
 
+**Status:** DONE
 **Priority:** P1  
 **Estimate:** 5
 
@@ -1338,6 +1339,18 @@ Candidates:
 - HVN
 - VAH
 - VAL
+
+Implemented deterministic volume-profile level generation in
+`btc_predictor.levels.volume_profile`. The calculator uses OHLCV bars closed
+and ingested by `as_of`, assigns each bar's configured price source to a
+versioned price bin, then emits point of control, high-volume node, value-area
+high, and value-area low records.
+
+Results persist profile configuration, source market identity, timeframe,
+profile window, bin boundaries, level prices, bin volume, total volume,
+value-area volume, completion state, and reason codes. Missing bars,
+insufficient history, and zero-volume profiles are reported explicitly instead
+of producing silent fallback levels.
 
 ---
 

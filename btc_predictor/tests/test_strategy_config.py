@@ -26,6 +26,11 @@ def test_loads_default_strategy_config() -> None:
     assert config.price_levels.breakout_close_buffer_fraction == 0
     assert config.price_levels.reclaim_close_buffer_fraction == 0
     assert config.price_levels.anchored_vwap_price_source == "hlc3"
+    assert config.price_levels.volume_profile_price_source == "hlc3"
+    assert config.price_levels.volume_profile_bin_size_fraction == 0.01
+    assert config.price_levels.volume_profile_value_area_fraction == 0.70
+    assert config.price_levels.volume_profile_hvn_volume_fraction == 0.70
+    assert config.price_levels.volume_profile_min_bars == 20
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -183,6 +188,11 @@ minimum_level_strength = 60
 breakout_close_buffer_fraction = 0
 reclaim_close_buffer_fraction = 0
 anchored_vwap_price_source = "hlc3"
+volume_profile_price_source = "hlc3"
+volume_profile_bin_size_fraction = 0.01
+volume_profile_value_area_fraction = 0.70
+volume_profile_hvn_volume_fraction = 0.70
+volume_profile_min_bars = 20
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
@@ -281,6 +291,34 @@ def test_invalid_anchored_vwap_price_source_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="anchored_vwap_price_source"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_volume_profile_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_volume_profile.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "volume_profile_value_area_fraction = 0.70",
+            "volume_profile_value_area_fraction = 0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="volume_profile_value_area_fraction"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_volume_profile_price_source_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_volume_profile_price_source.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            'volume_profile_price_source = "hlc3"',
+            'volume_profile_price_source = "ohlc4"',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="volume_profile_price_source"):
         load_strategy_config(config_path)
 
 

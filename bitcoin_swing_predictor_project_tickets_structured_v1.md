@@ -1208,7 +1208,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - HVN
   - VAH
   - VAL
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1217,6 +1217,18 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor.levels.volume_profile` for deterministic POC, HVN,
+    VAH, and VAL records from point-in-time OHLCV bars.
+  - Bars are filtered to those closed and ingested by `as_of`, then validated
+    as a single market series and timeframe before profile levels are emitted.
+  - Price-bin size, price source, value-area coverage, HVN volume threshold,
+    and minimum bar count are loaded from versioned `price_levels` config and
+    persisted in result and level records.
+  - Results persist profile window, bin boundaries, level prices, bin volume,
+    total volume, value-area volume, completion state, and reason codes.
+  - Missing input, insufficient history, and zero-volume profiles are reported
+    explicitly instead of silently producing fallback levels.
 
 #### BTC-095 Implement level clustering
 - **Description:**
