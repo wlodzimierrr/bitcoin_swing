@@ -619,14 +619,49 @@ class StressFlagConfig:
 
 
 @dataclass(frozen=True)
+class CapitulationFlagConfig:
+    range_percentile_min: float
+    downside_return_min: float
+    liquidation_percentile_min: float
+    volatility_percentile_min: float
+    funding_zscore_max: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        downside_return_min = _required_float(data, "downside_return_min")
+        if downside_return_min >= 0:
+            raise StrategyConfigError("downside_return_min must be negative")
+        funding_zscore_max = _required_float(data, "funding_zscore_max")
+        if funding_zscore_max >= 0:
+            raise StrategyConfigError("funding_zscore_max must be negative")
+        return cls(
+            range_percentile_min=_required_score(data, "range_percentile_min"),
+            downside_return_min=downside_return_min,
+            liquidation_percentile_min=_required_score(
+                data,
+                "liquidation_percentile_min",
+            ),
+            volatility_percentile_min=_required_score(
+                data,
+                "volatility_percentile_min",
+            ),
+            funding_zscore_max=funding_zscore_max,
+        )
+
+
+@dataclass(frozen=True)
 class VolatilityFlagConfig:
     stress: StressFlagConfig
+    capitulation: CapitulationFlagConfig
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
         return cls(
             stress=StressFlagConfig.from_mapping(
                 _required_mapping(data, "stress"),
+            ),
+            capitulation=CapitulationFlagConfig.from_mapping(
+                _required_mapping(data, "capitulation"),
             ),
         )
 

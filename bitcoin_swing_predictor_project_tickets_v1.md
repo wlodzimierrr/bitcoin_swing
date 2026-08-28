@@ -1713,6 +1713,26 @@ codes.
 **Priority:** P1  
 **Estimate:** 2
 
+**Status:** DONE
+
+Implemented `calculate_capitulation_flag` in `btc_predictor.features.volatility`
+as a dedicated `CAPITULATION` flag for downside washout events that can feed
+the Capitulation Reversal setup.
+
+The default rule flags capitulation when either an explicit systemic shock is
+present, or a disorderly downside return is confirmed by at least one panic
+component: extreme range percentile, liquidation cascade percentile, volatility
+spike percentile, or negative funding flush. Defaults are configured under
+`[volatility_flags.capitulation]`: range percentile >= 95, downside return <=
+-12%, liquidation percentile >= 95, volatility percentile >= 95, and funding
+z-score <= -2.
+
+Results persist inputs, thresholds, config metadata, flag state, effects,
+completion state, and reason codes. Missing inputs are reported with
+`CAPITULATION_INPUT_MISSING` instead of being treated as normal conditions. A
+severe downside return without confirming panic evidence records
+`CAPITULATION_CONFIRMATION_MISSING`.
+
 ---
 
 ## BTC-115 — Implement EUPHORIA flag

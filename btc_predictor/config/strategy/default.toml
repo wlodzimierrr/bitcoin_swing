@@ -231,6 +231,13 @@ basis_abs_zscore_min = 3.0
 max_exposure_multiplier = 0.50
 block_new_trades = false
 
+[volatility_flags.capitulation]
+range_percentile_min = 95
+downside_return_min = -0.12
+liquidation_percentile_min = 95
+volatility_percentile_min = 95
+funding_zscore_max = -2.0
+
 [backtest]
 initial_cash = 100000
 fee_bps = 10

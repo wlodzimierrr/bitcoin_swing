@@ -5,6 +5,14 @@ import pytest
 
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features import (
+    CAPITULATION_FLAG_EFFECTS,
+    CAPITULATION_FLAG_FEATURE_ID,
+    CAPITULATION_FLAG_REASON_CODES,
+    DEFAULT_CAPITULATION_DOWNSIDE_RETURN_MIN,
+    DEFAULT_CAPITULATION_FUNDING_ZSCORE_MAX,
+    DEFAULT_CAPITULATION_LIQUIDATION_PERCENTILE_MIN,
+    DEFAULT_CAPITULATION_RANGE_PERCENTILE_MIN,
+    DEFAULT_CAPITULATION_VOLATILITY_PERCENTILE_MIN,
     DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN,
     DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX,
     DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX,
@@ -36,10 +44,12 @@ from btc_predictor.features import (
     VOLATILITY_COMPRESSION_RATIO_REASON_CODES,
     VOLATILITY_PERCENTILE_FEATURE_ID,
     VOLATILITY_PERCENTILE_REASON_CODES,
+    CapitulationFlagInput,
     OrderlinessScoreInput,
     RealizedVolatilityResult,
     StressFlagInput,
     VolatilityCompressionRatioInput,
+    calculate_capitulation_flag,
     calculate_orderliness_score,
     calculate_stress_flag,
     realized_volatility_from_daily_bars,
@@ -206,6 +216,29 @@ def test_stress_flag_metadata_is_stable() -> None:
         "STRESS_ABNORMAL_FUNDING",
         "STRESS_ABNORMAL_BASIS",
         "STRESS_SYSTEMIC_MARKET_SHOCK",
+    )
+
+
+def test_capitulation_flag_metadata_is_stable() -> None:
+    assert CAPITULATION_FLAG_FEATURE_ID == "CAPITULATION"
+    assert CAPITULATION_FLAG_EFFECTS == (
+        "REQUIRE_REVERSAL_CONFIRMATION",
+        "NO_ADD_UNTIL_CONFIRMATION",
+    )
+    assert DEFAULT_CAPITULATION_RANGE_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_CAPITULATION_DOWNSIDE_RETURN_MIN == Decimal("-0.12")
+    assert DEFAULT_CAPITULATION_LIQUIDATION_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_CAPITULATION_VOLATILITY_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_CAPITULATION_FUNDING_ZSCORE_MAX == Decimal("-2")
+    assert CAPITULATION_FLAG_REASON_CODES == (
+        "CAPITULATION_INPUT_MISSING",
+        "CAPITULATION_DISORDERLY_DOWNSIDE",
+        "CAPITULATION_EXTREME_RANGE",
+        "CAPITULATION_LIQUIDATION_CASCADE",
+        "CAPITULATION_VOLATILITY_SPIKE",
+        "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
+        "CAPITULATION_SYSTEMIC_MARKET_SHOCK",
+        "CAPITULATION_CONFIRMATION_MISSING",
     )
 
 
@@ -799,6 +832,187 @@ def test_stress_flag_exposes_persistable_payload() -> None:
     }
 
 
+def test_capitulation_flag_is_clear_when_inputs_are_below_thresholds() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=Decimal("70"),
+            downside_return=Decimal("-0.04"),
+            liquidation_percentile=Decimal("65"),
+            volatility_percentile=Decimal("70"),
+            funding_zscore=Decimal("-0.5"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.reason_codes == ()
+
+
+def test_capitulation_flag_requires_downside_plus_confirmation() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=Decimal("96"),
+            downside_return=Decimal("-0.12"),
+            liquidation_percentile=Decimal("98"),
+            volatility_percentile=Decimal("96"),
+            funding_zscore=Decimal("-2.5"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is True
+    assert result.effects == CAPITULATION_FLAG_EFFECTS
+    assert result.reason_codes == (
+        "CAPITULATION_DISORDERLY_DOWNSIDE",
+        "CAPITULATION_EXTREME_RANGE",
+        "CAPITULATION_LIQUIDATION_CASCADE",
+        "CAPITULATION_VOLATILITY_SPIKE",
+        "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
+    )
+
+
+def test_capitulation_flag_reports_missing_confirmation() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=Decimal("80"),
+            downside_return=Decimal("-0.13"),
+            liquidation_percentile=Decimal("70"),
+            volatility_percentile=Decimal("75"),
+            funding_zscore=Decimal("-1.0"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.reason_codes == (
+        "CAPITULATION_DISORDERLY_DOWNSIDE",
+        "CAPITULATION_CONFIRMATION_MISSING",
+    )
+
+
+def test_capitulation_flag_allows_systemic_shock_to_flag_directly() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=Decimal("50"),
+            downside_return=Decimal("-0.02"),
+            liquidation_percentile=Decimal("50"),
+            volatility_percentile=Decimal("50"),
+            funding_zscore=Decimal("0"),
+            systemic_shock=True,
+        )
+    )
+
+    assert result.flagged is True
+    assert result.reason_codes == ("CAPITULATION_SYSTEMIC_MARKET_SHOCK",)
+
+
+def test_capitulation_flag_reports_missing_inputs_without_zero_fill() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=None,
+            downside_return=Decimal("-0.13"),
+            liquidation_percentile=Decimal("96"),
+            volatility_percentile=Decimal("50"),
+            funding_zscore=Decimal("-1"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is False
+    assert result.flagged is True
+    assert result.reason_codes == (
+        "CAPITULATION_INPUT_MISSING",
+        "CAPITULATION_DISORDERLY_DOWNSIDE",
+        "CAPITULATION_LIQUIDATION_CASCADE",
+    )
+
+
+def test_capitulation_flag_uses_custom_thresholds_and_config_metadata() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=Decimal("91"),
+            downside_return=Decimal("-0.09"),
+            liquidation_percentile=Decimal("88"),
+            volatility_percentile=Decimal("80"),
+            funding_zscore=Decimal("-1.6"),
+            systemic_shock=False,
+        ),
+        range_percentile_min=Decimal("90"),
+        downside_return_min=Decimal("-0.08"),
+        liquidation_percentile_min=Decimal("90"),
+        volatility_percentile_min=Decimal("90"),
+        funding_zscore_max=Decimal("-1.5"),
+        config_metadata={"parameter_set_id": "default_phase1"},
+    )
+
+    assert result.flagged is True
+    assert result.thresholds == {
+        "range_percentile_min": Decimal("90"),
+        "downside_return_min": Decimal("-0.08"),
+        "liquidation_percentile_min": Decimal("90"),
+        "volatility_percentile_min": Decimal("90"),
+        "funding_zscore_max": Decimal("-1.5"),
+    }
+    assert result.config_metadata == {"parameter_set_id": "default_phase1"}
+    assert result.reason_codes == (
+        "CAPITULATION_DISORDERLY_DOWNSIDE",
+        "CAPITULATION_EXTREME_RANGE",
+        "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
+    )
+
+
+def test_capitulation_flag_exposes_persistable_payload() -> None:
+    result = calculate_capitulation_flag(
+        CapitulationFlagInput(
+            range_percentile=Decimal("96"),
+            downside_return=Decimal("-0.14"),
+            liquidation_percentile=Decimal("98"),
+            volatility_percentile=Decimal("97"),
+            funding_zscore=Decimal("-2.3"),
+            systemic_shock=False,
+        ),
+        config_metadata={"config_version": "strategy_config_v1"},
+    )
+
+    assert result.as_record() == {
+        "feature_id": "CAPITULATION",
+        "flagged": True,
+        "effects": [
+            "REQUIRE_REVERSAL_CONFIRMATION",
+            "NO_ADD_UNTIL_CONFIRMATION",
+        ],
+        "inputs": {
+            "range_percentile": "96",
+            "downside_return": "-0.14",
+            "liquidation_percentile": "98",
+            "volatility_percentile": "97",
+            "funding_zscore": "-2.3",
+            "systemic_shock": False,
+        },
+        "thresholds": {
+            "range_percentile_min": "95",
+            "downside_return_min": "-0.12",
+            "liquidation_percentile_min": "95",
+            "volatility_percentile_min": "95",
+            "funding_zscore_max": "-2",
+        },
+        "config_metadata": {"config_version": "strategy_config_v1"},
+        "complete": True,
+        "reason_codes": [
+            "CAPITULATION_DISORDERLY_DOWNSIDE",
+            "CAPITULATION_EXTREME_RANGE",
+            "CAPITULATION_LIQUIDATION_CASCADE",
+            "CAPITULATION_VOLATILITY_SPIKE",
+            "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
+        ],
+    }
+
+
 def test_realized_volatility_filters_unavailable_future_bars() -> None:
     rows = daily_bars(("100", "110", "99", "108.9"))
     future_revision = daily_bar(
@@ -1049,6 +1263,71 @@ def test_stress_flag_rejects_invalid_inputs() -> None:
                 funding_zscore=Decimal("0"),
                 basis_zscore=Decimal("0"),
                 systemic_shock=False,
+            )
+        )
+
+
+def test_capitulation_flag_rejects_invalid_inputs() -> None:
+    valid_input = CapitulationFlagInput(
+        range_percentile=Decimal("50"),
+        downside_return=Decimal("-0.03"),
+        liquidation_percentile=Decimal("50"),
+        volatility_percentile=Decimal("50"),
+        funding_zscore=Decimal("0"),
+        systemic_shock=False,
+    )
+
+    with pytest.raises(ValueError, match="range_percentile"):
+        calculate_capitulation_flag(
+            CapitulationFlagInput(
+                range_percentile=Decimal("101"),
+                downside_return=Decimal("-0.03"),
+                liquidation_percentile=Decimal("50"),
+                volatility_percentile=Decimal("50"),
+                funding_zscore=Decimal("0"),
+                systemic_shock=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="liquidation_percentile"):
+        calculate_capitulation_flag(
+            CapitulationFlagInput(
+                range_percentile=Decimal("50"),
+                downside_return=Decimal("-0.03"),
+                liquidation_percentile=Decimal("-1"),
+                volatility_percentile=Decimal("50"),
+                funding_zscore=Decimal("0"),
+                systemic_shock=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="volatility_percentile"):
+        calculate_capitulation_flag(
+            CapitulationFlagInput(
+                range_percentile=Decimal("50"),
+                downside_return=Decimal("-0.03"),
+                liquidation_percentile=Decimal("50"),
+                volatility_percentile=Decimal("101"),
+                funding_zscore=Decimal("0"),
+                systemic_shock=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="downside_return_min"):
+        calculate_capitulation_flag(valid_input, downside_return_min=Decimal("0"))
+
+    with pytest.raises(ValueError, match="funding_zscore_max"):
+        calculate_capitulation_flag(valid_input, funding_zscore_max=Decimal("0"))
+
+    with pytest.raises(ValueError, match="systemic_shock"):
+        calculate_capitulation_flag(
+            CapitulationFlagInput(
+                range_percentile=Decimal("50"),
+                downside_return=Decimal("-0.03"),
+                liquidation_percentile=Decimal("50"),
+                volatility_percentile=Decimal("50"),
+                funding_zscore=Decimal("0"),
+                systemic_shock="yes",  # type: ignore[arg-type]
             )
         )
 

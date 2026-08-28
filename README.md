@@ -134,7 +134,10 @@ reason codes. `calculate_stress_flag` emits the hard `STRESS` override from
 extreme volatility, liquidation cascades, disorderly downside, abnormal
 funding/basis, or systemic shock inputs, with persisted exposure-reduction
 settings and optional new-trade blocking loaded from the versioned strategy
-config.
+config. `calculate_capitulation_flag` emits `CAPITULATION` for confirmed
+downside washouts: either an explicit systemic shock, or a severe downside
+return plus confirmation from extreme range, liquidation cascade, volatility
+spike, or negative funding flush.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.

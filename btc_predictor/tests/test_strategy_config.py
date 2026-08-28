@@ -126,6 +126,11 @@ def test_loads_default_strategy_config() -> None:
     assert config.volatility_flags.stress.basis_abs_zscore_min == 3.0
     assert config.volatility_flags.stress.max_exposure_multiplier == 0.50
     assert config.volatility_flags.stress.block_new_trades is False
+    assert config.volatility_flags.capitulation.range_percentile_min == 95
+    assert config.volatility_flags.capitulation.downside_return_min == -0.12
+    assert config.volatility_flags.capitulation.liquidation_percentile_min == 95
+    assert config.volatility_flags.capitulation.volatility_percentile_min == 95
+    assert config.volatility_flags.capitulation.funding_zscore_max == -2.0
     assert config.backtest.max_trades_per_year == 24
 
 
@@ -646,4 +651,32 @@ def test_invalid_stress_downside_threshold_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="downside_return_min"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_capitulation_downside_threshold_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_capitulation_downside.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "downside_return_min = -0.12",
+            "downside_return_min = 0.01",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="downside_return_min"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_capitulation_funding_threshold_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_capitulation_funding.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "funding_zscore_max = -2.0",
+            "funding_zscore_max = 0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="funding_zscore_max"):
         load_strategy_config(config_path)

@@ -18,10 +18,15 @@ VOLATILITY_COMPRESSION_RATIO_FEATURE_ID = "VOL_COMPRESSION_RATIO"
 VOLATILITY_PERCENTILE_FEATURE_ID = "VOL_PERCENTILE_2Y"
 ORDERLINESS_SCORE_FEATURE_ID = "ORDERLINESS_SCORE"
 STRESS_FLAG_FEATURE_ID = "STRESS"
+CAPITULATION_FLAG_FEATURE_ID = "CAPITULATION"
 STRESS_FLAG_EFFECTS = (
     "NO_ADD",
     "REDUCE_MAX_EXPOSURE",
     "OPTIONALLY_BLOCK_NEW_TRADES",
+)
+CAPITULATION_FLAG_EFFECTS = (
+    "REQUIRE_REVERSAL_CONFIRMATION",
+    "NO_ADD_UNTIL_CONFIRMATION",
 )
 ORDERLINESS_SCORE_COMPONENT_IDS = (
     "extreme_range",
@@ -65,6 +70,16 @@ STRESS_FLAG_REASON_CODES = (
     "STRESS_ABNORMAL_BASIS",
     "STRESS_SYSTEMIC_MARKET_SHOCK",
 )
+CAPITULATION_FLAG_REASON_CODES = (
+    "CAPITULATION_INPUT_MISSING",
+    "CAPITULATION_DISORDERLY_DOWNSIDE",
+    "CAPITULATION_EXTREME_RANGE",
+    "CAPITULATION_LIQUIDATION_CASCADE",
+    "CAPITULATION_VOLATILITY_SPIKE",
+    "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
+    "CAPITULATION_SYSTEMIC_MARKET_SHOCK",
+    "CAPITULATION_CONFIRMATION_MISSING",
+)
 REALIZED_VOLATILITY_REASON_CODES = (
     "REALIZED_VOLATILITY_INPUT_MISSING",
     "REALIZED_VOLATILITY_INSUFFICIENT_HISTORY",
@@ -84,6 +99,11 @@ DEFAULT_STRESS_FUNDING_ABS_ZSCORE_MIN = Decimal("3")
 DEFAULT_STRESS_BASIS_ABS_ZSCORE_MIN = Decimal("3")
 DEFAULT_STRESS_MAX_EXPOSURE_MULTIPLIER = Decimal("0.50")
 DEFAULT_STRESS_BLOCK_NEW_TRADES = False
+DEFAULT_CAPITULATION_RANGE_PERCENTILE_MIN = Decimal("95")
+DEFAULT_CAPITULATION_DOWNSIDE_RETURN_MIN = Decimal("-0.12")
+DEFAULT_CAPITULATION_LIQUIDATION_PERCENTILE_MIN = Decimal("95")
+DEFAULT_CAPITULATION_VOLATILITY_PERCENTILE_MIN = Decimal("95")
+DEFAULT_CAPITULATION_FUNDING_ZSCORE_MAX = Decimal("-2")
 
 
 @dataclass(frozen=True)
@@ -298,6 +318,44 @@ class StressFlagInput:
 
 
 @dataclass(frozen=True)
+class CapitulationFlagInput:
+    range_percentile: Decimal | None
+    downside_return: Decimal | None
+    liquidation_percentile: Decimal | None
+    volatility_percentile: Decimal | None
+    funding_zscore: Decimal | None
+    systemic_shock: bool | None
+
+    def as_record(self) -> dict[str, str | bool | None]:
+        return {
+            "range_percentile": (
+                str(self.range_percentile)
+                if self.range_percentile is not None
+                else None
+            ),
+            "downside_return": (
+                str(self.downside_return)
+                if self.downside_return is not None
+                else None
+            ),
+            "liquidation_percentile": (
+                str(self.liquidation_percentile)
+                if self.liquidation_percentile is not None
+                else None
+            ),
+            "volatility_percentile": (
+                str(self.volatility_percentile)
+                if self.volatility_percentile is not None
+                else None
+            ),
+            "funding_zscore": (
+                str(self.funding_zscore) if self.funding_zscore is not None else None
+            ),
+            "systemic_shock": self.systemic_shock,
+        }
+
+
+@dataclass(frozen=True)
 class StressFlagResult:
     feature_id: str
     flagged: bool
@@ -317,6 +375,30 @@ class StressFlagResult:
             "effects": list(self.effects),
             "max_exposure_multiplier": str(self.max_exposure_multiplier),
             "block_new_trades": self.block_new_trades,
+            "inputs": self.inputs.as_record(),
+            "thresholds": {key: str(value) for key, value in self.thresholds.items()},
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class CapitulationFlagResult:
+    feature_id: str
+    flagged: bool
+    effects: tuple[str, ...]
+    inputs: CapitulationFlagInput
+    thresholds: dict[str, Decimal]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "flagged": self.flagged,
+            "effects": list(self.effects),
             "inputs": self.inputs.as_record(),
             "thresholds": {key: str(value) for key, value in self.thresholds.items()},
             "config_metadata": dict(self.config_metadata),
@@ -458,6 +540,88 @@ def calculate_stress_flag(
         },
         config_metadata=dict(config_metadata or {}),
         complete="STRESS_INPUT_MISSING" not in reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
+def calculate_capitulation_flag(
+    inputs: CapitulationFlagInput,
+    *,
+    range_percentile_min: Any = DEFAULT_CAPITULATION_RANGE_PERCENTILE_MIN,
+    downside_return_min: Any = DEFAULT_CAPITULATION_DOWNSIDE_RETURN_MIN,
+    liquidation_percentile_min: Any = DEFAULT_CAPITULATION_LIQUIDATION_PERCENTILE_MIN,
+    volatility_percentile_min: Any = DEFAULT_CAPITULATION_VOLATILITY_PERCENTILE_MIN,
+    funding_zscore_max: Any = DEFAULT_CAPITULATION_FUNDING_ZSCORE_MAX,
+    config_metadata: dict[str, str] | None = None,
+) -> CapitulationFlagResult:
+    """Flag a downside washout only after severe selling has confirmation."""
+
+    thresholds = _capitulation_flag_thresholds(
+        range_percentile_min=range_percentile_min,
+        downside_return_min=downside_return_min,
+        liquidation_percentile_min=liquidation_percentile_min,
+        volatility_percentile_min=volatility_percentile_min,
+        funding_zscore_max=funding_zscore_max,
+    )
+    input_values = _capitulation_flag_input_values(inputs)
+
+    reason_codes = []
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("CAPITULATION_INPUT_MISSING")
+    if (
+        input_values["downside_return"] is not None
+        and input_values["downside_return"] <= thresholds["downside_return_min"]
+    ):
+        reason_codes.append("CAPITULATION_DISORDERLY_DOWNSIDE")
+    if (
+        input_values["range_percentile"] is not None
+        and input_values["range_percentile"] >= thresholds["range_percentile_min"]
+    ):
+        reason_codes.append("CAPITULATION_EXTREME_RANGE")
+    if (
+        input_values["liquidation_percentile"] is not None
+        and input_values["liquidation_percentile"]
+        >= thresholds["liquidation_percentile_min"]
+    ):
+        reason_codes.append("CAPITULATION_LIQUIDATION_CASCADE")
+    if (
+        input_values["volatility_percentile"] is not None
+        and input_values["volatility_percentile"]
+        >= thresholds["volatility_percentile_min"]
+    ):
+        reason_codes.append("CAPITULATION_VOLATILITY_SPIKE")
+    if (
+        input_values["funding_zscore"] is not None
+        and input_values["funding_zscore"] <= thresholds["funding_zscore_max"]
+    ):
+        reason_codes.append("CAPITULATION_NEGATIVE_FUNDING_FLUSH")
+    if input_values["systemic_shock"] is True:
+        reason_codes.append("CAPITULATION_SYSTEMIC_MARKET_SHOCK")
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    systemic_shock = "CAPITULATION_SYSTEMIC_MARKET_SHOCK" in reason_codes
+    downside_triggered = "CAPITULATION_DISORDERLY_DOWNSIDE" in reason_codes
+    confirmation_triggered = any(
+        reason_code in reason_codes
+        for reason_code in (
+            "CAPITULATION_EXTREME_RANGE",
+            "CAPITULATION_LIQUIDATION_CASCADE",
+            "CAPITULATION_VOLATILITY_SPIKE",
+            "CAPITULATION_NEGATIVE_FUNDING_FLUSH",
+        )
+    )
+    flagged = systemic_shock or (downside_triggered and confirmation_triggered)
+    if downside_triggered and not confirmation_triggered and not systemic_shock:
+        reason_codes = (*reason_codes, "CAPITULATION_CONFIRMATION_MISSING")
+
+    return CapitulationFlagResult(
+        feature_id=CAPITULATION_FLAG_FEATURE_ID,
+        flagged=flagged,
+        effects=CAPITULATION_FLAG_EFFECTS if flagged else (),
+        inputs=inputs,
+        thresholds=thresholds,
+        config_metadata=dict(config_metadata or {}),
+        complete="CAPITULATION_INPUT_MISSING" not in reason_codes,
         reason_codes=reason_codes,
     )
 
@@ -763,6 +927,73 @@ def _stress_flag_input_values(
         "basis_zscore": (
             Decimal(str(inputs.basis_zscore))
             if inputs.basis_zscore is not None
+            else None
+        ),
+        "systemic_shock": inputs.systemic_shock,
+    }
+
+
+def _capitulation_flag_thresholds(
+    *,
+    range_percentile_min: Any,
+    downside_return_min: Any,
+    liquidation_percentile_min: Any,
+    volatility_percentile_min: Any,
+    funding_zscore_max: Any,
+) -> dict[str, Decimal]:
+    downside_threshold = Decimal(str(downside_return_min))
+    if downside_threshold >= 0:
+        raise ValueError("downside_return_min must be < 0")
+    funding_threshold = Decimal(str(funding_zscore_max))
+    if funding_threshold >= 0:
+        raise ValueError("funding_zscore_max must be < 0")
+    return {
+        "range_percentile_min": _score_decimal(
+            range_percentile_min,
+            "range_percentile_min",
+        ),
+        "downside_return_min": downside_threshold,
+        "liquidation_percentile_min": _score_decimal(
+            liquidation_percentile_min,
+            "liquidation_percentile_min",
+        ),
+        "volatility_percentile_min": _score_decimal(
+            volatility_percentile_min,
+            "volatility_percentile_min",
+        ),
+        "funding_zscore_max": funding_threshold,
+    }
+
+
+def _capitulation_flag_input_values(
+    inputs: CapitulationFlagInput,
+) -> dict[str, Decimal | bool | None]:
+    if inputs.systemic_shock is not None and not isinstance(inputs.systemic_shock, bool):
+        raise ValueError("systemic_shock must be bool")
+    return {
+        "range_percentile": (
+            _score_decimal(inputs.range_percentile, "range_percentile")
+            if inputs.range_percentile is not None
+            else None
+        ),
+        "downside_return": (
+            Decimal(str(inputs.downside_return))
+            if inputs.downside_return is not None
+            else None
+        ),
+        "liquidation_percentile": (
+            _score_decimal(inputs.liquidation_percentile, "liquidation_percentile")
+            if inputs.liquidation_percentile is not None
+            else None
+        ),
+        "volatility_percentile": (
+            _score_decimal(inputs.volatility_percentile, "volatility_percentile")
+            if inputs.volatility_percentile is not None
+            else None
+        ),
+        "funding_zscore": (
+            Decimal(str(inputs.funding_zscore))
+            if inputs.funding_zscore is not None
             else None
         ),
         "systemic_shock": inputs.systemic_shock,

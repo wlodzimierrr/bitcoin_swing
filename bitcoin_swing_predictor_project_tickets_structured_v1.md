@@ -1611,7 +1611,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-114 Implement CAPITULATION flag
 - **Description:**
   Complete the ticket scope for implement capitulation flag.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1620,6 +1620,21 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `CAPITULATION` / `calculate_capitulation_flag` in
+    `btc_predictor.features.volatility`.
+  - Added versioned `[volatility_flags.capitulation]` config with startup
+    validation for range percentile, downside return, liquidation percentile,
+    volatility percentile, and funding z-score thresholds.
+  - The flag triggers on an explicit systemic shock, or on a severe downside
+    return confirmed by at least one panic component: extreme range,
+    liquidation cascade, volatility spike, or negative funding flush.
+  - Missing inputs are reported with `CAPITULATION_INPUT_MISSING` instead of
+    being silently treated as normal market conditions.
+  - A severe downside move without confirmation records
+    `CAPITULATION_CONFIRMATION_MISSING`.
+  - Results persist inputs, thresholds, config metadata, flag state, effects,
+    completion state, and reason codes.
 
 #### BTC-115 Implement EUPHORIA flag
 - **Description:**
