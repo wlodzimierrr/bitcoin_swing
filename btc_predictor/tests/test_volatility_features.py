@@ -5,9 +5,17 @@ import pytest
 
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features import (
+    DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN,
+    DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX,
+    DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX,
+    DEFAULT_ORDERLINESS_SCORE_WEIGHTS,
+    DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX,
     DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS,
     DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS,
     DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS,
+    ORDERLINESS_SCORE_COMPONENT_IDS,
+    ORDERLINESS_SCORE_FEATURE_ID,
+    ORDERLINESS_SCORE_REASON_CODES,
     REALIZED_VOLATILITY_FEATURE_IDS,
     REALIZED_VOLATILITY_REASON_CODES,
     REALIZED_VOLATILITY_WINDOWS,
@@ -18,8 +26,10 @@ from btc_predictor.features import (
     VOLATILITY_COMPRESSION_RATIO_REASON_CODES,
     VOLATILITY_PERCENTILE_FEATURE_ID,
     VOLATILITY_PERCENTILE_REASON_CODES,
+    OrderlinessScoreInput,
     RealizedVolatilityResult,
     VolatilityCompressionRatioInput,
+    calculate_orderliness_score,
     realized_volatility_from_daily_bars,
     rv_7_20_60_from_daily_bars,
     volatility_compression_ratio,
@@ -132,6 +142,33 @@ def test_volatility_percentile_metadata_is_stable() -> None:
     assert VOLATILITY_PERCENTILE_REASON_CODES == (
         "VOL_PERCENTILE_INPUT_MISSING",
         "VOL_PERCENTILE_INSUFFICIENT_HISTORY",
+    )
+
+
+def test_orderliness_score_metadata_is_stable() -> None:
+    assert ORDERLINESS_SCORE_FEATURE_ID == "ORDERLINESS_SCORE"
+    assert ORDERLINESS_SCORE_COMPONENT_IDS == (
+        "extreme_range",
+        "disorderly_downside",
+        "liquidation_cascade",
+        "volatility_spike",
+    )
+    assert DEFAULT_ORDERLINESS_SCORE_WEIGHTS == {
+        "extreme_range": Decimal("0.25"),
+        "disorderly_downside": Decimal("0.25"),
+        "liquidation_cascade": Decimal("0.25"),
+        "volatility_spike": Decimal("0.25"),
+    }
+    assert DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX == Decimal("90")
+    assert DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN == Decimal("-0.08")
+    assert DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX == Decimal("90")
+    assert DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX == Decimal("90")
+    assert ORDERLINESS_SCORE_REASON_CODES == (
+        "ORDERLINESS_INPUT_MISSING",
+        "ORDERLINESS_EXTREME_RANGE",
+        "ORDERLINESS_DISORDERLY_DOWNSIDE",
+        "ORDERLINESS_LIQUIDATION_CASCADE",
+        "ORDERLINESS_VOLATILITY_SPIKE",
     )
 
 
@@ -368,6 +405,172 @@ def test_volatility_percentile_exposes_persistable_payload() -> None:
     }
 
 
+def test_orderliness_score_is_100_when_market_is_orderly() -> None:
+    result = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=Decimal("55"),
+            downside_return=Decimal("-0.02"),
+            liquidation_percentile=Decimal("40"),
+            volatility_percentile=Decimal("55"),
+        )
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "ORDERLINESS_SCORE"
+    assert result.score == Decimal("100")
+    assert result.interpretation == "ORDERLY"
+    assert result.penalties == {
+        "extreme_range": Decimal("0"),
+        "disorderly_downside": Decimal("0"),
+        "liquidation_cascade": Decimal("0"),
+        "volatility_spike": Decimal("0"),
+    }
+    assert result.reason_codes == ()
+
+
+def test_orderliness_score_penalizes_extreme_ranges_and_disorderly_downside() -> None:
+    result = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=Decimal("95"),
+            downside_return=Decimal("-0.10"),
+            liquidation_percentile=Decimal("50"),
+            volatility_percentile=Decimal("60"),
+        )
+    )
+
+    assert result.complete is True
+    assert result.score == Decimal("50.00")
+    assert result.interpretation == "DISORDERLY"
+    assert result.penalties["extreme_range"] == Decimal("25.00")
+    assert result.penalties["disorderly_downside"] == Decimal("25.00")
+    assert result.reason_codes == (
+        "ORDERLINESS_EXTREME_RANGE",
+        "ORDERLINESS_DISORDERLY_DOWNSIDE",
+    )
+
+
+def test_orderliness_score_penalizes_liquidation_cascades_and_volatility_spikes() -> None:
+    result = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=Decimal("50"),
+            downside_return=Decimal("0.01"),
+            liquidation_percentile=Decimal("91"),
+            volatility_percentile=Decimal("92"),
+        )
+    )
+
+    assert result.complete is True
+    assert result.score == Decimal("50.00")
+    assert result.interpretation == "DISORDERLY"
+    assert result.reason_codes == (
+        "ORDERLINESS_LIQUIDATION_CASCADE",
+        "ORDERLINESS_VOLATILITY_SPIKE",
+    )
+
+
+def test_orderliness_score_uses_custom_weights_and_thresholds() -> None:
+    result = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=Decimal("85"),
+            downside_return=Decimal("-0.061"),
+            liquidation_percentile=Decimal("75"),
+            volatility_percentile=Decimal("82"),
+        ),
+        weights={
+            "extreme_range": Decimal("0.10"),
+            "disorderly_downside": Decimal("0.20"),
+            "liquidation_cascade": Decimal("0.30"),
+            "volatility_spike": Decimal("0.40"),
+        },
+        range_percentile_max=Decimal("80"),
+        downside_return_min=Decimal("-0.06"),
+        liquidation_percentile_max=Decimal("80"),
+        volatility_percentile_max=Decimal("80"),
+        config_metadata={"config_version": "strategy_config_v1"},
+    )
+
+    assert result.score == Decimal("30.00")
+    assert result.interpretation == "STRESSED"
+    assert result.penalties == {
+        "extreme_range": Decimal("10.00"),
+        "disorderly_downside": Decimal("20.00"),
+        "liquidation_cascade": Decimal("0"),
+        "volatility_spike": Decimal("40.00"),
+    }
+    assert result.thresholds == {
+        "range_percentile_max": Decimal("80"),
+        "downside_return_min": Decimal("-0.06"),
+        "liquidation_percentile_max": Decimal("80"),
+        "volatility_percentile_max": Decimal("80"),
+    }
+    assert result.config_metadata == {"config_version": "strategy_config_v1"}
+
+
+def test_orderliness_score_reports_missing_inputs_without_zero_fill() -> None:
+    result = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=None,
+            downside_return=Decimal("-0.02"),
+            liquidation_percentile=Decimal("40"),
+            volatility_percentile=Decimal("55"),
+        )
+    )
+
+    assert result.complete is False
+    assert result.score is None
+    assert result.interpretation is None
+    assert result.penalties["extreme_range"] is None
+    assert result.reason_codes == ("ORDERLINESS_INPUT_MISSING",)
+
+
+def test_orderliness_score_exposes_persistable_payload() -> None:
+    result = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=Decimal("95"),
+            downside_return=Decimal("-0.10"),
+            liquidation_percentile=Decimal("50"),
+            volatility_percentile=Decimal("60"),
+        ),
+        config_metadata={"parameter_set_id": "default_phase1"},
+    )
+
+    assert result.as_record() == {
+        "feature_id": "ORDERLINESS_SCORE",
+        "score": "50.00",
+        "interpretation": "DISORDERLY",
+        "inputs": {
+            "range_percentile": "95",
+            "downside_return": "-0.10",
+            "liquidation_percentile": "50",
+            "volatility_percentile": "60",
+        },
+        "weights": {
+            "extreme_range": "0.25",
+            "disorderly_downside": "0.25",
+            "liquidation_cascade": "0.25",
+            "volatility_spike": "0.25",
+        },
+        "thresholds": {
+            "range_percentile_max": "90",
+            "downside_return_min": "-0.08",
+            "liquidation_percentile_max": "90",
+            "volatility_percentile_max": "90",
+        },
+        "penalties": {
+            "extreme_range": "25.00",
+            "disorderly_downside": "25.00",
+            "liquidation_cascade": "0",
+            "volatility_spike": "0",
+        },
+        "config_metadata": {"parameter_set_id": "default_phase1"},
+        "complete": True,
+        "reason_codes": [
+            "ORDERLINESS_EXTREME_RANGE",
+            "ORDERLINESS_DISORDERLY_DOWNSIDE",
+        ],
+    }
+
+
 def test_realized_volatility_filters_unavailable_future_bars() -> None:
     rows = daily_bars(("100", "110", "99", "108.9"))
     future_revision = daily_bar(
@@ -541,3 +744,59 @@ def test_volatility_percentile_rejects_invalid_inputs() -> None:
             percentile_window_days=10,
             min_percentile_observations=1,
         )
+
+
+def test_orderliness_score_rejects_invalid_inputs() -> None:
+    valid_input = OrderlinessScoreInput(
+        range_percentile=Decimal("50"),
+        downside_return=Decimal("-0.02"),
+        liquidation_percentile=Decimal("50"),
+        volatility_percentile=Decimal("50"),
+    )
+
+    with pytest.raises(ValueError, match="range_percentile"):
+        calculate_orderliness_score(
+            OrderlinessScoreInput(
+                range_percentile=Decimal("101"),
+                downside_return=Decimal("-0.02"),
+                liquidation_percentile=Decimal("50"),
+                volatility_percentile=Decimal("50"),
+            )
+        )
+
+    with pytest.raises(ValueError, match="liquidation_percentile"):
+        calculate_orderliness_score(
+            OrderlinessScoreInput(
+                range_percentile=Decimal("50"),
+                downside_return=Decimal("-0.02"),
+                liquidation_percentile=Decimal("-1"),
+                volatility_percentile=Decimal("50"),
+            )
+        )
+
+    with pytest.raises(ValueError, match="volatility_percentile"):
+        calculate_orderliness_score(
+            OrderlinessScoreInput(
+                range_percentile=Decimal("50"),
+                downside_return=Decimal("-0.02"),
+                liquidation_percentile=Decimal("50"),
+                volatility_percentile=Decimal("101"),
+            )
+        )
+
+    with pytest.raises(ValueError, match="weights"):
+        calculate_orderliness_score(valid_input, weights={"extreme_range": Decimal("1")})
+
+    with pytest.raises(ValueError, match="weights"):
+        calculate_orderliness_score(
+            valid_input,
+            weights={
+                "extreme_range": Decimal("0.20"),
+                "disorderly_downside": Decimal("0.20"),
+                "liquidation_cascade": Decimal("0.20"),
+                "volatility_spike": Decimal("0.20"),
+            },
+        )
+
+    with pytest.raises(ValueError, match="downside_return_min"):
+        calculate_orderliness_score(valid_input, downside_return_min=Decimal("0"))

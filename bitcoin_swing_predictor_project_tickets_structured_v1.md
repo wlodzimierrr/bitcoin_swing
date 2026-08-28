@@ -1020,7 +1020,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - disorderly downside
   - liquidation cascades
   - volatility spikes
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1029,6 +1029,17 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `ORDERLINESS_SCORE`, starting from 100 and subtracting configured
+    component penalties.
+  - Penalizes extreme range percentile, disorderly downside return, liquidation
+    percentile, and volatility percentile triggers.
+  - Exports default equal weights plus default thresholds for each component.
+  - Persists inputs, weights, thresholds, penalties, interpretation, config
+    metadata, completion state, and reason codes through
+    `OrderlinessScoreResult.as_record()`.
+  - Missing component inputs are reported explicitly instead of silently
+    zero-filling.
 
 #### BTC-084 Implement Volatility Score
 - **Description:**

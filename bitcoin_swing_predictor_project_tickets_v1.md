@@ -1194,6 +1194,7 @@ codes.
 
 ## BTC-083 — Implement orderliness score
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 2
 
@@ -1203,6 +1204,12 @@ Penalize:
 - disorderly downside
 - liquidation cascades
 - volatility spikes
+
+Implemented as `ORDERLINESS_SCORE`, starting at 100 and subtracting configured
+component penalties for extreme range percentile, disorderly downside return,
+liquidation percentile, and volatility percentile triggers. Results persist
+inputs, weights, thresholds, penalties, interpretation, completion state,
+config metadata, and stable reason codes.
 
 ---
 

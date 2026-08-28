@@ -127,7 +127,10 @@ daily bars. `volatility_compression_ratio` implements
 outputs and emits stable reason codes for missing inputs or a zero RV60
 denominator. `volatility_percentile` implements `VOL_PERCENTILE_2Y` as the
 current RV20 percentile rank against prior RV20 history in the trailing 730-day
-window.
+window. `calculate_orderliness_score` starts from 100 and subtracts configured
+penalties for extreme ranges, disorderly downside returns, liquidation cascades,
+and volatility spikes, while persisting thresholds, weights, penalties, and
+reason codes.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.

@@ -16,6 +16,19 @@ RV_20_FEATURE_ID = "RV_20"
 RV_60_FEATURE_ID = "RV_60"
 VOLATILITY_COMPRESSION_RATIO_FEATURE_ID = "VOL_COMPRESSION_RATIO"
 VOLATILITY_PERCENTILE_FEATURE_ID = "VOL_PERCENTILE_2Y"
+ORDERLINESS_SCORE_FEATURE_ID = "ORDERLINESS_SCORE"
+ORDERLINESS_SCORE_COMPONENT_IDS = (
+    "extreme_range",
+    "disorderly_downside",
+    "liquidation_cascade",
+    "volatility_spike",
+)
+DEFAULT_ORDERLINESS_SCORE_WEIGHTS = {
+    "extreme_range": Decimal("0.25"),
+    "disorderly_downside": Decimal("0.25"),
+    "liquidation_cascade": Decimal("0.25"),
+    "volatility_spike": Decimal("0.25"),
+}
 REALIZED_VOLATILITY_WINDOWS = (7, 20, 60)
 REALIZED_VOLATILITY_FEATURE_IDS = {
     7: RV_7_FEATURE_ID,
@@ -30,6 +43,13 @@ VOLATILITY_PERCENTILE_REASON_CODES = (
     "VOL_PERCENTILE_INPUT_MISSING",
     "VOL_PERCENTILE_INSUFFICIENT_HISTORY",
 )
+ORDERLINESS_SCORE_REASON_CODES = (
+    "ORDERLINESS_INPUT_MISSING",
+    "ORDERLINESS_EXTREME_RANGE",
+    "ORDERLINESS_DISORDERLY_DOWNSIDE",
+    "ORDERLINESS_LIQUIDATION_CASCADE",
+    "ORDERLINESS_VOLATILITY_SPIKE",
+)
 REALIZED_VOLATILITY_REASON_CODES = (
     "REALIZED_VOLATILITY_INPUT_MISSING",
     "REALIZED_VOLATILITY_INSUFFICIENT_HISTORY",
@@ -38,6 +58,10 @@ REALIZED_VOLATILITY_REASON_CODES = (
 DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS = 365
 DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS = 730
 DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS = 365
+DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX = Decimal("90")
+DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN = Decimal("-0.08")
+DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX = Decimal("90")
+DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX = Decimal("90")
 
 
 @dataclass(frozen=True)
@@ -152,6 +176,69 @@ class VolatilityPercentileResult:
         }
 
 
+@dataclass(frozen=True)
+class OrderlinessScoreInput:
+    range_percentile: Decimal | None
+    downside_return: Decimal | None
+    liquidation_percentile: Decimal | None
+    volatility_percentile: Decimal | None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "range_percentile": (
+                str(self.range_percentile)
+                if self.range_percentile is not None
+                else None
+            ),
+            "downside_return": (
+                str(self.downside_return)
+                if self.downside_return is not None
+                else None
+            ),
+            "liquidation_percentile": (
+                str(self.liquidation_percentile)
+                if self.liquidation_percentile is not None
+                else None
+            ),
+            "volatility_percentile": (
+                str(self.volatility_percentile)
+                if self.volatility_percentile is not None
+                else None
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class OrderlinessScoreResult:
+    feature_id: str
+    score: Decimal | None
+    interpretation: str | None
+    inputs: OrderlinessScoreInput
+    weights: dict[str, Decimal]
+    thresholds: dict[str, Decimal]
+    penalties: dict[str, Decimal | None]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "score": str(self.score) if self.score is not None else None,
+            "interpretation": self.interpretation,
+            "inputs": self.inputs.as_record(),
+            "weights": {key: str(value) for key, value in self.weights.items()},
+            "thresholds": {key: str(value) for key, value in self.thresholds.items()},
+            "penalties": {
+                key: str(value) if value is not None else None
+                for key, value in self.penalties.items()
+            },
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
 def realized_volatility_from_daily_bars(
     bars: Sequence[OhlcvBar],
     *,
@@ -200,6 +287,91 @@ def realized_volatility_from_daily_bars(
         return_count=len(returns),
         source_bar_count=len(available_bars),
         complete=not reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
+def calculate_orderliness_score(
+    inputs: OrderlinessScoreInput,
+    *,
+    weights: dict[str, Any] | None = None,
+    range_percentile_max: Any = DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX,
+    downside_return_min: Any = DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN,
+    liquidation_percentile_max: Any = DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX,
+    volatility_percentile_max: Any = DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX,
+    config_metadata: dict[str, str] | None = None,
+) -> OrderlinessScoreResult:
+    """Score whether volatility is orderly enough to trade."""
+
+    selected_weights = _orderliness_score_weights(weights)
+    thresholds = _orderliness_thresholds(
+        range_percentile_max=range_percentile_max,
+        downside_return_min=downside_return_min,
+        liquidation_percentile_max=liquidation_percentile_max,
+        volatility_percentile_max=volatility_percentile_max,
+    )
+    input_values = _orderliness_score_input_values(inputs)
+
+    reason_codes = []
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("ORDERLINESS_INPUT_MISSING")
+    if (
+        input_values["range_percentile"] is not None
+        and input_values["range_percentile"] >= thresholds["range_percentile_max"]
+    ):
+        reason_codes.append("ORDERLINESS_EXTREME_RANGE")
+    if (
+        input_values["downside_return"] is not None
+        and input_values["downside_return"] <= thresholds["downside_return_min"]
+    ):
+        reason_codes.append("ORDERLINESS_DISORDERLY_DOWNSIDE")
+    if (
+        input_values["liquidation_percentile"] is not None
+        and input_values["liquidation_percentile"]
+        >= thresholds["liquidation_percentile_max"]
+    ):
+        reason_codes.append("ORDERLINESS_LIQUIDATION_CASCADE")
+    if (
+        input_values["volatility_percentile"] is not None
+        and input_values["volatility_percentile"]
+        >= thresholds["volatility_percentile_max"]
+    ):
+        reason_codes.append("ORDERLINESS_VOLATILITY_SPIKE")
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    penalties = {
+        component_id: (
+            selected_weights[component_id] * Decimal("100")
+            if _orderliness_component_triggered(component_id, reason_codes)
+            else Decimal("0")
+        )
+        if input_values[component_id] is not None
+        else None
+        for component_id in ORDERLINESS_SCORE_COMPONENT_IDS
+    }
+    missing_inputs = "ORDERLINESS_INPUT_MISSING" in reason_codes
+    score = (
+        max(
+            Decimal("0"),
+            Decimal("100")
+            - sum(
+                (penalty for penalty in penalties.values() if penalty is not None),
+                Decimal("0"),
+            ),
+        )
+        if not missing_inputs
+        else None
+    )
+    return OrderlinessScoreResult(
+        feature_id=ORDERLINESS_SCORE_FEATURE_ID,
+        score=score,
+        interpretation=_orderliness_score_interpretation(score),
+        inputs=inputs,
+        weights=selected_weights,
+        thresholds=thresholds,
+        penalties=penalties,
+        config_metadata=dict(config_metadata or {}),
+        complete=score is not None,
         reason_codes=reason_codes,
     )
 
@@ -354,6 +526,130 @@ def _validate_daily_bars(bars: Sequence[OhlcvBar]) -> None:
             raise ValueError("realized volatility requires canonical 1d bars")
 
 
+def _orderliness_score_weights(weights: dict[str, Any] | None) -> dict[str, Decimal]:
+    selected_weights = DEFAULT_ORDERLINESS_SCORE_WEIGHTS if weights is None else weights
+    missing_keys = [
+        component_id
+        for component_id in ORDERLINESS_SCORE_COMPONENT_IDS
+        if component_id not in selected_weights
+    ]
+    extra_keys = [
+        component_id
+        for component_id in selected_weights
+        if component_id not in ORDERLINESS_SCORE_COMPONENT_IDS
+    ]
+    if missing_keys or extra_keys:
+        raise ValueError("weights must match orderliness score component IDs")
+
+    decimal_weights = {
+        component_id: _non_negative_decimal(selected_weights[component_id], component_id)
+        for component_id in ORDERLINESS_SCORE_COMPONENT_IDS
+    }
+    total_weight = sum(decimal_weights.values(), Decimal("0"))
+    if total_weight != Decimal("1"):
+        raise ValueError("weights must sum to 1")
+    return decimal_weights
+
+
+def _orderliness_thresholds(
+    *,
+    range_percentile_max: Any,
+    downside_return_min: Any,
+    liquidation_percentile_max: Any,
+    volatility_percentile_max: Any,
+) -> dict[str, Decimal]:
+    downside_threshold = Decimal(str(downside_return_min))
+    if downside_threshold >= 0:
+        raise ValueError("downside_return_min must be < 0")
+    return {
+        "range_percentile_max": _score_decimal(
+            range_percentile_max,
+            "range_percentile_max",
+        ),
+        "downside_return_min": downside_threshold,
+        "liquidation_percentile_max": _score_decimal(
+            liquidation_percentile_max,
+            "liquidation_percentile_max",
+        ),
+        "volatility_percentile_max": _score_decimal(
+            volatility_percentile_max,
+            "volatility_percentile_max",
+        ),
+    }
+
+
+def _orderliness_score_input_values(
+    inputs: OrderlinessScoreInput,
+) -> dict[str, Decimal | None]:
+    return {
+        "extreme_range": (
+            _score_decimal(inputs.range_percentile, "range_percentile")
+            if inputs.range_percentile is not None
+            else None
+        ),
+        "disorderly_downside": (
+            Decimal(str(inputs.downside_return))
+            if inputs.downside_return is not None
+            else None
+        ),
+        "liquidation_cascade": (
+            _score_decimal(inputs.liquidation_percentile, "liquidation_percentile")
+            if inputs.liquidation_percentile is not None
+            else None
+        ),
+        "volatility_spike": (
+            _score_decimal(inputs.volatility_percentile, "volatility_percentile")
+            if inputs.volatility_percentile is not None
+            else None
+        ),
+        "range_percentile": (
+            _score_decimal(inputs.range_percentile, "range_percentile")
+            if inputs.range_percentile is not None
+            else None
+        ),
+        "downside_return": (
+            Decimal(str(inputs.downside_return))
+            if inputs.downside_return is not None
+            else None
+        ),
+        "liquidation_percentile": (
+            _score_decimal(inputs.liquidation_percentile, "liquidation_percentile")
+            if inputs.liquidation_percentile is not None
+            else None
+        ),
+        "volatility_percentile": (
+            _score_decimal(inputs.volatility_percentile, "volatility_percentile")
+            if inputs.volatility_percentile is not None
+            else None
+        ),
+    }
+
+
+def _orderliness_component_triggered(
+    component_id: str,
+    reason_codes: Sequence[str],
+) -> bool:
+    reason_by_component = {
+        "extreme_range": "ORDERLINESS_EXTREME_RANGE",
+        "disorderly_downside": "ORDERLINESS_DISORDERLY_DOWNSIDE",
+        "liquidation_cascade": "ORDERLINESS_LIQUIDATION_CASCADE",
+        "volatility_spike": "ORDERLINESS_VOLATILITY_SPIKE",
+    }
+    return reason_by_component[component_id] in reason_codes
+
+
+def _orderliness_score_interpretation(score: Decimal | None) -> str | None:
+    if score is None:
+        return None
+    if score >= Decimal("80"):
+        return "ORDERLY"
+    if score >= Decimal("60"):
+        return "MIXED"
+    if score >= Decimal("40"):
+        return "DISORDERLY"
+    return "STRESSED"
+
+
 def _validate_volatility_percentile_parameters(
     *,
     source_feature_id: str,
@@ -458,6 +754,13 @@ def _non_negative_decimal(value: Any, name: str) -> Decimal:
     decimal_value = Decimal(str(value))
     if decimal_value < 0:
         raise ValueError(f"{name} must be >= 0")
+    return decimal_value
+
+
+def _score_decimal(value: Any, name: str) -> Decimal:
+    decimal_value = Decimal(str(value))
+    if decimal_value < 0 or decimal_value > 100:
+        raise ValueError(f"{name} must be between 0 and 100")
     return decimal_value
 
 
