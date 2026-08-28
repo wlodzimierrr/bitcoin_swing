@@ -990,7 +990,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-082 Implement volatility percentile
 - **Description:**
   Complete the ticket scope for implement volatility percentile.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -999,6 +999,18 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `VOL_PERCENTILE_2Y` from the rulebook formula
+    `Percentile(RV20, 2yr)`.
+  - Uses the latest persisted RV20 result available at signal time and ranks it
+    against prior RV20 history only, excluding the current observation and future
+    results.
+  - Defaults to a 730-day percentile window with configurable minimum history.
+  - Persists source feature ID, window parameters, realized volatility,
+    percentile, counts, completion state, and reason codes through
+    `VolatilityPercentileResult.as_record()`.
+  - Missing RV20 input and insufficient history are reported explicitly instead
+    of silently zero-filling.
 
 #### BTC-083 Implement orderliness score
 - **Description:**

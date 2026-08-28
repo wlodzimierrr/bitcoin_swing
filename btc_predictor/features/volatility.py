@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -15,6 +15,7 @@ RV_7_FEATURE_ID = "RV_7"
 RV_20_FEATURE_ID = "RV_20"
 RV_60_FEATURE_ID = "RV_60"
 VOLATILITY_COMPRESSION_RATIO_FEATURE_ID = "VOL_COMPRESSION_RATIO"
+VOLATILITY_PERCENTILE_FEATURE_ID = "VOL_PERCENTILE_2Y"
 REALIZED_VOLATILITY_WINDOWS = (7, 20, 60)
 REALIZED_VOLATILITY_FEATURE_IDS = {
     7: RV_7_FEATURE_ID,
@@ -25,12 +26,18 @@ VOLATILITY_COMPRESSION_RATIO_REASON_CODES = (
     "VOL_COMPRESSION_INPUT_MISSING",
     "VOL_COMPRESSION_ZERO_DENOMINATOR",
 )
+VOLATILITY_PERCENTILE_REASON_CODES = (
+    "VOL_PERCENTILE_INPUT_MISSING",
+    "VOL_PERCENTILE_INSUFFICIENT_HISTORY",
+)
 REALIZED_VOLATILITY_REASON_CODES = (
     "REALIZED_VOLATILITY_INPUT_MISSING",
     "REALIZED_VOLATILITY_INSUFFICIENT_HISTORY",
     "REALIZED_VOLATILITY_NON_POSITIVE_CLOSE",
 )
 DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS = 365
+DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS = 730
+DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS = 365
 
 
 @dataclass(frozen=True)
@@ -104,6 +111,47 @@ class VolatilityCompressionRatioResult:
         }
 
 
+@dataclass(frozen=True)
+class VolatilityPercentileResult:
+    feature_id: str
+    observation_time: datetime
+    source_feature_id: str
+    percentile_window_days: int
+    min_percentile_observations: int
+    realized_volatility: Decimal | None
+    volatility_percentile: Decimal | None
+    history_observation_count: int
+    source_result_count: int
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "observation_time": require_utc_datetime(
+                self.observation_time,
+                "observation_time",
+            ).isoformat(),
+            "source_feature_id": self.source_feature_id,
+            "percentile_window_days": self.percentile_window_days,
+            "min_percentile_observations": self.min_percentile_observations,
+            "realized_volatility": (
+                str(self.realized_volatility)
+                if self.realized_volatility is not None
+                else None
+            ),
+            "volatility_percentile": (
+                str(self.volatility_percentile)
+                if self.volatility_percentile is not None
+                else None
+            ),
+            "history_observation_count": self.history_observation_count,
+            "source_result_count": self.source_result_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
 def realized_volatility_from_daily_bars(
     bars: Sequence[OhlcvBar],
     *,
@@ -151,6 +199,69 @@ def realized_volatility_from_daily_bars(
         realized_volatility=realized_volatility,
         return_count=len(returns),
         source_bar_count=len(available_bars),
+        complete=not reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
+def volatility_percentile(
+    results: Sequence[RealizedVolatilityResult],
+    *,
+    as_of: datetime,
+    source_feature_id: str = RV_20_FEATURE_ID,
+    percentile_window_days: int = DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS,
+    min_percentile_observations: int = DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS,
+) -> VolatilityPercentileResult:
+    """Calculate current realized volatility percentile against prior history."""
+
+    signal_time = require_utc_datetime(as_of, "as_of")
+    _validate_volatility_percentile_parameters(
+        source_feature_id=source_feature_id,
+        percentile_window_days=percentile_window_days,
+        min_percentile_observations=min_percentile_observations,
+    )
+    source_results = _available_realized_volatility_results(
+        results,
+        source_feature_id=source_feature_id,
+        signal_time=signal_time,
+    )
+    current_result = source_results[-1] if source_results else None
+    observation_time = (
+        current_result.observation_time if current_result is not None else signal_time
+    )
+    realized_volatility = (
+        _non_negative_decimal(current_result.realized_volatility, "realized_volatility")
+        if current_result is not None and current_result.realized_volatility is not None
+        else None
+    )
+    history = _realized_volatility_history(
+        source_results,
+        observation_time=observation_time,
+        percentile_window_days=percentile_window_days,
+    )
+
+    reason_codes = []
+    if realized_volatility is None:
+        reason_codes.append("VOL_PERCENTILE_INPUT_MISSING")
+
+    volatility_percentile = None
+    if realized_volatility is not None:
+        if len(history) < min_percentile_observations:
+            reason_codes.append("VOL_PERCENTILE_INSUFFICIENT_HISTORY")
+        else:
+            volatility_percentile = _percentile_rank(realized_volatility, history)
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    return VolatilityPercentileResult(
+        feature_id=VOLATILITY_PERCENTILE_FEATURE_ID,
+        observation_time=observation_time,
+        source_feature_id=source_feature_id,
+        percentile_window_days=percentile_window_days,
+        min_percentile_observations=min_percentile_observations,
+        realized_volatility=realized_volatility,
+        volatility_percentile=volatility_percentile,
+        history_observation_count=len(history),
+        source_result_count=len(source_results),
         complete=not reason_codes,
         reason_codes=reason_codes,
     )
@@ -243,6 +354,22 @@ def _validate_daily_bars(bars: Sequence[OhlcvBar]) -> None:
             raise ValueError("realized volatility requires canonical 1d bars")
 
 
+def _validate_volatility_percentile_parameters(
+    *,
+    source_feature_id: str,
+    percentile_window_days: int,
+    min_percentile_observations: int,
+) -> None:
+    if not source_feature_id.strip():
+        raise ValueError("source_feature_id must be non-empty")
+    if percentile_window_days < 1:
+        raise ValueError("percentile_window_days must be >= 1")
+    if min_percentile_observations < 1:
+        raise ValueError("min_percentile_observations must be >= 1")
+    if min_percentile_observations > percentile_window_days:
+        raise ValueError("min_percentile_observations must be <= percentile_window_days")
+
+
 def _compression_input_values(
     inputs: VolatilityCompressionRatioInput,
 ) -> dict[str, Decimal | None]:
@@ -254,6 +381,41 @@ def _compression_input_values(
         if inputs.rv_60 is not None
         else None,
     }
+
+
+def _available_realized_volatility_results(
+    results: Sequence[RealizedVolatilityResult],
+    *,
+    source_feature_id: str,
+    signal_time: datetime,
+) -> tuple[RealizedVolatilityResult, ...]:
+    available_results = []
+    for result in results:
+        observation_time = require_utc_datetime(
+            result.observation_time,
+            "observation_time",
+        )
+        if (
+            result.feature_id == source_feature_id
+            and observation_time <= signal_time
+        ):
+            available_results.append(result)
+    return tuple(sorted(available_results, key=lambda result: result.observation_time))
+
+
+def _realized_volatility_history(
+    results: Sequence[RealizedVolatilityResult],
+    *,
+    observation_time: datetime,
+    percentile_window_days: int,
+) -> tuple[Decimal, ...]:
+    window_start = observation_time - timedelta(days=percentile_window_days)
+    return tuple(
+        _non_negative_decimal(result.realized_volatility, "realized_volatility")
+        for result in results
+        if result.realized_volatility is not None
+        and window_start <= result.observation_time < observation_time
+    )
 
 
 def _available_daily_bars(
@@ -297,6 +459,15 @@ def _non_negative_decimal(value: Any, name: str) -> Decimal:
     if decimal_value < 0:
         raise ValueError(f"{name} must be >= 0")
     return decimal_value
+
+
+def _percentile_rank(value: Decimal, history: Sequence[Decimal]) -> Decimal:
+    if not history:
+        raise ValueError("history must contain at least one observation")
+    less_count = sum(1 for item in history if item < value)
+    equal_count = sum(1 for item in history if item == value)
+    rank = Decimal(less_count) + (Decimal("0.5") * Decimal(equal_count))
+    return (rank / Decimal(len(history))) * Decimal("100")
 
 
 def _dedupe_reason_codes(reason_codes: Sequence[str]) -> tuple[str, ...]:

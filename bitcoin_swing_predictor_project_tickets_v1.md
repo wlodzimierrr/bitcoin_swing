@@ -1179,8 +1179,16 @@ codes for missing inputs or zero RV60 denominator.
 
 ## BTC-082 — Implement volatility percentile
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 1
+
+Implemented as `VOL_PERCENTILE_2Y`, using the rulebook input
+`Percentile(RV20, 2yr)`. The helper consumes persisted RV feature results,
+selects the latest RV20 available at signal time, ranks it only against prior
+RV20 history in the trailing 730-day window, and persists source feature ID,
+window parameters, counts, percentile, completion state, and stable reason
+codes.
 
 ---
 

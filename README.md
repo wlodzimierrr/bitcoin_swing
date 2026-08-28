@@ -125,7 +125,9 @@ realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
 daily bars. `volatility_compression_ratio` implements
 `VOL_COMPRESSION_RATIO = RV_7 / RV_60` from persisted realized-volatility
 outputs and emits stable reason codes for missing inputs or a zero RV60
-denominator.
+denominator. `volatility_percentile` implements `VOL_PERCENTILE_2Y` as the
+current RV20 percentile rank against prior RV20 history in the trailing 730-day
+window.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.
