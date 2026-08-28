@@ -9,6 +9,7 @@ from typing import Any
 
 
 REGIME_SCORE_FEATURE_ID = "REGIME_SCORE"
+REGIME_SMOOTHED_SCORE_FEATURE_ID = "REGIME_SMOOTHED_SCORE"
 REGIME_MODEL_CORE_MARKET_ONLY = "CORE_MARKET_ONLY"
 REGIME_MODEL_FULL_MACRO_ONCHAIN_LIQUIDITY = "FULL_MACRO_ONCHAIN_LIQUIDITY"
 CORE_REGIME_SCORE_COMPONENT_IDS = (
@@ -39,9 +40,15 @@ DEFAULT_FULL_REGIME_SCORE_WEIGHTS = {
     "volatility": Decimal("0.10"),
     "liquidity": Decimal("0.10"),
 }
+DEFAULT_REGIME_SMOOTHING_PREVIOUS_WEIGHT = Decimal("0.70")
+DEFAULT_REGIME_SMOOTHING_NEW_WEIGHT = Decimal("0.30")
 REGIME_SCORE_REASON_CODES = (
     "REGIME_SCORE_CORE_INPUT_MISSING",
     "REGIME_SCORE_P1_INPUT_MISSING",
+)
+REGIME_SMOOTHING_REASON_CODES = (
+    "REGIME_SMOOTHING_NEW_SCORE_MISSING",
+    "REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING",
 )
 
 
@@ -137,6 +144,79 @@ class RegimeScoreResult:
         }
 
 
+@dataclass(frozen=True)
+class RegimeSmoothingInput:
+    previous_smoothed_score: Decimal | None
+    new_regime_score: Decimal | None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "previous_smoothed_score": _optional_score_record(
+                self.previous_smoothed_score,
+                "previous_smoothed_score",
+            ),
+            "new_regime_score": _optional_score_record(
+                self.new_regime_score,
+                "new_regime_score",
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class RegimeSmoothingResult:
+    feature_id: str
+    score: Decimal | None
+    interpretation: str | None
+    inputs: RegimeSmoothingInput
+    weights: dict[str, Decimal]
+    contributions: dict[str, Decimal | None]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    @property
+    def reason_code(self) -> str | None:
+        if self.interpretation is None:
+            return None
+        return f"{self.feature_id}_{self.interpretation}"
+
+    def as_record(self) -> dict[str, Any]:
+        if self.feature_id != REGIME_SMOOTHED_SCORE_FEATURE_ID:
+            raise ValueError("feature_id must be REGIME_SMOOTHED_SCORE")
+        if self.score is not None:
+            _score(self.score, "score")
+        if self.complete and self.score is None:
+            raise ValueError("complete regime smoothing requires score")
+        _validate_weights(
+            self.weights,
+            component_ids=("previous_smoothed_score", "new_regime_score"),
+            name="regime_smoothing",
+        )
+        for component_id in self.weights:
+            if component_id not in self.contributions:
+                raise ValueError(f"contributions missing {component_id}")
+        for component_id, contribution in self.contributions.items():
+            if component_id not in self.weights:
+                raise ValueError(f"contributions includes unsupported {component_id}")
+            if contribution is not None and contribution < 0:
+                raise ValueError(f"{component_id} contribution must be >= 0")
+        return {
+            "feature_id": self.feature_id,
+            "score": str(self.score) if self.score is not None else None,
+            "interpretation": self.interpretation,
+            "reason_code": self.reason_code,
+            "inputs": self.inputs.as_record(),
+            "weights": {key: str(value) for key, value in self.weights.items()},
+            "contributions": {
+                key: str(value) if value is not None else None
+                for key, value in self.contributions.items()
+            },
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
 def calculate_regime_score(
     inputs: RegimeScoreInput,
     *,
@@ -216,6 +296,77 @@ def calculate_regime_score(
         contributions=contributions,
         config_metadata=dict(config_metadata or {}),
         complete=score is not None,
+        reason_codes=tuple(reason_codes),
+    )
+
+
+def calculate_regime_smoothing(
+    inputs: RegimeSmoothingInput,
+    *,
+    previous_weight: Any = DEFAULT_REGIME_SMOOTHING_PREVIOUS_WEIGHT,
+    new_weight: Any = DEFAULT_REGIME_SMOOTHING_NEW_WEIGHT,
+    config_metadata: Mapping[str, str] | None = None,
+) -> RegimeSmoothingResult:
+    """Smooth the latest regime score against the prior smoothed regime score."""
+
+    weights = _normalize_weights(
+        {
+            "previous_smoothed_score": previous_weight,
+            "new_regime_score": new_weight,
+        },
+        component_ids=("previous_smoothed_score", "new_regime_score"),
+        name="regime_smoothing",
+    )
+    inputs.as_record()
+    reason_codes = []
+
+    if inputs.new_regime_score is None:
+        reason_codes.append("REGIME_SMOOTHING_NEW_SCORE_MISSING")
+        return RegimeSmoothingResult(
+            feature_id=REGIME_SMOOTHED_SCORE_FEATURE_ID,
+            score=None,
+            interpretation=None,
+            inputs=inputs,
+            weights=weights,
+            contributions={
+                "previous_smoothed_score": None,
+                "new_regime_score": None,
+            },
+            config_metadata=dict(config_metadata or {}),
+            complete=False,
+            reason_codes=tuple(reason_codes),
+        )
+
+    new_score = _score(inputs.new_regime_score, "new_regime_score")
+    if inputs.previous_smoothed_score is None:
+        reason_codes.append("REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING")
+        contributions = {
+            "previous_smoothed_score": None,
+            "new_regime_score": new_score,
+        }
+        score = new_score
+    else:
+        previous_score = _score(
+            inputs.previous_smoothed_score,
+            "previous_smoothed_score",
+        )
+        contributions = {
+            "previous_smoothed_score": (
+                weights["previous_smoothed_score"] * previous_score
+            ),
+            "new_regime_score": weights["new_regime_score"] * new_score,
+        }
+        score = sum(contributions.values(), Decimal("0"))
+
+    return RegimeSmoothingResult(
+        feature_id=REGIME_SMOOTHED_SCORE_FEATURE_ID,
+        score=score,
+        interpretation=_interpret_score(score),
+        inputs=inputs,
+        weights=weights,
+        contributions=contributions,
+        config_metadata=dict(config_metadata or {}),
+        complete=True,
         reason_codes=tuple(reason_codes),
     )
 

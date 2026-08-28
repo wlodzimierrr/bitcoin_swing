@@ -77,6 +77,8 @@ def test_loads_default_strategy_config() -> None:
         "rr_quality": 0.20,
         "confluence": 0.10,
     }
+    assert config.regime_smoothing.previous_weight == 0.70
+    assert config.regime_smoothing.new_weight == 0.30
     assert config.positioning_flags.crowding.funding_zscore_min == 2.0
     assert config.positioning_flags.crowding.basis_zscore_min == 2.0
     assert config.positioning_flags.crowding.oi_intensity_percentile_min == 90
@@ -470,6 +472,34 @@ def test_invalid_full_regime_weights_fail_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="full_regime"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_regime_smoothing_weights_fail_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_regime_smoothing_weights.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "new_weight = 0.30",
+            "new_weight = 0.20",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="regime_smoothing"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_regime_smoothing_fraction_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_regime_smoothing_fraction.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "previous_weight = 0.70",
+            "previous_weight = 1.20",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="previous_weight"):
         load_strategy_config(config_path)
 
 

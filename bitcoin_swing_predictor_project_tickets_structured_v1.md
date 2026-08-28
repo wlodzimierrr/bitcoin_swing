@@ -1397,7 +1397,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   \[
   R_t=0.7R_{t-1}+0.3R_{new}
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1406,6 +1406,18 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `RegimeSmoothingInput`, `RegimeSmoothingResult`, and
+    `calculate_regime_smoothing` in `btc_predictor.features.regime`.
+  - Persists `REGIME_SMOOTHED_SCORE` from
+    `previous_weight * previous_smoothed_score + new_weight * new_regime_score`,
+    with weights loaded from versioned `regime_smoothing` config.
+  - First-run bootstrap uses the current raw regime score and records
+    `REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING`.
+  - Missing current regime input prevents completion and records
+    `REGIME_SMOOTHING_NEW_SCORE_MISSING`.
+  - Results persist inputs, weights, contributions, config metadata,
+    interpretation, reason code, completion state, and reason codes.
 
 #### BTC-102 Implement regime classification
 - **Description:**

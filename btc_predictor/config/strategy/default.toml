@@ -186,6 +186,10 @@ entry_location = 0.25
 rr_quality = 0.20
 confluence = 0.10
 
+[regime_smoothing]
+previous_weight = 0.70
+new_weight = 0.30
+
 [positioning_flags.crowding]
 funding_zscore_min = 2.0
 basis_zscore_min = 2.0

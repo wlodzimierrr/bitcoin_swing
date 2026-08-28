@@ -202,7 +202,11 @@ Regime Score combines Trend, Flow, Macro, On-chain, Volatility, and Liquidity
 inputs when the full model is available. Until those P1 models exist,
 `calculate_regime_score` records `REGIME_MODEL = CORE_MARKET_ONLY` and uses the
 configured Trend/Flow/Volatility/Positioning fallback without zero-filling
-missing core inputs.
+missing core inputs. `calculate_regime_smoothing` then persists
+`REGIME_SMOOTHED_SCORE` as
+`0.70 * previous_smoothed_score + 0.30 * new_regime_score` using versioned
+`regime_smoothing` config. First-run bootstrap uses the raw regime score and
+records the missing previous value explicitly.
 
 Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day

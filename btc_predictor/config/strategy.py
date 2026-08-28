@@ -565,6 +565,22 @@ class VolatilityFlagConfig:
 
 
 @dataclass(frozen=True)
+class RegimeSmoothingConfig:
+    previous_weight: float
+    new_weight: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        config = cls(
+            previous_weight=_required_fraction(data, "previous_weight"),
+            new_weight=_required_fraction(data, "new_weight"),
+        )
+        if abs(config.previous_weight + config.new_weight - 1.0) > 0.000001:
+            raise StrategyConfigError("regime_smoothing weights must sum to 1.0")
+        return config
+
+
+@dataclass(frozen=True)
 class ScoringWeights:
     entry_conviction: dict[str, float]
     hold_score: dict[str, float]
@@ -653,6 +669,7 @@ class StrategyConfig:
     regime_thresholds: RegimeThresholds
     price_levels: PriceLevelParameters
     scoring_weights: ScoringWeights
+    regime_smoothing: RegimeSmoothingConfig
     positioning_flags: PositioningFlagConfig
     volatility_flags: VolatilityFlagConfig
     backtest: BacktestAssumptions
@@ -685,6 +702,9 @@ class StrategyConfig:
             ),
             scoring_weights=ScoringWeights.from_mapping(
                 _required_mapping(data, "scoring_weights"),
+            ),
+            regime_smoothing=RegimeSmoothingConfig.from_mapping(
+                _required_mapping(data, "regime_smoothing"),
             ),
             positioning_flags=PositioningFlagConfig.from_mapping(
                 _required_mapping(data, "positioning_flags"),

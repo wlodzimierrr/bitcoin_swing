@@ -1525,6 +1525,18 @@ interpretation, reason code, completion state, and reason codes.
 R_t=0.7R_{t-1}+0.3R_{new}
 \]
 
+Implemented `calculate_regime_smoothing` in `btc_predictor.features.regime`.
+The helper persists `REGIME_SMOOTHED_SCORE`, applies the configured
+`regime_smoothing.previous_weight` and `regime_smoothing.new_weight`, and keeps
+the base `REGIME_SCORE` available for reconstruction.
+
+When no previous smoothed score exists, the first observation bootstraps from
+the current raw regime score and records
+`REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING`. Missing current regime input blocks
+completion with `REGIME_SMOOTHING_NEW_SCORE_MISSING`. Results persist inputs,
+weights, contributions, config metadata, interpretation, reason code,
+completion state, and reason codes.
+
 ---
 
 ## BTC-102 — Implement regime classification
