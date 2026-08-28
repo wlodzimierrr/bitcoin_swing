@@ -33,6 +33,13 @@ def test_loads_default_strategy_config() -> None:
     assert config.positioning_flags.crowding.basis_zscore_min == 2.0
     assert config.positioning_flags.crowding.oi_intensity_percentile_min == 90
     assert config.positioning_flags.crowding.entry_quality_penalty == 10
+    assert config.volatility_flags.stress.volatility_percentile_min == 95
+    assert config.volatility_flags.stress.liquidation_percentile_min == 95
+    assert config.volatility_flags.stress.downside_return_min == -0.10
+    assert config.volatility_flags.stress.funding_abs_zscore_min == 3.0
+    assert config.volatility_flags.stress.basis_abs_zscore_min == 3.0
+    assert config.volatility_flags.stress.max_exposure_multiplier == 0.50
+    assert config.volatility_flags.stress.block_new_trades is False
     assert config.backtest.max_trades_per_year == 24
 
 
@@ -240,4 +247,32 @@ def test_invalid_crowding_flag_config_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="oi_intensity_percentile_min"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_stress_flag_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_stress_flag.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "volatility_percentile_min = 95",
+            "volatility_percentile_min = 120",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="volatility_percentile_min"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_stress_downside_threshold_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_stress_downside.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "downside_return_min = -0.10",
+            "downside_return_min = 0.10",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="downside_return_min"):
         load_strategy_config(config_path)

@@ -130,7 +130,11 @@ current RV20 percentile rank against prior RV20 history in the trailing 730-day
 window. `calculate_orderliness_score` starts from 100 and subtracts configured
 penalties for extreme ranges, disorderly downside returns, liquidation cascades,
 and volatility spikes, while persisting thresholds, weights, penalties, and
-reason codes.
+reason codes. `calculate_stress_flag` emits the hard `STRESS` override from
+extreme volatility, liquidation cascades, disorderly downside, abnormal
+funding/basis, or systemic shock inputs, with persisted exposure-reduction
+settings and optional new-trade blocking loaded from the versioned strategy
+config.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.

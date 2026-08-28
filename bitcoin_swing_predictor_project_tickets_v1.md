@@ -1222,6 +1222,7 @@ config metadata, and stable reason codes.
 
 ## BTC-085 — Implement STRESS flag
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 2
 
@@ -1232,6 +1233,15 @@ NO ADD
 REDUCE MAX EXPOSURE
 OPTIONALLY BLOCK NEW TRADES
 ```
+
+Implemented as the hard `STRESS` flag, triggered by extreme volatility
+percentile, liquidation percentile, disorderly downside return, abnormal
+funding z-score, abnormal basis z-score, or systemic market shock. Results
+persist inputs, thresholds, max-exposure multiplier, optional new-trade block
+setting, effects, completion state, config metadata, and stable reason codes.
+Default thresholds and exposure settings are defined under
+`[volatility_flags.stress]` in the versioned strategy config and validated at
+startup.
 
 ---
 

@@ -1063,7 +1063,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   REDUCE MAX EXPOSURE
   OPTIONALLY BLOCK NEW TRADES
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1072,6 +1072,23 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added hard `STRESS` flag evaluation with `NO_ADD`,
+    `REDUCE_MAX_EXPOSURE`, and `OPTIONALLY_BLOCK_NEW_TRADES` effects.
+  - Triggers on extreme volatility percentile, liquidation cascade percentile,
+    disorderly downside return, abnormal funding z-score, abnormal basis z-score,
+    or systemic market shock.
+  - Exports default stress thresholds, max-exposure multiplier, and optional
+    new-trade block setting.
+  - Added `[volatility_flags.stress]` to the versioned strategy config with
+    startup validation for percentile thresholds, downside threshold, funding
+    and basis z-score thresholds, max-exposure multiplier, and new-trade block
+    setting.
+  - Persists inputs, thresholds, max-exposure multiplier, block-new-trades
+    setting, effects, config metadata, completion state, and reason codes
+    through `StressFlagResult.as_record()`.
+  - Missing trigger inputs are reported explicitly instead of silently treating
+    them as normal market conditions.
 
 ## EPIC J — Price-Level / Structure Engine
 

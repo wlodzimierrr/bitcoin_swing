@@ -17,6 +17,12 @@ RV_60_FEATURE_ID = "RV_60"
 VOLATILITY_COMPRESSION_RATIO_FEATURE_ID = "VOL_COMPRESSION_RATIO"
 VOLATILITY_PERCENTILE_FEATURE_ID = "VOL_PERCENTILE_2Y"
 ORDERLINESS_SCORE_FEATURE_ID = "ORDERLINESS_SCORE"
+STRESS_FLAG_FEATURE_ID = "STRESS"
+STRESS_FLAG_EFFECTS = (
+    "NO_ADD",
+    "REDUCE_MAX_EXPOSURE",
+    "OPTIONALLY_BLOCK_NEW_TRADES",
+)
 ORDERLINESS_SCORE_COMPONENT_IDS = (
     "extreme_range",
     "disorderly_downside",
@@ -50,6 +56,15 @@ ORDERLINESS_SCORE_REASON_CODES = (
     "ORDERLINESS_LIQUIDATION_CASCADE",
     "ORDERLINESS_VOLATILITY_SPIKE",
 )
+STRESS_FLAG_REASON_CODES = (
+    "STRESS_INPUT_MISSING",
+    "STRESS_EXTREME_VOLATILITY",
+    "STRESS_LIQUIDATION_CASCADE",
+    "STRESS_DISORDERLY_DOWNSIDE",
+    "STRESS_ABNORMAL_FUNDING",
+    "STRESS_ABNORMAL_BASIS",
+    "STRESS_SYSTEMIC_MARKET_SHOCK",
+)
 REALIZED_VOLATILITY_REASON_CODES = (
     "REALIZED_VOLATILITY_INPUT_MISSING",
     "REALIZED_VOLATILITY_INSUFFICIENT_HISTORY",
@@ -62,6 +77,13 @@ DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX = Decimal("90")
 DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN = Decimal("-0.08")
 DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX = Decimal("90")
 DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX = Decimal("90")
+DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN = Decimal("95")
+DEFAULT_STRESS_LIQUIDATION_PERCENTILE_MIN = Decimal("95")
+DEFAULT_STRESS_DOWNSIDE_RETURN_MIN = Decimal("-0.10")
+DEFAULT_STRESS_FUNDING_ABS_ZSCORE_MIN = Decimal("3")
+DEFAULT_STRESS_BASIS_ABS_ZSCORE_MIN = Decimal("3")
+DEFAULT_STRESS_MAX_EXPOSURE_MULTIPLIER = Decimal("0.50")
+DEFAULT_STRESS_BLOCK_NEW_TRADES = False
 
 
 @dataclass(frozen=True)
@@ -239,6 +261,70 @@ class OrderlinessScoreResult:
         }
 
 
+@dataclass(frozen=True)
+class StressFlagInput:
+    volatility_percentile: Decimal | None
+    liquidation_percentile: Decimal | None
+    downside_return: Decimal | None
+    funding_zscore: Decimal | None
+    basis_zscore: Decimal | None
+    systemic_shock: bool | None
+
+    def as_record(self) -> dict[str, str | bool | None]:
+        return {
+            "volatility_percentile": (
+                str(self.volatility_percentile)
+                if self.volatility_percentile is not None
+                else None
+            ),
+            "liquidation_percentile": (
+                str(self.liquidation_percentile)
+                if self.liquidation_percentile is not None
+                else None
+            ),
+            "downside_return": (
+                str(self.downside_return)
+                if self.downside_return is not None
+                else None
+            ),
+            "funding_zscore": (
+                str(self.funding_zscore) if self.funding_zscore is not None else None
+            ),
+            "basis_zscore": (
+                str(self.basis_zscore) if self.basis_zscore is not None else None
+            ),
+            "systemic_shock": self.systemic_shock,
+        }
+
+
+@dataclass(frozen=True)
+class StressFlagResult:
+    feature_id: str
+    flagged: bool
+    effects: tuple[str, ...]
+    max_exposure_multiplier: Decimal
+    block_new_trades: bool
+    inputs: StressFlagInput
+    thresholds: dict[str, Decimal]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "flagged": self.flagged,
+            "effects": list(self.effects),
+            "max_exposure_multiplier": str(self.max_exposure_multiplier),
+            "block_new_trades": self.block_new_trades,
+            "inputs": self.inputs.as_record(),
+            "thresholds": {key: str(value) for key, value in self.thresholds.items()},
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
 def realized_volatility_from_daily_bars(
     bars: Sequence[OhlcvBar],
     *,
@@ -287,6 +373,91 @@ def realized_volatility_from_daily_bars(
         return_count=len(returns),
         source_bar_count=len(available_bars),
         complete=not reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
+def calculate_stress_flag(
+    inputs: StressFlagInput,
+    *,
+    volatility_percentile_min: Any = DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN,
+    liquidation_percentile_min: Any = DEFAULT_STRESS_LIQUIDATION_PERCENTILE_MIN,
+    downside_return_min: Any = DEFAULT_STRESS_DOWNSIDE_RETURN_MIN,
+    funding_abs_zscore_min: Any = DEFAULT_STRESS_FUNDING_ABS_ZSCORE_MIN,
+    basis_abs_zscore_min: Any = DEFAULT_STRESS_BASIS_ABS_ZSCORE_MIN,
+    max_exposure_multiplier: Any = DEFAULT_STRESS_MAX_EXPOSURE_MULTIPLIER,
+    block_new_trades: bool = DEFAULT_STRESS_BLOCK_NEW_TRADES,
+    config_metadata: dict[str, str] | None = None,
+) -> StressFlagResult:
+    """Flag hard stress conditions that override ordinary scoring."""
+
+    thresholds = _stress_flag_thresholds(
+        volatility_percentile_min=volatility_percentile_min,
+        liquidation_percentile_min=liquidation_percentile_min,
+        downside_return_min=downside_return_min,
+        funding_abs_zscore_min=funding_abs_zscore_min,
+        basis_abs_zscore_min=basis_abs_zscore_min,
+        max_exposure_multiplier=max_exposure_multiplier,
+    )
+    if not isinstance(block_new_trades, bool):
+        raise ValueError("block_new_trades must be bool")
+
+    input_values = _stress_flag_input_values(inputs)
+    reason_codes = []
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("STRESS_INPUT_MISSING")
+    if (
+        input_values["volatility_percentile"] is not None
+        and input_values["volatility_percentile"]
+        >= thresholds["volatility_percentile_min"]
+    ):
+        reason_codes.append("STRESS_EXTREME_VOLATILITY")
+    if (
+        input_values["liquidation_percentile"] is not None
+        and input_values["liquidation_percentile"]
+        >= thresholds["liquidation_percentile_min"]
+    ):
+        reason_codes.append("STRESS_LIQUIDATION_CASCADE")
+    if (
+        input_values["downside_return"] is not None
+        and input_values["downside_return"] <= thresholds["downside_return_min"]
+    ):
+        reason_codes.append("STRESS_DISORDERLY_DOWNSIDE")
+    if (
+        input_values["funding_zscore"] is not None
+        and abs(input_values["funding_zscore"])
+        >= thresholds["funding_abs_zscore_min"]
+    ):
+        reason_codes.append("STRESS_ABNORMAL_FUNDING")
+    if (
+        input_values["basis_zscore"] is not None
+        and abs(input_values["basis_zscore"]) >= thresholds["basis_abs_zscore_min"]
+    ):
+        reason_codes.append("STRESS_ABNORMAL_BASIS")
+    if input_values["systemic_shock"] is True:
+        reason_codes.append("STRESS_SYSTEMIC_MARKET_SHOCK")
+
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    flagged = any(
+        reason_code != "STRESS_INPUT_MISSING" for reason_code in reason_codes
+    )
+    exposure_multiplier = (
+        thresholds["max_exposure_multiplier"] if flagged else Decimal("1")
+    )
+    return StressFlagResult(
+        feature_id=STRESS_FLAG_FEATURE_ID,
+        flagged=flagged,
+        effects=STRESS_FLAG_EFFECTS if flagged else (),
+        max_exposure_multiplier=exposure_multiplier,
+        block_new_trades=block_new_trades if flagged else False,
+        inputs=inputs,
+        thresholds={
+            key: value
+            for key, value in thresholds.items()
+            if key != "max_exposure_multiplier"
+        },
+        config_metadata=dict(config_metadata or {}),
+        complete="STRESS_INPUT_MISSING" not in reason_codes,
         reason_codes=reason_codes,
     )
 
@@ -524,6 +695,78 @@ def _validate_daily_bars(bars: Sequence[OhlcvBar]) -> None:
     for bar in bars:
         if bar.timeframe != "1d":
             raise ValueError("realized volatility requires canonical 1d bars")
+
+
+def _stress_flag_thresholds(
+    *,
+    volatility_percentile_min: Any,
+    liquidation_percentile_min: Any,
+    downside_return_min: Any,
+    funding_abs_zscore_min: Any,
+    basis_abs_zscore_min: Any,
+    max_exposure_multiplier: Any,
+) -> dict[str, Decimal]:
+    downside_threshold = Decimal(str(downside_return_min))
+    if downside_threshold >= 0:
+        raise ValueError("downside_return_min must be < 0")
+    exposure_multiplier = Decimal(str(max_exposure_multiplier))
+    if exposure_multiplier < 0 or exposure_multiplier > 1:
+        raise ValueError("max_exposure_multiplier must be between 0 and 1")
+    return {
+        "volatility_percentile_min": _score_decimal(
+            volatility_percentile_min,
+            "volatility_percentile_min",
+        ),
+        "liquidation_percentile_min": _score_decimal(
+            liquidation_percentile_min,
+            "liquidation_percentile_min",
+        ),
+        "downside_return_min": downside_threshold,
+        "funding_abs_zscore_min": _non_negative_decimal(
+            funding_abs_zscore_min,
+            "funding_abs_zscore_min",
+        ),
+        "basis_abs_zscore_min": _non_negative_decimal(
+            basis_abs_zscore_min,
+            "basis_abs_zscore_min",
+        ),
+        "max_exposure_multiplier": exposure_multiplier,
+    }
+
+
+def _stress_flag_input_values(
+    inputs: StressFlagInput,
+) -> dict[str, Decimal | bool | None]:
+    if inputs.systemic_shock is not None and not isinstance(inputs.systemic_shock, bool):
+        raise ValueError("systemic_shock must be bool")
+    return {
+        "volatility_percentile": (
+            _score_decimal(inputs.volatility_percentile, "volatility_percentile")
+            if inputs.volatility_percentile is not None
+            else None
+        ),
+        "liquidation_percentile": (
+            _score_decimal(inputs.liquidation_percentile, "liquidation_percentile")
+            if inputs.liquidation_percentile is not None
+            else None
+        ),
+        "downside_return": (
+            Decimal(str(inputs.downside_return))
+            if inputs.downside_return is not None
+            else None
+        ),
+        "funding_zscore": (
+            Decimal(str(inputs.funding_zscore))
+            if inputs.funding_zscore is not None
+            else None
+        ),
+        "basis_zscore": (
+            Decimal(str(inputs.basis_zscore))
+            if inputs.basis_zscore is not None
+            else None
+        ),
+        "systemic_shock": inputs.systemic_shock,
+    }
 
 
 def _orderliness_score_weights(weights: dict[str, Any] | None) -> dict[str, Decimal]:

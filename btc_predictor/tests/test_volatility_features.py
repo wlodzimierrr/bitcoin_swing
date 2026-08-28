@@ -11,6 +11,13 @@ from btc_predictor.features import (
     DEFAULT_ORDERLINESS_SCORE_WEIGHTS,
     DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX,
     DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS,
+    DEFAULT_STRESS_BASIS_ABS_ZSCORE_MIN,
+    DEFAULT_STRESS_BLOCK_NEW_TRADES,
+    DEFAULT_STRESS_DOWNSIDE_RETURN_MIN,
+    DEFAULT_STRESS_FUNDING_ABS_ZSCORE_MIN,
+    DEFAULT_STRESS_LIQUIDATION_PERCENTILE_MIN,
+    DEFAULT_STRESS_MAX_EXPOSURE_MULTIPLIER,
+    DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN,
     DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS,
     DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS,
     ORDERLINESS_SCORE_COMPONENT_IDS,
@@ -22,14 +29,19 @@ from btc_predictor.features import (
     RV_7_FEATURE_ID,
     RV_20_FEATURE_ID,
     RV_60_FEATURE_ID,
+    STRESS_FLAG_EFFECTS,
+    STRESS_FLAG_FEATURE_ID,
+    STRESS_FLAG_REASON_CODES,
     VOLATILITY_COMPRESSION_RATIO_FEATURE_ID,
     VOLATILITY_COMPRESSION_RATIO_REASON_CODES,
     VOLATILITY_PERCENTILE_FEATURE_ID,
     VOLATILITY_PERCENTILE_REASON_CODES,
     OrderlinessScoreInput,
     RealizedVolatilityResult,
+    StressFlagInput,
     VolatilityCompressionRatioInput,
     calculate_orderliness_score,
+    calculate_stress_flag,
     realized_volatility_from_daily_bars,
     rv_7_20_60_from_daily_bars,
     volatility_compression_ratio,
@@ -169,6 +181,31 @@ def test_orderliness_score_metadata_is_stable() -> None:
         "ORDERLINESS_DISORDERLY_DOWNSIDE",
         "ORDERLINESS_LIQUIDATION_CASCADE",
         "ORDERLINESS_VOLATILITY_SPIKE",
+    )
+
+
+def test_stress_flag_metadata_is_stable() -> None:
+    assert STRESS_FLAG_FEATURE_ID == "STRESS"
+    assert STRESS_FLAG_EFFECTS == (
+        "NO_ADD",
+        "REDUCE_MAX_EXPOSURE",
+        "OPTIONALLY_BLOCK_NEW_TRADES",
+    )
+    assert DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_STRESS_LIQUIDATION_PERCENTILE_MIN == Decimal("95")
+    assert DEFAULT_STRESS_DOWNSIDE_RETURN_MIN == Decimal("-0.10")
+    assert DEFAULT_STRESS_FUNDING_ABS_ZSCORE_MIN == Decimal("3")
+    assert DEFAULT_STRESS_BASIS_ABS_ZSCORE_MIN == Decimal("3")
+    assert DEFAULT_STRESS_MAX_EXPOSURE_MULTIPLIER == Decimal("0.50")
+    assert DEFAULT_STRESS_BLOCK_NEW_TRADES is False
+    assert STRESS_FLAG_REASON_CODES == (
+        "STRESS_INPUT_MISSING",
+        "STRESS_EXTREME_VOLATILITY",
+        "STRESS_LIQUIDATION_CASCADE",
+        "STRESS_DISORDERLY_DOWNSIDE",
+        "STRESS_ABNORMAL_FUNDING",
+        "STRESS_ABNORMAL_BASIS",
+        "STRESS_SYSTEMIC_MARKET_SHOCK",
     )
 
 
@@ -571,6 +608,197 @@ def test_orderliness_score_exposes_persistable_payload() -> None:
     }
 
 
+def test_stress_flag_is_clear_when_inputs_are_below_thresholds() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=Decimal("70"),
+            liquidation_percentile=Decimal("65"),
+            downside_return=Decimal("-0.03"),
+            funding_zscore=Decimal("0.8"),
+            basis_zscore=Decimal("-1.0"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is True
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.max_exposure_multiplier == Decimal("1")
+    assert result.block_new_trades is False
+    assert result.reason_codes == ()
+
+
+def test_stress_flag_triggers_for_volatility_liquidations_and_downside() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=Decimal("96"),
+            liquidation_percentile=Decimal("98"),
+            downside_return=Decimal("-0.12"),
+            funding_zscore=Decimal("0"),
+            basis_zscore=Decimal("0"),
+            systemic_shock=False,
+        ),
+        block_new_trades=True,
+    )
+
+    assert result.complete is True
+    assert result.flagged is True
+    assert result.effects == STRESS_FLAG_EFFECTS
+    assert result.max_exposure_multiplier == Decimal("0.50")
+    assert result.block_new_trades is True
+    assert result.reason_codes == (
+        "STRESS_EXTREME_VOLATILITY",
+        "STRESS_LIQUIDATION_CASCADE",
+        "STRESS_DISORDERLY_DOWNSIDE",
+    )
+
+
+def test_stress_flag_triggers_for_abnormal_funding_basis_and_systemic_shock() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=Decimal("50"),
+            liquidation_percentile=Decimal("50"),
+            downside_return=Decimal("0.01"),
+            funding_zscore=Decimal("-3.2"),
+            basis_zscore=Decimal("3.1"),
+            systemic_shock=True,
+        )
+    )
+
+    assert result.flagged is True
+    assert result.reason_codes == (
+        "STRESS_ABNORMAL_FUNDING",
+        "STRESS_ABNORMAL_BASIS",
+        "STRESS_SYSTEMIC_MARKET_SHOCK",
+    )
+
+
+def test_stress_flag_uses_custom_thresholds_and_config_metadata() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=Decimal("91"),
+            liquidation_percentile=Decimal("75"),
+            downside_return=Decimal("-0.07"),
+            funding_zscore=Decimal("2.1"),
+            basis_zscore=Decimal("1.0"),
+            systemic_shock=False,
+        ),
+        volatility_percentile_min=Decimal("90"),
+        liquidation_percentile_min=Decimal("80"),
+        downside_return_min=Decimal("-0.06"),
+        funding_abs_zscore_min=Decimal("2"),
+        basis_abs_zscore_min=Decimal("2"),
+        max_exposure_multiplier=Decimal("0.25"),
+        config_metadata={"parameter_set_id": "default_phase1"},
+    )
+
+    assert result.flagged is True
+    assert result.max_exposure_multiplier == Decimal("0.25")
+    assert result.thresholds == {
+        "volatility_percentile_min": Decimal("90"),
+        "liquidation_percentile_min": Decimal("80"),
+        "downside_return_min": Decimal("-0.06"),
+        "funding_abs_zscore_min": Decimal("2"),
+        "basis_abs_zscore_min": Decimal("2"),
+    }
+    assert result.config_metadata == {"parameter_set_id": "default_phase1"}
+    assert result.reason_codes == (
+        "STRESS_EXTREME_VOLATILITY",
+        "STRESS_DISORDERLY_DOWNSIDE",
+        "STRESS_ABNORMAL_FUNDING",
+    )
+
+
+def test_stress_flag_reports_missing_inputs_without_treating_them_as_normal() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=None,
+            liquidation_percentile=Decimal("50"),
+            downside_return=Decimal("-0.03"),
+            funding_zscore=Decimal("0"),
+            basis_zscore=Decimal("0"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is False
+    assert result.flagged is False
+    assert result.effects == ()
+    assert result.max_exposure_multiplier == Decimal("1")
+    assert result.reason_codes == ("STRESS_INPUT_MISSING",)
+
+
+def test_stress_flag_can_report_present_trigger_with_missing_secondary_input() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=Decimal("99"),
+            liquidation_percentile=None,
+            downside_return=Decimal("-0.03"),
+            funding_zscore=Decimal("0"),
+            basis_zscore=Decimal("0"),
+            systemic_shock=False,
+        )
+    )
+
+    assert result.complete is False
+    assert result.flagged is True
+    assert result.effects == STRESS_FLAG_EFFECTS
+    assert result.reason_codes == (
+        "STRESS_INPUT_MISSING",
+        "STRESS_EXTREME_VOLATILITY",
+    )
+
+
+def test_stress_flag_exposes_persistable_payload() -> None:
+    result = calculate_stress_flag(
+        StressFlagInput(
+            volatility_percentile=Decimal("96"),
+            liquidation_percentile=Decimal("98"),
+            downside_return=Decimal("-0.12"),
+            funding_zscore=Decimal("-3.5"),
+            basis_zscore=Decimal("0"),
+            systemic_shock=False,
+        ),
+        block_new_trades=True,
+        config_metadata={"config_version": "strategy_config_v1"},
+    )
+
+    assert result.as_record() == {
+        "feature_id": "STRESS",
+        "flagged": True,
+        "effects": [
+            "NO_ADD",
+            "REDUCE_MAX_EXPOSURE",
+            "OPTIONALLY_BLOCK_NEW_TRADES",
+        ],
+        "max_exposure_multiplier": "0.50",
+        "block_new_trades": True,
+        "inputs": {
+            "volatility_percentile": "96",
+            "liquidation_percentile": "98",
+            "downside_return": "-0.12",
+            "funding_zscore": "-3.5",
+            "basis_zscore": "0",
+            "systemic_shock": False,
+        },
+        "thresholds": {
+            "volatility_percentile_min": "95",
+            "liquidation_percentile_min": "95",
+            "downside_return_min": "-0.10",
+            "funding_abs_zscore_min": "3",
+            "basis_abs_zscore_min": "3",
+        },
+        "config_metadata": {"config_version": "strategy_config_v1"},
+        "complete": True,
+        "reason_codes": [
+            "STRESS_EXTREME_VOLATILITY",
+            "STRESS_LIQUIDATION_CASCADE",
+            "STRESS_DISORDERLY_DOWNSIDE",
+            "STRESS_ABNORMAL_FUNDING",
+        ],
+    }
+
+
 def test_realized_volatility_filters_unavailable_future_bars() -> None:
     rows = daily_bars(("100", "110", "99", "108.9"))
     future_revision = daily_bar(
@@ -800,3 +1028,65 @@ def test_orderliness_score_rejects_invalid_inputs() -> None:
 
     with pytest.raises(ValueError, match="downside_return_min"):
         calculate_orderliness_score(valid_input, downside_return_min=Decimal("0"))
+
+
+def test_stress_flag_rejects_invalid_inputs() -> None:
+    valid_input = StressFlagInput(
+        volatility_percentile=Decimal("50"),
+        liquidation_percentile=Decimal("50"),
+        downside_return=Decimal("-0.03"),
+        funding_zscore=Decimal("0"),
+        basis_zscore=Decimal("0"),
+        systemic_shock=False,
+    )
+
+    with pytest.raises(ValueError, match="volatility_percentile"):
+        calculate_stress_flag(
+            StressFlagInput(
+                volatility_percentile=Decimal("101"),
+                liquidation_percentile=Decimal("50"),
+                downside_return=Decimal("-0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                systemic_shock=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="liquidation_percentile"):
+        calculate_stress_flag(
+            StressFlagInput(
+                volatility_percentile=Decimal("50"),
+                liquidation_percentile=Decimal("-1"),
+                downside_return=Decimal("-0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                systemic_shock=False,
+            )
+        )
+
+    with pytest.raises(ValueError, match="downside_return_min"):
+        calculate_stress_flag(valid_input, downside_return_min=Decimal("0"))
+
+    with pytest.raises(ValueError, match="funding_abs_zscore_min"):
+        calculate_stress_flag(valid_input, funding_abs_zscore_min=Decimal("-1"))
+
+    with pytest.raises(ValueError, match="basis_abs_zscore_min"):
+        calculate_stress_flag(valid_input, basis_abs_zscore_min=Decimal("-1"))
+
+    with pytest.raises(ValueError, match="max_exposure_multiplier"):
+        calculate_stress_flag(valid_input, max_exposure_multiplier=Decimal("1.1"))
+
+    with pytest.raises(ValueError, match="block_new_trades"):
+        calculate_stress_flag(valid_input, block_new_trades="yes")  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="systemic_shock"):
+        calculate_stress_flag(
+            StressFlagInput(
+                volatility_percentile=Decimal("50"),
+                liquidation_percentile=Decimal("50"),
+                downside_return=Decimal("-0.03"),
+                funding_zscore=Decimal("0"),
+                basis_zscore=Decimal("0"),
+                systemic_shock="yes",  # type: ignore[arg-type]
+            )
+        )

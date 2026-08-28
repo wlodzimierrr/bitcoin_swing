@@ -404,6 +404,60 @@ class PositioningFlagConfig:
 
 
 @dataclass(frozen=True)
+class StressFlagConfig:
+    volatility_percentile_min: float
+    liquidation_percentile_min: float
+    downside_return_min: float
+    funding_abs_zscore_min: float
+    basis_abs_zscore_min: float
+    max_exposure_multiplier: float
+    block_new_trades: bool
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        downside_return_min = _required_float(data, "downside_return_min")
+        if downside_return_min >= 0:
+            raise StrategyConfigError("downside_return_min must be negative")
+        return cls(
+            volatility_percentile_min=_required_score(
+                data,
+                "volatility_percentile_min",
+            ),
+            liquidation_percentile_min=_required_score(
+                data,
+                "liquidation_percentile_min",
+            ),
+            downside_return_min=downside_return_min,
+            funding_abs_zscore_min=_required_non_negative_float(
+                data,
+                "funding_abs_zscore_min",
+            ),
+            basis_abs_zscore_min=_required_non_negative_float(
+                data,
+                "basis_abs_zscore_min",
+            ),
+            max_exposure_multiplier=_required_fraction(
+                data,
+                "max_exposure_multiplier",
+            ),
+            block_new_trades=_required_bool(data, "block_new_trades"),
+        )
+
+
+@dataclass(frozen=True)
+class VolatilityFlagConfig:
+    stress: StressFlagConfig
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            stress=StressFlagConfig.from_mapping(
+                _required_mapping(data, "stress"),
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class ScoringWeights:
     entry_conviction: dict[str, float]
     hold_score: dict[str, float]
@@ -477,6 +531,7 @@ class StrategyConfig:
     price_levels: PriceLevelParameters
     scoring_weights: ScoringWeights
     positioning_flags: PositioningFlagConfig
+    volatility_flags: VolatilityFlagConfig
     backtest: BacktestAssumptions
 
     @classmethod
@@ -510,6 +565,9 @@ class StrategyConfig:
             ),
             positioning_flags=PositioningFlagConfig.from_mapping(
                 _required_mapping(data, "positioning_flags"),
+            ),
+            volatility_flags=VolatilityFlagConfig.from_mapping(
+                _required_mapping(data, "volatility_flags"),
             ),
             backtest=BacktestAssumptions.from_mapping(_required_mapping(data, "backtest")),
         )
@@ -637,6 +695,13 @@ def _required_positive_float(data: dict[str, Any], key: str) -> float:
     if value <= 0:
         raise StrategyConfigError(f"{key} must be positive")
     return value
+
+
+def _required_float(data: dict[str, Any], key: str) -> float:
+    value = data.get(key)
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        raise StrategyConfigError(f"{key} must be numeric")
+    return float(value)
 
 
 def _required_score(data: dict[str, Any], key: str) -> float:
