@@ -29,6 +29,14 @@ POSITIONING_WEIGHT_KEYS = (
 )
 ANCHORED_VWAP_PRICE_SOURCES = ("hlc3", "close")
 VOLUME_PROFILE_PRICE_SOURCES = ("hlc3", "close")
+LEVEL_STRENGTH_WEIGHT_KEYS = (
+    "timeframe",
+    "touch_count",
+    "reaction_magnitude",
+    "volume",
+    "confluence",
+)
+LEVEL_STRENGTH_TIMEFRAME_SCORE_KEYS = ("1h", "1d", "1w", "1mo", "unknown")
 
 
 class StrategyConfigError(ValueError):
@@ -346,6 +354,10 @@ class PriceLevelParameters:
     volume_profile_value_area_fraction: float
     volume_profile_hvn_volume_fraction: float
     volume_profile_min_bars: int
+    level_strength_weights: dict[str, float]
+    level_strength_timeframe_scores: dict[str, float]
+    level_strength_touch_count_full: int
+    level_strength_reaction_full_fraction: float
     rr_minimum: float
     rr_preferred_min: float
     rr_preferred_max: float
@@ -391,6 +403,24 @@ class PriceLevelParameters:
             volume_profile_min_bars=_required_positive_int(
                 data,
                 "volume_profile_min_bars",
+            ),
+            level_strength_weights=_required_weight_mapping(
+                data,
+                "level_strength_weights",
+                expected_keys=LEVEL_STRENGTH_WEIGHT_KEYS,
+            ),
+            level_strength_timeframe_scores=_required_score_mapping(
+                data,
+                "level_strength_timeframe_scores",
+                expected_keys=LEVEL_STRENGTH_TIMEFRAME_SCORE_KEYS,
+            ),
+            level_strength_touch_count_full=_required_positive_int(
+                data,
+                "level_strength_touch_count_full",
+            ),
+            level_strength_reaction_full_fraction=_required_positive_fraction(
+                data,
+                "level_strength_reaction_full_fraction",
             ),
             rr_minimum=_required_positive_float(data, "rr_minimum"),
             rr_preferred_min=_required_positive_float(data, "rr_preferred_min"),
@@ -725,6 +755,24 @@ def _required_weight_mapping(
         raise StrategyConfigError(f"{key} weights must sum to 1.0")
 
     return weights
+
+
+def _required_score_mapping(
+    data: dict[str, Any],
+    key: str,
+    *,
+    expected_keys: tuple[str, ...] | None = None,
+) -> dict[str, float]:
+    mapping = _required_mapping(data, key)
+    if expected_keys is not None:
+        missing = set(expected_keys) - set(mapping)
+        extra = set(mapping) - set(expected_keys)
+        if missing or extra:
+            raise StrategyConfigError(
+                f"{key} scores must exactly match {expected_keys}; "
+                f"missing={sorted(missing)}, extra={sorted(extra)}"
+            )
+    return {score_name: _required_score(mapping, score_name) for score_name in mapping}
 
 
 def _required_positive_int(data: dict[str, Any], key: str) -> int:

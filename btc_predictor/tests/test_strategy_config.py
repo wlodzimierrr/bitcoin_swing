@@ -33,6 +33,22 @@ def test_loads_default_strategy_config() -> None:
     assert config.price_levels.volume_profile_value_area_fraction == 0.70
     assert config.price_levels.volume_profile_hvn_volume_fraction == 0.70
     assert config.price_levels.volume_profile_min_bars == 20
+    assert config.price_levels.level_strength_touch_count_full == 4
+    assert config.price_levels.level_strength_reaction_full_fraction == 0.10
+    assert config.price_levels.level_strength_weights == {
+        "timeframe": 0.20,
+        "touch_count": 0.20,
+        "reaction_magnitude": 0.20,
+        "volume": 0.20,
+        "confluence": 0.20,
+    }
+    assert config.price_levels.level_strength_timeframe_scores == {
+        "1h": 40,
+        "1d": 65,
+        "1w": 85,
+        "1mo": 100,
+        "unknown": 50,
+    }
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -195,10 +211,26 @@ volume_profile_bin_size_fraction = 0.01
 volume_profile_value_area_fraction = 0.70
 volume_profile_hvn_volume_fraction = 0.70
 volume_profile_min_bars = 20
+level_strength_touch_count_full = 4
+level_strength_reaction_full_fraction = 0.10
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
 reward_reference_order = ["prior_local_swing_high"]
+
+[price_levels.level_strength_weights]
+timeframe = 0.20
+touch_count = 0.20
+reaction_magnitude = 0.20
+volume = 0.20
+confluence = 0.20
+
+[price_levels.level_strength_timeframe_scores]
+"1h" = 40
+"1d" = 65
+"1w" = 85
+"1mo" = 100
+unknown = 50
 
 [scoring_weights.entry_conviction]
 trend = 1.0
@@ -321,6 +353,34 @@ def test_invalid_volume_profile_price_source_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="volume_profile_price_source"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_level_strength_weight_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_level_strength_weights.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "confluence = 0.20",
+            "confluence = 0.10",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="level_strength_weights"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_level_strength_timeframe_scores_fail_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_level_strength_timeframes.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            '"1mo" = 100',
+            '"1mo" = 101',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="1mo"):
         load_strategy_config(config_path)
 
 

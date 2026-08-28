@@ -1267,7 +1267,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   - reaction magnitude
   - volume
   - confluence
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1276,6 +1276,21 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.levels.strength` with `LevelStrengthInput`,
+    `LevelStrengthResult`, `calculate_level_strength`, and
+    `calculate_level_strength_from_cluster`.
+  - Score combines timeframe, touch count, reaction magnitude, volume
+    percentile, and confluence using versioned
+    `price_levels.level_strength_weights`.
+  - Timeframe score table, full-touch count, and full-reaction fraction are
+    loaded from versioned `price_levels` config and persisted with each result.
+  - Cluster scoring reads member timeframes and confluence from cluster records
+    and defaults touch count to cluster member count when no explicit touch
+    metric is supplied.
+  - Missing reaction/volume/confluence/timeframe inputs are reported explicitly
+    instead of silently producing fallback scores; capped touch/reaction
+    components emit reason codes.
 
 #### BTC-097 Implement Structure Score
 - **Description:**

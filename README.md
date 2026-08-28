@@ -173,6 +173,9 @@ thresholds, minimum bars, and price source controlled by versioned
 into support/resistance zones using the configured cluster-distance fraction,
 persists member links, and assigns a confluence score from distinct source
 families, timeframes, and repeated touches without counting exact duplicates.
+`calculate_level_strength` scores clustered levels from timeframe, touch count,
+reaction magnitude, volume percentile, and confluence inputs, using versioned
+weights and normalization thresholds from `price_levels`.
 
 Flow feature helpers include `five_day_etf_flow` and `twenty_day_etf_flow`,
 which implement `ETF_FLOW_5D`, `ETF_NORM_5D`, `ETF_FLOW_20D`, and

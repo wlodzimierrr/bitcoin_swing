@@ -96,6 +96,8 @@ volume_profile_bin_size_fraction = 0.01
 volume_profile_value_area_fraction = 0.70
 volume_profile_hvn_volume_fraction = 0.70
 volume_profile_min_bars = 20
+level_strength_touch_count_full = 4
+level_strength_reaction_full_fraction = 0.10
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
@@ -105,6 +107,20 @@ reward_reference_order = [
     "prior_range_high",
     "conservative_setup_measured_move",
 ]
+
+[price_levels.level_strength_weights]
+timeframe = 0.20
+touch_count = 0.20
+reaction_magnitude = 0.20
+volume = 0.20
+confluence = 0.20
+
+[price_levels.level_strength_timeframe_scores]
+"1h" = 40
+"1d" = 65
+"1w" = 85
+"1mo" = 100
+unknown = 50
 
 [scoring_weights.entry_conviction]
 trend = 0.20

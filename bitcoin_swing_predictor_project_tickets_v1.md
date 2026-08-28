@@ -1387,6 +1387,7 @@ and reason codes.
 
 ## BTC-096 — Implement level-strength score
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
 
@@ -1397,6 +1398,21 @@ Inputs:
 - reaction magnitude
 - volume
 - confluence
+
+Implemented `calculate_level_strength` and
+`calculate_level_strength_from_cluster` in `btc_predictor.levels.strength`.
+The score combines timeframe quality, touch count, reaction magnitude,
+volume percentile, and clustering confluence using versioned
+`price_levels.level_strength_weights`. Timeframe scores, full-touch count, and
+full-reaction fraction are loaded from versioned config and persisted with each
+result.
+
+Cluster-based scoring reads member timeframes and confluence from cluster
+records, defaults touch count to cluster member count when an explicit touch
+metric is not supplied, and requires reaction magnitude plus volume percentile
+instead of silently filling them. Results persist inputs, component scores,
+weights, timeframe score table, normalization thresholds, config metadata,
+completion state, interpretation, and reason codes.
 
 ---
 
