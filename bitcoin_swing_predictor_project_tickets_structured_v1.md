@@ -969,7 +969,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   \[
   RV_7/RV_{60}
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -978,6 +978,14 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `VOL_COMPRESSION_RATIO = RV_7 / RV_60`.
+  - Consumes explicit RV7/RV60 values or persisted realized-volatility results.
+  - Persists numerator and denominator feature IDs, inputs, ratio, completion
+    state, and stable reason codes through
+    `VolatilityCompressionRatioResult.as_record()`.
+  - Missing RV inputs and zero RV60 denominator are reported explicitly instead
+    of silently zero-filling.
 
 #### BTC-082 Implement volatility percentile
 - **Description:**

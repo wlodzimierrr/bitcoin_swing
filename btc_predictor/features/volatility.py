@@ -14,12 +14,17 @@ from btc_predictor.data import OhlcvBar, require_utc_datetime
 RV_7_FEATURE_ID = "RV_7"
 RV_20_FEATURE_ID = "RV_20"
 RV_60_FEATURE_ID = "RV_60"
+VOLATILITY_COMPRESSION_RATIO_FEATURE_ID = "VOL_COMPRESSION_RATIO"
 REALIZED_VOLATILITY_WINDOWS = (7, 20, 60)
 REALIZED_VOLATILITY_FEATURE_IDS = {
     7: RV_7_FEATURE_ID,
     20: RV_20_FEATURE_ID,
     60: RV_60_FEATURE_ID,
 }
+VOLATILITY_COMPRESSION_RATIO_REASON_CODES = (
+    "VOL_COMPRESSION_INPUT_MISSING",
+    "VOL_COMPRESSION_ZERO_DENOMINATOR",
+)
 REALIZED_VOLATILITY_REASON_CODES = (
     "REALIZED_VOLATILITY_INPUT_MISSING",
     "REALIZED_VOLATILITY_INSUFFICIENT_HISTORY",
@@ -56,6 +61,44 @@ class RealizedVolatilityResult:
             ),
             "return_count": self.return_count,
             "source_bar_count": self.source_bar_count,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class VolatilityCompressionRatioInput:
+    rv_7: Decimal | None
+    rv_60: Decimal | None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "rv_7": str(self.rv_7) if self.rv_7 is not None else None,
+            "rv_60": str(self.rv_60) if self.rv_60 is not None else None,
+        }
+
+
+@dataclass(frozen=True)
+class VolatilityCompressionRatioResult:
+    feature_id: str
+    numerator_feature_id: str
+    denominator_feature_id: str
+    compression_ratio: Decimal | None
+    inputs: VolatilityCompressionRatioInput
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "numerator_feature_id": self.numerator_feature_id,
+            "denominator_feature_id": self.denominator_feature_id,
+            "compression_ratio": (
+                str(self.compression_ratio)
+                if self.compression_ratio is not None
+                else None
+            ),
+            "inputs": self.inputs.as_record(),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
         }
@@ -113,6 +156,57 @@ def realized_volatility_from_daily_bars(
     )
 
 
+def volatility_compression_ratio(
+    inputs: VolatilityCompressionRatioInput,
+) -> VolatilityCompressionRatioResult:
+    """Calculate volatility compression as RV7 / RV60."""
+
+    input_values = _compression_input_values(inputs)
+    reason_codes = []
+    if any(value is None for value in input_values.values()):
+        reason_codes.append("VOL_COMPRESSION_INPUT_MISSING")
+    if input_values["rv_60"] == 0:
+        reason_codes.append("VOL_COMPRESSION_ZERO_DENOMINATOR")
+
+    compression_ratio = (
+        input_values["rv_7"] / input_values["rv_60"]
+        if not reason_codes
+        else None
+    )
+    reason_codes = _dedupe_reason_codes(reason_codes)
+    return VolatilityCompressionRatioResult(
+        feature_id=VOLATILITY_COMPRESSION_RATIO_FEATURE_ID,
+        numerator_feature_id=RV_7_FEATURE_ID,
+        denominator_feature_id=RV_60_FEATURE_ID,
+        compression_ratio=compression_ratio,
+        inputs=inputs,
+        complete=compression_ratio is not None,
+        reason_codes=reason_codes,
+    )
+
+
+def volatility_compression_ratio_from_results(
+    results: Sequence[RealizedVolatilityResult],
+) -> VolatilityCompressionRatioResult:
+    """Calculate compression from persisted RV feature results."""
+
+    results_by_feature_id = {result.feature_id: result for result in results}
+    return volatility_compression_ratio(
+        VolatilityCompressionRatioInput(
+            rv_7=(
+                results_by_feature_id[RV_7_FEATURE_ID].realized_volatility
+                if RV_7_FEATURE_ID in results_by_feature_id
+                else None
+            ),
+            rv_60=(
+                results_by_feature_id[RV_60_FEATURE_ID].realized_volatility
+                if RV_60_FEATURE_ID in results_by_feature_id
+                else None
+            ),
+        )
+    )
+
+
 def rv_7_20_60_from_daily_bars(
     bars: Sequence[OhlcvBar],
     *,
@@ -149,6 +243,19 @@ def _validate_daily_bars(bars: Sequence[OhlcvBar]) -> None:
             raise ValueError("realized volatility requires canonical 1d bars")
 
 
+def _compression_input_values(
+    inputs: VolatilityCompressionRatioInput,
+) -> dict[str, Decimal | None]:
+    return {
+        "rv_7": _non_negative_decimal(inputs.rv_7, "rv_7")
+        if inputs.rv_7 is not None
+        else None,
+        "rv_60": _non_negative_decimal(inputs.rv_60, "rv_60")
+        if inputs.rv_60 is not None
+        else None,
+    }
+
+
 def _available_daily_bars(
     bars: Sequence[OhlcvBar],
     *,
@@ -183,6 +290,13 @@ def _annualized_volatility(
 
 def _realized_volatility_feature_id(window_days: int) -> str:
     return REALIZED_VOLATILITY_FEATURE_IDS.get(window_days, f"RV_{window_days}")
+
+
+def _non_negative_decimal(value: Any, name: str) -> Decimal:
+    decimal_value = Decimal(str(value))
+    if decimal_value < 0:
+        raise ValueError(f"{name} must be >= 0")
+    return decimal_value
 
 
 def _dedupe_reason_codes(reason_codes: Sequence[str]) -> tuple[str, ...]:

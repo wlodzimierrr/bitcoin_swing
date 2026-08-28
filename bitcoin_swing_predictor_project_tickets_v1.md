@@ -1162,12 +1162,18 @@ reason codes.
 
 ## BTC-081 — Implement compression ratio
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 1
 
 \[
 RV_7/RV_{60}
 \]
+
+Implemented as `VOL_COMPRESSION_RATIO = RV_7 / RV_60`, consuming explicit RV7
+and RV60 values or persisted RV feature results. The result persists numerator
+and denominator feature IDs, input values, completion state, and stable reason
+codes for missing inputs or zero RV60 denominator.
 
 ---
 

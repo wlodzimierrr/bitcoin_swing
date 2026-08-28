@@ -157,9 +157,15 @@ from btc_predictor.features.volatility import (
     RV_7_FEATURE_ID,
     RV_20_FEATURE_ID,
     RV_60_FEATURE_ID,
+    VOLATILITY_COMPRESSION_RATIO_FEATURE_ID,
+    VOLATILITY_COMPRESSION_RATIO_REASON_CODES,
     RealizedVolatilityResult,
+    VolatilityCompressionRatioInput,
+    VolatilityCompressionRatioResult,
     realized_volatility_from_daily_bars,
     rv_7_20_60_from_daily_bars,
+    volatility_compression_ratio,
+    volatility_compression_ratio_from_results,
 )
 
 __all__ = [
@@ -237,6 +243,8 @@ __all__ = [
     "RV_7_FEATURE_ID",
     "RV_20_FEATURE_ID",
     "RV_60_FEATURE_ID",
+    "VOLATILITY_COMPRESSION_RATIO_FEATURE_ID",
+    "VOLATILITY_COMPRESSION_RATIO_REASON_CODES",
     "TWENTY_DAY_ETF_FLOW_FEATURE_ID",
     "TWENTY_DAY_ETF_FLOW_WINDOW_DAYS",
     "TWENTY_DAY_ETF_NORM_FEATURE_ID",
@@ -269,6 +277,8 @@ __all__ = [
     "PositioningScoreInput",
     "PositioningScoreResult",
     "RealizedVolatilityResult",
+    "VolatilityCompressionRatioInput",
+    "VolatilityCompressionRatioResult",
     "SpotPerpCvdSpreadResult",
     "SpotPerpParticipationResult",
     "average_true_range",
@@ -311,5 +321,7 @@ __all__ = [
     "twelve_week_momentum_from_daily_bars",
     "twenty_week_ma_distance",
     "twenty_week_ma_distance_from_weekly_bars",
+    "volatility_compression_ratio",
+    "volatility_compression_ratio_from_results",
     "true_ranges",
 ]

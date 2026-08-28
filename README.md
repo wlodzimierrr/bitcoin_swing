@@ -122,7 +122,10 @@ percentiles, and historical normalization compare the current observation only
 against prior history. Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
-daily bars.
+daily bars. `volatility_compression_ratio` implements
+`VOL_COMPRESSION_RATIO = RV_7 / RV_60` from persisted realized-volatility
+outputs and emits stable reason codes for missing inputs or a zero RV60
+denominator.
 
 The trend feature helpers include `four_week_momentum`, which implements
 `MOMENTUM_4W` as `P_t / P_t-28 - 1` for canonical daily closes.

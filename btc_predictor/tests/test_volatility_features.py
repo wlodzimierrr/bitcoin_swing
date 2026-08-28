@@ -12,8 +12,13 @@ from btc_predictor.features import (
     RV_7_FEATURE_ID,
     RV_20_FEATURE_ID,
     RV_60_FEATURE_ID,
+    VOLATILITY_COMPRESSION_RATIO_FEATURE_ID,
+    VOLATILITY_COMPRESSION_RATIO_REASON_CODES,
+    VolatilityCompressionRatioInput,
     realized_volatility_from_daily_bars,
     rv_7_20_60_from_daily_bars,
+    volatility_compression_ratio,
+    volatility_compression_ratio_from_results,
 )
 
 
@@ -82,6 +87,14 @@ def test_realized_volatility_metadata_is_stable() -> None:
     )
 
 
+def test_volatility_compression_ratio_metadata_is_stable() -> None:
+    assert VOLATILITY_COMPRESSION_RATIO_FEATURE_ID == "VOL_COMPRESSION_RATIO"
+    assert VOLATILITY_COMPRESSION_RATIO_REASON_CODES == (
+        "VOL_COMPRESSION_INPUT_MISSING",
+        "VOL_COMPRESSION_ZERO_DENOMINATOR",
+    )
+
+
 def test_realized_volatility_uses_close_to_close_returns() -> None:
     rows = daily_bars(("100", "110", "99", "108.9"))
 
@@ -117,6 +130,83 @@ def test_rv_7_20_60_from_daily_bars_returns_default_windows() -> None:
     assert tuple(result.return_count for result in results) == (7, 20, 60)
     assert all(result.complete for result in results)
     assert all(result.realized_volatility is not None for result in results)
+
+
+def test_volatility_compression_ratio_uses_rv7_over_rv60() -> None:
+    result = volatility_compression_ratio(
+        VolatilityCompressionRatioInput(
+            rv_7=Decimal("0.25"),
+            rv_60=Decimal("0.50"),
+        )
+    )
+
+    assert result.complete is True
+    assert result.feature_id == "VOL_COMPRESSION_RATIO"
+    assert result.numerator_feature_id == "RV_7"
+    assert result.denominator_feature_id == "RV_60"
+    assert result.compression_ratio == Decimal("0.5")
+    assert result.inputs.as_record() == {"rv_7": "0.25", "rv_60": "0.50"}
+    assert result.reason_codes == ()
+
+
+def test_volatility_compression_ratio_from_results_uses_persisted_rvs() -> None:
+    results = rv_7_20_60_from_daily_bars(
+        compounding_daily_bars(count=62),
+        as_of=datetime(2026, 3, 3, 1, tzinfo=UTC),
+    )
+
+    result = volatility_compression_ratio_from_results(results)
+
+    assert result.complete is True
+    assert result.compression_ratio is not None
+    assert result.inputs.rv_7 == results[0].realized_volatility
+    assert result.inputs.rv_60 == results[2].realized_volatility
+
+
+def test_volatility_compression_ratio_reports_missing_inputs_without_zero_fill() -> None:
+    result = volatility_compression_ratio(
+        VolatilityCompressionRatioInput(
+            rv_7=None,
+            rv_60=Decimal("0.50"),
+        )
+    )
+
+    assert result.complete is False
+    assert result.compression_ratio is None
+    assert result.reason_codes == ("VOL_COMPRESSION_INPUT_MISSING",)
+
+
+def test_volatility_compression_ratio_reports_zero_denominator() -> None:
+    result = volatility_compression_ratio(
+        VolatilityCompressionRatioInput(
+            rv_7=Decimal("0.25"),
+            rv_60=Decimal("0"),
+        )
+    )
+
+    assert result.complete is False
+    assert result.compression_ratio is None
+    assert result.reason_codes == ("VOL_COMPRESSION_ZERO_DENOMINATOR",)
+
+
+def test_volatility_compression_ratio_exposes_persistable_payload() -> None:
+    result = volatility_compression_ratio(
+        VolatilityCompressionRatioInput(
+            rv_7=Decimal("0.25"),
+            rv_60=Decimal("0.50"),
+        )
+    )
+
+    record = result.as_record()
+    assert record == {
+        "feature_id": "VOL_COMPRESSION_RATIO",
+        "numerator_feature_id": "RV_7",
+        "denominator_feature_id": "RV_60",
+        "compression_ratio": "0.5",
+        "inputs": {"rv_7": "0.25", "rv_60": "0.50"},
+        "complete": True,
+        "reason_codes": [],
+    }
 
 
 def test_realized_volatility_filters_unavailable_future_bars() -> None:
@@ -228,4 +318,22 @@ def test_realized_volatility_rejects_invalid_inputs() -> None:
             (daily_bar(datetime(2026, 1, 1, tzinfo=UTC), close="100", timeframe="1h"),),
             as_of=datetime(2026, 1, 4, tzinfo=UTC),
             window_days=3,
+        )
+
+
+def test_volatility_compression_ratio_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="rv_7"):
+        volatility_compression_ratio(
+            VolatilityCompressionRatioInput(
+                rv_7=Decimal("-0.01"),
+                rv_60=Decimal("0.50"),
+            )
+        )
+
+    with pytest.raises(ValueError, match="rv_60"):
+        volatility_compression_ratio(
+            VolatilityCompressionRatioInput(
+                rv_7=Decimal("0.25"),
+                rv_60=Decimal("-0.50"),
+            )
         )
