@@ -153,6 +153,11 @@ weights and converts the raw composite to a 0-100 score using the standard
 normal CDF. Its result includes inputs, weights, contributions, interpretation,
 and a stable reason code for deterministic recomputation.
 
+Price-level helpers include `detect_weekly_swing_levels`, which confirms
+weekly swing highs and lows only after the configured right-side weekly bars
+have closed and been ingested. Each `WeeklySwingLevel` persists the original
+level timestamp separately from the later detection timestamp.
+
 Flow feature helpers include `five_day_etf_flow` and `twenty_day_etf_flow`,
 which implement `ETF_FLOW_5D`, `ETF_NORM_5D`, `ETF_FLOW_20D`, and
 `ETF_NORM_20D` from the latest ETF flow revisions available at signal time.

@@ -1095,7 +1095,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-090 Detect weekly swing highs/lows
 - **Description:**
   Complete the ticket scope for detect weekly swing highs/lows.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Point-in-time detection
   - No use of future bars before level confirmation
@@ -1104,6 +1104,17 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `detect_weekly_swing_levels` for confirmed canonical `1w` swing highs
+    and lows.
+  - Uses configurable left/right weekly confirmation windows with defaults from
+    the phase-1 `swing_window_weeks` convention.
+  - Filters source bars to observations closed and ingested by `as_of`, and does
+    not emit a level before the right-side confirmation bar is available.
+  - Persists `level_timestamp` separately from `detected_at` through
+    `WeeklySwingLevel.as_record()`.
+  - Records swing type, price, exchange, symbol, timeframe, provider, window
+    parameters, and source count for deterministic replay.
 
 #### BTC-091 Detect monthly swing highs/lows
 - **Description:**

@@ -1249,6 +1249,7 @@ startup.
 
 ## BTC-090 — Detect weekly swing highs/lows
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 5
 
@@ -1257,6 +1258,13 @@ startup.
 - Point-in-time detection
 - No use of future bars before level confirmation
 - Detection timestamp persisted separately from level timestamp
+
+Implemented `detect_weekly_swing_levels` for confirmed canonical `1w` swing
+highs/lows. Detection uses configurable left/right weekly confirmation windows,
+filters to bars closed and ingested by `as_of`, and emits no level until the
+right-side confirmation bar is available. `WeeklySwingLevel.as_record()`
+persists `level_timestamp` separately from `detected_at`, along with price,
+series identity, swing type, window parameters, and source count.
 
 ---
 
