@@ -1418,6 +1418,7 @@ completion state, interpretation, and reason codes.
 
 ## BTC-097 — Implement Structure Score
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
 
@@ -1441,6 +1442,26 @@ Phase 1 scope:
 
 AVWAP and volume-profile evidence are optional P1 enhancements and must not be
 required for the Phase 1 score.
+
+Implemented `calculate_structure_score` and
+`calculate_structure_score_from_clusters` in `btc_predictor.features.structure`.
+The direct scorer applies the Phase 1 formula:
+`0.45 LevelStrength + 0.25 EntryLocation + 0.20 RRQuality + 0.10 Confluence`
+using versioned `scoring_weights.structure_score`.
+
+The cluster helper selects the nearest support cluster below the entry and the
+nearest resistance cluster above the entry as the credible structural target.
+Entry location is scored from distance to support using versioned
+`price_levels` distance thresholds. R/R quality uses configured
+`rr_minimum`, `rr_preferred_min`, and `rr_preferred_max`. AVWAP and
+volume-profile records can be present in upstream clusters but are not required
+for the Phase 1 score.
+
+Results persist component inputs, weights, contributions, selected
+support/target clusters, entry/stop prices, reward/risk, normalization
+parameters, config metadata, interpretation, completion state, and reason
+codes. Missing support, target, level strength, or invalid risk are reported
+explicitly instead of silently filling component scores.
 
 ---
 

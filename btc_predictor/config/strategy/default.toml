@@ -98,6 +98,8 @@ volume_profile_hvn_volume_fraction = 0.70
 volume_profile_min_bars = 20
 level_strength_touch_count_full = 4
 level_strength_reaction_full_fraction = 0.10
+entry_location_full_score_distance_fraction = 0.01
+entry_location_zero_score_distance_fraction = 0.08
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
@@ -169,6 +171,12 @@ funding_health = 0.35
 oi_health = 0.30
 basis_health = 0.20
 leverage_health = 0.15
+
+[scoring_weights.structure_score]
+level_strength = 0.45
+entry_location = 0.25
+rr_quality = 0.20
+confluence = 0.10
 
 [positioning_flags.crowding]
 funding_zscore_min = 2.0

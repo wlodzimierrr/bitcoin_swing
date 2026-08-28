@@ -35,6 +35,8 @@ def test_loads_default_strategy_config() -> None:
     assert config.price_levels.volume_profile_min_bars == 20
     assert config.price_levels.level_strength_touch_count_full == 4
     assert config.price_levels.level_strength_reaction_full_fraction == 0.10
+    assert config.price_levels.entry_location_full_score_distance_fraction == 0.01
+    assert config.price_levels.entry_location_zero_score_distance_fraction == 0.08
     assert config.price_levels.level_strength_weights == {
         "timeframe": 0.20,
         "touch_count": 0.20,
@@ -55,6 +57,12 @@ def test_loads_default_strategy_config() -> None:
     assert config.scoring_weights.core_flow["etf_norm_5"] == 0.4
     assert config.scoring_weights.positioning["funding_health"] == 0.35
     assert config.scoring_weights.positioning["leverage_health"] == 0.15
+    assert config.scoring_weights.structure_score == {
+        "level_strength": 0.45,
+        "entry_location": 0.25,
+        "rr_quality": 0.20,
+        "confluence": 0.10,
+    }
     assert config.positioning_flags.crowding.funding_zscore_min == 2.0
     assert config.positioning_flags.crowding.basis_zscore_min == 2.0
     assert config.positioning_flags.crowding.oi_intensity_percentile_min == 90
@@ -213,6 +221,8 @@ volume_profile_hvn_volume_fraction = 0.70
 volume_profile_min_bars = 20
 level_strength_touch_count_full = 4
 level_strength_reaction_full_fraction = 0.10
+entry_location_full_score_distance_fraction = 0.01
+entry_location_zero_score_distance_fraction = 0.08
 rr_minimum = 2.0
 rr_preferred_min = 2.5
 rr_preferred_max = 3.0
@@ -255,6 +265,18 @@ flow_accel = 0.25
 
 [scoring_weights.core_regime]
 trend = 1.0
+
+[scoring_weights.positioning]
+funding_health = 0.35
+oi_health = 0.30
+basis_health = 0.20
+leverage_health = 0.15
+
+[scoring_weights.structure_score]
+level_strength = 0.45
+entry_location = 0.25
+rr_quality = 0.20
+confluence = 0.10
 
 [backtest]
 initial_cash = 100000
@@ -381,6 +403,37 @@ def test_invalid_level_strength_timeframe_scores_fail_fast(tmp_path: Path) -> No
     )
 
     with pytest.raises(StrategyConfigError, match="1mo"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_entry_location_distance_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_entry_location_distance.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "entry_location_zero_score_distance_fraction = 0.08",
+            "entry_location_zero_score_distance_fraction = 0.01",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        StrategyConfigError,
+        match="entry_location_zero_score_distance_fraction",
+    ):
+        load_strategy_config(config_path)
+
+
+def test_invalid_structure_score_weights_fail_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_structure_score_weights.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "rr_quality = 0.20",
+            "rr_quality = 0.10",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="structure_score"):
         load_strategy_config(config_path)
 
 

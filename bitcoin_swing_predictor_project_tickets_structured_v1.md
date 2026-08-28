@@ -1314,7 +1314,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 
   AVWAP and volume-profile evidence are optional P1 enhancements and must not be
   required for the Phase 1 score.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1323,6 +1323,25 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.features.structure` with `StructureScoreInput`,
+    `StructureSelection`, `StructureScoreResult`, `calculate_structure_score`,
+    and `calculate_structure_score_from_clusters`.
+  - Direct scoring applies
+    `0.45 LevelStrength + 0.25 EntryLocation + 0.20 RRQuality + 0.10 Confluence`
+    using versioned `scoring_weights.structure_score`.
+  - Cluster scoring selects the nearest support cluster below entry and nearest
+    resistance cluster above entry as the structural target, without requiring
+    AVWAP or volume-profile evidence for the Phase 1 score.
+  - Entry location uses versioned `price_levels` support-distance thresholds;
+    R/R quality uses configured `rr_minimum`, `rr_preferred_min`, and
+    `rr_preferred_max`.
+  - Results persist component inputs, weights, contributions, selected
+    support/target clusters, entry/stop prices, reward/risk, normalization
+    parameters, config metadata, interpretation, completion state, and reason
+    codes.
+  - Missing support, target, level strength, or invalid risk are reported
+    explicitly instead of silently filling component scores.
 
 ## EPIC K — Regime Engine
 

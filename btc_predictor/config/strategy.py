@@ -27,6 +27,12 @@ POSITIONING_WEIGHT_KEYS = (
     "basis_health",
     "leverage_health",
 )
+STRUCTURE_SCORE_WEIGHT_KEYS = (
+    "level_strength",
+    "entry_location",
+    "rr_quality",
+    "confluence",
+)
 ANCHORED_VWAP_PRICE_SOURCES = ("hlc3", "close")
 VOLUME_PROFILE_PRICE_SOURCES = ("hlc3", "close")
 LEVEL_STRENGTH_WEIGHT_KEYS = (
@@ -358,6 +364,8 @@ class PriceLevelParameters:
     level_strength_timeframe_scores: dict[str, float]
     level_strength_touch_count_full: int
     level_strength_reaction_full_fraction: float
+    entry_location_full_score_distance_fraction: float
+    entry_location_zero_score_distance_fraction: float
     rr_minimum: float
     rr_preferred_min: float
     rr_preferred_max: float
@@ -422,6 +430,14 @@ class PriceLevelParameters:
                 data,
                 "level_strength_reaction_full_fraction",
             ),
+            entry_location_full_score_distance_fraction=_required_positive_fraction(
+                data,
+                "entry_location_full_score_distance_fraction",
+            ),
+            entry_location_zero_score_distance_fraction=_required_positive_fraction(
+                data,
+                "entry_location_zero_score_distance_fraction",
+            ),
             rr_minimum=_required_positive_float(data, "rr_minimum"),
             rr_preferred_min=_required_positive_float(data, "rr_preferred_min"),
             rr_preferred_max=_required_positive_float(data, "rr_preferred_max"),
@@ -437,6 +453,14 @@ class PriceLevelParameters:
         if parameters.rr_preferred_max < parameters.rr_preferred_min:
             raise StrategyConfigError(
                 "price_levels.rr_preferred_max must be >= price_levels.rr_preferred_min",
+            )
+        if (
+            parameters.entry_location_zero_score_distance_fraction
+            <= parameters.entry_location_full_score_distance_fraction
+        ):
+            raise StrategyConfigError(
+                "price_levels.entry_location_zero_score_distance_fraction "
+                "must be > entry_location_full_score_distance_fraction",
             )
         return parameters
 
@@ -540,6 +564,7 @@ class ScoringWeights:
     core_flow: dict[str, float]
     core_regime: dict[str, float]
     positioning: dict[str, float]
+    structure_score: dict[str, float]
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -562,6 +587,11 @@ class ScoringWeights:
                 data,
                 "positioning",
                 expected_keys=POSITIONING_WEIGHT_KEYS,
+            ),
+            structure_score=_required_weight_mapping(
+                data,
+                "structure_score",
+                expected_keys=STRUCTURE_SCORE_WEIGHT_KEYS,
             ),
         )
 
