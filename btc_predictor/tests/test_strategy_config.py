@@ -21,6 +21,19 @@ def test_loads_default_strategy_config() -> None:
         "bull_trend_continuation",
         "bullish_reset",
     )
+    assert config.setup_requirements.bullish_reset == {
+        "regime_min": 55,
+        "trend_min": 55,
+        "correction_min_fraction": 0.08,
+        "correction_max_fraction": 0.25,
+        "funding_health_improving_days": 7,
+        "oi_health_stable_days": 7,
+        "flow_accel_improving_days": 5,
+        "structure_min": 70,
+        "entry_trigger_required": True,
+        "entry_conviction_min": 80,
+        "minimum_rr": 2.0,
+    }
     assert config.regime_thresholds.bull_min == 65
     assert config.price_levels.cluster_distance_fraction == 0.025
     assert config.price_levels.minimum_level_strength == 60

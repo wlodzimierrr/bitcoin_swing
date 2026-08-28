@@ -214,7 +214,10 @@ Setup detector helpers include `detect_bull_trend_continuation`, which persists
 `SETUP_BULL_TREND_CONTINUATION` from the configured hard filters for Regime,
 Trend, Flow, Positioning, Structure, STRESS, severe CROWDING, and R/R. Missing
 inputs block completion, while failed filters are kept as deterministic reason
-codes.
+codes. `detect_bullish_reset` persists `SETUP_BULLISH_RESET` for pullbacks in
+an intact bull regime, requiring a configured correction band, improving funding
+health, stable or improving OI health, improving flow acceleration, strong
+structure, a confirmed entry trigger, sufficient entry conviction, and R/R.
 
 Positioning feature helpers include `funding_health`, which implements
 `FUNDING_HEALTH` from the current 7-day average funding rate and its 180-day

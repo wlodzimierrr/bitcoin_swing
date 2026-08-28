@@ -153,13 +153,21 @@ from btc_predictor.features.rolling import (
     true_ranges,
 )
 from btc_predictor.features.setup import (
+    BULLISH_RESET_FEATURE_ID,
+    BULLISH_RESET_REASON_CODES,
+    BULLISH_RESET_REQUIREMENT_KEYS,
+    BULLISH_RESET_SETUP,
     BULL_TREND_CONTINUATION_FEATURE_ID,
     BULL_TREND_CONTINUATION_REASON_CODES,
     BULL_TREND_CONTINUATION_REQUIREMENT_KEYS,
     BULL_TREND_CONTINUATION_SETUP,
+    DEFAULT_BULLISH_RESET_REQUIREMENTS,
     DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS,
+    BullishResetInput,
+    BullishResetResult,
     BullTrendContinuationInput,
     BullTrendContinuationResult,
+    detect_bullish_reset,
     detect_bull_trend_continuation,
 )
 from btc_predictor.features.structure import (
@@ -253,6 +261,10 @@ from btc_predictor.features.volatility import (
 
 __all__ = [
     "CvdObservation",
+    "BULLISH_RESET_FEATURE_ID",
+    "BULLISH_RESET_REASON_CODES",
+    "BULLISH_RESET_REQUIREMENT_KEYS",
+    "BULLISH_RESET_SETUP",
     "BULL_TREND_CONTINUATION_FEATURE_ID",
     "BULL_TREND_CONTINUATION_REASON_CODES",
     "BULL_TREND_CONTINUATION_REQUIREMENT_KEYS",
@@ -317,6 +329,7 @@ __all__ = [
     "DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN",
     "DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS",
     "DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS",
+    "DEFAULT_BULLISH_RESET_REQUIREMENTS",
     "DEFAULT_BULL_TREND_CONTINUATION_REQUIREMENTS",
     "DEFAULT_REGIME_CLASSIFICATION_THRESHOLDS",
     "DEFAULT_FULL_FLOW_SCORE_WEIGHTS",
@@ -399,6 +412,8 @@ __all__ = [
     "WEEKLY_STRUCTURE_LABELS",
     "WEEKLY_STRUCTURE_SCORES",
     "WeeklyStructureClassification",
+    "BullishResetInput",
+    "BullishResetResult",
     "BullTrendContinuationInput",
     "BullTrendContinuationResult",
     "CrowdingFlagInput",
@@ -447,6 +462,7 @@ __all__ = [
     "calculate_structure_score",
     "calculate_structure_score_from_clusters",
     "calculate_trend_score",
+    "detect_bullish_reset",
     "detect_bull_trend_continuation",
     "classify_weekly_structure",
     "classify_weekly_structure_from_weekly_bars",

@@ -1517,7 +1517,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   Entry Conviction >= 80
   Initial R/R >= 2
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1526,6 +1526,27 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `BullishResetInput`, `BullishResetResult`, and
+    `detect_bullish_reset` in `btc_predictor.features.setup`.
+  - Persists `SETUP_BULLISH_RESET` using the versioned
+    `setup_requirements.bullish_reset` filters.
+  - Evaluates intact bull regime, trend support, correction band, funding
+    health improvement, OI health stability/improvement, FlowAccel improvement,
+    strong Structure Score, entry trigger confirmation, Entry Conviction, and
+    initial R/R.
+  - Histories are ordered oldest-to-newest; lookback checks compare the latest
+    value with the value N observations back. FundingHealth and FlowAccel must
+    be strictly higher; OIHealth may be equal or higher.
+  - Missing scalar inputs prevent completion with `BULLISH_RESET_INPUT_MISSING`;
+    short or unavailable history prevents completion with the relevant
+    `*_HISTORY_INSUFFICIENT` reason.
+  - Failed filters persist specific reason codes for low scores, shallow/deep
+    correction, deteriorating health, missing entry confirmation, weak Entry
+    Conviction, or insufficient R/R.
+  - Results persist inputs, requirements, comparison deltas, config metadata,
+    setup label, detected state, reason code, completion state, and reason
+    codes.
 
 #### BTC-112 Implement Capitulation Reversal setup
 - **Description:**

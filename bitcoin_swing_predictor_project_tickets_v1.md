@@ -1632,6 +1632,27 @@ Entry Conviction >= 80
 Initial R/R >= 2
 ```
 
+Implemented `detect_bullish_reset` in `btc_predictor.features.setup`. The
+detector persists `SETUP_BULLISH_RESET` and evaluates the versioned
+`setup_requirements.bullish_reset` filters: intact bull regime, trend support,
+8%-25% correction band, funding health improving, OI health stable or
+improving, FlowAccel improving, strong Structure Score, entry trigger
+confirmation, Entry Conviction, and initial R/R.
+
+Health/flow histories are interpreted as ordered oldest-to-newest. The lookback
+checks compare the latest value with the value N observations back:
+FundingHealth and FlowAccel must be strictly higher, while OIHealth may be
+equal or higher. Boundary values are accepted for the configured score,
+correction, and R/R thresholds.
+
+Missing scalar inputs prevent completion with `BULLISH_RESET_INPUT_MISSING`.
+Short or unavailable history prevents completion with the relevant
+`*_HISTORY_INSUFFICIENT` reason. Failed filters persist specific reason codes
+for low scores, shallow/deep correction, deteriorating health, missing entry
+confirmation, weak Entry Conviction, or insufficient R/R. Results persist
+inputs, requirements, comparison deltas, config metadata, setup label, detected
+state, reason code, completion state, and reason codes.
+
 ---
 
 ## BTC-112 — Implement Capitulation Reversal setup
