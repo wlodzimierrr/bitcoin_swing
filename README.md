@@ -61,6 +61,23 @@ BTC OHLCV collection is provider-injected through
 records are not silently changed, and derives complete daily, weekly, and
 monthly bars from the same point-in-time source data.
 
+BTC price-source research is versioned as `PRICE_SOURCE_POLICY_V1` in
+`btc_predictor.research`. The policy fixes Coin Metrics Community `BTC/USD` as
+the provisional canonical reference-price source, Bitstamp `BTC/USD` as the
+primary raw OHLCV source, Coinbase `BTC-USD` as the secondary validation and
+live-fallback source, and yfinance `BTC-USD` as a noncanonical sanity check.
+The reference-price role is explicitly separate from any execution venue.
+Historical fallback splicing is prohibited in V1.
+
+`compare_price_sources` produces a point-in-time report from synchronized `1h`
+histories. It measures provider coverage, gaps, duplicates, close/high/low and
+wick divergence, daily-return and ATR divergence, structural swing and
+breakout/reclaim differences, stop-touch sensitivity, and MFE/MAE sensitivity.
+The report cannot become decision-ready until all three required providers have
+at least two years of common bars and every top divergence event has a
+structured manual review. Provider endpoints, pagination limits, access
+constraints, and candle semantics are persisted with the policy record.
+
 Canonical market bars can be generated with `build_canonical_market_bars`.
 They use `1h` BTC source bars that were closed and ingested by the
 `data_available_at` cutoff. The canonical session is UTC: daily bars start at
