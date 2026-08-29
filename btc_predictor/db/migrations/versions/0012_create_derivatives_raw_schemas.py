@@ -1,7 +1,7 @@
 """create derivatives raw schemas
 
-Revision ID: 0012_create_derivatives_raw_schemas
-Revises: 0011_create_raw_btc_ohlcv
+Revision ID: 0012_raw_derivatives
+Revises: 0011_raw_btc_ohlcv
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0012_create_derivatives_raw_schemas"
-down_revision = "0011_create_raw_btc_ohlcv"
+revision = "0012_raw_derivatives"
+down_revision = "0011_raw_btc_ohlcv"
 branch_labels = None
 depends_on = None
 

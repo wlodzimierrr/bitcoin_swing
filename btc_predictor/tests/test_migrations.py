@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from alembic.script import ScriptDirectory
+
 from btc_predictor.db import (
     CORE_SCHEMAS,
     current_database_revision,
@@ -10,9 +12,16 @@ from btc_predictor.db import (
     verify_research_connection,
     verify_runtime_connection,
 )
+from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0018_create_ingestion_audit_log"
+HEAD_REVISION = "0018_ingestion_audit"
+
+
+def test_revision_ids_fit_alembic_version_table() -> None:
+    revisions = ScriptDirectory.from_config(alembic_config("sqlite://")).walk_revisions()
+
+    assert all(len(revision.revision) <= 32 for revision in revisions)
 
 
 def sqlite_url(path: Path) -> str:

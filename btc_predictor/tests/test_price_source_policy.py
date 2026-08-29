@@ -106,7 +106,9 @@ def test_v1_policy_persists_provider_roles_and_instrument_provenance() -> None:
     }
 
     assert record["version"] == PRICE_SOURCE_POLICY_VERSION
-    assert record["canonical_reference_provider_id"] == BITSTAMP_PROVIDER_ID
+    assert record["canonical_candidate_provider_id"] == BITSTAMP_PROVIDER_ID
+    assert record["canonical_candidate_status"] == "rejected"
+    assert record["canonical_reference_provider_id"] is None
     assert record["primary_raw_ohlcv_provider_id"] == BITSTAMP_PROVIDER_ID
     assert record["required_validation_provider_ids"] == [
         BITSTAMP_PROVIDER_ID,
@@ -135,6 +137,22 @@ def test_v1_policy_persists_provider_roles_and_instrument_provenance() -> None:
         "required_for_v1_completion"
     ]
     assert not instruments[YFINANCE_PROVIDER_ID]["required_for_v1_completion"]
+
+
+def test_policy_rejects_unknown_canonical_candidate_status() -> None:
+    with pytest.raises(ValueError, match="canonical candidate status"):
+        replace(
+            DEFAULT_PRICE_SOURCE_POLICY,
+            canonical_candidate_status="implicitly_validated",
+        ).as_record()
+
+
+def test_unapproved_candidate_cannot_be_recorded_as_canonical_reference() -> None:
+    with pytest.raises(ValueError, match="cannot be the canonical reference"):
+        replace(
+            DEFAULT_PRICE_SOURCE_POLICY,
+            canonical_reference_provider_id=BITSTAMP_PROVIDER_ID,
+        ).as_record()
 
 
 def test_policy_rejects_historical_fallback_splicing_in_v1() -> None:
@@ -588,3 +606,35 @@ def test_canonical_decision_and_manual_reviews_are_required_explicitly() -> None
     assert "PRICE_SOURCE_POLICY_MANUAL_REVIEW_MISSING" in report.reason_codes
     assert "PRICE_SOURCE_POLICY_CANONICAL_DECISION_MISSING" in report.reason_codes
     assert not report.policy_decision_ready
+
+
+def test_trade_probe_stop_touch_is_point_in_time_and_persisted() -> None:
+    start = datetime(2026, 8, 1, tzinfo=UTC)
+    end = start + timedelta(hours=2)
+    provider_bars = required_provider_series(start, 3)
+    coinbase = list(provider_bars[COINBASE_PROVIDER_ID])
+    coinbase[1] = hourly_bar(
+        start + timedelta(hours=1),
+        COINBASE_PROVIDER_ID,
+        low="94",
+    )
+    provider_bars[COINBASE_PROVIDER_ID] = tuple(coinbase)
+    probe = TradePathProbe(
+        entry_time=start,
+        exit_time=end,
+        entry_price=Decimal("100"),
+        stop_level=Decimal("95"),
+    )
+
+    report = compare_price_sources(
+        provider_bars,
+        start=start,
+        end=end,
+        as_of=end + timedelta(hours=1),
+        minimum_overlap_years=0,
+        trade_path_probes=(probe,),
+        canonical_source_decision=approved_decision(end + timedelta(hours=1)),
+    )
+
+    assert report.stop_touch_difference_count == 1
+    assert report.trade_path_probes[0].as_record()["stop_level"] == "95"

@@ -1,7 +1,7 @@
 """create paper portfolio schemas
 
-Revision ID: 0016_create_paper_portfolio_schemas
-Revises: 0015_create_predictor_recommendation_schemas
+Revision ID: 0016_paper_portfolio
+Revises: 0015_predictor_recommendations
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0016_create_paper_portfolio_schemas"
-down_revision = "0015_create_predictor_recommendation_schemas"
+revision = "0016_paper_portfolio"
+down_revision = "0015_predictor_recommendations"
 branch_labels = None
 depends_on = None
 

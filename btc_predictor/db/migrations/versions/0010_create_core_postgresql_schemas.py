@@ -1,7 +1,7 @@
 """create core postgresql schemas
 
-Revision ID: 0010_create_core_postgresql_schemas
-Revises: 0001_bootstrap_migration_framework
+Revision ID: 0010_core_schemas
+Revises: 0001_bootstrap
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -13,8 +13,8 @@ from alembic import context, op
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 
-revision = "0010_create_core_postgresql_schemas"
-down_revision = "0001_bootstrap_migration_framework"
+revision = "0010_core_schemas"
+down_revision = "0001_bootstrap"
 branch_labels = None
 depends_on = None
 

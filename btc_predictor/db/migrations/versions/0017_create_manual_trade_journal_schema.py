@@ -1,7 +1,7 @@
 """create manual trade journal schema
 
-Revision ID: 0017_create_manual_trade_journal_schema
-Revises: 0016_create_paper_portfolio_schemas
+Revision ID: 0017_manual_trade_journal
+Revises: 0016_paper_portfolio
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0017_create_manual_trade_journal_schema"
-down_revision = "0016_create_paper_portfolio_schemas"
+revision = "0017_manual_trade_journal"
+down_revision = "0016_paper_portfolio"
 branch_labels = None
 depends_on = None
 

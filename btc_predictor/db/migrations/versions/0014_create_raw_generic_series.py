@@ -1,7 +1,7 @@
 """create raw generic series
 
-Revision ID: 0014_create_raw_generic_series
-Revises: 0013_create_raw_etf_flows
+Revision ID: 0014_raw_generic_series
+Revises: 0013_raw_etf_flows
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0014_create_raw_generic_series"
-down_revision = "0013_create_raw_etf_flows"
+revision = "0014_raw_generic_series"
+down_revision = "0013_raw_etf_flows"
 branch_labels = None
 depends_on = None
 

@@ -2,21 +2,22 @@
 
 Policy identifier: `PRICE_SOURCE_POLICY_V1`
 
-Validation status: **provisional, pending real historical evidence and review**
+Validation status: **Bitstamp candidate rejected by empirical validation**
 
 ## Provider Roles
 
 | Role | Provider | Display instrument | API instrument | Required for V1 |
 | --- | --- | --- | --- | --- |
-| Provisional canonical reference and primary raw OHLCV | Bitstamp | `BTC/USD` | `btcusd` | Yes |
+| Rejected canonical candidate and retained raw OHLCV source | Bitstamp | `BTC/USD` | `btcusd` | Yes |
 | Independent validation | Coinbase Exchange | `BTC-USD` | `BTC-USD` | Yes |
 | Independent validation | Bitfinex | `BTC/USD` | `tBTCUSD` | Yes |
 | Optional institutional reference benchmark | Coin Metrics Community | `BTC/USD` | `btc-usd` | No |
 | Noncanonical sanity check | yfinance | `BTC-USD` | `BTC-USD` | No |
 
-Bitstamp is a candidate, not an approved permanent reference source. BTC-019
-must persist an explicit approved or rejected decision after the real evidence
-is reviewed. The reference-price role is not an execution-venue selection.
+Bitstamp is not an approved permanent reference source. The persisted BTC-019
+decision rejects it as the sole V1 structural reference after real evidence
+review. Its raw-data role does not promote it to strategy-canonical status, and
+the reference-price role remains separate from execution-venue selection.
 
 Historical fallback splicing is prohibited in V1. Provider outages remain
 explicit gaps. Any future policy that permits substitution must use a new
@@ -113,13 +114,27 @@ instead of being ignored.
   intraday history is limited and is restricted to noncanonical research
   checks.
 
-## Current Completion Gate
+## Empirical Decision
 
-The implementation now supports the required exchange-based V1 comparison,
-including a deterministic Bitfinex historical `1h` adapter. BTC-019 remains
-**IN PROGRESS** until a real multi-year Bitstamp/Coinbase/Bitfinex analysis is
-run and persisted, the top divergence events are reviewed, and an explicit
-Bitstamp approval or rejection is recorded.
+The persisted study covers `2023-01-01 00:00 UTC` through
+`2025-12-31 23:00 UTC`, with 26,292 synchronized common bars. Bitstamp had no
+missing bars and no material persistent close-price bias versus Coinbase, but
+source choice changed strategy-relevant outcomes:
+
+- Bitstamp alone created one weekly swing and its resulting breakout.
+- Both validators created a swing/reclaim sequence that Bitstamp did not.
+- Both validators touched a `107270` stop that Bitstamp missed during the
+  10 October 2025 selloff.
+- Maximum MFE and MAE differences were 2.433 and 4.605 percentage points.
+
+The Bitstamp candidate is therefore **REJECTED**. BTC-019 remains
+**IN PROGRESS** because no canonical V1 reference is approved. Coinbase and
+Bitfinex require follow-up rather than automatic promotion. A separate
+`BTC_REFERENCE_COMPOSITE_V1` research ticket is recommended; no composite or
+historical splicing is introduced here.
+
+The full evidence is persisted under
+`research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/`.
 
 Coin Metrics historical access is not a mandatory Phase 1 blocker. Promoting
 Coin Metrics to canonical status later requires a new policy version and its

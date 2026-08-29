@@ -1,7 +1,7 @@
 """create raw btc ohlcv
 
-Revision ID: 0011_create_raw_btc_ohlcv
-Revises: 0010_create_core_postgresql_schemas
+Revision ID: 0011_raw_btc_ohlcv
+Revises: 0010_core_schemas
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0011_create_raw_btc_ohlcv"
-down_revision = "0010_create_core_postgresql_schemas"
+revision = "0011_raw_btc_ohlcv"
+down_revision = "0010_core_schemas"
 branch_labels = None
 depends_on = None
 

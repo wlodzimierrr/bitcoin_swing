@@ -1,7 +1,7 @@
 """create raw etf flows
 
-Revision ID: 0013_create_raw_etf_flows
-Revises: 0012_create_derivatives_raw_schemas
+Revision ID: 0013_raw_etf_flows
+Revises: 0012_raw_derivatives
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0013_create_raw_etf_flows"
-down_revision = "0012_create_derivatives_raw_schemas"
+revision = "0013_raw_etf_flows"
+down_revision = "0012_raw_derivatives"
 branch_labels = None
 depends_on = None
 

@@ -1,7 +1,7 @@
 """create ingestion audit log
 
-Revision ID: 0018_create_ingestion_audit_log
-Revises: 0017_create_manual_trade_journal_schema
+Revision ID: 0018_ingestion_audit
+Revises: 0017_manual_trade_journal
 Create Date: 2026-08-26 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0018_create_ingestion_audit_log"
-down_revision = "0017_create_manual_trade_journal_schema"
+revision = "0018_ingestion_audit"
+down_revision = "0017_manual_trade_journal"
 branch_labels = None
 depends_on = None
 

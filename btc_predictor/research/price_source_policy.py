@@ -6,7 +6,7 @@ from bisect import bisect_left
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_CEILING, Decimal
 from statistics import median
 from typing import Any
 
@@ -75,6 +75,7 @@ PROVIDER_ACCESS_STATUSES = (
     "api_error",
 )
 CANONICAL_DECISION_STATUSES = ("approved", "rejected")
+CANONICAL_CANDIDATE_STATUSES = ("provisional", "approved", "rejected")
 DIVERGENCE_TIER_PRICE = 1
 DIVERGENCE_TIER_INDICATOR = 2
 DIVERGENCE_TIER_DECISION = 3
@@ -152,7 +153,9 @@ class PriceSourceInstrumentPolicy:
 @dataclass(frozen=True)
 class PriceSourcePolicy:
     version: str
-    canonical_reference_provider_id: str
+    canonical_candidate_provider_id: str
+    canonical_candidate_status: str
+    canonical_reference_provider_id: str | None
     primary_raw_ohlcv_provider_id: str
     required_validation_provider_ids: tuple[str, ...]
     secondary_validation_provider_id: str
@@ -167,6 +170,26 @@ class PriceSourcePolicy:
     def as_record(self) -> dict[str, Any]:
         if self.version != PRICE_SOURCE_POLICY_VERSION:
             raise ValueError(f"version must be {PRICE_SOURCE_POLICY_VERSION}")
+        if self.canonical_candidate_status not in CANONICAL_CANDIDATE_STATUSES:
+            raise ValueError(
+                "canonical candidate status must be one of "
+                f"{CANONICAL_CANDIDATE_STATUSES}",
+            )
+        if (
+            self.canonical_candidate_status == "approved"
+            and self.canonical_candidate_provider_id
+            != self.canonical_reference_provider_id
+        ):
+            raise ValueError(
+                "approved V1 reference must match the canonical candidate",
+            )
+        if (
+            self.canonical_candidate_status != "approved"
+            and self.canonical_reference_provider_id is not None
+        ):
+            raise ValueError(
+                "unapproved canonical candidate cannot be the canonical reference",
+            )
         provider_ids = [instrument.provider_id for instrument in self.instruments]
         if len(provider_ids) != len(set(provider_ids)):
             raise ValueError("price-source policy provider IDs must be unique")
@@ -188,7 +211,7 @@ class PriceSourcePolicy:
         ]
         if len(required_exchanges) != len(set(required_exchanges)):
             raise ValueError("required validation providers must use independent venues")
-        if self.canonical_reference_provider_id not in self.required_validation_provider_ids:
+        if self.canonical_candidate_provider_id not in self.required_validation_provider_ids:
             raise ValueError("V1 canonical candidate must be in the empirical provider set")
         if self.secondary_validation_provider_id not in self.required_validation_provider_ids:
             raise ValueError("secondary validation provider must be required for V1")
@@ -198,7 +221,7 @@ class PriceSourcePolicy:
         ):
             raise ValueError("additional validation providers must be required for V1")
         selected_provider_ids = (
-            self.canonical_reference_provider_id,
+            self.canonical_candidate_provider_id,
             self.primary_raw_ohlcv_provider_id,
             self.secondary_validation_provider_id,
             *self.additional_validation_provider_ids,
@@ -213,9 +236,9 @@ class PriceSourcePolicy:
             raise ValueError("every selected provider must have instrument provenance")
         if (
             REFERENCE_PRICE_ROLE
-            not in instruments_by_provider[self.canonical_reference_provider_id].roles
+            not in instruments_by_provider[self.canonical_candidate_provider_id].roles
         ):
-            raise ValueError("canonical provider must have reference-price role")
+            raise ValueError("canonical candidate must have reference-price role")
         if (
             PRIMARY_RAW_OHLCV_ROLE
             not in instruments_by_provider[self.primary_raw_ohlcv_provider_id].roles
@@ -249,13 +272,15 @@ class PriceSourcePolicy:
             if instrument.required_for_v1_completion:
                 raise ValueError("sanity-check provider must be optional for V1")
         if instruments_by_provider[
-            self.canonical_reference_provider_id
+            self.canonical_candidate_provider_id
         ].execution_venue:
             raise ValueError("reference-price role must be separate from execution")
         if any(instrument.fallback_splicing_allowed for instrument in self.instruments):
             raise ValueError("unversioned historical fallback splicing is prohibited")
         return {
             "version": self.version,
+            "canonical_candidate_provider_id": self.canonical_candidate_provider_id,
+            "canonical_candidate_status": self.canonical_candidate_status,
             "canonical_reference_provider_id": self.canonical_reference_provider_id,
             "primary_raw_ohlcv_provider_id": self.primary_raw_ohlcv_provider_id,
             "required_validation_provider_ids": list(
@@ -284,7 +309,9 @@ class PriceSourcePolicy:
 
 DEFAULT_PRICE_SOURCE_POLICY = PriceSourcePolicy(
     version=PRICE_SOURCE_POLICY_VERSION,
-    canonical_reference_provider_id=BITSTAMP_PROVIDER_ID,
+    canonical_candidate_provider_id=BITSTAMP_PROVIDER_ID,
+    canonical_candidate_status="rejected",
+    canonical_reference_provider_id=None,
     primary_raw_ohlcv_provider_id=BITSTAMP_PROVIDER_ID,
     required_validation_provider_ids=REQUIRED_POLICY_PROVIDER_IDS,
     secondary_validation_provider_id=COINBASE_PROVIDER_ID,
@@ -319,8 +346,8 @@ DEFAULT_PRICE_SOURCE_POLICY = PriceSourcePolicy(
             access_constraints="Public endpoint; paginate with explicit UTC start/end.",
             data_semantics="Bitstamp BTC/USD spot exchange OHLCV.",
             notes=(
-                "Provisional V1 canonical candidate and primary raw OHLCV provider; "
-                "promotion remains gated on the persisted empirical comparison."
+                "Rejected V1 canonical candidate retained as the primary raw OHLCV "
+                "provider; it must not be exposed as strategy-canonical."
             ),
         ),
         PriceSourceInstrumentPolicy(
@@ -509,20 +536,27 @@ class TradePathProbe:
     exit_time: datetime
     entry_price: Decimal
     direction: str = "long"
+    stop_level: Decimal | None = None
 
-    def as_record(self) -> dict[str, str]:
+    def as_record(self) -> dict[str, str | None]:
         entry_time = require_utc_datetime(self.entry_time, "entry_time")
         exit_time = require_utc_datetime(self.exit_time, "exit_time")
         if exit_time < entry_time:
             raise ValueError("exit_time must be >= entry_time")
         if self.direction not in ("long", "short"):
             raise ValueError("direction must be 'long' or 'short'")
-        return {
+        record = {
             "entry_time": entry_time.isoformat(),
             "exit_time": exit_time.isoformat(),
             "entry_price": str(_positive_decimal(self.entry_price, "entry_price")),
             "direction": self.direction,
         }
+        record["stop_level"] = (
+            str(_positive_decimal(self.stop_level, "stop_level"))
+            if self.stop_level is not None
+            else None
+        )
+        return record
 
 
 @dataclass(frozen=True)
@@ -530,7 +564,11 @@ class DivergenceDistribution:
     observation_count: int
     mean_abs: Decimal | None
     median_abs: Decimal | None
+    standard_deviation_abs: Decimal | None
+    p90_abs: Decimal | None
     p95_abs: Decimal | None
+    p99_abs: Decimal | None
+    p995_abs: Decimal | None
     max_abs: Decimal | None
 
     def as_record(self) -> dict[str, str | int | None]:
@@ -538,7 +576,13 @@ class DivergenceDistribution:
             "observation_count": self.observation_count,
             "mean_abs": _optional_decimal_record(self.mean_abs),
             "median_abs": _optional_decimal_record(self.median_abs),
+            "standard_deviation_abs": _optional_decimal_record(
+                self.standard_deviation_abs,
+            ),
+            "p90_abs": _optional_decimal_record(self.p90_abs),
             "p95_abs": _optional_decimal_record(self.p95_abs),
+            "p99_abs": _optional_decimal_record(self.p99_abs),
+            "p995_abs": _optional_decimal_record(self.p995_abs),
             "max_abs": _optional_decimal_record(self.max_abs),
         }
 
@@ -986,7 +1030,7 @@ def compare_price_sources(
     if top_event_count < 1:
         raise ValueError("top_event_count must be >= 1")
     min_overlap = _non_negative_decimal(minimum_overlap_years, "minimum_overlap_years")
-    baseline = baseline_provider_id or policy.canonical_reference_provider_id
+    baseline = baseline_provider_id or policy.canonical_candidate_provider_id
     if baseline not in instruments_by_provider:
         raise ValueError("baseline provider must be configured by the policy")
     required_provider_ids = policy.required_validation_provider_ids
@@ -1105,6 +1149,11 @@ def compare_price_sources(
         timestamps=comparison_timestamps,
         stop_levels=normalized_stop_levels,
     )
+    stop_touch_difference_count += _probe_stop_touch_difference_count(
+        normalized,
+        baseline_provider_id=baseline,
+        probes=normalized_trade_path_probes,
+    )
     mfe_diffs, mae_diffs = _mfe_mae_differences(
         normalized,
         baseline_provider_id=baseline,
@@ -1146,7 +1195,7 @@ def compare_price_sources(
         reason_codes.append("PRICE_SOURCE_POLICY_CANONICAL_DECISION_MISSING")
     else:
         canonical_source_decision.as_record()
-        if canonical_source_decision.provider_id != policy.canonical_reference_provider_id:
+        if canonical_source_decision.provider_id != policy.canonical_candidate_provider_id:
             raise ValueError("canonical decision provider must match policy candidate")
     divergence_tiers = _build_divergence_tiers(
         close_diffs=close_diffs,
@@ -1880,6 +1929,49 @@ def _mfe_mae_differences(
     return tuple(mfe_differences), tuple(mae_differences)
 
 
+def _probe_stop_touch_difference_count(
+    provider_bars: Mapping[str, Sequence[OhlcvBar]],
+    *,
+    baseline_provider_id: str,
+    probes: Sequence[TradePathProbe],
+) -> int:
+    baseline_bars = _deduplicated_bars(
+        provider_bars.get(baseline_provider_id, ()),
+    )
+    difference_count = 0
+    for probe in probes:
+        if probe.stop_level is None:
+            continue
+        baseline_touched = _path_touches_probe_stop(baseline_bars, probe)
+        for provider_id, bars in provider_bars.items():
+            if provider_id == baseline_provider_id:
+                continue
+            candidate_touched = _path_touches_probe_stop(
+                _deduplicated_bars(bars),
+                probe,
+            )
+            if candidate_touched != baseline_touched:
+                difference_count += 1
+    return difference_count
+
+
+def _path_touches_probe_stop(
+    bars: Sequence[OhlcvBar],
+    probe: TradePathProbe,
+) -> bool:
+    if probe.stop_level is None:
+        return False
+    stop_level = _positive_decimal(probe.stop_level, "stop_level")
+    path = (
+        bar
+        for bar in bars
+        if probe.entry_time <= bar.timestamp <= probe.exit_time
+    )
+    if probe.direction == "long":
+        return any(bar.low <= stop_level for bar in path)
+    return any(bar.high >= stop_level for bar in path)
+
+
 def _daily_returns(bars: Sequence[OhlcvBar]) -> dict[datetime, Decimal]:
     ordered = sorted(bars, key=lambda bar: bar.timestamp)
     return {
@@ -2035,16 +2127,41 @@ def _distribution(values: Sequence[Decimal]) -> DivergenceDistribution:
             observation_count=0,
             mean_abs=None,
             median_abs=None,
+            standard_deviation_abs=None,
+            p90_abs=None,
             p95_abs=None,
+            p99_abs=None,
+            p995_abs=None,
             max_abs=None,
         )
+    mean_abs = sum(ordered, Decimal("0")) / Decimal(len(ordered))
+    variance = sum(
+        ((value - mean_abs) ** 2 for value in ordered),
+        Decimal("0"),
+    ) / Decimal(len(ordered))
     return DivergenceDistribution(
         observation_count=len(ordered),
-        mean_abs=sum(ordered, Decimal("0")) / Decimal(len(ordered)),
+        mean_abs=mean_abs,
         median_abs=Decimal(str(median(ordered))),
-        p95_abs=ordered[min(len(ordered) - 1, int(len(ordered) * Decimal("0.95")))],
+        standard_deviation_abs=variance.sqrt(),
+        p90_abs=_nearest_rank_percentile(ordered, Decimal("0.90")),
+        p95_abs=_nearest_rank_percentile(ordered, Decimal("0.95")),
+        p99_abs=_nearest_rank_percentile(ordered, Decimal("0.99")),
+        p995_abs=_nearest_rank_percentile(ordered, Decimal("0.995")),
         max_abs=ordered[-1],
     )
+
+
+def _nearest_rank_percentile(
+    ordered: Sequence[Decimal],
+    probability: Decimal,
+) -> Decimal:
+    rank = int(
+        (probability * Decimal(len(ordered))).to_integral_value(
+            rounding=ROUND_CEILING,
+        ),
+    )
+    return ordered[max(0, rank - 1)]
 
 
 def _nonzero_count(values: Sequence[Decimal]) -> int:

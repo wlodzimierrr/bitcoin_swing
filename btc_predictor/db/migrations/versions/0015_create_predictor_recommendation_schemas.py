@@ -1,7 +1,7 @@
 """create predictor recommendation schemas
 
-Revision ID: 0015_create_predictor_recommendation_schemas
-Revises: 0014_create_raw_generic_series
+Revision ID: 0015_predictor_recommendations
+Revises: 0014_raw_generic_series
 Create Date: 2026-08-25 00:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0015_create_predictor_recommendation_schemas"
-down_revision = "0014_create_raw_generic_series"
+revision = "0015_predictor_recommendations"
+down_revision = "0014_raw_generic_series"
 branch_labels = None
 depends_on = None
 

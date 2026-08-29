@@ -1,0 +1,357 @@
+{
+  "schema_version": "BTC019_REVIEW_ASSESSMENTS_V1",
+  "reviewer": "Codex BTC-019 empirical review",
+  "reviewed_at": "2026-08-29T14:13:30+00:00",
+  "default_timestamp_assessment": {
+    "swing_impact": false,
+    "breakout_impact": false,
+    "reclaim_impact": false,
+    "stop_touch_impact": false,
+    "mfe_impact": false,
+    "mae_impact": false,
+    "trade_outcome_impact": false
+  },
+  "timestamp_reviews": {
+    "2023-01-29T10:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitfinex printed the isolated upper extreme; Bitstamp and Coinbase remained closely aligned.",
+      "review_notes": "The move was not confirmed by the two other venues and did not alter a reviewed structural or trade-path outcome. Raw data remains unchanged."
+    },
+    "2023-03-24T14:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "mfe_impact": true,
+      "review_conclusion": "Bitstamp printed an isolated high that materially overstated favorable excursion.",
+      "review_notes": "Bitstamp reached 29380 while Coinbase and Bitfinex reached 28299.99 and 28253. This produced the maximum reviewed MFE sensitivity of 2.433 percentage points without changing stop state."
+    },
+    "2023-08-01T04:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower wick; the other two venues did not confirm it.",
+      "review_notes": "No reviewed swing, breakout, reclaim, stop, or material path result changed."
+    },
+    "2023-08-17T21:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "swing_impact": true,
+      "reclaim_impact": true,
+      "mae_impact": true,
+      "review_conclusion": "A real cross-market selloff was confirmed, but Bitstamp materially underrepresented its depth.",
+      "review_notes": "Hourly lows were 26266 Bitstamp, 25234.76 Coinbase, and 24713 Bitfinex. The difference created validator swing/reclaim sensitivity and MAE differences up to 2.982 percentage points; all compared probes had already touched their stops."
+    },
+    "2023-08-17T22:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "review_conclusion": "The follow-through selloff was present across venues with different intrahour ranges.",
+      "review_notes": "This was part of the confirmed 17 August repricing, not a collection or timestamp-alignment failure."
+    },
+    "2023-10-23T22:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "review_conclusion": "All venues confirmed the rapid upside move, with materially dispersed intrahour highs.",
+      "review_notes": "Coinbase reached 35000, Bitstamp 34283, and Bitfinex 33534. The reviewed weekly structure and material path outcomes were unchanged."
+    },
+    "2023-10-24T21:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower extreme after the cross-market breakout.",
+      "review_notes": "The event was not confirmed by Bitstamp and Bitfinex and did not alter reviewed strategy outcomes."
+    },
+    "2023-12-05T07:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitfinex printed the isolated lower wick.",
+      "review_notes": "No evidence supports rewriting the source candle, and no reviewed structural or trade-path outcome changed."
+    },
+    "2023-12-05T22:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated upper wick.",
+      "review_notes": "Bitstamp and Bitfinex did not confirm the high; no reviewed decision or portfolio state changed."
+    },
+    "2024-01-03T12:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "review_conclusion": "The downside move was confirmed on all venues, while Bitstamp recorded the shallowest low.",
+      "review_notes": "Lows were 41454 Bitstamp, 40625.68 Coinbase, and 40383 Bitfinex. No reviewed structural or stop outcome changed."
+    },
+    "2024-01-05T14:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitstamp printed an isolated lower wick relative to closely aligned validators.",
+      "review_notes": "Bitstamp reached 42500 while Coinbase and Bitfinex reached 43208.44 and 43245. No reviewed decision or material path result changed."
+    },
+    "2024-03-27T20:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitfinex printed the isolated upper wick.",
+      "review_notes": "Bitstamp and Coinbase highs were approximately 69100 while Bitfinex reached 70202; reviewed strategy state was unchanged."
+    },
+    "2024-04-13T05:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated upper wick.",
+      "review_notes": "Bitstamp and Bitfinex remained near 67900 while Coinbase reached 69100; no reviewed structural or path outcome changed."
+    },
+    "2024-05-14T02:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower wick.",
+      "review_notes": "Coinbase reached 61433 while Bitstamp and Bitfinex stayed above 62400; no reviewed strategy state changed."
+    },
+    "2024-06-05T19:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitstamp printed an isolated lower wick.",
+      "review_notes": "Bitstamp reached 69600 while Coinbase and Bitfinex remained near 70875; no reviewed swing, stop, or material path result changed."
+    },
+    "2024-07-02T21:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower extreme.",
+      "review_notes": "The other two venues did not confirm the wick and no reviewed strategy state changed."
+    },
+    "2024-08-05T01:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "review_conclusion": "All three venues confirmed the sharp selloff, with Bitstamp recording the shallowest low.",
+      "review_notes": "The event did not create a reviewed structural or stop disagreement."
+    },
+    "2024-11-06T17:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated upper wick.",
+      "review_notes": "Bitstamp and Bitfinex did not confirm the extreme and no reviewed strategy outcome changed."
+    },
+    "2024-12-05T22:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "mae_impact": true,
+      "review_conclusion": "Bitfinex printed an isolated lower wick that materially increased adverse excursion.",
+      "review_notes": "Bitstamp and Coinbase lows were near 92075 while Bitfinex reached 88800. MAE sensitivity reached 3.416 percentage points, but stop state did not change."
+    },
+    "2025-02-03T12:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitfinex printed the isolated lower wick.",
+      "review_notes": "Bitstamp and Coinbase were closely aligned near 94860 while Bitfinex reached 93049; reviewed strategy state was unchanged."
+    },
+    "2025-02-12T23:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower wick.",
+      "review_notes": "Bitstamp and Bitfinex lows were near 97600 while Coinbase reached 95500; no reviewed decision or portfolio result changed."
+    },
+    "2025-02-25T07:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "review_conclusion": "Bitstamp and Coinbase confirmed a deeper selloff than Bitfinex.",
+      "review_notes": "The move was real across venues, with Bitfinex underrepresenting the downside range; reviewed structure and stop state were unchanged."
+    },
+    "2025-04-02T04:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitstamp printed an isolated lower wick while both validators remained tightly aligned.",
+      "review_notes": "Bitstamp reached 81188 while Coinbase and Bitfinex stayed near 84450. It did not alter the reviewed structural, stop, or material path outcomes, but it is direct evidence of isolated Bitstamp wick risk."
+    },
+    "2025-04-02T21:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower wick.",
+      "review_notes": "The move was not confirmed by Bitstamp or Bitfinex and did not alter reviewed strategy state."
+    },
+    "2025-08-14T00:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Bitfinex printed the isolated upper extreme during the reviewed path.",
+      "review_notes": "The event contributed to path sensitivity but did not alone explain the later pairwise stop disagreement."
+    },
+    "2025-10-10T21:00:00+00:00": {
+      "event_classification": "cross_market_movement",
+      "swing_impact": true,
+      "reclaim_impact": true,
+      "stop_touch_impact": true,
+      "mae_impact": true,
+      "trade_outcome_impact": true,
+      "review_conclusion": "A real selloff was confirmed by all venues, but Bitstamp materially underrepresented the downside and missed a consensus stop hit.",
+      "review_notes": "Lows were 109683 Bitstamp, 107000 Coinbase, and 103310 Bitfinex. Both validators crossed the 107270 probe stop while Bitstamp did not; MAE sensitivity reached 4.605 percentage points."
+    },
+    "2025-12-05T15:00:00+00:00": {
+      "event_classification": "venue_specific_anomaly",
+      "review_conclusion": "Coinbase printed the isolated lower wick.",
+      "review_notes": "Bitstamp and Bitfinex remained near 90300 while Coinbase reached 88303.41; no reviewed strategy outcome changed."
+    }
+  },
+  "structural_reviews": {
+    "swing_high|2023-02-13T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitstamp alone created this swing high.",
+      "notes": "Bitstamp's 25270 high narrowly exceeded the next week; Coinbase's next-week high was higher, while a later Bitfinex gap changed its complete-week confirmation window."
+    },
+    "swing_high|2024-05-20T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitstamp and Coinbase selected 20 May while Bitfinex selected the nearby 3 June high.",
+      "notes": "The two highs differed by less than 0.02%; this is a marginal venue-ordering difference, not a distinct market structure."
+    },
+    "swing_high|2024-06-03T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitfinex alone selected the nearby 3 June high.",
+      "notes": "This is the counterpart to the 20 May disagreement and does not show Bitstamp acting alone."
+    },
+    "swing_low|2023-02-13T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitfinex alone created the swing low.",
+      "notes": "Small relative weekly-low ordering differences and a later incomplete Bitfinex week changed the strict classifier window."
+    },
+    "swing_low|2023-03-06T00:00:00+00:00": {
+      "classification": "DATA_CONTINUITY_EFFECT",
+      "conclusion": "Bitstamp and Coinbase created this low while Bitfinex could not produce the weekly bar.",
+      "notes": "Two persistent missing Bitfinex hours made the entire complete-week aggregate unavailable."
+    },
+    "swing_low|2023-08-14T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Both validators created a swing low that Bitstamp did not.",
+      "notes": "The 17 August selloff reached materially deeper lows on Coinbase and Bitfinex than on Bitstamp."
+    },
+    "swing_low|2024-04-15T00:00:00+00:00": {
+      "classification": "DATA_CONTINUITY_EFFECT",
+      "conclusion": "Bitfinex selected the earlier low after its later weekly bar became incomplete.",
+      "notes": "The persistent 5 May Bitfinex gap removed the 29 April complete weekly bar from its classifier input."
+    },
+    "swing_low|2024-04-29T00:00:00+00:00": {
+      "classification": "DATA_CONTINUITY_EFFECT",
+      "conclusion": "Bitstamp and Coinbase selected the later low while Bitfinex lacked the complete week.",
+      "notes": "The Bitfinex source gap, not a substituted price, caused this difference."
+    },
+    "swing_low|2025-10-06T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitfinex alone created the swing low, while Bitstamp recorded the shallowest crash low.",
+      "notes": "Coinbase also traded below Bitstamp, but a later persistent Coinbase gap affected its complete-week confirmation sequence."
+    },
+    "breakout|2023-03-13T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitstamp alone created this breakout.",
+      "notes": "The event follows directly from the candidate-only 13 February swing high and is material source sensitivity."
+    },
+    "reclaim|2023-08-14T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitfinex alone produced the initial reclaim tied to its deeper August low.",
+      "notes": "The source level and confirmation differ because the crash wick was materially deeper on Bitfinex."
+    },
+    "reclaim|2023-09-11T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Coinbase alone produced the later reclaim of its August low.",
+      "notes": "Bitstamp lacked the validator swing source level; Bitfinex had already confirmed its own reclaim."
+    },
+    "reclaim|2024-06-24T00:00:00+00:00": {
+      "classification": "DATA_CONTINUITY_EFFECT",
+      "conclusion": "Bitfinex reclaimed its earlier low after the source-gap-altered swing sequence.",
+      "notes": "The event is downstream of the incomplete 29 April Bitfinex weekly bar."
+    },
+    "reclaim|2024-07-08T00:00:00+00:00": {
+      "classification": "DATA_CONTINUITY_EFFECT",
+      "conclusion": "Bitstamp and Coinbase reclaimed the later 29 April low.",
+      "notes": "Bitfinex lacked that complete source week and therefore could not create the same reclaim."
+    },
+    "reclaim|2025-10-06T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Both validators produced a reclaim that Bitstamp did not.",
+      "notes": "This validator-consensus difference occurred in the same broad selloff where Bitstamp missed the reviewed stop."
+    },
+    "reclaim|2025-10-13T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitstamp alone produced a later reclaim.",
+      "notes": "The candidate's shallower low and different source-level sequence delayed and changed the reclaim state."
+    },
+    "reclaim|2025-11-03T00:00:00+00:00": {
+      "classification": "DECISION_DIVERGENCE",
+      "conclusion": "Bitfinex alone produced the later reclaim of its deeper October low.",
+      "notes": "The event is downstream of Bitfinex's venue-specific crash extreme."
+    }
+  },
+  "path_reviews": {
+    "4|coinbase": {
+      "review_conclusion": "Bitstamp's isolated 24 March high increased MFE by 1.915 percentage points versus Coinbase.",
+      "review_notes": "No stop or trade-outcome state changed."
+    },
+    "4|bitfinex": {
+      "review_conclusion": "Bitstamp's isolated 24 March high increased MFE by 2.433 percentage points versus Bitfinex.",
+      "review_notes": "This was the largest MFE sensitivity; stop state was unchanged."
+    },
+    "6|bitfinex": {
+      "review_conclusion": "Venue-specific path highs produced a 1.014 percentage-point MFE difference.",
+      "review_notes": "The Bitstamp 24 March spike remained the primary favorable-extreme difference; stop state was unchanged."
+    },
+    "25|coinbase": {
+      "review_conclusion": "Coinbase's deeper 17 August low increased MAE by 1.230 percentage points.",
+      "review_notes": "The selloff was cross-market and all compared stop states agreed."
+    },
+    "25|bitfinex": {
+      "review_conclusion": "Bitfinex's deeper 17 August low increased MAE by 2.982 percentage points.",
+      "review_notes": "The selloff was cross-market and stop state agreed."
+    },
+    "26|bitfinex": {
+      "review_conclusion": "The Bitfinex 17 August low increased MAE by 2.171 percentage points.",
+      "review_notes": "No stop-state difference resulted."
+    },
+    "27|bitfinex": {
+      "review_conclusion": "The Bitfinex 17 August low increased MAE by 2.135 percentage points.",
+      "review_notes": "No stop-state difference resulted."
+    },
+    "28|bitfinex": {
+      "review_conclusion": "The Bitfinex 17 August low increased MAE by 2.107 percentage points.",
+      "review_notes": "No stop-state difference resulted."
+    },
+    "63|bitfinex": {
+      "review_conclusion": "Different April path highs produced a 1.438 percentage-point MFE difference.",
+      "review_notes": "The outcome remained stop-state consistent."
+    },
+    "64|bitfinex": {
+      "review_conclusion": "Different April/May path highs produced a 1.043 percentage-point MFE difference.",
+      "review_notes": "The outcome remained stop-state consistent."
+    },
+    "95|bitfinex": {
+      "review_conclusion": "Bitfinex's 5 December lower wick increased MAE by 1.981 percentage points.",
+      "review_notes": "No stop-state difference resulted."
+    },
+    "96|bitfinex": {
+      "review_conclusion": "Bitfinex's isolated 5 December low increased MAE by 3.416 percentage points.",
+      "review_notes": "No stop-state difference resulted."
+    },
+    "131|bitfinex": {
+      "review_conclusion": "Bitstamp and Coinbase touched the stop while Bitfinex did not.",
+      "review_notes": "Bitstamp was not acting alone, so this disagreement does not count as a candidate-only stop hit."
+    },
+    "137|coinbase": {
+      "review_conclusion": "Coinbase touched the 107270 stop that Bitstamp missed.",
+      "review_notes": "The 10 October cross-market selloff increased MAE by 1.424 percentage points and changed trade outcome state."
+    },
+    "137|bitfinex": {
+      "review_conclusion": "Bitfinex touched the 107270 stop that Bitstamp missed.",
+      "review_notes": "Both validators agreed on the stop hit; MAE sensitivity reached 4.605 percentage points."
+    }
+  },
+  "gap_rechecks": [
+    {
+      "provider": "coinbase",
+      "window_start": "2023-03-04T16:00:00+00:00",
+      "window_end": "2023-03-04T22:00:00+00:00",
+      "missing_timestamps": ["2023-03-04T18:00:00+00:00", "2023-03-04T19:00:00+00:00", "2023-03-04T20:00:00+00:00"],
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure."
+    },
+    {
+      "provider": "coinbase",
+      "window_start": "2025-10-25T14:00:00+00:00",
+      "window_end": "2025-10-25T22:00:00+00:00",
+      "missing_timestamps": ["2025-10-25T16:00:00+00:00", "2025-10-25T17:00:00+00:00", "2025-10-25T18:00:00+00:00", "2025-10-25T19:00:00+00:00", "2025-10-25T20:00:00+00:00"],
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure."
+    },
+    {
+      "provider": "bitfinex",
+      "window_start": "2023-03-06T08:00:00+00:00",
+      "window_end": "2023-03-06T13:00:00+00:00",
+      "missing_timestamps": ["2023-03-06T10:00:00+00:00", "2023-03-06T11:00:00+00:00"],
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure."
+    },
+    {
+      "provider": "bitfinex",
+      "window_start": "2024-05-05T08:00:00+00:00",
+      "window_end": "2024-05-05T13:00:00+00:00",
+      "missing_timestamps": ["2024-05-05T10:00:00+00:00", "2024-05-05T11:00:00+00:00"],
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure."
+    }
+  ],
+  "decision": {
+    "status": "REJECTED",
+    "decided_at": "2026-08-29T14:13:30+00:00",
+    "material_systematic_bias_detected": false,
+    "isolated_wick_risk_acceptable": false,
+    "rationale": "Bitstamp had perfect continuity and no material persistent close-price bias versus Coinbase, but source choice changed strategy-relevant outcomes. Bitstamp alone created one swing and its breakout, failed to create a validator-consensus swing/reclaim sequence, and missed a 107270 stop that both validators hit during the 10 October 2025 selloff. Maximum MFE and MAE sensitivities were 2.433 and 4.605 percentage points. Those rare but consequential range differences make the isolated-wick risk unacceptable for a sole V1 canonical structural reference without a separate cross-venue confirmation or composite policy.",
+    "known_limitations": "The study covers three calendar years and three spot venues. The 149 weekly 28-day probes measure source sensitivity rather than a full strategy backtest. Root causes of persistent Coinbase and Bitfinex gaps remain UNKNOWN. Coin Metrics history was entitlement-unavailable and was not substituted.",
+    "follow_up_candidates": {
+      "coinbase": "Worthy of follow-up because closes align closely with Bitstamp, but persistent gaps and isolated Coinbase wicks prevent automatic promotion.",
+      "bitfinex": "Useful as a required validator, but its persistent close premium, source gaps, and several isolated extremes do not support automatic promotion.",
+      "composite": "Open a separate BTC_REFERENCE_COMPOSITE_V1 research ticket; do not implement or splice it into PRICE_SOURCE_POLICY_V1."
+    }
+  }
+}

@@ -62,8 +62,9 @@ records are not silently changed, and derives complete daily, weekly, and
 monthly bars from the same point-in-time source data.
 
 BTC price-source research is versioned as `PRICE_SOURCE_POLICY_V1` in
-`btc_predictor.research`. The policy uses Bitstamp `BTC/USD` (`btcusd`) as the
-provisional canonical candidate and primary raw OHLCV source. Coinbase
+`btc_predictor.research`. Empirical BTC-019 research rejected Bitstamp
+`BTC/USD` (`btcusd`) as the sole canonical reference, while retaining it as a
+primary raw OHLCV source. Coinbase
 `BTC-USD` and Bitfinex `BTC/USD` (`tBTCUSD`) are required independent validation
 venues. Coin Metrics `btc-usd` is an optional institutional benchmark and
 yfinance `BTC-USD` remains a noncanonical sanity check. The reference-price
@@ -80,6 +81,9 @@ at least two years of common bars, an explicit canonical-source decision is
 recorded, and every top divergence event has a structured manual review.
 Provider endpoints, access and entitlement diagnostics, pagination limits,
 constraints, and candle semantics are persisted with the policy record.
+The decision and its three-year evidence are persisted under
+`research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/`; no provider is currently
+approved as strategy-canonical.
 
 Canonical market bars can be generated with `build_canonical_market_bars`.
 They use `1h` BTC source bars that were closed and ingested by the
