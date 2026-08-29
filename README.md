@@ -180,7 +180,18 @@ Feature generation includes a past-only rolling statistics framework in
 z-scores, percentiles, ATR, and historical normalization. Mean, volatility, and
 ATR use trailing windows through the current completed observation; z-scores,
 percentiles, and historical normalization compare the current observation only
-against prior history. Volatility feature helpers include
+against prior history.
+
+Lower-level numerical work is isolated in `btc_predictor.quant`, a typed
+NumPy/SciPy core with no database, configuration, signal-action, or domain-model
+dependencies. Its `FLOAT64_V1` policy standardizes internal arrays on owned
+`float64` values, exact shape matching, explicit NaN handling, unconditional
+infinity rejection, `1e-12` comparison tolerances, and explicitly seeded PCG64
+simulation. Existing Decimal-facing feature APIs remain unchanged; migration to
+the array core can proceed ticket by ticket. The complete conventions are in
+`btc_predictor/quant/POLICY.md`.
+
+Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
 daily bars. `volatility_compression_ratio` implements
