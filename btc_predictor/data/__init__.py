@@ -4,6 +4,16 @@ from btc_predictor.data.audit import (
     IngestionAuditRecord,
     build_ingestion_audit_insert_ignore,
 )
+from btc_predictor.data.bitfinex import (
+    BITFINEX_BTC_USD_API_SYMBOL,
+    BITFINEX_BTC_USD_SYMBOL,
+    BITFINEX_CANDLES_BASE_URL,
+    BITFINEX_EXCHANGE,
+    BITFINEX_MAX_CANDLES_PER_REQUEST,
+    BITFINEX_PROVIDER_ID,
+    BitfinexOhlcvProvider,
+    BitfinexOhlcvProviderError,
+)
 from btc_predictor.data.derivatives import (
     DERIVATIVES_FEEDS,
     BtcDerivativesAggregate,
@@ -99,10 +109,18 @@ from btc_predictor.data.quality import (
 )
 
 __all__ = [
+    "BITFINEX_BTC_USD_API_SYMBOL",
+    "BITFINEX_BTC_USD_SYMBOL",
+    "BITFINEX_CANDLES_BASE_URL",
+    "BITFINEX_EXCHANGE",
+    "BITFINEX_MAX_CANDLES_PER_REQUEST",
+    "BITFINEX_PROVIDER_ID",
     "DERIVED_TIMEFRAMES",
     "DERIVATIVES_FEEDS",
     "DERIVATIVES_QUALITY_REASON_CODES",
     "BtcDerivativesAggregate",
+    "BitfinexOhlcvProvider",
+    "BitfinexOhlcvProviderError",
     "CANONICAL_BTC_MARKET_BAR_SESSION",
     "CANONICAL_MARKET_BAR_TIMEFRAMES",
     "DerivativesCollectionError",

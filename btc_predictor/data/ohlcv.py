@@ -195,6 +195,11 @@ def collect_btc_ohlcv(
 ) -> OhlcvCollectionResult:
     """Fetch raw 1h BTC OHLCV and persist raw plus complete derived bars."""
 
+    declared_provider_id = getattr(provider, "provider_id", None)
+    if declared_provider_id is not None and declared_provider_id != request.provider:
+        raise ValueError(
+            "OHLCV request provider must match the adapter's declared provider_id",
+        )
     ingestion_time = require_utc_datetime(ingested_at or datetime.now(UTC), "ingested_at")
     rows, attempts = _fetch_with_retry(provider, request)
     raw_bars = _normalize_provider_rows(rows, request=request, ingested_at=ingestion_time)
