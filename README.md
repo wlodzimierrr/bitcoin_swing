@@ -113,6 +113,15 @@ and two breakout/reclaim state differences. V1 remains
 `RESEARCH_INCONCLUSIVE`, BTC-019 remains in progress, and the production
 canonical reference remains unresolved.
 
+BTC-019C freezes the research-only `BTC_REFERENCE_COMPOSITE_V2` protocol at
+definition SHA-256
+`bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a`.
+The immutable definition and governance report are under
+`research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V2/`.
+No V2 external validation was performed and the sealed 2015-2019 candidate
+sample was not opened. BTC-019 remains in progress; normal Phase-1 development
+may resume before a later validator opens that sample against the frozen hash.
+
 Canonical market bars can be generated with `build_canonical_market_bars`.
 They use `1h` BTC source bars that were closed and ingested by the
 `data_available_at` cutoff. The canonical session is UTC: daily bars start at

@@ -1,0 +1,665 @@
+{
+  "approval_gates": [
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "validation_period_days",
+      "rationale": "Require at least four years spanning multiple market regimes.",
+      "source_of_rationale": "Economic coverage requirement; candidate sealed period exceeds four years.",
+      "threshold": 1460,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "reference_usable_rate",
+      "rationale": "Canonical structure needs near-continuous hourly prices.",
+      "source_of_rationale": "Frozen V1 availability gate retained because availability remains economically meaningful.",
+      "threshold": "0.995",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "reference_unavailable_rate",
+      "rationale": "Unavailable reference hours must remain rare and explicit.",
+      "source_of_rationale": "Complement of the frozen 99.5% V1 usable-rate gate.",
+      "threshold": "0.005",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "metric": "reference_degraded_rate",
+      "rationale": "Track warning frequency without rejecting economically harmless warnings alone.",
+      "source_of_rationale": "BTC-019B observed 1.0873% degraded hours with zero material episodes.",
+      "threshold": "0.020",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "metric": "venue_disagreement_rate",
+      "rationale": "Frequent severe disagreement may indicate an unstable provider set.",
+      "source_of_rationale": "BTC-019B observed 0.0114%; threshold is diagnostic, not a sole rejection gate.",
+      "threshold": "0.005",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "metric": "unrecorded_quality_state_count",
+      "rationale": "Every warning and unavailable observation must be reconstructable.",
+      "source_of_rationale": "Protocol provenance requirement.",
+      "threshold": 0,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "daily_bucket_usable_rate",
+      "rationale": "Daily features require nearly continuous explicit period state.",
+      "source_of_rationale": "Aligned with the hourly usable-rate floor.",
+      "threshold": "0.995",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "weekly_bucket_usable_rate",
+      "rationale": "Structural models must not lose meaningful weekly history.",
+      "source_of_rationale": "Economic requirement following the two omitted V1 weeks found by BTC-019B.",
+      "threshold": "0.990",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "metric": "silent_incomplete_bucket_omission_count",
+      "rationale": "Incomplete periods must remain visible as metadata records.",
+      "source_of_rationale": "Direct BTC-019B failure mechanism.",
+      "threshold": 0,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "atr_median_absolute_fractional_difference",
+      "rationale": "Typical volatility estimates should remain close to cross-venue consensus.",
+      "source_of_rationale": "Frozen V1 ATR median gate.",
+      "threshold": "0.02",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "atr_p95_absolute_fractional_difference",
+      "rationale": "Tail ATR distortion must remain bounded.",
+      "source_of_rationale": "Frozen V1 ATR p95 gate.",
+      "threshold": "0.10",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "metric": "exact_timestamp_swing_disagreement_rate",
+      "rationale": "Retain exact-label sensitivity without making it the sole structural gate.",
+      "source_of_rationale": "BTC-019B observed 12.1212% caused by two adjacent-week shifts.",
+      "threshold": "0.15",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "within_1_week_swing_disagreement_rate",
+      "rationale": "Weekly structures should match after allowing one label week of tolerance.",
+      "source_of_rationale": "BTC-019B diagnostic rate was zero; 5% allows sparse unexplained events.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "within_2_week_swing_disagreement_rate",
+      "rationale": "Two-week unmatched structures indicate more than label timing noise.",
+      "source_of_rationale": "BTC-019B diagnostic rate was zero; stricter 2% tail allowance.",
+      "threshold": "0.02",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "swing_level_disagreement_rate_above_0_50_atr",
+      "rationale": "Half an ATR is the primary economically meaningful structural level tolerance.",
+      "source_of_rationale": "Predeclared from BTC-019B grid and existing ATR-normalized structural logic.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "structural_state_disagreement_rate",
+      "rationale": "Reference choice should rarely change support/resistance state.",
+      "source_of_rationale": "BTC-019B separated structural effects from exact timestamp labels.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "breakout_disagreement_rate",
+      "rationale": "Breakout eligibility must be stable across robust references.",
+      "source_of_rationale": "Economic reasoning using existing deterministic breakout logic.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "reclaim_disagreement_rate",
+      "rationale": "Reclaim eligibility must be stable across robust references.",
+      "source_of_rationale": "Economic reasoning using existing deterministic reclaim logic.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "stop_touch_disagreement_rate",
+      "rationale": "Canonical source choice should almost never change stop outcomes.",
+      "source_of_rationale": "Frozen V1 stop gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "rationale": "A robust estimator must preserve genuine shared tail moves.",
+      "source_of_rationale": "Known-event requirement and BTC-019B stop analysis.",
+      "threshold": "1.0",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "rationale": "Most isolated exchange wicks should not create canonical stop events.",
+      "source_of_rationale": "Three known isolated V1 events were suppressed; 95% avoids event-specific perfection.",
+      "threshold": "0.95",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "rationale": "Gap-through behavior must agree with deterministic venue consensus.",
+      "source_of_rationale": "Stop-risk economic requirement.",
+      "threshold": "0.99",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "mfe_median_absolute_difference",
+      "rationale": "Typical favorable excursion distortion should remain below 25 bps.",
+      "source_of_rationale": "BTC-019B and V1 observed zero median difference.",
+      "threshold": "0.0025",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "mfe_p95_absolute_difference",
+      "rationale": "95% of path probes should remain within one percentage point.",
+      "source_of_rationale": "Existing BTC-019 material-path threshold.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "metric": "mfe_max_absolute_difference",
+      "rationale": "Expose extreme path sensitivity without letting one event decide alone.",
+      "source_of_rationale": "Robustness diagnostic chosen before sealed validation.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "mae_median_absolute_difference",
+      "rationale": "Typical adverse excursion distortion should remain below 25 bps.",
+      "source_of_rationale": "BTC-019B and V1 observed zero median difference.",
+      "threshold": "0.0025",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "mae_p95_absolute_difference",
+      "rationale": "95% of adverse paths should remain within one percentage point.",
+      "source_of_rationale": "Existing BTC-019 material-path threshold.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "metric": "mae_max_absolute_difference",
+      "rationale": "Expose extreme adverse-path sensitivity without post-hoc tuning.",
+      "source_of_rationale": "Robustness diagnostic chosen before sealed validation.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "rationale": "Reference policy should rarely change whether a trade is permitted.",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_action_disagreement_rate",
+      "rationale": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "risk_size_p95_relative_difference",
+      "rationale": "Reference changes should not materially resize most positions.",
+      "source_of_rationale": "Reserved Phase-1 risk consequence gate.",
+      "threshold": "0.10",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "regime_classification_disagreement_rate",
+      "rationale": "Regime labels should be robust to reference construction.",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.02",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "setup_classification_disagreement_rate",
+      "rationale": "Setup selection should rarely depend on venue noise.",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "metric": "point_in_time_violation_count",
+      "rationale": "Future or late observations invalidate the study.",
+      "source_of_rationale": "Non-negotiable point-in-time correctness requirement.",
+      "threshold": 0,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "provenance_complete_rate",
+      "rationale": "Every output must be reconstructable from immutable inputs.",
+      "source_of_rationale": "Non-negotiable auditability requirement.",
+      "threshold": "1.0",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "metric": "deterministic_rerun_hash_match",
+      "rationale": "Identical inputs and protocol must produce identical artifacts.",
+      "source_of_rationale": "Non-negotiable reproducibility requirement.",
+      "threshold": true,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "metric": "raw_observation_mutation_count",
+      "rationale": "Research may not rewrite source evidence.",
+      "source_of_rationale": "Existing BTC-019 and V1 governance.",
+      "threshold": 0,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "metric": "historical_fallback_splice_count",
+      "rationale": "Unversioned fallback splicing would invalidate provenance.",
+      "source_of_rationale": "Existing PRICE_SOURCE_POLICY_V1 governance.",
+      "threshold": 0,
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "live_shadow_days",
+      "rationale": "Historical APIs cannot reconstruct original publication latency.",
+      "source_of_rationale": "Prospective promotion requirement.",
+      "threshold": 90,
+      "validation_stage": "promotion"
+    }
+  ],
+  "atr_materiality": {
+    "grid": [
+      "0.10",
+      "0.20",
+      "0.30",
+      "0.50",
+      "1.00"
+    ],
+    "primary_threshold": "0.50",
+    "selection_rationale": "Half an ATR distinguishes economically meaningful level movement while the complete grid prevents post-hoc threshold selection."
+  },
+  "comparison_series": [
+    "Bitstamp-only",
+    "Coinbase-only",
+    "Bitfinex-only",
+    "MEDIAN_OHLC_V1 historical formula",
+    "BTC_REFERENCE_COMPOSITE_V2"
+  ],
+  "definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+  "frozen_dependency_artifacts": {
+    "BTC-019": {
+      "canonical_source_decision.json": "5ca7f5de0492cf2f2b31bd854a282f23a4054a75fd7d0a9c5ad044e24168fa0d",
+      "collection_manifest.json": "a2fd940ceb04c3fa8d864a4755f0d7789ff6f4f872907adf3c2e81701940504e",
+      "comparison_report.json": "82479ba02ab59e8e412f988a0208bbbaa02c8096eb756335e10211cfab730fac",
+      "empirical_validation_report.md": "41aed55372af99bb6bad8cdeff98f435950583d01fa240b6aa52d7f509843d79",
+      "manual_reviews.json": "b50aa107358d460a3b4cecdf0f4e61c365241972d73c4d72f2a43a97c3f73c95",
+      "review_assessments.json": "f6b8dbf775ffa81c1bb229b10a2034cdd91b1f2d364a419aa34c7766150c0980",
+      "supplemental_analysis.json": "94ed504ed111090fe7313445c785b817b48fdb7cce7067e274aaffb024bf29f8"
+    },
+    "BTC-019B": {
+      "degraded_bar_diagnostics.json": "7fef4315bb752bbd35bc18d7b00c3191a3e904a3cdb16129909f00bbbe638fdb",
+      "degraded_episode_diagnostics.json": "c1ba2dd65c5ef2da0e23058c3afe7ec3c2825238304f67e0d3546b3d9bea328c",
+      "diagnostic_protocol.json": "a3c566a5865591d617172dbc278fcdaa3092892d1c356da13004d8614a2d12bc",
+      "final_diagnostic_decision.json": "d911b7dba49ae3f4d05307efb655b0b18b3cc8fcb2ee8c9791ae42033c97a73d",
+      "final_diagnostic_report.md": "94e5a844a3eeabf4c28234292ab1b8ffcb59afab6a7226a0eab4525c6bd146bc",
+      "swing_disagreement_diagnostics.json": "d916bf9906cd50c8c86dab0510478283d2714d523a76adad65ab4676984002a5"
+    },
+    "BTC_REFERENCE_COMPOSITE_V1": {
+      "candidate_definition.json": "c2ca6c24363e3964bb1332a35242c2b7dfc93421034f8e5bf8e702a406d8561e",
+      "database_persistence_evidence.json": "b750e9f1d66fdd8fea1fd5e25fc990ddbfb212b59626746cffd8a7fc1b69afa0",
+      "development_validation_report.json": "8d0555b345bbc430e2f21fba1caef36de5849f22927b3e6fb8f876762a40ea0f",
+      "external_manual_review_assessments.json": "90e88d7e5ed276df70193837b901c060a4d83f75ca8e99cc2ac7ae5cb7a95256",
+      "external_validation_report.json": "f10de48bd501957f1c59ad58b168e0c8c9a6e6532d71c1145b77be43cc562055",
+      "final_decision.json": "cb0a32e14b45cf496c75029a17a83df68450367eba4c6e49708f3388819fc1e3",
+      "final_research_report.md": "3aca594b9a08333baeab01bdf97f80f559d776b54a6d830a0af14cd4611da4cb",
+      "point_in_time_metadata_correction.json": "2022e45d572a3e435c0973404329469d3b421c5cafcff5bef87b59559703baf4"
+    }
+  },
+  "future_strategy_consequence_metrics": [
+    "Trend Score",
+    "flow-independent price features",
+    "Volatility Score",
+    "Structure Score",
+    "Regime",
+    "setup classification",
+    "Entry Conviction",
+    "hard vetoes",
+    "entry zone",
+    "structural stop",
+    "R/R",
+    "initial position sizing",
+    "Hold Score",
+    "Add Score",
+    "trailing stop",
+    "paper-trade outcome"
+  ],
+  "governance": {
+    "btc019_status": "IN PROGRESS",
+    "btc_reference_composite_v1": "RESEARCH_INCONCLUSIVE",
+    "material_change_requires": "BTC_REFERENCE_COMPOSITE_V3 or later",
+    "normal_phase_1_development_may_resume_after_freeze": true,
+    "price_source_policy_v1": "UNCHANGED",
+    "production_canonical_reference": "UNRESOLVED",
+    "validation_not_performed": true
+  },
+  "higher_timeframe_aggregation": {
+    "complete_degraded": "publish OHLC and preserve degraded count",
+    "complete_ok": "publish OHLC and BUCKET_COMPLETE_OK",
+    "complete_venue_disagreement": "publish OHLC and preserve venue-disagreement count",
+    "incomplete": "persist bucket metadata with null OHLC, bucket_complete=false, bucket_usable=false, and REFERENCE_UNAVAILABLE",
+    "partial_bucket_ohlc_approved": false,
+    "required_metadata": [
+      "expected_bar_count",
+      "observed_bar_count",
+      "missing_bar_count",
+      "degraded_bar_count",
+      "venue_disagreement_bar_count",
+      "unavailable_bar_count",
+      "quality_state",
+      "bucket_complete",
+      "bucket_usable"
+    ],
+    "silent_bucket_omission_allowed": false,
+    "timeframes": [
+      "1d",
+      "1w"
+    ]
+  },
+  "hypothesis": "Keep robust median OHLC as the reference-price estimator while separating price availability from reference-quality state.",
+  "live_shadow": {
+    "minimum_days": 90,
+    "reason": "historical APIs do not reconstruct publication latency perfectly",
+    "required_for_promotion": true
+  },
+  "method": {
+    "candle_invariants": [
+      "high >= max(open, close)",
+      "low <= min(open, close)",
+      "high >= low",
+      "all prices > 0"
+    ],
+    "close": "median(available provider closes)",
+    "formula": "For every OHLC field independently, publish the median of all provider values available at the fixed decision time.",
+    "high": "median(available provider highs)",
+    "low": "median(available provider lows)",
+    "name": "median_ohlc",
+    "open": "median(available provider opens)",
+    "version": "MEDIAN_OHLC_V2",
+    "volume": "not_composited_provider_specific_only"
+  },
+  "point_in_time": {
+    "composite_available_at": "fixed composite decision_time",
+    "hourly_decision_time": "observation_time + 1 hour + 5 minutes",
+    "provider_inclusion": "provider.available_at <= composite decision_time",
+    "quality_atr": "prior completed daily ATR only",
+    "wait_for_late_provider": false
+  },
+  "production_promotion_authorized": false,
+  "prohibited_actions": [
+    "bulk collect the sealed 2015-2019 sample",
+    "inspect sealed-sample composite outcomes",
+    "tune thresholds using sealed-sample data",
+    "mutate raw provider observations",
+    "historically splice a fallback provider",
+    "silently omit incomplete higher-timeframe buckets",
+    "promote a production canonical source in BTC-019C",
+    "modify PRICE_SOURCE_POLICY_V1"
+  ],
+  "provenance_schema": [
+    "reference_policy_version",
+    "method_version",
+    "observation_time",
+    "decision_time",
+    "available_at",
+    "providers_expected",
+    "providers_available",
+    "provider observation IDs",
+    "provider OHLC values",
+    "provider available_at values",
+    "input_count",
+    "composite OHLC",
+    "reference_price_available",
+    "quality_state",
+    "confirmation_state",
+    "close_dispersion_bps",
+    "high_dispersion_atr",
+    "low_dispersion_atr",
+    "range_dispersion_atr",
+    "fallback_used",
+    "reason_codes"
+  ],
+  "providers": {
+    "historical_splicing_allowed": false,
+    "instruments": {
+      "bitfinex": {
+        "api_symbol": "tBTCUSD",
+        "exchange": "bitfinex",
+        "normalized_symbol": "BTC/USD"
+      },
+      "bitstamp": {
+        "api_symbol": "btcusd",
+        "exchange": "bitstamp",
+        "normalized_symbol": "BTC/USD"
+      },
+      "coinbase": {
+        "api_symbol": "BTC-USD",
+        "exchange": "coinbase",
+        "normalized_symbol": "BTC-USD"
+      }
+    },
+    "minimum_provider_count": 2,
+    "required": [
+      "bitstamp",
+      "coinbase",
+      "bitfinex"
+    ],
+    "single_venue_fallback_allowed": false
+  },
+  "quality_state_semantics": {
+    "entry_permission_separate": true,
+    "one_provider": {
+      "publish": false,
+      "quality_state": "REFERENCE_UNAVAILABLE"
+    },
+    "strategy_policy_reserved": {
+      "REFERENCE_DEGRADED": "reference usable; entry/add policy evaluated later",
+      "REFERENCE_OK": "normal operation candidate",
+      "REFERENCE_UNAVAILABLE": "DATA_QUALITY_FAIL candidate",
+      "VENUE_DISAGREEMENT": "reference usable; hard entry/add veto candidate"
+    },
+    "three_providers": {
+      "full_close_agreement": {
+        "publish": true,
+        "quality_state": "REFERENCE_OK"
+      },
+      "full_close_agreement_with_range_disagreement": {
+        "meaning": "close consensus exists but a high, low, or total-range dispersion exceeds the frozen ATR threshold",
+        "publish": true,
+        "quality_state": "VENUE_DISAGREEMENT"
+      },
+      "no_close_consensus": {
+        "meaning": "price exists but confidence and venue agreement are poor",
+        "publish": true,
+        "quality_state": "VENUE_DISAGREEMENT"
+      },
+      "two_of_three_close_consensus": {
+        "publish": true,
+        "quality_state": "REFERENCE_DEGRADED"
+      }
+    },
+    "two_providers": {
+      "agreement_checks_fail": {
+        "publish": false,
+        "quality_state": "REFERENCE_UNAVAILABLE"
+      },
+      "agreement_checks_pass": {
+        "publish": true,
+        "quality_state": "REFERENCE_DEGRADED"
+      },
+      "prior_atr_unavailable": {
+        "publish": false,
+        "quality_state": "REFERENCE_UNAVAILABLE"
+      }
+    },
+    "zero_providers": {
+      "publish": false,
+      "quality_state": "REFERENCE_UNAVAILABLE"
+    }
+  },
+  "quality_thresholds": {
+    "atr_window_days": 14,
+    "close_agreement_bps": "50",
+    "high_low_or_range_disagreement_atr": "0.30",
+    "threshold_source": "frozen V1 close and two-provider ATR thresholds; V2 applies the ATR threshold to explicit three-provider range disagreement too"
+  },
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V2",
+  "research_only": true,
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V2_PROTOCOL_DEFINITION_V1",
+  "status": "FROZEN_RESEARCH_PROTOCOL",
+  "untouched_validation_sample": {
+    "end": "2019-11-30T23:00:00+00:00",
+    "guard": "all overlapping exploratory access raises until a future dedicated validator exists",
+    "known_metadata_only": "provider availability boundaries",
+    "start": "2015-07-20T21:00:00+00:00",
+    "status": [
+      "BOUNDARY_VERIFIED",
+      "BULK_COMPLETENESS_UNMEASURED",
+      "OUTCOMES_UNINSPECTED",
+      "DO_NOT_OPEN_UNTIL_V2_VALIDATION"
+    ]
+  },
+  "validation_metric_families": {
+    "availability_quality": [
+      "reference_usable_rate",
+      "REFERENCE_OK rate",
+      "REFERENCE_DEGRADED rate",
+      "VENUE_DISAGREEMENT rate",
+      "REFERENCE_UNAVAILABLE rate",
+      "degraded episode count",
+      "unavailable episode count",
+      "venue-disagreement episode count",
+      "higher-timeframe incomplete-bucket count"
+    ],
+    "path": [
+      "median absolute MFE difference",
+      "p95 MFE difference",
+      "max MFE difference",
+      "median absolute MAE difference",
+      "p95 MAE difference",
+      "max MAE difference"
+    ],
+    "quality_economic_materiality": [
+      "structural-state difference",
+      "breakout difference",
+      "reclaim difference",
+      "stop difference",
+      "MFE difference",
+      "MAE difference",
+      "trade eligibility difference",
+      "risk difference"
+    ],
+    "stops": [
+      "stop-touch disagreement rate",
+      "cross-market confirmed stop preservation",
+      "isolated-venue stop suppression",
+      "gap-through-stop behavior",
+      "structural invalidation differences"
+    ],
+    "swings": [
+      "exact timestamp disagreement",
+      "+/-1 week matched disagreement",
+      "+/-2 week matched disagreement",
+      "ATR-normalized level disagreement",
+      "structural-state disagreement",
+      "breakout disagreement",
+      "reclaim disagreement",
+      "stop-impact disagreement",
+      "trade/risk-material disagreement"
+    ]
+  }
+}
