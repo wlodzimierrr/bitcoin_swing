@@ -1,0 +1,48 @@
+{
+  "atr_material_grid": [
+    "0.10",
+    "0.20",
+    "0.30",
+    "0.50",
+    "1.00"
+  ],
+  "bar_classification_precedence": [
+    "MISSING_PROVIDER",
+    "GENUINE_CROSS_MARKET_VOLATILITY",
+    "PROVIDER_CLOSE_DISCONTINUITY",
+    "PERSISTENT_PROVIDER_DISLOCATION",
+    "ISOLATED_PROVIDER_OUTLIER",
+    "TWO_OF_THREE_CLOSE_CONSENSUS",
+    "RANGE_DISAGREEMENT",
+    "OTHER_EXPLAINED",
+    "UNRESOLVED"
+  ],
+  "diagnostic_rules": {
+    "genuine_cross_market_volatility": "Every available venue has an hourly high-low range of at least 0.30 prior daily ATR. This uses the frozen V1 range threshold.",
+    "isolated_provider_outlier": "One provider lies outside the closest close pair and no stronger point-in-time diagnostic above applies.",
+    "missing_provider": "Fewer than all three frozen V1 providers are present.",
+    "persistent_provider_dislocation": "The same isolated provider was already the outlier in the immediately preceding degraded hour; no future hour is used.",
+    "provider_close_discontinuity": "The isolated close has an opposite one-hour return sign to both members of the agreeing pair, or its open gap from its own prior close exceeds 50 bps and every agreeing-pair gap.",
+    "range_disagreement": "High, low, or candle-range dispersion exceeds the frozen 0.30 prior-daily-ATR V1 two-provider range threshold.",
+    "two_of_three_close_consensus": "The closest provider-close pair is within the frozen 50 bps V1 close threshold while all three closes are not."
+  },
+  "economic_counterfactual": "Research-only, one episode at a time: for three-provider degraded hours, replace each independent median-OHLC candle with the fieldwise midpoint of the closest close-consensus pair. Two-provider candles are unchanged. This is diagnostic attribution, not a composite candidate.",
+  "episode_definition": "Maximal sequence of REFERENCE_DEGRADED observations separated by exactly one hour.",
+  "frozen_v1_invariants": {
+    "approval_thresholds_changed": false,
+    "formula_changed": false,
+    "price_source_policy_changed": false,
+    "primary_method_version": "MEDIAN_OHLC_V1",
+    "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+    "v1_decision": "RESEARCH_INCONCLUSIVE"
+  },
+  "material_path_difference_fraction": "0.01",
+  "point_in_time": {
+    "atr_rule": "prior completed daily ATR only",
+    "decision_time": "observation_time + 1 hour + 5 minutes",
+    "input_rule": "input.available_at <= composite_decision_time",
+    "persistent_flag_rule": "prior observations only"
+  },
+  "schema_version": "BTC019B_DIAGNOSTIC_PROTOCOL_V1",
+  "scope": "diagnostic_only"
+}

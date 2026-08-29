@@ -1,0 +1,440 @@
+{
+  "database": {
+    "expected_existing_head": "0019_reference_composite",
+    "migration_required": false,
+    "reason": "BTC-019B persists immutable research artifacts only.",
+    "schema_changed": false
+  },
+  "governance": {
+    "automatic_provider_promotion": false,
+    "btc019_status_recommendation": "IN PROGRESS",
+    "btc_reference_composite_v1": "RESEARCH_INCONCLUSIVE",
+    "degraded_rate_gate_assessment": "The frozen total-frequency gate is not economically well specified as a standalone gate: it treats usable warnings with zero measured structural/trade effects like unusable reference failures. Preserve it for V1 and supplement, rather than retroactively replace, it.",
+    "diagnostic_conclusion": "MIXED",
+    "exact_swing_gate_assessment": "Exact timestamps are too brittle as a standalone weekly-structure gate, but the failure exposed real omitted-week level and breakout state changes. Preserve the V1 result and require temporal, ATR, structural-state, and trade-risk diagnostics in a future version.",
+    "price_source_policy_v1": "UNCHANGED",
+    "production_canonical_reference": "UNRESOLVED"
+  },
+  "provider_attribution": {
+    "bitfinex": {
+      "agreeing_close_cluster_member": {
+        "count": 21,
+        "rate": "0.07342657342657342657342657343"
+      },
+      "close_outlier": {
+        "count": 250,
+        "rate": "0.8741258741258741258741258741"
+      },
+      "high_outlier": {
+        "count": 244,
+        "rate": "0.8531468531468531468531468531"
+      },
+      "low_outlier": {
+        "count": 248,
+        "rate": "0.8671328671328671328671328671"
+      },
+      "missing": {
+        "count": 12,
+        "rate": "0.04195804195804195804195804196"
+      },
+      "stale_or_dislocated": {
+        "count": 118,
+        "rate": "0.4125874125874125874125874126"
+      }
+    },
+    "bitstamp": {
+      "agreeing_close_cluster_member": {
+        "count": 256,
+        "rate": "0.8951048951048951048951048951"
+      },
+      "close_outlier": {
+        "count": 15,
+        "rate": "0.05244755244755244755244755245"
+      },
+      "high_outlier": {
+        "count": 15,
+        "rate": "0.05244755244755244755244755245"
+      },
+      "low_outlier": {
+        "count": 13,
+        "rate": "0.04545454545454545454545454545"
+      },
+      "missing": {
+        "count": 0,
+        "rate": "0"
+      },
+      "stale_or_dislocated": {
+        "count": 4,
+        "rate": "0.01398601398601398601398601399"
+      }
+    },
+    "coinbase": {
+      "agreeing_close_cluster_member": {
+        "count": 265,
+        "rate": "0.9265734265734265734265734266"
+      },
+      "close_outlier": {
+        "count": 6,
+        "rate": "0.02097902097902097902097902098"
+      },
+      "high_outlier": {
+        "count": 12,
+        "rate": "0.04195804195804195804195804196"
+      },
+      "low_outlier": {
+        "count": 10,
+        "rate": "0.03496503496503496503496503497"
+      },
+      "missing": {
+        "count": 3,
+        "rate": "0.01048951048951048951048951049"
+      },
+      "stale_or_dislocated": {
+        "count": 0,
+        "rate": "0"
+      }
+    }
+  },
+  "quality_state_analysis": {
+    "material_degraded": {
+      "bar_count": 0,
+      "episode_count": 0,
+      "rate_of_all_hours": "0",
+      "rate_of_degraded_hours": "0"
+    },
+    "quality_state_counts": {
+      "REFERENCE_DEGRADED": 286,
+      "REFERENCE_OK": 26015,
+      "VENUE_DISAGREEMENT": 3
+    },
+    "reference_degraded": {
+      "bar_count": 286,
+      "rate": "0.01087287104622871046228710462",
+      "reference_usable": true
+    },
+    "reference_unavailable": {
+      "bar_count": 0,
+      "rate": "0"
+    },
+    "unresolved_venue_disagreement": {
+      "bar_count": 3,
+      "causal_swing_link": "The three unusable hours make the 2020-03-09 and 2021-04-12 weekly buckets incomplete. The research-only restoration diagnostic tests whether those omissions explain the paired swing differences.",
+      "rate": "0.0001140510948905109489051094891",
+      "records": [
+        {
+          "classification": "GENUINE_CROSS_MARKET_VOLATILITY",
+          "complete_week_omitted_from_frozen_composite": true,
+          "diagnostics": {
+            "close_dispersion_bps": "440.2412632349133272043539509",
+            "high_dispersion_atr": "0.2051989755048940219571204851",
+            "low_dispersion_atr": "0.3952932750941426364123604428",
+            "range_dispersion_atr": "0.1900942995892486144552399576"
+          },
+          "linked_swing_pair_ids": [
+            "BTC019B-SWING-PAIR-02"
+          ],
+          "provider_ohlc": {
+            "bitfinex": {
+              "close": "4297.1",
+              "high": "4900",
+              "low": "4250",
+              "open": "4777.04095362"
+            },
+            "bitstamp": {
+              "close": "4111.78",
+              "high": "4773.93",
+              "low": "4007.14",
+              "open": "4671.14"
+            },
+            "coinbase": {
+              "close": "4209.51",
+              "high": "4842.99",
+              "low": "4130",
+              "open": "4677.57"
+            }
+          },
+          "reason_codes": [
+            "COMPOSITE_CLOSE_DISAGREEMENT"
+          ],
+          "reference_usable": false,
+          "stop_touch_effect": false,
+          "structural_effect": true,
+          "timestamp": "2020-03-13T01:00:00+00:00",
+          "trade_or_risk_material_effect": false,
+          "weekly_bucket": "2020-03-09T00:00:00+00:00"
+        },
+        {
+          "classification": "GENUINE_CROSS_MARKET_VOLATILITY",
+          "complete_week_omitted_from_frozen_composite": true,
+          "diagnostics": {
+            "close_dispersion_bps": "248.9330330210938809940726938",
+            "high_dispersion_atr": "0.1481169728797125089085267244",
+            "low_dispersion_atr": "0.04434799206865000796390317289",
+            "range_dispersion_atr": "0.1924649649483625168724298973"
+          },
+          "linked_swing_pair_ids": [
+            "BTC019B-SWING-PAIR-02"
+          ],
+          "provider_ohlc": {
+            "bitfinex": {
+              "close": "5698.7",
+              "high": "5767",
+              "low": "5365.17648769",
+              "open": "5376.5"
+            },
+            "bitstamp": {
+              "close": "5842.71",
+              "high": "5848.00",
+              "low": "5338.32",
+              "open": "5355.00"
+            },
+            "coinbase": {
+              "close": "5785.09",
+              "high": "5858",
+              "low": "5337.93",
+              "open": "5349.72"
+            }
+          },
+          "reason_codes": [
+            "COMPOSITE_CLOSE_DISAGREEMENT"
+          ],
+          "reference_usable": false,
+          "stop_touch_effect": false,
+          "structural_effect": true,
+          "timestamp": "2020-03-13T09:00:00+00:00",
+          "trade_or_risk_material_effect": false,
+          "weekly_bucket": "2020-03-09T00:00:00+00:00"
+        },
+        {
+          "classification": "GENUINE_CROSS_MARKET_VOLATILITY",
+          "complete_week_omitted_from_frozen_composite": true,
+          "diagnostics": {
+            "close_dispersion_bps": "247.3041861867504652991682952",
+            "high_dispersion_atr": "0.04970532454292047109192246818",
+            "low_dispersion_atr": "0.4048122317045297065242959713",
+            "range_dispersion_atr": "0.3565571642059231697031249957"
+          },
+          "linked_swing_pair_ids": [
+            "BTC019B-SWING-PAIR-01"
+          ],
+          "provider_ohlc": {
+            "bitfinex": {
+              "close": "55025",
+              "high": "58909",
+              "low": "50500",
+              "open": "58764"
+            },
+            "bitstamp": {
+              "close": "55453.57",
+              "high": "59033.11",
+              "low": "51541.16",
+              "open": "58855.51"
+            },
+            "coinbase": {
+              "close": "56396.39",
+              "high": "59036.84",
+              "low": "51300",
+              "open": "58849.46"
+            }
+          },
+          "reason_codes": [
+            "COMPOSITE_CLOSE_DISAGREEMENT"
+          ],
+          "reference_usable": false,
+          "stop_touch_effect": false,
+          "structural_effect": true,
+          "timestamp": "2021-04-18T03:00:00+00:00",
+          "trade_or_risk_material_effect": false,
+          "weekly_bucket": "2021-04-12T00:00:00+00:00"
+        }
+      ],
+      "restoration_result": {
+        "breakout_reclaim_state_changes_vs_frozen_composite": 2,
+        "max_mae_fractional_difference": "0",
+        "max_mfe_fractional_difference": "0",
+        "method": "Research-only fieldwise median of all three raw venues for the three V1 VENUE_DISAGREEMENT hours; not a proposed formula.",
+        "restored_hour_count": 3,
+        "stop_touch_difference_count": 0,
+        "swing_symmetric_difference_after_restoration": 0
+      }
+    },
+    "usable_reference": {
+      "bar_count": 26301,
+      "rate": "0.9998859489051094890510948905"
+    }
+  },
+  "schema_version": "BTC019B_GATE_DIAGNOSTICS_V1",
+  "summary": {
+    "degraded_classification_breakdown": {
+      "GENUINE_CROSS_MARKET_VOLATILITY": {
+        "bars": 104,
+        "episodes": 41,
+        "material_structure_episodes": 0,
+        "percent_of_all_hours": "0.003953771289537712895377128954",
+        "stop_impact_count": 0,
+        "trade_or_risk_material_episodes": 0
+      },
+      "ISOLATED_PROVIDER_OUTLIER": {
+        "bars": 45,
+        "episodes": 33,
+        "material_structure_episodes": 0,
+        "percent_of_all_hours": "0.001710766423357664233576642336",
+        "stop_impact_count": 0,
+        "trade_or_risk_material_episodes": 0
+      },
+      "MISSING_PROVIDER": {
+        "bars": 15,
+        "episodes": 8,
+        "material_structure_episodes": 0,
+        "percent_of_all_hours": "0.0005702554744525547445255474453",
+        "stop_impact_count": 0,
+        "trade_or_risk_material_episodes": 0
+      },
+      "PERSISTENT_PROVIDER_DISLOCATION": {
+        "bars": 106,
+        "episodes": 12,
+        "material_structure_episodes": 0,
+        "percent_of_all_hours": "0.004029805352798053527980535280",
+        "stop_impact_count": 0,
+        "trade_or_risk_material_episodes": 0
+      },
+      "PROVIDER_CLOSE_DISCONTINUITY": {
+        "bars": 16,
+        "episodes": 7,
+        "material_structure_episodes": 0,
+        "percent_of_all_hours": "0.0006082725060827250608272506083",
+        "stop_impact_count": 0,
+        "trade_or_risk_material_episodes": 0
+      }
+    },
+    "degraded_classification_counts": {
+      "GENUINE_CROSS_MARKET_VOLATILITY": 104,
+      "ISOLATED_PROVIDER_OUTLIER": 45,
+      "MISSING_PROVIDER": 15,
+      "PERSISTENT_PROVIDER_DISLOCATION": 106,
+      "PROVIDER_CLOSE_DISCONTINUITY": 16
+    },
+    "degraded_episode_classification_counts": {
+      "GENUINE_CROSS_MARKET_VOLATILITY": 41,
+      "ISOLATED_PROVIDER_OUTLIER": 33,
+      "MISSING_PROVIDER": 8,
+      "PERSISTENT_PROVIDER_DISLOCATION": 12,
+      "PROVIDER_CLOSE_DISCONTINUITY": 7
+    },
+    "degraded_episode_rate_per_evaluation_hour": "0.003839720194647201946472019465",
+    "diagnostic_stop_impact_disagreement": {
+      "denominator": 33,
+      "disagreement_count": 0,
+      "disagreement_rate": "0"
+    },
+    "diagnostic_structural_state_disagreement": {
+      "denominator": 33,
+      "disagreement_count": 2,
+      "disagreement_rate": "0.06060606060606060606060606061"
+    },
+    "diagnostic_trade_or_risk_material_disagreement": {
+      "denominator": 33,
+      "disagreement_count": 0,
+      "disagreement_rate": "0"
+    },
+    "diagnostic_within_one_week_swing_disagreement": {
+      "denominator": 31,
+      "disagreement_count": 0,
+      "disagreement_rate": "0"
+    },
+    "diagnostic_within_two_weeks_swing_disagreement": {
+      "denominator": 31,
+      "disagreement_count": 0,
+      "disagreement_rate": "0"
+    },
+    "economic_consequence_bar_counts": {
+      "REFERENCE_DEGRADED_BUT_ECONOMICALLY_EQUIVALENT": 149,
+      "REFERENCE_DEGRADED_WITH_MINOR_NUMERIC_DIFFERENCE": 137
+    },
+    "economic_consequence_counts": {
+      "REFERENCE_DEGRADED_BUT_ECONOMICALLY_EQUIVALENT": 78,
+      "REFERENCE_DEGRADED_WITH_MINOR_NUMERIC_DIFFERENCE": 23
+    },
+    "economically_material_degraded_bars": 0,
+    "economically_material_degraded_episodes": 0,
+    "economically_material_degraded_rate_all_hours": "0",
+    "economically_material_degraded_rate_degraded_hours": "0",
+    "episode_duration_hours": {
+      "maximum": 35,
+      "median": "1",
+      "p95": "9"
+    },
+    "evaluation_hour_count": 26304,
+    "frozen_degraded_rate": "0.01087287104622871046228710462",
+    "frozen_exact_swing_disagreement": {
+      "denominator": 33,
+      "disagreement_count": 4,
+      "disagreement_rate": "0.1212121212121212121212121212"
+    },
+    "total_degraded_bars": 286,
+    "total_degraded_episodes": 101,
+    "unavailable_bar_count": 0,
+    "unavailable_or_disagreement_rate": "0.0001140510948905109489051094891",
+    "unresolved_disagreement_bar_count": 3,
+    "usable_reference_rate": "0.9998859489051094890510948905"
+  },
+  "v1_artifact_sha256": {
+    "candidate_definition.json": "c2ca6c24363e3964bb1332a35242c2b7dfc93421034f8e5bf8e702a406d8561e",
+    "database_persistence_evidence.json": "b750e9f1d66fdd8fea1fd5e25fc990ddbfb212b59626746cffd8a7fc1b69afa0",
+    "development_validation_report.json": "8d0555b345bbc430e2f21fba1caef36de5849f22927b3e6fb8f876762a40ea0f",
+    "external_manual_review_assessments.json": "90e88d7e5ed276df70193837b901c060a4d83f75ca8e99cc2ac7ae5cb7a95256",
+    "external_validation_report.json": "f10de48bd501957f1c59ad58b168e0c8c9a6e6532d71c1145b77be43cc562055",
+    "final_decision.json": "cb0a32e14b45cf496c75029a17a83df68450367eba4c6e49708f3388819fc1e3",
+    "final_research_report.md": "3aca594b9a08333baeab01bdf97f80f559d776b54a6d830a0af14cd4611da4cb",
+    "point_in_time_metadata_correction.json": "2022e45d572a3e435c0973404329469d3b421c5cafcff5bef87b59559703baf4"
+  },
+  "v2_research_proposal": {
+    "approval_metrics": [
+      "usable_reference_rate",
+      "unavailable_and_unresolved_rate",
+      "degraded_episode_rate",
+      "economically_material_degraded_rate",
+      "exact_and_temporal_swing_disagreement",
+      "atr_material_swing_disagreement_grid",
+      "structural_state_disagreement",
+      "stop_impact_disagreement",
+      "trade_or_risk_material_disagreement"
+    ],
+    "candidate_methodology": "Retain MEDIAN_OHLC_V1 as the leading formula candidate; study quality-state and incomplete-period semantics before introducing any new formula.",
+    "migration_and_governance": "Create new versioned policy, method, persistence metadata, migration, and reviewed approval decision; never rewrite V1 rows or artifacts.",
+    "point_in_time_rules": "Retain close + 5 minute decision time, require input available_at <= decision time, use prior completed ATR only, and prohibit implicit splicing.",
+    "quality_state_semantics": {
+      "degraded": "Usable two-provider or partial-consensus reference with separately persisted cause, episode, and materiality diagnostics.",
+      "unavailable": "No publishable hourly reference. Weekly aggregation must explicitly persist incomplete-bucket state rather than silently remove the week.",
+      "unresolved_disagreement": "Separate from missing input and from usable degraded consensus."
+    },
+    "status": "PROPOSED_NOT_IMPLEMENTED",
+    "swing_consensus_semantics": "Keep exact timestamps, add predeclared +/-1w, +/-2w, ATR-grid, structural-state, stop, and trade/risk material metrics.",
+    "threshold_policy": "Freeze thresholds and the complete 0.10/0.20/0.30/0.50/1.00 ATR grid before opening any V2 validation sample.",
+    "untouched_validation": {
+      "candidate_longest_historical_period": "2015-07-20T21:00:00Z through 2019-11-30T23:00:00Z",
+      "candidate_status": "Public API boundary availability verified on 2026-08-29; bulk completeness remains unmeasured and must be frozen before collection.",
+      "coverage_boundary_evidence": {
+        "bitfinex": {
+          "candle_present_at_common_start": true,
+          "documentation": "https://docs.bitfinex.com/reference/rest-public-candles",
+          "instrument": "tBTCUSD"
+        },
+        "bitstamp": {
+          "candle_present_at_common_start": true,
+          "documentation": "https://www.bitstamp.net/api/#ohlc_data",
+          "instrument": "BTC/USD"
+        },
+        "coinbase": {
+          "documentation": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles",
+          "first_public_1h_candle": "2015-07-20T21:00:00Z",
+          "instrument": "BTC-USD"
+        },
+        "inspection_scope": "Coverage-boundary metadata only; no cross-provider outcomes, gate tuning, or V2 metric design used this historical sample."
+      },
+      "inspected_and_ineligible_as_pristine_oos": "2020-01-01 through 2025-12-31",
+      "required_supplement": "future live-shadow validation"
+    },
+    "version": "BTC_REFERENCE_COMPOSITE_V2"
+  }
+}

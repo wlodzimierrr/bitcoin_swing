@@ -94,6 +94,25 @@ frequency and swing disagreement missed their predeclared gates. Composite
 records remain research-only in `derived.btc_reference_composite`; neither
 `PRICE_SOURCE_POLICY_V1` nor the production canonical reference was changed.
 
+BTC-019B diagnoses the two failed V1 gates without changing the composite or
+its frozen thresholds. Reproduce the immutable diagnostic artifacts with
+Python 3.12+:
+
+```bash
+python -m btc_predictor.research.btc019b_diagnostics \
+  --raw-dir data/btc_reference_composite_v1/external_2019-12-01_2022-12-31 \
+  --v1-artifact-dir research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1 \
+  --output-dir /tmp/btc019b-reproduction
+```
+
+The committed result is under `research_artifacts/btc019b/` and remains
+`MIXED`: the 286 degraded-but-usable hours had no measured
+structural or trade/risk effect, while three unusable disagreement hours caused
+two complete weekly buckets to be omitted, four exact swing-set differences,
+and two breakout/reclaim state differences. V1 remains
+`RESEARCH_INCONCLUSIVE`, BTC-019 remains in progress, and the production
+canonical reference remains unresolved.
+
 Canonical market bars can be generated with `build_canonical_market_bars`.
 They use `1h` BTC source bars that were closed and ingested by the
 `data_available_at` cutoff. The canonical session is UTC: daily bars start at
