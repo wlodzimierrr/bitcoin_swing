@@ -25,14 +25,19 @@ Policy version: `FLOAT64_V1`.
 - NaN is rejected by default.
 - `propagate` must be requested explicitly and produces NaN where an input or
   rolling window is incomplete.
-- `omit` is reserved for reduction helpers whose behavior will be implemented
-  and parity-tested in BTC-043. BTC-042 boundaries support only `raise` and
-  `propagate`; they never silently remove observations.
+- Raw array boundaries support only `raise` and `propagate`; they never silently
+  remove observations.
+- BTC-043 rolling reductions additionally support `omit`, count only finite
+  values toward `min_periods`, and retain the original output shape. Temporal
+  returns and true range do not support omission because it would change
+  observation adjacency.
 - Rolling warm-up periods are represented by NaN, not zero.
 
 ## Tolerances And Statistics
 
 - Default absolute and relative comparison tolerances are both `1e-12`.
+- BTC-043 parity against the BTC-041 Decimal oracle uses absolute and relative
+  tolerances of `1e-12`.
 - Near-zero denominators and effectively constant z-score inputs fail.
 - Degrees of freedom are explicit and default to population statistics
   (`ddof=0`).
@@ -40,6 +45,18 @@ Policy version: `FLOAT64_V1`.
 - Percentile ranks use the mean rank for ties.
 - Return transforms emit `n-1` observations and do not invent a padded first
   return.
+
+## Rolling Windows
+
+- Mean, volatility, true range, ATR, and realized volatility include the
+  current completed observation.
+- Z-scores, percentile ranks, and historical normalization compare the current
+  observation only with prior history.
+- Realized volatility uses population standard deviation by default and
+  annualizes simple close-to-close returns by `sqrt(annualization_periods)`.
+- Warm-up and undefined results remain NaN in the NumPy layer and convert to
+  `None` only at existing Decimal-facing feature boundaries.
+- Appending future observations cannot change an earlier result.
 
 ## Determinism And Boundaries
 

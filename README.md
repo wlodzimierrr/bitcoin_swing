@@ -191,6 +191,15 @@ simulation. Existing Decimal-facing feature APIs remain unchanged; migration to
 the array core can proceed ticket by ticket. The complete conventions are in
 `btc_predictor/quant/POLICY.md`.
 
+BTC-043 provides NumPy kernels for rolling mean and volatility, prior-window
+z-scores and percentile ranks, historical normalization, close-to-close
+returns, true range, ATR, and annualized realized volatility. Outputs are
+parity-tested against the BTC-041 Decimal implementation at `1e-12` absolute
+and relative tolerance. Batch results match prefix-by-prefix calculations,
+warm-up and missing values remain explicit, and the existing
+`btc_predictor.features` APIs retain their Decimal/`None` surface while
+delegating numerical work to the vectorized core.
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical

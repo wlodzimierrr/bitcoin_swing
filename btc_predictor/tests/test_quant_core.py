@@ -82,7 +82,6 @@ def test_adjacent_ticket_namespaces_do_not_preempt_their_implementations() -> No
         "distances",
         "portfolio",
         "risk",
-        "rolling",
         "scoring",
         "statistics",
         "transforms",

@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import Any
 
 from btc_predictor.data import OhlcvBar, require_utc_datetime
+from btc_predictor.quant.rolling import realized_volatility as quant_realized_volatility
 
 
 RV_7_FEATURE_ID = "RV_7"
@@ -526,10 +527,20 @@ def realized_volatility_from_daily_bars(
         if any(close <= 0 for close in closes):
             reason_codes.append("REALIZED_VOLATILITY_NON_POSITIVE_CLOSE")
         else:
-            returns = _close_to_close_returns(closes)
-            realized_volatility = _annualized_volatility(
-                returns,
+            returns = tuple(
+                (current / previous) - Decimal("1")
+                for previous, current in zip(closes, closes[1:])
+            )
+            quant_values = quant_realized_volatility(
+                tuple(float(close) for close in closes),
+                window=window_days,
                 annualization_periods=annualization_periods,
+            )
+            quant_value = quant_values[-1]
+            realized_volatility = (
+                Decimal("0")
+                if quant_value == 0
+                else Decimal(str(float(quant_value)))
             )
 
     reason_codes = _dedupe_reason_codes(reason_codes)
@@ -1459,25 +1470,6 @@ def _available_daily_bars(
         if record["ingested_at"] <= signal_time and record["timestamp"] <= signal_time:
             available_bars.append(bar)
     return tuple(sorted(available_bars, key=lambda bar: bar.timestamp))
-
-
-def _close_to_close_returns(closes: Sequence[Decimal]) -> tuple[Decimal, ...]:
-    return tuple(
-        (current_close / previous_close) - Decimal("1")
-        for previous_close, current_close in zip(closes, closes[1:])
-    )
-
-
-def _annualized_volatility(
-    returns: Sequence[Decimal],
-    *,
-    annualization_periods: int,
-) -> Decimal:
-    mean = sum(returns, Decimal("0")) / Decimal(len(returns))
-    variance = sum(((value - mean) ** 2 for value in returns), Decimal("0")) / Decimal(
-        len(returns)
-    )
-    return variance.sqrt() * Decimal(annualization_periods).sqrt()
 
 
 def _realized_volatility_feature_id(window_days: int) -> str:
