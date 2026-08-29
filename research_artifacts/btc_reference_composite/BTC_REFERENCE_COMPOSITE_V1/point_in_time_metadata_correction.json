@@ -1,0 +1,16 @@
+{
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+  "original_definition_sha256": "dc5dd567165cc56aeda906ee147e8209a8cdc1105071d558e8529ed52d90f65f",
+  "correction_scope": "Point-in-time metadata only; formulas, thresholds, provider set, quality outcomes, approval gates, and decision are unchanged.",
+  "original_behavior": "Derived available_at stored the latest included provider input time.",
+  "corrected_behavior": "Derived available_at stores the fixed composite decision time: observation_time plus one hour and five minutes.",
+  "provider_availability_provenance": "Each provider input remains linked by its immutable raw observation ID; only inputs available by the fixed decision time are included.",
+  "validation": {
+    "development_metrics_identical_after_correction": true,
+    "external_metrics_identical_after_correction": true,
+    "database_migration_downgrade_verified": "0019_reference_composite -> 0018_ingestion_audit",
+    "database_migration_upgrade_verified": "0018_ingestion_audit -> 0019_reference_composite",
+    "derived_rows_restored": 157824
+  },
+  "governance_note": "The original frozen artifact is retained rather than rewritten. This correction closes an availability-field naming bug and does not constitute post-validation model retuning."
+}

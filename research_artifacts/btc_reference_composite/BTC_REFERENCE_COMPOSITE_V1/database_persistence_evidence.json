@@ -1,0 +1,28 @@
+{
+  "database_revision": "0019_reference_composite",
+  "derived_table": "derived.btc_reference_composite",
+  "external_2020_2022": {
+    "records_present": 78912,
+    "records_per_method": 26304,
+    "quality_counts_per_method": {
+      "REFERENCE_OK": 26015,
+      "REFERENCE_DEGRADED": 286,
+      "VENUE_DISAGREEMENT": 3
+    }
+  },
+  "development_2023_2025": {
+    "records_inserted_by_final_run": 78912,
+    "records_per_method": 26304,
+    "median_ohlc_quality_counts": {
+      "REFERENCE_OK": 26220,
+      "REFERENCE_DEGRADED": 84
+    },
+    "atr_dependent_method_quality_counts": {
+      "REFERENCE_OK": 25884,
+      "REFERENCE_DEGRADED": 84,
+      "REFERENCE_UNAVAILABLE": 336
+    }
+  },
+  "persistence_semantics": "Immutable conflict-do-nothing rows keyed by policy version, observation time, and method version.",
+  "external_insert_accounting_note": "The initial psycopg executemany rowcount returned zero despite successful insertion; direct grouped database counts verified all 78912 external rows. Persistence counting now uses before/after SQL counts."
+}

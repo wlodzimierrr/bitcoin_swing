@@ -1,0 +1,29 @@
+{
+  "schema_version": "BTC_REFERENCE_COMPOSITE_MANUAL_REVIEW_V1",
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+  "reviewer": "Codex cross-venue composite review",
+  "reviewed_sample": "external_2020_2022",
+  "review_basis": "The 20 largest ATR-normalized high/low disagreements from the frozen external report; raw OHLC remains in external_validation_report.json.",
+  "reviews": [
+    {"timestamp": "2022-01-24T11:00:00+00:00", "classification": "ISOLATED_BITSTAMP_HIGH", "conclusion": "Coinbase and Bitfinex highs agreed near 34,200 while Bitstamp printed 38,050; median OHLC correctly rejected the isolated high."},
+    {"timestamp": "2021-10-10T20:00:00+00:00", "classification": "ISOLATED_BITSTAMP_LOW", "conclusion": "Coinbase and Bitfinex lows agreed near 55,200 while Bitstamp printed 51,000; median OHLC correctly rejected the isolated low."},
+    {"timestamp": "2020-02-11T15:00:00+00:00", "classification": "BITFINEX_DISCONTINUITY", "conclusion": "Bitstamp and Coinbase agreed near 10,212 while Bitfinex remained near 9,780; the composite explicitly degraded to two-provider consensus."},
+    {"timestamp": "2020-02-11T16:00:00+00:00", "classification": "BITFINEX_CATCH_UP_RANGE", "conclusion": "Bitfinex retained the prior 9,779 low as it caught up to the other closes; median OHLC rejected that isolated low."},
+    {"timestamp": "2020-11-05T17:00:00+00:00", "classification": "ISOLATED_BITSTAMP_LOW", "conclusion": "Coinbase and Bitfinex lows agreed at 14,800 while Bitstamp printed 14,100; median OHLC selected the confirmed level."},
+    {"timestamp": "2020-07-27T17:00:00+00:00", "classification": "ISOLATED_BITSTAMP_LOW", "conclusion": "Coinbase and Bitfinex lows were 10,640 and 10,666 while Bitstamp printed 10,450; the median rejected Bitstamp's isolated depth."},
+    {"timestamp": "2020-03-12T10:00:00+00:00", "classification": "CROSS_MARKET_CRASH", "conclusion": "All venues showed the March 2020 crash; median OHLC retained a 5,683 low and the bar degraded because only Coinbase and Bitfinex closes formed the close cluster."},
+    {"timestamp": "2021-10-18T15:00:00+00:00", "classification": "ISOLATED_BITSTAMP_LOW", "conclusion": "Coinbase and Bitfinex lows agreed near 61,700 while Bitstamp printed 59,013; median OHLC rejected the isolated wick."},
+    {"timestamp": "2021-10-13T17:00:00+00:00", "classification": "BITFINEX_DISCONTINUITY", "conclusion": "Bitstamp and Coinbase agreed near 56,890 while Bitfinex remained near 54,750; the degraded median used the two-venue cluster."},
+    {"timestamp": "2021-04-14T10:00:00+00:00", "classification": "ISOLATED_BITSTAMP_LOW", "conclusion": "Coinbase and Bitfinex lows were 63,500 and 63,425 while Bitstamp printed 61,417.52; the median rejected the outlier."},
+    {"timestamp": "2022-11-08T19:00:00+00:00", "classification": "CROSS_MARKET_SELLOFF_WITH_RANGE_DISPERSION", "conclusion": "All venues sold off with aligned closes and varying lows; the median retained 17,114 rather than either extreme."},
+    {"timestamp": "2020-03-12T11:00:00+00:00", "classification": "CROSS_MARKET_CRASH", "conclusion": "All three venues confirmed continued crash volatility; the median preserved both the broad high and low movement."},
+    {"timestamp": "2021-10-13T18:00:00+00:00", "classification": "BITFINEX_CATCH_UP_RANGE", "conclusion": "Bitfinex carried a 54,714 low while Bitstamp and Coinbase agreed near 56,838; the median rejected the stale extreme."},
+    {"timestamp": "2022-11-09T23:00:00+00:00", "classification": "ISOLATED_BITSTAMP_HIGH", "conclusion": "Coinbase and Bitfinex highs agreed near 15,965 while Bitstamp printed 16,574; median OHLC rejected the isolated high."},
+    {"timestamp": "2020-12-25T14:00:00+00:00", "classification": "ISOLATED_BITFINEX_LOW", "conclusion": "Bitstamp and Coinbase lows agreed near 23,802 while Bitfinex printed 22,855; median OHLC rejected the isolated low."},
+    {"timestamp": "2022-08-19T12:00:00+00:00", "classification": "ISOLATED_BITFINEX_HIGH", "conclusion": "Bitstamp and Coinbase highs agreed near 21,601 while Bitfinex printed 22,261; median OHLC rejected the isolated high."},
+    {"timestamp": "2020-07-22T23:00:00+00:00", "classification": "ISOLATED_COINBASE_LOW", "conclusion": "Bitstamp and Bitfinex lows agreed near 9,518 while Coinbase printed 9,400; median OHLC rejected the isolated low."},
+    {"timestamp": "2021-04-18T04:00:00+00:00", "classification": "MIXED_RANGE_DISAGREEMENT", "conclusion": "Bitstamp supplied the highest high while Bitfinex supplied the lowest low; the median avoided allowing either venue to dominate the candle."},
+    {"timestamp": "2020-01-03T04:00:00+00:00", "classification": "BITFINEX_RANGE_OUTLIER", "conclusion": "Bitstamp and Coinbase ranges were closely aligned while Bitfinex printed the higher range and close; the composite degraded to the two-venue center."},
+    {"timestamp": "2020-11-26T09:00:00+00:00", "classification": "ISOLATED_COINBASE_LOW", "conclusion": "Bitstamp and Bitfinex lows remained above 16,670 while Coinbase printed 16,200; median OHLC rejected the isolated low."}
+  ]
+}

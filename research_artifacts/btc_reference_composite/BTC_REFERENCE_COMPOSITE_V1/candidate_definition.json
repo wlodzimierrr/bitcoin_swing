@@ -1,0 +1,95 @@
+{
+  "approval_gates": {
+    "all_tolerance_grid_variants_must_pass_known_event_gate": true,
+    "external_atr_median_abs_divergence_maximum": "0.02",
+    "external_atr_p95_abs_divergence_maximum": "0.10",
+    "external_combined_swing_disagreement_rate_maximum": "0.10",
+    "external_degraded_reference_rate_maximum": "0.005",
+    "external_period_minimum_days": 730,
+    "external_stop_disagreement_rate_maximum": "0.01",
+    "external_usable_reference_rate_minimum": "0.995",
+    "known_cross_market_events_represented_required": 2,
+    "known_isolated_events_rejected_required": 3,
+    "october_2025_consensus_stop_must_be_touched": true
+  },
+  "atr_definition": {
+    "method_version": "ATR_BOOTSTRAP_MEDIAN_OHLC_V1",
+    "point_in_time": "previous completed daily ATR only",
+    "session": "00:00 UTC daily",
+    "source": "median OHLC of at least two synchronized venues",
+    "window_days": 14
+  },
+  "availability_assumption_for_historical_public_api_data": "Each final candle is available at bar close; the composite decision is fixed at close plus five minutes. Historical API archives cannot reconstruct provider publication latency, which remains a limitation.",
+  "candidate_methods": [
+    {
+      "confirmation_tolerance_atr": null,
+      "formula": "Independent cross-provider median of open, high, low, and close.",
+      "method": "median_ohlc",
+      "method_version": "MEDIAN_OHLC_V1"
+    },
+    {
+      "confirmation_tolerance_atr": "0.15",
+      "formula": "Median open/close; retain the most extreme high or low only when the two most extreme venues are within tolerance, otherwise use the median.",
+      "method": "confirmed_extremes",
+      "method_version": "CONFIRMED_EXTREMES_V1"
+    },
+    {
+      "confirmation_tolerance_atr": "0.15",
+      "formula": "For each OHLC field, start at the cross-provider median and add the mean residual after clipping each residual to +/- tolerance * prior ATR.",
+      "method": "clipped_center",
+      "method_version": "CLIPPED_CENTER_V1"
+    }
+  ],
+  "canonical_reference_role": "structural and backtest reference; independent of execution venue",
+  "definition_sha256": "dc5dd567165cc56aeda906ee147e8209a8cdc1105071d558e8529ed52d90f65f",
+  "development_period": {
+    "end": "2025-12-31T23:00:00+00:00",
+    "start": "2023-01-01T00:00:00+00:00",
+    "status": "previously inspected development sample"
+  },
+  "external_validation_protocol": {
+    "evaluation_end": "2022-12-31T23:00:00+00:00",
+    "evaluation_start": "2020-01-01T00:00:00+00:00",
+    "retuning_after_inspection_allowed": false,
+    "warmup_start": "2019-12-01T00:00:00+00:00"
+  },
+  "extreme_methods_primary_confirmation_tolerance_atr": "0.15",
+  "frozen_at": "2026-08-29T14:54:52.716839+00:00",
+  "historical_provider_splicing_allowed": false,
+  "policy": {
+    "atr_window_days": 14,
+    "close_disagreement_bps": "50",
+    "decision_delay_seconds": 300,
+    "fallback_splicing_allowed": false,
+    "minimum_provider_count": 2,
+    "missing_provider_logic": {
+      "0": "REFERENCE_UNAVAILABLE",
+      "1": "REFERENCE_UNAVAILABLE",
+      "2": "REFERENCE_DEGRADED if agreement checks pass",
+      "3": "REFERENCE_OK"
+    },
+    "point_in_time_logic": "Include only inputs available by observation close plus the fixed decision delay; composite available_at is the latest included input.",
+    "required_provider_ids": [
+      "bitstamp",
+      "coinbase",
+      "bitfinex"
+    ],
+    "status": "RESEARCH",
+    "two_provider_range_disagreement_atr": "0.30",
+    "version": "BTC_REFERENCE_COMPOSITE_V1"
+  },
+  "price_source_policy_change_in_scope": false,
+  "primary_candidate_method_version": "MEDIAN_OHLC_V1",
+  "raw_source_mutation_allowed": false,
+  "recommended_future_policy_version_if_approved": "PRICE_SOURCE_POLICY_V2",
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+  "schema_version": "BTC_REFERENCE_COMPOSITE_DEFINITION_V1",
+  "sensitivity_tolerance_atr_grid": [
+    "0.05",
+    "0.10",
+    "0.15",
+    "0.20",
+    "0.30"
+  ],
+  "status": "RESEARCH"
+}

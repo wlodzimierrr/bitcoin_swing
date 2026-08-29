@@ -1,0 +1,30 @@
+{
+  "btc019_impact": "BTC-019 remains IN PROGRESS. Bitstamp remains suitable as immutable primary raw OHLCV but remains rejected as the sole canonical reference.",
+  "decision": "RESEARCH_INCONCLUSIVE",
+  "gate_results": {
+    "external_atr_median_abs_divergence": true,
+    "external_atr_p95_abs_divergence": true,
+    "external_combined_swing_disagreement_rate": false,
+    "external_degraded_reference_rate": false,
+    "external_period_sufficient": true,
+    "external_stop_disagreement_rate": true,
+    "external_usable_reference_rate": true,
+    "known_cross_market_events_represented": true,
+    "known_isolated_events_rejected": true,
+    "october_2025_consensus_stop_touched": true,
+    "tolerance_grid_known_event_gate": true
+  },
+  "gate_values": {
+    "external_atr_median_abs_divergence": "0.002833317595384140625228159604",
+    "external_atr_p95_abs_divergence": "0.01946403849957149449535236348",
+    "external_combined_swing_disagreement_rate": "0.1212121212121212121212121212",
+    "external_degraded_reference_rate": "0.01087287104622871046228710462",
+    "external_stop_disagreement_rate": "0",
+    "external_usable_reference_rate": "0.9998859489051094890510948905"
+  },
+  "price_source_policy_action": "Do not mutate PRICE_SOURCE_POLICY_V1 and do not migrate a composite while this decision is inconclusive. Any future approved promotion requires a separately reviewed PRICE_SOURCE_POLICY_V2 migration.",
+  "primary_method_version": "MEDIAN_OHLC_V1",
+  "rationale": "The primary candidate handled the critical known events but did not pass every predeclared external robustness gate without retuning.",
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+  "schema_version": "BTC_REFERENCE_COMPOSITE_DECISION_V1"
+}

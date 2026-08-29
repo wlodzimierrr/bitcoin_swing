@@ -1,0 +1,1864 @@
+{
+  "atr_comparison": {
+    "CLIPPED_CENTER_V1": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1515555707976817801875316755",
+        "median_abs": "0.004164475855940914370938853259",
+        "observation_count": 1081,
+        "p95_abs": "0.02013797539052481932368337403",
+        "p99_abs": "0.1075154936310317051371586680"
+      },
+      "daily_atr_count": 1081,
+      "daily_atr_distribution": {
+        "max_abs": "6112.268533732074829931972789",
+        "median_abs": "1439.989399762857142857142858",
+        "observation_count": 1081,
+        "p95_abs": "3801.139030872380952380952381",
+        "p99_abs": "5325.361722572312925170068026"
+      }
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1444565099132494408020276595",
+        "median_abs": "0.02097779701673044798445387116",
+        "observation_count": 1081,
+        "p95_abs": "0.06498508163966129571558961495",
+        "p99_abs": "0.09064549558157079876965520127"
+      },
+      "daily_atr_count": 1081,
+      "daily_atr_distribution": {
+        "max_abs": "6272.956455902142857142857143",
+        "median_abs": "1476.712617445",
+        "observation_count": 1081,
+        "p95_abs": "3893.966090355714285714285714",
+        "p99_abs": "5500.591615417142857142857143"
+      }
+    },
+    "MEDIAN_OHLC_V1": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1475431874065055455499738288",
+        "median_abs": "0.002833317595384140625228159604",
+        "observation_count": 1081,
+        "p95_abs": "0.01946403849957149449535236348",
+        "p99_abs": "0.1067655730143384622552502531"
+      },
+      "daily_atr_count": 1081,
+      "daily_atr_distribution": {
+        "max_abs": "6112.945",
+        "median_abs": "1442.914285714285714285714286",
+        "observation_count": 1081,
+        "p95_abs": "3809.107857142857142857142857",
+        "p99_abs": "5324.075714285714285714285714"
+      }
+    },
+    "bitfinex": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1364333048232059176639169668",
+        "median_abs": "0.01059192386757186568572215272",
+        "observation_count": 1078,
+        "p95_abs": "0.04230248071274957880504647489",
+        "p99_abs": "0.05527603034030818383754758900"
+      },
+      "daily_atr_count": 1078,
+      "daily_atr_distribution": {
+        "max_abs": "6037.607049564285714285714286",
+        "median_abs": "1462.024141771071428571428572",
+        "observation_count": 1078,
+        "p95_abs": "3861.381005628571428571428571",
+        "p99_abs": "5273.497811422857142857142857"
+      }
+    },
+    "bitstamp": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.09830212513347490393974389474",
+        "median_abs": "0.003406882486559107830357797213",
+        "observation_count": 1083,
+        "p95_abs": "0.03965611562760768519287277651",
+        "p99_abs": "0.07921827695810728017815521744"
+      },
+      "daily_atr_count": 1083,
+      "daily_atr_distribution": {
+        "max_abs": "6199.348571428571428571428571",
+        "median_abs": "1439.435",
+        "observation_count": 1083,
+        "p95_abs": "3888.481428571428571428571429",
+        "p99_abs": "5414.015"
+      }
+    },
+    "coinbase": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1265365160291487601099751756",
+        "median_abs": "0.000767957846550712132091355334",
+        "observation_count": 1080,
+        "p95_abs": "0.01763779973757011605291326196",
+        "p99_abs": "0.03288333009305862791495340417"
+      },
+      "daily_atr_count": 1080,
+      "daily_atr_distribution": {
+        "max_abs": "6194.376428571428571428571429",
+        "median_abs": "1453.686785714285714285714286",
+        "observation_count": 1080,
+        "p95_abs": "3890.915",
+        "p99_abs": "5373.542142857142857142857143"
+      }
+    },
+    "definition": "14-day ATR on complete 00:00 UTC daily bars"
+  },
+  "candidate_to_candidate_comparison": [
+    {
+      "close_abs_fractional_difference": {
+        "max_abs": "0",
+        "median_abs": "0",
+        "observation_count": 26301,
+        "p95_abs": "0",
+        "p99_abs": "0"
+      },
+      "combined_swing_disagreement_rate_difference": "0.1073593073593073593073593074",
+      "common_hour_count": 26301,
+      "high_abs_fractional_difference": {
+        "max_abs": "0.01939393939393939393939393939",
+        "median_abs": "0.0003042054793990070079132149528",
+        "observation_count": 26301,
+        "p95_abs": "0.002089552238805970149253731343",
+        "p99_abs": "0.003999837018525560927907861140"
+      },
+      "left": "MEDIAN_OHLC_V1",
+      "low_abs_fractional_difference": {
+        "max_abs": "0.01507464292852420706301984841",
+        "median_abs": "0.0002636038801660912007156741565",
+        "observation_count": 26301,
+        "p95_abs": "0.001551502308332702641338076137",
+        "p99_abs": "0.003268542986705710371290025726"
+      },
+      "right": "CONFIRMED_EXTREMES_V1",
+      "stop_touch_disagreement_count": 2
+    },
+    {
+      "close_abs_fractional_difference": {
+        "max_abs": "0.005822481260468403426464980081",
+        "median_abs": "0.0001184916748467078865433909146",
+        "observation_count": 26301,
+        "p95_abs": "0.0006987598046456738010639558046",
+        "p99_abs": "0.001327564432793612909816912345"
+      },
+      "combined_swing_disagreement_rate_difference": "0.0552584670231729055258467023",
+      "common_hour_count": 26301,
+      "high_abs_fractional_difference": {
+        "max_abs": "0.006401346801346801346801346869",
+        "median_abs": "0.0001195537957617109835712168651",
+        "observation_count": 26301,
+        "p95_abs": "0.0007489815040343549225840001006",
+        "p99_abs": "0.001445211740225117214639215397"
+      },
+      "left": "MEDIAN_OHLC_V1",
+      "low_abs_fractional_difference": {
+        "max_abs": "0.007271202078550445579994569207",
+        "median_abs": "0.0001391838200010231153375555464",
+        "observation_count": 26301,
+        "p95_abs": "0.0008700537104022799517702510482",
+        "p99_abs": "0.001643916042859239688830177895"
+      },
+      "right": "CLIPPED_CENTER_V1",
+      "stop_touch_disagreement_count": 0
+    },
+    {
+      "close_abs_fractional_difference": {
+        "max_abs": "0.005822481260468403426464980081",
+        "median_abs": "0.0001184916748467078865433909146",
+        "observation_count": 26301,
+        "p95_abs": "0.0006987598046456738010639558046",
+        "p99_abs": "0.001327564432793612909816912345"
+      },
+      "combined_swing_disagreement_rate_difference": "0.0521008403361344537815126051",
+      "common_hour_count": 26301,
+      "high_abs_fractional_difference": {
+        "max_abs": "0.01274540890474303078345884522",
+        "median_abs": "0.0003740230894522971311350126610",
+        "observation_count": 26301,
+        "p95_abs": "0.001602703205406410812821625643",
+        "p99_abs": "0.002988999078085351952701695770"
+      },
+      "left": "CONFIRMED_EXTREMES_V1",
+      "low_abs_fractional_difference": {
+        "max_abs": "0.01547197699669225921599766921",
+        "median_abs": "0.0004169055008460324263659163745",
+        "observation_count": 26301,
+        "p95_abs": "0.001587732781051533402368558363",
+        "p99_abs": "0.003030423139693606001878890231"
+      },
+      "right": "CLIPPED_CENTER_V1",
+      "stop_touch_disagreement_count": 2
+    }
+  ],
+  "database_records_inserted": 78912,
+  "evaluation_end": "2022-12-31T23:00:00+00:00",
+  "evaluation_hour_count": 26304,
+  "evaluation_start": "2020-01-01T00:00:00+00:00",
+  "known_event_analysis": {
+    "events": [],
+    "summary_by_series": {
+      "CLIPPED_CENTER_V1": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 0,
+        "october_2025_stop_touched": null
+      },
+      "CONFIRMED_EXTREMES_V1": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 0,
+        "october_2025_stop_touched": null
+      },
+      "MEDIAN_OHLC_V1": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 0,
+        "october_2025_stop_touched": null
+      },
+      "bitfinex": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 0,
+        "october_2025_stop_touched": null
+      },
+      "bitstamp": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 0,
+        "october_2025_stop_touched": null
+      },
+      "coinbase": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 0,
+        "october_2025_stop_touched": null
+      }
+    }
+  },
+  "material_disagreement_events": [
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "8.312416323307309319488403705",
+        "high_dispersion_atr": "1.784052499999172947031227204",
+        "low_dispersion_atr": "0.03893699212744820084551279103",
+        "range_dispersion_atr": "1.822989492126621147876739995"
+      },
+      "primary_composite_ohlc": {
+        "close": "33708.61",
+        "high": "34200",
+        "low": "33027",
+        "open": "33288.86"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "33731",
+          "high": "34198",
+          "low": "33052",
+          "open": "33317"
+        },
+        "bitstamp": {
+          "close": "33708.61",
+          "high": "38050.00",
+          "low": "32967.93",
+          "open": "33286.53"
+        },
+        "coinbase": {
+          "close": "33702.98",
+          "high": "34200",
+          "low": "33027",
+          "open": "33288.86"
+        }
+      },
+      "timestamp": "2022-01-24T11:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "5.012631620701800157101721572",
+        "high_dispersion_atr": "0.04188551669450499216600680357",
+        "low_dispersion_atr": "1.587151658183996013059440508",
+        "range_dispersion_atr": "1.627120252132482218196588622"
+      },
+      "primary_composite_ohlc": {
+        "close": "55439.94073937",
+        "high": "56545.24",
+        "low": "55201",
+        "open": "55486.91"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "55439.94073937",
+          "high": "56450",
+          "low": "55201",
+          "open": "55498"
+        },
+        "bitstamp": {
+          "close": "55414.20",
+          "high": "56561.00",
+          "low": "51000.00",
+          "open": "55486.91"
+        },
+        "coinbase": {
+          "close": "55441.99",
+          "high": "56545.24",
+          "low": "55206.08",
+          "open": "55474.16"
+        }
+      },
+      "timestamp": "2021-10-10T20:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "426.2412456655238632435444337",
+        "high_dispersion_atr": "1.335164415960936903944457160",
+        "low_dispersion_atr": "0.2276274901589618916238279937",
+        "range_dispersion_atr": "1.114032320258001191853331931"
+      },
+      "primary_composite_ohlc": {
+        "close": "10211.73",
+        "high": "10245.00",
+        "low": "9850.00",
+        "open": "9853.80"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "9779.90394844",
+          "high": "9787.5",
+          "low": "9778.4",
+          "open": "9787.5"
+        },
+        "bitstamp": {
+          "close": "10211.73",
+          "high": "10245.00",
+          "low": "9850.00",
+          "open": "9853.80"
+        },
+        "coinbase": {
+          "close": "10215.17",
+          "high": "10250",
+          "low": "9857.25",
+          "open": "9857.25"
+        }
+      },
+      "timestamp": "2020-02-11T15:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "21.10462811736393747887832846",
+        "high_dispersion_atr": "0.3637420895374660538313548156",
+        "low_dispersion_atr": "1.259153866615528323012873253",
+        "range_dispersion_atr": "0.9267051441462061741301842012"
+      },
+      "primary_composite_ohlc": {
+        "close": "10267.89",
+        "high": "10383.90",
+        "low": "10209.91",
+        "open": "10211.73"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "10247",
+          "high": "10274",
+          "low": "9779",
+          "open": "9779"
+        },
+        "bitstamp": {
+          "close": "10267.89",
+          "high": "10383.90",
+          "low": "10209.91",
+          "open": "10211.73"
+        },
+        "coinbase": {
+          "close": "10268.67",
+          "high": "10400",
+          "low": "10215.17",
+          "open": "10215.18"
+        }
+      },
+      "timestamp": "2020-02-11T16:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "14.44122937773845299492763443",
+        "high_dispersion_atr": "0.05033455119804910222253078652",
+        "low_dispersion_atr": "1.214971925470150743302467261",
+        "range_dispersion_atr": "1.255222209686797594355587569"
+      },
+      "primary_composite_ohlc": {
+        "close": "15054.12",
+        "high": "15244.19",
+        "low": "14800",
+        "open": "15170"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "15036",
+          "high": "15221",
+          "low": "14800",
+          "open": "15142"
+        },
+        "bitstamp": {
+          "close": "15057.74",
+          "high": "15244.19",
+          "low": "14100.00",
+          "open": "15172.53"
+        },
+        "coinbase": {
+          "close": "15054.12",
+          "high": "15250",
+          "low": "14800",
+          "open": "15170"
+        }
+      },
+      "timestamp": "2020-11-05T17:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "7.808868302058050208267111068",
+        "high_dispersion_atr": "0.08547452263272054901681897381",
+        "low_dispersion_atr": "1.075276464104114070333890410",
+        "range_dispersion_atr": "0.9898019414713935213170714363"
+      },
+      "primary_composite_ohlc": {
+        "close": "10885.06",
+        "high": "10968",
+        "low": "10640",
+        "open": "10736"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "10881",
+          "high": "10974",
+          "low": "10666",
+          "open": "10736"
+        },
+        "bitstamp": {
+          "close": "10885.06",
+          "high": "10956.83",
+          "low": "10450.00",
+          "open": "10731.16"
+        },
+        "coinbase": {
+          "close": "10889.5",
+          "high": "10968",
+          "low": "10640",
+          "open": "10736.24"
+        }
+      },
+      "timestamp": "2020-07-27T17:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "384.3518457806045505212772933",
+        "high_dispersion_atr": "0.09612768456029151018470688427",
+        "low_dispersion_atr": "0.9461097072333058762757060884",
+        "range_dispersion_atr": "0.9483085987127759085261144539"
+      },
+      "primary_composite_ohlc": {
+        "close": "6100.4",
+        "high": "7360.9",
+        "low": "5683",
+        "open": "7349.65"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "6100.4",
+          "high": "7399.34478664",
+          "low": "5683",
+          "open": "7380.71158058"
+        },
+        "bitstamp": {
+          "close": "6334.44",
+          "high": "7360.00",
+          "low": "5965.24",
+          "open": "7342.49"
+        },
+        "coinbase": {
+          "close": "6099.97",
+          "high": "7360.9",
+          "low": "5578",
+          "open": "7349.65"
+        }
+      },
+      "timestamp": "2020-03-12T10:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "2.639810797971103021639998181",
+        "high_dispersion_atr": "0.007132912434371826579320002823",
+        "low_dispersion_atr": "0.8857460276137227063991063834",
+        "range_dispersion_atr": "0.8928789400480945329784263863"
+      },
+      "primary_composite_ohlc": {
+        "close": "62012.02",
+        "high": "62200",
+        "low": "61701",
+        "open": "62109.67"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "61999",
+          "high": "62183",
+          "low": "61730",
+          "open": "62103"
+        },
+        "bitstamp": {
+          "close": "62012.02",
+          "high": "62204.88",
+          "low": "59013.00",
+          "open": "62120.72"
+        },
+        "coinbase": {
+          "close": "62015.37",
+          "high": "62200",
+          "low": "61701",
+          "open": "62109.67"
+        }
+      },
+      "timestamp": "2021-10-18T15:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "374.6298345649473879439238371",
+        "high_dispersion_atr": "0.8849825667430216294013906062",
+        "low_dispersion_atr": "0.7262677904416087247369808031",
+        "range_dispersion_atr": "0.1608574452114289189353550506"
+      },
+      "primary_composite_ohlc": {
+        "close": "56883.35",
+        "high": "57229.98",
+        "low": "56771.27",
+        "open": "56937.73"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "54769",
+          "high": "54769",
+          "low": "54730.02335027",
+          "open": "54730.02335027"
+        },
+        "bitstamp": {
+          "close": "56900.02",
+          "high": "57263.69",
+          "low": "56771.27",
+          "open": "56971.73"
+        },
+        "coinbase": {
+          "close": "56883.35",
+          "high": "57229.98",
+          "low": "56777.31",
+          "open": "56937.73"
+        }
+      },
+      "timestamp": "2021-10-13T17:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "17.39503775290659107926715102",
+        "high_dispersion_atr": "0.1358303439290105282424951802",
+        "low_dispersion_atr": "0.8776963343219741990022072823",
+        "range_dispersion_atr": "0.9819166627530457002551680871"
+      },
+      "primary_composite_ohlc": {
+        "close": "64144.73",
+        "high": "64233.36",
+        "low": "63425",
+        "open": "63654.05"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "64056",
+          "high": "64100",
+          "low": "63425",
+          "open": "63535"
+        },
+        "bitstamp": {
+          "close": "64144.73",
+          "high": "64422.28",
+          "low": "61417.52",
+          "open": "64422.28"
+        },
+        "coinbase": {
+          "close": "64167.58",
+          "high": "64233.36",
+          "low": "63500",
+          "open": "63654.05"
+        }
+      },
+      "timestamp": "2021-04-14T10:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "6.996717724288840262582056893",
+        "high_dispersion_atr": "0.1004380509672627151318182709",
+        "low_dispersion_atr": "0.8386356160922194219295589647",
+        "range_dispersion_atr": "0.7381975651249567067977406938"
+      },
+      "primary_composite_ohlc": {
+        "close": "18280.00",
+        "high": "18722",
+        "low": "17114.00",
+        "open": "18600.28"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "18270",
+          "high": "18722",
+          "low": "16950",
+          "open": "18612"
+        },
+        "bitstamp": {
+          "close": "18280.00",
+          "high": "18722.00",
+          "low": "17114.00",
+          "open": "18591.00"
+        },
+        "coinbase": {
+          "close": "18282.79",
+          "high": "18787.87",
+          "low": "17500",
+          "open": "18600.28"
+        }
+      },
+      "timestamp": "2022-11-08T19:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "80.78512736913171631345815014",
+        "high_dispersion_atr": "0.7665091376157035754673516969",
+        "low_dispersion_atr": "0.1372352604464796794504865484",
+        "range_dispersion_atr": "0.6292738771692238960168651486"
+      },
+      "primary_composite_ohlc": {
+        "close": "6072.9",
+        "high": "6500",
+        "low": "5755.1",
+        "open": "6100.4"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "6072.9",
+          "high": "6500",
+          "low": "5755.1",
+          "open": "6100.4"
+        },
+        "bitstamp": {
+          "close": "6030.94",
+          "high": "6426.27",
+          "low": "5720.54",
+          "open": "6334.46"
+        },
+        "coinbase": {
+          "close": "6080",
+          "high": "6740",
+          "low": "5776.71",
+          "open": "6099.97"
+        }
+      },
+      "timestamp": "2020-03-12T11:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "11.52362509899961242704922176",
+        "high_dispersion_atr": "0.02213972958180454480955180312",
+        "low_dispersion_atr": "0.7545258821451014575013683079",
+        "range_dispersion_atr": "0.7328331331637307169933713080"
+      },
+      "primary_composite_ohlc": {
+        "close": "56969.92",
+        "high": "57186.28",
+        "low": "56834.88",
+        "open": "56884.96"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "56912",
+          "high": "57132",
+          "low": "54714.80621188",
+          "open": "54769"
+        },
+        "bitstamp": {
+          "close": "56977.65",
+          "high": "57186.28",
+          "low": "56834.88",
+          "open": "56928.46"
+        },
+        "coinbase": {
+          "close": "56969.92",
+          "high": "57194.41",
+          "low": "56841.75",
+          "open": "56884.96"
+        }
+      },
+      "timestamp": "2021-10-13T18:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "28.94545417934603409522802725",
+        "high_dispersion_atr": "0.7530663889864267638547506327",
+        "low_dispersion_atr": "0.1295572049546549782658707576",
+        "range_dispersion_atr": "0.6695806947656467568320236351"
+      },
+      "primary_composite_ohlc": {
+        "close": "15891.96",
+        "high": "15977",
+        "low": "15588",
+        "open": "15887"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "15923",
+          "high": "15977",
+          "low": "15588",
+          "open": "15887"
+        },
+        "bitstamp": {
+          "close": "15877.00",
+          "high": "16574.00",
+          "low": "15632.00",
+          "open": "15922.00"
+        },
+        "coinbase": {
+          "close": "15891.96",
+          "high": "15952.05",
+          "low": "15525",
+          "open": "15849.63"
+        }
+      },
+      "timestamp": "2022-11-09T23:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "5.236074974933019446316288064",
+        "high_dispersion_atr": "0.02186577476289177815463852773",
+        "low_dispersion_atr": "0.7448417184850197851893725269",
+        "range_dispersion_atr": "0.7286367062370454117203693235"
+      },
+      "primary_composite_ohlc": {
+        "close": "24025.63",
+        "high": "24510.16",
+        "low": "23801.21",
+        "open": "24496.88"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "24020",
+          "high": "24492",
+          "low": "22855",
+          "open": "24486.6816334"
+        },
+        "bitstamp": {
+          "close": "24025.63",
+          "high": "24510.16",
+          "low": "23801.21",
+          "open": "24496.88"
+        },
+        "coinbase": {
+          "close": "24032.58",
+          "high": "24519.85",
+          "low": "23803.69",
+          "open": "24499.35"
+        }
+      },
+      "timestamp": "2020-12-25T14:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "8.119777158774373259052924791",
+        "high_dispersion_atr": "0.7250356827860170402835012536",
+        "low_dispersion_atr": "0.004319016329019680891908188475",
+        "range_dispersion_atr": "0.7227046809638446979413052675"
+      },
+      "primary_composite_ohlc": {
+        "close": "21540",
+        "high": "21602.00",
+        "low": "21267.71644419",
+        "open": "21465.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "21540",
+          "high": "22261",
+          "low": "21267.71644419",
+          "open": "21460"
+        },
+        "bitstamp": {
+          "close": "21551.00",
+          "high": "21602.00",
+          "low": "21268.00",
+          "open": "21465.00"
+        },
+        "coinbase": {
+          "close": "21533.51",
+          "high": "21599.59",
+          "low": "21264.06",
+          "open": "21468.4"
+        }
+      },
+      "timestamp": "2022-08-19T12:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "22.55881067266557716276831829",
+        "high_dispersion_atr": "0.04508178133645588095836923850",
+        "low_dispersion_atr": "0.7111492267159237559630077060",
+        "range_dispersion_atr": "0.6660674453794678750046384675"
+      },
+      "primary_composite_ohlc": {
+        "close": "9539.51",
+        "high": "9553.06",
+        "low": "9513.77",
+        "open": "9513.86"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "9557.7",
+          "high": "9557.8",
+          "low": "9523.2",
+          "open": "9523.2"
+        },
+        "bitstamp": {
+          "close": "9539.51",
+          "high": "9553.06",
+          "low": "9513.77",
+          "open": "9513.86"
+        },
+        "coinbase": {
+          "close": "9536.18",
+          "high": "9549.99",
+          "low": "9400",
+          "open": "9513.62"
+        }
+      },
+      "timestamp": "2020-07-22T23:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "25.17168339292686790313021095",
+        "high_dispersion_atr": "0.6959639696384716368103120997",
+        "low_dispersion_atr": "0.2205401610390750126154588736",
+        "range_dispersion_atr": "0.5699898993012827081981181096"
+      },
+      "primary_composite_ohlc": {
+        "close": "54986.39",
+        "high": "56907",
+        "low": "54500.00",
+        "open": "55428.50"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "55040",
+          "high": "56150",
+          "low": "54176",
+          "open": "55014"
+        },
+        "bitstamp": {
+          "close": "54901.59",
+          "high": "57939.99",
+          "low": "54500.00",
+          "open": "55428.50"
+        },
+        "coinbase": {
+          "close": "54986.39",
+          "high": "56907",
+          "low": "54743.22",
+          "open": "56396.39"
+        }
+      },
+      "timestamp": "2021-04-18T04:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "84.91191309555403946437826444",
+        "high_dispersion_atr": "0.6775490189752953397294036427",
+        "low_dispersion_atr": "0.1960113813060113167861359692",
+        "range_dispersion_atr": "0.4815376376692840229432676736"
+      },
+      "primary_composite_ohlc": {
+        "close": "7196.87",
+        "high": "7281.24",
+        "low": "6937.61",
+        "open": "6942.82"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "7255.9",
+          "high": "7416",
+          "low": "6977.5",
+          "open": "6977.5"
+        },
+        "bitstamp": {
+          "close": "7196.87",
+          "high": "7265.98",
+          "low": "6934.10",
+          "open": "6942.82"
+        },
+        "coinbase": {
+          "close": "7194.79",
+          "high": "7281.24",
+          "low": "6937.61",
+          "open": "6937.61"
+        }
+      },
+      "timestamp": "2020-01-03T04:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "37.88957729899763345591058602",
+        "high_dispersion_atr": "0.1269976071484993622915887995",
+        "low_dispersion_atr": "0.6635250054908428154730023929",
+        "range_dispersion_atr": "0.5492368691792249627200672002"
+      },
+      "primary_composite_ohlc": {
+        "close": "17058.63",
+        "high": "17131.07",
+        "low": "16673.52",
+        "open": "16843.18"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "17100.364428",
+          "high": "17237",
+          "low": "16815",
+          "open": "17021"
+        },
+        "bitstamp": {
+          "close": "17035.73",
+          "high": "17119.29",
+          "low": "16673.52",
+          "open": "16841.45"
+        },
+        "coinbase": {
+          "close": "17058.63",
+          "high": "17131.07",
+          "low": "16200",
+          "open": "16843.18"
+        }
+      },
+      "timestamp": "2020-11-26T09:00:00+00:00"
+    }
+  ],
+  "point_in_time_statement": "All composite inputs satisfy provider available_at <= bar close + five minutes. ATR uses only prior completed daily observations.",
+  "raw_artifacts": {
+    "collection_manifest_sha256": "ede78386f126ebb7c6d89d78bf787c3d3acbc36a071a2213e0d6a26f0b9da49c",
+    "historical_period_end": "2022-12-31T23:00:00+00:00",
+    "historical_period_start": "2019-12-01T00:00:00+00:00",
+    "providers": {
+      "bitfinex": {
+        "path": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31/bitfinex_btc_usd_1h.jsonl.gz",
+        "sha256": "7ed5c1cd67075211395ffcfb815c7ced978966e29a404f1bc11bb3781515cf92",
+        "size_bytes": 789847
+      },
+      "bitstamp": {
+        "path": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31/bitstamp_btc_usd_1h.jsonl.gz",
+        "sha256": "0af33e8e13d874e6bba187f9174c579feeb928d8c3a9fd7723866fed6cc657a0",
+        "size_bytes": 851720
+      },
+      "coinbase": {
+        "path": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31/coinbase_btc_usd_1h.jsonl.gz",
+        "sha256": "5556cbb479ea2addbf879e4898e9986e6fb3fec7e8b9a0fdd82e4f3bc64bb27f",
+        "size_bytes": 851858
+      }
+    }
+  },
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+  "sample_name": "external_2020_2022",
+  "schema_version": "BTC_REFERENCE_COMPOSITE_EMPIRICAL_V1",
+  "series_profiles": {
+    "CLIPPED_CENTER_V1": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.005822481260468403426464980081",
+        "median_abs": "0.0001184916748467078865433909146",
+        "observation_count": 26301,
+        "p95_abs": "0.0006987598046456738010639558046",
+        "p99_abs": "0.001327564432793612909816912345"
+      },
+      "degraded_reference_bar_count": 286,
+      "degraded_reference_rate": "0.01087287104622871046228710462",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 3,
+      "quality_state_counts": {
+        "REFERENCE_DEGRADED": 286,
+        "REFERENCE_OK": 26015,
+        "VENUE_DISAGREEMENT": 3
+      },
+      "series_id": "CLIPPED_CENTER_V1",
+      "usable_hour_count": 26301,
+      "usable_reference_rate": "0.9998859489051094890510948905"
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0",
+        "median_abs": "0",
+        "observation_count": 26301,
+        "p95_abs": "0",
+        "p99_abs": "0"
+      },
+      "degraded_reference_bar_count": 286,
+      "degraded_reference_rate": "0.01087287104622871046228710462",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 3,
+      "quality_state_counts": {
+        "REFERENCE_DEGRADED": 286,
+        "REFERENCE_OK": 26015,
+        "VENUE_DISAGREEMENT": 3
+      },
+      "series_id": "CONFIRMED_EXTREMES_V1",
+      "usable_hour_count": 26301,
+      "usable_reference_rate": "0.9998859489051094890510948905"
+    },
+    "MEDIAN_OHLC_V1": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0",
+        "median_abs": "0",
+        "observation_count": 26301,
+        "p95_abs": "0",
+        "p99_abs": "0"
+      },
+      "degraded_reference_bar_count": 286,
+      "degraded_reference_rate": "0.01087287104622871046228710462",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 3,
+      "quality_state_counts": {
+        "REFERENCE_DEGRADED": 286,
+        "REFERENCE_OK": 26015,
+        "VENUE_DISAGREEMENT": 3
+      },
+      "series_id": "MEDIAN_OHLC_V1",
+      "usable_hour_count": 26301,
+      "usable_reference_rate": "0.9998859489051094890510948905"
+    },
+    "bitfinex": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.04228725706222158243510159395",
+        "median_abs": "0.0004674287279732021475980796394",
+        "observation_count": 26292,
+        "p95_abs": "0.002386679590608518927512809889",
+        "p99_abs": "0.004442210286476119704726883295"
+      },
+      "degraded_reference_bar_count": 0,
+      "degraded_reference_rate": "0",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 12,
+      "quality_state_counts": {},
+      "series_id": "bitfinex",
+      "usable_hour_count": 26292,
+      "usable_reference_rate": "0.9995437956204379562043795620"
+    },
+    "bitstamp": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.03836469739689200708150285227",
+        "median_abs": "0.00004193332916187414320238128924",
+        "observation_count": 26304,
+        "p95_abs": "0.0006414262920074439209151390202",
+        "p99_abs": "0.001098056862228159098666691486"
+      },
+      "degraded_reference_bar_count": 0,
+      "degraded_reference_rate": "0",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 0,
+      "quality_state_counts": {},
+      "series_id": "bitstamp",
+      "usable_hour_count": 26304,
+      "usable_reference_rate": "1"
+    },
+    "coinbase": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.02042625806780663443857060413",
+        "median_abs": "0.00003456959983959705674426965671",
+        "observation_count": 26301,
+        "p95_abs": "0.0005990406453031901879910143903",
+        "p99_abs": "0.0009781501188724102796331937054"
+      },
+      "degraded_reference_bar_count": 0,
+      "degraded_reference_rate": "0",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 3,
+      "quality_state_counts": {},
+      "series_id": "coinbase",
+      "usable_hour_count": 26301,
+      "usable_reference_rate": "0.9998859489051094890510948905"
+    }
+  },
+  "structural_comparison": {
+    "CLIPPED_CENTER_V1": {
+      "breakout": {
+        "consensus_event_count": 9,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 8,
+        "event_timestamps": [
+          "2020-07-27T00:00:00+00:00",
+          "2020-10-19T00:00:00+00:00",
+          "2021-02-08T00:00:00+00:00",
+          "2021-08-02T00:00:00+00:00",
+          "2021-10-04T00:00:00+00:00",
+          "2021-10-11T00:00:00+00:00",
+          "2021-11-01T00:00:00+00:00",
+          "2022-03-21T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 6,
+        "disagreement_rate": "0.1764705882352941176470588235"
+      },
+      "reclaim": {
+        "consensus_event_count": 3,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.25",
+        "event_count": 4,
+        "event_timestamps": [
+          "2021-06-21T00:00:00+00:00",
+          "2022-01-10T00:00:00+00:00",
+          "2022-01-31T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 17,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 17,
+        "event_timestamps": [
+          "2020-02-10T00:00:00+00:00",
+          "2020-05-04T00:00:00+00:00",
+          "2020-06-01T00:00:00+00:00",
+          "2020-08-17T00:00:00+00:00",
+          "2021-01-04T00:00:00+00:00",
+          "2021-03-08T00:00:00+00:00",
+          "2021-04-05T00:00:00+00:00",
+          "2021-05-10T00:00:00+00:00",
+          "2021-06-14T00:00:00+00:00",
+          "2021-09-06T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2021-12-27T00:00:00+00:00",
+          "2022-02-07T00:00:00+00:00",
+          "2022-03-28T00:00:00+00:00",
+          "2022-08-15T00:00:00+00:00",
+          "2022-09-12T00:00:00+00:00",
+          "2022-10-31T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 14,
+        "disagreement_count": 4,
+        "disagreement_rate": "0.25",
+        "event_count": 14,
+        "event_timestamps": [
+          "2020-03-16T00:00:00+00:00",
+          "2020-06-22T00:00:00+00:00",
+          "2020-09-07T00:00:00+00:00",
+          "2021-05-17T00:00:00+00:00",
+          "2021-06-21T00:00:00+00:00",
+          "2021-07-19T00:00:00+00:00",
+          "2021-09-20T00:00:00+00:00",
+          "2021-11-29T00:00:00+00:00",
+          "2022-01-24T00:00:00+00:00",
+          "2022-02-21T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00",
+          "2022-06-13T00:00:00+00:00",
+          "2022-10-10T00:00:00+00:00",
+          "2022-11-21T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 153
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "breakout": {
+        "consensus_event_count": 9,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 8,
+        "event_timestamps": [
+          "2020-07-27T00:00:00+00:00",
+          "2020-10-19T00:00:00+00:00",
+          "2021-02-08T00:00:00+00:00",
+          "2021-08-02T00:00:00+00:00",
+          "2021-10-04T00:00:00+00:00",
+          "2021-10-11T00:00:00+00:00",
+          "2021-11-01T00:00:00+00:00",
+          "2022-03-21T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 8,
+        "disagreement_rate": "0.2285714285714285714285714286"
+      },
+      "reclaim": {
+        "consensus_event_count": 3,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.25",
+        "event_count": 4,
+        "event_timestamps": [
+          "2021-06-21T00:00:00+00:00",
+          "2022-01-03T00:00:00+00:00",
+          "2022-01-10T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 17,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 17,
+        "event_timestamps": [
+          "2020-02-10T00:00:00+00:00",
+          "2020-05-04T00:00:00+00:00",
+          "2020-06-01T00:00:00+00:00",
+          "2020-08-17T00:00:00+00:00",
+          "2021-01-04T00:00:00+00:00",
+          "2021-03-08T00:00:00+00:00",
+          "2021-04-05T00:00:00+00:00",
+          "2021-05-10T00:00:00+00:00",
+          "2021-06-14T00:00:00+00:00",
+          "2021-09-06T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2021-12-27T00:00:00+00:00",
+          "2022-02-07T00:00:00+00:00",
+          "2022-03-28T00:00:00+00:00",
+          "2022-08-15T00:00:00+00:00",
+          "2022-09-12T00:00:00+00:00",
+          "2022-10-31T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 14,
+        "disagreement_count": 6,
+        "disagreement_rate": "0.3529411764705882352941176471",
+        "event_count": 14,
+        "event_timestamps": [
+          "2020-03-16T00:00:00+00:00",
+          "2020-06-22T00:00:00+00:00",
+          "2020-08-31T00:00:00+00:00",
+          "2021-05-17T00:00:00+00:00",
+          "2021-06-21T00:00:00+00:00",
+          "2021-07-19T00:00:00+00:00",
+          "2021-09-20T00:00:00+00:00",
+          "2021-11-29T00:00:00+00:00",
+          "2022-01-24T00:00:00+00:00",
+          "2022-02-21T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00",
+          "2022-06-13T00:00:00+00:00",
+          "2022-10-10T00:00:00+00:00",
+          "2022-11-21T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 153
+    },
+    "MEDIAN_OHLC_V1": {
+      "breakout": {
+        "consensus_event_count": 9,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 8,
+        "event_timestamps": [
+          "2020-07-27T00:00:00+00:00",
+          "2020-10-19T00:00:00+00:00",
+          "2021-02-08T00:00:00+00:00",
+          "2021-08-02T00:00:00+00:00",
+          "2021-10-04T00:00:00+00:00",
+          "2021-10-11T00:00:00+00:00",
+          "2021-11-01T00:00:00+00:00",
+          "2022-03-21T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 4,
+        "disagreement_rate": "0.1212121212121212121212121212"
+      },
+      "reclaim": {
+        "consensus_event_count": 3,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.25",
+        "event_count": 4,
+        "event_timestamps": [
+          "2021-06-21T00:00:00+00:00",
+          "2022-01-10T00:00:00+00:00",
+          "2022-01-31T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 17,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 17,
+        "event_timestamps": [
+          "2020-02-10T00:00:00+00:00",
+          "2020-05-04T00:00:00+00:00",
+          "2020-06-01T00:00:00+00:00",
+          "2020-08-17T00:00:00+00:00",
+          "2021-01-04T00:00:00+00:00",
+          "2021-03-08T00:00:00+00:00",
+          "2021-04-05T00:00:00+00:00",
+          "2021-05-10T00:00:00+00:00",
+          "2021-06-14T00:00:00+00:00",
+          "2021-09-06T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2021-12-27T00:00:00+00:00",
+          "2022-02-07T00:00:00+00:00",
+          "2022-03-28T00:00:00+00:00",
+          "2022-08-15T00:00:00+00:00",
+          "2022-09-12T00:00:00+00:00",
+          "2022-10-31T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 14,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1333333333333333333333333333",
+        "event_count": 14,
+        "event_timestamps": [
+          "2020-03-16T00:00:00+00:00",
+          "2020-06-22T00:00:00+00:00",
+          "2020-09-07T00:00:00+00:00",
+          "2021-05-17T00:00:00+00:00",
+          "2021-06-21T00:00:00+00:00",
+          "2021-07-19T00:00:00+00:00",
+          "2021-09-20T00:00:00+00:00",
+          "2021-11-29T00:00:00+00:00",
+          "2022-01-24T00:00:00+00:00",
+          "2022-02-21T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00",
+          "2022-06-13T00:00:00+00:00",
+          "2022-09-19T00:00:00+00:00",
+          "2022-11-21T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 153
+    },
+    "bitfinex": {
+      "breakout": {
+        "consensus_event_count": 9,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.2",
+        "event_count": 9,
+        "event_timestamps": [
+          "2020-07-27T00:00:00+00:00",
+          "2020-10-19T00:00:00+00:00",
+          "2021-02-08T00:00:00+00:00",
+          "2021-08-02T00:00:00+00:00",
+          "2021-10-04T00:00:00+00:00",
+          "2021-10-18T00:00:00+00:00",
+          "2021-11-01T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2022-03-21T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 3,
+        "disagreement_rate": "0.09375"
+      },
+      "reclaim": {
+        "consensus_event_count": 3,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.25",
+        "event_count": 4,
+        "event_timestamps": [
+          "2021-06-21T00:00:00+00:00",
+          "2022-01-03T00:00:00+00:00",
+          "2022-01-10T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 17,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1111111111111111111111111111",
+        "event_count": 17,
+        "event_timestamps": [
+          "2020-02-17T00:00:00+00:00",
+          "2020-05-04T00:00:00+00:00",
+          "2020-06-01T00:00:00+00:00",
+          "2020-08-17T00:00:00+00:00",
+          "2021-01-04T00:00:00+00:00",
+          "2021-03-08T00:00:00+00:00",
+          "2021-04-12T00:00:00+00:00",
+          "2021-05-10T00:00:00+00:00",
+          "2021-06-14T00:00:00+00:00",
+          "2021-09-06T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2021-12-27T00:00:00+00:00",
+          "2022-02-07T00:00:00+00:00",
+          "2022-03-28T00:00:00+00:00",
+          "2022-08-15T00:00:00+00:00",
+          "2022-09-12T00:00:00+00:00",
+          "2022-10-31T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 14,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.07142857142857142857142857143",
+        "event_count": 13,
+        "event_timestamps": [
+          "2020-03-09T00:00:00+00:00",
+          "2020-06-22T00:00:00+00:00",
+          "2020-09-07T00:00:00+00:00",
+          "2021-05-17T00:00:00+00:00",
+          "2021-06-21T00:00:00+00:00",
+          "2021-09-20T00:00:00+00:00",
+          "2021-11-29T00:00:00+00:00",
+          "2022-01-24T00:00:00+00:00",
+          "2022-02-21T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00",
+          "2022-06-13T00:00:00+00:00",
+          "2022-09-19T00:00:00+00:00",
+          "2022-11-21T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 150
+    },
+    "bitstamp": {
+      "breakout": {
+        "consensus_event_count": 9,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 9,
+        "event_timestamps": [
+          "2020-07-27T00:00:00+00:00",
+          "2020-10-19T00:00:00+00:00",
+          "2021-02-08T00:00:00+00:00",
+          "2021-08-02T00:00:00+00:00",
+          "2021-10-04T00:00:00+00:00",
+          "2021-10-11T00:00:00+00:00",
+          "2021-11-01T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2022-03-21T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 0,
+        "disagreement_rate": "0"
+      },
+      "reclaim": {
+        "consensus_event_count": 3,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 3,
+        "event_timestamps": [
+          "2021-06-21T00:00:00+00:00",
+          "2022-01-10T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 17,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 17,
+        "event_timestamps": [
+          "2020-02-10T00:00:00+00:00",
+          "2020-05-04T00:00:00+00:00",
+          "2020-06-01T00:00:00+00:00",
+          "2020-08-17T00:00:00+00:00",
+          "2021-01-04T00:00:00+00:00",
+          "2021-03-08T00:00:00+00:00",
+          "2021-04-12T00:00:00+00:00",
+          "2021-05-10T00:00:00+00:00",
+          "2021-06-14T00:00:00+00:00",
+          "2021-09-06T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2021-12-27T00:00:00+00:00",
+          "2022-02-07T00:00:00+00:00",
+          "2022-03-28T00:00:00+00:00",
+          "2022-08-15T00:00:00+00:00",
+          "2022-09-12T00:00:00+00:00",
+          "2022-10-31T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 14,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 14,
+        "event_timestamps": [
+          "2020-03-09T00:00:00+00:00",
+          "2020-06-22T00:00:00+00:00",
+          "2020-09-07T00:00:00+00:00",
+          "2021-05-17T00:00:00+00:00",
+          "2021-06-21T00:00:00+00:00",
+          "2021-07-19T00:00:00+00:00",
+          "2021-09-20T00:00:00+00:00",
+          "2021-11-29T00:00:00+00:00",
+          "2022-01-24T00:00:00+00:00",
+          "2022-02-21T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00",
+          "2022-06-13T00:00:00+00:00",
+          "2022-09-19T00:00:00+00:00",
+          "2022-11-21T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 155
+    },
+    "coinbase": {
+      "breakout": {
+        "consensus_event_count": 9,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.2",
+        "event_count": 9,
+        "event_timestamps": [
+          "2020-07-27T00:00:00+00:00",
+          "2020-10-26T00:00:00+00:00",
+          "2021-02-08T00:00:00+00:00",
+          "2021-08-02T00:00:00+00:00",
+          "2021-10-04T00:00:00+00:00",
+          "2021-10-11T00:00:00+00:00",
+          "2021-11-01T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2022-03-21T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 2,
+        "disagreement_rate": "0.0625"
+      },
+      "reclaim": {
+        "consensus_event_count": 3,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.25",
+        "event_count": 4,
+        "event_timestamps": [
+          "2021-06-21T00:00:00+00:00",
+          "2022-01-10T00:00:00+00:00",
+          "2022-01-31T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 17,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 17,
+        "event_timestamps": [
+          "2020-02-10T00:00:00+00:00",
+          "2020-05-04T00:00:00+00:00",
+          "2020-06-01T00:00:00+00:00",
+          "2020-08-17T00:00:00+00:00",
+          "2021-01-04T00:00:00+00:00",
+          "2021-03-08T00:00:00+00:00",
+          "2021-04-12T00:00:00+00:00",
+          "2021-05-10T00:00:00+00:00",
+          "2021-06-14T00:00:00+00:00",
+          "2021-09-06T00:00:00+00:00",
+          "2021-11-08T00:00:00+00:00",
+          "2021-12-27T00:00:00+00:00",
+          "2022-02-07T00:00:00+00:00",
+          "2022-03-28T00:00:00+00:00",
+          "2022-08-15T00:00:00+00:00",
+          "2022-09-12T00:00:00+00:00",
+          "2022-10-31T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 14,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1333333333333333333333333333",
+        "event_count": 14,
+        "event_timestamps": [
+          "2020-03-09T00:00:00+00:00",
+          "2020-06-22T00:00:00+00:00",
+          "2020-09-07T00:00:00+00:00",
+          "2021-05-17T00:00:00+00:00",
+          "2021-06-21T00:00:00+00:00",
+          "2021-07-19T00:00:00+00:00",
+          "2021-09-20T00:00:00+00:00",
+          "2021-11-29T00:00:00+00:00",
+          "2022-01-24T00:00:00+00:00",
+          "2022-02-21T00:00:00+00:00",
+          "2022-05-09T00:00:00+00:00",
+          "2022-06-13T00:00:00+00:00",
+          "2022-10-10T00:00:00+00:00",
+          "2022-11-21T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 152
+    },
+    "consensus_definition": "Event timestamp present for at least two independent raw providers."
+  },
+  "tolerance_grid": {
+    "CLIPPED_CENTER_V1": [
+      {
+        "combined_swing_disagreement_rate": "0.1764705882352941176470588235",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.05",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.1764705882352941176470588235",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.10",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.1764705882352941176470588235",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.15",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.1764705882352941176470588235",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.20",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.1764705882352941176470588235",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.30",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      }
+    ],
+    "CONFIRMED_EXTREMES_V1": [
+      {
+        "combined_swing_disagreement_rate": "0.1212121212121212121212121212",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.05",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.2285714285714285714285714286",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0.01307189542483660130718954248",
+        "tolerance_atr": "0.10",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.2285714285714285714285714286",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0.01307189542483660130718954248",
+        "tolerance_atr": "0.15",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.2285714285714285714285714286",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0.01307189542483660130718954248",
+        "tolerance_atr": "0.20",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.2285714285714285714285714286",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 0,
+          "isolated_extremes_rejected": 0,
+          "october_2025_stop_touched": null
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0.01307189542483660130718954248",
+        "tolerance_atr": "0.30",
+        "usable_reference_rate": "0.9998859489051094890510948905"
+      }
+    ]
+  },
+  "trade_path_comparison": {
+    "CLIPPED_CENTER_V1": {
+      "comparable_probe_count": 153,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0035301317202662821442339044",
+        "median_abs": "0.00033919179229868119147592555",
+        "observation_count": 153,
+        "p95_abs": "0.00238087707318948841841914482",
+        "p99_abs": "0.0031962638814217844342300424"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0022084623651521333113335963",
+        "median_abs": "0.00030745216753778114135704657",
+        "observation_count": 153,
+        "p95_abs": "0.0013621976065038807987249074",
+        "p99_abs": "0.0020982506064144528221601274"
+      },
+      "probe_count": 153,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 55
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "comparable_probe_count": 153,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0102497971736360205549479430",
+        "median_abs": "0.00066121089223638470451911935",
+        "observation_count": 153,
+        "p95_abs": "0.0055806914434864210983938653",
+        "p99_abs": "0.0080077695521512863739646705"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.005766038761572661274795413845",
+        "median_abs": "0.0003620298017806740161920232",
+        "observation_count": 153,
+        "p95_abs": "0.00301574586326883120134177786",
+        "p99_abs": "0.0037098264420070496439475409"
+      },
+      "probe_count": 153,
+      "stop_disagreement_count": 2,
+      "stop_disagreement_rate": "0.01307189542483660130718954248",
+      "stop_touch_count": 57
+    },
+    "MEDIAN_OHLC_V1": {
+      "comparable_probe_count": 153,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.00277965382704748296206163240",
+        "median_abs": "0E-29",
+        "observation_count": 153,
+        "p95_abs": "0E-29",
+        "p99_abs": "0.00059299003907141454749100372"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.00034648319556501509676780676",
+        "median_abs": "0E-29",
+        "observation_count": 153,
+        "p95_abs": "0E-29",
+        "p99_abs": "0.00002443304235801070611492414"
+      },
+      "probe_count": 153,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 55
+    },
+    "bitfinex": {
+      "comparable_probe_count": 153,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0383275598007527333690857526",
+        "median_abs": "0.00133291825791091370669659887",
+        "observation_count": 153,
+        "p95_abs": "0.0140261182125193970349576303",
+        "p99_abs": "0.0314010662561310519192267308"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0077378829197915443971004022",
+        "median_abs": "0.00097776487462421863424298059",
+        "observation_count": 153,
+        "p95_abs": "0.0042398280676618079211684381",
+        "p99_abs": "0.0071060565948545019791805381"
+      },
+      "probe_count": 153,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 55
+    },
+    "bitstamp": {
+      "comparable_probe_count": 153,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0184343104818644470986799098",
+        "median_abs": "0E-28",
+        "observation_count": 153,
+        "p95_abs": "0.0022873778332293616136410896",
+        "p99_abs": "0.0060745333087922187658127695"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.00632484650313557248811107862",
+        "median_abs": "0.000055447462589409033425422066",
+        "observation_count": 153,
+        "p95_abs": "0.0012183386372689878658484731",
+        "p99_abs": "0.00438536876404732325898547884"
+      },
+      "probe_count": 153,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 55
+    },
+    "coinbase": {
+      "comparable_probe_count": 153,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.02021895133832696034780786754",
+        "median_abs": "0.00010733469490971649472364107",
+        "observation_count": 153,
+        "p95_abs": "0.00232872617141771508237851369",
+        "p99_abs": "0.0063506680798568276197591785"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0037098264420070496439475409",
+        "median_abs": "0.0000788219152556362983244764",
+        "observation_count": 153,
+        "p95_abs": "0.00212735316092203990067841399",
+        "p99_abs": "0.0037030957405219539904663374"
+      },
+      "probe_count": 153,
+      "stop_disagreement_count": 2,
+      "stop_disagreement_rate": "0.01307189542483660130718954248",
+      "stop_touch_count": 57
+    },
+    "probe_definition": {
+      "direction": "long",
+      "entry_and_stop_source": "ATR_BOOTSTRAP_MEDIAN_OHLC_V1",
+      "entry_interval_days": 7,
+      "path_days": 28,
+      "point_in_time": true,
+      "stop_rule": "minimum composite-bootstrap low in prior 28 days"
+    }
+  }
+}

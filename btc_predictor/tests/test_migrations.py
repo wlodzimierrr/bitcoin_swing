@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0018_ingestion_audit"
+HEAD_REVISION = "0019_reference_composite"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:
@@ -317,6 +317,24 @@ def test_ingestion_audit_log_migration_renders_postgresql_sql() -> None:
     assert "records_fetched >= 0" in sql
     assert "records_inserted >= 0" in sql
     assert "Ingestion job audit log with counters, gaps, failures, and provider metadata" in sql
+
+
+def test_reference_composite_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE derived.btc_reference_composite" in sql
+    assert "reference_policy_version VARCHAR(64) NOT NULL" in sql
+    assert "observation_time TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "available_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "input_providers_expected JSON NOT NULL" in sql
+    assert "bitstamp_observation_id VARCHAR(64)" in sql
+    assert "composite_method_version VARCHAR(64) NOT NULL" in sql
+    assert "quality_state VARCHAR(32) NOT NULL" in sql
+    assert "confirmation_state VARCHAR(48) NOT NULL" in sql
+    assert "fallback_used BOOLEAN NOT NULL" in sql
+    assert "CONSTRAINT pk_derived_btc_reference_composite PRIMARY KEY" in sql
+    assert "fallback_used = false" in sql
+    assert "COMMENT ON TABLE derived.btc_reference_composite" in sql
 
 
 def test_runtime_and_research_connections_can_be_verified(tmp_path: Path) -> None:

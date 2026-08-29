@@ -1,0 +1,2644 @@
+{
+  "atr_comparison": {
+    "CLIPPED_CENTER_V1": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.08059451941287878787878787826",
+        "median_abs": "0.004141396727514297267633294632",
+        "observation_count": 1069,
+        "p95_abs": "0.01451618646991397634071155831",
+        "p99_abs": "0.02373363105861503282067964065"
+      },
+      "daily_atr_count": 1069,
+      "daily_atr_distribution": {
+        "max_abs": "6137.653962585034013605442177",
+        "median_abs": "2386.355624999999999999999999",
+        "observation_count": 1069,
+        "p95_abs": "4459.984380102040816326530601",
+        "p99_abs": "5285.813087585034013605442176"
+      }
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1095195238786471185948613731",
+        "median_abs": "0.03556141766494941344423065037",
+        "observation_count": 1069,
+        "p95_abs": "0.06617941061923925743216928480",
+        "p99_abs": "0.09573616796513931070909811177"
+      },
+      "daily_atr_count": 1069,
+      "daily_atr_distribution": {
+        "max_abs": "6430.933571428571428571428571",
+        "median_abs": "2518.925714285714285714285714",
+        "observation_count": 1069,
+        "p95_abs": "4604.087142857142857142857143",
+        "p99_abs": "5546.697142857142857142857143"
+      }
+    },
+    "MEDIAN_OHLC_V1": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.08305752840909090909090909092",
+        "median_abs": "0.005091116173120728929384966402",
+        "observation_count": 1083,
+        "p95_abs": "0.01421509214677071226963307330",
+        "p99_abs": "0.02142996108949416342412451357"
+      },
+      "daily_atr_count": 1083,
+      "daily_atr_distribution": {
+        "max_abs": "6152.092857142857142857142857",
+        "median_abs": "2372.457857142857142857142857",
+        "observation_count": 1083,
+        "p95_abs": "4469.067142857142857142857143",
+        "p99_abs": "5303.923571428571428571428571"
+      }
+    },
+    "bitfinex": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.09385521141912597592026557203",
+        "median_abs": "0.008166433783573979195777053128",
+        "observation_count": 1081,
+        "p95_abs": "0.04315266356221993867360393689",
+        "p99_abs": "0.05814915983776177468752586714"
+      },
+      "daily_atr_count": 1081,
+      "daily_atr_distribution": {
+        "max_abs": "6066.785714285714285714285714",
+        "median_abs": "2328.142857142857142857142857",
+        "observation_count": 1081,
+        "p95_abs": "4445.214285714285714285714286",
+        "p99_abs": "5195"
+      }
+    },
+    "bitstamp": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1280302911279046018004996151",
+        "median_abs": "0",
+        "observation_count": 1083,
+        "p95_abs": "0.03083030661373426809696764902",
+        "p99_abs": "0.1106222444101872018111231194"
+      },
+      "daily_atr_count": 1083,
+      "daily_atr_distribution": {
+        "max_abs": "6135.00",
+        "median_abs": "2358.928571428571428571428571",
+        "observation_count": 1083,
+        "p95_abs": "4460.071428571428571428571429",
+        "p99_abs": "5286.785714285714285714285714"
+      }
+    },
+    "coinbase": {
+      "abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.1335507985049269452939177709",
+        "median_abs": "0.01395050597976080956761729527",
+        "observation_count": 1081,
+        "p95_abs": "0.03888987679410643973072526356",
+        "p99_abs": "0.06754666317375073678695395927"
+      },
+      "daily_atr_count": 1081,
+      "daily_atr_distribution": {
+        "max_abs": "6186.775714285714285714285714",
+        "median_abs": "2400.439285714285714285714286",
+        "observation_count": 1081,
+        "p95_abs": "4514.015714285714285714285714",
+        "p99_abs": "5343.441428571428571428571429"
+      }
+    },
+    "definition": "14-day ATR on complete 00:00 UTC daily bars"
+  },
+  "candidate_to_candidate_comparison": [
+    {
+      "close_abs_fractional_difference": {
+        "max_abs": "0",
+        "median_abs": "0",
+        "observation_count": 25968,
+        "p95_abs": "0",
+        "p99_abs": "0"
+      },
+      "combined_swing_disagreement_rate_difference": "0.03225806451612903225806451613",
+      "common_hour_count": 25968,
+      "high_abs_fractional_difference": {
+        "max_abs": "0.008225393340651298938894987194",
+        "median_abs": "0.000541519093531882556033273115",
+        "observation_count": 25968,
+        "p95_abs": "0.002391924241160152915330813996",
+        "p99_abs": "0.003507522334876978271761019010"
+      },
+      "left": "MEDIAN_OHLC_V1",
+      "low_abs_fractional_difference": {
+        "max_abs": "0.009615742536701606807590090097",
+        "median_abs": "0.0001921664695097172047913890099",
+        "observation_count": 25968,
+        "p95_abs": "0.001124313699525516398254944643",
+        "p99_abs": "0.002814593130967649992874447770"
+      },
+      "right": "CONFIRMED_EXTREMES_V1",
+      "stop_touch_disagreement_count": 0
+    },
+    {
+      "close_abs_fractional_difference": {
+        "max_abs": "0.002157244021318626393139395114",
+        "median_abs": "0.0002521539344813642829792736904",
+        "observation_count": 25968,
+        "p95_abs": "0.0008582432734598373422626943520",
+        "p99_abs": "0.001211430230230276183980237268"
+      },
+      "combined_swing_disagreement_rate_difference": "0.03225806451612903225806451613",
+      "common_hour_count": 25968,
+      "high_abs_fractional_difference": {
+        "max_abs": "0.003347102501716637930192130132",
+        "median_abs": "0.0002004664751121217416840385266",
+        "observation_count": 25968,
+        "p95_abs": "0.0008070120771055551813408413722",
+        "p99_abs": "0.001220300103120988277879495759"
+      },
+      "left": "MEDIAN_OHLC_V1",
+      "low_abs_fractional_difference": {
+        "max_abs": "0.002786470755054696253318270408",
+        "median_abs": "0.0002647728225061124168676391480",
+        "observation_count": 25968,
+        "p95_abs": "0.0008899043224524213843962020171",
+        "p99_abs": "0.001274296308400387795853354803"
+      },
+      "right": "CLIPPED_CENTER_V1",
+      "stop_touch_disagreement_count": 0
+    },
+    {
+      "close_abs_fractional_difference": {
+        "max_abs": "0.002157244021318626393139395114",
+        "median_abs": "0.0002521539344813642829792736904",
+        "observation_count": 25968,
+        "p95_abs": "0.0008582432734598373422626943520",
+        "p99_abs": "0.001211430230230276183980237268"
+      },
+      "combined_swing_disagreement_rate_difference": "0.06451612903225806451612903226",
+      "common_hour_count": 25968,
+      "high_abs_fractional_difference": {
+        "max_abs": "0.005458214176840332718800354203",
+        "median_abs": "0.0005162799826455842430162542065",
+        "observation_count": 25968,
+        "p95_abs": "0.001695225530652839778892519521",
+        "p99_abs": "0.002426046877024073679415980268"
+      },
+      "left": "CONFIRMED_EXTREMES_V1",
+      "low_abs_fractional_difference": {
+        "max_abs": "0.006969005130435232785086016277",
+        "median_abs": "0.0004950105955744844717623059172",
+        "observation_count": 25968,
+        "p95_abs": "0.001267629342416738867707757857",
+        "p99_abs": "0.002093368277944057606914483973"
+      },
+      "right": "CLIPPED_CENTER_V1",
+      "stop_touch_disagreement_count": 0
+    }
+  ],
+  "database_records_inserted": 78912,
+  "evaluation_end": "2025-12-31T23:00:00+00:00",
+  "evaluation_hour_count": 26304,
+  "evaluation_start": "2023-01-01T00:00:00+00:00",
+  "known_event_analysis": {
+    "events": [
+      {
+        "classification": "ISOLATED_VENUE_EXTREME",
+        "description": "Bitstamp isolated high",
+        "event_centered_path_definition": {
+          "direction": "long",
+          "entry_price": "26333.78",
+          "entry_time": "2023-03-17T14:00:00+00:00",
+          "exit_time": "2023-04-14T14:00:00+00:00",
+          "stop_level": null
+        },
+        "extreme": "high",
+        "raw_ohlc": {
+          "bitfinex": {
+            "close": "27994",
+            "high": "28253",
+            "low": "27828",
+            "open": "27974"
+          },
+          "bitstamp": {
+            "close": "28036.00",
+            "high": "29380.00",
+            "low": "27859.00",
+            "open": "28008.00"
+          },
+          "coinbase": {
+            "close": "28029.41",
+            "high": "28299.99",
+            "low": "27854.08",
+            "open": "28013.75"
+          }
+        },
+        "series_behavior": {
+          "CLIPPED_CENTER_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.006400524345536417483551544822",
+            "event_centered_mfe": "0.1778407809285260224699986102",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "-0.000169364215847478030119489113",
+            "mfe_difference_vs_venue_consensus": "-0.0006835327096983418255943506",
+            "ohlc": {
+              "close": "28019.80333333333333333333333",
+              "high": "28366.72398809523809523809524",
+              "low": "27847.02666666666666666666667",
+              "open": "27998.58333333333333333333333"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "CONFIRMED_EXTREMES_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.007624427636290726207935207175",
+            "event_centered_mfe": "0.1790939242296396491502549197",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "-0.001393267506601786754503151466",
+            "mfe_difference_vs_venue_consensus": "0.0005696105914152848546619589",
+            "ohlc": {
+              "close": "28029.41",
+              "high": "28299.99",
+              "low": "27828",
+              "open": "28008.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "MEDIAN_OHLC_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.006231160129688939453432055709",
+            "event_centered_mfe": "0.1785243136382243642955929608",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0E-30",
+            "mfe_difference_vs_venue_consensus": "0E-28",
+            "ohlc": {
+              "close": "28029.41",
+              "high": "28299.99",
+              "low": "27854.08",
+              "open": "28008.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "bitfinex": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.007624427636290726207935207175",
+            "event_centered_mfe": "0.1759800529965694252781028777",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "-0.001393267506601786754503151466",
+            "mfe_difference_vs_venue_consensus": "-0.0025442606416549390174900831",
+            "ohlc": {
+              "close": "27994",
+              "high": "28253",
+              "low": "27828",
+              "open": "27974"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "bitstamp": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.005345985270629586789287371581",
+            "event_centered_mfe": "0.1785243136382243642955929608",
+            "isolated_extreme_rejected": false,
+            "mae_difference_vs_venue_consensus": "0.000885174859059352664144684128",
+            "mfe_difference_vs_venue_consensus": "0E-28",
+            "ohlc": {
+              "close": "28036.00",
+              "high": "29380.00",
+              "low": "27859.00",
+              "open": "28008.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "coinbase": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.006231160129688939453432055709",
+            "event_centered_mfe": "0.1790939242296396491502549197",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0E-30",
+            "mfe_difference_vs_venue_consensus": "0.0005696105914152848546619589",
+            "ohlc": {
+              "close": "28029.41",
+              "high": "28299.99",
+              "low": "27854.08",
+              "open": "28013.75"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          }
+        },
+        "timestamp": "2023-03-24T14:00:00+00:00",
+        "venue_consensus_extreme": "28299.99",
+        "venue_consensus_path": {
+          "mae": "-0.006231160129688939453432055709",
+          "mfe": "0.1785243136382243642955929608"
+        }
+      },
+      {
+        "classification": "CROSS_MARKET_MOVE",
+        "description": "Cross-market selloff with Bitstamp shallower downside",
+        "event_centered_path_definition": {
+          "direction": "long",
+          "entry_price": "29439.00",
+          "entry_time": "2023-08-10T21:00:00+00:00",
+          "exit_time": "2023-09-07T21:00:00+00:00",
+          "stop_level": null
+        },
+        "extreme": "low",
+        "raw_ohlc": {
+          "bitfinex": {
+            "close": "26230",
+            "high": "27734",
+            "low": "24713",
+            "open": "27680"
+          },
+          "bitstamp": {
+            "close": "26401.00",
+            "high": "27696.00",
+            "low": "26266.00",
+            "open": "27643.00"
+          },
+          "coinbase": {
+            "close": "26522.46",
+            "high": "27847.53",
+            "low": "25234.76",
+            "open": "27644.5"
+          }
+        },
+        "series_behavior": {
+          "CLIPPED_CENTER_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1428119161656306260402866945",
+            "event_centered_mfe": "0.007883759638574679846462176025",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0.000197696932640375012738204423",
+            "ohlc": {
+              "close": "26401.00000000000000000000000",
+              "high": "27744.11386904761904761904762",
+              "low": "25234.76000000000000000000000",
+              "open": "27655.83333333333333333333333"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": true
+          },
+          "CONFIRMED_EXTREMES_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1428119161656306260402866945",
+            "event_centered_mfe": "0.008492136281803050375352423656",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0.000806073575868745541628452054",
+            "ohlc": {
+              "close": "26401.00",
+              "high": "27734",
+              "low": "25234.76",
+              "open": "27644.5"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": true
+          },
+          "MEDIAN_OHLC_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1428119161656306260402866945",
+            "event_centered_mfe": "0.007686062705934304833723971602",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0E-30",
+            "ohlc": {
+              "close": "26401.00",
+              "high": "27734",
+              "low": "25234.76",
+              "open": "27644.5"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": true
+          },
+          "bitfinex": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1605353442712048642956622168",
+            "event_centered_mfe": "0.008492136281803050375352423656",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "-0.0177234281055742382553755223",
+            "mfe_difference_vs_venue_consensus": "0.000806073575868745541628452054",
+            "ohlc": {
+              "close": "26230",
+              "high": "27734",
+              "low": "24713",
+              "open": "27680"
+            },
+            "reclaim_state_in_event_week": true,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": true
+          },
+          "bitstamp": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": false,
+            "event_centered_mae": "-0.1394748462923332993647882061",
+            "event_centered_mfe": "0.007473079927986684330310132817",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0.0033370698732973266754984884",
+            "mfe_difference_vs_venue_consensus": "-0.000212982777947620503413838785",
+            "ohlc": {
+              "close": "26401.00",
+              "high": "27696.00",
+              "low": "26266.00",
+              "open": "27643.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "coinbase": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1428119161656306260402866945",
+            "event_centered_mfe": "0.007686062705934304833723971602",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0E-30",
+            "ohlc": {
+              "close": "26522.46",
+              "high": "27847.53",
+              "low": "25234.76",
+              "open": "27644.5"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": true
+          }
+        },
+        "timestamp": "2023-08-17T21:00:00+00:00",
+        "venue_consensus_extreme": "25234.76",
+        "venue_consensus_path": {
+          "mae": "-0.1428119161656306260402866945",
+          "mfe": "0.007686062705934304833723971602"
+        }
+      },
+      {
+        "classification": "ISOLATED_VENUE_EXTREME",
+        "description": "Bitfinex isolated downside wick",
+        "event_centered_path_definition": {
+          "direction": "long",
+          "entry_price": "95681.45",
+          "entry_time": "2024-11-28T22:00:00+00:00",
+          "exit_time": "2024-12-26T22:00:00+00:00",
+          "stop_level": null
+        },
+        "extreme": "low",
+        "raw_ohlc": {
+          "bitfinex": {
+            "close": "96557",
+            "high": "99126",
+            "low": "88800",
+            "open": "99020"
+          },
+          "bitstamp": {
+            "close": "96810.00",
+            "high": "99143.00",
+            "low": "92092.00",
+            "open": "99010.00"
+          },
+          "coinbase": {
+            "close": "96917.15",
+            "high": "99139.62",
+            "low": "92055.86",
+            "open": "99003.24"
+          }
+        },
+        "series_behavior": {
+          "CLIPPED_CENTER_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.03957383601424060677134287534",
+            "event_centered_mfe": "0.1317166841988006382985765088",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "-0.00168153818639623359346983934",
+            "mfe_difference_vs_venue_consensus": "-0.0008330420020460252919104665",
+            "ohlc": {
+              "close": "96761.38333333333333333333333",
+              "high": "99136.20666666666666666666667",
+              "low": "91894.96798809523809523809524",
+              "open": "99011.08"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "CONFIRMED_EXTREMES_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.03789229782784437317787303600",
+            "event_centered_mfe": "0.1328097557049981997555430023",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0E-29",
+            "mfe_difference_vs_venue_consensus": "0.0002600295041515361650560270",
+            "ohlc": {
+              "close": "96810.00",
+              "high": "99143.00",
+              "low": "92055.86",
+              "open": "99010.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "MEDIAN_OHLC_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.03789229782784437317787303600",
+            "event_centered_mfe": "0.1325497262008466635904869753",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0E-29",
+            "mfe_difference_vs_venue_consensus": "0E-28",
+            "ohlc": {
+              "close": "96810.00",
+              "high": "99139.62",
+              "low": "92055.86",
+              "open": "99010.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "bitfinex": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.07192041926622140446241147056",
+            "event_centered_mfe": "0.1297905706905570515496995499",
+            "isolated_extreme_rejected": false,
+            "mae_difference_vs_venue_consensus": "-0.03402812143837703128453843456",
+            "mfe_difference_vs_venue_consensus": "-0.0027591555102896120407874254",
+            "ohlc": {
+              "close": "96557",
+              "high": "99126",
+              "low": "88800",
+              "open": "99020"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "bitstamp": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.03751458616064033310531978769",
+            "event_centered_mfe": "0.1325497262008466635904869753",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0.00037771166720404007255324831",
+            "mfe_difference_vs_venue_consensus": "0E-28",
+            "ohlc": {
+              "close": "96810.00",
+              "high": "99143.00",
+              "low": "92092.00",
+              "open": "99010.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "coinbase": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.03789229782784437317787303600",
+            "event_centered_mfe": "0.1328097557049981997555430023",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0E-29",
+            "mfe_difference_vs_venue_consensus": "0.0002600295041515361650560270",
+            "ohlc": {
+              "close": "96917.15",
+              "high": "99139.62",
+              "low": "92055.86",
+              "open": "99003.24"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          }
+        },
+        "timestamp": "2024-12-05T22:00:00+00:00",
+        "venue_consensus_extreme": "92055.86",
+        "venue_consensus_path": {
+          "mae": "-0.03789229782784437317787303600",
+          "mfe": "0.1325497262008466635904869753"
+        }
+      },
+      {
+        "classification": "ISOLATED_VENUE_EXTREME",
+        "description": "Bitstamp isolated downside wick",
+        "event_centered_path_definition": {
+          "direction": "long",
+          "entry_price": "87350.49",
+          "entry_time": "2025-03-26T04:00:00+00:00",
+          "exit_time": "2025-04-23T04:00:00+00:00",
+          "stop_level": null
+        },
+        "extreme": "low",
+        "raw_ohlc": {
+          "bitfinex": {
+            "close": "84568",
+            "high": "84681",
+            "low": "84427",
+            "open": "84532"
+          },
+          "bitstamp": {
+            "close": "84615.00",
+            "high": "84732.00",
+            "low": "81188.00",
+            "open": "84584.00"
+          },
+          "coinbase": {
+            "close": "84610.18",
+            "high": "84731.47",
+            "low": "84470.09",
+            "open": "84546.51"
+          }
+        },
+        "series_behavior": {
+          "CLIPPED_CENTER_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.1476648079860036656157662462",
+            "event_centered_mfe": "0.07532928550257703190903680105",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0.0002048834146971203786798067",
+            "mfe_difference_vs_venue_consensus": "0.00002907825703095655216129869",
+            "ohlc": {
+              "close": "84597.72666666666666666666667",
+              "high": "84714.82333333333333333333333",
+              "low": "84306.68808333333333333333333",
+              "open": "84554.17"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "CONFIRMED_EXTREMES_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.1480220660467960740689605748",
+            "event_centered_mfe": "0.07558206027235794555932084640",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "-0.0001523746460952880745145219",
+            "mfe_difference_vs_venue_consensus": "0.00028185302681187020244534404",
+            "ohlc": {
+              "close": "84610.18",
+              "high": "84732.00",
+              "low": "84427",
+              "open": "84546.51"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "MEDIAN_OHLC_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.1478696914007007859944460529",
+            "event_centered_mfe": "0.07530020724554607535687550236",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0E-29",
+            "ohlc": {
+              "close": "84610.18",
+              "high": "84731.47",
+              "low": "84427",
+              "open": "84546.51"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "bitfinex": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.1471026665105141367838921110",
+            "event_centered_mfe": "0.07510558898982707481091405440",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "0.0007670248901866492105539419",
+            "mfe_difference_vs_venue_consensus": "-0.00019461825571900054596144796",
+            "ohlc": {
+              "close": "84568",
+              "high": "84681",
+              "low": "84427",
+              "open": "84532"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "bitstamp": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.1478696914007007859944460529",
+            "event_centered_mfe": "0.07530020724554607535687550236",
+            "isolated_extreme_rejected": false,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0E-29",
+            "ohlc": {
+              "close": "84615.00",
+              "high": "84732.00",
+              "low": "81188.00",
+              "open": "84584.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          },
+          "coinbase": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": null,
+            "event_centered_mae": "-0.1480220660467960740689605748",
+            "event_centered_mfe": "0.07558206027235794555932084640",
+            "isolated_extreme_rejected": true,
+            "mae_difference_vs_venue_consensus": "-0.0001523746460952880745145219",
+            "mfe_difference_vs_venue_consensus": "0.00028185302681187020244534404",
+            "ohlc": {
+              "close": "84610.18",
+              "high": "84731.47",
+              "low": "84470.09",
+              "open": "84546.51"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": null,
+            "swing_state_in_event_week": false
+          }
+        },
+        "timestamp": "2025-04-02T04:00:00+00:00",
+        "venue_consensus_extreme": "84427",
+        "venue_consensus_path": {
+          "mae": "-0.1478696914007007859944460529",
+          "mfe": "0.07530020724554607535687550236"
+        }
+      },
+      {
+        "classification": "CROSS_MARKET_MOVE",
+        "description": "Cross-market selloff and consensus stop hit",
+        "event_centered_path_definition": {
+          "direction": "long",
+          "entry_price": "122407.37",
+          "entry_time": "2025-10-03T21:00:00+00:00",
+          "exit_time": "2025-10-31T21:00:00+00:00",
+          "stop_level": "107270"
+        },
+        "extreme": "low",
+        "raw_ohlc": {
+          "bitfinex": {
+            "close": "113840",
+            "high": "115240",
+            "low": "103310",
+            "open": "114480"
+          },
+          "bitstamp": {
+            "close": "113974.00",
+            "high": "115388.00",
+            "low": "109683.00",
+            "open": "114290.00"
+          },
+          "coinbase": {
+            "close": "113874.92",
+            "high": "115156.73",
+            "low": "107000",
+            "open": "114323.97"
+          }
+        },
+        "reviewed_stop": "107270",
+        "series_behavior": {
+          "CLIPPED_CENTER_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1535456566054805360167447434",
+            "event_centered_mfe": "0.03119607912497425604356992557",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0.0007801817815381541160470975",
+            "mfe_difference_vs_venue_consensus": "-0.00037579436597649308207504172",
+            "ohlc": {
+              "close": "113896.3066666666666666666667",
+              "high": "115261.5766666666666666666667",
+              "low": "107000.0000000000000000000000",
+              "open": "114364.6566666666666666666667"
+            },
+            "reclaim_state_in_event_week": true,
+            "reviewed_stop_touched": true,
+            "swing_state_in_event_week": true
+          },
+          "CONFIRMED_EXTREMES_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1543258383870186901327918409",
+            "event_centered_mfe": "0.03176794011667761508151020645",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0.00019606662572686595586523916",
+            "ohlc": {
+              "close": "113874.92",
+              "high": "115388.00",
+              "low": "107000",
+              "open": "114323.97"
+            },
+            "reclaim_state_in_event_week": true,
+            "reviewed_stop_touched": true,
+            "swing_state_in_event_week": true
+          },
+          "MEDIAN_OHLC_V1": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1542175932707319828863245734",
+            "event_centered_mfe": "0.03157187349095074912564496729",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0.0001082451162867072464672675",
+            "mfe_difference_vs_venue_consensus": "0E-29",
+            "ohlc": {
+              "close": "113874.92",
+              "high": "115240",
+              "low": "107000",
+              "open": "114323.97"
+            },
+            "reclaim_state_in_event_week": true,
+            "reviewed_stop_touched": true,
+            "swing_state_in_event_week": true
+          },
+          "bitfinex": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1560148706732282541484225991",
+            "event_centered_mfe": "0.03024842376729440392355460296",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "-0.0016890322862095640156307582",
+            "mfe_difference_vs_venue_consensus": "-0.00132344972365634520209036433",
+            "ohlc": {
+              "close": "113840",
+              "high": "115240",
+              "low": "103310",
+              "open": "114480"
+            },
+            "reclaim_state_in_event_week": true,
+            "reviewed_stop_touched": true,
+            "swing_state_in_event_week": true
+          },
+          "bitstamp": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": false,
+            "event_centered_mae": "-0.1542175932707319828863245734",
+            "event_centered_mfe": "0.03157187349095074912564496729",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0.0001082451162867072464672675",
+            "mfe_difference_vs_venue_consensus": "0E-29",
+            "ohlc": {
+              "close": "113974.00",
+              "high": "115388.00",
+              "low": "109683.00",
+              "open": "114290.00"
+            },
+            "reclaim_state_in_event_week": false,
+            "reviewed_stop_touched": false,
+            "swing_state_in_event_week": true
+          },
+          "coinbase": {
+            "available": true,
+            "breakout_state_in_event_week": false,
+            "cross_market_move_represented": true,
+            "event_centered_mae": "-0.1543258383870186901327918409",
+            "event_centered_mfe": "0.03176794011667761508151020645",
+            "isolated_extreme_rejected": null,
+            "mae_difference_vs_venue_consensus": "0E-28",
+            "mfe_difference_vs_venue_consensus": "0.00019606662572686595586523916",
+            "ohlc": {
+              "close": "113874.92",
+              "high": "115156.73",
+              "low": "107000",
+              "open": "114323.97"
+            },
+            "reclaim_state_in_event_week": true,
+            "reviewed_stop_touched": true,
+            "swing_state_in_event_week": true
+          }
+        },
+        "timestamp": "2025-10-10T21:00:00+00:00",
+        "venue_consensus_extreme": "107000",
+        "venue_consensus_path": {
+          "mae": "-0.1543258383870186901327918409",
+          "mfe": "0.03157187349095074912564496729"
+        }
+      }
+    ],
+    "summary_by_series": {
+      "CLIPPED_CENTER_V1": {
+        "cross_market_moves_represented": 2,
+        "isolated_extremes_rejected": 3,
+        "october_2025_stop_touched": true
+      },
+      "CONFIRMED_EXTREMES_V1": {
+        "cross_market_moves_represented": 2,
+        "isolated_extremes_rejected": 3,
+        "october_2025_stop_touched": true
+      },
+      "MEDIAN_OHLC_V1": {
+        "cross_market_moves_represented": 2,
+        "isolated_extremes_rejected": 3,
+        "october_2025_stop_touched": true
+      },
+      "bitfinex": {
+        "cross_market_moves_represented": 2,
+        "isolated_extremes_rejected": 2,
+        "october_2025_stop_touched": true
+      },
+      "bitstamp": {
+        "cross_market_moves_represented": 0,
+        "isolated_extremes_rejected": 1,
+        "october_2025_stop_touched": false
+      },
+      "coinbase": {
+        "cross_market_moves_represented": 2,
+        "isolated_extremes_rejected": 3,
+        "october_2025_stop_touched": true
+      }
+    }
+  },
+  "material_disagreement_events": [
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "110.7761069656452407105791447",
+        "high_dispersion_atr": "0.3325865596412977871146263649",
+        "low_dispersion_atr": "3.408611675067217471055333892",
+        "range_dispersion_atr": "3.492016210580774627462354297"
+      },
+      "primary_composite_ohlc": {
+        "close": "26401.00",
+        "high": "27734",
+        "low": "25234.76",
+        "open": "27644.5"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "26230",
+          "high": "27734",
+          "low": "24713",
+          "open": "27680"
+        },
+        "bitstamp": {
+          "close": "26401.00",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00"
+        },
+        "coinbase": {
+          "close": "26522.46",
+          "high": "27847.53",
+          "low": "25234.76",
+          "open": "27644.5"
+        }
+      },
+      "timestamp": "2023-08-17T21:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "11.76729696055988447675748093",
+        "high_dispersion_atr": "0.07630156862458609242260744275",
+        "low_dispersion_atr": "2.102606896028396104160838988",
+        "range_dispersion_atr": "2.053778115138359602761842570"
+      },
+      "primary_composite_ohlc": {
+        "close": "113874.92",
+        "high": "115240",
+        "low": "107000",
+        "open": "114323.97"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "113840",
+          "high": "115240",
+          "low": "103310",
+          "open": "114480"
+        },
+        "bitstamp": {
+          "close": "113974.00",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00"
+        },
+        "coinbase": {
+          "close": "113874.92",
+          "high": "115156.73",
+          "low": "107000",
+          "open": "114323.97"
+        }
+      },
+      "timestamp": "2025-10-10T21:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "9.303646098906161324623119801",
+        "high_dispersion_atr": "1.740708700150967720048173969",
+        "low_dispersion_atr": "0.01187386562176649195121537496",
+        "range_dispersion_atr": "1.739390701066951639441589062"
+      },
+      "primary_composite_ohlc": {
+        "close": "33320.27",
+        "high": "34283.00",
+        "low": "31612.11",
+        "open": "31652.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "33339",
+          "high": "33534",
+          "low": "31611",
+          "open": "31648"
+        },
+        "bitstamp": {
+          "close": "33308.00",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00"
+        },
+        "coinbase": {
+          "close": "33320.27",
+          "high": "35000",
+          "low": "31612.11",
+          "open": "31653.06"
+        }
+      },
+      "timestamp": "2023-10-23T22:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "5.554887130602960542100253185",
+        "high_dispersion_atr": "0.01893443672835209141991568607",
+        "low_dispersion_atr": "1.218520106701119916242962237",
+        "range_dispersion_atr": "1.221456800711340799441619748"
+      },
+      "primary_composite_ohlc": {
+        "close": "84610.18",
+        "high": "84731.47",
+        "low": "84427",
+        "open": "84546.51"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "84568",
+          "high": "84681",
+          "low": "84427",
+          "open": "84532"
+        },
+        "bitstamp": {
+          "close": "84615.00",
+          "high": "84732.00",
+          "low": "81188.00",
+          "open": "84584.00"
+        },
+        "coinbase": {
+          "close": "84610.18",
+          "high": "84731.47",
+          "low": "84470.09",
+          "open": "84546.51"
+        }
+      },
+      "timestamp": "2025-04-02T04:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "37.20173535791757049891540130",
+        "high_dispersion_atr": "0.004915036977392688531422058563",
+        "low_dispersion_atr": "0.9517824546809841556142009875",
+        "range_dispersion_atr": "0.9468674177035914670827789290"
+      },
+      "primary_composite_ohlc": {
+        "close": "96810.00",
+        "high": "99139.62",
+        "low": "92055.86",
+        "open": "99010.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "96557",
+          "high": "99126",
+          "low": "88800",
+          "open": "99020"
+        },
+        "bitstamp": {
+          "close": "96810.00",
+          "high": "99143.00",
+          "low": "92092.00",
+          "open": "99010.00"
+        },
+        "coinbase": {
+          "close": "96917.15",
+          "high": "99139.62",
+          "low": "92055.86",
+          "open": "99003.24"
+        }
+      },
+      "timestamp": "2024-12-05T22:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "4.437686703989947471803172245",
+        "high_dispersion_atr": "0.03946074077081990345716736628",
+        "low_dispersion_atr": "0.7610742547370451396114937742",
+        "range_dispersion_atr": "0.7248326235590906091538035945"
+      },
+      "primary_composite_ohlc": {
+        "close": "42815.1",
+        "high": "43751.00",
+        "low": "40625.68",
+        "open": "43751.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "42797",
+          "high": "43700",
+          "low": "40383",
+          "open": "43700"
+        },
+        "bitstamp": {
+          "close": "42816.00",
+          "high": "43751.00",
+          "low": "41454.00",
+          "open": "43751.00"
+        },
+        "coinbase": {
+          "close": "42815.1",
+          "high": "43755.53",
+          "low": "40625.68",
+          "open": "43751.15"
+        }
+      },
+      "timestamp": "2024-01-03T12:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "16.80229953710616694042108407",
+        "high_dispersion_atr": "0.03103526663583416293671759256",
+        "low_dispersion_atr": "0.7440562510288388426836820280",
+        "range_dispersion_atr": "0.7660048130060907259486873976"
+      },
+      "primary_composite_ohlc": {
+        "close": "26788.00",
+        "high": "26914",
+        "low": "26065.08",
+        "open": "26488.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "26832",
+          "high": "26914",
+          "low": "25959",
+          "open": "26220"
+        },
+        "bitstamp": {
+          "close": "26788.00",
+          "high": "26904.00",
+          "low": "26298.00",
+          "open": "26488.00"
+        },
+        "coinbase": {
+          "close": "26786.99",
+          "high": "26918.14",
+          "low": "26065.08",
+          "open": "26522.63"
+        }
+      },
+      "timestamp": "2023-08-17T22:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "18.93128183802890113317392660",
+        "high_dispersion_atr": "0.07796614313442911532876855601",
+        "low_dispersion_atr": "0.7283178736703988090467891940",
+        "range_dispersion_atr": "0.6503517305359696937180206380"
+      },
+      "primary_composite_ohlc": {
+        "close": "28857.00",
+        "high": "28915",
+        "low": "28803.00",
+        "open": "28826.54"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "28910",
+          "high": "28956",
+          "low": "28860",
+          "open": "28878"
+        },
+        "bitstamp": {
+          "close": "28857.00",
+          "high": "28915.00",
+          "low": "28803.00",
+          "open": "28824.00"
+        },
+        "coinbase": {
+          "close": "28855.37",
+          "high": "28915",
+          "low": "28477",
+          "open": "28826.54"
+        }
+      },
+      "timestamp": "2023-08-01T04:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "14.98426117424519460095663805",
+        "high_dispersion_atr": "0.6838814541908219103863032994",
+        "low_dispersion_atr": "0.01881129110906431164327897274",
+        "range_dispersion_atr": "0.6650701630817575987430243266"
+      },
+      "primary_composite_ohlc": {
+        "close": "28029.41",
+        "high": "28299.99",
+        "low": "27854.08",
+        "open": "28008.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "27994",
+          "high": "28253",
+          "low": "27828",
+          "open": "27974"
+        },
+        "bitstamp": {
+          "close": "28036.00",
+          "high": "29380.00",
+          "low": "27859.00",
+          "open": "28008.00"
+        },
+        "coinbase": {
+          "close": "28029.41",
+          "high": "28299.99",
+          "low": "27854.08",
+          "open": "28013.75"
+        }
+      },
+      "timestamp": "2023-03-24T14:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "51.82333057240715452978442390",
+        "high_dispersion_atr": "0.1020162761603550657540542929",
+        "low_dispersion_atr": "0.6337714445712900788237219073",
+        "range_dispersion_atr": "0.5317551684109350130696676144"
+      },
+      "primary_composite_ohlc": {
+        "close": "89342.00",
+        "high": "91423.56",
+        "low": "88188",
+        "open": "91263.16"
+      },
+      "quality_state": "REFERENCE_DEGRADED",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "89763",
+          "high": "91689",
+          "low": "89325",
+          "open": "91570"
+        },
+        "bitstamp": {
+          "close": "89342.00",
+          "high": "91416.00",
+          "low": "87629.00",
+          "open": "91245.00"
+        },
+        "coinbase": {
+          "close": "89300",
+          "high": "91423.56",
+          "low": "88188",
+          "open": "91263.16"
+        }
+      },
+      "timestamp": "2025-02-25T07:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "2.299060176742881189507644831",
+        "high_dispersion_atr": "0.03859586782290391434822925819",
+        "low_dispersion_atr": "0.6308518690690310631265622224",
+        "range_dispersion_atr": "0.6522696794386586609487603225"
+      },
+      "primary_composite_ohlc": {
+        "close": "71290",
+        "high": "71424.00",
+        "low": "70856.01",
+        "open": "71099"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "71290",
+          "high": "71380",
+          "low": "70896",
+          "open": "71099"
+        },
+        "bitstamp": {
+          "close": "71284.00",
+          "high": "71424.00",
+          "low": "69600.00",
+          "open": "71090.00"
+        },
+        "coinbase": {
+          "close": "71300.39",
+          "high": "71459.29",
+          "low": "70856.01",
+          "open": "71100.83"
+        }
+      },
+      "timestamp": "2024-06-05T19:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "0.1746261563456713712574188486",
+        "high_dispersion_atr": "0.007392512803376693470907701010",
+        "low_dispersion_atr": "0.5653268980044850866937389568",
+        "range_dispersion_atr": "0.5727194108078617801646466578"
+      },
+      "primary_composite_ohlc": {
+        "close": "90479",
+        "high": "91480.00",
+        "low": "90297.00",
+        "open": "90309.13"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "90479",
+          "high": "91462",
+          "low": "90307",
+          "open": "90307"
+        },
+        "bitstamp": {
+          "close": "90480.00",
+          "high": "91480.00",
+          "low": "90297.00",
+          "open": "90313.00"
+        },
+        "coinbase": {
+          "close": "90478.42",
+          "high": "91488.2",
+          "low": "88303.41",
+          "open": "90309.13"
+        }
+      },
+      "timestamp": "2025-12-05T15:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "14.75960850820375554238777303",
+        "high_dispersion_atr": "0.01442945733536137667504425354",
+        "low_dispersion_atr": "0.5419606348332340798626790821",
+        "range_dispersion_atr": "0.5290670587193315073489785220"
+      },
+      "primary_composite_ohlc": {
+        "close": "97882.00",
+        "high": "98035.28",
+        "low": "97540.00",
+        "open": "97805.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "98007",
+          "high": "98088",
+          "low": "97716",
+          "open": "97964"
+        },
+        "bitstamp": {
+          "close": "97882.00",
+          "high": "98029.00",
+          "low": "97540.00",
+          "open": "97805.00"
+        },
+        "coinbase": {
+          "close": "97862.53",
+          "high": "98035.28",
+          "low": "95500",
+          "open": "97804.78"
+        }
+      },
+      "timestamp": "2025-02-12T23:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "28.77208294945772519355412242",
+        "high_dispersion_atr": "0.08862979913216655016420252964",
+        "low_dispersion_atr": "0.5138418116352989277376979992",
+        "range_dispersion_atr": "0.4263726408251012252542171694"
+      },
+      "primary_composite_ohlc": {
+        "close": "61869.00",
+        "high": "61996.2",
+        "low": "61807.00",
+        "open": "61924.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "62028",
+          "high": "62163",
+          "low": "61974",
+          "open": "62087"
+        },
+        "bitstamp": {
+          "close": "61869.00",
+          "high": "61995.00",
+          "low": "61807.00",
+          "open": "61924.00"
+        },
+        "coinbase": {
+          "close": "61849.99",
+          "high": "61996.2",
+          "low": "61000",
+          "open": "61905.38"
+        }
+      },
+      "timestamp": "2024-07-02T21:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "5.679505943669010816406668333",
+        "high_dispersion_atr": "0.5090229992928924476427584041",
+        "low_dispersion_atr": "0.03406157147865751086336769711",
+        "range_dispersion_atr": "0.4891909343853771574748587260"
+      },
+      "primary_composite_ohlc": {
+        "close": "28013.00",
+        "high": "30000",
+        "low": "27742.00",
+        "open": "27904.86"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "28000",
+          "high": "30208",
+          "low": "27754",
+          "open": "27911"
+        },
+        "bitstamp": {
+          "close": "28013.00",
+          "high": "29900.00",
+          "low": "27742.00",
+          "open": "27900.00"
+        },
+        "coinbase": {
+          "close": "28015.91",
+          "high": "30000",
+          "low": "27733.39",
+          "open": "27904.86"
+        }
+      },
+      "timestamp": "2023-10-16T13:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "1.610640319454400960585886523",
+        "high_dispersion_atr": "0.5030704825052630105667925409",
+        "low_dispersion_atr": "0.001503673838478897906266534860",
+        "range_dispersion_atr": "0.5028447184445282185298743359"
+      },
+      "primary_composite_ohlc": {
+        "close": "74504.53",
+        "high": "74721.00",
+        "low": "74211",
+        "open": "74384.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "74504",
+          "high": "74719",
+          "low": "74211",
+          "open": "74358"
+        },
+        "bitstamp": {
+          "close": "74516.00",
+          "high": "74721.00",
+          "low": "74208.00",
+          "open": "74384.00"
+        },
+        "coinbase": {
+          "close": "74504.53",
+          "high": "75900",
+          "low": "74211.53",
+          "open": "74398.22"
+        }
+      },
+      "timestamp": "2024-11-06T17:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "13.91899051196840533641573954",
+        "high_dispersion_atr": "0.01923403157248362717995646657",
+        "low_dispersion_atr": "0.4733244291315536079937113079",
+        "range_dispersion_atr": "0.4540903975590699808137548413"
+      },
+      "primary_composite_ohlc": {
+        "close": "41526.00",
+        "high": "41728.89",
+        "low": "41384.03",
+        "open": "41719.5"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "41470",
+          "high": "41706",
+          "low": "40849",
+          "open": "41702"
+        },
+        "bitstamp": {
+          "close": "41526.00",
+          "high": "41729.00",
+          "low": "41415.00",
+          "open": "41729.00"
+        },
+        "coinbase": {
+          "close": "41527.8",
+          "high": "41728.89",
+          "low": "41384.03",
+          "open": "41719.5"
+        }
+      },
+      "timestamp": "2023-12-05T07:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "12.87166417669976857954711896",
+        "high_dispersion_atr": "0.06882454914745530285389013945",
+        "low_dispersion_atr": "0.4509819141504308002794380190",
+        "range_dispersion_atr": "0.4656433542911847654531811948"
+      },
+      "primary_composite_ohlc": {
+        "close": "34137.00",
+        "high": "34254.19",
+        "low": "33480",
+        "open": "33641.53"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "34164",
+          "high": "34314",
+          "low": "33480",
+          "open": "33672"
+        },
+        "bitstamp": {
+          "close": "34137.00",
+          "high": "34238.00",
+          "low": "33498.00",
+          "open": "33630.00"
+        },
+        "coinbase": {
+          "close": "34120.06",
+          "high": "34254.19",
+          "low": "33000",
+          "open": "33641.53"
+        }
+      },
+      "timestamp": "2023-10-24T21:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "3.446889182512782214051818234",
+        "high_dispersion_atr": "0.006906607061701613625343598632",
+        "low_dispersion_atr": "0.4405327278225772389452894675",
+        "range_dispersion_atr": "0.4375761323338351098248512832"
+      },
+      "primary_composite_ohlc": {
+        "close": "43517.5",
+        "high": "44102",
+        "low": "43208.44",
+        "open": "44030.00"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "43526",
+          "high": "44102",
+          "low": "43245",
+          "open": "44035"
+        },
+        "bitstamp": {
+          "close": "43511.00",
+          "high": "44097.00",
+          "low": "42500.00",
+          "open": "44030.00"
+        },
+        "coinbase": {
+          "close": "43517.5",
+          "high": "44108.68",
+          "low": "43208.44",
+          "open": "44025.02"
+        }
+      },
+      "timestamp": "2024-01-05T14:00:00+00:00"
+    },
+    {
+      "diagnostics": {
+        "close_dispersion_bps": "5.009016229212582648767782008",
+        "high_dispersion_atr": "0.01447927514521042285052375993",
+        "low_dispersion_atr": "0.4366169730518413739718322409",
+        "range_dispersion_atr": "0.4496520333171833725944447848"
+      },
+      "primary_composite_ohlc": {
+        "close": "84847.00",
+        "high": "85737.11",
+        "low": "84192.00",
+        "open": "85674.64"
+      },
+      "quality_state": "REFERENCE_OK",
+      "raw_ohlc": {
+        "bitfinex": {
+          "close": "84807",
+          "high": "85702",
+          "low": "84234",
+          "open": "85647"
+        },
+        "bitstamp": {
+          "close": "84847.00",
+          "high": "85741.00",
+          "low": "84192.00",
+          "open": "85740.00"
+        },
+        "coinbase": {
+          "close": "84849.5",
+          "high": "85737.11",
+          "low": "83057.97",
+          "open": "85674.64"
+        }
+      },
+      "timestamp": "2025-04-02T21:00:00+00:00"
+    }
+  ],
+  "point_in_time_statement": "All composite inputs satisfy provider available_at <= bar close + five minutes. ATR uses only prior completed daily observations.",
+  "raw_artifacts": {
+    "collection_manifest_sha256": "143ebfc57837eb03fc71f27a46b29a6fe53e9bb1960e4b05dc5ba034584c1c8e",
+    "historical_period_end": "2025-12-31T23:00:00+00:00",
+    "historical_period_start": "2023-01-01T00:00:00+00:00",
+    "providers": {
+      "bitfinex": {
+        "path": "data/btc019/2023-01-01_2025-12-31/bitfinex_btc_usd_1h.jsonl.gz",
+        "sha256": "b10e9ace4098245bb0dd1343d0ca4808ac341b72d863520e949c31be0ba07fa0",
+        "size_bytes": 642534
+      },
+      "bitstamp": {
+        "path": "data/btc019/2023-01-01_2025-12-31/bitstamp_btc_usd_1h.jsonl.gz",
+        "sha256": "f8243a1ab5c5cdef4172127a6bc769804f4b8ce6d57e6be1e8141e59c5e07679",
+        "size_bytes": 680800
+      },
+      "coinbase": {
+        "path": "data/btc019/2023-01-01_2025-12-31/coinbase_btc_usd_1h.jsonl.gz",
+        "sha256": "300b283f9bdeca0b9305fe02af5157845a7167561ae88c7c5c9c6e3faff36929",
+        "size_bytes": 843554
+      }
+    }
+  },
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V1",
+  "sample_name": "development_2023_2025",
+  "schema_version": "BTC_REFERENCE_COMPOSITE_EMPIRICAL_V1",
+  "series_profiles": {
+    "CLIPPED_CENTER_V1": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.002157244021318626393139395114",
+        "median_abs": "0.0002521539344813642829792736904",
+        "observation_count": 25968,
+        "p95_abs": "0.0008582432734598373422626943520",
+        "p99_abs": "0.001211430230230276183980237268"
+      },
+      "degraded_reference_bar_count": 84,
+      "degraded_reference_rate": "0.003193430656934306569343065693",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 336,
+      "quality_state_counts": {
+        "REFERENCE_DEGRADED": 84,
+        "REFERENCE_OK": 25884,
+        "REFERENCE_UNAVAILABLE": 336
+      },
+      "series_id": "CLIPPED_CENTER_V1",
+      "usable_hour_count": 25968,
+      "usable_reference_rate": "0.9872262773722627737226277372"
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0",
+        "median_abs": "0",
+        "observation_count": 25968,
+        "p95_abs": "0",
+        "p99_abs": "0"
+      },
+      "degraded_reference_bar_count": 84,
+      "degraded_reference_rate": "0.003193430656934306569343065693",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 336,
+      "quality_state_counts": {
+        "REFERENCE_DEGRADED": 84,
+        "REFERENCE_OK": 25884,
+        "REFERENCE_UNAVAILABLE": 336
+      },
+      "series_id": "CONFIRMED_EXTREMES_V1",
+      "usable_hour_count": 25968,
+      "usable_reference_rate": "0.9872262773722627737226277372"
+    },
+    "MEDIAN_OHLC_V1": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0",
+        "median_abs": "0",
+        "observation_count": 26304,
+        "p95_abs": "0",
+        "p99_abs": "0"
+      },
+      "degraded_reference_bar_count": 84,
+      "degraded_reference_rate": "0.003193430656934306569343065693",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 0,
+      "quality_state_counts": {
+        "REFERENCE_DEGRADED": 84,
+        "REFERENCE_OK": 26220
+      },
+      "series_id": "MEDIAN_OHLC_V1",
+      "usable_hour_count": 26304,
+      "usable_reference_rate": "1"
+    },
+    "bitfinex": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.01120099768015058688030035109",
+        "median_abs": "0.000872001795163506987388433390",
+        "observation_count": 26300,
+        "p95_abs": "0.002703002925167549153923056985",
+        "p99_abs": "0.003791436223868656301088733521"
+      },
+      "degraded_reference_bar_count": 0,
+      "degraded_reference_rate": "0",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 4,
+      "quality_state_counts": {},
+      "series_id": "bitfinex",
+      "usable_hour_count": 26300,
+      "usable_reference_rate": "0.9998479318734793187347931873"
+    },
+    "bitstamp": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.008874564442410864679233519205",
+        "median_abs": "0",
+        "observation_count": 26304,
+        "p95_abs": "0.0002840249803433931286737072534",
+        "p99_abs": "0.0005411402324496560643494099905"
+      },
+      "degraded_reference_bar_count": 0,
+      "degraded_reference_rate": "0",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 0,
+      "quality_state_counts": {},
+      "series_id": "bitstamp",
+      "usable_hour_count": 26304,
+      "usable_reference_rate": "1"
+    },
+    "coinbase": {
+      "close_abs_fractional_divergence_vs_venue_consensus": {
+        "max_abs": "0.004930505109206256961596203206",
+        "median_abs": "0.00001756567717816865353879324060",
+        "observation_count": 26296,
+        "p95_abs": "0.0003131480713396930734135213604",
+        "p99_abs": "0.0005730924737564449719945101821"
+      },
+      "degraded_reference_bar_count": 0,
+      "degraded_reference_rate": "0",
+      "expected_hour_count": 26304,
+      "missing_reference_bar_count": 8,
+      "quality_state_counts": {},
+      "series_id": "coinbase",
+      "usable_hour_count": 26296,
+      "usable_reference_rate": "0.9996958637469586374695863747"
+    }
+  },
+  "structural_comparison": {
+    "CLIPPED_CENTER_V1": {
+      "breakout": {
+        "consensus_event_count": 7,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-10-23T00:00:00+00:00",
+          "2024-02-05T00:00:00+00:00",
+          "2024-02-12T00:00:00+00:00",
+          "2024-11-04T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-07T00:00:00+00:00",
+          "2025-09-29T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 2,
+        "disagreement_rate": "0.06451612903225806451612903226"
+      },
+      "reclaim": {
+        "consensus_event_count": 6,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1428571428571428571428571429",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-06-05T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-07-08T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2025-02-24T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 14,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1333333333333333333333333333",
+        "event_count": 14,
+        "event_timestamps": [
+          "2023-04-10T00:00:00+00:00",
+          "2023-07-10T00:00:00+00:00",
+          "2023-12-04T00:00:00+00:00",
+          "2024-01-08T00:00:00+00:00",
+          "2024-03-11T00:00:00+00:00",
+          "2024-04-08T00:00:00+00:00",
+          "2024-06-03T00:00:00+00:00",
+          "2024-07-29T00:00:00+00:00",
+          "2024-12-16T00:00:00+00:00",
+          "2025-01-20T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-14T00:00:00+00:00",
+          "2025-08-11T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 16,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 16,
+        "event_timestamps": [
+          "2023-03-06T00:00:00+00:00",
+          "2023-05-08T00:00:00+00:00",
+          "2023-06-12T00:00:00+00:00",
+          "2023-08-14T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-01-22T00:00:00+00:00",
+          "2024-04-29T00:00:00+00:00",
+          "2024-07-01T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2024-09-02T00:00:00+00:00",
+          "2025-01-13T00:00:00+00:00",
+          "2025-03-10T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-06-16T00:00:00+00:00",
+          "2025-09-01T00:00:00+00:00",
+          "2025-11-17T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 154
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "breakout": {
+        "consensus_event_count": 7,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-10-23T00:00:00+00:00",
+          "2024-02-05T00:00:00+00:00",
+          "2024-02-12T00:00:00+00:00",
+          "2024-11-04T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-07T00:00:00+00:00",
+          "2025-09-29T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 0,
+        "disagreement_rate": "0"
+      },
+      "reclaim": {
+        "consensus_event_count": 6,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1428571428571428571428571429",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-06-05T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-07-08T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2025-02-24T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 14,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 14,
+        "event_timestamps": [
+          "2023-04-10T00:00:00+00:00",
+          "2023-07-10T00:00:00+00:00",
+          "2023-12-04T00:00:00+00:00",
+          "2024-01-08T00:00:00+00:00",
+          "2024-03-11T00:00:00+00:00",
+          "2024-04-08T00:00:00+00:00",
+          "2024-05-20T00:00:00+00:00",
+          "2024-07-29T00:00:00+00:00",
+          "2024-12-16T00:00:00+00:00",
+          "2025-01-20T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-14T00:00:00+00:00",
+          "2025-08-11T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 16,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 16,
+        "event_timestamps": [
+          "2023-03-06T00:00:00+00:00",
+          "2023-05-08T00:00:00+00:00",
+          "2023-06-12T00:00:00+00:00",
+          "2023-08-14T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-01-22T00:00:00+00:00",
+          "2024-04-29T00:00:00+00:00",
+          "2024-07-01T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2024-09-02T00:00:00+00:00",
+          "2025-01-13T00:00:00+00:00",
+          "2025-03-10T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-06-16T00:00:00+00:00",
+          "2025-09-01T00:00:00+00:00",
+          "2025-11-17T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 154
+    },
+    "MEDIAN_OHLC_V1": {
+      "breakout": {
+        "consensus_event_count": 7,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.125",
+        "event_count": 8,
+        "event_timestamps": [
+          "2023-03-13T00:00:00+00:00",
+          "2023-10-23T00:00:00+00:00",
+          "2024-02-05T00:00:00+00:00",
+          "2024-02-12T00:00:00+00:00",
+          "2024-11-04T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-07T00:00:00+00:00",
+          "2025-09-29T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 1,
+        "disagreement_rate": "0.03225806451612903225806451613"
+      },
+      "reclaim": {
+        "consensus_event_count": 6,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1428571428571428571428571429",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-06-05T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-07-08T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2025-02-24T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 14,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.06666666666666666666666666667",
+        "event_count": 15,
+        "event_timestamps": [
+          "2023-02-13T00:00:00+00:00",
+          "2023-04-10T00:00:00+00:00",
+          "2023-07-10T00:00:00+00:00",
+          "2023-12-04T00:00:00+00:00",
+          "2024-01-08T00:00:00+00:00",
+          "2024-03-11T00:00:00+00:00",
+          "2024-04-08T00:00:00+00:00",
+          "2024-05-20T00:00:00+00:00",
+          "2024-07-29T00:00:00+00:00",
+          "2024-12-16T00:00:00+00:00",
+          "2025-01-20T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-14T00:00:00+00:00",
+          "2025-08-11T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 16,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 16,
+        "event_timestamps": [
+          "2023-03-06T00:00:00+00:00",
+          "2023-05-08T00:00:00+00:00",
+          "2023-06-12T00:00:00+00:00",
+          "2023-08-14T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-01-22T00:00:00+00:00",
+          "2024-04-29T00:00:00+00:00",
+          "2024-07-01T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2024-09-02T00:00:00+00:00",
+          "2025-01-13T00:00:00+00:00",
+          "2025-03-10T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-06-16T00:00:00+00:00",
+          "2025-09-01T00:00:00+00:00",
+          "2025-11-17T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 156
+    },
+    "bitfinex": {
+      "breakout": {
+        "consensus_event_count": 7,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-10-23T00:00:00+00:00",
+          "2024-02-05T00:00:00+00:00",
+          "2024-02-12T00:00:00+00:00",
+          "2024-11-04T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-07T00:00:00+00:00",
+          "2025-09-29T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 7,
+        "disagreement_rate": "0.2121212121212121212121212121"
+      },
+      "reclaim": {
+        "consensus_event_count": 6,
+        "disagreement_count": 4,
+        "disagreement_rate": "0.4444444444444444444444444444",
+        "event_count": 8,
+        "event_timestamps": [
+          "2023-06-05T00:00:00+00:00",
+          "2023-08-14T00:00:00+00:00",
+          "2024-06-24T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2025-02-24T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00",
+          "2025-11-03T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 14,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.1333333333333333333333333333",
+        "event_count": 14,
+        "event_timestamps": [
+          "2023-04-10T00:00:00+00:00",
+          "2023-07-10T00:00:00+00:00",
+          "2023-12-04T00:00:00+00:00",
+          "2024-01-08T00:00:00+00:00",
+          "2024-03-11T00:00:00+00:00",
+          "2024-04-08T00:00:00+00:00",
+          "2024-06-03T00:00:00+00:00",
+          "2024-07-29T00:00:00+00:00",
+          "2024-12-16T00:00:00+00:00",
+          "2025-01-20T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-14T00:00:00+00:00",
+          "2025-08-11T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 16,
+        "disagreement_count": 5,
+        "disagreement_rate": "0.2631578947368421052631578947",
+        "event_count": 17,
+        "event_timestamps": [
+          "2023-02-13T00:00:00+00:00",
+          "2023-05-08T00:00:00+00:00",
+          "2023-06-12T00:00:00+00:00",
+          "2023-08-14T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-01-22T00:00:00+00:00",
+          "2024-04-15T00:00:00+00:00",
+          "2024-07-01T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2024-09-02T00:00:00+00:00",
+          "2025-01-13T00:00:00+00:00",
+          "2025-03-10T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-06-16T00:00:00+00:00",
+          "2025-09-01T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00",
+          "2025-11-17T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 154
+    },
+    "bitstamp": {
+      "breakout": {
+        "consensus_event_count": 7,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.125",
+        "event_count": 8,
+        "event_timestamps": [
+          "2023-03-13T00:00:00+00:00",
+          "2023-10-23T00:00:00+00:00",
+          "2024-02-05T00:00:00+00:00",
+          "2024-02-12T00:00:00+00:00",
+          "2024-11-04T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-07T00:00:00+00:00",
+          "2025-09-29T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 2,
+        "disagreement_rate": "0.06451612903225806451612903226"
+      },
+      "reclaim": {
+        "consensus_event_count": 6,
+        "disagreement_count": 2,
+        "disagreement_rate": "0.2857142857142857142857142857",
+        "event_count": 6,
+        "event_timestamps": [
+          "2023-06-05T00:00:00+00:00",
+          "2024-07-08T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2025-02-24T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-10-13T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 14,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.06666666666666666666666666667",
+        "event_count": 15,
+        "event_timestamps": [
+          "2023-02-13T00:00:00+00:00",
+          "2023-04-10T00:00:00+00:00",
+          "2023-07-10T00:00:00+00:00",
+          "2023-12-04T00:00:00+00:00",
+          "2024-01-08T00:00:00+00:00",
+          "2024-03-11T00:00:00+00:00",
+          "2024-04-08T00:00:00+00:00",
+          "2024-05-20T00:00:00+00:00",
+          "2024-07-29T00:00:00+00:00",
+          "2024-12-16T00:00:00+00:00",
+          "2025-01-20T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-14T00:00:00+00:00",
+          "2025-08-11T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 16,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.0625",
+        "event_count": 15,
+        "event_timestamps": [
+          "2023-03-06T00:00:00+00:00",
+          "2023-05-08T00:00:00+00:00",
+          "2023-06-12T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-01-22T00:00:00+00:00",
+          "2024-04-29T00:00:00+00:00",
+          "2024-07-01T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2024-09-02T00:00:00+00:00",
+          "2025-01-13T00:00:00+00:00",
+          "2025-03-10T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-06-16T00:00:00+00:00",
+          "2025-09-01T00:00:00+00:00",
+          "2025-11-17T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 156
+    },
+    "coinbase": {
+      "breakout": {
+        "consensus_event_count": 7,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-10-23T00:00:00+00:00",
+          "2024-02-05T00:00:00+00:00",
+          "2024-02-12T00:00:00+00:00",
+          "2024-11-04T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-07T00:00:00+00:00",
+          "2025-09-29T00:00:00+00:00"
+        ]
+      },
+      "combined_swing": {
+        "disagreement_count": 0,
+        "disagreement_rate": "0"
+      },
+      "reclaim": {
+        "consensus_event_count": 6,
+        "disagreement_count": 1,
+        "disagreement_rate": "0.1428571428571428571428571429",
+        "event_count": 7,
+        "event_timestamps": [
+          "2023-06-05T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-07-08T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2025-02-24T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_high": {
+        "consensus_event_count": 14,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 14,
+        "event_timestamps": [
+          "2023-04-10T00:00:00+00:00",
+          "2023-07-10T00:00:00+00:00",
+          "2023-12-04T00:00:00+00:00",
+          "2024-01-08T00:00:00+00:00",
+          "2024-03-11T00:00:00+00:00",
+          "2024-04-08T00:00:00+00:00",
+          "2024-05-20T00:00:00+00:00",
+          "2024-07-29T00:00:00+00:00",
+          "2024-12-16T00:00:00+00:00",
+          "2025-01-20T00:00:00+00:00",
+          "2025-05-19T00:00:00+00:00",
+          "2025-07-14T00:00:00+00:00",
+          "2025-08-11T00:00:00+00:00",
+          "2025-10-06T00:00:00+00:00"
+        ]
+      },
+      "swing_low": {
+        "consensus_event_count": 16,
+        "disagreement_count": 0,
+        "disagreement_rate": "0",
+        "event_count": 16,
+        "event_timestamps": [
+          "2023-03-06T00:00:00+00:00",
+          "2023-05-08T00:00:00+00:00",
+          "2023-06-12T00:00:00+00:00",
+          "2023-08-14T00:00:00+00:00",
+          "2023-09-11T00:00:00+00:00",
+          "2024-01-22T00:00:00+00:00",
+          "2024-04-29T00:00:00+00:00",
+          "2024-07-01T00:00:00+00:00",
+          "2024-08-05T00:00:00+00:00",
+          "2024-09-02T00:00:00+00:00",
+          "2025-01-13T00:00:00+00:00",
+          "2025-03-10T00:00:00+00:00",
+          "2025-04-07T00:00:00+00:00",
+          "2025-06-16T00:00:00+00:00",
+          "2025-09-01T00:00:00+00:00",
+          "2025-11-17T00:00:00+00:00"
+        ]
+      },
+      "weekly_bar_count": 154
+    },
+    "consensus_definition": "Event timestamp present for at least two independent raw providers."
+  },
+  "tolerance_grid": {
+    "CLIPPED_CENTER_V1": [
+      {
+        "combined_swing_disagreement_rate": "0.06451612903225806451612903226",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.05",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.06451612903225806451612903226",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.10",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.06451612903225806451612903226",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.15",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.06451612903225806451612903226",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.20",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0.06451612903225806451612903226",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.30",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      }
+    ],
+    "CONFIRMED_EXTREMES_V1": [
+      {
+        "combined_swing_disagreement_rate": "0",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.05",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.10",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.15",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.20",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      },
+      {
+        "combined_swing_disagreement_rate": "0",
+        "known_event_gate_passed": true,
+        "known_event_summary": {
+          "cross_market_moves_represented": 2,
+          "isolated_extremes_rejected": 3,
+          "october_2025_stop_touched": true
+        },
+        "research_parameter_override": true,
+        "stop_disagreement_rate": "0",
+        "tolerance_atr": "0.30",
+        "usable_reference_rate": "0.9872262773722627737226277372"
+      }
+    ]
+  },
+  "trade_path_comparison": {
+    "CLIPPED_CENTER_V1": {
+      "comparable_probe_count": 149,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0017724944953222188232894871",
+        "median_abs": "0.0004545424758922704545603477",
+        "observation_count": 149,
+        "p95_abs": "0.0015278858261851619367990028",
+        "p99_abs": "0.0017450753032333729891936879"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0027194047910234539698155034",
+        "median_abs": "0.00025982113942655008345166019",
+        "observation_count": 149,
+        "p95_abs": "0.0019182950056086377507957607",
+        "p99_abs": "0.0026320736980635457792818199"
+      },
+      "probe_count": 149,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 70
+    },
+    "CONFIRMED_EXTREMES_V1": {
+      "comparable_probe_count": 149,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.004038032405161540700494809357",
+        "median_abs": "0.00023284694194349580875504501",
+        "observation_count": 149,
+        "p95_abs": "0.00143367049727267912937562887",
+        "p99_abs": "0.00350688656189813391166426594"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0025186309688103781396632625",
+        "median_abs": "0.0005304389798988427324307357",
+        "observation_count": 149,
+        "p95_abs": "0.00217595778284209596003629975",
+        "p99_abs": "0.0024571307525287295450934703"
+      },
+      "probe_count": 149,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 70
+    },
+    "MEDIAN_OHLC_V1": {
+      "comparable_probe_count": 149,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.00060616571113786138371452471",
+        "median_abs": "0E-28",
+        "observation_count": 149,
+        "p95_abs": "0.0001084163577618707115705128",
+        "p99_abs": "0.0004120022323626932799317159"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0009236441253517027263025129",
+        "median_abs": "0E-29",
+        "observation_count": 149,
+        "p95_abs": "0E-29",
+        "p99_abs": "0.0008507033493763593828468895"
+      },
+      "probe_count": 149,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 70
+    },
+    "bitfinex": {
+      "comparable_probe_count": 149,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.03377847237344744363467841273",
+        "median_abs": "0.0016205778911799186263016344",
+        "observation_count": 149,
+        "p95_abs": "0.00565588095112005507599428057",
+        "p99_abs": "0.03181448619604793382586871223"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.01388549917653517371186573602",
+        "median_abs": "0.0009236441253517027263025129",
+        "observation_count": 149,
+        "p95_abs": "0.0072243411296189191464304845",
+        "p99_abs": "0.01015541802355192690568425601"
+      },
+      "probe_count": 149,
+      "stop_disagreement_count": 1,
+      "stop_disagreement_rate": "0.006711409395973154362416107383",
+      "stop_touch_count": 69
+    },
+    "bitstamp": {
+      "comparable_probe_count": 149,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.01424323338641495573992821480",
+        "median_abs": "0E-29",
+        "observation_count": 149,
+        "p95_abs": "0.0039261379122376669392204960",
+        "p99_abs": "0.0122976787728377907829864650"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0191450420803929869763326468",
+        "median_abs": "0E-28",
+        "observation_count": 149,
+        "p95_abs": "0.0010210641757743069999621828",
+        "p99_abs": "0.0092150965363345299311147763"
+      },
+      "probe_count": 149,
+      "stop_disagreement_count": 1,
+      "stop_disagreement_rate": "0.006711409395973154362416107383",
+      "stop_touch_count": 69
+    },
+    "coinbase": {
+      "comparable_probe_count": 149,
+      "mae_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0033832505118272955334057421",
+        "median_abs": "0.0001579750518107133671462454",
+        "observation_count": 149,
+        "p95_abs": "0.00139259259259259259259259260",
+        "p99_abs": "0.0033656521614411520036717249"
+      },
+      "mfe_abs_difference_vs_venue_consensus": {
+        "max_abs": "0.0074261366579041907799169863",
+        "median_abs": "0.0001758860258552458007211327",
+        "observation_count": 149,
+        "p95_abs": "0.0012890281833938789562409478",
+        "p99_abs": "0.0073407915052685754530433134"
+      },
+      "probe_count": 149,
+      "stop_disagreement_count": 0,
+      "stop_disagreement_rate": "0",
+      "stop_touch_count": 70
+    },
+    "probe_definition": {
+      "direction": "long",
+      "entry_and_stop_source": "ATR_BOOTSTRAP_MEDIAN_OHLC_V1",
+      "entry_interval_days": 7,
+      "path_days": 28,
+      "point_in_time": true,
+      "stop_rule": "minimum composite-bootstrap low in prior 28 days"
+    }
+  }
+}

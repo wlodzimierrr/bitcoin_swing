@@ -85,6 +85,15 @@ The decision and its three-year evidence are persisted under
 `research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/`; no provider is currently
 approved as strategy-canonical.
 
+Follow-up `BTC_REFERENCE_COMPOSITE_V1` research compares Bitstamp, Coinbase,
+and Bitfinex against median-OHLC, confirmed-extremes, and clipped-center
+composites. Candidate definitions were frozen before an untouched 2020-2022
+validation. Median OHLC handled the known isolated-wick and consensus-stop
+cases, but the result is `RESEARCH_INCONCLUSIVE` because external degraded-bar
+frequency and swing disagreement missed their predeclared gates. Composite
+records remain research-only in `derived.btc_reference_composite`; neither
+`PRICE_SOURCE_POLICY_V1` nor the production canonical reference was changed.
+
 Canonical market bars can be generated with `build_canonical_market_bars`.
 They use `1h` BTC source bars that were closed and ingested by the
 `data_available_at` cutoff. The canonical session is UTC: daily bars start at

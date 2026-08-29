@@ -140,13 +140,21 @@ Coin Metrics historical access is not a mandatory Phase 1 blocker. Promoting
 Coin Metrics to canonical status later requires a new policy version and its
 own empirical validation.
 
-## Phase 2 Research Note
+## Composite Research Note
 
-`BTC_REFERENCE_COMPOSITE_V1` is reserved as a post-Phase-1 research candidate.
-It would investigate a robust cross-venue reference built from approved spot
-sources after `PRICE_SOURCE_POLICY_V1` has a certified baseline. That research
-must define constituent eligibility, robust aggregation, outage behavior,
-versioning, provenance, and decision/portfolio sensitivity before promotion.
+`BTC_REFERENCE_COMPOSITE_V1` was implemented and evaluated as a separate
+research policy; it is not part of BTC-019 or the production V1 policy. The
+study compared median OHLC, consensus-extremes, and clipped-center methods on
+the inspected 2023-2025 sample, froze definitions and gates, and then evaluated
+the untouched 2020-2022 period without retuning.
 
-The composite is not implemented by BTC-019 and must not be used by Phase 1
-strategy, backtest, or live-shadow decisions.
+The result is **RESEARCH_INCONCLUSIVE**. Median OHLC handled all five required
+BTC-019 regression events, including the 10 October 2025 consensus stop, and
+passed external coverage, ATR, stop, MFE, and MAE gates. It missed the frozen
+external degraded-reference-frequency and swing-disagreement gates. It is
+therefore not approved for Phase 1 strategy, backtest, or live-shadow use.
+
+Evidence is stored under
+`research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/`.
+`PRICE_SOURCE_POLICY_V1` retains its historical meaning. Any future approved
+composite promotion requires a separately reviewed `PRICE_SOURCE_POLICY_V2`.

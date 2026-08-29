@@ -19,6 +19,12 @@ from btc_predictor.db.connections import (
     verify_research_connection,
     verify_runtime_connection,
 )
+from btc_predictor.db.derived import (
+    BTC_REFERENCE_COMPOSITE_PRIMARY_KEY,
+    btc_reference_composite,
+    build_reference_composite_insert_ignore,
+    derived_metadata,
+)
 from btc_predictor.db.portfolio import (
     COMPLETED_TRADES_PRIMARY_KEY,
     MANUAL_DECISIONS,
@@ -77,6 +83,7 @@ from btc_predictor.db.system import (
 __all__ = [
     "Base",
     "BTC_OHLCV_PRIMARY_KEY",
+    "BTC_REFERENCE_COMPOSITE_PRIMARY_KEY",
     "COMPLETED_TRADES_PRIMARY_KEY",
     "CORE_SCHEMAS",
     "ConnectionVerification",
@@ -112,6 +119,9 @@ __all__ = [
     "render_downgrade_sql",
     "render_upgrade_sql",
     "btc_ohlcv",
+    "btc_reference_composite",
+    "build_reference_composite_insert_ignore",
+    "derived_metadata",
     "etf_flows",
     "funding_rates",
     "futures_basis",
