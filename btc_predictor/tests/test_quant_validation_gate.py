@@ -18,7 +18,10 @@ from btc_predictor.features.positioning import (
     calculate_positioning_score,
 )
 from btc_predictor.features.structure import (
-    STRUCTURE_SCORE_COMPONENT_IDS,
+    STRUCTURE_SCORE_COMPONENT_IDS_V1_1,
+    STRUCTURE_SCORE_COMPONENT_IDS_V1_2,
+    STRUCTURE_SCORE_V1_1,
+    STRUCTURE_SCORE_V1_2,
     StructureScoreInput,
     calculate_structure_score,
 )
@@ -169,20 +172,34 @@ def test_existing_domain_score_fixtures_are_reproduced_by_quant_engine() -> None
         domain_contributions=positioning.contributions,
     )
 
-    structure = calculate_structure_score(
-        StructureScoreInput(
-            level_strength=Decimal("80"),
-            entry_location=Decimal("70"),
-            rr_quality=Decimal("90"),
-            confluence=Decimal("75"),
-        )
+    structure_inputs = StructureScoreInput(
+        level_strength=Decimal("80"),
+        entry_location=Decimal("70"),
+        rr_quality=Decimal("90"),
+        confluence=Decimal("75"),
+    )
+    structure_v1_1 = calculate_structure_score(
+        structure_inputs,
+        version=STRUCTURE_SCORE_V1_1,
     )
     _assert_domain_score_parity(
         values=[80, 70, 90, 75],
         weights=[0.45, 0.25, 0.20, 0.10],
-        names=STRUCTURE_SCORE_COMPONENT_IDS,
-        domain_score=structure.score,
-        domain_contributions=structure.contributions,
+        names=STRUCTURE_SCORE_COMPONENT_IDS_V1_1,
+        domain_score=structure_v1_1.score,
+        domain_contributions=structure_v1_1.contributions,
+    )
+
+    structure_v1_2 = calculate_structure_score(
+        structure_inputs,
+        version=STRUCTURE_SCORE_V1_2,
+    )
+    _assert_domain_score_parity(
+        values=[80, 70],
+        weights=[0.642857, 0.357143],
+        names=STRUCTURE_SCORE_COMPONENT_IDS_V1_2,
+        domain_score=structure_v1_2.score,
+        domain_contributions=structure_v1_2.contributions,
     )
 
 

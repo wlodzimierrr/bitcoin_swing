@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
@@ -17,12 +17,29 @@ from btc_predictor.quant.comparisons import (
 
 
 STRUCTURE_SCORE_FEATURE_ID = "STRUCTURE_SCORE"
-STRUCTURE_SCORE_COMPONENT_IDS = (
+STRUCTURE_SCORE_V1_1 = "STRUCTURE_SCORE_V1_1"
+STRUCTURE_SCORE_V1_2 = "STRUCTURE_SCORE_V1_2"
+STRUCTURE_SCORE_VERSIONS = (STRUCTURE_SCORE_V1_1, STRUCTURE_SCORE_V1_2)
+DEFAULT_STRUCTURE_SCORE_VERSION = STRUCTURE_SCORE_V1_2
+# v1.1 nested the independent R/R filter and an outer Confluence term into the
+# Structure composite. v1.2 removes both: R/R stays an independent hard
+# asymmetry filter, and confluence is already represented inside LevelStrength.
+# Both remain persisted as diagnostics so v1.1 records stay reproducible.
+STRUCTURE_SCORE_COMPONENT_IDS_V1_1 = (
     "level_strength",
     "entry_location",
     "rr_quality",
     "confluence",
 )
+STRUCTURE_SCORE_COMPONENT_IDS_V1_2 = (
+    "level_strength",
+    "entry_location",
+)
+STRUCTURE_SCORE_COMPONENT_IDS = STRUCTURE_SCORE_COMPONENT_IDS_V1_1
+STRUCTURE_SCORE_DIAGNOSTIC_COMPONENT_IDS = {
+    STRUCTURE_SCORE_V1_1: (),
+    STRUCTURE_SCORE_V1_2: ("rr_quality", "confluence"),
+}
 STRUCTURE_SCORE_REASON_CODES = (
     "STRUCTURE_SCORE_INPUT_MISSING",
     "STRUCTURE_SCORE_SUPPORT_MISSING",
@@ -30,12 +47,27 @@ STRUCTURE_SCORE_REASON_CODES = (
     "STRUCTURE_SCORE_INVALID_RISK",
     "STRUCTURE_SCORE_COMPLETE",
 )
-DEFAULT_STRUCTURE_SCORE_WEIGHTS = {
+DEFAULT_STRUCTURE_SCORE_WEIGHTS_V1_1 = {
     "level_strength": Decimal("0.45"),
     "entry_location": Decimal("0.25"),
     "rr_quality": Decimal("0.20"),
     "confluence": Decimal("0.10"),
 }
+# 0.45 and 0.25 renormalized over their 0.70 subtotal, to six decimal places.
+DEFAULT_STRUCTURE_SCORE_WEIGHTS_V1_2 = {
+    "level_strength": Decimal("0.642857"),
+    "entry_location": Decimal("0.357143"),
+}
+DEFAULT_STRUCTURE_SCORE_WEIGHTS = DEFAULT_STRUCTURE_SCORE_WEIGHTS_V1_1
+STRUCTURE_SCORE_COMPONENT_IDS_BY_VERSION = {
+    STRUCTURE_SCORE_V1_1: STRUCTURE_SCORE_COMPONENT_IDS_V1_1,
+    STRUCTURE_SCORE_V1_2: STRUCTURE_SCORE_COMPONENT_IDS_V1_2,
+}
+DEFAULT_STRUCTURE_SCORE_WEIGHTS_BY_VERSION = {
+    STRUCTURE_SCORE_V1_1: DEFAULT_STRUCTURE_SCORE_WEIGHTS_V1_1,
+    STRUCTURE_SCORE_V1_2: DEFAULT_STRUCTURE_SCORE_WEIGHTS_V1_2,
+}
+STRUCTURE_SCORE_WEIGHT_SUM_TOLERANCE = Decimal("0.000001")
 DEFAULT_ENTRY_LOCATION_FULL_SCORE_DISTANCE_FRACTION = Decimal("0.01")
 DEFAULT_ENTRY_LOCATION_ZERO_SCORE_DISTANCE_FRACTION = Decimal("0.08")
 DEFAULT_RR_MINIMUM = Decimal("2.0")
@@ -127,6 +159,8 @@ class StructureScoreResult:
     config_metadata: dict[str, str]
     complete: bool
     reason_codes: tuple[str, ...] = ()
+    score_version: str = DEFAULT_STRUCTURE_SCORE_VERSION
+    diagnostics: dict[str, Decimal | None] = field(default_factory=dict)
 
     @property
     def reason_code(self) -> str | None:
@@ -141,8 +175,9 @@ class StructureScoreResult:
             _score(self.score, "score")
         if self.complete and self.score is None:
             raise ValueError("complete structure score requires score")
-        _validate_weights(self.weights)
-        for component_id in STRUCTURE_SCORE_COMPONENT_IDS:
+        component_ids = _component_ids(self.score_version)
+        _validate_weights(self.weights, self.score_version)
+        for component_id in component_ids:
             if component_id not in self.contributions:
                 raise ValueError(f"contributions missing {component_id}")
             contribution = self.contributions[component_id]
@@ -152,6 +187,7 @@ class StructureScoreResult:
         _validate_rr_parameters(self.rr_parameters)
         return {
             "feature_id": self.feature_id,
+            "score_version": self.score_version,
             "score": str(self.score) if self.score is not None else None,
             "interpretation": self.interpretation,
             "reason_code": self.reason_code,
@@ -160,6 +196,10 @@ class StructureScoreResult:
             "contributions": {
                 key: str(value) if value is not None else None
                 for key, value in self.contributions.items()
+            },
+            "diagnostics": {
+                key: str(value) if value is not None else None
+                for key, value in self.diagnostics.items()
             },
             "selection": self.selection.as_record(),
             "entry_location_parameters": {
@@ -177,30 +217,48 @@ class StructureScoreResult:
 def calculate_structure_score(
     inputs: StructureScoreInput,
     *,
+    version: str = DEFAULT_STRUCTURE_SCORE_VERSION,
     weights: Mapping[str, Any] | None = None,
     selection: StructureSelection | None = None,
     entry_location_parameters: Mapping[str, Any] | None = None,
     rr_parameters: Mapping[str, Any] | None = None,
     config_metadata: Mapping[str, str] | None = None,
 ) -> StructureScoreResult:
-    """Calculate StructureScore from explicit component scores."""
+    """Calculate StructureScore from explicit component scores.
 
-    normalized_weights = _normalize_weights(weights or DEFAULT_STRUCTURE_SCORE_WEIGHTS)
+    ``STRUCTURE_SCORE_V1_1`` keeps the original nested composite so historical
+    records stay reproducible. ``STRUCTURE_SCORE_V1_2`` weights only
+    LevelStrength and EntryLocation; R/R and Confluence are still accepted and
+    persisted as diagnostics but carry no weight, so their absence alone can no
+    longer make a v1.2 score incomplete.
+    """
+
+    score_version = _require_version(version)
+    component_ids = _component_ids(score_version)
+    normalized_weights = _normalize_weights(
+        weights or DEFAULT_STRUCTURE_SCORE_WEIGHTS_BY_VERSION[score_version],
+        score_version,
+    )
     normalized_entry_parameters = _normalize_entry_location_parameters(
         entry_location_parameters,
     )
     normalized_rr_parameters = _normalize_rr_parameters(rr_parameters)
     inputs.as_record()
-    components = {
+    all_components = {
         "level_strength": inputs.level_strength,
         "entry_location": inputs.entry_location,
         "rr_quality": inputs.rr_quality,
         "confluence": inputs.confluence,
     }
+    components = {name: all_components[name] for name in component_ids}
+    diagnostics = {
+        name: all_components[name]
+        for name in STRUCTURE_SCORE_DIAGNOSTIC_COMPONENT_IDS[score_version]
+    }
     weighted = decimal_weighted_score(
         components,
         normalized_weights,
-        component_ids=STRUCTURE_SCORE_COMPONENT_IDS,
+        component_ids=component_ids,
     )
     contributions = weighted.contributions
     if any(value is None for value in components.values()):
@@ -217,6 +275,8 @@ def calculate_structure_score(
             config_metadata=dict(config_metadata or {}),
             complete=False,
             reason_codes=("STRUCTURE_SCORE_INPUT_MISSING",),
+            score_version=score_version,
+            diagnostics=diagnostics,
         )
 
     if weighted.score is None:
@@ -235,6 +295,8 @@ def calculate_structure_score(
         config_metadata=dict(config_metadata or {}),
         complete=True,
         reason_codes=("STRUCTURE_SCORE_COMPLETE",),
+        score_version=score_version,
+        diagnostics=diagnostics,
     )
 
 
@@ -243,6 +305,7 @@ def calculate_structure_score_from_clusters(
     *,
     entry_price: Any,
     stop_price: Any,
+    version: str = DEFAULT_STRUCTURE_SCORE_VERSION,
     level_strength_score: Any | None = None,
     level_strength_result: Any | None = None,
     weights: Mapping[str, Any] | None = None,
@@ -261,6 +324,7 @@ def calculate_structure_score_from_clusters(
 
     entry = _positive_decimal(entry_price, "entry_price")
     stop = _positive_decimal(stop_price, "stop_price")
+    score_version = _require_version(version)
     level_strength = _level_strength_score(
         level_strength_score=level_strength_score,
         level_strength_result=level_strength_result,
@@ -294,6 +358,7 @@ def calculate_structure_score_from_clusters(
     )
     if support is None:
         return _incomplete_from_components(
+            version=score_version,
             level_strength=level_strength,
             entry_location=None,
             rr_quality=None,
@@ -307,6 +372,7 @@ def calculate_structure_score_from_clusters(
         )
     if target is None:
         return _incomplete_from_components(
+            version=score_version,
             level_strength=level_strength,
             entry_location=_entry_location_score(support, entry, entry_parameters),
             rr_quality=None,
@@ -329,6 +395,7 @@ def calculate_structure_score_from_clusters(
     )
     if reward_risk is None:
         return _incomplete_from_components(
+            version=score_version,
             level_strength=level_strength,
             entry_location=_entry_location_score(support, entry, entry_parameters),
             rr_quality=None,
@@ -348,6 +415,7 @@ def calculate_structure_score_from_clusters(
             rr_quality=_rr_quality_score(reward_risk, rr_parameters),
             confluence=_record_score(support, "confluence_score"),
         ),
+        version=score_version,
         weights=weights,
         selection=selection,
         entry_location_parameters=entry_parameters,
@@ -358,6 +426,7 @@ def calculate_structure_score_from_clusters(
 
 def _incomplete_from_components(
     *,
+    version: str,
     level_strength: Decimal | None,
     entry_location: Decimal | None,
     rr_quality: Decimal | None,
@@ -376,12 +445,33 @@ def _incomplete_from_components(
             rr_quality=rr_quality,
             confluence=confluence,
         ),
+        version=version,
         weights=weights,
         selection=selection,
         entry_location_parameters=entry_location_parameters,
         rr_parameters=rr_parameters,
         config_metadata=config_metadata,
     )
+    if result.complete:
+        # Under v1.2 the missing input carries no weight, so the structural
+        # situation is still reported but the score itself remains valid. The
+        # originating reason code is preserved for the independent R/R filter.
+        return StructureScoreResult(
+            feature_id=result.feature_id,
+            score=result.score,
+            interpretation=result.interpretation,
+            inputs=result.inputs,
+            weights=result.weights,
+            contributions=result.contributions,
+            selection=result.selection,
+            entry_location_parameters=result.entry_location_parameters,
+            rr_parameters=result.rr_parameters,
+            config_metadata=result.config_metadata,
+            complete=True,
+            reason_codes=(*reason_codes, *result.reason_codes),
+            score_version=result.score_version,
+            diagnostics=result.diagnostics,
+        )
     return StructureScoreResult(
         feature_id=result.feature_id,
         score=result.score,
@@ -395,6 +485,8 @@ def _incomplete_from_components(
         config_metadata=result.config_metadata,
         complete=False,
         reason_codes=(*reason_codes, "STRUCTURE_SCORE_INPUT_MISSING"),
+        score_version=result.score_version,
+        diagnostics=result.diagnostics,
     )
 
 
@@ -582,25 +674,45 @@ def _empty_selection() -> StructureSelection:
     )
 
 
-def _normalize_weights(weights: Mapping[str, Any]) -> dict[str, Decimal]:
+def _require_version(version: str) -> str:
+    if version not in STRUCTURE_SCORE_VERSIONS:
+        raise ValueError(
+            f"structure score version must be one of {STRUCTURE_SCORE_VERSIONS}",
+        )
+    return version
+
+
+def _component_ids(version: str) -> tuple[str, ...]:
+    return STRUCTURE_SCORE_COMPONENT_IDS_BY_VERSION[_require_version(version)]
+
+
+def _normalize_weights(
+    weights: Mapping[str, Any],
+    version: str = DEFAULT_STRUCTURE_SCORE_VERSION,
+) -> dict[str, Decimal]:
     normalized = {key: Decimal(str(value)) for key, value in weights.items()}
-    _validate_weights(normalized)
+    _validate_weights(normalized, version)
     return normalized
 
 
-def _validate_weights(weights: Mapping[str, Decimal]) -> None:
-    missing = set(STRUCTURE_SCORE_COMPONENT_IDS) - set(weights)
-    extra = set(weights) - set(STRUCTURE_SCORE_COMPONENT_IDS)
+def _validate_weights(
+    weights: Mapping[str, Decimal],
+    version: str = DEFAULT_STRUCTURE_SCORE_VERSION,
+) -> None:
+    component_ids = _component_ids(version)
+    missing = set(component_ids) - set(weights)
+    extra = set(weights) - set(component_ids)
     if missing or extra:
         raise ValueError(
             "structure score weights must exactly match "
-            f"{STRUCTURE_SCORE_COMPONENT_IDS}; missing={sorted(missing)}, "
+            f"{component_ids} for {version}; missing={sorted(missing)}, "
             f"extra={sorted(extra)}",
         )
     for key, value in weights.items():
         if value < 0 or value > 1:
             raise ValueError(f"{key} weight must be between 0 and 1")
-    if abs(sum(weights.values()) - Decimal("1")) > Decimal("0.000001"):
+    total = sum(weights.values(), Decimal("0"))
+    if abs(total - Decimal("1")) > STRUCTURE_SCORE_WEIGHT_SUM_TOLERANCE:
         raise ValueError("structure score weights must sum to 1.0")
 
 

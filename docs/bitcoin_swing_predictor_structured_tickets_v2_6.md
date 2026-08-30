@@ -2583,7 +2583,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   Outer `Confluence` is removed because confluence is already represented inside
   `LevelStrength`.
 
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
   - v1.1 Structure Score remains reproducible from historical persisted inputs
@@ -2598,6 +2598,30 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added an explicit `version` argument selecting `STRUCTURE_SCORE_V1_1` or
+    `STRUCTURE_SCORE_V1_2`, with per-version component IDs and weights. v1.2 is
+    now the default; v1.1 stays fully reachable and is pinned by its original
+    tests, so historical records remain reproducible from the same persisted
+    inputs.
+  - v1.2 weights are `0.642857 LevelStrength + 0.357143 EntryLocation`, the
+    v1.1 0.45/0.25 pair renormalized over their 0.70 subtotal. They sum to
+    exactly `1.000000`, within the named
+    `STRUCTURE_SCORE_WEIGHT_SUM_TOLERANCE` of 1e-6.
+  - `rr_quality` and `confluence` are still accepted, calculated from clusters,
+    and persisted, but under v1.2 they move out of `weights`/`contributions`
+    into a separate `diagnostics` map and carry zero weight.
+  - Because a zero-weight component cannot invalidate the composite, a missing
+    R/R no longer makes a v1.2 Structure Score incomplete. An undefined R/R now
+    yields a complete Structure Score that still carries
+    `STRUCTURE_SCORE_INVALID_RISK` for the independent hard asymmetry filter.
+    This is the substantive behavioural change of the de-nesting.
+  - `score_version` is persisted in `as_record()`; v1.1 and v1.2 records differ
+    by version and neither overwrites the other.
+  - Support/target cluster selection is unchanged and asserted identical across
+    both versions.
+  - The BTC-049 validation gate now checks float64/Decimal score parity for
+    both v1.1 and v1.2 rather than v1.1 alone.
 
 ## EPIC K — Regime Engine
 
