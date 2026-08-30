@@ -22,7 +22,24 @@ from btc_predictor.features import (
     DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN,
     DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX,
     DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX,
+    COMPRESSION_SCORE_FEATURE_ID,
+    DEFAULT_COMPRESSION_FULL_SCORE_RATIO,
+    DEFAULT_COMPRESSION_ZERO_SCORE_RATIO,
+    DEFAULT_ORDERLINESS_SCORE_DISORDERLY_MAX,
     DEFAULT_ORDERLINESS_SCORE_WEIGHTS,
+    DEFAULT_VOLATILITY_REGIME_COMPRESSED_MAX,
+    DEFAULT_VOLATILITY_REGIME_ELEVATED_MAX,
+    DEFAULT_VOLATILITY_REGIME_NORMAL_MAX,
+    DEFAULT_VOLATILITY_SCORE_WEIGHTS,
+    VOLATILITY_REGIMES,
+    VOLATILITY_SCORE_COMPONENT_IDS,
+    VOLATILITY_SCORE_FEATURE_ID,
+    VOLATILITY_SCORE_REASON_CODES,
+    VolatilityScoreInput,
+    VolatilityScoreResult,
+    calculate_volatility_score,
+    calculate_volatility_score_from_results,
+    compression_score_from_ratio,
     DEFAULT_ORDERLINESS_VOLATILITY_PERCENTILE_MAX,
     DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS,
     DEFAULT_STRESS_BASIS_ABS_ZSCORE_MIN,
@@ -1674,3 +1691,287 @@ def test_euphoria_flag_rejects_invalid_inputs() -> None:
                 systemic_shock="yes",  # type: ignore[arg-type]
             )
         )
+
+
+def test_volatility_score_metadata_is_stable() -> None:
+    assert VOLATILITY_SCORE_FEATURE_ID == "VOLATILITY_SCORE"
+    assert COMPRESSION_SCORE_FEATURE_ID == "COMPRESSION_SCORE"
+    assert VOLATILITY_SCORE_COMPONENT_IDS == ("compression", "orderliness")
+    assert DEFAULT_VOLATILITY_SCORE_WEIGHTS == {
+        "compression": Decimal("0.5"),
+        "orderliness": Decimal("0.5"),
+    }
+    assert DEFAULT_COMPRESSION_FULL_SCORE_RATIO == Decimal("0.70")
+    assert DEFAULT_COMPRESSION_ZERO_SCORE_RATIO == Decimal("1.30")
+    assert DEFAULT_VOLATILITY_REGIME_COMPRESSED_MAX == Decimal("25")
+    assert DEFAULT_VOLATILITY_REGIME_NORMAL_MAX == Decimal("75")
+    assert DEFAULT_VOLATILITY_REGIME_ELEVATED_MAX == Decimal("95")
+    assert DEFAULT_ORDERLINESS_SCORE_DISORDERLY_MAX == Decimal("60")
+    assert VOLATILITY_REGIMES == ("COMPRESSED", "NORMAL", "ELEVATED", "STRESSED")
+    assert VOLATILITY_SCORE_REASON_CODES == (
+        "VOLATILITY_SCORE_INPUT_MISSING",
+        "VOLATILITY_SCORE_COMPLETE",
+        "VOLATILITY_COMPRESSED",
+        "VOLATILITY_EXPANDING",
+        "VOLATILITY_DISORDERLY",
+        "VOLATILITY_REGIME_UNKNOWN",
+    )
+
+
+@pytest.mark.parametrize(
+    ("ratio", "expected"),
+    [
+        ("0.50", Decimal("100")),
+        ("0.70", Decimal("100")),
+        ("0.85", Decimal("75")),
+        ("1.00", Decimal("50")),
+        ("1.15", Decimal("25")),
+        ("1.30", Decimal("0")),
+        ("2.00", Decimal("0")),
+    ],
+)
+def test_compression_score_is_a_clamped_linear_ramp(
+    ratio: str,
+    expected: Decimal,
+) -> None:
+    assert compression_score_from_ratio(Decimal(ratio)) == expected
+
+
+def test_compression_score_is_neutral_at_the_rulebook_boundary() -> None:
+    # The rulebook prefers RV7 / RV60 < 1, so an exactly neutral ratio must
+    # score at the midpoint rather than favouring either side.
+    assert compression_score_from_ratio(Decimal("1")) == Decimal("50")
+
+
+def test_compression_score_returns_none_without_a_ratio() -> None:
+    assert compression_score_from_ratio(None) is None
+
+
+def test_compression_score_rejects_inverted_thresholds() -> None:
+    with pytest.raises(ValueError, match="less than zero_score_ratio"):
+        compression_score_from_ratio(
+            Decimal("1"),
+            full_score_ratio=Decimal("1.30"),
+            zero_score_ratio=Decimal("0.70"),
+        )
+
+
+def test_volatility_score_is_the_even_compression_orderliness_composite() -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1.00"),
+            orderliness_score=Decimal("80"),
+            volatility_percentile=Decimal("50"),
+        ),
+    )
+
+    # 0.5 * 50 + 0.5 * 80
+    assert result.score == Decimal("65.0")
+    assert result.compression_score == Decimal("50")
+    assert result.contributions["compression"] == Decimal("25.0")
+    assert result.contributions["orderliness"] == Decimal("40.0")
+    assert result.interpretation == "ACCEPTABLE"
+    assert result.volatility_regime == "NORMAL"
+    assert result.complete
+    assert "VOLATILITY_SCORE_COMPLETE" in result.reason_codes
+
+
+def test_volatility_score_is_100_when_compressed_and_orderly() -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("0.60"),
+            orderliness_score=Decimal("100"),
+            volatility_percentile=Decimal("10"),
+        ),
+    )
+
+    assert result.score == Decimal("100.0")
+    assert result.interpretation == "FAVORABLE"
+    assert result.volatility_regime == "COMPRESSED"
+    assert "VOLATILITY_COMPRESSED" in result.reason_codes
+
+
+def test_volatility_score_flags_expanding_and_disorderly_volatility() -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1.60"),
+            orderliness_score=Decimal("25"),
+            volatility_percentile=Decimal("97"),
+        ),
+    )
+
+    assert result.score == Decimal("12.5")
+    assert result.compression_score == Decimal("0")
+    assert result.interpretation == "UNFAVORABLE"
+    assert result.volatility_regime == "STRESSED"
+    assert "VOLATILITY_EXPANDING" in result.reason_codes
+    assert "VOLATILITY_DISORDERLY" in result.reason_codes
+
+
+@pytest.mark.parametrize(
+    ("percentile", "regime"),
+    [
+        ("0", "COMPRESSED"),
+        ("25", "COMPRESSED"),
+        ("25.01", "NORMAL"),
+        ("75", "NORMAL"),
+        ("75.01", "ELEVATED"),
+        ("95", "ELEVATED"),
+        ("95.01", "STRESSED"),
+        ("100", "STRESSED"),
+    ],
+)
+def test_volatility_regime_bands_are_inclusive_at_their_upper_bound(
+    percentile: str,
+    regime: str,
+) -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1"),
+            orderliness_score=Decimal("50"),
+            volatility_percentile=Decimal(percentile),
+        ),
+    )
+
+    assert result.volatility_regime == regime
+    assert result.volatility_regime in VOLATILITY_REGIMES
+
+
+def test_volatility_score_regime_is_unknown_without_a_percentile() -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1"),
+            orderliness_score=Decimal("50"),
+        ),
+    )
+
+    # The percentile only classifies the regime; it must not block the score.
+    assert result.score == Decimal("50.0")
+    assert result.complete
+    assert result.volatility_regime is None
+    assert "VOLATILITY_REGIME_UNKNOWN" in result.reason_codes
+
+
+@pytest.mark.parametrize(
+    ("compression_ratio", "orderliness_score"),
+    [(None, Decimal("80")), (Decimal("1"), None), (None, None)],
+)
+def test_volatility_score_is_incomplete_when_a_component_is_missing(
+    compression_ratio: Decimal | None,
+    orderliness_score: Decimal | None,
+) -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=compression_ratio,
+            orderliness_score=orderliness_score,
+        ),
+    )
+
+    # Missing components are never silently scored as zero.
+    assert result.score is None
+    assert not result.complete
+    assert result.interpretation is None
+    assert "VOLATILITY_SCORE_INPUT_MISSING" in result.reason_codes
+
+
+def test_volatility_score_uses_custom_weights_and_thresholds() -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1.00"),
+            orderliness_score=Decimal("80"),
+            volatility_percentile=Decimal("50"),
+        ),
+        weights={"compression": Decimal("0.25"), "orderliness": Decimal("0.75")},
+        full_score_ratio=Decimal("0.90"),
+        zero_score_ratio=Decimal("1.10"),
+    )
+
+    # Ratio 1.00 sits midway between 0.90 and 1.10, so compression is still 50.
+    assert result.compression_score == Decimal("50")
+    assert result.score == Decimal("72.50")
+    assert result.weights == {
+        "compression": Decimal("0.25"),
+        "orderliness": Decimal("0.75"),
+    }
+    assert result.thresholds["compression_full_score_ratio"] == Decimal("0.90")
+
+
+def test_volatility_score_rejects_unknown_or_missing_weights() -> None:
+    inputs = VolatilityScoreInput(
+        compression_ratio=Decimal("1"),
+        orderliness_score=Decimal("50"),
+    )
+    with pytest.raises(ValueError, match="missing components"):
+        calculate_volatility_score(inputs, weights={"compression": Decimal("1")})
+    with pytest.raises(ValueError, match="unknown volatility score weights"):
+        calculate_volatility_score(
+            inputs,
+            weights={
+                "compression": Decimal("0.5"),
+                "orderliness": Decimal("0.5"),
+                "regime": Decimal("0.5"),
+            },
+        )
+
+
+def test_volatility_score_rejects_non_monotonic_regime_bounds() -> None:
+    with pytest.raises(ValueError, match="non-decreasing"):
+        calculate_volatility_score(
+            VolatilityScoreInput(
+                compression_ratio=Decimal("1"),
+                orderliness_score=Decimal("50"),
+                volatility_percentile=Decimal("50"),
+            ),
+            compressed_percentile_max=Decimal("80"),
+            normal_percentile_max=Decimal("40"),
+        )
+
+
+def test_volatility_score_record_is_persistable_and_deterministic() -> None:
+    inputs = VolatilityScoreInput(
+        compression_ratio=Decimal("0.85"),
+        orderliness_score=Decimal("90"),
+        volatility_percentile=Decimal("30"),
+    )
+    first = calculate_volatility_score(inputs, config_metadata={"config": "v1.2"})
+    second = calculate_volatility_score(inputs, config_metadata={"config": "v1.2"})
+
+    assert isinstance(first, VolatilityScoreResult)
+    assert first.as_record() == second.as_record()
+    record = first.as_record()
+    assert record["feature_id"] == "VOLATILITY_SCORE"
+    assert record["score"] == "82.5"
+    assert record["compression_score"] == "75"
+    assert record["volatility_regime"] == "NORMAL"
+    assert record["weights"] == {"compression": "0.5", "orderliness": "0.5"}
+    assert record["config_metadata"] == {"config": "v1.2"}
+    assert record["contributions"] == {
+        "compression": "37.5",
+        "orderliness": "45.0",
+    }
+    assert record["thresholds"]["compression_full_score_ratio"] == "0.70"
+    assert "VOLATILITY_SCORE_COMPLETE" in record["reason_codes"]
+
+
+def test_volatility_score_from_upstream_feature_results() -> None:
+    compression = volatility_compression_ratio(
+        VolatilityCompressionRatioInput(rv_7=Decimal("0.40"), rv_60=Decimal("0.40")),
+    )
+    orderliness = calculate_orderliness_score(
+        OrderlinessScoreInput(
+            range_percentile=Decimal("50"),
+            downside_return=Decimal("-0.01"),
+            liquidation_percentile=Decimal("50"),
+            volatility_percentile=Decimal("50"),
+        ),
+    )
+
+    result = calculate_volatility_score_from_results(compression, orderliness)
+
+    assert compression.compression_ratio == Decimal("1")
+    assert orderliness.score == Decimal("100.00")
+    # 0.5 * 50 + 0.5 * 100
+    assert result.score == Decimal("75.000")
+    assert result.inputs.compression_ratio == Decimal("1")
+    assert result.inputs.orderliness_score == Decimal("100.00")
+    assert result.volatility_regime is None

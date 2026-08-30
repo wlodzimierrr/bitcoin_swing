@@ -19,6 +19,8 @@ RV_20_FEATURE_ID = "RV_20"
 RV_60_FEATURE_ID = "RV_60"
 VOLATILITY_COMPRESSION_RATIO_FEATURE_ID = "VOL_COMPRESSION_RATIO"
 VOLATILITY_PERCENTILE_FEATURE_ID = "VOL_PERCENTILE_2Y"
+COMPRESSION_SCORE_FEATURE_ID = "COMPRESSION_SCORE"
+VOLATILITY_SCORE_FEATURE_ID = "VOLATILITY_SCORE"
 ORDERLINESS_SCORE_FEATURE_ID = "ORDERLINESS_SCORE"
 STRESS_FLAG_FEATURE_ID = "STRESS"
 CAPITULATION_FLAG_FEATURE_ID = "CAPITULATION"
@@ -49,6 +51,20 @@ DEFAULT_ORDERLINESS_SCORE_WEIGHTS = {
     "liquidation_cascade": Decimal("0.25"),
     "volatility_spike": Decimal("0.25"),
 }
+VOLATILITY_SCORE_COMPONENT_IDS = (
+    "compression",
+    "orderliness",
+)
+DEFAULT_VOLATILITY_SCORE_WEIGHTS = {
+    "compression": Decimal("0.5"),
+    "orderliness": Decimal("0.5"),
+}
+VOLATILITY_REGIMES = (
+    "COMPRESSED",
+    "NORMAL",
+    "ELEVATED",
+    "STRESSED",
+)
 REALIZED_VOLATILITY_WINDOWS = (7, 20, 60)
 REALIZED_VOLATILITY_FEATURE_IDS = {
     7: RV_7_FEATURE_ID,
@@ -69,6 +85,14 @@ ORDERLINESS_SCORE_REASON_CODES = (
     "ORDERLINESS_DISORDERLY_DOWNSIDE",
     "ORDERLINESS_LIQUIDATION_CASCADE",
     "ORDERLINESS_VOLATILITY_SPIKE",
+)
+VOLATILITY_SCORE_REASON_CODES = (
+    "VOLATILITY_SCORE_INPUT_MISSING",
+    "VOLATILITY_SCORE_COMPLETE",
+    "VOLATILITY_COMPRESSED",
+    "VOLATILITY_EXPANDING",
+    "VOLATILITY_DISORDERLY",
+    "VOLATILITY_REGIME_UNKNOWN",
 )
 STRESS_FLAG_REASON_CODES = (
     "STRESS_INPUT_MISSING",
@@ -108,6 +132,12 @@ REALIZED_VOLATILITY_REASON_CODES = (
 DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS = 365
 DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS = 730
 DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS = 365
+DEFAULT_COMPRESSION_FULL_SCORE_RATIO = Decimal("0.70")
+DEFAULT_COMPRESSION_ZERO_SCORE_RATIO = Decimal("1.30")
+DEFAULT_VOLATILITY_REGIME_COMPRESSED_MAX = Decimal("25")
+DEFAULT_VOLATILITY_REGIME_NORMAL_MAX = Decimal("75")
+DEFAULT_VOLATILITY_REGIME_ELEVATED_MAX = Decimal("95")
+DEFAULT_ORDERLINESS_SCORE_DISORDERLY_MAX = Decimal("60")
 DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX = Decimal("90")
 DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN = Decimal("-0.08")
 DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX = Decimal("90")
@@ -300,6 +330,78 @@ class OrderlinessScoreResult:
             "penalties": {
                 key: str(value) if value is not None else None
                 for key, value in self.penalties.items()
+            },
+            "config_metadata": dict(self.config_metadata),
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
+@dataclass(frozen=True)
+class VolatilityScoreInput:
+    """Explicit Volatility Score inputs.
+
+    ``volatility_percentile`` is the 2-year percentile of RV20. It does not
+    enter the weighted composite; it classifies the volatility regime so a
+    setup-specific interpretation stays possible.
+    """
+
+    compression_ratio: Decimal | None
+    orderliness_score: Decimal | None
+    volatility_percentile: Decimal | None = None
+
+    def as_record(self) -> dict[str, str | None]:
+        return {
+            "compression_ratio": (
+                str(self.compression_ratio)
+                if self.compression_ratio is not None
+                else None
+            ),
+            "orderliness_score": (
+                str(self.orderliness_score)
+                if self.orderliness_score is not None
+                else None
+            ),
+            "volatility_percentile": (
+                str(self.volatility_percentile)
+                if self.volatility_percentile is not None
+                else None
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class VolatilityScoreResult:
+    feature_id: str
+    score: Decimal | None
+    interpretation: str | None
+    volatility_regime: str | None
+    compression_score: Decimal | None
+    inputs: VolatilityScoreInput
+    weights: dict[str, Decimal]
+    thresholds: dict[str, Decimal]
+    contributions: dict[str, Decimal | None]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...] = ()
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "feature_id": self.feature_id,
+            "score": str(self.score) if self.score is not None else None,
+            "interpretation": self.interpretation,
+            "volatility_regime": self.volatility_regime,
+            "compression_score": (
+                str(self.compression_score)
+                if self.compression_score is not None
+                else None
+            ),
+            "inputs": self.inputs.as_record(),
+            "weights": {key: str(value) for key, value in self.weights.items()},
+            "thresholds": {key: str(value) for key, value in self.thresholds.items()},
+            "contributions": {
+                key: str(value) if value is not None else None
+                for key, value in self.contributions.items()
             },
             "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
@@ -1024,6 +1126,153 @@ def volatility_percentile(
     )
 
 
+def compression_score_from_ratio(
+    compression_ratio: Any | None,
+    *,
+    full_score_ratio: Any = DEFAULT_COMPRESSION_FULL_SCORE_RATIO,
+    zero_score_ratio: Any = DEFAULT_COMPRESSION_ZERO_SCORE_RATIO,
+) -> Decimal | None:
+    """Convert RV7/RV60 into a bounded 0-100 compression score.
+
+    Compression is favourable for a swing entry, so the score decreases as the
+    ratio rises. It is a clamped linear ramp: full score at or below
+    ``full_score_ratio``, zero at or above ``zero_score_ratio``. The defaults
+    are symmetric about the rulebook's ``RV7 / RV60 < 1`` boundary, so an
+    exactly neutral ratio of 1 scores 50.
+    """
+
+    thresholds = _compression_score_thresholds(
+        full_score_ratio=full_score_ratio,
+        zero_score_ratio=zero_score_ratio,
+    )
+    if compression_ratio is None:
+        return None
+    ratio = _non_negative_decimal(compression_ratio, "compression_ratio")
+    full = thresholds["compression_full_score_ratio"]
+    zero = thresholds["compression_zero_score_ratio"]
+    if decision_less_equal(ratio, full):
+        return Decimal("100")
+    if decision_greater_equal(ratio, zero):
+        return Decimal("0")
+    return Decimal("100") * (zero - ratio) / (zero - full)
+
+
+def calculate_volatility_score(
+    inputs: VolatilityScoreInput,
+    *,
+    weights: dict[str, Any] | None = None,
+    full_score_ratio: Any = DEFAULT_COMPRESSION_FULL_SCORE_RATIO,
+    zero_score_ratio: Any = DEFAULT_COMPRESSION_ZERO_SCORE_RATIO,
+    compressed_percentile_max: Any = DEFAULT_VOLATILITY_REGIME_COMPRESSED_MAX,
+    normal_percentile_max: Any = DEFAULT_VOLATILITY_REGIME_NORMAL_MAX,
+    elevated_percentile_max: Any = DEFAULT_VOLATILITY_REGIME_ELEVATED_MAX,
+    disorderly_score_max: Any = DEFAULT_ORDERLINESS_SCORE_DISORDERLY_MAX,
+    config_metadata: dict[str, str] | None = None,
+) -> VolatilityScoreResult:
+    """Combine compression and orderliness into the Phase 1 Volatility Score.
+
+    ``VolatilityScore = 0.5 * CompressionScore + 0.5 * OrderlinessScore``.
+    """
+
+    selected_weights = _volatility_score_weights(weights)
+    thresholds = _volatility_score_thresholds(
+        full_score_ratio=full_score_ratio,
+        zero_score_ratio=zero_score_ratio,
+        compressed_percentile_max=compressed_percentile_max,
+        normal_percentile_max=normal_percentile_max,
+        elevated_percentile_max=elevated_percentile_max,
+        disorderly_score_max=disorderly_score_max,
+    )
+    inputs.as_record()
+    compression_score = compression_score_from_ratio(
+        inputs.compression_ratio,
+        full_score_ratio=thresholds["compression_full_score_ratio"],
+        zero_score_ratio=thresholds["compression_zero_score_ratio"],
+    )
+    orderliness_score = (
+        _score_decimal(inputs.orderliness_score, "orderliness_score")
+        if inputs.orderliness_score is not None
+        else None
+    )
+    volatility_percentile_value = (
+        _score_decimal(inputs.volatility_percentile, "volatility_percentile")
+        if inputs.volatility_percentile is not None
+        else None
+    )
+    volatility_regime = _volatility_regime(volatility_percentile_value, thresholds)
+
+    components = {
+        "compression": compression_score,
+        "orderliness": orderliness_score,
+    }
+    weighted = decimal_weighted_score(
+        components,
+        selected_weights,
+        component_ids=VOLATILITY_SCORE_COMPONENT_IDS,
+    )
+
+    reason_codes = []
+    if any(value is None for value in components.values()):
+        reason_codes.append("VOLATILITY_SCORE_INPUT_MISSING")
+    if compression_score is not None and inputs.compression_ratio is not None:
+        ratio = _non_negative_decimal(inputs.compression_ratio, "compression_ratio")
+        if decision_less_equal(ratio, thresholds["compression_full_score_ratio"]):
+            reason_codes.append("VOLATILITY_COMPRESSED")
+        elif decision_greater_equal(ratio, thresholds["compression_zero_score_ratio"]):
+            reason_codes.append("VOLATILITY_EXPANDING")
+    if orderliness_score is not None and decision_less_equal(
+        orderliness_score,
+        thresholds["orderliness_disorderly_score_max"],
+    ):
+        reason_codes.append("VOLATILITY_DISORDERLY")
+    if volatility_regime is None:
+        reason_codes.append("VOLATILITY_REGIME_UNKNOWN")
+    if weighted.score is not None:
+        reason_codes.append("VOLATILITY_SCORE_COMPLETE")
+
+    return VolatilityScoreResult(
+        feature_id=VOLATILITY_SCORE_FEATURE_ID,
+        score=weighted.score,
+        interpretation=_volatility_score_interpretation(weighted.score),
+        volatility_regime=volatility_regime,
+        compression_score=compression_score,
+        inputs=inputs,
+        weights=selected_weights,
+        thresholds=thresholds,
+        contributions=weighted.contributions,
+        config_metadata=dict(config_metadata or {}),
+        complete=weighted.score is not None,
+        reason_codes=_dedupe_reason_codes(reason_codes),
+    )
+
+
+def calculate_volatility_score_from_results(
+    compression_result: VolatilityCompressionRatioResult,
+    orderliness_result: OrderlinessScoreResult,
+    *,
+    percentile_result: VolatilityPercentileResult | None = None,
+    weights: dict[str, Any] | None = None,
+    config_metadata: dict[str, str] | None = None,
+    **thresholds: Any,
+) -> VolatilityScoreResult:
+    """Calculate the Volatility Score from persisted upstream feature results."""
+
+    return calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=compression_result.compression_ratio,
+            orderliness_score=orderliness_result.score,
+            volatility_percentile=(
+                percentile_result.volatility_percentile
+                if percentile_result is not None
+                else None
+            ),
+        ),
+        weights=weights,
+        config_metadata=config_metadata,
+        **thresholds,
+    )
+
+
 def volatility_compression_ratio(
     inputs: VolatilityCompressionRatioInput,
 ) -> VolatilityCompressionRatioResult:
@@ -1443,6 +1692,112 @@ def _orderliness_component_triggered(
         "volatility_spike": "ORDERLINESS_VOLATILITY_SPIKE",
     }
     return reason_by_component[component_id] in reason_codes
+
+
+def _volatility_score_weights(weights: dict[str, Any] | None) -> dict[str, Decimal]:
+    if weights is None:
+        return dict(DEFAULT_VOLATILITY_SCORE_WEIGHTS)
+    missing = [key for key in VOLATILITY_SCORE_COMPONENT_IDS if key not in weights]
+    if missing:
+        raise ValueError(f"volatility score weights missing components: {missing}")
+    unexpected = [key for key in weights if key not in VOLATILITY_SCORE_COMPONENT_IDS]
+    if unexpected:
+        raise ValueError(f"unknown volatility score weights: {unexpected}")
+    selected = {
+        key: _non_negative_decimal(weights[key], f"weights.{key}")
+        for key in VOLATILITY_SCORE_COMPONENT_IDS
+    }
+    total = sum(selected.values(), Decimal("0"))
+    if total <= 0:
+        raise ValueError("volatility score weights must have a positive total")
+    return selected
+
+
+def _compression_score_thresholds(
+    *,
+    full_score_ratio: Any,
+    zero_score_ratio: Any,
+) -> dict[str, Decimal]:
+    full = _non_negative_decimal(full_score_ratio, "full_score_ratio")
+    zero = _non_negative_decimal(zero_score_ratio, "zero_score_ratio")
+    if decision_greater_equal(full, zero):
+        raise ValueError(
+            "compression full_score_ratio must be less than zero_score_ratio",
+        )
+    return {
+        "compression_full_score_ratio": full,
+        "compression_zero_score_ratio": zero,
+    }
+
+
+def _volatility_score_thresholds(
+    *,
+    full_score_ratio: Any,
+    zero_score_ratio: Any,
+    compressed_percentile_max: Any,
+    normal_percentile_max: Any,
+    elevated_percentile_max: Any,
+    disorderly_score_max: Any,
+) -> dict[str, Decimal]:
+    compressed = _score_decimal(compressed_percentile_max, "compressed_percentile_max")
+    normal = _score_decimal(normal_percentile_max, "normal_percentile_max")
+    elevated = _score_decimal(elevated_percentile_max, "elevated_percentile_max")
+    if not (
+        decision_less_equal(compressed, normal)
+        and decision_less_equal(normal, elevated)
+    ):
+        raise ValueError(
+            "volatility regime percentile bounds must be non-decreasing",
+        )
+    return {
+        **_compression_score_thresholds(
+            full_score_ratio=full_score_ratio,
+            zero_score_ratio=zero_score_ratio,
+        ),
+        "regime_compressed_percentile_max": compressed,
+        "regime_normal_percentile_max": normal,
+        "regime_elevated_percentile_max": elevated,
+        "orderliness_disorderly_score_max": _score_decimal(
+            disorderly_score_max,
+            "disorderly_score_max",
+        ),
+    }
+
+
+def _volatility_regime(
+    volatility_percentile_value: Decimal | None,
+    thresholds: dict[str, Decimal],
+) -> str | None:
+    if volatility_percentile_value is None:
+        return None
+    if decision_less_equal(
+        volatility_percentile_value,
+        thresholds["regime_compressed_percentile_max"],
+    ):
+        return "COMPRESSED"
+    if decision_less_equal(
+        volatility_percentile_value,
+        thresholds["regime_normal_percentile_max"],
+    ):
+        return "NORMAL"
+    if decision_less_equal(
+        volatility_percentile_value,
+        thresholds["regime_elevated_percentile_max"],
+    ):
+        return "ELEVATED"
+    return "STRESSED"
+
+
+def _volatility_score_interpretation(score: Decimal | None) -> str | None:
+    if score is None:
+        return None
+    if decision_greater_equal(score, Decimal("80")):
+        return "FAVORABLE"
+    if decision_greater_equal(score, Decimal("60")):
+        return "ACCEPTABLE"
+    if decision_greater_equal(score, Decimal("40")):
+        return "MARGINAL"
+    return "UNFAVORABLE"
 
 
 def _orderliness_score_interpretation(score: Decimal | None) -> str | None:
