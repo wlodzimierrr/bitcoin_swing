@@ -21,6 +21,7 @@ from btc_predictor.quant import (
     ScoreOutput,
     as_float64_array,
     decision_equal,
+    decision_greater_equal,
     weighted_score,
 )
 
@@ -39,6 +40,23 @@ ENTRY_CONVICTION_REASON_CODES = (
     "ENTRY_CONVICTION_COMPLETE",
 )
 ENTRY_CONVICTION_WEIGHT_SUM_TOLERANCE = Decimal("0.000001")
+ENTRY_ACTION_FEATURE_ID = "ENTRY_ACTION"
+ENTRY_ACTION_CLASSIFICATION_VERSION = "ENTRY_ACTION_CLASSIFICATION_V1"
+ENTRY_ACTION_LABELS = (
+    "IGNORE",
+    "WATCH",
+    "VALID",
+    "STRONG",
+    "EXCEPTIONAL",
+)
+ENTRY_ACTION_THRESHOLD_IDS = (
+    "ignore_below",
+    "watch_min",
+    "valid_trade_min",
+    "strong_setup_min",
+    "exceptional_min",
+)
+ENTRY_ACTION_REASON_CODES = ("ENTRY_ACTION_SCORE_MISSING",)
 REQUIRED_CONFIG_METADATA_KEYS = (
     "config_version",
     "strategy_version",
@@ -185,6 +203,72 @@ class EntryConvictionBatchResult:
     config_metadata: dict[str, str]
 
 
+@dataclass(frozen=True)
+class EntryActionResult:
+    """Versioned interpretation of an Entry Conviction score."""
+
+    feature_id: str
+    classification_version: str
+    source_feature_id: str
+    source_score_version: str
+    score: Decimal | None
+    action: str | None
+    thresholds: dict[str, Decimal]
+    config_metadata: dict[str, str]
+    complete: bool
+    reason_codes: tuple[str, ...]
+
+    @property
+    def reason_code(self) -> str | None:
+        return f"{self.feature_id}_{self.action}" if self.action is not None else None
+
+    def as_record(self) -> dict[str, Any]:
+        """Return a validated, reproducible action-classification record."""
+
+        if self.feature_id != ENTRY_ACTION_FEATURE_ID:
+            raise ValueError("feature_id must be ENTRY_ACTION")
+        if self.classification_version != ENTRY_ACTION_CLASSIFICATION_VERSION:
+            raise ValueError(
+                "classification_version must be "
+                f"{ENTRY_ACTION_CLASSIFICATION_VERSION}",
+            )
+        if self.source_feature_id != ENTRY_CONVICTION_FEATURE_ID:
+            raise ValueError("source_feature_id must be ENTRY_CONVICTION")
+        if self.source_score_version != ENTRY_CONVICTION_SCORE_VERSION:
+            raise ValueError(
+                f"source_score_version must be {ENTRY_CONVICTION_SCORE_VERSION}",
+            )
+        thresholds = _normalize_action_thresholds(self.thresholds)
+        metadata = _validate_config_metadata(self.config_metadata)
+        score = _score(self.score, "score") if self.score is not None else None
+        expected_action = (
+            _classify_entry_action(score, thresholds) if score is not None else None
+        )
+        if self.action != expected_action:
+            raise ValueError("action does not match score and thresholds")
+        if self.complete != (score is not None and self.action is not None):
+            raise ValueError("complete state does not match entry action")
+        expected_reason_codes = (
+            () if self.complete else ("ENTRY_ACTION_SCORE_MISSING",)
+        )
+        if self.reason_codes != expected_reason_codes:
+            raise ValueError("reason_codes do not match entry action state")
+
+        return {
+            "feature_id": self.feature_id,
+            "classification_version": self.classification_version,
+            "source_feature_id": self.source_feature_id,
+            "source_score_version": self.source_score_version,
+            "score": str(score) if score is not None else None,
+            "action": self.action,
+            "reason_code": self.reason_code,
+            "thresholds": {key: str(value) for key, value in thresholds.items()},
+            "config_metadata": metadata,
+            "complete": self.complete,
+            "reason_codes": list(self.reason_codes),
+        }
+
+
 def calculate_entry_conviction(
     inputs: EntryConvictionInput,
     *,
@@ -259,6 +343,43 @@ def calculate_entry_conviction_batch(
     )
 
 
+def classify_entry_action(
+    score: Decimal | None,
+    *,
+    strategy_config: StrategyConfig,
+) -> EntryActionResult:
+    """Classify Entry Conviction using versioned strategy thresholds."""
+
+    thresholds, metadata = _action_threshold_contract(strategy_config)
+    if score is None:
+        return EntryActionResult(
+            feature_id=ENTRY_ACTION_FEATURE_ID,
+            classification_version=ENTRY_ACTION_CLASSIFICATION_VERSION,
+            source_feature_id=ENTRY_CONVICTION_FEATURE_ID,
+            source_score_version=ENTRY_CONVICTION_SCORE_VERSION,
+            score=None,
+            action=None,
+            thresholds=thresholds,
+            config_metadata=metadata,
+            complete=False,
+            reason_codes=("ENTRY_ACTION_SCORE_MISSING",),
+        )
+
+    normalized_score = _score(score, "score")
+    return EntryActionResult(
+        feature_id=ENTRY_ACTION_FEATURE_ID,
+        classification_version=ENTRY_ACTION_CLASSIFICATION_VERSION,
+        source_feature_id=ENTRY_CONVICTION_FEATURE_ID,
+        source_score_version=ENTRY_CONVICTION_SCORE_VERSION,
+        score=normalized_score,
+        action=_classify_entry_action(normalized_score, thresholds),
+        thresholds=thresholds,
+        config_metadata=metadata,
+        complete=True,
+        reason_codes=(),
+    )
+
+
 def _config_contract(
     strategy_config: StrategyConfig,
 ) -> tuple[dict[str, Decimal], dict[str, str]]:
@@ -267,6 +388,68 @@ def _config_contract(
     weights = _normalize_weights(strategy_config.scoring_weights.entry_conviction)
     metadata = _validate_config_metadata(strategy_config.run_metadata())
     return weights, metadata
+
+
+def _action_threshold_contract(
+    strategy_config: StrategyConfig,
+) -> tuple[dict[str, Decimal], dict[str, str]]:
+    if not isinstance(strategy_config, StrategyConfig):
+        raise TypeError("strategy_config must be a StrategyConfig")
+    config = strategy_config.entry_thresholds
+    thresholds = _normalize_action_thresholds(
+        {
+            "ignore_below": config.ignore_below,
+            "watch_min": config.watch_min,
+            "valid_trade_min": config.valid_trade_min,
+            "strong_setup_min": config.strong_setup_min,
+            "exceptional_min": config.exceptional_min,
+        },
+    )
+    metadata = _validate_config_metadata(strategy_config.run_metadata())
+    return thresholds, metadata
+
+
+def _normalize_action_thresholds(
+    thresholds: Mapping[str, Any],
+) -> dict[str, Decimal]:
+    missing = set(ENTRY_ACTION_THRESHOLD_IDS) - set(thresholds)
+    extra = set(thresholds) - set(ENTRY_ACTION_THRESHOLD_IDS)
+    if missing or extra:
+        raise ValueError(
+            "entry action thresholds must exactly match "
+            f"{ENTRY_ACTION_THRESHOLD_IDS}; "
+            f"missing={sorted(missing)}, extra={sorted(extra)}",
+        )
+    normalized = {
+        threshold_id: _score(thresholds[threshold_id], threshold_id)
+        for threshold_id in ENTRY_ACTION_THRESHOLD_IDS
+    }
+    if normalized["watch_min"] < normalized["ignore_below"]:
+        raise ValueError("watch_min must be >= ignore_below")
+    ordered = (
+        normalized["watch_min"],
+        normalized["valid_trade_min"],
+        normalized["strong_setup_min"],
+        normalized["exceptional_min"],
+    )
+    if any(current <= previous for previous, current in zip(ordered, ordered[1:])):
+        raise ValueError("entry action thresholds must be strictly increasing")
+    return normalized
+
+
+def _classify_entry_action(
+    score: Decimal,
+    thresholds: Mapping[str, Decimal],
+) -> str:
+    if decision_greater_equal(score, thresholds["exceptional_min"]):
+        return "EXCEPTIONAL"
+    if decision_greater_equal(score, thresholds["strong_setup_min"]):
+        return "STRONG"
+    if decision_greater_equal(score, thresholds["valid_trade_min"]):
+        return "VALID"
+    if decision_greater_equal(score, thresholds["watch_min"]):
+        return "WATCH"
+    return "IGNORE"
 
 
 def _normalize_weights(weights: Mapping[str, Any]) -> dict[str, Decimal]:

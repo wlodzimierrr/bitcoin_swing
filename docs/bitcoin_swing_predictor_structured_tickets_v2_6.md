@@ -3364,7 +3364,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   0.50 ATR
   0.75 ATR
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3374,6 +3374,32 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/buffer.py` with
+    `calculate_volatility_buffer()`, policy version `VOLATILITY_BUFFER_V1`,
+    implementing `max(0.3 * ATR_20, LevelNoiseEstimate)`.
+  - Scope is the buffer distance only; applying it to an invalidation level to
+    reach a stop is BTC-142.
+  - **Specification gap recorded:** `LevelNoiseEstimate` is named once in the
+    rulebook and never defined. It is therefore an explicit caller-supplied
+    input. `level_noise_from_zone()` offers a documented Phase-1 reading (half
+    the structural zone width, i.e. the distance from zone edge to centre) but
+    is labelled a provisional interpretation rather than a rulebook formula.
+  - ATR window defaults to 20 per rulebook 16.1. Note this differs from the
+    14-day ATR used by the price-source research modules; the buffer window is
+    explicit and configurable.
+  - `volatility_buffer_grid()` evaluates the rulebook's declared 0.25 / 0.50 /
+    0.75 ATR robustness grid. It reports the sweep and deliberately does not
+    select a winner; calibration belongs to BTC-185. Parameters are marked
+    `PROVISIONAL_RESEARCH_CALIBRATABLE`.
+  - A missing ATR yields an incomplete buffer rather than zero, so a stop can
+    never be placed on a silently absent volatility term. A missing level noise
+    estimate is permitted and the maximum degenerates to the ATR term.
+  - `binding_term` records which of the two terms governed, and both terms stay
+    persisted, so a buffer is reconstructable rather than just its winner.
+  - `atr_from_daily_bars()` bridges to the BTC-043 `average_true_range`
+    primitive and returns `None` during warm-up rather than a partial-window
+    value.
 
 #### BTC-142 Implement initial stop
 - **Description:**

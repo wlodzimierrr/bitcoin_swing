@@ -1,5 +1,22 @@
 """Risk and sizing modules."""
 
+from btc_predictor.risk.buffer import (
+    ATR_BOUND,
+    BUFFER_ATR_MULTIPLIER_GRID,
+    BUFFER_BINDING_TERMS,
+    BUFFER_PARAMETER_STATUS,
+    DEFAULT_BUFFER_ATR_MULTIPLIER,
+    DEFAULT_BUFFER_ATR_WINDOW_DAYS,
+    LEVEL_NOISE_BOUND,
+    VOLATILITY_BUFFER_FEATURE_ID,
+    VOLATILITY_BUFFER_POLICY_VERSION,
+    VOLATILITY_BUFFER_REASON_CODES,
+    VolatilityBufferResult,
+    atr_from_daily_bars,
+    calculate_volatility_buffer,
+    level_noise_from_zone,
+    volatility_buffer_grid,
+)
 from btc_predictor.risk.invalidation import (
     BEARISH_DISTRIBUTION_SETUP,
     BULLISH_RESET_SETUP,
@@ -25,6 +42,21 @@ from btc_predictor.risk.invalidation import (
 )
 
 __all__ = [
+    "ATR_BOUND",
+    "BUFFER_ATR_MULTIPLIER_GRID",
+    "BUFFER_BINDING_TERMS",
+    "BUFFER_PARAMETER_STATUS",
+    "DEFAULT_BUFFER_ATR_MULTIPLIER",
+    "DEFAULT_BUFFER_ATR_WINDOW_DAYS",
+    "LEVEL_NOISE_BOUND",
+    "VOLATILITY_BUFFER_FEATURE_ID",
+    "VOLATILITY_BUFFER_POLICY_VERSION",
+    "VOLATILITY_BUFFER_REASON_CODES",
+    "VolatilityBufferResult",
+    "atr_from_daily_bars",
+    "calculate_volatility_buffer",
+    "level_noise_from_zone",
+    "volatility_buffer_grid",
     "BEARISH_DISTRIBUTION_SETUP",
     "BULLISH_RESET_SETUP",
     "BULL_TREND_CONTINUATION_SETUP",
