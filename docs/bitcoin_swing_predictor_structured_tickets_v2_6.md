@@ -3205,7 +3205,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   \]
 
   Regime remains a setup/context gate and is not an Entry Conviction component.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Exact v1.2 weights are loaded from versioned strategy config
@@ -3219,6 +3219,17 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.features.entry` with typed single-observation and
+    float64 batch APIs over the exact five-component v1.2 contract.
+  - Both APIs require a validated `StrategyConfig`; weights and persisted
+    config identity therefore come from the same versioned parameter set.
+  - Single results persist `ENTRY_CONVICTION_V1_2`, parameter status, direct
+    inputs, weights, per-component contributions, missing components, reason
+    codes, and full config metadata. Regime has no weighted input route.
+  - Batch scoring delegates to BTC-046, retains NaN masks without zero-fill,
+    and is parity-tested against repeated single-observation calculations.
+  - Entry action bands remain owned by BTC-131 and are not inferred here.
 
 #### BTC-131 Implement entry action thresholds
 - **Description:**
@@ -3295,7 +3306,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-140 Implement structural invalidation selection
 - **Description:**
   Select best invalidation level based on active setup and nearby structure.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3305,6 +3316,38 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/invalidation.py` with
+    `select_structural_invalidation()`, policy version
+    `STRUCTURAL_INVALIDATION_V1`.
+  - Scope is the invalidation **level only**. The volatility buffer (BTC-141)
+    and the resulting stop (BTC-142) are not computed here; rulebook 16.1
+    composes them as `Stop = StructuralInvalidation -/+ VolatilityBuffer`.
+  - Selection is setup-specific via `SETUP_INVALIDATION_POLICY`. Bull trend
+    continuation, bullish reset and bearish distribution take the nearest
+    qualifying zone; capitulation reversal takes the farthest still-qualifying
+    zone, matching the rulebook's wide Stage 1 thesis stop, because a washout
+    buy expects nearby structure to be probed.
+  - Stops are zone-based rather than line-based (rulebook 16.2), so the
+    invalidation price is the far edge of the selected zone: `lower_bound` for
+    a long, `upper_bound` for a short, never the centre.
+  - Eligibility filters: correct side of entry, within a maximum distance
+    fraction, and meeting minimum cluster confluence and member count.
+    Proximity alone cannot win, so a weak near zone defers to a stronger
+    farther one.
+  - Point-in-time safe: a cluster whose `detected_at` is after `as_of` is
+    rejected with `STRUCTURAL_INVALIDATION_NOT_YET_DETECTED`. Detection exactly
+    at `as_of` is usable.
+  - Deterministic: candidates are ordered by distance then `cluster_id`, so
+    selection is independent of input ordering and ties resolve stably.
+  - Every considered zone is persisted in `candidates` with an explicit
+    eligible/rejection verdict, so any selection is reconstructable from the
+    record.
+  - An optional ATR is accepted and reported as ATR-normalized distance for
+    diagnostics only; it never influences selection, keeping BTC-141 free to
+    own buffer sizing.
+  - Distance and confluence thresholds are marked
+    `PROVISIONAL_RESEARCH_CALIBRATABLE` pending BTC-185.
 
 #### BTC-141 Implement volatility buffer
 - **Description:**

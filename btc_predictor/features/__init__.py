@@ -1,5 +1,17 @@
 """Feature generation helpers."""
 
+from btc_predictor.features.entry import (
+    ENTRY_CONVICTION_COMPONENT_IDS,
+    ENTRY_CONVICTION_FEATURE_ID,
+    ENTRY_CONVICTION_REASON_CODES,
+    ENTRY_CONVICTION_SCORE_VERSION,
+    ENTRY_CONVICTION_WEIGHT_SUM_TOLERANCE,
+    EntryConvictionBatchResult,
+    EntryConvictionInput,
+    EntryConvictionResult,
+    calculate_entry_conviction,
+    calculate_entry_conviction_batch,
+)
 from btc_predictor.features.flow import (
     CvdObservation,
     ETF_FLOW_ACCELERATION_FEATURE_ID,
@@ -670,4 +682,14 @@ __all__ = [
     "calculate_volatility_score_from_results",
     "compression_score_from_ratio",
     "true_ranges",
+    "ENTRY_CONVICTION_COMPONENT_IDS",
+    "ENTRY_CONVICTION_FEATURE_ID",
+    "ENTRY_CONVICTION_REASON_CODES",
+    "ENTRY_CONVICTION_SCORE_VERSION",
+    "ENTRY_CONVICTION_WEIGHT_SUM_TOLERANCE",
+    "EntryConvictionBatchResult",
+    "EntryConvictionInput",
+    "EntryConvictionResult",
+    "calculate_entry_conviction",
+    "calculate_entry_conviction_batch",
 ]
