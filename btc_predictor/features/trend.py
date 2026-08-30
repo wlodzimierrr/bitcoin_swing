@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from math import erf, sqrt
 from typing import Any
 
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features.rolling import NumericValue, OptionalDecimalSeries, rolling_mean
+from btc_predictor.quant.transforms import normal_cdf_score
 
 
 TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS = 20
@@ -303,8 +303,7 @@ def _trend_score_input_values(inputs: TrendScoreInput) -> dict[str, Decimal]:
 
 
 def _standard_normal_score(raw_score: Decimal) -> Decimal:
-    cdf = Decimal(str(0.5 * (1.0 + erf(float(raw_score) / sqrt(2.0)))))
-    return Decimal("100") * cdf
+    return Decimal(str(normal_cdf_score(float(raw_score))))
 
 
 def _trend_score_interpretation(score: Decimal) -> str:

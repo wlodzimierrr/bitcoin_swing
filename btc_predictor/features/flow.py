@@ -6,10 +6,10 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from math import erf, sqrt
 from typing import Any
 
 from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume, require_utc_datetime
+from btc_predictor.quant.transforms import normal_cdf_score
 
 
 FIVE_DAY_ETF_FLOW_FEATURE_ID = "ETF_FLOW_5D"
@@ -1077,8 +1077,7 @@ def _flow_score_input_values(inputs: FlowScoreInput) -> dict[str, Decimal | None
 
 
 def _standard_normal_score(raw_score: Decimal) -> Decimal:
-    cdf = Decimal(str(0.5 * (1.0 + erf(float(raw_score) / sqrt(2.0)))))
-    return Decimal("100") * cdf
+    return Decimal(str(normal_cdf_score(float(raw_score))))
 
 
 def _flow_score_interpretation(score: Decimal | None) -> str | None:

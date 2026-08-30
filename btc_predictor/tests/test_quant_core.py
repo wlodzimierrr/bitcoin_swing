@@ -84,7 +84,6 @@ def test_adjacent_ticket_namespaces_do_not_preempt_their_implementations() -> No
         "risk",
         "scoring",
         "statistics",
-        "transforms",
     ):
         module = __import__(f"btc_predictor.quant.{module_name}", fromlist=[module_name])
         public_functions = [

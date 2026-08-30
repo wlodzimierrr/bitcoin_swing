@@ -58,6 +58,26 @@ Policy version: `FLOAT64_V1`.
   `None` only at existing Decimal-facing feature boundaries.
 - Appending future observations cannot change an earlier result.
 
+## Nonlinear Transforms
+
+- Elementwise transforms accept scalar or array-like input. Scalar input
+  returns a Python `float`; array-like input returns an owned, shape-preserving
+  `float64` array.
+- Score and percentile ranges are explicit. Degenerate intervals, zero-width
+  distributions, invalid probabilities, and negative decay distances fail
+  before calculation.
+- Gaussian health uses `maximum * exp(-0.5 * ((x - preferred) / width)^2)`.
+  Normal-CDF scores use SciPy's stable standard-normal primitive and explicit
+  output bounds.
+- Smooth penalties use a bounded cubic smoothstep transition. Winsorization
+  uses deterministic linear-interpolation quantiles across the complete input
+  array.
+- Under explicit NaN propagation, elementwise transforms preserve NaN at the
+  affected locations. A NaN makes the complete winsorized output NaN because
+  every output depends on the globally derived quantile bounds.
+- Transform helpers contain no strategy interpretation, reason codes,
+  persistence behavior, or action decisions.
+
 ## Determinism And Boundaries
 
 - Simulation requires an explicit non-negative seed and uses NumPy `PCG64`.

@@ -6,7 +6,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
-from math import exp
 from typing import Any
 
 from btc_predictor.data import (
@@ -15,6 +14,7 @@ from btc_predictor.data import (
     OpenInterest,
     require_utc_datetime,
 )
+from btc_predictor.quant.transforms import gaussian_health, percentile_to_health
 
 
 FUNDING_HEALTH_FEATURE_ID = "FUNDING_HEALTH"
@@ -790,11 +790,11 @@ def open_interest_intensity(
         else:
             oi_intensity_percentile = _percentile_rank(oi_intensity, history)
 
-    health_score = (
-        Decimal("100") - oi_intensity_percentile
-        if oi_intensity_percentile is not None
-        else None
-    )
+    health_score = None
+    if oi_intensity_percentile is not None:
+        health_score = Decimal(
+            str(percentile_to_health(float(oi_intensity_percentile)))
+        )
     reason_codes = _dedupe_reason_codes(reason_codes)
     return OpenInterestIntensityResult(
         feature_id=OI_INTENSITY_FEATURE_ID,
@@ -1327,8 +1327,15 @@ def _gaussian_health_score(
     preferred_zscore: Decimal,
     zscore_width: Decimal,
 ) -> Decimal:
-    scaled_distance = (zscore - preferred_zscore) / zscore_width
-    return Decimal(str(100 * exp(-0.5 * (float(scaled_distance) ** 2))))
+    return Decimal(
+        str(
+            gaussian_health(
+                float(zscore),
+                preferred=float(preferred_zscore),
+                width=float(zscore_width),
+            )
+        )
+    )
 
 
 def _average(values: Sequence[Decimal]) -> Decimal:

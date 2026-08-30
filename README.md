@@ -200,6 +200,15 @@ warm-up and missing values remain explicit, and the existing
 `btc_predictor.features` APIs retain their Decimal/`None` surface while
 delegating numerical work to the vectorized core.
 
+BTC-044 centralizes Gaussian health, stable logistic and normal-CDF mappings,
+bounded linear and smooth-penalty transforms, exponential decay, score
+clipping, percentile-to-health conversion, and deterministic winsorization in
+`btc_predictor.quant.transforms`. The scalar and array paths share the same
+`float64` implementation and explicit NaN policy. Funding, OI growth, futures
+basis, OI intensity, Trend Score, and Flow Score retain their existing public
+and persistence APIs while delegating exact transform formulas to this
+domain-free numerical layer.
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
