@@ -3137,7 +3137,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   Produce an analytical effective-weight report comparing the retired nested
   v1.1 architecture with v1.2.
 
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -3156,6 +3156,39 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/features/scoring_contracts.py`: a declarative,
+    testable score dependency graph with the v1.2 weights, node roles
+    (COMPOSITE / FACTOR / CONTEXT_GATE / INDEPENDENT_FILTER / DIAGNOSTIC), and
+    an explicit prohibited-nesting table.
+  - `audit_factor_overlap()` expands a composite into every weighted route to a
+    leaf factor and reports any leaf reachable by more than one path. All three
+    v1.2 composites audit clean; all three v1.1 composites do not.
+  - The audit is explicitly **structural only**. `MECHANICAL_VS_EMPIRICAL_NOTE`
+    records that natural empirical correlation between distinct components is
+    expected and is not treated as double-counting; a test asserts two
+    separately declared correlated factors still audit clean.
+  - Analytical effective-weight report committed to
+    `research_artifacts/btc129_scoring_contracts/`. Headline v1.1 leakage for
+    Entry Conviction: Trend declared 0.20 but effective **0.29** (0.20 direct +
+    0.20 x 0.45 through Regime); Flow 0.20 -> 0.25; Positioning 0.15 -> 0.18;
+    Volatility 0.10 -> 0.13. Hold: Trend 0.20 -> 0.3125. Add: Trend leaks in at
+    0.0625 purely through the nested Hold Score.
+  - **Config was still v1.1 and is now migrated.** `default.toml` had
+    `entry_conviction.regime = 0.20`, `hold_score.regime = 0.25`,
+    `add_score.hold_score = 0.20`, and the retired Structure `rr_quality` /
+    `confluence`. All are replaced with the v1.2 contracts.
+  - Config validation rejects the prohibited nested components by name with a
+    rationale, so a v1.1 config fails fast rather than silently double-counting.
+    A test asserts the config guard and the analytical contract table cannot
+    drift apart.
+  - Entry/Hold/Add component key sets are deliberately *not* pinned to an exact
+    list: those scores are unimplemented and their factor set may still change.
+    The nesting prohibition is what is locked.
+  - Strategy/config version bumped for the intentional behaviour change:
+    `strategy_config_v1` -> `strategy_config_v2`, `swing_v1.0` -> `swing_v1.2`.
+  - Weights and Entry/Hold/Add thresholds are marked
+    `PROVISIONAL_PENDING_BTC_185`.
 
 #### BTC-130 Implement Entry Conviction
 - **Description:**

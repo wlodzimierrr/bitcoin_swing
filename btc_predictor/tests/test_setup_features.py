@@ -309,8 +309,8 @@ def test_detect_bull_trend_continuation_uses_versioned_strategy_config() -> None
             "require_no_severe_crowding": True,
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,
@@ -697,8 +697,8 @@ def test_detect_bullish_reset_uses_versioned_strategy_config() -> None:
             "flow_accel": "6",
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,
@@ -935,8 +935,8 @@ def test_detect_capitulation_reversal_uses_versioned_strategy_config() -> None:
         },
         "confirmation_lag_days": "3",
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,
@@ -1166,8 +1166,8 @@ def test_detect_bearish_distribution_uses_versioned_strategy_config() -> None:
             "require_no_stress": True,
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,

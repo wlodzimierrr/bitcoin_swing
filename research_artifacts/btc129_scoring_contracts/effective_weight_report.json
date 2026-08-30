@@ -1,0 +1,142 @@
+{
+  "composites": {
+    "add_score": {
+      "v1_1_declared_weights": {
+        "flow": "0.20",
+        "hold_score": "0.20",
+        "momentum": "0.10",
+        "new_structure": "0.25",
+        "positioning": "0.15",
+        "risk_improvement": "0.10"
+      },
+      "v1_1_effective_weights": {
+        "confluence": "0.002000",
+        "entry_location": "0.005000",
+        "flow": "0.252500",
+        "level_strength": "0.009000",
+        "momentum": "0.10",
+        "momentum_persistence": "0.0200",
+        "new_structure": "0.25",
+        "positioning": "0.187500",
+        "risk_improvement": "0.10",
+        "rr_quality": "0.004000",
+        "trend": "0.062500",
+        "volatility": "0.007500"
+      },
+      "v1_1_mechanically_clean": false,
+      "v1_1_overlapping_leaves": [
+        "flow",
+        "positioning",
+        "trend"
+      ],
+      "v1_2_declared_weight_total": "1.0000",
+      "v1_2_declared_weights": {
+        "flow": "0.25",
+        "momentum": "0.125",
+        "new_structure": "0.3125",
+        "positioning": "0.1875",
+        "risk_improvement": "0.125"
+      },
+      "v1_2_effective_weights": {
+        "flow": "0.25",
+        "momentum": "0.125",
+        "new_structure": "0.3125",
+        "positioning": "0.1875",
+        "risk_improvement": "0.125"
+      },
+      "v1_2_mechanically_clean": true
+    },
+    "entry_conviction": {
+      "v1_1_declared_weights": {
+        "flow": "0.20",
+        "positioning": "0.15",
+        "regime": "0.20",
+        "structure": "0.15",
+        "trend": "0.20",
+        "volatility": "0.10"
+      },
+      "v1_1_effective_weights": {
+        "confluence": "0.0150",
+        "entry_location": "0.0375",
+        "flow": "0.2500",
+        "level_strength": "0.0675",
+        "positioning": "0.1800",
+        "rr_quality": "0.0300",
+        "trend": "0.2900",
+        "volatility": "0.1300"
+      },
+      "v1_1_mechanically_clean": false,
+      "v1_1_overlapping_leaves": [
+        "flow",
+        "positioning",
+        "trend",
+        "volatility"
+      ],
+      "v1_2_declared_weight_total": "1.0000",
+      "v1_2_declared_weights": {
+        "flow": "0.25",
+        "positioning": "0.1875",
+        "structure": "0.1875",
+        "trend": "0.25",
+        "volatility": "0.125"
+      },
+      "v1_2_effective_weights": {
+        "entry_location": "0.0669643125",
+        "flow": "0.25",
+        "level_strength": "0.1205356875",
+        "positioning": "0.1875",
+        "trend": "0.25",
+        "volatility": "0.125"
+      },
+      "v1_2_mechanically_clean": true
+    },
+    "hold_score": {
+      "v1_1_declared_weights": {
+        "flow": "0.20",
+        "momentum_persistence": "0.10",
+        "positioning": "0.15",
+        "regime": "0.25",
+        "structure": "0.10",
+        "trend": "0.20"
+      },
+      "v1_1_effective_weights": {
+        "confluence": "0.0100",
+        "entry_location": "0.0250",
+        "flow": "0.2625",
+        "level_strength": "0.0450",
+        "momentum_persistence": "0.10",
+        "positioning": "0.1875",
+        "rr_quality": "0.0200",
+        "trend": "0.3125",
+        "volatility": "0.0375"
+      },
+      "v1_1_mechanically_clean": false,
+      "v1_1_overlapping_leaves": [
+        "flow",
+        "positioning",
+        "trend"
+      ],
+      "v1_2_declared_weight_total": "1.0000000",
+      "v1_2_declared_weights": {
+        "flow": "0.2666667",
+        "momentum_persistence": "0.1333333",
+        "positioning": "0.20",
+        "structure": "0.1333333",
+        "trend": "0.2666667"
+      },
+      "v1_2_effective_weights": {
+        "entry_location": "0.0476190547619",
+        "flow": "0.2666667",
+        "level_strength": "0.0857142452381",
+        "momentum_persistence": "0.1333333",
+        "positioning": "0.20",
+        "trend": "0.2666667"
+      },
+      "v1_2_mechanically_clean": true
+    }
+  },
+  "contracts_version": "SCORING_CONTRACTS_V1_2",
+  "mechanical_vs_empirical": "This audit detects mechanical (structural) double-counting only: one leaf factor reaching a composite through more than one declared path. Natural empirical correlation between distinct components is expected, is not a defect, and is deliberately out of scope here.",
+  "parameter_status": "PROVISIONAL_PENDING_BTC_185",
+  "retired_contracts_version": "SCORING_CONTRACTS_V1_1"
+}

@@ -761,8 +761,8 @@ def test_calculate_flow_score_uses_full_model_when_p1_inputs_are_available() -> 
             "flow_accel": 0.25,
         },
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -850,8 +850,8 @@ def test_calculate_flow_score_exposes_persistable_payload() -> None:
             flow_accel_zscore=Decimal("0.2"),
         ),
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -879,8 +879,8 @@ def test_calculate_flow_score_exposes_persistable_payload() -> None:
         "flow_accel": "0.050",
     }
     assert record["config_metadata"] == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
     assert record["complete"] is True
@@ -913,8 +913,8 @@ def test_calculate_flow_score_uses_weights_from_versioned_strategy_config() -> N
         "spot_dominance": Decimal("0.1"),
     }
     assert result.config_metadata == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
 

@@ -9,8 +9,8 @@ from btc_predictor.config.strategy import DEFAULT_STRATEGY_CONFIG_PATH
 def test_loads_default_strategy_config() -> None:
     config = load_strategy_config()
 
-    assert config.identity.config_version == "strategy_config_v1"
-    assert config.identity.strategy_version == "swing_v1.0"
+    assert config.identity.config_version == "strategy_config_v2"
+    assert config.identity.strategy_version == "swing_v1.2"
     assert config.identity.parameter_set_id == "default_phase1"
     assert config.entry_thresholds.valid_trade_min == 80
     assert config.hold_thresholds.possible_add_min == 85
@@ -106,7 +106,7 @@ def test_loads_default_strategy_config() -> None:
     assert config.entry_triggers.no_chase.distance_mode == "atr"
     assert config.entry_triggers.no_chase.max_distance_atr == 0.50
     assert config.entry_triggers.no_chase.max_distance_fraction == 0.02
-    assert config.scoring_weights.entry_conviction["trend"] == 0.2
+    assert config.scoring_weights.entry_conviction["trend"] == 0.25
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
     assert config.scoring_weights.core_flow["etf_norm_5"] == 0.4
@@ -127,10 +127,8 @@ def test_loads_default_strategy_config() -> None:
     assert config.scoring_weights.positioning["funding_health"] == 0.35
     assert config.scoring_weights.positioning["leverage_health"] == 0.15
     assert config.scoring_weights.structure_score == {
-        "level_strength": 0.45,
-        "entry_location": 0.25,
-        "rr_quality": 0.20,
-        "confluence": 0.10,
+        "level_strength": 0.642857,
+        "entry_location": 0.357143,
     }
     assert config.regime_smoothing.previous_weight == 0.70
     assert config.regime_smoothing.new_weight == 0.30
@@ -163,8 +161,8 @@ def test_strategy_config_exposes_run_metadata() -> None:
     config = load_strategy_config()
 
     assert config.run_metadata() == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
 
@@ -174,8 +172,8 @@ def test_invalid_strategy_config_fails_fast(tmp_path: Path) -> None:
     config_path.write_text(
         """
 [identity]
-config_version = "strategy_config_v1"
-strategy_version = "swing_v1.0"
+config_version = "strategy_config_v2"
+strategy_version = "swing_v1.2"
 parameter_set_id = "broken"
 
 [entry_thresholds]
@@ -198,8 +196,8 @@ def test_missing_strategy_section_fails_fast(tmp_path: Path) -> None:
     config_path.write_text(
         """
 [identity]
-config_version = "strategy_config_v1"
-strategy_version = "swing_v1.0"
+config_version = "strategy_config_v2"
+strategy_version = "swing_v1.2"
 parameter_set_id = "broken"
 """.strip(),
         encoding="utf-8",
@@ -214,8 +212,8 @@ def test_invalid_flow_weight_keys_fail_fast(tmp_path: Path) -> None:
     config_path.write_text(
         """
 [identity]
-config_version = "strategy_config_v1"
-strategy_version = "swing_v1.0"
+config_version = "strategy_config_v2"
+strategy_version = "swing_v1.2"
 parameter_set_id = "broken"
 
 [entry_thresholds]
@@ -416,10 +414,8 @@ basis_health = 0.20
 leverage_health = 0.15
 
 [scoring_weights.structure_score]
-level_strength = 0.45
-entry_location = 0.25
-rr_quality = 0.20
-confluence = 0.10
+level_strength = 0.642857
+entry_location = 0.357143
 
 [backtest]
 initial_cash = 100000
@@ -640,8 +636,8 @@ def test_invalid_structure_score_weights_fail_fast(tmp_path: Path) -> None:
     config_path = tmp_path / "invalid_structure_score_weights.toml"
     config_path.write_text(
         DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
-            "rr_quality = 0.20",
-            "rr_quality = 0.10",
+            "entry_location = 0.357143",
+            "entry_location = 0.10",
         ),
         encoding="utf-8",
     )

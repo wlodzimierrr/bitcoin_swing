@@ -158,8 +158,8 @@ def test_level_strength_record_is_reconstructable() -> None:
         reaction_magnitude_fraction="0.08",
         volume_percentile="90",
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -201,8 +201,8 @@ def test_level_strength_record_is_reconstructable() -> None:
         "touch_count_full": 4,
         "reaction_full_fraction": "0.10",
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,

@@ -242,8 +242,8 @@ def test_structure_score_record_is_reconstructable() -> None:
         version=STRUCTURE_SCORE_V1_1,
         level_strength_score="80",
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -296,8 +296,8 @@ def test_structure_score_record_is_reconstructable() -> None:
             "rr_preferred_max": "3.0",
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,

@@ -1,6 +1,6 @@
 [identity]
-config_version = "strategy_config_v1"
-strategy_version = "swing_v1.0"
+config_version = "strategy_config_v2"
+strategy_version = "swing_v1.2"
 parameter_set_id = "default_phase1"
 
 [entry_thresholds]
@@ -177,29 +177,29 @@ distance_mode = "atr"
 max_distance_atr = 0.50
 max_distance_fraction = 0.02
 
+# v1.2 de-nested contracts (BTC-129). Regime is a context/setup gate and is not
+# an Entry or Hold component; Hold Score is not nested into Add Score. Weights
+# remain PROVISIONAL starting values pending BTC-185 robustness research.
 [scoring_weights.entry_conviction]
-trend = 0.20
-regime = 0.20
-flow = 0.20
-positioning = 0.15
-volatility = 0.10
-structure = 0.15
+trend = 0.25
+flow = 0.25
+positioning = 0.1875
+volatility = 0.125
+structure = 0.1875
 
 [scoring_weights.hold_score]
-regime = 0.25
-trend = 0.20
-flow = 0.20
-positioning = 0.15
-structure = 0.10
-momentum_persistence = 0.10
+trend = 0.2666667
+flow = 0.2666667
+positioning = 0.20
+structure = 0.1333333
+momentum_persistence = 0.1333333
 
 [scoring_weights.add_score]
-hold_score = 0.20
-new_structure = 0.25
-flow = 0.20
-positioning = 0.15
-momentum = 0.10
-risk_improvement = 0.10
+new_structure = 0.3125
+flow = 0.25
+positioning = 0.1875
+momentum = 0.125
+risk_improvement = 0.125
 
 [scoring_weights.full_flow]
 etf_norm_5 = 0.30
@@ -233,11 +233,10 @@ oi_health = 0.30
 basis_health = 0.20
 leverage_health = 0.15
 
+# R/R is an independent hard filter; confluence lives inside level_strength.
 [scoring_weights.structure_score]
-level_strength = 0.45
-entry_location = 0.25
-rr_quality = 0.20
-confluence = 0.10
+level_strength = 0.642857
+entry_location = 0.357143
 
 [regime_smoothing]
 previous_weight = 0.70

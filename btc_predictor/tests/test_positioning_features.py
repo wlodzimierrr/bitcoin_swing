@@ -1077,8 +1077,8 @@ def test_calculate_positioning_score_exposes_persistable_payload() -> None:
             leverage_health=Decimal("40"),
         ),
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -1107,8 +1107,8 @@ def test_calculate_positioning_score_exposes_persistable_payload() -> None:
         "leverage_health": "6.00",
     }
     assert record["config_metadata"] == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
     assert record["complete"] is True
@@ -1137,8 +1137,8 @@ def test_calculate_positioning_score_uses_weights_from_versioned_strategy_config
         "leverage_health": Decimal("0.15"),
     }
     assert result.config_metadata == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
 
@@ -1220,8 +1220,8 @@ def test_calculate_crowding_flag_uses_versioned_strategy_config() -> None:
     assert result.oi_intensity_percentile_min == Decimal("90.0")
     assert result.entry_quality_penalty == Decimal("10.0")
     assert result.config_metadata == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
 
@@ -1234,8 +1234,8 @@ def test_calculate_crowding_flag_exposes_persistable_payload() -> None:
             oi_intensity_percentile=Decimal("95"),
         ),
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -1258,8 +1258,8 @@ def test_calculate_crowding_flag_exposes_persistable_payload() -> None:
         "oi_intensity_percentile": "95",
     }
     assert record["config_metadata"] == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
     assert record["complete"] is True

@@ -39,9 +39,59 @@ POSITIONING_WEIGHT_KEYS = (
 STRUCTURE_SCORE_WEIGHT_KEYS = (
     "level_strength",
     "entry_location",
-    "rr_quality",
-    "confluence",
 )
+ENTRY_CONVICTION_WEIGHT_KEYS = (
+    "trend",
+    "flow",
+    "positioning",
+    "volatility",
+    "structure",
+)
+HOLD_SCORE_WEIGHT_KEYS = (
+    "trend",
+    "flow",
+    "positioning",
+    "structure",
+    "momentum_persistence",
+)
+ADD_SCORE_WEIGHT_KEYS = (
+    "new_structure",
+    "flow",
+    "positioning",
+    "momentum",
+    "risk_improvement",
+)
+# BTC-129: components that must never be nested inside another weighted score.
+# Rejecting them in config makes the v1.2 de-nesting enforceable rather than
+# merely documented. This is a structural rule; it says nothing about natural
+# empirical correlation between distinct components.
+PROHIBITED_NESTED_WEIGHT_COMPONENTS = {
+    "entry_conviction": {
+        "regime": (
+            "Regime is a context/setup gate and its own components are already "
+            "scored directly by Entry Conviction"
+        ),
+    },
+    "hold_score": {
+        "regime": (
+            "Regime is separate context and invalidation logic, not a Hold "
+            "Score component"
+        ),
+    },
+    "add_score": {
+        "hold_score": (
+            "Add Score must be an independent judgement rather than a "
+            "re-weighting of Hold Score"
+        ),
+    },
+    "structure_score": {
+        "rr_quality": (
+            "R/R is an independent hard asymmetry filter, not a Structure "
+            "contribution"
+        ),
+        "confluence": "Confluence is already represented inside level_strength",
+    },
+}
 ANCHORED_VWAP_PRICE_SOURCES = ("hlc3", "close")
 VOLUME_PROFILE_PRICE_SOURCES = ("hlc3", "close")
 LEVEL_STRENGTH_WEIGHT_KEYS = (
@@ -891,6 +941,10 @@ class ScoringWeights:
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
         return cls(
+            # Entry/Hold/Add component sets are not pinned to an exact key
+            # list: those scores are not implemented yet and their factor set
+            # may still gain a component. The prohibited-nesting rule below is
+            # what BTC-129 actually locks, and it applies regardless.
             entry_conviction=_required_weight_mapping(data, "entry_conviction"),
             hold_score=_required_weight_mapping(data, "hold_score"),
             add_score=_required_weight_mapping(data, "add_score"),
@@ -1107,6 +1161,15 @@ def _required_weight_mapping(
     expected_keys: tuple[str, ...] | None = None,
 ) -> dict[str, float]:
     mapping = _required_mapping(data, key)
+    # Report prohibited nesting before the generic key check so a v1.1 config
+    # gets an explanation rather than an opaque "unexpected key".
+    for nested, rationale in PROHIBITED_NESTED_WEIGHT_COMPONENTS.get(key, {}).items():
+        if nested in mapping:
+            raise StrategyConfigError(
+                f"{key} must not nest {nested!r} as a weighted component: "
+                f"{rationale}. This mechanical nesting was removed in the v1.2 "
+                "de-nested scoring contracts",
+            )
     if expected_keys is not None:
         missing = set(expected_keys) - set(mapping)
         extra = set(mapping) - set(expected_keys)

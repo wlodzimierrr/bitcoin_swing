@@ -618,7 +618,7 @@ def test_orderliness_score_uses_custom_weights_and_thresholds() -> None:
         downside_return_min=Decimal("-0.06"),
         liquidation_percentile_max=Decimal("80"),
         volatility_percentile_max=Decimal("80"),
-        config_metadata={"config_version": "strategy_config_v1"},
+        config_metadata={"config_version": "strategy_config_v2"},
     )
 
     assert result.score == Decimal("30.00")
@@ -635,7 +635,7 @@ def test_orderliness_score_uses_custom_weights_and_thresholds() -> None:
         "liquidation_percentile_max": Decimal("80"),
         "volatility_percentile_max": Decimal("80"),
     }
-    assert result.config_metadata == {"config_version": "strategy_config_v1"}
+    assert result.config_metadata == {"config_version": "strategy_config_v2"}
 
 
 def test_orderliness_score_reports_missing_inputs_without_zero_fill() -> None:
@@ -855,7 +855,7 @@ def test_stress_flag_exposes_persistable_payload() -> None:
             systemic_shock=False,
         ),
         block_new_trades=True,
-        config_metadata={"config_version": "strategy_config_v1"},
+        config_metadata={"config_version": "strategy_config_v2"},
     )
 
     assert result.as_record() == {
@@ -883,7 +883,7 @@ def test_stress_flag_exposes_persistable_payload() -> None:
             "funding_abs_zscore_min": "3",
             "basis_abs_zscore_min": "3",
         },
-        "config_metadata": {"config_version": "strategy_config_v1"},
+        "config_metadata": {"config_version": "strategy_config_v2"},
         "complete": True,
         "reason_codes": [
             "STRESS_EXTREME_VOLATILITY",
@@ -1038,7 +1038,7 @@ def test_capitulation_flag_exposes_persistable_payload() -> None:
             funding_zscore=Decimal("-2.3"),
             systemic_shock=False,
         ),
-        config_metadata={"config_version": "strategy_config_v1"},
+        config_metadata={"config_version": "strategy_config_v2"},
     )
 
     assert result.as_record() == {
@@ -1063,7 +1063,7 @@ def test_capitulation_flag_exposes_persistable_payload() -> None:
             "volatility_percentile_min": "95",
             "funding_zscore_max": "-2",
         },
-        "config_metadata": {"config_version": "strategy_config_v1"},
+        "config_metadata": {"config_version": "strategy_config_v2"},
         "complete": True,
         "reason_codes": [
             "CAPITULATION_DISORDERLY_DOWNSIDE",
@@ -1229,7 +1229,7 @@ def test_euphoria_flag_exposes_persistable_payload() -> None:
             volatility_percentile=Decimal("96"),
             systemic_euphoria=False,
         ),
-        config_metadata={"config_version": "strategy_config_v1"},
+        config_metadata={"config_version": "strategy_config_v2"},
     )
 
     assert result.as_record() == {
@@ -1257,7 +1257,7 @@ def test_euphoria_flag_exposes_persistable_payload() -> None:
             "oi_intensity_percentile_min": "95",
             "volatility_percentile_min": "95",
         },
-        "config_metadata": {"config_version": "strategy_config_v1"},
+        "config_metadata": {"config_version": "strategy_config_v2"},
         "complete": True,
         "reason_codes": [
             "EUPHORIA_UPSIDE_EXTENSION",

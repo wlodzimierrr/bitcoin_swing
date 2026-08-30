@@ -187,8 +187,8 @@ def test_calculate_regime_score_exposes_persistable_payload() -> None:
             positioning_score=Decimal("65"),
         ),
         config_metadata={
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
     )
@@ -221,8 +221,8 @@ def test_calculate_regime_score_exposes_persistable_payload() -> None:
             "positioning": "9.75",
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,
@@ -248,8 +248,8 @@ def test_calculate_regime_score_uses_weights_from_versioned_strategy_config() ->
     assert result.score == Decimal("72.25")
     assert result.weights == DEFAULT_CORE_REGIME_SCORE_WEIGHTS
     assert result.config_metadata == {
-        "config_version": "strategy_config_v1",
-        "strategy_version": "swing_v1.0",
+        "config_version": "strategy_config_v2",
+        "strategy_version": "swing_v1.2",
         "parameter_set_id": "default_phase1",
     }
 
@@ -389,8 +389,8 @@ def test_calculate_regime_smoothing_exposes_persistable_payload() -> None:
             "new_regime_score": "18.0",
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,
@@ -482,8 +482,8 @@ def test_calculate_regime_classification_uses_versioned_strategy_config() -> Non
             "bear": "20.0",
         },
         "config_metadata": {
-            "config_version": "strategy_config_v1",
-            "strategy_version": "swing_v1.0",
+            "config_version": "strategy_config_v2",
+            "strategy_version": "swing_v1.2",
             "parameter_set_id": "default_phase1",
         },
         "complete": True,
