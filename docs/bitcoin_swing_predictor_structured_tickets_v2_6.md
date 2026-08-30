@@ -2987,7 +2987,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-121 Implement breakout + retest trigger
 - **Description:**
   Complete the ticket scope for implement breakout + retest trigger.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -2997,6 +2997,24 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `evaluate_breakout_retest_trigger` in
+    `btc_predictor.signals.breakout_retest` as the entry-confirmation step after
+    a BTC-092 breakout level is detected.
+  - The state machine searches a bounded post-breakout window for a pullback into
+    an ATR-normalized retest zone, requires former resistance to hold as support,
+    and then requires a later close above the retest high plus configured buffer.
+  - ATR distance uses the BTC-045 quantitative primitive and freezes an ATR value
+    available by breakout detection so later volatility cannot rewrite the setup.
+  - Retest/continuation windows, retest distance, tolerated support breach, and
+    continuation buffer are startup-validated under
+    `[entry_triggers.breakout_retest]`.
+  - Results persist the BTC-092 source, ATR provenance, thresholds, all evaluated
+    bars, retest and confirmation timestamps, config metadata, completion state,
+    and stable pending/failure/success reason codes.
+  - Focused tests cover missing ATR, unavailable bars, bounded expiry, failed
+    support, strict continuation boundaries, future-data appends, deterministic
+    ordering, and end-to-end BTC-092 integration.
 
 #### BTC-122 Implement higher-low confirmation trigger
 - **Description:**

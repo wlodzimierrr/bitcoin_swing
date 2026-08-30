@@ -155,6 +155,13 @@ confirmation_bars = 1
 hold_buffer_fraction = 0
 close_buffer_fraction = 0
 
+[entry_triggers.breakout_retest]
+max_retest_bars = 5
+max_continuation_bars = 3
+retest_distance_atr_max = 0.50
+support_breach_atr_max = 0.25
+continuation_buffer_atr = 0
+
 [scoring_weights.entry_conviction]
 trend = 0.20
 regime = 0.20

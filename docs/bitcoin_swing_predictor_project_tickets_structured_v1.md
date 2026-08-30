@@ -1691,7 +1691,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-121 Implement breakout + retest trigger
 - **Description:**
   Complete the ticket scope for implement breakout + retest trigger.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1700,6 +1700,15 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added point-in-time `evaluate_breakout_retest_trigger` confirmation for
+    BTC-092 breakout levels using BTC-045 ATR-normalized distance.
+  - A bounded retest window must hold former resistance as support, followed by
+    a later continuation close above the retest high; the breakout candle itself
+    is never treated as the entry trigger.
+  - Versioned `[entry_triggers.breakout_retest]` parameters and frozen ATR
+    provenance are persisted with evaluated bars, thresholds, config identity,
+    completion state, and stable reason codes.
 
 #### BTC-122 Implement higher-low confirmation trigger
 - **Description:**

@@ -1,5 +1,17 @@
 """Signal and recommendation modules."""
 
+from btc_predictor.signals.breakout_retest import (
+    BREAKOUT_RETEST_TRIGGER_FEATURE_ID,
+    BREAKOUT_RETEST_TRIGGER_REASON_CODES,
+    BREAKOUT_RETEST_TRIGGER_TYPE,
+    DEFAULT_BREAKOUT_RETEST_CONTINUATION_BUFFER_ATR,
+    DEFAULT_BREAKOUT_RETEST_DISTANCE_ATR_MAX,
+    DEFAULT_BREAKOUT_RETEST_MAX_CONTINUATION_BARS,
+    DEFAULT_BREAKOUT_RETEST_MAX_RETEST_BARS,
+    DEFAULT_BREAKOUT_RETEST_SUPPORT_BREACH_ATR_MAX,
+    BreakoutRetestTriggerResult,
+    evaluate_breakout_retest_trigger,
+)
 from btc_predictor.signals.data_quality import (
     DATA_QUALITY_BLOCKED_ACTIONS,
     DATA_QUALITY_FAIL_REASON_CODE,
@@ -24,8 +36,16 @@ from btc_predictor.signals.reclaim import (
 )
 
 __all__ = [
+    "BREAKOUT_RETEST_TRIGGER_FEATURE_ID",
+    "BREAKOUT_RETEST_TRIGGER_REASON_CODES",
+    "BREAKOUT_RETEST_TRIGGER_TYPE",
     "DATA_QUALITY_BLOCKED_ACTIONS",
     "DATA_QUALITY_FAIL_REASON_CODE",
+    "DEFAULT_BREAKOUT_RETEST_CONTINUATION_BUFFER_ATR",
+    "DEFAULT_BREAKOUT_RETEST_DISTANCE_ATR_MAX",
+    "DEFAULT_BREAKOUT_RETEST_MAX_CONTINUATION_BARS",
+    "DEFAULT_BREAKOUT_RETEST_MAX_RETEST_BARS",
+    "DEFAULT_BREAKOUT_RETEST_SUPPORT_BREACH_ATR_MAX",
     "DEFAULT_RECLAIM_CLOSE_BUFFER_FRACTION",
     "DEFAULT_RECLAIM_CONFIRMATION_BARS",
     "DEFAULT_RECLAIM_HOLD_BUFFER_FRACTION",
@@ -34,12 +54,14 @@ __all__ = [
     "RECLAIM_TRIGGER_FEATURE_ID",
     "RECLAIM_TRIGGER_REASON_CODES",
     "RECLAIM_TRIGGER_TYPE",
+    "BreakoutRetestTriggerResult",
     "DataQualityFailure",
     "DataQualityGatedRecommendation",
     "RecommendationReasonCode",
     "ReclaimTriggerResult",
     "apply_data_quality_gate",
     "build_recommendation_reason_code_records",
-    "failures_from_quality_reports",
+    "evaluate_breakout_retest_trigger",
     "evaluate_reclaim_trigger",
+    "failures_from_quality_reports",
 ]

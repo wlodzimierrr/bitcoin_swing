@@ -557,14 +557,55 @@ class ReclaimTriggerConfig:
 
 
 @dataclass(frozen=True)
+class BreakoutRetestTriggerConfig:
+    max_retest_bars: int
+    max_continuation_bars: int
+    retest_distance_atr_max: float
+    support_breach_atr_max: float
+    continuation_buffer_atr: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        parameters = cls(
+            max_retest_bars=_required_positive_int(data, "max_retest_bars"),
+            max_continuation_bars=_required_positive_int(
+                data,
+                "max_continuation_bars",
+            ),
+            retest_distance_atr_max=_required_positive_float(
+                data,
+                "retest_distance_atr_max",
+            ),
+            support_breach_atr_max=_required_non_negative_float(
+                data,
+                "support_breach_atr_max",
+            ),
+            continuation_buffer_atr=_required_non_negative_float(
+                data,
+                "continuation_buffer_atr",
+            ),
+        )
+        if parameters.support_breach_atr_max > parameters.retest_distance_atr_max:
+            raise StrategyConfigError(
+                "entry_triggers.breakout_retest.support_breach_atr_max "
+                "must be <= retest_distance_atr_max",
+            )
+        return parameters
+
+
+@dataclass(frozen=True)
 class EntryTriggerConfig:
     reclaim: ReclaimTriggerConfig
+    breakout_retest: BreakoutRetestTriggerConfig
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
         return cls(
             reclaim=ReclaimTriggerConfig.from_mapping(
                 _required_mapping(data, "reclaim"),
+            ),
+            breakout_retest=BreakoutRetestTriggerConfig.from_mapping(
+                _required_mapping(data, "breakout_retest"),
             ),
         )
 

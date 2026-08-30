@@ -1782,8 +1782,17 @@ strategy metadata, completion/detection state, and stable reason codes.
 
 ## BTC-121 — Implement breakout + retest trigger
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
+
+Implemented `evaluate_breakout_retest_trigger` as a bounded point-in-time state
+machine after BTC-092 breakout detection. It uses BTC-045 ATR-normalized
+distance to identify a pullback near former resistance, requires that level to
+hold as support, and confirms only on a later close above the retest high. The
+ATR value is frozen as available by breakout detection. Versioned retest and
+continuation windows, distance/breach thresholds, evaluated-bar provenance,
+config identity, completion state, and stable reason codes are persisted.
 
 ---
 
