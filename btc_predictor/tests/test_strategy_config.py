@@ -95,6 +95,14 @@ def test_loads_default_strategy_config() -> None:
     assert config.entry_triggers.breakout_retest.retest_distance_atr_max == 0.50
     assert config.entry_triggers.breakout_retest.support_breach_atr_max == 0.25
     assert config.entry_triggers.breakout_retest.continuation_buffer_atr == 0
+    assert config.entry_triggers.higher_low.pivot_left_bars == 2
+    assert config.entry_triggers.higher_low.pivot_right_bars == 2
+    assert config.entry_triggers.higher_low.higher_low_left_bars == 2
+    assert config.entry_triggers.higher_low.higher_low_right_bars == 2
+    assert config.entry_triggers.higher_low.max_pattern_bars == 30
+    assert config.entry_triggers.higher_low.max_breakout_bars == 10
+    assert config.entry_triggers.higher_low.higher_low_buffer_fraction == 0
+    assert config.entry_triggers.higher_low.pivot_break_buffer_fraction == 0
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -351,6 +359,16 @@ retest_distance_atr_max = 0.50
 support_breach_atr_max = 0.25
 continuation_buffer_atr = 0
 
+[entry_triggers.higher_low]
+pivot_left_bars = 2
+pivot_right_bars = 2
+higher_low_left_bars = 2
+higher_low_right_bars = 2
+max_pattern_bars = 30
+max_breakout_bars = 10
+higher_low_buffer_fraction = 0
+pivot_break_buffer_fraction = 0
+
 [scoring_weights.entry_conviction]
 trend = 1.0
 
@@ -506,6 +524,20 @@ def test_breakout_retest_breach_cannot_exceed_retest_distance(tmp_path: Path) ->
     )
 
     with pytest.raises(StrategyConfigError, match="support_breach_atr_max"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_higher_low_trigger_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_higher_low.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "max_pattern_bars = 30",
+            "max_pattern_bars = 5",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="max_pattern_bars"):
         load_strategy_config(config_path)
 
 

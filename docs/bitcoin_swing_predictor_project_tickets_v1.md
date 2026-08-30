@@ -1798,8 +1798,18 @@ config identity, completion state, and stable reason codes are persisted.
 
 ## BTC-122 — Implement higher-low confirmation trigger
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
+
+Implemented `evaluate_higher_low_trigger` as a bounded point-in-time sequence
+anchored to a BTC-090 weekly swing low and its matching canonical daily source
+bar. It confirms a local bounce pivot and subsequent pullback low with past-only
+windows, requires the low to remain strictly above the source threshold, and
+triggers only after a later strict close above the pivot. Versioned windows,
+limits, buffers, evaluated bars, stage timestamps, config identity, completion
+state, and reason codes are persisted. Detection never predates BTC-090 source
+availability even when the reconstructed daily structure occurred earlier.
 
 ---
 

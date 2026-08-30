@@ -1713,7 +1713,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-122 Implement higher-low confirmation trigger
 - **Description:**
   Complete the ticket scope for implement higher-low confirmation trigger.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1722,6 +1722,14 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added point-in-time `evaluate_higher_low_trigger` anchored to BTC-090 weekly
+    swing lows and their matching canonical daily source bars.
+  - Confirmed daily bounce and pullback extrema must form a strict higher low,
+    followed by a later strict close above the bounce pivot.
+  - Versioned `[entry_triggers.higher_low]` windows, limits, and buffers are
+    persisted with complete stage provenance and stable reason codes; trigger
+    detection can never predate BTC-090 source availability.
 
 #### BTC-123 Implement no-chase filter
 - **Description:**

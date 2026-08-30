@@ -594,9 +594,62 @@ class BreakoutRetestTriggerConfig:
 
 
 @dataclass(frozen=True)
+class HigherLowTriggerConfig:
+    pivot_left_bars: int
+    pivot_right_bars: int
+    higher_low_left_bars: int
+    higher_low_right_bars: int
+    max_pattern_bars: int
+    max_breakout_bars: int
+    higher_low_buffer_fraction: float
+    pivot_break_buffer_fraction: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        parameters = cls(
+            pivot_left_bars=_required_positive_int(data, "pivot_left_bars"),
+            pivot_right_bars=_required_positive_int(data, "pivot_right_bars"),
+            higher_low_left_bars=_required_positive_int(
+                data,
+                "higher_low_left_bars",
+            ),
+            higher_low_right_bars=_required_positive_int(
+                data,
+                "higher_low_right_bars",
+            ),
+            max_pattern_bars=_required_positive_int(data, "max_pattern_bars"),
+            max_breakout_bars=_required_positive_int(data, "max_breakout_bars"),
+            higher_low_buffer_fraction=_required_fraction(
+                data,
+                "higher_low_buffer_fraction",
+            ),
+            pivot_break_buffer_fraction=_required_fraction(
+                data,
+                "pivot_break_buffer_fraction",
+            ),
+        )
+        minimum_pattern_bars = (
+            parameters.pivot_left_bars
+            + max(
+                parameters.pivot_right_bars,
+                parameters.higher_low_left_bars
+                + parameters.higher_low_right_bars,
+            )
+            + 1
+        )
+        if parameters.max_pattern_bars < minimum_pattern_bars:
+            raise StrategyConfigError(
+                "entry_triggers.higher_low.max_pattern_bars must accommodate "
+                "both confirmation windows",
+            )
+        return parameters
+
+
+@dataclass(frozen=True)
 class EntryTriggerConfig:
     reclaim: ReclaimTriggerConfig
     breakout_retest: BreakoutRetestTriggerConfig
+    higher_low: HigherLowTriggerConfig
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -606,6 +659,9 @@ class EntryTriggerConfig:
             ),
             breakout_retest=BreakoutRetestTriggerConfig.from_mapping(
                 _required_mapping(data, "breakout_retest"),
+            ),
+            higher_low=HigherLowTriggerConfig.from_mapping(
+                _required_mapping(data, "higher_low"),
             ),
         )
 

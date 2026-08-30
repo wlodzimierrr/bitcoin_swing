@@ -162,6 +162,16 @@ retest_distance_atr_max = 0.50
 support_breach_atr_max = 0.25
 continuation_buffer_atr = 0
 
+[entry_triggers.higher_low]
+pivot_left_bars = 2
+pivot_right_bars = 2
+higher_low_left_bars = 2
+higher_low_right_bars = 2
+max_pattern_bars = 30
+max_breakout_bars = 10
+higher_low_buffer_fraction = 0
+pivot_break_buffer_fraction = 0
+
 [scoring_weights.entry_conviction]
 trend = 0.20
 regime = 0.20

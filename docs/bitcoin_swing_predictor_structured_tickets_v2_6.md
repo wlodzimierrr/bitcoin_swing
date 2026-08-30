@@ -3019,7 +3019,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-122 Implement higher-low confirmation trigger
 - **Description:**
   Complete the ticket scope for implement higher-low confirmation trigger.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3029,6 +3029,27 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `evaluate_higher_low_trigger` in
+    `btc_predictor.signals.higher_low`, anchored to a confirmed BTC-090 weekly
+    swing low.
+  - The weekly source low is linked to the last matching canonical daily low in
+    its UTC source week. The daily sequence then requires a confirmed bounce
+    pivot, a confirmed pullback low strictly above the source threshold, and a
+    later strict close above the pivot threshold.
+  - Bounce and pullback extrema use independent past-only left/right windows;
+    pattern and pivot-break searches are bounded so pending and expired states
+    are explicit.
+  - Historical daily structure can predate weekly swing confirmation, but the
+    actionable trigger `detected_at` can never precede BTC-090 `detected_at`.
+  - Window lengths, search limits, higher-low buffer, and pivot-break buffer are
+    startup-validated under `[entry_triggers.higher_low]`.
+  - Results persist the BTC-090 source, matching daily anchor, evaluated bars,
+    pivot and higher-low confirmation times, thresholds, config metadata,
+    completion state, and stable reason codes.
+  - Focused tests cover delayed source knowledge, missing anchors, bounded stage
+    expiry, strict thresholds, invalidation, unavailable data, deterministic
+    future appends, and end-to-end BTC-090 integration.
 
 #### BTC-123 Implement no-chase filter
 - **Description:**

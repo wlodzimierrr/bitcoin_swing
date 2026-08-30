@@ -328,14 +328,18 @@ metadata, and reason codes. `evaluate_breakout_retest_trigger` waits for a
 post-breakout pullback into a configured ATR-normalized retest zone, requires
 former resistance to hold as support, and confirms only on a later close above
 the retest high. ATR provenance, bounded search windows, evaluated bars, and
-terminal/pending reason codes are persisted for replay. `calculate_anchored_vwap`
-builds anchored VWAP records from major swing lows/highs, breakout levels, and
-capitulation events, using the configured HLC3/close price source and only bars
-closed and ingested by the signal time. `calculate_volume_profile_levels` builds
-POC, HVN, VAH, and VAL
-records from deterministic price bins, with bin size, value-area coverage, HVN
-thresholds, minimum bars, and price source controlled by versioned
-`price_levels` config. `cluster_price_levels` combines nearby level records
+terminal/pending reason codes are persisted for replay.
+`evaluate_higher_low_trigger` anchors a BTC-090 weekly swing low to its matching
+daily source bar, confirms a local bounce pivot and subsequent higher low with
+past-only windows, and triggers only after a later close above the pivot. Its
+actionable detection time cannot precede BTC-090 source availability.
+`calculate_anchored_vwap` builds anchored VWAP records from major swing
+lows/highs, breakout levels, and capitulation events, using the configured
+HLC3/close price source and only bars closed and ingested by the signal time.
+`calculate_volume_profile_levels` builds POC, HVN, VAH, and VAL records from
+deterministic price bins, with bin size, value-area coverage, HVN thresholds,
+minimum bars, and price source controlled by versioned `price_levels` config.
+`cluster_price_levels` combines nearby level records
 into support/resistance zones using the configured cluster-distance fraction,
 persists member links, and assigns a confluence score from distinct source
 families, timeframes, and repeated touches without counting exact duplicates.
