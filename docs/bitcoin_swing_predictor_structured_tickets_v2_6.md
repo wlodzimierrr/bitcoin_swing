@@ -3380,14 +3380,27 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     implementing `max(0.3 * ATR_20, LevelNoiseEstimate)`.
   - Scope is the buffer distance only; applying it to an invalidation level to
     reach a stop is BTC-142.
-  - **Specification gap recorded:** `LevelNoiseEstimate` is named once in the
-    rulebook and never defined. It is therefore an explicit caller-supplied
-    input. `level_noise_from_zone()` offers a documented Phase-1 reading (half
-    the structural zone width, i.e. the distance from zone edge to centre) but
-    is labelled a provisional interpretation rather than a rulebook formula.
-  - ATR window defaults to 20 per rulebook 16.1. Note this differs from the
-    14-day ATR used by the price-source research modules; the buffer window is
-    explicit and configurable.
+  - **Specification gap resolved:** `LevelNoiseEstimate` is named once in the
+    rulebook and never defined. The approved Phase-1 interpretation is
+    `LEVEL_NOISE_ESTIMATE_V1` =
+    `0.5 * (zone_upper_bound - zone_lower_bound)`, status
+    `PROVISIONAL_RESEARCH_CALIBRATABLE` so BTC-185 may challenge it while
+    BTC-142 has one deterministic reading.
+  - **Canonical strategy path:** `volatility_buffer_for_invalidation()` takes a
+    BTC-140 selection and derives the noise term from the selected zone, so
+    advisory, paper trading and backtesting cannot invent competing
+    LevelNoiseEstimate definitions. The derivation exists in one place.
+  - **Missing-noise semantics are differentiated.** A bounded zone that reaches
+    the buffer without a derived noise term is an integration defect and yields
+    an incomplete buffer with `VOLATILITY_BUFFER_LEVEL_NOISE_NOT_DERIVED`,
+    never a silent ATR-only degradation. ATR-only is used only when structure
+    genuinely has no usable zone width, recorded as
+    `level_noise_source = UNAVAILABLE`.
+  - **ATR identity is explicit.** `atr_window` is persisted alongside
+    `atr_multiplier`, defaulting to 20 per rulebook 16.1, so an unlabeled ATR
+    value can never later be assumed to be ATR20. The 14-day window used by the
+    price-source research modules is deliberately left unharmonized; it is
+    recorded as a different identity and does not alter strategy semantics.
   - `volatility_buffer_grid()` evaluates the rulebook's declared 0.25 / 0.50 /
     0.75 ATR robustness grid. It reports the sweep and deliberately does not
     select a winner; calibration belongs to BTC-185. Parameters are marked
