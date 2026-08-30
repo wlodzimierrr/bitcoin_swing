@@ -3476,7 +3476,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   2. Prior local swing high
   3. Prior range high
   4. Conservative measured move from the active setup
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - If no credible structural reward reference exists, the R/R filter fails
@@ -3486,6 +3486,32 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/reward.py`, policy version
+    `REWARD_RISK_FILTER_V1`, with `select_reward_reference()` and
+    `evaluate_reward_risk()`.
+  - Reference selection follows the rulebook order strictly: a nearer
+    lower-tier reference never overrides a higher tier. Within a tier the
+    nearest credible reference wins. Priority 1 requires a *major* cluster, so
+    a daily cluster is skipped in favour of a prior swing high.
+  - Reward is measured to the near edge of a resistance zone, the first price
+    at which the level starts to matter, mirroring BTC-140's far-edge rule for
+    invalidation.
+  - **No credible reference fails the filter.** Absence of structure is never a
+    pass and never neutral: `REWARD_RISK_NO_REWARD_REFERENCE`, `passes=False`.
+    Inverted geometry (a reference behind entry, or a stop on the wrong side)
+    fails as `REWARD_RISK_INVALID_RISK` rather than producing a negative ratio.
+  - `reward_risk_for_stop()` is the canonical path, taking entry, stop and
+    direction from the BTC-142 result so trade geometry cannot be restated.
+  - The record persists the selected reference (type, priority, price, source,
+    timeframe) plus every rejected alternative, and R/R is reproducible from the
+    stored entry, stop and reference price alone.
+  - Short setups are supported: reward is measured downward to support.
+  - The ratio is computed in exact `Decimal` for the hard threshold comparison,
+    with a test pinning it against the BTC-047 `reward_risk_ratio` float64
+    kernel so the two cannot drift.
+  - The `2.5`-`3.0` preferred band is reported as a reason code without
+    changing the pass/fail verdict. Thresholds are provisional pending BTC-185.
 
 #### BTC-144 Implement conviction-based risk budget
 - **Description:**
