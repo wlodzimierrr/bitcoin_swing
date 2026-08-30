@@ -103,6 +103,9 @@ def test_loads_default_strategy_config() -> None:
     assert config.entry_triggers.higher_low.max_breakout_bars == 10
     assert config.entry_triggers.higher_low.higher_low_buffer_fraction == 0
     assert config.entry_triggers.higher_low.pivot_break_buffer_fraction == 0
+    assert config.entry_triggers.no_chase.distance_mode == "atr"
+    assert config.entry_triggers.no_chase.max_distance_atr == 0.50
+    assert config.entry_triggers.no_chase.max_distance_fraction == 0.02
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -369,6 +372,11 @@ max_breakout_bars = 10
 higher_low_buffer_fraction = 0
 pivot_break_buffer_fraction = 0
 
+[entry_triggers.no_chase]
+distance_mode = "atr"
+max_distance_atr = 0.50
+max_distance_fraction = 0.02
+
 [scoring_weights.entry_conviction]
 trend = 1.0
 
@@ -538,6 +546,20 @@ def test_invalid_higher_low_trigger_config_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="max_pattern_bars"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_no_chase_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_no_chase.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            'distance_mode = "atr"',
+            'distance_mode = "absolute"',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="distance_mode"):
         load_strategy_config(config_path)
 
 

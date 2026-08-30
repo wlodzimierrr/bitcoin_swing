@@ -172,6 +172,11 @@ max_breakout_bars = 10
 higher_low_buffer_fraction = 0
 pivot_break_buffer_fraction = 0
 
+[entry_triggers.no_chase]
+distance_mode = "atr"
+max_distance_atr = 0.50
+max_distance_fraction = 0.02
+
 [scoring_weights.entry_conviction]
 trend = 0.20
 regime = 0.20

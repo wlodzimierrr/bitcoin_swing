@@ -3058,7 +3058,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   ```text
   NO TRADE
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3068,6 +3068,26 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `apply_no_chase_filter` in `btc_predictor.signals.no_chase` as a hard
+    entry veto over BTC-095 `LevelCluster` records.
+  - Long entries measure only price above a support zone's upper boundary;
+    short entries mirror the rule below a resistance zone's lower boundary.
+    Prices inside or on the non-chasing side of a zone have zero chase distance.
+  - The default mode uses BTC-045 ATR-normalized distance with a `0.50 ATR`
+    threshold. A versioned fractional compatibility mode uses distance divided
+    by current entry price with a default `2%` threshold.
+  - Exact-threshold distances pass. Distances strictly above the active limit
+    persist `NO_CHASE_VIOLATION` and the `NO_TRADE` effect.
+  - Chased prices missing required ATR provenance fail closed with
+    `NO_CHASE_ATR_MISSING`, while prices still inside the entry zone do not
+    require ATR.
+  - Results persist the complete cluster, current-price and ATR availability,
+    directional boundary, raw and normalized distances, both configured limits,
+    config metadata, completion/block state, effects, and stable reason codes.
+  - Focused tests cover long/short symmetry, exact boundaries, missing ATR,
+    fractional compatibility, point-in-time availability, determinism, and
+    direct BTC-095 cluster integration.
 
 ## EPIC N — Scoring Engine
 

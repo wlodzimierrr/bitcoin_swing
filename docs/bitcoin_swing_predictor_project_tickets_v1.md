@@ -1815,6 +1815,7 @@ availability even when the reconstructed daily structure occurred earlier.
 
 ## BTC-123 — Implement no-chase filter
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 2
 
@@ -1823,6 +1824,16 @@ If price moves materially outside intended entry zone:
 ```text
 NO TRADE
 ```
+
+Implemented `apply_no_chase_filter` as a directional hard veto over BTC-095
+entry-zone clusters using BTC-045 distance primitives. Long entries measure
+price above a support zone's upper bound; shorts mirror below a resistance
+zone's lower bound. The default `0.50 ATR` threshold and optional `2%`
+fractional compatibility threshold are versioned under
+`[entry_triggers.no_chase]`. Exact thresholds pass, strict violations persist
+the `NO_TRADE` effect, and missing ATR for an already-chased price fails closed.
+Results retain cluster, price/ATR availability, raw and normalized distances,
+configuration identity, completion/block state, effects, and reason codes.
 
 ---
 

@@ -646,10 +646,36 @@ class HigherLowTriggerConfig:
 
 
 @dataclass(frozen=True)
+class NoChaseConfig:
+    distance_mode: str
+    max_distance_atr: float
+    max_distance_fraction: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            distance_mode=_required_choice(
+                data,
+                "distance_mode",
+                ("atr", "fractional"),
+            ),
+            max_distance_atr=_required_positive_float(
+                data,
+                "max_distance_atr",
+            ),
+            max_distance_fraction=_required_positive_fraction(
+                data,
+                "max_distance_fraction",
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class EntryTriggerConfig:
     reclaim: ReclaimTriggerConfig
     breakout_retest: BreakoutRetestTriggerConfig
     higher_low: HigherLowTriggerConfig
+    no_chase: NoChaseConfig
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -662,6 +688,9 @@ class EntryTriggerConfig:
             ),
             higher_low=HigherLowTriggerConfig.from_mapping(
                 _required_mapping(data, "higher_low"),
+            ),
+            no_chase=NoChaseConfig.from_mapping(
+                _required_mapping(data, "no_chase"),
             ),
         )
 

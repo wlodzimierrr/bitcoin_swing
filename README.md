@@ -333,6 +333,11 @@ terminal/pending reason codes are persisted for replay.
 daily source bar, confirms a local bounce pivot and subsequent higher low with
 past-only windows, and triggers only after a later close above the pivot. Its
 actionable detection time cannot precede BTC-090 source availability.
+`apply_no_chase_filter` consumes a BTC-095 support or resistance cluster and
+measures only directional chase beyond the intended entry-zone boundary using
+BTC-045 distance primitives. The default `0.50 ATR` limit and optional
+fractional compatibility limit are versioned; violations and required-but-
+missing ATR inputs fail closed with the `NO_TRADE` effect.
 `calculate_anchored_vwap` builds anchored VWAP records from major swing
 lows/highs, breakout levels, and capitulation events, using the configured
 HLC3/close price source and only bars closed and ingested by the signal time.

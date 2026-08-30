@@ -1738,7 +1738,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
   ```text
   NO TRADE
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1747,6 +1747,15 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `apply_no_chase_filter` as a hard `NO_TRADE` veto over BTC-095 entry
+    zones using BTC-045 ATR or fractional distance.
+  - Long entries measure above support-zone upper bounds and shorts mirror below
+    resistance-zone lower bounds; exact configured thresholds pass.
+  - Versioned `[entry_triggers.no_chase]` mode and limits are persisted with the
+    cluster, price/ATR provenance, distances, block state, effects, config
+    identity, and stable reason codes. Missing ATR for an already-chased price
+    fails closed.
 
 ## EPIC N — Scoring Engine
 
