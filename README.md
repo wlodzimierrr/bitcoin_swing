@@ -237,6 +237,17 @@ quantities and notionals remain non-negative, position side is explicit, and
 profitable stop outcomes are floored at zero downside contribution. Empty
 portfolio risk and exposure are zero, while undefined average entry is NaN.
 
+BTC-048 provides `POINT_IN_TIME_FEATURE_MATRIX_V1` in
+`btc_predictor.research.feature_matrix`. It builds immutable `float64` research
+matrices whose rows are explicit UTC decision timestamps and whose columns use
+a versioned, fingerprinted feature order. Every selected cell retains its
+observation time, availability time, source ID, and missing-value state.
+`FORWARD_TARGET_MATRIX_V1` stores future returns, MFE/MAE, and 2R-before-1R
+labels separately, preventing those outcomes from entering contemporaneous
+feature matrices. Both datasets serialize deterministically and expose NumPy
+copies for scikit-learn, statsmodels, and BTC-046 batch scoring without database
+access.
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
