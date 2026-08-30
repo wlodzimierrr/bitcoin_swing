@@ -16,6 +16,18 @@ from btc_predictor.quant.arrays import (
     require_probability,
     require_same_shape,
 )
+from btc_predictor.quant.distances import (
+    CLUSTER_DISTANCE_MODES,
+    ClusterDistanceMode,
+    DistanceInput,
+    DistanceOutput,
+    atr_normalized_distance,
+    cluster_distance_matrix,
+    distance_to_resistance,
+    distance_to_support,
+    entry_distance_score,
+    pairwise_price_distance,
+)
 from btc_predictor.quant.simulation import normal_samples
 from btc_predictor.quant.rolling import (
     PARITY_ABSOLUTE_TOLERANCE,
@@ -51,6 +63,7 @@ from btc_predictor.quant.transforms import (
 
 __all__ = [
     "DEFAULT_TOLERANCE",
+    "CLUSTER_DISTANCE_MODES",
     "FLOAT_DTYPE",
     "NAN_POLICIES",
     "PARITY_ABSOLUTE_TOLERANCE",
@@ -59,6 +72,9 @@ __all__ = [
     "QUANT_POLICY_VERSION",
     "ROLLING_NAN_POLICIES",
     "FloatArray",
+    "ClusterDistanceMode",
+    "DistanceInput",
+    "DistanceOutput",
     "NanPolicy",
     "NumericInputError",
     "NumericTolerance",
@@ -67,11 +83,16 @@ __all__ = [
     "TransformInput",
     "TransformOutput",
     "average_true_range",
+    "atr_normalized_distance",
     "as_float64_array",
     "as_float64_matrix",
     "as_float64_vector",
     "bounded_linear",
     "clip_score",
+    "cluster_distance_matrix",
+    "distance_to_resistance",
+    "distance_to_support",
+    "entry_distance_score",
     "exponential_decay",
     "gaussian_health",
     "is_effectively_zero",
@@ -79,6 +100,7 @@ __all__ = [
     "normal_samples",
     "normal_cdf_score",
     "percentile_to_health",
+    "pairwise_price_distance",
     "realized_volatility",
     "require_probability",
     "require_same_shape",

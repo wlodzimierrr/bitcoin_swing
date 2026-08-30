@@ -10,6 +10,7 @@ from hashlib import sha1
 from typing import Any
 
 from btc_predictor.data import require_utc_datetime
+from btc_predictor.quant.distances import atr_normalized_distance
 
 
 LEVEL_CLUSTER_RESULT_FEATURE_ID = "LEVEL_CLUSTERS"
@@ -28,6 +29,7 @@ LEVEL_CLUSTER_REASON_CODES = (
     "LEVEL_CLUSTER_COMPLETE",
 )
 DEFAULT_LEVEL_CLUSTER_DISTANCE_FRACTION = Decimal("0.025")
+DEFAULT_LEVEL_CLUSTER_ATR_DISTANCE_THRESHOLD = Decimal("0.50")
 DEFAULT_LEVEL_CLUSTER_MINIMUM_STRENGTH = Decimal("60")
 LEVEL_CLUSTER_TOUCH_BONUS_MAX = Decimal("10")
 
@@ -218,6 +220,8 @@ def cluster_price_levels(
     as_of: datetime,
     reference_price: Any,
     cluster_distance_fraction: Any = DEFAULT_LEVEL_CLUSTER_DISTANCE_FRACTION,
+    cluster_atr: Any | None = None,
+    cluster_atr_distance_threshold: Any = DEFAULT_LEVEL_CLUSTER_ATR_DISTANCE_THRESHOLD,
     minimum_level_strength: Any = DEFAULT_LEVEL_CLUSTER_MINIMUM_STRENGTH,
 ) -> LevelClusterResult:
     """Cluster point-in-time known levels into support/resistance zones."""
@@ -227,6 +231,15 @@ def cluster_price_levels(
     distance_fraction = _positive_decimal_fraction(
         cluster_distance_fraction,
         "cluster_distance_fraction",
+    )
+    atr = (
+        _positive_decimal(cluster_atr, "cluster_atr")
+        if cluster_atr is not None
+        else None
+    )
+    atr_distance_threshold = _positive_decimal(
+        cluster_atr_distance_threshold,
+        "cluster_atr_distance_threshold",
     )
     minimum_strength = _score(
         Decimal(str(minimum_level_strength)),
@@ -257,6 +270,8 @@ def cluster_price_levels(
     raw_clusters = _cluster_members(
         prepared.members,
         cluster_distance_fraction=distance_fraction,
+        cluster_atr=atr,
+        cluster_atr_distance_threshold=atr_distance_threshold,
     )
     clusters = tuple(
         sorted(
@@ -428,6 +443,8 @@ def _cluster_members(
     members: Sequence[LevelClusterMember],
     *,
     cluster_distance_fraction: Decimal,
+    cluster_atr: Decimal | None,
+    cluster_atr_distance_threshold: Decimal,
 ) -> tuple[tuple[LevelClusterMember, ...], ...]:
     clusters: list[list[LevelClusterMember]] = []
     for member in sorted(members, key=lambda item: (item.price, item.member_id)):
@@ -435,8 +452,21 @@ def _cluster_members(
             clusters.append([member])
             continue
         previous_price = clusters[-1][-1].price
-        distance = (member.price - previous_price) / previous_price
-        if distance <= cluster_distance_fraction:
+        if cluster_atr is None:
+            distance = (member.price - previous_price) / previous_price
+            threshold = cluster_distance_fraction
+        else:
+            distance = Decimal(
+                str(
+                    atr_normalized_distance(
+                        float(member.price),
+                        float(previous_price),
+                        float(cluster_atr),
+                    )
+                )
+            )
+            threshold = cluster_atr_distance_threshold
+        if distance <= threshold:
             clusters[-1].append(member)
         else:
             clusters.append([member])

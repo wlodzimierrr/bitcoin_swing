@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 
 from btc_predictor.levels import (
+    DEFAULT_LEVEL_CLUSTER_ATR_DISTANCE_THRESHOLD,
     DEFAULT_LEVEL_CLUSTER_DISTANCE_FRACTION,
     DEFAULT_LEVEL_CLUSTER_MINIMUM_STRENGTH,
     LEVEL_CLUSTER_FEATURE_ID,
@@ -67,6 +68,7 @@ def test_level_cluster_metadata_is_stable() -> None:
     assert LEVEL_CLUSTER_RESISTANCE == "resistance"
     assert LEVEL_CLUSTER_ZONE_TYPES == ("support", "resistance")
     assert DEFAULT_LEVEL_CLUSTER_DISTANCE_FRACTION == Decimal("0.025")
+    assert DEFAULT_LEVEL_CLUSTER_ATR_DISTANCE_THRESHOLD == Decimal("0.50")
     assert DEFAULT_LEVEL_CLUSTER_MINIMUM_STRENGTH == Decimal("60")
     assert LEVEL_CLUSTER_TOUCH_BONUS_MAX == Decimal("10")
     assert LEVEL_CLUSTER_REASON_CODES == (
@@ -76,6 +78,38 @@ def test_level_cluster_metadata_is_stable() -> None:
         "LEVEL_CLUSTER_DUPLICATE_MEMBER_SKIPPED",
         "LEVEL_CLUSTER_COMPLETE",
     )
+
+
+def test_optional_atr_clustering_preserves_persistence_api() -> None:
+    levels = (
+        level_record(
+            feature_id="WEEKLY_SWING_LEVEL",
+            level_type="swing_low",
+            price="100",
+        ),
+        level_record(
+            feature_id="MONTHLY_SWING_LEVEL",
+            level_type="swing_low",
+            price="104",
+        ),
+    )
+    fractional = cluster_price_levels(
+        levels,
+        as_of=datetime(2026, 1, 11, tzinfo=UTC),
+        reference_price="110",
+    )
+    atr_normalized = cluster_price_levels(
+        levels,
+        as_of=datetime(2026, 1, 11, tzinfo=UTC),
+        reference_price="110",
+        cluster_atr="10",
+        cluster_atr_distance_threshold="0.5",
+    )
+
+    assert len(fractional.clusters) == 2
+    assert len(atr_normalized.clusters) == 1
+    assert atr_normalized.clusters[0].member_count == 2
+    assert atr_normalized.as_record().keys() == fractional.as_record().keys()
 
 
 def test_clusters_nearby_levels_into_support_and_resistance_zones() -> None:

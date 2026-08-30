@@ -209,6 +209,15 @@ basis, OI intensity, Trend Score, and Flow Score retain their existing public
 and persistence APIs while delegating exact transform formulas to this
 domain-free numerical layer.
 
+BTC-045 provides reusable absolute, fractional, and ATR-normalized price
+distances, nearest support/resistance calculations, deterministic pairwise
+cluster matrices, and entry-distance scoring in `btc_predictor.quant.distances`.
+Zero or missing ATR fails explicitly, unavailable directional levels remain
+NaN, and scalar expansion never enables general array broadcasting. BTC-095
+retains its existing fractional clustering behavior and persistence payload by
+default, with optional `cluster_atr` and `cluster_atr_distance_threshold`
+inputs for volatility-normalized clustering.
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical

@@ -78,6 +78,24 @@ Policy version: `FLOAT64_V1`.
 - Transform helpers contain no strategy interpretation, reason codes,
   persistence behavior, or action decisions.
 
+## Price Distances
+
+- Elementwise distance helpers permit explicit scalar expansion against an
+  array. Two non-scalar inputs must have identical shapes.
+- Prices and finite ATR observations must be strictly positive. ATR-normalized
+  operations require ATR explicitly and never substitute zero or a default.
+- Directional support and resistance lookups return NaN when no qualifying
+  level exists. A propagated NaN in the level set makes all dependent nearest-
+  level results NaN.
+- Cluster matrices are symmetric with a zero diagonal. `static` is an alias
+  for absolute price-unit distance; fractional distance divides by the lower
+  pair price, matching BTC-095's sorted-adjacent compatibility formula; ATR
+  distance divides by one explicit as-of ATR.
+- Entry-distance scores use directional long-entry distance above support.
+  Fractional mode divides by entry price to preserve the existing Structure
+  Score formula, while ATR mode expresses full-score and no-chase thresholds
+  directly in ATR units.
+
 ## Determinism And Boundaries
 
 - Simulation requires an explicit non-negative seed and uses NumPy `PCG64`.
