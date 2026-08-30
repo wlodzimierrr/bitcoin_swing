@@ -79,8 +79,6 @@ def test_quant_package_has_no_application_or_database_imports() -> None:
 
 def test_adjacent_ticket_namespaces_do_not_preempt_their_implementations() -> None:
     for module_name in (
-        "portfolio",
-        "risk",
         "statistics",
     ):
         module = __import__(f"btc_predictor.quant.{module_name}", fromlist=[module_name])

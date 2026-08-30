@@ -113,6 +113,28 @@ Policy version: `FLOAT64_V1`.
 - Domain model selection, score interpretation, reason codes, Decimal scale,
   and persistence formatting remain outside the quantitative layer.
 
+## Risk And Portfolio Mathematics
+
+- Position sides are explicit `long` or `short` values. Quantities and
+  notionals are unsigned and non-negative; direction is never inferred from a
+  negative quantity.
+- Long stop risk is `notional * max((entry - stop) / entry, 0)`. Short stop
+  risk is the symmetric `notional * max((stop - entry) / entry, 0)`.
+  Profitable stop outcomes therefore contribute zero downside risk, and all
+  risk outputs remain non-negative.
+- Reward/risk is directional and returns NaN when either the risk leg or reward
+  leg is not strictly positive. Maximum-notional sizing rejects zero stop
+  distance rather than producing unbounded exposure.
+- Realized and unrealized P&L are signed: positive is profitable and negative
+  is a loss for the explicitly selected side.
+- Gross exposure sums unsigned notionals. Net exposure applies `+1` to long
+  notionals and `-1` to short notionals before summing.
+- Empty aggregate portfolios have zero risk and exposure. Weighted-average
+  entry is NaN for an empty or zero-total-quantity position because no entry
+  price is mathematically defined.
+- Risk and portfolio kernels contain no recommendation-action or lifecycle
+  decisions and can be shared by advisory, paper-trading, and backtest layers.
+
 ## Determinism And Boundaries
 
 - Simulation requires an explicit non-negative seed and uses NumPy `PCG64`.

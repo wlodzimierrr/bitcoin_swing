@@ -228,6 +228,15 @@ Orderliness scores now delegate numerical weighting to this engine while a
 feature-layer adapter preserves their existing Decimal and persistence
 contracts.
 
+BTC-047 provides shared long/short risk and portfolio mathematics in
+`btc_predictor.quant.risk` and `btc_predictor.quant.portfolio`: stop distance,
+reward/risk, notional and capital risk, per-tranche and aggregate risk at stop,
+risk improvement, weighted entry, signed realized/unrealized P&L, gross/net
+exposure, and maximum permitted notional. Tranche counts are unrestricted,
+quantities and notionals remain non-negative, position side is explicit, and
+profitable stop outcomes are floored at zero downside contribution. Empty
+portfolio risk and exposure are zero, while undefined average entry is NaN.
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical
