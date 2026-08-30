@@ -28,6 +28,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 QUANT_ROOT = REPOSITORY_ROOT / "btc_predictor/quant"
 EXPECTED_MODULES = {
     "arrays.py",
+    "comparisons.py",
     "distances.py",
     "portfolio.py",
     "risk.py",
@@ -236,10 +237,31 @@ def test_simulation_rejects_non_finite_parameters() -> None:
         normal_samples(2, seed=1, mean="not-a-number")
 
 
+def test_simulation_never_returns_non_finite_output_from_accepted_parameters() -> None:
+    safe = normal_samples(
+        1_000,
+        seed=0,
+        mean=1e300,
+        standard_deviation=1e290,
+    )
+    constant = normal_samples(4, seed=0, mean=1e308, standard_deviation=0)
+
+    assert np.isfinite(safe).all()
+    np.testing.assert_array_equal(constant, np.full(4, 1e308))
+    with pytest.raises(NumericInputError, match="non-finite"):
+        normal_samples(
+            1_000,
+            seed=0,
+            mean=1e308,
+            standard_deviation=1e308,
+        )
+
+
 def test_numeric_policy_documents_required_conventions_and_future_omit_scope() -> None:
     policy = (QUANT_ROOT / "POLICY.md").read_text()
 
     for requirement in (
+        "DECISION_COMPARISON_V1",
         "float64",
         "Infinity",
         "NaN",

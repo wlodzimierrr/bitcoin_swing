@@ -10,6 +10,7 @@ from typing import Any
 
 from btc_predictor.data import OhlcvBar, require_utc_datetime
 from btc_predictor.features._scoring import decimal_weighted_score
+from btc_predictor.quant.comparisons import decision_greater_equal, decision_less_equal
 from btc_predictor.quant.rolling import realized_volatility as quant_realized_volatility
 
 
@@ -589,30 +590,42 @@ def calculate_stress_flag(
         reason_codes.append("STRESS_INPUT_MISSING")
     if (
         input_values["volatility_percentile"] is not None
-        and input_values["volatility_percentile"]
-        >= thresholds["volatility_percentile_min"]
+        and decision_greater_equal(
+            input_values["volatility_percentile"],
+            thresholds["volatility_percentile_min"],
+        )
     ):
         reason_codes.append("STRESS_EXTREME_VOLATILITY")
     if (
         input_values["liquidation_percentile"] is not None
-        and input_values["liquidation_percentile"]
-        >= thresholds["liquidation_percentile_min"]
+        and decision_greater_equal(
+            input_values["liquidation_percentile"],
+            thresholds["liquidation_percentile_min"],
+        )
     ):
         reason_codes.append("STRESS_LIQUIDATION_CASCADE")
     if (
         input_values["downside_return"] is not None
-        and input_values["downside_return"] <= thresholds["downside_return_min"]
+        and decision_less_equal(
+            input_values["downside_return"],
+            thresholds["downside_return_min"],
+        )
     ):
         reason_codes.append("STRESS_DISORDERLY_DOWNSIDE")
     if (
         input_values["funding_zscore"] is not None
-        and abs(input_values["funding_zscore"])
-        >= thresholds["funding_abs_zscore_min"]
+        and decision_greater_equal(
+            abs(input_values["funding_zscore"]),
+            thresholds["funding_abs_zscore_min"],
+        )
     ):
         reason_codes.append("STRESS_ABNORMAL_FUNDING")
     if (
         input_values["basis_zscore"] is not None
-        and abs(input_values["basis_zscore"]) >= thresholds["basis_abs_zscore_min"]
+        and decision_greater_equal(
+            abs(input_values["basis_zscore"]),
+            thresholds["basis_abs_zscore_min"],
+        )
     ):
         reason_codes.append("STRESS_ABNORMAL_BASIS")
     if input_values["systemic_shock"] is True:
@@ -669,29 +682,42 @@ def calculate_capitulation_flag(
         reason_codes.append("CAPITULATION_INPUT_MISSING")
     if (
         input_values["downside_return"] is not None
-        and input_values["downside_return"] <= thresholds["downside_return_min"]
+        and decision_less_equal(
+            input_values["downside_return"],
+            thresholds["downside_return_min"],
+        )
     ):
         reason_codes.append("CAPITULATION_DISORDERLY_DOWNSIDE")
     if (
         input_values["range_percentile"] is not None
-        and input_values["range_percentile"] >= thresholds["range_percentile_min"]
+        and decision_greater_equal(
+            input_values["range_percentile"],
+            thresholds["range_percentile_min"],
+        )
     ):
         reason_codes.append("CAPITULATION_EXTREME_RANGE")
     if (
         input_values["liquidation_percentile"] is not None
-        and input_values["liquidation_percentile"]
-        >= thresholds["liquidation_percentile_min"]
+        and decision_greater_equal(
+            input_values["liquidation_percentile"],
+            thresholds["liquidation_percentile_min"],
+        )
     ):
         reason_codes.append("CAPITULATION_LIQUIDATION_CASCADE")
     if (
         input_values["volatility_percentile"] is not None
-        and input_values["volatility_percentile"]
-        >= thresholds["volatility_percentile_min"]
+        and decision_greater_equal(
+            input_values["volatility_percentile"],
+            thresholds["volatility_percentile_min"],
+        )
     ):
         reason_codes.append("CAPITULATION_VOLATILITY_SPIKE")
     if (
         input_values["funding_zscore"] is not None
-        and input_values["funding_zscore"] <= thresholds["funding_zscore_max"]
+        and decision_less_equal(
+            input_values["funding_zscore"],
+            thresholds["funding_zscore_max"],
+        )
     ):
         reason_codes.append("CAPITULATION_NEGATIVE_FUNDING_FLUSH")
     if input_values["systemic_shock"] is True:
@@ -753,34 +779,50 @@ def calculate_euphoria_flag(
         reason_codes.append("EUPHORIA_INPUT_MISSING")
     if (
         input_values["upside_return"] is not None
-        and input_values["upside_return"] >= thresholds["upside_return_min"]
+        and decision_greater_equal(
+            input_values["upside_return"],
+            thresholds["upside_return_min"],
+        )
     ):
         reason_codes.append("EUPHORIA_UPSIDE_EXTENSION")
     if (
         input_values["range_percentile"] is not None
-        and input_values["range_percentile"] >= thresholds["range_percentile_min"]
+        and decision_greater_equal(
+            input_values["range_percentile"],
+            thresholds["range_percentile_min"],
+        )
     ):
         reason_codes.append("EUPHORIA_EXTREME_RANGE")
     if (
         input_values["funding_zscore"] is not None
-        and input_values["funding_zscore"] >= thresholds["funding_zscore_min"]
+        and decision_greater_equal(
+            input_values["funding_zscore"],
+            thresholds["funding_zscore_min"],
+        )
     ):
         reason_codes.append("EUPHORIA_FUNDING_OVERHEATED")
     if (
         input_values["basis_zscore"] is not None
-        and input_values["basis_zscore"] >= thresholds["basis_zscore_min"]
+        and decision_greater_equal(
+            input_values["basis_zscore"],
+            thresholds["basis_zscore_min"],
+        )
     ):
         reason_codes.append("EUPHORIA_BASIS_OVERHEATED")
     if (
         input_values["oi_intensity_percentile"] is not None
-        and input_values["oi_intensity_percentile"]
-        >= thresholds["oi_intensity_percentile_min"]
+        and decision_greater_equal(
+            input_values["oi_intensity_percentile"],
+            thresholds["oi_intensity_percentile_min"],
+        )
     ):
         reason_codes.append("EUPHORIA_OI_INTENSITY_EXTREME")
     if (
         input_values["volatility_percentile"] is not None
-        and input_values["volatility_percentile"]
-        >= thresholds["volatility_percentile_min"]
+        and decision_greater_equal(
+            input_values["volatility_percentile"],
+            thresholds["volatility_percentile_min"],
+        )
     ):
         reason_codes.append("EUPHORIA_VOLATILITY_SPIKE")
     if input_values["systemic_euphoria"] is True:
@@ -841,24 +883,34 @@ def calculate_orderliness_score(
         reason_codes.append("ORDERLINESS_INPUT_MISSING")
     if (
         input_values["range_percentile"] is not None
-        and input_values["range_percentile"] >= thresholds["range_percentile_max"]
+        and decision_greater_equal(
+            input_values["range_percentile"],
+            thresholds["range_percentile_max"],
+        )
     ):
         reason_codes.append("ORDERLINESS_EXTREME_RANGE")
     if (
         input_values["downside_return"] is not None
-        and input_values["downside_return"] <= thresholds["downside_return_min"]
+        and decision_less_equal(
+            input_values["downside_return"],
+            thresholds["downside_return_min"],
+        )
     ):
         reason_codes.append("ORDERLINESS_DISORDERLY_DOWNSIDE")
     if (
         input_values["liquidation_percentile"] is not None
-        and input_values["liquidation_percentile"]
-        >= thresholds["liquidation_percentile_max"]
+        and decision_greater_equal(
+            input_values["liquidation_percentile"],
+            thresholds["liquidation_percentile_max"],
+        )
     ):
         reason_codes.append("ORDERLINESS_LIQUIDATION_CASCADE")
     if (
         input_values["volatility_percentile"] is not None
-        and input_values["volatility_percentile"]
-        >= thresholds["volatility_percentile_max"]
+        and decision_greater_equal(
+            input_values["volatility_percentile"],
+            thresholds["volatility_percentile_max"],
+        )
     ):
         reason_codes.append("ORDERLINESS_VOLATILITY_SPIKE")
 
@@ -1396,11 +1448,11 @@ def _orderliness_component_triggered(
 def _orderliness_score_interpretation(score: Decimal | None) -> str | None:
     if score is None:
         return None
-    if score >= Decimal("80"):
+    if decision_greater_equal(score, Decimal("80")):
         return "ORDERLY"
-    if score >= Decimal("60"):
+    if decision_greater_equal(score, Decimal("60")):
         return "MIXED"
-    if score >= Decimal("40"):
+    if decision_greater_equal(score, Decimal("40")):
         return "DISORDERLY"
     return "STRESSED"
 

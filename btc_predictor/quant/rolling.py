@@ -107,7 +107,13 @@ def rolling_zscore(
     )
     valid &= ~np.isnan(array) & ~np.isnan(deviations) & (deviations != 0)
     output = np.full(array.shape, np.nan, dtype=np.float64)
-    np.divide(array - means, deviations, out=output, where=valid)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        standardized = (
+            array.astype(np.longdouble) - means.astype(np.longdouble)
+        ) / deviations.astype(np.longdouble)
+        output[valid] = np.asarray(standardized[valid], dtype=np.float64)
+    if np.any(np.isnan(output[valid])):
+        raise NumericInputError("rolling_zscore produced an unexpected NaN")
     return _checked_output(output, name="rolling_zscore")
 
 
@@ -168,17 +174,33 @@ def historical_normalize(
     finite = ~np.isnan(windows)
     historical_min = np.min(np.where(finite, windows, np.inf), axis=1)
     historical_max = np.max(np.where(finite, windows, -np.inf), axis=1)
-    with np.errstate(over="ignore", invalid="ignore"):
-        widths = historical_max - historical_min
-    valid &= ~np.isnan(array) & (widths != 0)
+    valid &= ~np.isnan(array) & (historical_max != historical_min)
     fractions = np.full(array.shape, np.nan, dtype=np.float64)
-    np.divide(array - historical_min, widths, out=fractions, where=valid)
+    valid_indexes = np.flatnonzero(valid)
+    if valid_indexes.size:
+        minimums = historical_min[valid_indexes].astype(np.longdouble)
+        maximums = historical_max[valid_indexes].astype(np.longdouble)
+        current = array[valid_indexes].astype(np.longdouble)
+        scales = np.maximum(np.abs(minimums), np.abs(maximums))
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            minimums /= scales
+            maximums /= scales
+            current /= scales
+            normalized = (current - minimums) / (maximums - minimums)
+        with np.errstate(over="ignore", invalid="ignore"):
+            fractions[valid_indexes] = np.asarray(normalized, dtype=np.float64)
+        if np.any(np.isnan(fractions[valid_indexes])):
+            raise NumericInputError("historical_normalize produced an unexpected NaN")
     np.clip(fractions, 0, 1, out=fractions)
+    positions = fractions.astype(np.longdouble)
+    with np.errstate(over="ignore", invalid="ignore"):
+        normalized_values = (
+            (np.longdouble(1) - positions) * np.longdouble(lower_value)
+            + positions * np.longdouble(upper_value)
+        )
+        normalized_values = np.asarray(normalized_values, dtype=np.float64)
     return _checked_output(
-        np.asarray(
-            lower_value + fractions * (upper_value - lower_value),
-            dtype=np.float64,
-        ),
+        normalized_values,
         name="historical_normalize",
     )
 
@@ -224,19 +246,25 @@ def true_range(
         )
     if highs.size == 0:
         return np.empty(0, dtype=np.float64)
-    high_low = highs - lows
-    previous_close = np.concatenate((np.asarray((np.nan,)), closes[:-1]))
-    candidates = np.stack(
-        (
-            high_low,
-            np.abs(highs - previous_close),
-            np.abs(lows - previous_close),
-        ),
-        axis=0,
-    )
-    output = np.max(candidates, axis=0)
-    output[0] = high_low[0]
-    return _checked_output(np.asarray(output, dtype=np.float64), name="true_range")
+    with np.errstate(over="ignore", invalid="ignore"):
+        long_highs = highs.astype(np.longdouble)
+        long_lows = lows.astype(np.longdouble)
+        long_closes = closes.astype(np.longdouble)
+        high_low = long_highs - long_lows
+        previous_close = np.concatenate(
+            (np.asarray((np.nan,), dtype=np.longdouble), long_closes[:-1])
+        )
+        candidates = np.stack(
+            (
+                high_low,
+                np.abs(long_highs - previous_close),
+                np.abs(long_lows - previous_close),
+            ),
+            axis=0,
+        )
+        output = np.asarray(np.max(candidates, axis=0), dtype=np.float64)
+        output[0] = np.float64(high_low[0])
+    return _checked_output(output, name="true_range")
 
 
 def average_true_range(
@@ -270,7 +298,7 @@ def realized_volatility(
 ) -> FloatArray:
     """Return annualized trailing volatility of simple close-to-close returns."""
 
-    _validate_annualization_periods(annualization_periods)
+    annualization_scale = _validate_annualization_periods(annualization_periods)
     values = as_float64_vector(prices, allow_empty=True, nan_policy=nan_policy)
     if values.size == 0:
         _validate_window(window, min_periods)
@@ -284,7 +312,8 @@ def realized_volatility(
         nan_policy=nan_policy,
     )
     output = np.full(values.shape, np.nan, dtype=np.float64)
-    output[1:] = return_volatility * np.sqrt(np.float64(annualization_periods))
+    with np.errstate(over="ignore", invalid="ignore"):
+        output[1:] = return_volatility * np.sqrt(annualization_scale)
     return _checked_output(output, name="realized_volatility")
 
 
@@ -346,12 +375,16 @@ def _window_means(
 ) -> FloatArray:
     with np.errstate(over="ignore", invalid="ignore"):
         sums = np.sum(
-            np.where(np.isnan(windows), 0, windows),
+            np.where(np.isnan(windows), 0, windows).astype(np.longdouble),
             axis=1,
-            dtype=np.float64,
+            dtype=np.longdouble,
         )
     output = np.full(counts.shape, np.nan, dtype=np.float64)
-    np.divide(sums, counts, out=output, where=valid)
+    valid_indexes = np.flatnonzero(valid)
+    if valid_indexes.size:
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            means = sums[valid_indexes] / counts[valid_indexes].astype(np.longdouble)
+            output[valid_indexes] = np.asarray(means, dtype=np.float64)
     return output
 
 
@@ -364,11 +397,25 @@ def _window_standard_deviations(
 ) -> FloatArray:
     means = _window_means(windows, counts=counts, valid=counts > 0)
     with np.errstate(over="ignore", invalid="ignore"):
-        centered = np.where(np.isnan(windows), 0, windows - means[:, np.newaxis])
-        sums_of_squares = np.sum(centered * centered, axis=1, dtype=np.float64)
+        long_windows = windows.astype(np.longdouble)
+        centered = np.where(
+            np.isnan(windows),
+            np.longdouble(0),
+            long_windows - means.astype(np.longdouble)[:, np.newaxis],
+        )
+        sums_of_squares = np.sum(
+            centered * centered,
+            axis=1,
+            dtype=np.longdouble,
+        )
     output = np.full(counts.shape, np.nan, dtype=np.float64)
-    np.divide(sums_of_squares, counts - ddof, out=output, where=valid)
-    np.sqrt(output, out=output)
+    valid_indexes = np.flatnonzero(valid)
+    if valid_indexes.size:
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            variances = sums_of_squares[valid_indexes] / (
+                counts[valid_indexes].astype(np.longdouble) - np.longdouble(ddof)
+            )
+            output[valid_indexes] = np.asarray(np.sqrt(variances), dtype=np.float64)
     return output
 
 
@@ -405,10 +452,22 @@ def _validate_bounds(lower: float, upper: float) -> tuple[np.float64, np.float64
     return np.float64(bounds[0]), np.float64(bounds[1])
 
 
-def _validate_annualization_periods(annualization_periods: int) -> None:
+def _validate_annualization_periods(annualization_periods: int) -> np.float64:
     if (
         isinstance(annualization_periods, bool)
         or not isinstance(annualization_periods, int)
         or annualization_periods < 1
     ):
         raise NumericInputError("annualization_periods must be an integer >= 1")
+    try:
+        with np.errstate(over="ignore", invalid="ignore"):
+            result = np.float64(annualization_periods)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise NumericInputError(
+            "annualization_periods must fit in finite float64 range"
+        ) from error
+    if not np.isfinite(result):
+        raise NumericInputError(
+            "annualization_periods must fit in finite float64 range"
+        )
+    return result

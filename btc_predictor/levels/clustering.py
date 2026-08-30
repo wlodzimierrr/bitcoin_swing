@@ -10,6 +10,7 @@ from hashlib import sha1
 from typing import Any
 
 from btc_predictor.data import require_utc_datetime
+from btc_predictor.quant.comparisons import decision_less_equal
 from btc_predictor.quant.distances import atr_normalized_distance
 
 
@@ -466,7 +467,7 @@ def _cluster_members(
                 )
             )
             threshold = cluster_atr_distance_threshold
-        if distance <= threshold:
+        if decision_less_equal(distance, threshold):
             clusters[-1].append(member)
         else:
             clusters.append([member])

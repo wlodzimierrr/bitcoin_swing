@@ -237,16 +237,16 @@ quantities and notionals remain non-negative, position side is explicit, and
 profitable stop outcomes are floored at zero downside contribution. Empty
 portfolio risk and exposure are zero, while undefined average entry is NaN.
 
-BTC-048 provides `POINT_IN_TIME_FEATURE_MATRIX_V1` in
+BTC-048 provides `POINT_IN_TIME_FEATURE_MATRIX_V2` in
 `btc_predictor.research.feature_matrix`. It builds immutable `float64` research
 matrices whose rows are explicit UTC decision timestamps and whose columns use
-a versioned, fingerprinted feature order. Every selected cell retains its
-observation time, availability time, source ID, and missing-value state.
-`FORWARD_TARGET_MATRIX_V1` stores future returns, MFE/MAE, and 2R-before-1R
-labels separately, preventing those outcomes from entering contemporaneous
-feature matrices. Both datasets serialize deterministically and expose NumPy
-copies for scikit-learn, statsmodels, and BTC-046 batch scoring without database
-access.
+a versioned, fingerprinted feature order and calculation provenance. Every
+selected cell retains its observation time, availability time, source ID,
+revision, and missing-value state. `FORWARD_TARGET_MATRIX_V2` stores labels
+separately with versioned target semantics; fixed 1/2/4/8-week returns enforce
+exact elapsed calendar horizons. Both datasets serialize deterministically and
+expose NumPy copies for scikit-learn, statsmodels, and BTC-046 batch scoring
+without database access.
 
 BTC-049 establishes the quantitative migration release gate in
 `test_quant_validation_gate.py`. It cross-checks NumPy rolling kernels against
@@ -263,6 +263,12 @@ python -m btc_predictor.research.quant_benchmarks \
   --observations 100000 \
   --repeats 3
 ```
+
+The E2 correctness remediation adds `DECISION_COMPARISON_V1` for deterministic
+hard thresholds across float64/Decimal boundaries, stable extreme-value
+arithmetic, simulation output validation, a dedicated decision-boundary suite,
+and material feature/target provenance fingerprints. Quant APIs reject
+unrepresentable outputs instead of returning infinity or unexpected NaN.
 
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close

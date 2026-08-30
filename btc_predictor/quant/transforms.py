@@ -37,9 +37,22 @@ def gaussian_health(
     scale = _positive_scalar(width, name="width")
     peak = _non_negative_scalar(maximum, name="maximum")
     with np.errstate(over="ignore", under="ignore", invalid="ignore"):
-        distance = (array - center) / scale
-        result = peak * np.exp(-np.float64(0.5) * np.square(distance))
-    return _restore_output(result, scalar=scalar)
+        distance = (
+            array.astype(np.longdouble) - np.longdouble(center)
+        ) / np.longdouble(scale)
+        magnitude = np.abs(distance)
+        decay = np.zeros(array.shape, dtype=np.longdouble)
+        moderate = magnitude <= np.longdouble(40)
+        decay[moderate] = np.exp(
+            -np.longdouble("0.5") * np.square(distance[moderate])
+        )
+        decay[np.isnan(distance)] = np.nan
+        result = np.asarray(np.longdouble(peak) * decay, dtype=np.float64)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def sigmoid(
@@ -57,8 +70,22 @@ def sigmoid(
     center = _finite_scalar(midpoint, name="midpoint")
     slope = _non_zero_scalar(steepness, name="steepness")
     floor, ceiling = _ordered_bounds(lower, upper, names=("lower", "upper"))
-    result = floor + (ceiling - floor) * expit(slope * (array - center))
-    return _restore_output(result, scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore"):
+        argument = np.longdouble(slope) * (
+            array.astype(np.longdouble) - np.longdouble(center)
+        )
+        probabilities = expit(
+            np.asarray(
+                np.clip(argument, -np.finfo(np.float64).max, np.finfo(np.float64).max),
+                dtype=np.float64,
+            )
+        )
+        result = _stable_interpolate(floor, ceiling, probabilities)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def normal_cdf_score(
@@ -80,9 +107,26 @@ def normal_cdf_score(
         maximum,
         names=("minimum", "maximum"),
     )
-    probabilities = ndtr((array - center) / scale)
-    result = floor + (ceiling - floor) * probabilities
-    return _restore_output(result, scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        standardized = (
+            array.astype(np.longdouble) - np.longdouble(center)
+        ) / np.longdouble(scale)
+        probabilities = ndtr(
+            np.asarray(
+                np.clip(
+                    standardized,
+                    -np.finfo(np.float64).max,
+                    np.finfo(np.float64).max,
+                ),
+                dtype=np.float64,
+            )
+        )
+        result = _stable_interpolate(floor, ceiling, probabilities)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def bounded_linear(
@@ -109,11 +153,15 @@ def bounded_linear(
         names=("output_minimum", "output_maximum"),
     )
     _require_bool(clip, name="clip")
-    position = (array - source_min) / (source_max - source_min)
+    position = _stable_interval_position(array, source_min, source_max)
     if clip:
         position = np.clip(position, np.float64(0), np.float64(1))
-    result = target_min + position * (target_max - target_min)
-    return _restore_output(result, scalar=scalar)
+    result = _stable_interpolate(target_min, target_max, position)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def smooth_penalty(
@@ -133,10 +181,25 @@ def smooth_penalty(
     peak = _non_negative_scalar(maximum, name="maximum")
     if direction not in PENALTY_DIRECTIONS:
         raise NumericInputError(f"direction must be one of {PENALTY_DIRECTIONS}")
-    distance = array - onset if direction == "above" else onset - array
-    position = np.clip(distance / transition, np.float64(0), np.float64(1))
-    result = peak * np.square(position) * (np.float64(3) - np.float64(2) * position)
-    return _restore_output(result, scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        values_long = array.astype(np.longdouble)
+        distance = (
+            values_long - np.longdouble(onset)
+            if direction == "above"
+            else np.longdouble(onset) - values_long
+        )
+        position = np.asarray(
+            np.clip(distance / np.longdouble(transition), 0, 1),
+            dtype=np.float64,
+        )
+        result = peak * np.square(position) * (
+            np.float64(3) - np.float64(2) * position
+        )
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def exponential_decay(
@@ -154,9 +217,18 @@ def exponential_decay(
     finite = array[~np.isnan(array)]
     if np.any(finite < 0):
         raise NumericInputError("distances must be non-negative")
-    with np.errstate(under="ignore", invalid="ignore"):
-        result = start * np.exp(-rate * array)
-    return _restore_output(result, scalar=scalar)
+    with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+        exponent = np.longdouble(rate) * array.astype(np.longdouble)
+        exponent = np.asarray(
+            np.clip(exponent, 0, np.finfo(np.float64).max),
+            dtype=np.float64,
+        )
+        result = start * np.exp(-exponent)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def clip_score(
@@ -175,7 +247,11 @@ def clip_score(
         names=("minimum", "maximum"),
     )
     result = np.clip(array, floor, ceiling)
-    return _restore_output(result, scalar=scalar)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def percentile_to_health(
@@ -192,7 +268,11 @@ def percentile_to_health(
     if np.any((finite < 0) | (finite > 100)):
         raise NumericInputError("percentiles must be between 0 and 100")
     result = array if higher_is_healthier else np.float64(100) - array
-    return _restore_output(result, scalar=scalar)
+    return _restore_output(
+        result,
+        scalar=scalar,
+        expected_nan=np.isnan(array),
+    )
 
 
 def winsorize(
@@ -214,9 +294,22 @@ def winsorize(
     if np.any(np.isnan(array)):
         result = np.full(array.shape, np.nan, dtype=np.float64)
     else:
-        bounds = np.quantile(array, (lower, upper), method="linear")
+        with np.errstate(over="ignore", invalid="ignore"):
+            bounds = np.asarray(
+                np.quantile(
+                    array.astype(np.longdouble),
+                    (lower, upper),
+                    method="linear",
+                ),
+                dtype=np.float64,
+            )
         result = np.clip(array, bounds[0], bounds[1])
-    return _restore_output(result, scalar=scalar)
+    expected_nan = (
+        np.ones(array.shape, dtype=np.bool_)
+        if np.any(np.isnan(array))
+        else np.zeros(array.shape, dtype=np.bool_)
+    )
+    return _restore_output(result, scalar=scalar, expected_nan=expected_nan)
 
 
 def _coerce_input(
@@ -238,10 +331,52 @@ def _coerce_input(
     return array, scalar
 
 
-def _restore_output(values: ArrayLike, *, scalar: bool) -> TransformOutput:
-    reject_infinite_result(values, name="transform_result")
-    array = np.array(values, dtype=np.float64, order="C", copy=True)
+def _restore_output(
+    values: ArrayLike,
+    *,
+    scalar: bool,
+    expected_nan: np.ndarray,
+) -> TransformOutput:
+    with np.errstate(over="ignore", invalid="ignore"):
+        array = np.array(values, dtype=np.float64, order="C", copy=True)
+    reject_infinite_result(array, name="transform_result")
+    if expected_nan.shape != array.shape:
+        raise NumericInputError("transform NaN expectation shape mismatch")
+    if np.any(np.isnan(array) & ~expected_nan):
+        raise NumericInputError("transform_result produced an unexpected NaN")
     return float(array[0]) if scalar else array
+
+
+def _stable_interval_position(
+    values: FloatArray,
+    lower: np.float64,
+    upper: np.float64,
+) -> FloatArray:
+    scale = np.longdouble(max(abs(lower), abs(upper)))
+    if scale == 0:
+        raise NumericInputError("interval scale must be non-zero")
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        lower_scaled = np.longdouble(lower) / scale
+        upper_scaled = np.longdouble(upper) / scale
+        values_scaled = values.astype(np.longdouble) / scale
+        position = (values_scaled - lower_scaled) / (
+            upper_scaled - lower_scaled
+        )
+        return np.asarray(position, dtype=np.float64)
+
+
+def _stable_interpolate(
+    lower: np.float64,
+    upper: np.float64,
+    positions: ArrayLike,
+) -> FloatArray:
+    values = np.asarray(positions, dtype=np.longdouble)
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = (
+            (np.longdouble(1) - values) * np.longdouble(lower)
+            + values * np.longdouble(upper)
+        )
+        return np.asarray(result, dtype=np.float64)
 
 
 def _finite_scalar(value: float, *, name: str) -> np.float64:

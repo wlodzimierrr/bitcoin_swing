@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from btc_predictor.quant.arrays import FloatArray, NumericInputError
+from btc_predictor.quant.arrays import (
+    FloatArray,
+    NumericInputError,
+    reject_non_finite_result,
+)
 
 
 def normal_samples(
@@ -30,10 +34,13 @@ def normal_samples(
     if parameters[1] < 0:
         raise NumericInputError("standard_deviation must be non-negative")
     generator = np.random.Generator(np.random.PCG64(seed))
-    return np.asarray(
-        generator.normal(parameters[0], parameters[1], size=normalized_shape),
-        dtype=np.float64,
-    )
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.asarray(
+            generator.normal(parameters[0], parameters[1], size=normalized_shape),
+            dtype=np.float64,
+        )
+    reject_non_finite_result(result, name="normal_samples")
+    return result
 
 
 def _validated_shape(shape: int | tuple[int, ...]) -> tuple[int, ...]:

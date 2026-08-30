@@ -10,6 +10,7 @@ from typing import Any
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features._scoring import decimal_weighted_score
 from btc_predictor.features.rolling import NumericValue, OptionalDecimalSeries, rolling_mean
+from btc_predictor.quant.comparisons import decision_greater_equal
 from btc_predictor.quant.transforms import normal_cdf_score
 
 
@@ -316,13 +317,13 @@ def _standard_normal_score(raw_score: Decimal) -> Decimal:
 
 
 def _trend_score_interpretation(score: Decimal) -> str:
-    if score >= Decimal("80"):
+    if decision_greater_equal(score, Decimal("80")):
         return "STRONG_BULLISH"
-    if score >= Decimal("65"):
+    if decision_greater_equal(score, Decimal("65")):
         return "BULLISH"
-    if score >= Decimal("45"):
+    if decision_greater_equal(score, Decimal("45")):
         return "MIXED"
-    if score >= Decimal("25"):
+    if decision_greater_equal(score, Decimal("25")):
         return "BEARISH"
     return "STRONG_BEARISH"
 

@@ -311,8 +311,10 @@ def test_nan_and_infinity_policy_is_enforced_at_inputs_and_arithmetic_outputs() 
         as_float64_array([1, np.inf], nan_policy="propagate")
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
-        with pytest.raises(NumericInputError, match="finite float64 range"):
-            rolling_mean([1e308, 1e308], window=2)
+        np.testing.assert_array_equal(
+            rolling_mean([1e308, 1e308], window=2),
+            [np.nan, 1e308],
+        )
         with pytest.raises(NumericInputError, match="finite float64 range"):
             weighted_score(
                 [1e308, 1e308],

@@ -8,6 +8,12 @@ from decimal import Decimal
 from typing import Any
 
 from btc_predictor.features._scoring import decimal_weighted_score
+from btc_predictor.quant.comparisons import (
+    decision_greater,
+    decision_greater_equal,
+    decision_less,
+    decision_less_equal,
+)
 
 
 STRUCTURE_SCORE_FEATURE_ID = "STRUCTURE_SCORE"
@@ -417,7 +423,10 @@ def _nearest_support(
         dict(cluster)
         for cluster in clusters
         if cluster.get("zone_type") == "support"
-        and _record_decimal(cluster, "center_price") <= entry_price
+        and decision_less_equal(
+            _record_decimal(cluster, "center_price"),
+            entry_price,
+        )
     ]
     if not supports:
         return None
@@ -439,7 +448,10 @@ def _nearest_resistance(
         dict(cluster)
         for cluster in clusters
         if cluster.get("zone_type") == "resistance"
-        and _record_decimal(cluster, "center_price") > entry_price
+        and decision_greater(
+            _record_decimal(cluster, "center_price"),
+            entry_price,
+        )
     ]
     if not resistances:
         return None
@@ -459,14 +471,14 @@ def _entry_location_score(
     parameters: Mapping[str, Decimal],
 ) -> Decimal:
     upper_bound = _record_decimal(support, "upper_bound")
-    if entry_price <= upper_bound:
+    if decision_less_equal(entry_price, upper_bound):
         return Decimal("100")
     distance_fraction = (entry_price - upper_bound) / entry_price
     full_distance = parameters["full_score_distance_fraction"]
     zero_distance = parameters["zero_score_distance_fraction"]
-    if distance_fraction <= full_distance:
+    if decision_less_equal(distance_fraction, full_distance):
         return Decimal("100")
-    if distance_fraction >= zero_distance:
+    if decision_greater_equal(distance_fraction, zero_distance):
         return Decimal("0")
     return (
         Decimal("100")
@@ -484,7 +496,7 @@ def _reward_risk_ratio(
     target_price = _record_decimal(target, "center_price")
     risk = entry - stop
     reward = target_price - entry
-    if risk <= 0 or reward <= 0:
+    if decision_less_equal(risk, 0) or decision_less_equal(reward, 0):
         return None
     return reward / risk
 
@@ -496,15 +508,15 @@ def _rr_quality_score(
     rr_minimum = parameters["rr_minimum"]
     rr_preferred_min = parameters["rr_preferred_min"]
     rr_preferred_max = parameters["rr_preferred_max"]
-    if reward_risk < rr_minimum:
+    if decision_less(reward_risk, rr_minimum):
         return reward_risk / rr_minimum * Decimal("60")
-    if reward_risk < rr_preferred_min:
+    if decision_less(reward_risk, rr_preferred_min):
         return Decimal("60") + (
             (reward_risk - rr_minimum)
             / (rr_preferred_min - rr_minimum)
             * Decimal("25")
         )
-    if reward_risk <= rr_preferred_max:
+    if decision_less_equal(reward_risk, rr_preferred_max):
         return Decimal("85") + (
             (reward_risk - rr_preferred_min)
             / (rr_preferred_max - rr_preferred_min)
@@ -644,11 +656,11 @@ def _validate_rr_parameters(parameters: Mapping[str, Decimal]) -> None:
 
 
 def _interpret_score(score: Decimal) -> str:
-    if score >= Decimal("85"):
+    if decision_greater_equal(score, Decimal("85")):
         return "strong"
-    if score >= Decimal("70"):
+    if decision_greater_equal(score, Decimal("70")):
         return "constructive"
-    if score >= Decimal("55"):
+    if decision_greater_equal(score, Decimal("55")):
         return "mixed"
     return "weak"
 

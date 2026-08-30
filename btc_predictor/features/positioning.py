@@ -15,6 +15,7 @@ from btc_predictor.data import (
     require_utc_datetime,
 )
 from btc_predictor.features._scoring import decimal_weighted_score
+from btc_predictor.quant.comparisons import decision_greater_equal
 from btc_predictor.quant.transforms import gaussian_health, percentile_to_health
 
 
@@ -884,17 +885,20 @@ def calculate_crowding_flag(
         reason_codes.append("CROWDING_INPUT_MISSING")
     if (
         input_values["funding_zscore"] is not None
-        and input_values["funding_zscore"] >= funding_threshold
+        and decision_greater_equal(input_values["funding_zscore"], funding_threshold)
     ):
         reason_codes.append("CROWDING_FUNDING_EXCESS")
     if (
         input_values["basis_zscore"] is not None
-        and input_values["basis_zscore"] >= basis_threshold
+        and decision_greater_equal(input_values["basis_zscore"], basis_threshold)
     ):
         reason_codes.append("CROWDING_BASIS_EXCESS")
     if (
         input_values["oi_intensity_percentile"] is not None
-        and input_values["oi_intensity_percentile"] >= oi_threshold
+        and decision_greater_equal(
+            input_values["oi_intensity_percentile"],
+            oi_threshold,
+        )
     ):
         reason_codes.append("CROWDING_LEVERAGE_EXCESS")
 
@@ -1276,11 +1280,11 @@ def _percentile_rank(value: Decimal, history: Sequence[Decimal]) -> Decimal:
 def _positioning_score_interpretation(score: Decimal | None) -> str | None:
     if score is None:
         return None
-    if score >= Decimal("70"):
+    if decision_greater_equal(score, Decimal("70")):
         return "ADD_SUPPORTIVE"
-    if score >= Decimal("60"):
+    if decision_greater_equal(score, Decimal("60")):
         return "TRADE_SUPPORTIVE"
-    if score >= Decimal("40"):
+    if decision_greater_equal(score, Decimal("40")):
         return "WEAK_POSITIONING"
     return "STRESSED_POSITIONING"
 

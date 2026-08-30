@@ -33,7 +33,9 @@ def pairwise_price_distance(
     left, right, scalar = _aligned_inputs(first, second, nan_policy=nan_policy)
     _validate_prices(left, name="first")
     _validate_prices(right, name="second")
-    return _restore_output(np.abs(left - right), scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.abs(left - right)
+    return _restore_output(result, scalar=scalar)
 
 
 def atr_normalized_distance(
@@ -51,7 +53,8 @@ def atr_normalized_distance(
     _validate_prices(left, name="first")
     _validate_prices(right, name="second")
     atr_values = _aligned_atr(atr, shape=left.shape, nan_policy=nan_policy)
-    result = np.abs(left - right) / atr_values
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        result = np.abs(left - right) / atr_values
     return _restore_output(result, scalar=scalar)
 
 
@@ -103,16 +106,17 @@ def cluster_distance_matrix(
     values = as_float64_vector(prices, allow_empty=True, nan_policy=nan_policy)
     _validate_prices(values, name="prices")
     _validate_cluster_mode(mode)
-    distances = np.abs(np.subtract.outer(values, values))
-    if mode == "fractional":
-        distances = distances / np.minimum.outer(values, values)
-    elif mode == "atr":
-        if atr is None:
-            raise NumericInputError("atr is required when mode is 'atr'")
-        atr_value = _positive_scalar(atr, name="atr")
-        distances = distances / atr_value
-    elif atr is not None:
-        raise NumericInputError("atr is only valid when mode is 'atr'")
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        distances = np.abs(np.subtract.outer(values, values))
+        if mode == "fractional":
+            distances = distances / np.minimum.outer(values, values)
+        elif mode == "atr":
+            if atr is None:
+                raise NumericInputError("atr is required when mode is 'atr'")
+            atr_value = _positive_scalar(atr, name="atr")
+            distances = distances / atr_value
+        elif atr is not None:
+            raise NumericInputError("atr is only valid when mode is 'atr'")
     reject_infinite_result(distances, name="cluster_distance_matrix")
     return np.array(distances, dtype=np.float64, order="C", copy=True)
 
@@ -150,22 +154,23 @@ def entry_distance_score(
             "zero_score_distance must be greater than full_score_distance"
         )
 
-    distances = np.maximum(entries - supports, np.float64(0))
-    if mode == "fractional":
-        distances = distances / entries
-    elif mode == "atr":
-        if atr is None:
-            raise NumericInputError("atr is required when mode is 'atr'")
-        distances = distances / _aligned_atr(
-            atr,
-            shape=entries.shape,
-            nan_policy=nan_policy,
-        )
-    elif atr is not None:
-        raise NumericInputError("atr is only valid when mode is 'atr'")
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        distances = np.maximum(entries - supports, np.float64(0))
+        if mode == "fractional":
+            distances = distances / entries
+        elif mode == "atr":
+            if atr is None:
+                raise NumericInputError("atr is required when mode is 'atr'")
+            distances = distances / _aligned_atr(
+                atr,
+                shape=entries.shape,
+                nan_policy=nan_policy,
+            )
+        elif atr is not None:
+            raise NumericInputError("atr is only valid when mode is 'atr'")
 
-    position = (distances - full_distance) / (zero_distance - full_distance)
-    scores = np.float64(100) * (np.float64(1) - np.clip(position, 0, 1))
+        position = (distances - full_distance) / (zero_distance - full_distance)
+        scores = np.float64(100) * (np.float64(1) - np.clip(position, 0, 1))
     return _restore_output(scores, scalar=scalar)
 
 
@@ -185,20 +190,22 @@ def _distance_to_directional_level(
         result = np.full(price_values.shape, np.nan, dtype=np.float64)
     else:
         flat_prices = price_values.reshape(-1)
-        if direction == "support":
-            candidates = flat_prices[:, np.newaxis] - level_values[np.newaxis, :]
-        else:
-            candidates = level_values[np.newaxis, :] - flat_prices[:, np.newaxis]
-        valid = candidates >= 0
-        nearest = np.min(np.where(valid, candidates, np.inf), axis=1)
+        with np.errstate(over="ignore", invalid="ignore"):
+            if direction == "support":
+                candidates = flat_prices[:, np.newaxis] - level_values[np.newaxis, :]
+            else:
+                candidates = level_values[np.newaxis, :] - flat_prices[:, np.newaxis]
+            valid = candidates >= 0
+            nearest = np.min(np.where(valid, candidates, np.inf), axis=1)
         nearest[np.isinf(nearest)] = np.nan
         result = nearest.reshape(price_values.shape)
     if atr is not None:
-        result = result / _aligned_atr(
-            atr,
-            shape=price_values.shape,
-            nan_policy=nan_policy,
-        )
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            result = result / _aligned_atr(
+                atr,
+                shape=price_values.shape,
+                nan_policy=nan_policy,
+            )
     return _restore_output(result, scalar=scalar)
 
 

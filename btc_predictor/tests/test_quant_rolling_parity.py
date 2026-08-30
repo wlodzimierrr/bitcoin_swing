@@ -213,6 +213,26 @@ def test_large_deterministic_sample_matches_decimal_oracle_within_frozen_toleran
     )
 
 
+def test_extreme_finite_windows_use_stable_intermediate_arithmetic() -> None:
+    np.testing.assert_array_equal(
+        rolling_mean([1e308, 1e308], window=2),
+        [np.nan, 1e308],
+    )
+    normalized = historical_normalize(
+        [-1e308, 1e308, 0],
+        window=2,
+        min_periods=2,
+    )
+    np.testing.assert_array_equal(normalized, [np.nan, np.nan, 50])
+
+    with pytest.raises(NumericInputError, match="finite float64 range"):
+        realized_volatility(
+            [100, 101],
+            window=1,
+            annualization_periods=10**1000,
+        )
+
+
 def test_returns_true_range_atr_and_realized_volatility_match_reference_math() -> None:
     closes = [100, 110, 99, 108.9, 104]
     highs = [102, 113, 103, 112, 109]

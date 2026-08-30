@@ -62,6 +62,13 @@ def test_atr_nan_is_only_allowed_with_explicit_propagation() -> None:
     assert np.isnan(result[1])
 
 
+def test_extreme_finite_distance_arithmetic_fails_without_returning_infinity() -> None:
+    with pytest.raises(NumericInputError, match="finite float64 range"):
+        atr_normalized_distance(1e308, 1e-308, 1e-308)
+    with pytest.raises(NumericInputError, match="finite float64 range"):
+        cluster_distance_matrix([1e-308, 1e308], mode="fractional")
+
+
 def test_nearest_directional_level_distances_are_deterministic() -> None:
     prices = [100, 115, 125]
     supports = [80, 95, 110]

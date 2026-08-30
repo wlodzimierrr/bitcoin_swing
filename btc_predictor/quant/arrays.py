@@ -149,11 +149,24 @@ def reject_infinite_result(values: ArrayLike, *, name: str = "result") -> None:
     """Reject arithmetic outputs that exceeded the finite float64 range."""
 
     try:
-        array = np.asarray(values, dtype=np.float64)
+        with np.errstate(over="ignore", invalid="ignore"):
+            array = np.asarray(values, dtype=np.float64)
     except (TypeError, ValueError, OverflowError) as error:
         raise NumericInputError(f"{name} must be float64-compatible") from error
     if np.any(np.isinf(array)):
         raise NumericInputError(f"{name} exceeded the finite float64 range")
+
+
+def reject_non_finite_result(values: ArrayLike, *, name: str = "result") -> None:
+    """Reject arithmetic outputs containing infinity or an unexpected NaN."""
+
+    try:
+        with np.errstate(over="ignore", invalid="ignore"):
+            array = np.asarray(values, dtype=np.float64)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise NumericInputError(f"{name} must be float64-compatible") from error
+    if not np.all(np.isfinite(array)):
+        raise NumericInputError(f"{name} produced a non-finite float64 result")
 
 
 def stable_row_sum(

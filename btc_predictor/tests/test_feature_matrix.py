@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
 
 import numpy as np
@@ -11,6 +12,7 @@ from btc_predictor.research import (
     INITIAL_FEATURE_NAMES,
     FeatureMatrixDefinition,
     FeatureMatrixError,
+    FeatureMatrixProvenance,
     FeatureObservation,
     ForwardTargetDefinition,
     ForwardTargetObservation,
@@ -310,6 +312,89 @@ def test_target_extraction_cutoff_exposes_only_available_revision() -> None:
     assert as_known.values[0, 0] == pytest.approx(0.10)
     assert latest.values[0, 0] == pytest.approx(0.12)
     assert latest.source_ids[0][0] == "target-run-1-revision"
+    assert as_known.revisions[0][0] == 0
+    assert latest.revisions[0][0] == 1
+    assert as_known.as_record()["data_available_at"] == original_available.isoformat()
+    assert latest.as_record()["revisions"][0][0] == 1
+
+
+def test_fixed_target_horizon_is_enforced() -> None:
+    invalid = target(
+        "future_8w_return",
+        0.1,
+        DAY_1,
+        DAY_1 + timedelta(hours=1),
+        DAY_1 + timedelta(hours=1),
+    )
+
+    with pytest.raises(FeatureMatrixError, match="4838400 seconds"):
+        build_forward_target_matrix([invalid], [DAY_1])
+
+
+def test_material_target_semantics_change_target_fingerprint() -> None:
+    original = ForwardTargetDefinition(target_names=("future_8w_return",))
+    changed_specification = replace(
+        original.target_specifications[0],
+        horizon=timedelta(weeks=8, microseconds=1),
+    )
+    changed = ForwardTargetDefinition(
+        target_names=("future_8w_return",),
+        target_specifications=(changed_specification,),
+    )
+
+    assert original.fingerprint != changed.fingerprint
+    assert original.fingerprint == ForwardTargetDefinition(
+        target_names=("future_8w_return",)
+    ).fingerprint
+    assert original.as_record()["target_specifications"][0][
+        "horizon_seconds"
+    ] == int(timedelta(weeks=8).total_seconds())
+    assert original.as_record()["target_specifications"][0][
+        "horizon_microseconds"
+    ] == 8 * 7 * 86_400 * 1_000_000
+
+
+def test_material_feature_provenance_changes_feature_fingerprint() -> None:
+    original = FeatureMatrixDefinition(feature_names=("TREND_SCORE",))
+    changed_parameter_set = FeatureMatrixDefinition(
+        feature_names=("TREND_SCORE",),
+        provenance=replace(original.provenance, parameter_set_id="challenger_v2"),
+    )
+    changed_price_policy = FeatureMatrixDefinition(
+        feature_names=("TREND_SCORE",),
+        provenance=replace(
+            original.provenance,
+            price_source_policy_version="PRICE_SOURCE_POLICY_V2",
+        ),
+    )
+
+    assert original.fingerprint != changed_parameter_set.fingerprint
+    assert original.fingerprint != changed_price_policy.fingerprint
+    assert original.fingerprint == FeatureMatrixDefinition(
+        feature_names=("TREND_SCORE",),
+        provenance=FeatureMatrixProvenance(),
+    ).fingerprint
+
+
+def test_selected_feature_revision_survives_serialization() -> None:
+    revised = feature(
+        "TREND_SCORE",
+        71,
+        DAY_1,
+        DAY_1 + timedelta(hours=1),
+        revision=3,
+        source_id="feature-run-revision-3",
+    )
+
+    matrix = build_point_in_time_feature_matrix(
+        [revised],
+        [DAY_2],
+        definition=SMALL_FEATURE_DEFINITION,
+    )
+
+    assert matrix.revisions[0][0] == 3
+    assert matrix.as_record()["revisions"][0][0] == 3
+    assert matrix.revisions[0][1] is None
 
 
 def test_feature_and_target_observation_types_cannot_be_mixed() -> None:

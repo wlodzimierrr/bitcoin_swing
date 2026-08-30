@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any
 
 from btc_predictor.features._scoring import decimal_weighted_score
+from btc_predictor.quant.comparisons import decision_greater_equal
 
 
 REGIME_SCORE_FEATURE_ID = "REGIME_SCORE"
@@ -483,17 +484,17 @@ def _interpret_score(score: Decimal | None) -> str | None:
 
 
 def _classify_regime(score: Decimal, thresholds: Mapping[str, Decimal]) -> str:
-    if score >= thresholds["strong_bull"]:
+    if decision_greater_equal(score, thresholds["strong_bull"]):
         return "STRONG_BULL"
-    if score >= thresholds["bull"]:
+    if decision_greater_equal(score, thresholds["bull"]):
         return "BULL"
-    if score >= thresholds["mild_bull"]:
+    if decision_greater_equal(score, thresholds["mild_bull"]):
         return "MILD_BULL"
-    if score >= thresholds["neutral"]:
+    if decision_greater_equal(score, thresholds["neutral"]):
         return "NEUTRAL"
-    if score >= thresholds["mild_bear"]:
+    if decision_greater_equal(score, thresholds["mild_bear"]):
         return "MILD_BEAR"
-    if score >= thresholds["bear"]:
+    if decision_greater_equal(score, thresholds["bear"]):
         return "BEAR"
     return "STRONG_BEAR"
 

@@ -16,8 +16,12 @@ from numpy.typing import NDArray
 
 from btc_predictor.quant.arrays import FloatArray, as_float64_matrix
 
-FEATURE_MATRIX_VERSION = "POINT_IN_TIME_FEATURE_MATRIX_V1"
-FORWARD_TARGET_MATRIX_VERSION = "FORWARD_TARGET_MATRIX_V1"
+FEATURE_MATRIX_VERSION = "POINT_IN_TIME_FEATURE_MATRIX_V2"
+FORWARD_TARGET_MATRIX_VERSION = "FORWARD_TARGET_MATRIX_V2"
+FEATURE_IMPLEMENTATION_VERSION = "E2_QUANT_FEATURES_V1"
+POINT_IN_TIME_POLICY_VERSION = "AVAILABLE_AT_LTE_DECISION_TIME_V1"
+DEFAULT_PRICE_SOURCE_POLICY_VERSION = "PRICE_SOURCE_POLICY_V1"
+DEFAULT_REFERENCE_PRICE_METHOD_VERSION = "NO_APPROVED_CANONICAL_REFERENCE_V1"
 
 # Frozen numeric research schema. Categorical states remain outside X until an
 # encoding policy is versioned explicitly.
@@ -71,18 +75,57 @@ BINARY_FORWARD_TARGET_NAMES = ("hit_2R_before_1R",)
 type NumericValue = float | int | Decimal | np.floating[Any] | None
 type TimestampCells = tuple[tuple[datetime | None, ...], ...]
 type SourceCells = tuple[tuple[str | None, ...], ...]
+type RevisionCells = tuple[tuple[int | None, ...], ...]
 
 
 class FeatureMatrixError(ValueError):
     """Raised when research-matrix inputs violate the frozen data contract."""
 
 
+def _require_non_empty_string(value: str, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise FeatureMatrixError(f"{field_name} must be a non-empty string")
+    return value
+
+
+@dataclass(frozen=True)
+class FeatureMatrixProvenance:
+    """Immutable calculation identity required to interpret a feature matrix."""
+
+    config_version: str = "strategy_config_v1"
+    strategy_version: str = "swing_v1.0"
+    parameter_set_id: str = "default_phase1"
+    feature_implementation_version: str = FEATURE_IMPLEMENTATION_VERSION
+    price_source_policy_version: str = DEFAULT_PRICE_SOURCE_POLICY_VERSION
+    reference_price_method_version: str = DEFAULT_REFERENCE_PRICE_METHOD_VERSION
+    point_in_time_policy_version: str = POINT_IN_TIME_POLICY_VERSION
+
+    def __post_init__(self) -> None:
+        for field_name, value in self.as_record().items():
+            _require_non_empty_string(value, field_name)
+
+    def as_record(self) -> dict[str, str]:
+        return {
+            "config_version": self.config_version,
+            "strategy_version": self.strategy_version,
+            "parameter_set_id": self.parameter_set_id,
+            "feature_implementation_version": self.feature_implementation_version,
+            "price_source_policy_version": self.price_source_policy_version,
+            "reference_price_method_version": self.reference_price_method_version,
+            "point_in_time_policy_version": self.point_in_time_policy_version,
+        }
+
+
+DEFAULT_FEATURE_MATRIX_PROVENANCE = FeatureMatrixProvenance()
+
+
 @dataclass(frozen=True)
 class FeatureMatrixDefinition:
-    """Versioned feature names whose order defines matrix columns."""
+    """Versioned feature names and the calculation contract behind them."""
 
     feature_names: tuple[str, ...] = INITIAL_FEATURE_NAMES
     version: str = FEATURE_MATRIX_VERSION
+    provenance: FeatureMatrixProvenance = DEFAULT_FEATURE_MATRIX_PROVENANCE
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -91,6 +134,10 @@ class FeatureMatrixDefinition:
             _validate_names(self.feature_names, field_name="feature_names"),
         )
         _require_non_empty_string(self.version, "version")
+        if not isinstance(self.provenance, FeatureMatrixProvenance):
+            raise FeatureMatrixError(
+                "provenance must be a FeatureMatrixProvenance"
+            )
 
     @property
     def fingerprint(self) -> str:
@@ -98,22 +145,197 @@ class FeatureMatrixDefinition:
             version=self.version,
             names=self.feature_names,
             names_field="feature_names",
+            semantics={"provenance": self.provenance.as_record()},
         )
 
     def as_record(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "feature_names": list(self.feature_names),
+            "provenance": self.provenance.as_record(),
             "fingerprint": self.fingerprint,
         }
 
 
 @dataclass(frozen=True)
+class TargetSpecification:
+    """Serializable semantics for one forward-target column."""
+
+    target_name: str
+    target_version: str
+    target_kind: str
+    horizon: timedelta | None
+    horizon_alignment: str
+    time_unit: str
+    return_convention: str | None
+    entry_reference_price: str
+    exit_reference_price: str
+    excursion_window: str | None
+    barrier_definition: str | None
+    barrier_tie_rule: str | None
+    structural_thesis_definition: str | None
+    price_source_policy_version: str
+    reference_series_role: str
+    decision_timestamp_convention: str
+
+    def __post_init__(self) -> None:
+        required = {
+            "target_name": self.target_name,
+            "target_version": self.target_version,
+            "target_kind": self.target_kind,
+            "horizon_alignment": self.horizon_alignment,
+            "time_unit": self.time_unit,
+            "entry_reference_price": self.entry_reference_price,
+            "exit_reference_price": self.exit_reference_price,
+            "price_source_policy_version": self.price_source_policy_version,
+            "reference_series_role": self.reference_series_role,
+            "decision_timestamp_convention": self.decision_timestamp_convention,
+        }
+        for field_name, value in required.items():
+            _require_non_empty_string(value, field_name)
+        if self.horizon is not None and (
+            not isinstance(self.horizon, timedelta) or self.horizon <= timedelta(0)
+        ):
+            raise FeatureMatrixError("target horizon must be a positive timedelta")
+        for field_name in (
+            "return_convention",
+            "excursion_window",
+            "barrier_definition",
+            "barrier_tie_rule",
+            "structural_thesis_definition",
+        ):
+            value = getattr(self, field_name)
+            if value is not None:
+                _require_non_empty_string(value, field_name)
+        if self.horizon_alignment == "EXACT_ELAPSED_TIME" and self.horizon is None:
+            raise FeatureMatrixError(
+                "EXACT_ELAPSED_TIME targets require an explicit horizon"
+            )
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "target_name": self.target_name,
+            "target_version": self.target_version,
+            "target_kind": self.target_kind,
+            "horizon_seconds": (
+                None if self.horizon is None else int(self.horizon.total_seconds())
+            ),
+            "horizon_microseconds": (
+                None
+                if self.horizon is None
+                else (
+                    (self.horizon.days * 86_400 + self.horizon.seconds) * 1_000_000
+                    + self.horizon.microseconds
+                )
+            ),
+            "horizon_alignment": self.horizon_alignment,
+            "time_unit": self.time_unit,
+            "return_convention": self.return_convention,
+            "entry_reference_price": self.entry_reference_price,
+            "exit_reference_price": self.exit_reference_price,
+            "excursion_window": self.excursion_window,
+            "barrier_definition": self.barrier_definition,
+            "barrier_tie_rule": self.barrier_tie_rule,
+            "structural_thesis_definition": self.structural_thesis_definition,
+            "price_source_policy_version": self.price_source_policy_version,
+            "reference_series_role": self.reference_series_role,
+            "decision_timestamp_convention": self.decision_timestamp_convention,
+        }
+
+
+def _fixed_return_specification(weeks: int) -> TargetSpecification:
+    name = f"future_{weeks}w_return"
+    return TargetSpecification(
+        target_name=name,
+        target_version=f"{name.upper()}_V1",
+        target_kind="FIXED_HORIZON_RETURN",
+        horizon=timedelta(weeks=weeks),
+        horizon_alignment="EXACT_ELAPSED_TIME",
+        time_unit="CALENDAR_WEEK",
+        return_convention="SIMPLE_RETURN",
+        entry_reference_price="CANONICAL_REFERENCE_CLOSE_AT_DECISION",
+        exit_reference_price="CANONICAL_REFERENCE_CLOSE_AT_OUTCOME",
+        excursion_window=None,
+        barrier_definition=None,
+        barrier_tie_rule=None,
+        structural_thesis_definition=None,
+        price_source_policy_version=DEFAULT_PRICE_SOURCE_POLICY_VERSION,
+        reference_series_role="CANONICAL_REFERENCE_PRICE",
+        decision_timestamp_convention="UTC_DECISION_TIMESTAMP",
+    )
+
+
+DEFAULT_TARGET_SPECIFICATIONS = (
+    _fixed_return_specification(1),
+    _fixed_return_specification(2),
+    _fixed_return_specification(4),
+    _fixed_return_specification(8),
+    TargetSpecification(
+        target_name="future_MFE",
+        target_version="FUTURE_MFE_EXTERNAL_WINDOW_V1",
+        target_kind="PATH_EXCURSION",
+        horizon=None,
+        horizon_alignment="RECORDED_OUTCOME_TIME_WINDOW_END",
+        time_unit="OBSERVATION_DEFINED",
+        return_convention="SIMPLE_RETURN_FROM_DECISION_REFERENCE",
+        entry_reference_price="CANONICAL_REFERENCE_CLOSE_AT_DECISION",
+        exit_reference_price="MAXIMUM_CANONICAL_REFERENCE_HIGH_IN_WINDOW",
+        excursion_window="DECISION_THROUGH_RECORDED_OUTCOME_TIME",
+        barrier_definition=None,
+        barrier_tie_rule=None,
+        structural_thesis_definition=None,
+        price_source_policy_version=DEFAULT_PRICE_SOURCE_POLICY_VERSION,
+        reference_series_role="CANONICAL_REFERENCE_PRICE",
+        decision_timestamp_convention="UTC_DECISION_TIMESTAMP",
+    ),
+    TargetSpecification(
+        target_name="future_MAE",
+        target_version="FUTURE_MAE_EXTERNAL_WINDOW_V1",
+        target_kind="PATH_EXCURSION",
+        horizon=None,
+        horizon_alignment="RECORDED_OUTCOME_TIME_WINDOW_END",
+        time_unit="OBSERVATION_DEFINED",
+        return_convention="SIMPLE_RETURN_FROM_DECISION_REFERENCE",
+        entry_reference_price="CANONICAL_REFERENCE_CLOSE_AT_DECISION",
+        exit_reference_price="MINIMUM_CANONICAL_REFERENCE_LOW_IN_WINDOW",
+        excursion_window="DECISION_THROUGH_RECORDED_OUTCOME_TIME",
+        barrier_definition=None,
+        barrier_tie_rule=None,
+        structural_thesis_definition=None,
+        price_source_policy_version=DEFAULT_PRICE_SOURCE_POLICY_VERSION,
+        reference_series_role="CANONICAL_REFERENCE_PRICE",
+        decision_timestamp_convention="UTC_DECISION_TIMESTAMP",
+    ),
+    TargetSpecification(
+        target_name="hit_2R_before_1R",
+        target_version="HIT_2R_BEFORE_MINUS_1R_EXTERNAL_V1",
+        target_kind="BARRIER_OUTCOME",
+        horizon=None,
+        horizon_alignment="FIRST_RECORDED_BARRIER_RESOLUTION",
+        time_unit="EVENT_TIME",
+        return_convention=None,
+        entry_reference_price="VERSIONED_TRADE_ENTRY_REFERENCE",
+        exit_reference_price="FIRST_RECORDED_BARRIER_TOUCH",
+        excursion_window=None,
+        barrier_definition="POSITIVE_2R_BEFORE_NEGATIVE_1R",
+        barrier_tie_rule="VERSIONED_SOURCE_CALCULATION_REQUIRED",
+        structural_thesis_definition=None,
+        price_source_policy_version=DEFAULT_PRICE_SOURCE_POLICY_VERSION,
+        reference_series_role="CANONICAL_REFERENCE_PRICE",
+        decision_timestamp_convention="UTC_DECISION_TIMESTAMP",
+    ),
+)
+
+
+@dataclass(frozen=True)
 class ForwardTargetDefinition:
-    """Versioned target names kept physically separate from feature columns."""
+    """Versioned target semantics kept physically separate from features."""
 
     target_names: tuple[str, ...] = FORWARD_TARGET_NAMES
     version: str = FORWARD_TARGET_MATRIX_VERSION
+    target_specifications: tuple[TargetSpecification, ...] = (
+        DEFAULT_TARGET_SPECIFICATIONS
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -122,6 +344,23 @@ class ForwardTargetDefinition:
             _validate_names(self.target_names, field_name="target_names"),
         )
         _require_non_empty_string(self.version, "version")
+        specifications = tuple(self.target_specifications)
+        if any(not isinstance(item, TargetSpecification) for item in specifications):
+            raise FeatureMatrixError(
+                "target_specifications must contain TargetSpecification values"
+            )
+        specification_names = tuple(item.target_name for item in specifications)
+        if len(set(specification_names)) != len(specification_names):
+            raise FeatureMatrixError("target specification names must be unique")
+        selected = tuple(
+            item for name in self.target_names for item in specifications
+            if item.target_name == name
+        )
+        if tuple(item.target_name for item in selected) != self.target_names:
+            raise FeatureMatrixError(
+                "every target name must have exactly one target specification"
+            )
+        object.__setattr__(self, "target_specifications", selected)
 
     @property
     def fingerprint(self) -> str:
@@ -129,12 +368,26 @@ class ForwardTargetDefinition:
             version=self.version,
             names=self.target_names,
             names_field="target_names",
+            semantics={
+                "target_specifications": [
+                    item.as_record() for item in self.target_specifications
+                ]
+            },
         )
+
+    def specification(self, target_name: str) -> TargetSpecification:
+        for specification in self.target_specifications:
+            if specification.target_name == target_name:
+                return specification
+        raise FeatureMatrixError(f"target specification missing for {target_name}")
 
     def as_record(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "target_names": list(self.target_names),
+            "target_specifications": [
+                item.as_record() for item in self.target_specifications
+            ],
             "fingerprint": self.fingerprint,
         }
 
@@ -207,6 +460,7 @@ class PointInTimeFeatureMatrix:
     observation_times: TimestampCells
     available_ats: TimestampCells
     source_ids: SourceCells
+    revisions: RevisionCells
 
     def __post_init__(self) -> None:
         if not isinstance(self.definition, FeatureMatrixDefinition):
@@ -233,12 +487,17 @@ class PointInTimeFeatureMatrix:
             self.source_ids,
             expected_shape=expected_shape,
         )
+        revisions = _validate_revision_cells(
+            self.revisions,
+            expected_shape=expected_shape,
+        )
         _validate_feature_provenance(
             timestamps,
             values,
             observation_times,
             available_ats,
             source_ids,
+            revisions,
         )
         object.__setattr__(self, "decision_timestamps", timestamps)
         object.__setattr__(self, "values", values)
@@ -246,6 +505,7 @@ class PointInTimeFeatureMatrix:
         object.__setattr__(self, "observation_times", observation_times)
         object.__setattr__(self, "available_ats", available_ats)
         object.__setattr__(self, "source_ids", source_ids)
+        object.__setattr__(self, "revisions", revisions)
 
     def to_numpy(self, *, copy: bool = True) -> FloatArray:
         """Return X as float64; the zero-copy form is read-only."""
@@ -267,6 +527,7 @@ class PointInTimeFeatureMatrix:
             "observation_times": _serializable_timestamp_cells(self.observation_times),
             "available_ats": _serializable_timestamp_cells(self.available_ats),
             "source_ids": [list(row) for row in self.source_ids],
+            "revisions": [list(row) for row in self.revisions],
         }
 
 
@@ -281,6 +542,8 @@ class ForwardTargetMatrix:
     outcome_times: TimestampCells
     available_ats: TimestampCells
     source_ids: SourceCells
+    revisions: RevisionCells
+    data_available_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.definition, ForwardTargetDefinition):
@@ -307,12 +570,22 @@ class ForwardTargetMatrix:
             self.source_ids,
             expected_shape=expected_shape,
         )
+        revisions = _validate_revision_cells(
+            self.revisions,
+            expected_shape=expected_shape,
+        )
+        data_available_at = (
+            None
+            if self.data_available_at is None
+            else _require_utc(self.data_available_at, "data_available_at")
+        )
         _validate_target_provenance(
             timestamps,
             values,
             outcome_times,
             available_ats,
             source_ids,
+            revisions,
         )
         object.__setattr__(self, "decision_timestamps", timestamps)
         object.__setattr__(self, "values", values)
@@ -320,6 +593,8 @@ class ForwardTargetMatrix:
         object.__setattr__(self, "outcome_times", outcome_times)
         object.__setattr__(self, "available_ats", available_ats)
         object.__setattr__(self, "source_ids", source_ids)
+        object.__setattr__(self, "revisions", revisions)
+        object.__setattr__(self, "data_available_at", data_available_at)
 
     def to_numpy(self, *, copy: bool = True) -> FloatArray:
         """Return Y as float64; the zero-copy form is read-only."""
@@ -341,6 +616,12 @@ class ForwardTargetMatrix:
             "outcome_times": _serializable_timestamp_cells(self.outcome_times),
             "available_ats": _serializable_timestamp_cells(self.available_ats),
             "source_ids": [list(row) for row in self.source_ids],
+            "revisions": [list(row) for row in self.revisions],
+            "data_available_at": (
+                None
+                if self.data_available_at is None
+                else self.data_available_at.isoformat()
+            ),
         }
 
 
@@ -396,6 +677,7 @@ def build_point_in_time_feature_matrix(
     observation_times = _empty_timestamp_cells(shape)
     available_ats = _empty_timestamp_cells(shape)
     source_ids = _empty_source_cells(shape)
+    revisions = _empty_revision_cells(shape)
     grouped = _group_feature_observations(relevant)
 
     for column, feature_name in enumerate(matrix_definition.feature_names):
@@ -425,6 +707,7 @@ def build_point_in_time_feature_matrix(
             observation_times[row_index][column] = selected.observation_time
             available_ats[row_index][column] = selected.available_at
             source_ids[row_index][column] = selected.source_id
+            revisions[row_index][column] = selected.revision
 
     return PointInTimeFeatureMatrix(
         definition=matrix_definition,
@@ -434,6 +717,7 @@ def build_point_in_time_feature_matrix(
         observation_times=_freeze_cells(observation_times),
         available_ats=_freeze_cells(available_ats),
         source_ids=_freeze_cells(source_ids),
+        revisions=_freeze_cells(revisions),
     )
 
 
@@ -472,12 +756,14 @@ def build_forward_target_matrix(
         and (cutoff is None or row.available_at <= cutoff)
     )
     _reject_duplicate_target_observations(relevant)
+    _validate_target_horizons(relevant, matrix_definition)
 
     shape = (len(timestamps), len(matrix_definition.target_names))
     values = np.full(shape, np.nan, dtype=np.float64)
     outcome_times = _empty_timestamp_cells(shape)
     available_ats = _empty_timestamp_cells(shape)
     source_ids = _empty_source_cells(shape)
+    revisions = _empty_revision_cells(shape)
     row_indexes = {timestamp: index for index, timestamp in enumerate(timestamps)}
     column_indexes = {
         name: index for index, name in enumerate(matrix_definition.target_names)
@@ -498,6 +784,7 @@ def build_forward_target_matrix(
         outcome_times[row_index][column] = row.outcome_time
         available_ats[row_index][column] = row.available_at
         source_ids[row_index][column] = row.source_id
+        revisions[row_index][column] = row.revision
 
     return ForwardTargetMatrix(
         definition=matrix_definition,
@@ -507,6 +794,8 @@ def build_forward_target_matrix(
         outcome_times=_freeze_cells(outcome_times),
         available_ats=_freeze_cells(available_ats),
         source_ids=_freeze_cells(source_ids),
+        revisions=_freeze_cells(revisions),
+        data_available_at=cutoff,
     )
 
 
@@ -574,6 +863,23 @@ def _reject_duplicate_target_observations(
         seen.add(identity)
 
 
+def _validate_target_horizons(
+    observations: Sequence[ForwardTargetObservation],
+    definition: ForwardTargetDefinition,
+) -> None:
+    for row in observations:
+        specification = definition.specification(row.target_name)
+        if specification.horizon_alignment != "EXACT_ELAPSED_TIME":
+            continue
+        assert specification.horizon is not None
+        expected = row.decision_timestamp + specification.horizon
+        if row.outcome_time != expected:
+            raise FeatureMatrixError(
+                f"{row.target_name} outcome_time must equal decision_timestamp + "
+                f"{int(specification.horizon.total_seconds())} seconds"
+            )
+
+
 def _feature_selection_key(row: FeatureObservation) -> tuple[datetime, datetime, int]:
     return row.observation_time, row.available_at, row.revision
 
@@ -632,9 +938,14 @@ def _definition_fingerprint(
     version: str,
     names: Sequence[str],
     names_field: str,
+    semantics: dict[str, Any],
 ) -> str:
     payload = json.dumps(
-        {"version": version, names_field: list(names)},
+        {
+            "version": version,
+            names_field: list(names),
+            **semantics,
+        },
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
@@ -677,12 +988,6 @@ def _normalize_target_value(
 def _validate_revision(value: int) -> None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise FeatureMatrixError("revision must be a non-negative integer")
-
-
-def _require_non_empty_string(value: str, field_name: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise FeatureMatrixError(f"{field_name} must be a non-empty string")
-    return value
 
 
 def _require_utc(value: datetime, field_name: str) -> datetime:
@@ -766,19 +1071,38 @@ def _validate_source_cells(
     return rows
 
 
+def _validate_revision_cells(
+    values: Sequence[Sequence[int | None]],
+    *,
+    expected_shape: tuple[int, int],
+) -> RevisionCells:
+    rows = tuple(tuple(row) for row in values)
+    if len(rows) != expected_shape[0] or any(
+        len(row) != expected_shape[1] for row in rows
+    ):
+        raise FeatureMatrixError(f"revisions must have shape {expected_shape}")
+    for row in rows:
+        for value in row:
+            if value is not None:
+                _validate_revision(value)
+    return rows
+
+
 def _validate_feature_provenance(
     decision_timestamps: Sequence[datetime],
     values: FloatArray,
     observation_times: TimestampCells,
     available_ats: TimestampCells,
     source_ids: SourceCells,
+    revisions: RevisionCells,
 ) -> None:
     for row_index, decision_time in enumerate(decision_timestamps):
         for column in range(values.shape[1]):
             observation_time = observation_times[row_index][column]
             available_at = available_ats[row_index][column]
             source_id = source_ids[row_index][column]
-            provenance = (observation_time, available_at, source_id)
+            revision = revisions[row_index][column]
+            provenance = (observation_time, available_at, source_id, revision)
             if any(value is None for value in provenance):
                 if not all(value is None for value in provenance):
                     raise FeatureMatrixError(
@@ -805,13 +1129,15 @@ def _validate_target_provenance(
     outcome_times: TimestampCells,
     available_ats: TimestampCells,
     source_ids: SourceCells,
+    revisions: RevisionCells,
 ) -> None:
     for row_index, decision_time in enumerate(decision_timestamps):
         for column in range(values.shape[1]):
             outcome_time = outcome_times[row_index][column]
             available_at = available_ats[row_index][column]
             source_id = source_ids[row_index][column]
-            provenance = (outcome_time, available_at, source_id)
+            revision = revisions[row_index][column]
+            provenance = (outcome_time, available_at, source_id, revision)
             if any(value is None for value in provenance):
                 if not all(value is None for value in provenance):
                     raise FeatureMatrixError("target provenance cells must be complete")
@@ -831,6 +1157,10 @@ def _empty_timestamp_cells(shape: tuple[int, int]) -> list[list[datetime | None]
 
 
 def _empty_source_cells(shape: tuple[int, int]) -> list[list[str | None]]:
+    return [[None for _ in range(shape[1])] for _ in range(shape[0])]
+
+
+def _empty_revision_cells(shape: tuple[int, int]) -> list[list[int | None]]:
     return [[None for _ in range(shape[1])] for _ in range(shape[0])]
 
 

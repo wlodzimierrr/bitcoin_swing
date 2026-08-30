@@ -36,6 +36,12 @@ Policy version: `FLOAT64_V1`.
   returns and true range do not support omission because it would change
   observation adjacency.
 - Rolling warm-up periods are represented by NaN, not zero.
+- Arithmetic that is mathematically defined but not representable in `float64`
+  raises `NumericInputError`. Numerically stable formulations may use wider
+  intermediates, but public numeric outputs remain `float64`.
+- NumPy warning handling is scoped to the operation being checked. Runtime
+  warnings are never disabled globally, and post-arithmetic validation remains
+  mandatory after a locally handled overflow or invalid operation.
 
 ## Tolerances And Statistics
 
@@ -50,6 +56,22 @@ Policy version: `FLOAT64_V1`.
 - Percentile ranks use the mean rank for ties.
 - Return transforms emit `n-1` observations and do not invent a padded first
   return.
+
+## Hard-Decision Comparisons
+
+- Policy version `DECISION_COMPARISON_V1` governs comparisons between migrated
+  `float64` results and Decimal-facing strategy thresholds.
+- The comparison band uses the central `PARITY_TOLERANCE`: two values are
+  equivalent when their absolute difference is no greater than the larger of
+  `1e-12` and `1e-12 * max(abs(left), abs(right))`.
+- Inclusive `>=` and `<=` comparisons accept values in the equivalence band.
+  Strict `>` and `<` comparisons reject values in that band. Values outside the
+  band retain their ordinary ordering.
+- Domain decisions use `btc_predictor.quant.comparisons`; compatibility
+  wrappers may preserve existing Decimal return types, but binary float text is
+  not treated as an authoritative exact threshold boundary.
+- This policy is for hard decisions, not for hiding material parity failures or
+  changing persisted numeric values through arbitrary rounding.
 
 ## Rolling Windows
 
@@ -160,6 +182,9 @@ Policy version: `FLOAT64_V1`.
 ## Determinism And Boundaries
 
 - Simulation requires an explicit non-negative seed and uses NumPy `PCG64`.
+- Seeded simulations validate every generated sample. Accepted finite
+  parameters either return finite `float64` samples or fail deterministically;
+  they never return infinity or an unexpected NaN.
 - Helpers do not access clocks, global random state, files, networks, databases,
   configuration, trading actions, or mutable application state.
 - The package may depend on the Python standard library, NumPy, SciPy, and other

@@ -87,6 +87,44 @@ def test_sigmoid_is_stable_for_extreme_values_and_supports_reverse_slope() -> No
     np.testing.assert_array_equal(decreasing, [1.0, 0.5, 0.0])
 
 
+def test_extreme_finite_intervals_are_stable_and_do_not_create_nan() -> None:
+    assert bounded_linear(
+        0,
+        input_minimum=-1e308,
+        input_maximum=1e308,
+    ) == 50
+    assert sigmoid(
+        -1e308,
+        midpoint=1e308,
+        lower=-1e308,
+        upper=1e308,
+    ) == -1e308
+    assert normal_cdf_score(
+        -1e308,
+        mean=1e308,
+        minimum=-1e308,
+        maximum=1e308,
+    ) == -1e308
+
+    values = bounded_linear(
+        [-1e308, 0, 1e308],
+        input_minimum=-1e308,
+        input_maximum=1e308,
+    )
+    np.testing.assert_array_equal(values, [0, 50, 100])
+    assert np.isfinite(values).all()
+
+    with pytest.raises(NumericInputError, match="finite float64 range"):
+        bounded_linear(
+            1e308,
+            input_minimum=-1,
+            input_maximum=1,
+            output_minimum=-1e308,
+            output_maximum=1e308,
+            clip=False,
+        )
+
+
 def test_bounded_linear_clips_by_default_and_can_extrapolate() -> None:
     values = [-5, 0, 5, 10, 15]
 
@@ -144,6 +182,15 @@ def test_winsorize_uses_linear_quantiles_and_preserves_shape() -> None:
     np.testing.assert_array_equal(result, np.clip(values, *expected_bounds))
     assert result.shape == values.shape
     assert winsorize(42.0) == 42.0
+
+    np.testing.assert_array_equal(
+        winsorize(
+            [-1e308, 1e308],
+            lower_quantile=0.5,
+            upper_quantile=0.5,
+        ),
+        [0, 0],
+    )
 
 
 @pytest.mark.parametrize(
