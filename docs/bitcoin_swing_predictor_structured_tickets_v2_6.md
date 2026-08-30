@@ -3427,7 +3427,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   \[
   Stop=Invalidation+Buffer
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3437,6 +3437,29 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/stop.py` with `calculate_initial_stop()`, policy
+    version `INITIAL_STOP_V1`, implementing
+    `long: Invalidation - Buffer` and `short: Invalidation + Buffer`.
+  - `initial_stop_for_setup()` is the canonical path composing a BTC-140
+    selection with a BTC-141 buffer. Direction, invalidation level and entry
+    price are all taken from the BTC-140 result, so the trade side cannot be
+    restated inconsistently downstream. It accepts result objects or their
+    persisted records.
+  - Upstream incompleteness propagates: an incomplete invalidation or buffer
+    yields no stop, reported as `INITIAL_STOP_INVALIDATION_INCOMPLETE` and/or
+    `INITIAL_STOP_BUFFER_INCOMPLETE`, and both are reported together when both
+    fail.
+  - Two guards beyond the bare formula: a stop driven to or below zero by a wide
+    buffer is rejected (`INITIAL_STOP_NON_POSITIVE`), and when an entry price is
+    supplied a long stop must sit below entry and a short stop above it
+    (`INITIAL_STOP_WRONG_SIDE_OF_ENTRY`).
+  - Owns the stop's own geometry: `stop_distance` and
+    `stop_distance_fraction` are derived once here because BTC-145 consumes the
+    latter as `StopDistance%`. Reward/risk (BTC-143), the risk budget (BTC-144)
+    and sizing (BTC-145) remain out of scope, as does trailing behaviour.
+  - The record carries both inputs alongside the output, so a stop is
+    re-derivable from its own persisted row.
 
 #### BTC-143 Implement R/R filter
 - **Description:**

@@ -25,6 +25,14 @@ from btc_predictor.risk.buffer import (
     level_noise_from_zone,
     volatility_buffer_grid,
 )
+from btc_predictor.risk.stop import (
+    INITIAL_STOP_FEATURE_ID,
+    INITIAL_STOP_POLICY_VERSION,
+    INITIAL_STOP_REASON_CODES,
+    InitialStopResult,
+    calculate_initial_stop,
+    initial_stop_for_setup,
+)
 from btc_predictor.risk.invalidation import (
     BEARISH_DISTRIBUTION_SETUP,
     BULLISH_RESET_SETUP,
@@ -50,6 +58,12 @@ from btc_predictor.risk.invalidation import (
 )
 
 __all__ = [
+    "INITIAL_STOP_FEATURE_ID",
+    "INITIAL_STOP_POLICY_VERSION",
+    "INITIAL_STOP_REASON_CODES",
+    "InitialStopResult",
+    "calculate_initial_stop",
+    "initial_stop_for_setup",
     "LEVEL_NOISE_DERIVED_FROM_ZONE",
     "LEVEL_NOISE_ESTIMATE_FORMULA",
     "LEVEL_NOISE_ESTIMATE_VERSION",
