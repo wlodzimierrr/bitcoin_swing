@@ -120,10 +120,24 @@ class EntryConvictionResult:
             for component_id in ENTRY_CONVICTION_COMPONENT_IDS
             if inputs[component_id] is None
         )
+        contribution_missing = tuple(
+            component_id
+            for component_id in ENTRY_CONVICTION_COMPONENT_IDS
+            if contributions[component_id] is None
+        )
         if self.missing_components != expected_missing:
             raise ValueError("missing_components do not match Entry Conviction inputs")
+        if contribution_missing != expected_missing:
+            raise ValueError("contributions do not match Entry Conviction inputs")
         if self.complete != (self.score is not None and not expected_missing):
             raise ValueError("complete state does not match Entry Conviction inputs")
+        expected_reason_codes = (
+            ("ENTRY_CONVICTION_COMPLETE",)
+            if self.complete
+            else ("ENTRY_CONVICTION_INPUT_MISSING",)
+        )
+        if self.reason_codes != expected_reason_codes:
+            raise ValueError("reason_codes do not match Entry Conviction state")
 
         score = _score(self.score, "score") if self.score is not None else None
         if score is not None:

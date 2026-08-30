@@ -269,6 +269,26 @@ def test_result_validation_rejects_contribution_drift() -> None:
         broken.as_record()
 
 
+def test_result_validation_rejects_contribution_missingness_drift() -> None:
+    config = load_strategy_config()
+    result = calculate_entry_conviction(complete_input(), strategy_config=config)
+    broken = replace(
+        result,
+        contributions={**result.contributions, "flow": None},
+    )
+
+    with pytest.raises(ValueError, match="contributions do not match"):
+        broken.as_record()
+
+
+def test_result_validation_rejects_reason_code_drift() -> None:
+    config = load_strategy_config()
+    result = calculate_entry_conviction(complete_input(), strategy_config=config)
+
+    with pytest.raises(ValueError, match="reason_codes do not match"):
+        replace(result, reason_codes=()).as_record()
+
+
 def test_repeated_single_and_batch_calculation_is_deterministic() -> None:
     config = load_strategy_config()
     first = calculate_entry_conviction(complete_input(), strategy_config=config)
