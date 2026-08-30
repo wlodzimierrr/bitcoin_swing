@@ -13,6 +13,22 @@ Status values:
 TODO / IN_PROGRESS / BLOCKED / DONE
 ```
 
+### Authoritative Roadmap / Dependency Policy
+
+This v2.6 document is the **authoritative Phase-1 execution roadmap**.
+`bitcoin_swing_predictor_project_tickets_v1.md` is retained only as historical
+provenance and must **not** be used to determine current execution order or
+ticket dependencies.
+
+Dependency rules:
+
+- Every executable `TODO` / `IN_PROGRESS` ticket declares its current prerequisites in this document.
+- `Dependencies` is the single authoritative dependency field; the legacy `V2 Dependencies` field is retired.
+- Ticket ranges such as `BTC-150..158` are inclusive.
+- Completed tickets whose old v1 dependency detail was never reconstructed are marked as historical/completed and carry no remaining execution dependency.
+- The `V2 Execution Order` below is the scheduling/tie-break authority when multiple dependency-satisfied tickets are available.
+- A dependency change must be made in this file rather than by pointing to an older roadmap.
+
 ### Codex Model Selection Policy
 
 This roadmap is now optimized for **maximum implementation quality and
@@ -352,7 +368,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   - Test runner works
   - No secrets committed
   - Environment-specific configuration supported
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -378,7 +394,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   - Config validated at startup
   - Invalid configs fail fast
   - Config version is persisted with every run
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -392,7 +408,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   - Fresh database can be built from migrations
   - Upgrade and downgrade tested
   - Schema state can be reproduced exactly
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -417,7 +433,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   - Schemas created through migration
   - Application DB user has correct permissions
   - Research and runtime connections verified
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -444,7 +460,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   - UTC timestamps
   - Duplicate ingestion is idempotent
   - Missing bars can be detected
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -469,7 +485,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   - Units documented
   - Timestamp semantics documented
   - Point-in-time availability supported
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -489,7 +505,7 @@ BTC-220+     Full validation / invariants / historical scenarios
 - **Acceptance Criteria:**
   - Historical revisions can be represented
   - Signal jobs query only data available at signal time
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -511,7 +527,7 @@ BTC-220+     Full validation / invariants / historical scenarios
 - **Acceptance Criteria:**
   - Can store VIX, yields, DXY proxies, liquidity measures, and on-chain metrics
   - Revisions do not overwrite historical availability state
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -541,7 +557,7 @@ BTC-220+     Full validation / invariants / historical scenarios
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   Every recommendation is reconstructable later.
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -571,7 +587,7 @@ BTC-220+     Full validation / invariants / historical scenarios
   EXIT
   MISSED
   ```
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -592,7 +608,7 @@ BTC-220+     Full validation / invariants / historical scenarios
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   Can compare recommendation vs actual execution.
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -730,18 +746,20 @@ Official documentation:
 
 ### Source hierarchy
 
-Provisional hierarchy:
+Current role hierarchy:
 
 ```text
-STRUCTURAL / REFERENCE PRICE
-Bitstamp BTC/USD candidate
-        ↓
-Coinbase BTC-USD
-        +
-Bitfinex BTC/USD
+PRODUCTION STRUCTURAL / REFERENCE PRICE
+UNRESOLVED — no provider/composite is promoted yet
+
+FROZEN RESEARCH CANDIDATE
+BTC_REFERENCE_COMPOSITE_V2
+(Bitstamp + Coinbase + Bitfinex median-OHLC protocol)
 
 RAW OHLCV / VOLUME
 Bitstamp BTC/USD
+Coinbase BTC-USD
+Bitfinex BTC/USD
 
 OPTIONAL INSTITUTIONAL BENCHMARK
 Coin Metrics BTC/USD pair candles
@@ -757,9 +775,14 @@ queryable.
 ### Exchange-specific wick policy
 
 A structural break should not automatically be declared solely because one
-exchange prints an isolated abnormal wick. Research output records cross-venue
-median high/low/close and ATR-normalized high/low divergence distributions,
-without a permanent hardcoded anomaly threshold.
+exchange prints an isolated abnormal wick. BTC-019 now uses the versioned
+`PRICE_SOURCE_WICK_ANOMALY_V1` rule: an isolated wick must be materially extreme
+in ATR units and stand clear of the runner-up venue; `CROSS_VENUE_CONFIRMED`
+requires meaningful corroboration by a second venue. The materiality threshold is
+`0.30 ATR`, deliberately reused from the frozen two-provider range-disagreement
+threshold rather than introduced as an unversioned magic constant. Research
+output continues to record cross-venue median high/low/close and ATR-normalized
+high/low divergence distributions.
 
 BTC-019 must quantify cross-source divergence and define the exact rule for:
 
@@ -777,12 +800,34 @@ Raw observations remain immutable. The final approved canonical series will
 determine strategy structure, while exchange-specific data remains available
 for diagnostics and execution analysis.
 
-### Post-Phase-1 reference research
+### Reference-composite research governance
 
-Reserve `BTC_REFERENCE_COMPOSITE_V1` for Phase 2 research into a robust
-cross-venue reference. It must not be implemented or used in Phase 1. A future
-ticket must define constituent eligibility, aggregation, outage behavior,
-provenance, versioning, and decision/portfolio sensitivity before promotion.
+The price-reference research line has progressed beyond the original BTC-019
+provider comparison, but **no production canonical reference has been approved**.
+Current authoritative state:
+
+```text
+BTC-019 = IN_PROGRESS
+Bitstamp sole canonical candidate = REJECTED
+BTC_REFERENCE_COMPOSITE_V1 = RESEARCH_INCONCLUSIVE
+BTC-019B diagnostic conclusion = MIXED
+BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
+production canonical reference = UNRESOLVED
+```
+
+`BTC_REFERENCE_COMPOSITE_V1`, BTC-019B, and BTC-019C/V2 are separate, versioned
+research artifacts. They do not rewrite `PRICE_SOURCE_POLICY_V1` history and do
+not imply production promotion. The frozen V2 protocol definition SHA-256 is:
+
+```text
+bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a
+```
+
+The candidate V2 validation period `2015-07-20 21:00 UTC` through
+`2019-11-30 23:00 UTC` remains sealed until the preregistered validation stage.
+Normal Phase-1 implementation may continue with an injectable/versioned reference
+price abstraction, but final authoritative strategy calibration/certification
+remains blocked until the production canonical reference is resolved.
 
 ### Persistence requirements
 
@@ -932,12 +977,19 @@ Do not overwrite raw history when the preferred provider changes.
     Maximum MFE/MAE sensitivities were 2.433/4.605 percentage points.
   - BTC-019 remains **IN PROGRESS** because rejection does not satisfy the
     approved-canonical-reference criterion. Coinbase and Bitfinex are not
-    automatically promoted. Follow-up `BTC_REFERENCE_COMPOSITE_V1` research is
-    recommended without implementing or splicing a composite into V1.
+    automatically promoted.
   - Evidence is persisted under
     `research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/`.
-  - `BTC_REFERENCE_COMPOSITE_V1` is reserved for a separate post-Phase-1
-    research ticket and is not implemented by BTC-019.
+  - Separate follow-up research has since implemented and preserved
+    `BTC_REFERENCE_COMPOSITE_V1` (`RESEARCH_INCONCLUSIVE`), BTC-019B (`MIXED`),
+    and BTC-019C / `BTC_REFERENCE_COMPOSITE_V2` (`FROZEN_RESEARCH_PROTOCOL`).
+    These artifacts are versioned research only; none rewrites V1 or promotes a
+    production canonical reference.
+  - The BTC-019 correctness/reproducibility audit corrected implementation defects
+    without changing the governing conclusions: Bitstamp remains `REJECTED`, V1
+    remains `RESEARCH_INCONCLUSIVE`, BTC-019B remains `MIXED`, and the V2 protocol
+    remains byte-identical with SHA-256
+    `bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a`.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
@@ -956,7 +1008,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Missing interval detection
   - Daily, weekly, and monthly bars derive from point-in-time source data
   - Raw records never silently changed
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -984,7 +1036,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Provider-specific raw data normalized
   - Aggregate BTC view can be generated
   - No future timestamps leak into derived data
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -1004,7 +1056,7 @@ Do not overwrite raw history when the preferred provider changes.
   - AUM normalization supported where available
   - available_at correctly captured
   - Missing publication days handled explicitly
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1030,7 +1082,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1057,7 +1109,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1085,7 +1137,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1112,7 +1164,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1142,7 +1194,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1167,7 +1219,7 @@ Do not overwrite raw history when the preferred provider changes.
 - **Acceptance Criteria:**
   - Predictor can still report existing position state
   - Failure reasons are persisted
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1190,7 +1242,7 @@ Do not overwrite raw history when the preferred provider changes.
   - Monthly boundaries documented
   - Reproducible aggregation
   - Point-in-time correct
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1218,7 +1270,7 @@ Do not overwrite raw history when the preferred provider changes.
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   All rolling calculations use only past information.
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1653,7 +1705,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1673,7 +1725,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1691,7 +1743,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1717,7 +1769,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1736,7 +1788,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1764,7 +1816,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Inputs persisted
   - Score explainable
   - Historical recomputation deterministic
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1786,7 +1838,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1805,7 +1857,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1827,7 +1879,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -1846,7 +1898,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1866,7 +1918,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -1904,7 +1956,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Missing P1 inputs are not silently filled with zero
   - Output records `FLOW_MODEL = ETF_CORE` or `FLOW_MODEL = ETF_SPOT_PERP_FULL`
   - Formula weights are loaded from versioned strategy config
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1929,7 +1981,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1949,7 +2001,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1971,7 +2023,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -1991,7 +2043,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -2017,7 +2069,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2044,7 +2096,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -2071,7 +2123,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -2098,7 +2150,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -2121,7 +2173,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -2153,7 +2205,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -2173,17 +2225,38 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-084 Implement Volatility Score
 - **Description:**
   Complete the ticket scope for implement volatility score.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-043, BTC-044, BTC-046
+- **Dependencies:** BTC-043, BTC-044, BTC-046
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `VOLATILITY_SCORE` as the rulebook v1.2 composite
+    `0.5 CompressionScore + 0.5 OrderlinessScore`, using the shared BTC-046
+    `decimal_weighted_score` boundary so advisory, paper, and backtest layers
+    share one formula.
+  - Added `COMPRESSION_SCORE`, a clamped linear ramp over RV7/RV60: full score
+    at or below `0.70`, zero at or above `1.30`. The bounds are symmetric about
+    the rulebook's `RV7 / RV60 < 1` boundary, so a neutral ratio scores 50.
+  - Classifies the volatility regime as COMPRESSED / NORMAL / ELEVATED /
+    STRESSED from the 2-year RV20 percentile. The regime is reported for
+    setup-specific interpretation and deliberately does not enter the weighted
+    composite, so a missing percentile never blocks the score.
+  - Persists inputs, weights, thresholds, per-component contributions,
+    compression score, regime, interpretation, config metadata, completion
+    state, and reason codes through `VolatilityScoreResult.as_record()`.
+  - Missing component inputs produce `VOLATILITY_SCORE_INPUT_MISSING` and a
+    `None` score rather than a silent zero-fill.
+  - `calculate_volatility_score_from_results()` composes the score directly
+    from persisted BTC-081/BTC-082/BTC-083 feature results.
+  - Threshold and band comparisons use `DECISION_COMPARISON_V1` helpers, and
+    the score ramp stays in exact `Decimal`, matching the existing
+    entry-location convention rather than round-tripping through float64.
 
 #### BTC-085 Implement STRESS flag
 - **Description:**
@@ -2200,7 +2273,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -2233,7 +2306,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Point-in-time detection
   - No use of future bars before level confirmation
   - Detection timestamp persisted separately from level timestamp
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -2258,7 +2331,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2283,7 +2356,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -2316,7 +2389,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
@@ -2350,7 +2423,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
@@ -2377,7 +2450,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Member levels linked
   - Confluence score available
   - No double-counting of nearby lines
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -2412,7 +2485,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2460,7 +2533,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2557,8 +2630,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Output records `REGIME_MODEL = CORE_MARKET_ONLY` or `REGIME_MODEL = FULL_MACRO_ONCHAIN_LIQUIDITY`
   - Missing P1 inputs are not silently filled with zero
   - Formula weights are loaded from versioned strategy config
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-046 after migration parity; existing inputs remain authoritative
+- **Dependencies:** BTC-046 after migration parity; existing inputs remain authoritative
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2588,7 +2660,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -2622,7 +2694,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -2661,7 +2733,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2711,7 +2783,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -2746,7 +2818,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
@@ -2779,7 +2851,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
@@ -2808,7 +2880,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -2837,7 +2909,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** Historical/completed; no remaining execution dependency.
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -2869,7 +2941,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-092
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2883,7 +2955,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-092, BTC-045
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2897,7 +2969,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-090
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -2915,7 +2987,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-045, BTC-095
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3012,8 +3084,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Missing inputs are surfaced rather than zero-filled
   - Output is deterministic, explainable, and reproducible
   - Persisted record identifies v1.2 scoring/config version
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-046, BTC-084, BTC-098, BTC-129
+- **Dependencies:** BTC-046, BTC-084, BTC-098, BTC-129
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3033,8 +3104,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-130
+- **Dependencies:** BTC-130
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -3056,8 +3126,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-130, BTC-045 where distance/no-chase metrics are used
+- **Dependencies:** BTC-130, BTC-045 where distance/no-chase metrics are used
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3085,7 +3154,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-130, BTC-131, BTC-132
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3101,8 +3170,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-045, BTC-047, BTC-097
+- **Dependencies:** BTC-045, BTC-047, BTC-097
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -3128,8 +3196,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-043, BTC-045, BTC-047
+- **Dependencies:** BTC-043, BTC-045, BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3153,8 +3220,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-140, BTC-141, BTC-047
+- **Dependencies:** BTC-140, BTC-141, BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3180,8 +3246,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - If no credible structural reward reference exists, the R/R filter fails
   - Selected reward reference is persisted with the recommendation
   - R/R calculation is reproducible from stored levels and entry/stop values
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3201,8 +3266,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-130, BTC-047
+- **Dependencies:** BTC-130, BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3219,8 +3283,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-144, BTC-047
+- **Dependencies:** BTC-144, BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3239,8 +3302,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3267,8 +3329,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047 and completed paper-portfolio persistence schema
+- **Dependencies:** BTC-047 and completed paper-portfolio persistence schema
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -3286,7 +3347,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-047, BTC-150
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
@@ -3312,8 +3373,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-046, BTC-129
+- **Dependencies:** BTC-046, BTC-129
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3339,8 +3399,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-046, BTC-047, BTC-129
+- **Dependencies:** BTC-046, BTC-047, BTC-129
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3363,8 +3422,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047, BTC-153
+- **Dependencies:** BTC-047, BTC-153
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3384,8 +3442,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3416,8 +3473,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-043, BTC-045, BTC-047
+- **Dependencies:** BTC-043, BTC-045, BTC-047
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -3436,7 +3492,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Trim signals include reason codes
   - Trim signals are distinct from full exits
   - Paper trader can simulate partial reductions once BTC-164 is complete
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-047, BTC-150, BTC-152
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3458,7 +3514,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-142, BTC-150, BTC-152, BTC-156
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3480,8 +3536,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047, BTC-150
+- **Dependencies:** BTC-047, BTC-150
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3500,8 +3555,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3521,8 +3575,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3536,8 +3589,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047, BTC-154
+- **Dependencies:** BTC-047, BTC-154
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3551,7 +3603,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-047, BTC-157, BTC-160
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3578,8 +3630,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3599,7 +3650,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-160..165 and completed paper-portfolio persistence schema
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3671,7 +3722,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-130..133, BTC-140..146, BTC-160..166
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3695,7 +3746,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-150..158, BTC-160..166, BTC-170
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3709,7 +3760,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-170, BTC-171
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -3741,8 +3792,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047, BTC-048, BTC-049, BTC-150..158
+- **Dependencies:** BTC-047, BTC-048, BTC-049, BTC-150..158
 - **Priority:** P0
 - **Complexity:** XL
 - **Risk:** High.
@@ -3762,7 +3812,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-180
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
@@ -3779,8 +3829,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-048, BTC-180
+- **Dependencies:** BTC-048, BTC-180
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -3803,7 +3852,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-180, BTC-182
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3824,7 +3873,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-180, BTC-182
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -3863,8 +3912,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-048, BTC-049, BTC-180
+- **Dependencies:** BTC-048, BTC-049, BTC-180
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -4040,8 +4088,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-048, BTC-180
+- **Dependencies:** BTC-048, BTC-180
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4055,8 +4102,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-048, BTC-165, BTC-166
+- **Dependencies:** BTC-048, BTC-165, BTC-166
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4074,7 +4120,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-180, BTC-191
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4112,7 +4158,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-182, BTC-185, BTC-189, BTC-192
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4135,7 +4181,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-166, BTC-170, BTC-172
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -4159,7 +4205,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-200
 - **Priority:** P1
 - **Complexity:** XS
 - **Risk:** Low.
@@ -4173,7 +4219,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-200, BTC-201 and completed manual-trade journal schema
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -4197,7 +4243,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-191, BTC-202
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4220,7 +4266,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-166, BTC-170, BTC-172
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
@@ -4241,7 +4287,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-166, BTC-170..172, BTC-210
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4267,7 +4313,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-170..172, BTC-210
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4277,7 +4323,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 
 The project must not proceed to trust paper/backtest performance until all of the following are true:
 
-- [ ] BTC-019 canonical BTC price-source policy is validated and versioned
+- [ ] BTC-019 production canonical reference is explicitly approved and versioned
 - [x] BTC-042 quant package exists and numerical conventions are documented
 - [x] BTC-043 rolling/statistics NumPy parity passes
 - [x] BTC-044 nonlinear transformations reproduce existing score behavior
@@ -4316,8 +4362,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-049 for quant parity coverage
+- **Dependencies:** BTC-049 for quant parity coverage
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4338,8 +4383,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-043, BTC-048, BTC-049
+- **Dependencies:** BTC-043, BTC-048, BTC-049
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -4363,8 +4407,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
-- **V2 Dependencies:** BTC-047
+- **Dependencies:** BTC-047
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4386,7 +4429,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-160..166
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4401,7 +4444,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** Follow roadmap execution order in `bitcoin_swing_predictor_project_tickets_v1.md`
+- **Dependencies:** BTC-180, BTC-220..223
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
