@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any
 
 from btc_predictor.data import OhlcvBar
+from btc_predictor.features._scoring import decimal_weighted_score
 from btc_predictor.features.rolling import NumericValue, OptionalDecimalSeries, rolling_mean
 from btc_predictor.quant.transforms import normal_cdf_score
 
@@ -120,11 +121,19 @@ def calculate_trend_score(
 
     selected_weights = _trend_score_weights(weights)
     input_values = _trend_score_input_values(inputs)
+    weighted = decimal_weighted_score(
+        input_values,
+        selected_weights,
+        component_ids=TREND_SCORE_COMPONENT_IDS,
+        expected_weight_total=None,
+    )
     contributions = {
-        component_id: selected_weights[component_id] * input_values[component_id]
+        component_id: weighted.contributions[component_id]
         for component_id in TREND_SCORE_COMPONENT_IDS
     }
-    raw_score = sum(contributions.values(), Decimal("0"))
+    if weighted.score is None:
+        raise RuntimeError("trend score inputs unexpectedly produced an incomplete score")
+    raw_score = weighted.score
     score = _standard_normal_score(raw_score)
     return TrendScoreResult(
         feature_id=TREND_SCORE_FEATURE_ID,

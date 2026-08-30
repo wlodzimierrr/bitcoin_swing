@@ -14,6 +14,7 @@ from btc_predictor.data import (
     OpenInterest,
     require_utc_datetime,
 )
+from btc_predictor.features._scoring import decimal_weighted_score
 from btc_predictor.quant.transforms import gaussian_health, percentile_to_health
 
 
@@ -835,19 +836,13 @@ def calculate_positioning_score(
     if missing_components:
         reason_codes.append("POSITIONING_SCORE_INPUT_MISSING")
 
-    contributions = {
-        component_id: (
-            selected_weights[component_id] * input_values[component_id]
-            if input_values[component_id] is not None
-            else None
-        )
-        for component_id in POSITIONING_SCORE_COMPONENT_IDS
-    }
-    score = (
-        sum((value for value in contributions.values() if value is not None), Decimal("0"))
-        if not missing_components
-        else None
+    weighted = decimal_weighted_score(
+        input_values,
+        selected_weights,
+        component_ids=POSITIONING_SCORE_COMPONENT_IDS,
     )
+    contributions = weighted.contributions
+    score = weighted.score
     return PositioningScoreResult(
         feature_id=POSITIONING_SCORE_FEATURE_ID,
         score=score,

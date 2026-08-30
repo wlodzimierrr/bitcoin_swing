@@ -44,6 +44,13 @@ from btc_predictor.quant.rolling import (
     simple_returns,
     true_range,
 )
+from btc_predictor.quant.scoring import (
+    CompleteOutput,
+    ScoreOutput,
+    WeightInput,
+    WeightedScoreResult,
+    weighted_score,
+)
 from btc_predictor.quant.transforms import (
     PENALTY_DIRECTIONS,
     PenaltyDirection,
@@ -73,6 +80,7 @@ __all__ = [
     "ROLLING_NAN_POLICIES",
     "FloatArray",
     "ClusterDistanceMode",
+    "CompleteOutput",
     "DistanceInput",
     "DistanceOutput",
     "NanPolicy",
@@ -80,8 +88,11 @@ __all__ = [
     "NumericTolerance",
     "PenaltyDirection",
     "RollingNanPolicy",
+    "ScoreOutput",
     "TransformInput",
     "TransformOutput",
+    "WeightInput",
+    "WeightedScoreResult",
     "average_true_range",
     "atr_normalized_distance",
     "as_float64_array",
@@ -113,4 +124,5 @@ __all__ = [
     "smooth_penalty",
     "true_range",
     "winsorize",
+    "weighted_score",
 ]

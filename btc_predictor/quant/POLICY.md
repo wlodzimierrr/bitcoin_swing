@@ -96,6 +96,23 @@ Policy version: `FLOAT64_V1`.
   Score formula, while ATR mode expresses full-score and no-chase thresholds
   directly in ATR units.
 
+## Weighted Scores
+
+- Weighted scoring accepts one named component row or a two-dimensional
+  observation matrix and computes contributions and scores from the same
+  `float64` multiplication-and-reduction path.
+- Mapping weights are reordered to an explicit component-name sequence and
+  must match it exactly. Array weights require component names and exact shape
+  alignment.
+- Weights are finite, non-negative, and have a positive total. Callers may
+  enforce a configured expected total with an explicit absolute tolerance or
+  opt out when a domain policy only requires a positive total.
+- Missing component inputs are represented by NaN contribution masks. A row
+  with any missing component has a NaN score and a false completeness mask;
+  missing values are never replaced with zero.
+- Domain model selection, score interpretation, reason codes, Decimal scale,
+  and persistence formatting remain outside the quantitative layer.
+
 ## Determinism And Boundaries
 
 - Simulation requires an explicit non-negative seed and uses NumPy `PCG64`.

@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import Any
 
 from btc_predictor.data import OhlcvBar, require_utc_datetime
+from btc_predictor.features._scoring import decimal_weighted_score
 from btc_predictor.quant.rolling import realized_volatility as quant_realized_volatility
 
 
@@ -862,9 +863,9 @@ def calculate_orderliness_score(
         reason_codes.append("ORDERLINESS_VOLATILITY_SPIKE")
 
     reason_codes = _dedupe_reason_codes(reason_codes)
-    penalties = {
+    penalty_inputs = {
         component_id: (
-            selected_weights[component_id] * Decimal("100")
+            Decimal("100")
             if _orderliness_component_triggered(component_id, reason_codes)
             else Decimal("0")
         )
@@ -872,17 +873,26 @@ def calculate_orderliness_score(
         else None
         for component_id in ORDERLINESS_SCORE_COMPONENT_IDS
     }
+    weighted = decimal_weighted_score(
+        penalty_inputs,
+        selected_weights,
+        component_ids=ORDERLINESS_SCORE_COMPONENT_IDS,
+    )
+    penalties = {
+        component_id: (
+            Decimal("0")
+            if penalty_inputs[component_id] == Decimal("0")
+            else weighted.contributions[component_id]
+        )
+        for component_id in ORDERLINESS_SCORE_COMPONENT_IDS
+    }
     missing_inputs = "ORDERLINESS_INPUT_MISSING" in reason_codes
     score = (
         max(
             Decimal("0"),
-            Decimal("100")
-            - sum(
-                (penalty for penalty in penalties.values() if penalty is not None),
-                Decimal("0"),
-            ),
+            Decimal("100") - weighted.score,
         )
-        if not missing_inputs
+        if not missing_inputs and weighted.score is not None
         else None
     )
     return OrderlinessScoreResult(

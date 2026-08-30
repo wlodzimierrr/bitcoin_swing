@@ -81,7 +81,6 @@ def test_adjacent_ticket_namespaces_do_not_preempt_their_implementations() -> No
     for module_name in (
         "portfolio",
         "risk",
-        "scoring",
         "statistics",
     ):
         module = __import__(f"btc_predictor.quant.{module_name}", fromlist=[module_name])

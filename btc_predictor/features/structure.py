@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from btc_predictor.features._scoring import decimal_weighted_score
+
 
 STRUCTURE_SCORE_FEATURE_ID = "STRUCTURE_SCORE"
 STRUCTURE_SCORE_COMPONENT_IDS = (
@@ -189,14 +191,12 @@ def calculate_structure_score(
         "rr_quality": inputs.rr_quality,
         "confluence": inputs.confluence,
     }
-    contributions = {
-        component_id: (
-            components[component_id] * normalized_weights[component_id]
-            if components[component_id] is not None
-            else None
-        )
-        for component_id in STRUCTURE_SCORE_COMPONENT_IDS
-    }
+    weighted = decimal_weighted_score(
+        components,
+        normalized_weights,
+        component_ids=STRUCTURE_SCORE_COMPONENT_IDS,
+    )
+    contributions = weighted.contributions
     if any(value is None for value in components.values()):
         return StructureScoreResult(
             feature_id=STRUCTURE_SCORE_FEATURE_ID,
@@ -213,7 +213,9 @@ def calculate_structure_score(
             reason_codes=("STRUCTURE_SCORE_INPUT_MISSING",),
         )
 
-    score = sum(contribution for contribution in contributions.values() if contribution is not None)
+    if weighted.score is None:
+        raise RuntimeError("complete structure inputs unexpectedly produced an incomplete score")
+    score = weighted.score
     return StructureScoreResult(
         feature_id=STRUCTURE_SCORE_FEATURE_ID,
         score=score,

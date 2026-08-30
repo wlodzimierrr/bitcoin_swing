@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from btc_predictor.features._scoring import decimal_weighted_score
+
 
 REGIME_SCORE_FEATURE_ID = "REGIME_SCORE"
 REGIME_SMOOTHED_SCORE_FEATURE_ID = "REGIME_SMOOTHED_SCORE"
@@ -337,24 +339,13 @@ def calculate_regime_score(
         if regime_model == REGIME_MODEL_FULL_MACRO_ONCHAIN_LIQUIDITY
         else core_score_weights
     )
-    contributions = {
-        component_id: (
-            selected_weights[component_id] * input_values[component_id]
-            if input_values[component_id] is not None
-            else None
-        )
-        for component_id in selected_component_ids
-    }
-    selected_missing = [
-        component_id
-        for component_id in selected_component_ids
-        if input_values[component_id] is None
-    ]
-    score = (
-        sum((value for value in contributions.values() if value is not None), Decimal("0"))
-        if not selected_missing
-        else None
+    weighted = decimal_weighted_score(
+        input_values,
+        selected_weights,
+        component_ids=selected_component_ids,
     )
+    contributions = weighted.contributions
+    score = weighted.score
     return RegimeScoreResult(
         feature_id=REGIME_SCORE_FEATURE_ID,
         regime_model=regime_model,

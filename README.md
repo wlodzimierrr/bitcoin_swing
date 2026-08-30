@@ -218,6 +218,16 @@ retains its existing fractional clustering behavior and persistence payload by
 default, with optional `cluster_atr` and `cluster_atr_distance_threshold`
 inputs for volatility-normalized clustering.
 
+BTC-046 implements named vectorized weighted scoring for individual rows and
+historical matrices in `btc_predictor.quant.scoring`. It returns aligned
+component contributions, input-missing masks, and row-completeness masks;
+incomplete rows remain NaN instead of being partially summed. Weight names,
+shape, non-negativity, positive totals, and configurable total tolerance are
+validated centrally. Trend, Flow, Positioning, Structure, Regime, and
+Orderliness scores now delegate numerical weighting to this engine while a
+feature-layer adapter preserves their existing Decimal and persistence
+contracts.
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical

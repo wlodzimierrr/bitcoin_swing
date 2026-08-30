@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import Any
 
 from btc_predictor.data import EtfFlow, OhlcvBar, PerpVolume, require_utc_datetime
+from btc_predictor.features._scoring import decimal_weighted_score
 from btc_predictor.quant.transforms import normal_cdf_score
 
 
@@ -728,24 +729,13 @@ def calculate_flow_score(
         if flow_model == FLOW_MODEL_ETF_SPOT_PERP_FULL
         else core_score_weights
     )
-    contributions = {
-        component_id: (
-            selected_weights[component_id] * input_values[component_id]
-            if input_values[component_id] is not None
-            else None
-        )
-        for component_id in selected_component_ids
-    }
-    selected_missing = [
-        component_id
-        for component_id in selected_component_ids
-        if input_values[component_id] is None
-    ]
-    raw_score = (
-        sum((value for value in contributions.values() if value is not None), Decimal("0"))
-        if not selected_missing
-        else None
+    weighted = decimal_weighted_score(
+        input_values,
+        selected_weights,
+        component_ids=selected_component_ids,
     )
+    contributions = weighted.contributions
+    raw_score = weighted.score
     score = _standard_normal_score(raw_score) if raw_score is not None else None
     return FlowScoreResult(
         feature_id=FLOW_SCORE_FEATURE_ID,
