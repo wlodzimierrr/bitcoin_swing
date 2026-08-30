@@ -603,3 +603,51 @@ def test_unknown_version_and_mismatched_weights_are_rejected() -> None:
                 "entry_location": Decimal("0.2"),
             },
         )
+
+
+def test_persisted_score_version_drives_historical_recomputation() -> None:
+    """A historical record must recompute under its own persisted version.
+
+    The BTC-098 default is v1.2, so a v1.1 record replayed without carrying its
+    version forward would silently migrate. Recomputation must read
+    ``score_version`` off the persisted record rather than relying on the
+    current function default.
+    """
+
+    inputs = StructureScoreInput(
+        level_strength=Decimal("80"),
+        entry_location=Decimal("70"),
+        rr_quality=Decimal("90"),
+        confluence=Decimal("75"),
+    )
+    historical = calculate_structure_score(
+        inputs, version=STRUCTURE_SCORE_V1_1
+    ).as_record()
+
+    replayed = calculate_structure_score(
+        inputs,
+        version=historical["score_version"],
+    )
+
+    assert historical["score_version"] == STRUCTURE_SCORE_V1_1
+    assert replayed.as_record() == historical
+    assert replayed.score == Decimal("79.00")
+    # Replaying without the persisted version would have migrated to v1.2.
+    assert calculate_structure_score(inputs).score != replayed.score
+
+
+def test_v1_2_invalid_rr_diagnostic_does_not_mark_structure_incomplete() -> None:
+    result = calculate_structure_score_from_clusters(
+        cluster_result(),
+        entry_price="100",
+        stop_price="101",
+        version=STRUCTURE_SCORE_V1_2,
+        level_strength_score="80",
+    )
+
+    # A reason code describing the independent R/R filter must never be read as
+    # "the Structure Score is incomplete" under v1.2.
+    assert "STRUCTURE_SCORE_INVALID_RISK" in result.reason_codes
+    assert "STRUCTURE_SCORE_INPUT_MISSING" not in result.reason_codes
+    assert result.complete is True
+    assert result.as_record()["complete"] is True

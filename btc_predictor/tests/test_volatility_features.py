@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 
 from btc_predictor.data import OhlcvBar
+from btc_predictor.features._scoring import decimal_bounded_linear
 from btc_predictor.features import (
     CAPITULATION_FLAG_EFFECTS,
     CAPITULATION_FLAG_FEATURE_ID,
@@ -23,6 +24,13 @@ from btc_predictor.features import (
     DEFAULT_ORDERLINESS_LIQUIDATION_PERCENTILE_MAX,
     DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX,
     COMPRESSION_SCORE_FEATURE_ID,
+    COMPRESSION_SCORE_PARAMETER_STATUS,
+    COMPRESSION_SCORE_V1_PARAMETERS,
+    COMPRESSION_SCORE_VERSION,
+    VOLATILITY_REGIME_PARAMETER_STATUS,
+    VOLATILITY_REGIME_V1_PARAMETERS,
+    VOLATILITY_REGIME_VERSION,
+    VOLATILITY_SCORE_DIAGNOSTIC_IDS,
     DEFAULT_COMPRESSION_FULL_SCORE_RATIO,
     DEFAULT_COMPRESSION_ZERO_SCORE_RATIO,
     DEFAULT_ORDERLINESS_SCORE_DISORDERLY_MAX,
@@ -1975,3 +1983,195 @@ def test_volatility_score_from_upstream_feature_results() -> None:
     assert result.inputs.compression_ratio == Decimal("1")
     assert result.inputs.orderliness_score == Decimal("100.00")
     assert result.volatility_regime is None
+
+
+def test_compression_score_parameters_are_versioned_and_marked_provisional() -> None:
+    assert COMPRESSION_SCORE_VERSION == "COMPRESSION_SCORE_V1"
+    assert COMPRESSION_SCORE_V1_PARAMETERS == {
+        "full_compression_ratio": Decimal("0.70"),
+        "neutral_ratio": Decimal("1.00"),
+        "zero_compression_ratio": Decimal("1.30"),
+    }
+    # The ramp endpoints are a deterministic Phase-1 choice, not an empirically
+    # validated calibration; BTC-185 may vary them.
+    assert COMPRESSION_SCORE_PARAMETER_STATUS == "PROVISIONAL_RESEARCH_CALIBRATABLE"
+
+
+def test_declared_neutral_ratio_cannot_drift_from_the_ramp_endpoints() -> None:
+    parameters = COMPRESSION_SCORE_V1_PARAMETERS
+    neutral = parameters["neutral_ratio"]
+
+    # The declared neutral ratio must actually be the ramp's midpoint, so the
+    # three parameters can never be edited out of agreement with each other.
+    assert neutral == (
+        parameters["full_compression_ratio"] + parameters["zero_compression_ratio"]
+    ) / 2
+    assert compression_score_from_ratio(neutral) == Decimal("50")
+
+
+@pytest.mark.parametrize(
+    ("ratio", "expected"),
+    [
+        ("0.00", Decimal("100")),
+        ("0.699999", Decimal("100")),
+        ("0.70", Decimal("100")),
+        ("1.00", Decimal("50")),
+        ("1.30", Decimal("0")),
+        ("1.300001", Decimal("0")),
+        ("99", Decimal("0")),
+    ],
+)
+def test_compression_score_exact_boundaries_and_clamping(
+    ratio: str,
+    expected: Decimal,
+) -> None:
+    assert compression_score_from_ratio(Decimal(ratio)) == expected
+
+
+def test_compression_score_is_bounded_0_to_100_across_the_domain() -> None:
+    for hundredths in range(0, 301, 1):
+        score = compression_score_from_ratio(Decimal(hundredths) / Decimal("100"))
+        assert Decimal("0") <= score <= Decimal("100")
+
+
+def test_decimal_bounded_linear_matches_quant_bounded_linear() -> None:
+    """The Decimal ramp must agree with the BTC-044 float64 primitive."""
+
+    from btc_predictor.quant.transforms import bounded_linear
+
+    for hundredths in range(0, 201):
+        ratio = Decimal(hundredths) / Decimal("100")
+        exact = decimal_bounded_linear(
+            ratio,
+            input_minimum=Decimal("0.70"),
+            input_maximum=Decimal("1.30"),
+            output_at_minimum=Decimal("100"),
+            output_at_maximum=Decimal("0"),
+        )
+        # bounded_linear maps low->low, so invert to compare the same ramp.
+        quant_penalty = bounded_linear(
+            float(ratio),
+            input_minimum=0.70,
+            input_maximum=1.30,
+            output_minimum=0.0,
+            output_maximum=100.0,
+        )
+        assert abs(float(exact) - (100.0 - quant_penalty)) < 1e-9
+
+
+def test_volatility_regime_thresholds_are_versioned() -> None:
+    assert VOLATILITY_REGIME_VERSION == "VOLATILITY_REGIME_V1"
+    assert VOLATILITY_REGIME_V1_PARAMETERS == {
+        "compressed_percentile_max": Decimal("25"),
+        "normal_percentile_max": Decimal("75"),
+        "elevated_percentile_max": Decimal("95"),
+    }
+    assert VOLATILITY_REGIME_PARAMETER_STATUS == "PROVISIONAL_RESEARCH_CALIBRATABLE"
+    # The stressed boundary reuses the already-authoritative stress threshold.
+    assert (
+        VOLATILITY_REGIME_V1_PARAMETERS["elevated_percentile_max"]
+        == DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN
+    )
+
+
+def test_case_a_low_compression_with_mid_percentile_is_not_stressed() -> None:
+    """Weak compression must not manufacture a STRESSED regime."""
+
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1.25"),
+            orderliness_score=Decimal("90"),
+            volatility_percentile=Decimal("45"),
+        ),
+    )
+
+    assert result.compression_score == Decimal("8.333333333333333333333333333")
+    assert result.compression_score < Decimal("20")
+    assert result.volatility_regime == "NORMAL"
+    assert result.complete is True
+
+
+def test_case_b_full_compression_with_stress_percentile_is_stressed() -> None:
+    """Full compression and a stressed regime are a valid combination."""
+
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("0.65"),
+            orderliness_score=Decimal("90"),
+            volatility_percentile=Decimal("97"),
+        ),
+    )
+
+    assert result.compression_score == Decimal("100")
+    assert result.volatility_regime == "STRESSED"
+    assert result.complete is True
+
+
+def test_regime_does_not_change_the_score_for_a_fixed_component_pair() -> None:
+    """Regime is context; it must contribute no weight to the composite."""
+
+    scores = {
+        percentile: calculate_volatility_score(
+            VolatilityScoreInput(
+                compression_ratio=Decimal("1.00"),
+                orderliness_score=Decimal("80"),
+                volatility_percentile=Decimal(percentile),
+            ),
+        )
+        for percentile in ("5", "45", "85", "99")
+    }
+    regimes = {result.volatility_regime for result in scores.values()}
+
+    assert regimes == {"COMPRESSED", "NORMAL", "ELEVATED", "STRESSED"}
+    assert {result.score for result in scores.values()} == {Decimal("65.0")}
+
+
+def test_volatility_score_has_exactly_two_weighted_components() -> None:
+    result = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1.00"),
+            orderliness_score=Decimal("80"),
+            volatility_percentile=Decimal("45"),
+        ),
+    )
+    record = result.as_record()
+
+    assert VOLATILITY_SCORE_COMPONENT_IDS == ("compression", "orderliness")
+    assert set(record["weights"]) == {"compression", "orderliness"}
+    assert set(record["contributions"]) == {"compression", "orderliness"}
+    # Context must be reachable but must never look like a weighted component.
+    assert set(record["diagnostics"]) == set(VOLATILITY_SCORE_DIAGNOSTIC_IDS)
+    assert "volatility_percentile" not in record["contributions"]
+    assert "volatility_regime" not in record["contributions"]
+    assert "compression_ratio" not in record["contributions"]
+    assert record["compression_score_version"] == "COMPRESSION_SCORE_V1"
+    assert record["volatility_regime_version"] == "VOLATILITY_REGIME_V1"
+
+
+def test_missing_regime_context_is_not_a_missing_weighted_component() -> None:
+    complete_without_regime = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=Decimal("1.00"),
+            orderliness_score=Decimal("80"),
+        ),
+    )
+    incomplete = calculate_volatility_score(
+        VolatilityScoreInput(
+            compression_ratio=None,
+            orderliness_score=Decimal("80"),
+            volatility_percentile=Decimal("45"),
+        ),
+    )
+
+    assert complete_without_regime.complete is True
+    assert complete_without_regime.score == Decimal("65.0")
+    assert "VOLATILITY_REGIME_UNKNOWN" in complete_without_regime.reason_codes
+    assert "VOLATILITY_SCORE_INPUT_MISSING" not in (
+        complete_without_regime.reason_codes
+    )
+
+    assert incomplete.complete is False
+    assert incomplete.score is None
+    assert "VOLATILITY_SCORE_INPUT_MISSING" in incomplete.reason_codes
+    # The two conditions must never be conflated by a downstream consumer.
+    assert "VOLATILITY_REGIME_UNKNOWN" not in incomplete.reason_codes

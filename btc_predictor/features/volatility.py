@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
 from btc_predictor.data import OhlcvBar, require_utc_datetime
-from btc_predictor.features._scoring import decimal_weighted_score
+from btc_predictor.features._scoring import (
+    decimal_bounded_linear,
+    decimal_weighted_score,
+)
 from btc_predictor.quant.comparisons import decision_greater_equal, decision_less_equal
 from btc_predictor.quant.rolling import realized_volatility as quant_realized_volatility
 
@@ -132,11 +135,45 @@ REALIZED_VOLATILITY_REASON_CODES = (
 DEFAULT_REALIZED_VOLATILITY_ANNUALIZATION_PERIODS = 365
 DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS = 730
 DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS = 365
+# --- COMPRESSION_SCORE_V1 -----------------------------------------------
+# PROVISIONAL. The rulebook states the preference "RV7 / RV60 < 1" but does not
+# derive the ramp endpoints, so 0.70 and 1.30 are a deterministic Phase-1
+# specification chosen symmetrically about that neutral boundary. They are
+# research-calibratable and are exposed here as an explicit versioned contract
+# so BTC-185 parameter-robustness work can vary them. They must not be treated
+# as empirically validated.
+COMPRESSION_SCORE_VERSION = "COMPRESSION_SCORE_V1"
 DEFAULT_COMPRESSION_FULL_SCORE_RATIO = Decimal("0.70")
+DEFAULT_COMPRESSION_NEUTRAL_RATIO = Decimal("1.00")
 DEFAULT_COMPRESSION_ZERO_SCORE_RATIO = Decimal("1.30")
+COMPRESSION_SCORE_V1_PARAMETERS = {
+    "full_compression_ratio": DEFAULT_COMPRESSION_FULL_SCORE_RATIO,
+    "neutral_ratio": DEFAULT_COMPRESSION_NEUTRAL_RATIO,
+    "zero_compression_ratio": DEFAULT_COMPRESSION_ZERO_SCORE_RATIO,
+}
+COMPRESSION_SCORE_PARAMETER_STATUS = "PROVISIONAL_RESEARCH_CALIBRATABLE"
+
+# --- VOLATILITY_REGIME_V1 -----------------------------------------------
+# PROVISIONAL contextual classification over the 2-year RV20 percentile. The
+# stressed boundary reuses the already-authoritative
+# DEFAULT_STRESS_VOLATILITY_PERCENTILE_MIN; the compressed/normal boundaries are
+# a deterministic Phase-1 quartile split and are research-calibratable.
+VOLATILITY_REGIME_VERSION = "VOLATILITY_REGIME_V1"
 DEFAULT_VOLATILITY_REGIME_COMPRESSED_MAX = Decimal("25")
 DEFAULT_VOLATILITY_REGIME_NORMAL_MAX = Decimal("75")
 DEFAULT_VOLATILITY_REGIME_ELEVATED_MAX = Decimal("95")
+VOLATILITY_REGIME_V1_PARAMETERS = {
+    "compressed_percentile_max": DEFAULT_VOLATILITY_REGIME_COMPRESSED_MAX,
+    "normal_percentile_max": DEFAULT_VOLATILITY_REGIME_NORMAL_MAX,
+    "elevated_percentile_max": DEFAULT_VOLATILITY_REGIME_ELEVATED_MAX,
+}
+VOLATILITY_REGIME_PARAMETER_STATUS = "PROVISIONAL_RESEARCH_CALIBRATABLE"
+# Diagnostics-only context. None of these is a weighted Volatility Score
+# component; BTC-129 factor-nesting audits can rely on this separation.
+VOLATILITY_SCORE_DIAGNOSTIC_IDS = (
+    "compression_ratio",
+    "volatility_percentile",
+)
 DEFAULT_ORDERLINESS_SCORE_DISORDERLY_MAX = Decimal("60")
 DEFAULT_ORDERLINESS_RANGE_PERCENTILE_MAX = Decimal("90")
 DEFAULT_ORDERLINESS_DOWNSIDE_RETURN_MIN = Decimal("-0.08")
@@ -384,12 +421,17 @@ class VolatilityScoreResult:
     config_metadata: dict[str, str]
     complete: bool
     reason_codes: tuple[str, ...] = ()
+    compression_score_version: str = COMPRESSION_SCORE_VERSION
+    volatility_regime_version: str = VOLATILITY_REGIME_VERSION
+    diagnostics: dict[str, Decimal | None] = field(default_factory=dict)
 
     def as_record(self) -> dict[str, Any]:
         return {
             "feature_id": self.feature_id,
             "score": str(self.score) if self.score is not None else None,
             "interpretation": self.interpretation,
+            "compression_score_version": self.compression_score_version,
+            "volatility_regime_version": self.volatility_regime_version,
             "volatility_regime": self.volatility_regime,
             "compression_score": (
                 str(self.compression_score)
@@ -402,6 +444,10 @@ class VolatilityScoreResult:
             "contributions": {
                 key: str(value) if value is not None else None
                 for key, value in self.contributions.items()
+            },
+            "diagnostics": {
+                key: str(value) if value is not None else None
+                for key, value in self.diagnostics.items()
             },
             "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
@@ -1148,13 +1194,13 @@ def compression_score_from_ratio(
     if compression_ratio is None:
         return None
     ratio = _non_negative_decimal(compression_ratio, "compression_ratio")
-    full = thresholds["compression_full_score_ratio"]
-    zero = thresholds["compression_zero_score_ratio"]
-    if decision_less_equal(ratio, full):
-        return Decimal("100")
-    if decision_greater_equal(ratio, zero):
-        return Decimal("0")
-    return Decimal("100") * (zero - ratio) / (zero - full)
+    return decimal_bounded_linear(
+        ratio,
+        input_minimum=thresholds["compression_full_score_ratio"],
+        input_maximum=thresholds["compression_zero_score_ratio"],
+        output_at_minimum=Decimal("100"),
+        output_at_maximum=Decimal("0"),
+    )
 
 
 def calculate_volatility_score(
@@ -1232,6 +1278,14 @@ def calculate_volatility_score(
 
     return VolatilityScoreResult(
         feature_id=VOLATILITY_SCORE_FEATURE_ID,
+        diagnostics={
+            "compression_ratio": (
+                _non_negative_decimal(inputs.compression_ratio, "compression_ratio")
+                if inputs.compression_ratio is not None
+                else None
+            ),
+            "volatility_percentile": volatility_percentile_value,
+        },
         score=weighted.score,
         interpretation=_volatility_score_interpretation(weighted.score),
         volatility_regime=volatility_regime,

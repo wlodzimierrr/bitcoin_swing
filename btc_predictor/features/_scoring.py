@@ -10,6 +10,8 @@ import numpy as np
 
 from btc_predictor.quant.scoring import weighted_score
 
+DECIMAL_BOUNDED_LINEAR_POLICY_VERSION = "DECIMAL_BOUNDED_LINEAR_V1"
+
 
 @dataclass(frozen=True)
 class DecimalWeightedScore:
@@ -70,3 +72,38 @@ def decimal_weighted_score(
 def _decimal_with_template(value: float, template: Decimal) -> Decimal:
     quantum = Decimal(1).scaleb(template.as_tuple().exponent)
     return Decimal(str(value)).quantize(quantum)
+
+
+def decimal_bounded_linear(
+    value: Decimal,
+    *,
+    input_minimum: Decimal,
+    input_maximum: Decimal,
+    output_at_minimum: Decimal,
+    output_at_maximum: Decimal,
+) -> Decimal:
+    """Clamped linear interpolation held in exact ``Decimal``.
+
+    This is the Decimal-facing twin of ``quant.transforms.bounded_linear``.
+    Feature scores are persisted as Decimals and compared against Decimal
+    strategy thresholds, so the interpolation is evaluated exactly rather than
+    round-tripped through ``float64``, which would perturb the boundary values
+    that hard decisions are taken on. ``test_decimal_bounded_linear_matches_
+    quant_bounded_linear`` pins this against the BTC-044 primitive so the two
+    cannot drift apart.
+    """
+
+    if input_minimum >= input_maximum:
+        raise ValueError("input_minimum must be less than input_maximum")
+    if value <= input_minimum:
+        return output_at_minimum
+    if value >= input_maximum:
+        return output_at_maximum
+    # Symmetric interpolation with a single trailing division. Deriving a
+    # separate position factor first would add an intermediate quotient and
+    # widen the Decimal scale of the persisted result.
+    span = input_maximum - input_minimum
+    return (
+        output_at_minimum * (input_maximum - value)
+        + output_at_maximum * (value - input_minimum)
+    ) / span
