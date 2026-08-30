@@ -5,8 +5,12 @@ from decimal import Decimal
 import pytest
 
 from btc_predictor.config.strategy import (
+    ADD_SCORE_CONTRACT_VERSION,
     DEFAULT_STRATEGY_CONFIG_PATH,
+    ENTRY_CONVICTION_CONTRACT_VERSION,
+    HOLD_SCORE_CONTRACT_VERSION,
     PROHIBITED_NESTED_WEIGHT_COMPONENTS,
+    SCORING_COMPONENT_SETS,
     StrategyConfigError,
     load_strategy_config,
 )
@@ -272,3 +276,168 @@ def test_prohibited_nesting_tables_agree_between_config_and_contracts() -> None:
     }
 
     assert contract_edges == config_edges
+
+
+# --- version-keyed exact component-set validation ------------------------
+
+V1_2_SECTIONS = {
+    "entry_conviction": (
+        ENTRY_CONVICTION_CONTRACT_VERSION,
+        """[scoring_weights.entry_conviction]
+trend = 0.25
+flow = 0.25
+positioning = 0.1875
+volatility = 0.125
+structure = 0.1875""",
+    ),
+    "hold_score": (
+        HOLD_SCORE_CONTRACT_VERSION,
+        """[scoring_weights.hold_score]
+trend = 0.2666667
+flow = 0.2666667
+positioning = 0.20
+structure = 0.1333333
+momentum_persistence = 0.1333333""",
+    ),
+    "add_score": (
+        ADD_SCORE_CONTRACT_VERSION,
+        """[scoring_weights.add_score]
+new_structure = 0.3125
+flow = 0.25
+positioning = 0.1875
+momentum = 0.125
+risk_improvement = 0.125""",
+    ),
+}
+
+
+def _config_with(tmp_path, section: str, replacement: str, name: str):
+    """Rewrite one scoring_weights section of the default config."""
+
+    text = DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8")
+    original = V1_2_SECTIONS[section][1]
+    assert original in text, section
+    path = tmp_path / f"{name}_{section}.toml"
+    path.write_text(text.replace(original, replacement, 1), encoding="utf-8")
+    return path
+
+
+def test_component_sets_are_bound_to_a_named_contract_version() -> None:
+    assert ENTRY_CONVICTION_CONTRACT_VERSION == "ENTRY_CONVICTION_V1_2"
+    assert HOLD_SCORE_CONTRACT_VERSION == "HOLD_SCORE_V1_2"
+    assert ADD_SCORE_CONTRACT_VERSION == "ADD_SCORE_V1_2"
+    assert set(SCORING_COMPONENT_SETS) == {
+        "entry_conviction",
+        "hold_score",
+        "add_score",
+        "structure_score",
+    }
+
+
+def test_config_component_sets_match_the_authoritative_contracts() -> None:
+    """The config key tuples and the analytical contracts must not drift."""
+
+    assert set(SCORING_COMPONENT_SETS["entry_conviction"][1]) == set(
+        ENTRY_CONVICTION_WEIGHTS_V1_2,
+    )
+    assert set(SCORING_COMPONENT_SETS["hold_score"][1]) == set(
+        HOLD_SCORE_WEIGHTS_V1_2,
+    )
+    assert set(SCORING_COMPONENT_SETS["add_score"][1]) == set(ADD_SCORE_WEIGHTS_V1_2)
+    assert set(SCORING_COMPONENT_SETS["structure_score"][1]) == set(
+        STRUCTURE_WEIGHTS_V1_2,
+    )
+
+
+@pytest.mark.parametrize("section", sorted(V1_2_SECTIONS))
+def test_accepts_exactly_the_authoritative_v1_2_component_set(
+    tmp_path,
+    section: str,
+) -> None:
+    version, block = V1_2_SECTIONS[section]
+    config = load_strategy_config(_config_with(tmp_path, section, block, "exact"))
+    weights = getattr(config.scoring_weights, section)
+
+    assert set(weights) == set(SCORING_COMPONENT_SETS[section][1])
+    assert abs(sum(weights.values()) - 1.0) <= 1e-6
+    assert SCORING_COMPONENT_SETS[section][0] == version
+
+
+@pytest.mark.parametrize("section", sorted(V1_2_SECTIONS))
+def test_rejects_missing_required_component(tmp_path, section: str) -> None:
+    version, block = V1_2_SECTIONS[section]
+    lines = block.splitlines()
+    # Drop the final component and give its weight to the first one so the
+    # sum still reaches 1.0 and only the missing key can be the failure.
+    dropped_name, dropped_weight = lines[-1].split(" = ")
+    first_name, first_weight = lines[1].split(" = ")
+    lines[1] = f"{first_name} = {float(first_weight) + float(dropped_weight)}"
+    broken = "\n".join(lines[:-1])
+    path = _config_with(tmp_path, section, broken, "missing")
+
+    with pytest.raises(StrategyConfigError, match="must exactly match") as excinfo:
+        load_strategy_config(path)
+    assert version in str(excinfo.value)
+    assert dropped_name in str(excinfo.value)
+
+
+@pytest.mark.parametrize("section", sorted(V1_2_SECTIONS))
+def test_rejects_unexpected_additional_component(tmp_path, section: str) -> None:
+    version, block = V1_2_SECTIONS[section]
+    path = _config_with(
+        tmp_path,
+        section,
+        f"{block}\nsentiment = 0.0",
+        "extra",
+    )
+
+    with pytest.raises(StrategyConfigError, match="must exactly match") as excinfo:
+        load_strategy_config(path)
+    assert version in str(excinfo.value)
+    assert "sentiment" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    ("section", "retired"),
+    [
+        ("entry_conviction", "regime"),
+        ("hold_score", "regime"),
+        ("add_score", "hold_score"),
+    ],
+)
+def test_rejects_retired_nested_component(
+    tmp_path,
+    section: str,
+    retired: str,
+) -> None:
+    _, block = V1_2_SECTIONS[section]
+    path = _config_with(
+        tmp_path,
+        section,
+        f"{block}\n{retired} = 0.0",
+        "retired",
+    )
+
+    # The nesting prohibition must win over the generic key error, so the
+    # author is told *why* the component is gone.
+    with pytest.raises(
+        StrategyConfigError,
+        match=f"must not nest '{retired}'",
+    ):
+        load_strategy_config(path)
+
+
+@pytest.mark.parametrize("section", sorted(V1_2_SECTIONS))
+def test_rejects_correct_names_with_invalid_weight_sum(
+    tmp_path,
+    section: str,
+) -> None:
+    version, block = V1_2_SECTIONS[section]
+    lines = block.splitlines()
+    name, weight = lines[1].split(" = ")
+    lines[1] = f"{name} = {float(weight) + 0.05}"
+    path = _config_with(tmp_path, section, "\n".join(lines), "sum")
+
+    with pytest.raises(StrategyConfigError, match="must sum to 1.0") as excinfo:
+        load_strategy_config(path)
+    assert version in str(excinfo.value)

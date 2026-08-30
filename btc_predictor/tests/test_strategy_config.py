@@ -376,13 +376,25 @@ max_distance_atr = 0.50
 max_distance_fraction = 0.02
 
 [scoring_weights.entry_conviction]
-trend = 1.0
+trend = 0.25
+flow = 0.25
+positioning = 0.1875
+volatility = 0.125
+structure = 0.1875
 
 [scoring_weights.hold_score]
-trend = 1.0
+trend = 0.2666667
+flow = 0.2666667
+positioning = 0.20
+structure = 0.1333333
+momentum_persistence = 0.1333333
 
 [scoring_weights.add_score]
-trend = 1.0
+new_structure = 0.3125
+flow = 0.25
+positioning = 0.1875
+momentum = 0.125
+risk_improvement = 0.125
 
 [scoring_weights.full_flow]
 etf_norm_5 = 0.30

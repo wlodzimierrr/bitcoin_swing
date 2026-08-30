@@ -61,6 +61,26 @@ ADD_SCORE_WEIGHT_KEYS = (
     "momentum",
     "risk_improvement",
 )
+# BTC-129: version-keyed authoritative component sets. Validation is bound to a
+# named contract version rather than a bare key list, so changing a composite's
+# component set is not a config edit -- it requires minting a new scoring
+# contract version and a new config version alongside it.
+ENTRY_CONVICTION_CONTRACT_VERSION = "ENTRY_CONVICTION_V1_2"
+HOLD_SCORE_CONTRACT_VERSION = "HOLD_SCORE_V1_2"
+ADD_SCORE_CONTRACT_VERSION = "ADD_SCORE_V1_2"
+STRUCTURE_SCORE_CONTRACT_VERSION = "STRUCTURE_SCORE_V1_2"
+SCORING_COMPONENT_SETS = {
+    "entry_conviction": (
+        ENTRY_CONVICTION_CONTRACT_VERSION,
+        ENTRY_CONVICTION_WEIGHT_KEYS,
+    ),
+    "hold_score": (HOLD_SCORE_CONTRACT_VERSION, HOLD_SCORE_WEIGHT_KEYS),
+    "add_score": (ADD_SCORE_CONTRACT_VERSION, ADD_SCORE_WEIGHT_KEYS),
+    "structure_score": (
+        STRUCTURE_SCORE_CONTRACT_VERSION,
+        STRUCTURE_SCORE_WEIGHT_KEYS,
+    ),
+}
 # BTC-129: components that must never be nested inside another weighted score.
 # Rejecting them in config makes the v1.2 de-nesting enforceable rather than
 # merely documented. This is a structural rule; it says nothing about natural
@@ -941,13 +961,24 @@ class ScoringWeights:
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
         return cls(
-            # Entry/Hold/Add component sets are not pinned to an exact key
-            # list: those scores are not implemented yet and their factor set
-            # may still gain a component. The prohibited-nesting rule below is
-            # what BTC-129 actually locks, and it applies regardless.
-            entry_conviction=_required_weight_mapping(data, "entry_conviction"),
-            hold_score=_required_weight_mapping(data, "hold_score"),
-            add_score=_required_weight_mapping(data, "add_score"),
+            entry_conviction=_required_weight_mapping(
+                data,
+                "entry_conviction",
+                expected_keys=ENTRY_CONVICTION_WEIGHT_KEYS,
+                contract_version=ENTRY_CONVICTION_CONTRACT_VERSION,
+            ),
+            hold_score=_required_weight_mapping(
+                data,
+                "hold_score",
+                expected_keys=HOLD_SCORE_WEIGHT_KEYS,
+                contract_version=HOLD_SCORE_CONTRACT_VERSION,
+            ),
+            add_score=_required_weight_mapping(
+                data,
+                "add_score",
+                expected_keys=ADD_SCORE_WEIGHT_KEYS,
+                contract_version=ADD_SCORE_CONTRACT_VERSION,
+            ),
             full_flow=_required_weight_mapping(
                 data,
                 "full_flow",
@@ -977,6 +1008,7 @@ class ScoringWeights:
                 data,
                 "structure_score",
                 expected_keys=STRUCTURE_SCORE_WEIGHT_KEYS,
+                contract_version=STRUCTURE_SCORE_CONTRACT_VERSION,
             ),
         )
 
@@ -1159,6 +1191,7 @@ def _required_weight_mapping(
     key: str,
     *,
     expected_keys: tuple[str, ...] | None = None,
+    contract_version: str | None = None,
 ) -> dict[str, float]:
     mapping = _required_mapping(data, key)
     # Report prohibited nesting before the generic key check so a v1.1 config
@@ -1174,9 +1207,19 @@ def _required_weight_mapping(
         missing = set(expected_keys) - set(mapping)
         extra = set(mapping) - set(expected_keys)
         if missing or extra:
+            contract = (
+                f" defined by {contract_version}" if contract_version else ""
+            )
+            remedy = (
+                " Changing this component set requires a new scoring contract "
+                "version and a new config version."
+                if contract_version
+                else ""
+            )
             raise StrategyConfigError(
-                f"{key} weights must exactly match {expected_keys}; "
-                f"missing={sorted(missing)}, extra={sorted(extra)}"
+                f"{key} weights must exactly match the component set{contract}: "
+                f"{expected_keys}; missing={sorted(missing)}, "
+                f"extra={sorted(extra)}.{remedy}"
             )
     weights: dict[str, float] = {}
     for weight_name, value in mapping.items():
@@ -1184,7 +1227,10 @@ def _required_weight_mapping(
 
     total_weight = sum(weights.values())
     if abs(total_weight - 1.0) > 0.000001:
-        raise StrategyConfigError(f"{key} weights must sum to 1.0")
+        contract = f" ({contract_version})" if contract_version else ""
+        raise StrategyConfigError(
+            f"{key} weights{contract} must sum to 1.0; got {total_weight}",
+        )
 
     return weights
 
