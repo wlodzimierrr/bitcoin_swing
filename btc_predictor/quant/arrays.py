@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import fsum
 from typing import Literal, TypeAlias
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-
 FloatArray: TypeAlias = NDArray[np.float64]
+ScalarOrFloatArray: TypeAlias = float | FloatArray
 NanPolicy: TypeAlias = Literal["raise", "propagate"]
 NAN_POLICIES = ("raise", "propagate")
 FLOAT_DTYPE = np.dtype(np.float64)
@@ -33,14 +34,21 @@ class NumericTolerance:
         try:
             values = np.asarray((self.absolute, self.relative), dtype=np.float64)
         except (TypeError, ValueError, OverflowError) as error:
-            raise NumericInputError("numeric tolerances must be float64 values") from error
+            raise NumericInputError(
+                "numeric tolerances must be float64 values"
+            ) from error
         if not np.all(np.isfinite(values)) or np.any(values < 0):
-            raise NumericInputError("numeric tolerances must be finite and non-negative")
+            raise NumericInputError(
+                "numeric tolerances must be finite and non-negative"
+            )
         object.__setattr__(self, "absolute", float(values[0]))
         object.__setattr__(self, "relative", float(values[1]))
 
 
 DEFAULT_TOLERANCE = NumericTolerance()
+PARITY_TOLERANCE = DEFAULT_TOLERANCE
+PARITY_ABSOLUTE_TOLERANCE = PARITY_TOLERANCE.absolute
+PARITY_RELATIVE_TOLERANCE = PARITY_TOLERANCE.relative
 
 
 def as_float64_array(
@@ -117,7 +125,9 @@ def require_same_shape(*arrays: FloatArray) -> tuple[int, ...]:
         raise NumericInputError("at least one array is required")
     shape = arrays[0].shape
     if any(array.shape != shape for array in arrays[1:]):
-        raise NumericInputError("arrays must have identical shapes; broadcasting is disabled")
+        raise NumericInputError(
+            "arrays must have identical shapes; broadcasting is disabled"
+        )
     return shape
 
 
@@ -133,6 +143,45 @@ def require_probability(value: float, *, name: str = "probability") -> np.float6
     if not np.isfinite(probability) or not 0 <= probability <= 1:
         raise NumericInputError(f"{name} must be finite and between 0 and 1")
     return probability
+
+
+def reject_infinite_result(values: ArrayLike, *, name: str = "result") -> None:
+    """Reject arithmetic outputs that exceeded the finite float64 range."""
+
+    try:
+        array = np.asarray(values, dtype=np.float64)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise NumericInputError(f"{name} must be float64-compatible") from error
+    if np.any(np.isinf(array)):
+        raise NumericInputError(f"{name} exceeded the finite float64 range")
+
+
+def stable_row_sum(
+    values: ArrayLike,
+    *,
+    nan_policy: NanPolicy = "raise",
+    name: str = "values",
+) -> ScalarOrFloatArray:
+    """Accurately sum a vector or each row of a matrix without flattening."""
+
+    array = as_float64_array(
+        values,
+        allow_empty=True,
+        nan_policy=nan_policy,
+    )
+    if array.ndim not in (1, 2):
+        raise NumericInputError(f"{name} must be a vector or matrix")
+    rows = (array,) if array.ndim == 1 else array
+    output = np.empty(len(rows), dtype=np.float64)
+    for index, row in enumerate(rows):
+        try:
+            output[index] = fsum(float(value) for value in row)
+        except OverflowError as error:
+            raise NumericInputError(
+                f"{name} exceeded the finite float64 range"
+            ) from error
+    reject_infinite_result(output, name=name)
+    return float(output[0]) if array.ndim == 1 else output
 
 
 def is_effectively_zero(

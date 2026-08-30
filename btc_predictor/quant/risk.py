@@ -12,8 +12,9 @@ from btc_predictor.quant.arrays import (
     NanPolicy,
     NumericInputError,
     as_float64_array,
+    reject_infinite_result,
+    stable_row_sum,
 )
-
 
 PositionSide: TypeAlias = Literal["long", "short"]
 RiskInput: TypeAlias = float | ArrayLike
@@ -38,11 +39,14 @@ def stop_distance(
     _validate_positive(entries, name="entry_prices")
     _validate_positive(stops, name="stop_prices")
     _validate_side(side)
-    if side == "long":
-        distances = (entries - stops) / entries
-    else:
-        distances = (stops - entries) / entries
-    return _restore_output(np.maximum(distances, np.float64(0)), scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        if side == "long":
+            distances = (entries - stops) / entries
+        else:
+            distances = (stops - entries) / entries
+        result = np.maximum(distances, np.float64(0))
+    reject_infinite_result(result, name="stop_distance")
+    return _restore_output(result, scalar=scalar)
 
 
 def reward_risk_ratio(
@@ -65,15 +69,17 @@ def reward_risk_ratio(
     _validate_positive(stops, name="stop_prices")
     _validate_positive(targets, name="target_prices")
     _validate_side(side)
-    if side == "long":
-        risk = entries - stops
-        reward = targets - entries
-    else:
-        risk = stops - entries
-        reward = entries - targets
-    valid = (risk > 0) & (reward > 0)
-    result = np.full(entries.shape, np.nan, dtype=np.float64)
-    np.divide(reward, risk, out=result, where=valid)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        if side == "long":
+            risk = entries - stops
+            reward = targets - entries
+        else:
+            risk = stops - entries
+            reward = entries - targets
+        valid = (risk > 0) & (reward > 0)
+        result = np.full(entries.shape, np.nan, dtype=np.float64)
+        np.divide(reward, risk, out=result, where=valid)
+    reject_infinite_result(result, name="reward_risk_ratio")
     return _restore_output(result, scalar=scalar)
 
 
@@ -92,7 +98,10 @@ def capital_at_risk(
     )
     _validate_non_negative(nav, name="net_asset_values")
     _validate_fractions(fractions, name="risk_fractions")
-    return _restore_output(nav * fractions, scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = nav * fractions
+    reject_infinite_result(result, name="capital_at_risk")
+    return _restore_output(result, scalar=scalar)
 
 
 def risk_contribution_by_tranche(
@@ -115,11 +124,16 @@ def risk_contribution_by_tranche(
     _validate_positive(entries, name="entry_prices")
     _validate_positive(stops, name="stop_prices")
     _validate_side(side)
-    if side == "long":
-        loss_fractions = (entries - stops) / entries
-    else:
-        loss_fractions = (stops - entries) / entries
-    contributions = notional_values * np.maximum(loss_fractions, np.float64(0))
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        if side == "long":
+            loss_fractions = (entries - stops) / entries
+        else:
+            loss_fractions = (stops - entries) / entries
+        contributions = notional_values * np.maximum(
+            loss_fractions,
+            np.float64(0),
+        )
+    reject_infinite_result(contributions, name="risk_contribution_by_tranche")
     return _restore_output(contributions, scalar=scalar)
 
 
@@ -130,8 +144,8 @@ def risk_at_stop(
     *,
     side: PositionSide,
     nan_policy: NanPolicy = "raise",
-) -> float:
-    """Return total downside capital risk at stop across arbitrary tranches."""
+) -> RiskOutput:
+    """Return total risk for one tranche vector or each row of a tranche matrix."""
 
     contributions = risk_contribution_by_tranche(
         notionals,
@@ -140,7 +154,13 @@ def risk_at_stop(
         side=side,
         nan_policy=nan_policy,
     )
-    return float(np.sum(contributions, dtype=np.float64))
+    if isinstance(contributions, float):
+        return contributions
+    return stable_row_sum(
+        contributions,
+        nan_policy="propagate",
+        name="risk_at_stop",
+    )
 
 
 def risk_improvement(
@@ -149,17 +169,34 @@ def risk_improvement(
     *,
     nan_policy: NanPolicy = "raise",
 ) -> RiskOutput:
-    """Return the non-negative reduction from current to proposed risk."""
+    """Return aggregate risk reduction for one portfolio or each matrix row."""
 
-    current, proposed, scalar = _aligned_inputs(
+    current, proposed, _ = _aligned_inputs(
         current_risk,
         proposed_risk,
         nan_policy=nan_policy,
     )
     _validate_non_negative(current, name="current_risk")
     _validate_non_negative(proposed, name="proposed_risk")
-    improvements = np.maximum(current - proposed, np.float64(0))
-    return _restore_output(improvements, scalar=scalar)
+    current_total = stable_row_sum(
+        current,
+        nan_policy="propagate",
+        name="current_risk",
+    )
+    proposed_total = stable_row_sum(
+        proposed,
+        nan_policy="propagate",
+        name="proposed_risk",
+    )
+    with np.errstate(over="ignore", invalid="ignore"):
+        improvements = np.maximum(
+            np.asarray(current_total) - np.asarray(proposed_total),
+            np.float64(0),
+        )
+    reject_infinite_result(improvements, name="risk_improvement")
+    if improvements.ndim == 0:
+        return float(improvements)
+    return np.array(improvements, dtype=np.float64, order="C", copy=True)
 
 
 def max_allowed_notional(
@@ -180,7 +217,9 @@ def max_allowed_notional(
     _validate_non_negative(nav, name="net_asset_values")
     _validate_fractions(fractions, name="risk_fractions")
     _validate_positive(distances, name="stop_distance_fractions")
-    result = nav * fractions / distances
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        result = nav * fractions / distances
+    reject_infinite_result(result, name="max_allowed_notional")
     return _restore_output(result, scalar=scalar)
 
 
@@ -221,6 +260,8 @@ def _coerce_input(
     except (TypeError, ValueError, OverflowError) as error:
         raise NumericInputError("values must form a regular numeric array") from error
     scalar = candidate.ndim == 0
+    if candidate.ndim > 2:
+        raise NumericInputError("risk inputs must be scalars, vectors, or matrices")
     prepared = [values] if scalar else values
     return (
         as_float64_array(

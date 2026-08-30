@@ -13,8 +13,8 @@ from btc_predictor.quant.arrays import (
     NumericInputError,
     as_float64_array,
     as_float64_vector,
+    reject_infinite_result,
 )
-
 
 DistanceInput: TypeAlias = float | ArrayLike
 DistanceOutput: TypeAlias = float | FloatArray
@@ -113,6 +113,7 @@ def cluster_distance_matrix(
         distances = distances / atr_value
     elif atr is not None:
         raise NumericInputError("atr is only valid when mode is 'atr'")
+    reject_infinite_result(distances, name="cluster_distance_matrix")
     return np.array(distances, dtype=np.float64, order="C", copy=True)
 
 
@@ -145,7 +146,9 @@ def entry_distance_score(
         name="zero_score_distance",
     )
     if zero_distance <= full_distance:
-        raise NumericInputError("zero_score_distance must be greater than full_score_distance")
+        raise NumericInputError(
+            "zero_score_distance must be greater than full_score_distance"
+        )
 
     distances = np.maximum(entries - supports, np.float64(0))
     if mode == "fractional":
@@ -301,5 +304,6 @@ def _non_negative_scalar(value: float, *, name: str) -> np.float64:
 
 
 def _restore_output(values: ArrayLike, *, scalar: bool) -> DistanceOutput:
+    reject_infinite_result(values, name="distance_result")
     array = np.array(values, dtype=np.float64, order="C", copy=True)
     return float(array[0]) if scalar else array

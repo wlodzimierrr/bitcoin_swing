@@ -17,11 +17,15 @@ Policy version: `FLOAT64_V1`.
 - Empty arrays are rejected unless a boundary explicitly opts in.
 - Elementwise operations require identical shapes. Implicit NumPy broadcasting
   is not part of the public contract.
-- Portfolio matrices use rows as observations and columns as assets.
+- Portfolio matrices use rows as observations and columns as assets. Aggregate
+  portfolio and risk helpers return one result per row and never flatten time
+  and asset axes together.
 
 ## NaN And Infinity
 
-- Infinity is rejected at every public boundary.
+- Infinity is rejected at every public input boundary and after public
+  arithmetic. Finite inputs that exceed the float64 output range fail with
+  `NumericInputError` instead of returning infinity.
 - NaN is rejected by default.
 - `propagate` must be requested explicitly and produces NaN where an input or
   rolling window is incomplete.
@@ -35,9 +39,10 @@ Policy version: `FLOAT64_V1`.
 
 ## Tolerances And Statistics
 
-- Default absolute and relative comparison tolerances are both `1e-12`.
-- BTC-043 parity against the BTC-041 Decimal oracle uses absolute and relative
-  tolerances of `1e-12`.
+- `PARITY_TOLERANCE` centrally owns the default absolute and relative
+  comparison tolerances; both are `1e-12`.
+- BTC-043/BTC-049 parity against Python and Decimal oracles uses that same
+  central tolerance object.
 - Near-zero denominators and effectively constant z-score inputs fail.
 - Degrees of freedom are explicit and default to population statistics
   (`ddof=0`).
@@ -128,12 +133,29 @@ Policy version: `FLOAT64_V1`.
 - Realized and unrealized P&L are signed: positive is profitable and negative
   is a loss for the explicitly selected side.
 - Gross exposure sums unsigned notionals. Net exposure applies `+1` to long
-  notionals and `-1` to short notionals before summing.
+  notionals and `-1` to short notionals before summing. Portfolio reductions
+  use stable summation so small residual exposure is retained when large long
+  and short notionals nearly cancel.
+- Risk improvement compares aggregate current and proposed portfolio risk
+  before flooring the result at zero. Per-tranche clipping must not hide a net
+  increase in total risk.
 - Empty aggregate portfolios have zero risk and exposure. Weighted-average
   entry is NaN for an empty or zero-total-quantity position because no entry
   price is mathematically defined.
 - Risk and portfolio kernels contain no recommendation-action or lifecycle
   decisions and can be shared by advisory, paper-trading, and backtest layers.
+
+## Validation Gate
+
+- `test_quant_validation_gate.py` is the BTC-049 cross-module release gate. It
+  covers Python/NumPy rolling parity, existing Trend/Flow/Positioning/Structure
+  fixtures, single-row/batch equivalence, future-append invariance, and explicit
+  NaN/infinity behavior.
+- The quantitative migration is not complete while any parity or safety gate
+  fails, regardless of benchmark results.
+- `btc_predictor.research.quant_benchmarks` provides seeded representative
+  rolling, scoring, and portfolio timings. Timings are diagnostic only and have
+  no fixed pass/fail threshold because correctness takes priority over speed.
 
 ## Determinism And Boundaries
 

@@ -13,13 +13,16 @@ from btc_predictor.quant.arrays import (
     NanPolicy,
     NumericInputError,
     as_float64_array,
+    reject_infinite_result,
+    stable_row_sum,
 )
 from btc_predictor.quant.risk import POSITION_SIDES, PositionSide
 
-
 PortfolioInput: TypeAlias = float | ArrayLike
 PortfolioOutput: TypeAlias = float | FloatArray
-SideInput: TypeAlias = PositionSide | Sequence[PositionSide]
+SideInput: TypeAlias = (
+    PositionSide | Sequence[PositionSide] | Sequence[Sequence[PositionSide]]
+)
 
 
 def position_notional(
@@ -37,7 +40,10 @@ def position_notional(
     )
     _validate_non_negative(quantity_values, name="quantities")
     _validate_positive(price_values, name="prices")
-    return _restore_output(quantity_values * price_values, scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = quantity_values * price_values
+    reject_infinite_result(result, name="position_notional")
+    return _restore_output(result, scalar=scalar)
 
 
 def weighted_average_entry(
@@ -45,8 +51,8 @@ def weighted_average_entry(
     quantities: PortfolioInput,
     *,
     nan_policy: NanPolicy = "raise",
-) -> float:
-    """Return quantity-weighted entry, or NaN for an empty/zero-quantity position."""
+) -> PortfolioOutput:
+    """Return weighted entry for one tranche vector or each tranche-matrix row."""
 
     entries, quantity_values, _ = _aligned_inputs(
         entry_prices,
@@ -55,10 +61,28 @@ def weighted_average_entry(
     )
     _validate_positive(entries, name="entry_prices")
     _validate_non_negative(quantity_values, name="quantities")
-    total_quantity = np.sum(quantity_values, dtype=np.float64)
-    if total_quantity == 0:
-        return float("nan")
-    return float(np.sum(entries * quantity_values, dtype=np.float64) / total_quantity)
+    with np.errstate(over="ignore", invalid="ignore"):
+        weighted_entries = entries * quantity_values
+    reject_infinite_result(weighted_entries, name="weighted_entry_numerator")
+    total_quantity = stable_row_sum(
+        quantity_values,
+        nan_policy="propagate",
+        name="total_quantity",
+    )
+    weighted_total = stable_row_sum(
+        weighted_entries,
+        nan_policy="propagate",
+        name="weighted_entry_numerator",
+    )
+    totals = np.asarray(total_quantity, dtype=np.float64)
+    numerators = np.asarray(weighted_total, dtype=np.float64)
+    result = np.full(totals.shape, np.nan, dtype=np.float64)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        np.divide(numerators, totals, out=result, where=totals != 0)
+    reject_infinite_result(result, name="weighted_average_entry")
+    if result.ndim == 0:
+        return float(result)
+    return np.array(result, dtype=np.float64, order="C", copy=True)
 
 
 def unrealized_pnl(
@@ -103,12 +127,16 @@ def gross_exposure(
     notionals: PortfolioInput,
     *,
     nan_policy: NanPolicy = "raise",
-) -> float:
-    """Return total unsigned notional exposure; an empty portfolio returns zero."""
+) -> PortfolioOutput:
+    """Return gross exposure for one portfolio vector or each matrix row."""
 
     values, _ = _coerce_input(notionals, nan_policy=nan_policy)
     _validate_non_negative(values, name="notionals")
-    return float(np.sum(values, dtype=np.float64))
+    return stable_row_sum(
+        values,
+        nan_policy="propagate",
+        name="gross_exposure",
+    )
 
 
 def net_exposure(
@@ -116,13 +144,18 @@ def net_exposure(
     sides: SideInput,
     *,
     nan_policy: NanPolicy = "raise",
-) -> float:
-    """Return long notional minus short notional; an empty portfolio returns zero."""
+) -> PortfolioOutput:
+    """Return net exposure for one portfolio vector or each matrix row."""
 
     values, scalar = _coerce_input(notionals, nan_policy=nan_policy)
     _validate_non_negative(values, name="notionals")
     signs = _side_signs(sides, shape=values.shape, scalar=scalar)
-    return float(np.sum(values * signs, dtype=np.float64))
+    signed_values = values * signs
+    return stable_row_sum(
+        signed_values,
+        nan_policy="propagate",
+        name="net_exposure",
+    )
 
 
 def _position_pnl(
@@ -143,8 +176,11 @@ def _position_pnl(
     _validate_positive(marks, name="mark_prices")
     _validate_non_negative(quantity_values, name="quantities")
     _validate_side(side)
-    price_changes = marks - entries if side == "long" else entries - marks
-    return _restore_output(quantity_values * price_changes, scalar=scalar)
+    with np.errstate(over="ignore", invalid="ignore"):
+        price_changes = marks - entries if side == "long" else entries - marks
+        result = quantity_values * price_changes
+    reject_infinite_result(result, name="position_pnl")
+    return _restore_output(result, scalar=scalar)
 
 
 def _aligned_inputs(
@@ -185,6 +221,10 @@ def _coerce_input(
     except (TypeError, ValueError, OverflowError) as error:
         raise NumericInputError("values must form a regular numeric array") from error
     scalar = candidate.ndim == 0
+    if candidate.ndim > 2:
+        raise NumericInputError(
+            "portfolio inputs must be scalars, vectors, or matrices"
+        )
     prepared = [values] if scalar else values
     return (
         as_float64_array(
@@ -207,7 +247,9 @@ def _side_signs(
         return np.full(shape, 1 if sides == "long" else -1, dtype=np.float64)
     side_values = np.asarray(tuple(sides), dtype=object)
     if scalar or side_values.shape != shape:
-        raise NumericInputError("sides must match the notional shape or be one side string")
+        raise NumericInputError(
+            "sides must match the notional shape or be one side string"
+        )
     signs = np.empty(shape, dtype=np.float64)
     for index, side in np.ndenumerate(side_values):
         _validate_side(side)

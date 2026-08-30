@@ -13,8 +13,8 @@ from btc_predictor.quant.arrays import (
     NanPolicy,
     NumericInputError,
     as_float64_array,
+    reject_infinite_result,
 )
-
 
 TransformInput: TypeAlias = float | ArrayLike
 TransformOutput: TypeAlias = float | FloatArray
@@ -239,6 +239,7 @@ def _coerce_input(
 
 
 def _restore_output(values: ArrayLike, *, scalar: bool) -> TransformOutput:
+    reject_infinite_result(values, name="transform_result")
     array = np.array(values, dtype=np.float64, order="C", copy=True)
     return float(array[0]) if scalar else array
 
@@ -250,7 +251,11 @@ def _finite_scalar(value: float, *, name: str) -> np.float64:
         candidate = np.asarray(value)
     except (TypeError, ValueError, OverflowError) as error:
         raise NumericInputError(f"{name} must be a finite float64 scalar") from error
-    if candidate.ndim != 0 or np.iscomplexobj(candidate) or candidate.dtype.kind in ("S", "U"):
+    if (
+        candidate.ndim != 0
+        or np.iscomplexobj(candidate)
+        or candidate.dtype.kind in ("S", "U")
+    ):
         raise NumericInputError(f"{name} must be a finite float64 scalar")
     try:
         result = np.float64(value)

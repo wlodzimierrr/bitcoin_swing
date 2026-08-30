@@ -161,13 +161,18 @@ def test_arbitrary_tranche_count_matches_independent_python_oracle() -> None:
     assert result == pytest.approx(expected, rel=1e-12, abs=1e-12)
 
 
-def test_risk_improvement_is_non_negative_and_scalar_vector_paths_agree() -> None:
-    np.testing.assert_array_equal(
-        risk_improvement([500, 500, 200], [300, 600, 200]),
-        [200, 0, 0],
-    )
+def test_risk_improvement_uses_total_portfolio_risk_before_clipping() -> None:
+    assert risk_improvement([500, 500, 200], [300, 600, 200]) == 100
     assert risk_improvement(500, 300) == 200
     assert risk_improvement(300, 500) == 0
+    assert risk_improvement([100, 100], [0, 300]) == 0
+    np.testing.assert_array_equal(
+        risk_improvement(
+            [[500, 500, 200], [100, 100, 100]],
+            [[300, 600, 200], [0, 300, 100]],
+        ),
+        [100, 0],
+    )
 
 
 def test_max_allowed_notional_reproduces_rulebook_position_sizing() -> None:
@@ -205,12 +210,67 @@ def test_gross_and_net_exposure_handle_mixed_directions() -> None:
     assert net_exposure(notionals, "short") == -16_500
 
 
+def test_portfolio_matrices_return_one_aggregate_per_observation_row() -> None:
+    notionals = np.asarray([[1_000, 2_000], [3_000, 4_000]], dtype=np.float64)
+    entries = np.asarray([[100, 100], [100, 100]], dtype=np.float64)
+    entry_prices = np.asarray([[100, 110], [200, 220]], dtype=np.float64)
+    quantities = np.ones((2, 2), dtype=np.float64)
+    sides = [["long", "short"], ["long", "short"]]
+
+    np.testing.assert_array_equal(
+        risk_at_stop(notionals, entries, 90, side="long"),
+        [300, 700],
+    )
+    np.testing.assert_array_equal(gross_exposure(notionals), [3_000, 7_000])
+    np.testing.assert_array_equal(net_exposure(notionals, sides), [-1_000, -1_000])
+    np.testing.assert_array_equal(
+        weighted_average_entry(entry_prices, quantities),
+        [105, 210],
+    )
+
+
+def test_matrix_aggregates_match_independent_single_portfolio_calls() -> None:
+    notionals = np.asarray([[1_000, 2_000], [3_000, 4_000]], dtype=np.float64)
+    entries = np.asarray([[100, 110], [120, 130]], dtype=np.float64)
+    quantities = np.asarray([[1, 2], [3, 4]], dtype=np.float64)
+    sides = np.asarray([["long", "short"], ["short", "long"]], dtype=object)
+
+    np.testing.assert_array_equal(
+        risk_at_stop(notionals, entries, 90, side="long"),
+        [
+            risk_at_stop(row_n, row_e, 90, side="long")
+            for row_n, row_e in zip(notionals, entries)
+        ],
+    )
+    np.testing.assert_array_equal(
+        gross_exposure(notionals),
+        [gross_exposure(row) for row in notionals],
+    )
+    np.testing.assert_array_equal(
+        net_exposure(notionals, sides),
+        [net_exposure(row, row_sides) for row, row_sides in zip(notionals, sides)],
+    )
+    np.testing.assert_array_equal(
+        weighted_average_entry(entries, quantities),
+        [weighted_average_entry(row, row_q) for row, row_q in zip(entries, quantities)],
+    )
+
+
+def test_net_exposure_uses_stable_summation_for_nearly_hedged_positions() -> None:
+    assert net_exposure([1e16, 1, 1e16], ["long", "long", "short"]) == 1
+
+
 def test_empty_portfolio_behavior_is_explicit() -> None:
     assert risk_at_stop([], [], 100, side="long") == 0
     assert risk_contribution_by_tranche([], [], 100, side="long").shape == (0,)
     assert gross_exposure([]) == 0
     assert net_exposure([], []) == 0
     assert np.isnan(weighted_average_entry([], []))
+    assert risk_at_stop(np.empty((0, 2)), np.empty((0, 2)), 100, side="long").shape == (
+        0,
+    )
+    np.testing.assert_array_equal(gross_exposure(np.empty((2, 0))), [0, 0])
+    assert np.all(np.isnan(weighted_average_entry(np.empty((2, 0)), np.empty((2, 0)))))
 
 
 def test_nan_requires_explicit_propagation_and_is_never_zero_filled() -> None:
@@ -265,6 +325,23 @@ def test_array_shape_mismatches_do_not_broadcast() -> None:
         risk_contribution_by_tranche([1, 2], [[100, 110]], 90, side="long")
     with pytest.raises(NumericInputError, match="identical shapes"):
         realized_pnl([100, 110], [[120, 130]], 1, side="long")
+    with pytest.raises(NumericInputError, match="scalars, vectors, or matrices"):
+        position_notional(np.ones((1, 1, 1)), 100)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda: position_notional(1e308, 1e308),
+        lambda: gross_exposure([1e308, 1e308]),
+        lambda: max_allowed_notional(1e308, 1.0, 1e-308),
+        lambda: risk_at_stop([1e308, 1e308], [100, 100], 1, side="long"),
+        lambda: unrealized_pnl(1e308, 1e-308, 1e308, side="long"),
+    ],
+)
+def test_finite_inputs_cannot_silently_overflow_to_infinity(call) -> None:
+    with pytest.raises(NumericInputError, match="finite float64 range|infinite"):
+        call()
 
 
 def test_repeated_risk_and_portfolio_calculations_are_deterministic() -> None:

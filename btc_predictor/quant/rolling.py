@@ -13,14 +13,12 @@ from btc_predictor.quant.arrays import (
     NanPolicy,
     NumericInputError,
     as_float64_vector,
+    reject_infinite_result,
     require_same_shape,
 )
 
-
 RollingNanPolicy: TypeAlias = Literal["raise", "propagate", "omit"]
 ROLLING_NAN_POLICIES = ("raise", "propagate", "omit")
-PARITY_ABSOLUTE_TOLERANCE = 1e-12
-PARITY_RELATIVE_TOLERANCE = 1e-12
 
 
 def rolling_mean(
@@ -41,7 +39,10 @@ def rolling_mean(
         required=required,
         nan_policy=nan_policy,
     )
-    return _window_means(windows, counts=counts, valid=valid)
+    return _checked_output(
+        _window_means(windows, counts=counts, valid=valid),
+        name="rolling_mean",
+    )
 
 
 def rolling_volatility(
@@ -65,11 +66,14 @@ def rolling_volatility(
         nan_policy=nan_policy,
     )
     valid &= counts > ddof
-    return _window_standard_deviations(
-        windows,
-        counts=counts,
-        valid=valid,
-        ddof=ddof,
+    return _checked_output(
+        _window_standard_deviations(
+            windows,
+            counts=counts,
+            valid=valid,
+            ddof=ddof,
+        ),
+        name="rolling_volatility",
     )
 
 
@@ -104,7 +108,7 @@ def rolling_zscore(
     valid &= ~np.isnan(array) & ~np.isnan(deviations) & (deviations != 0)
     output = np.full(array.shape, np.nan, dtype=np.float64)
     np.divide(array - means, deviations, out=output, where=valid)
-    return output
+    return _checked_output(output, name="rolling_zscore")
 
 
 def rolling_percentile(
@@ -137,7 +141,7 @@ def rolling_percentile(
         out=output,
         where=valid,
     )
-    return output
+    return _checked_output(output, name="rolling_percentile")
 
 
 def historical_normalize(
@@ -155,7 +159,7 @@ def historical_normalize(
     required = _validate_window(window, min_periods)
     lower_value, upper_value = _validate_bounds(lower, upper)
     windows, expected_counts = _prior_windows(array, window)
-    counts, valid = _window_validity(
+    _, valid = _window_validity(
         windows,
         expected_counts=expected_counts,
         required=required,
@@ -164,14 +168,18 @@ def historical_normalize(
     finite = ~np.isnan(windows)
     historical_min = np.min(np.where(finite, windows, np.inf), axis=1)
     historical_max = np.max(np.where(finite, windows, -np.inf), axis=1)
-    widths = historical_max - historical_min
+    with np.errstate(over="ignore", invalid="ignore"):
+        widths = historical_max - historical_min
     valid &= ~np.isnan(array) & (widths != 0)
     fractions = np.full(array.shape, np.nan, dtype=np.float64)
     np.divide(array - historical_min, widths, out=fractions, where=valid)
     np.clip(fractions, 0, 1, out=fractions)
-    return np.asarray(
-        lower_value + fractions * (upper_value - lower_value),
-        dtype=np.float64,
+    return _checked_output(
+        np.asarray(
+            lower_value + fractions * (upper_value - lower_value),
+            dtype=np.float64,
+        ),
+        name="historical_normalize",
     )
 
 
@@ -188,7 +196,12 @@ def simple_returns(
         raise NumericInputError("return inputs must be strictly positive")
     if values.size < 2:
         return np.empty(0, dtype=np.float64)
-    return np.asarray(values[1:] / values[:-1] - np.float64(1), dtype=np.float64)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        output = np.asarray(
+            values[1:] / values[:-1] - np.float64(1),
+            dtype=np.float64,
+        )
+    return _checked_output(output, name="simple_returns")
 
 
 def true_range(
@@ -206,7 +219,9 @@ def true_range(
     require_same_shape(highs, lows, closes)
     comparable = ~np.isnan(highs) & ~np.isnan(lows)
     if np.any(highs[comparable] < lows[comparable]):
-        raise NumericInputError("high values must be greater than or equal to low values")
+        raise NumericInputError(
+            "high values must be greater than or equal to low values"
+        )
     if highs.size == 0:
         return np.empty(0, dtype=np.float64)
     high_low = highs - lows
@@ -221,7 +236,7 @@ def true_range(
     )
     output = np.max(candidates, axis=0)
     output[0] = high_low[0]
-    return np.asarray(output, dtype=np.float64)
+    return _checked_output(np.asarray(output, dtype=np.float64), name="true_range")
 
 
 def average_true_range(
@@ -270,7 +285,12 @@ def realized_volatility(
     )
     output = np.full(values.shape, np.nan, dtype=np.float64)
     output[1:] = return_volatility * np.sqrt(np.float64(annualization_periods))
-    return output
+    return _checked_output(output, name="realized_volatility")
+
+
+def _checked_output(values: FloatArray, *, name: str) -> FloatArray:
+    reject_infinite_result(values, name=name)
+    return values
 
 
 def _rolling_array(values: ArrayLike, nan_policy: RollingNanPolicy) -> FloatArray:
@@ -284,7 +304,9 @@ def _rolling_array(values: ArrayLike, nan_policy: RollingNanPolicy) -> FloatArra
     )
 
 
-def _inclusive_windows(values: FloatArray, window: int) -> tuple[FloatArray, FloatArray]:
+def _inclusive_windows(
+    values: FloatArray, window: int
+) -> tuple[FloatArray, FloatArray]:
     if values.size == 0:
         return np.empty((0, window), dtype=np.float64), np.empty(0, dtype=np.float64)
     padded = np.pad(values, (window - 1, 0), constant_values=np.nan)
@@ -322,7 +344,12 @@ def _window_means(
     counts: FloatArray,
     valid: np.ndarray,
 ) -> FloatArray:
-    sums = np.sum(np.where(np.isnan(windows), 0, windows), axis=1, dtype=np.float64)
+    with np.errstate(over="ignore", invalid="ignore"):
+        sums = np.sum(
+            np.where(np.isnan(windows), 0, windows),
+            axis=1,
+            dtype=np.float64,
+        )
     output = np.full(counts.shape, np.nan, dtype=np.float64)
     np.divide(sums, counts, out=output, where=valid)
     return output
@@ -336,8 +363,9 @@ def _window_standard_deviations(
     ddof: int,
 ) -> FloatArray:
     means = _window_means(windows, counts=counts, valid=counts > 0)
-    centered = np.where(np.isnan(windows), 0, windows - means[:, np.newaxis])
-    sums_of_squares = np.sum(centered * centered, axis=1, dtype=np.float64)
+    with np.errstate(over="ignore", invalid="ignore"):
+        centered = np.where(np.isnan(windows), 0, windows - means[:, np.newaxis])
+        sums_of_squares = np.sum(centered * centered, axis=1, dtype=np.float64)
     output = np.full(counts.shape, np.nan, dtype=np.float64)
     np.divide(sums_of_squares, counts - ddof, out=output, where=valid)
     np.sqrt(output, out=output)
@@ -367,7 +395,9 @@ def _validate_bounds(lower: float, upper: float) -> tuple[np.float64, np.float64
     try:
         bounds = np.asarray((lower, upper), dtype=np.float64)
     except (TypeError, ValueError, OverflowError) as error:
-        raise NumericInputError("normalization bounds must be float64 values") from error
+        raise NumericInputError(
+            "normalization bounds must be float64 values"
+        ) from error
     if not np.all(np.isfinite(bounds)):
         raise NumericInputError("normalization bounds must be finite")
     if bounds[1] <= bounds[0]:

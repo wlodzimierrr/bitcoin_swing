@@ -248,6 +248,22 @@ feature matrices. Both datasets serialize deterministically and expose NumPy
 copies for scikit-learn, statsmodels, and BTC-046 batch scoring without database
 access.
 
+BTC-049 establishes the quantitative migration release gate in
+`test_quant_validation_gate.py`. It cross-checks NumPy rolling kernels against
+pure-Python oracles, reproduces existing Trend, Flow, Positioning, and Structure
+fixtures, verifies single-row/batch parity and future-append invariance, and
+rejects input or arithmetic-output infinity. Portfolio matrices now aggregate
+each decision row independently, risk improvement compares total portfolio risk
+before clipping, and stable summation preserves nearly hedged residual
+exposure. Run the diagnostic benchmarks separately; timing never overrides a
+correctness failure:
+
+```bash
+python -m btc_predictor.research.quant_benchmarks \
+  --observations 100000 \
+  --repeats 3
+```
+
 Volatility feature helpers include
 `rv_7_20_60_from_daily_bars`, which calculates annualized close-to-close
 realized volatility for 7-, 20-, and 60-day windows from point-in-time canonical

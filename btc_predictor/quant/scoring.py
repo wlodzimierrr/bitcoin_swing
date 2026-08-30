@@ -14,8 +14,9 @@ from btc_predictor.quant.arrays import (
     NumericInputError,
     as_float64_array,
     as_float64_vector,
+    reject_infinite_result,
+    stable_row_sum,
 )
-
 
 WeightInput: TypeAlias = Mapping[str, float] | ArrayLike
 ScoreOutput: TypeAlias = float | FloatArray
@@ -58,8 +59,15 @@ def weighted_score(
     )
 
     missing = np.isnan(matrix)
-    contributions = np.asarray(matrix * weight_values, dtype=np.float64)
-    scores = np.asarray(np.sum(contributions, axis=1), dtype=np.float64)
+    with np.errstate(over="ignore", invalid="ignore"):
+        contributions = np.asarray(matrix * weight_values, dtype=np.float64)
+    reject_infinite_result(contributions, name="score_contributions")
+    score_values = stable_row_sum(
+        contributions,
+        nan_policy="propagate",
+        name="weighted_scores",
+    )
+    scores = np.asarray(score_values, dtype=np.float64)
     complete = np.asarray(~np.any(missing, axis=1), dtype=np.bool_)
     if single_row:
         score_output: ScoreOutput = float(scores[0])
@@ -96,12 +104,18 @@ def _observation_matrix(values: ArrayLike) -> tuple[FloatArray, bool]:
     array = as_float64_array(values, allow_empty=True, nan_policy="propagate")
     if array.ndim == 1:
         if array.size == 0:
-            raise NumericInputError("an observation row must contain at least one component")
+            raise NumericInputError(
+                "an observation row must contain at least one component"
+            )
         return array[np.newaxis, :], True
     if array.ndim != 2:
-        raise NumericInputError("score observations must be a one-dimensional row or matrix")
+        raise NumericInputError(
+            "score observations must be a one-dimensional row or matrix"
+        )
     if array.shape[1] == 0:
-        raise NumericInputError("score observations must contain at least one component")
+        raise NumericInputError(
+            "score observations must contain at least one component"
+        )
     return array, False
 
 
@@ -132,7 +146,9 @@ def _named_weights(
     names = _component_names(component_names)
     weight_values = as_float64_vector(weights)
     if weight_values.size != len(names):
-        raise NumericInputError("component_names count must match the number of weights")
+        raise NumericInputError(
+            "component_names count must match the number of weights"
+        )
     return names, weight_values
 
 
@@ -155,7 +171,8 @@ def _validate_weight_policy(
 ) -> None:
     if np.any(weights < 0):
         raise NumericInputError("weights must be non-negative")
-    total = float(np.sum(weights))
+    total = stable_row_sum(weights, name="weights")
+    assert isinstance(total, float)
     if total <= 0:
         raise NumericInputError("weights must have a positive total")
     tolerance_value = _non_negative_scalar(tolerance, name="weight_tolerance")
