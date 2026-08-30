@@ -268,7 +268,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Complexity:** S
 - **Risk:** Low.
 - **Implementation Notes:**
-  - Added `portfolio.manual_trade_journal` in Alembic revision `0017_create_manual_trade_journal_schema`.
+  - Added `portfolio.manual_trade_journal` in Alembic revision `0017_manual_trade_journal`.
   - Linked journal entries to `signals.recommendations` for suggested-versus-actual execution comparison.
   - Captured actual entry, size, stop, exit, manual decision, override reason, and notes.
 
