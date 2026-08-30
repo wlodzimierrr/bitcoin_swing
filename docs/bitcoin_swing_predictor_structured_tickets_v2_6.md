@@ -3182,9 +3182,10 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     rationale, so a v1.1 config fails fast rather than silently double-counting.
     A test asserts the config guard and the analytical contract table cannot
     drift apart.
-  - Entry/Hold/Add component key sets are deliberately *not* pinned to an exact
-    list: those scores are unimplemented and their factor set may still change.
-    The nesting prohibition is what is locked.
+  - Entry/Hold/Add/Structure component key sets are pinned to their named v1.2
+    scoring contracts. Changing membership requires a new scoring-contract
+    version and config version; prohibited retired nesting receives a specific
+    architectural validation error before generic component-set validation.
   - Strategy/config version bumped for the intentional behaviour change:
     `strategy_config_v1` -> `strategy_config_v2`, `swing_v1.0` -> `swing_v1.2`.
   - Weights and Entry/Hold/Add thresholds are marked

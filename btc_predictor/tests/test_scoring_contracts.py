@@ -11,6 +11,7 @@ from btc_predictor.config.strategy import (
     HOLD_SCORE_CONTRACT_VERSION,
     PROHIBITED_NESTED_WEIGHT_COMPONENTS,
     SCORING_COMPONENT_SETS,
+    STRUCTURE_SCORE_CONTRACT_VERSION,
     StrategyConfigError,
     load_strategy_config,
 )
@@ -308,6 +309,12 @@ positioning = 0.1875
 momentum = 0.125
 risk_improvement = 0.125""",
     ),
+    "structure_score": (
+        STRUCTURE_SCORE_CONTRACT_VERSION,
+        """[scoring_weights.structure_score]
+level_strength = 0.642857
+entry_location = 0.357143""",
+    ),
 }
 
 
@@ -326,6 +333,7 @@ def test_component_sets_are_bound_to_a_named_contract_version() -> None:
     assert ENTRY_CONVICTION_CONTRACT_VERSION == "ENTRY_CONVICTION_V1_2"
     assert HOLD_SCORE_CONTRACT_VERSION == "HOLD_SCORE_V1_2"
     assert ADD_SCORE_CONTRACT_VERSION == "ADD_SCORE_V1_2"
+    assert STRUCTURE_SCORE_CONTRACT_VERSION == "STRUCTURE_SCORE_V1_2"
     assert set(SCORING_COMPONENT_SETS) == {
         "entry_conviction",
         "hold_score",
@@ -347,6 +355,24 @@ def test_config_component_sets_match_the_authoritative_contracts() -> None:
     assert set(SCORING_COMPONENT_SETS["structure_score"][1]) == set(
         STRUCTURE_WEIGHTS_V1_2,
     )
+
+
+def test_default_config_weights_match_the_authoritative_contracts() -> None:
+    """Independent config and analytical weight definitions must not drift."""
+
+    config = load_strategy_config()
+    expected = {
+        "entry_conviction": ENTRY_CONVICTION_WEIGHTS_V1_2,
+        "hold_score": HOLD_SCORE_WEIGHTS_V1_2,
+        "add_score": ADD_SCORE_WEIGHTS_V1_2,
+        "structure_score": STRUCTURE_WEIGHTS_V1_2,
+    }
+
+    for section, contract_weights in expected.items():
+        configured = getattr(config.scoring_weights, section)
+        assert {
+            name: Decimal(str(weight)) for name, weight in configured.items()
+        } == contract_weights
 
 
 @pytest.mark.parametrize("section", sorted(V1_2_SECTIONS))
@@ -403,6 +429,8 @@ def test_rejects_unexpected_additional_component(tmp_path, section: str) -> None
         ("entry_conviction", "regime"),
         ("hold_score", "regime"),
         ("add_score", "hold_score"),
+        ("structure_score", "rr_quality"),
+        ("structure_score", "confluence"),
     ],
 )
 def test_rejects_retired_nested_component(

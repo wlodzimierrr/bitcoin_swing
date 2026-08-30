@@ -92,8 +92,8 @@ def _require_non_empty_string(value: str, field_name: str) -> str:
 class FeatureMatrixProvenance:
     """Immutable calculation identity required to interpret a feature matrix."""
 
-    config_version: str = "strategy_config_v1"
-    strategy_version: str = "swing_v1.0"
+    config_version: str = "strategy_config_v2"
+    strategy_version: str = "swing_v1.2"
     parameter_set_id: str = "default_phase1"
     feature_implementation_version: str = FEATURE_IMPLEMENTATION_VERSION
     price_source_policy_version: str = DEFAULT_PRICE_SOURCE_POLICY_VERSION

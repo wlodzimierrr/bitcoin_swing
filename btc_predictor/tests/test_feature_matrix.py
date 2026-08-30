@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta, timezone
 import numpy as np
 import pytest
 
+from btc_predictor.config import load_strategy_config
 from btc_predictor.quant import weighted_score
 from btc_predictor.research import (
     FEATURE_MATRIX_VERSION,
@@ -94,6 +95,15 @@ def test_default_feature_definition_freezes_initial_names_and_order() -> None:
         ).fingerprint
     )
     assert definition.as_record()["feature_names"] == list(INITIAL_FEATURE_NAMES)
+
+
+def test_default_feature_provenance_tracks_current_strategy_identity() -> None:
+    provenance = FeatureMatrixProvenance()
+    strategy_metadata = load_strategy_config().run_metadata()
+
+    assert provenance.config_version == strategy_metadata["config_version"]
+    assert provenance.strategy_version == strategy_metadata["strategy_version"]
+    assert provenance.parameter_set_id == strategy_metadata["parameter_set_id"]
 
 
 def test_point_in_time_selection_respects_availability_and_late_revisions() -> None:
