@@ -320,10 +320,14 @@ to canonical monthly bars, using calendar-month close times and persisting each
 detects breakout levels from confirmed swing highs and reclaim levels from
 confirmed swing lows, using only source levels and confirmation bars available
 at signal time. Breakout/reclaim close buffers are loaded from versioned
-`price_levels` config. `calculate_anchored_vwap` builds anchored VWAP records
-from major swing lows/highs, breakout levels, and capitulation events, using
-the configured HLC3/close price source and only bars closed and ingested by the
-signal time. `calculate_volume_profile_levels` builds POC, HVN, VAH, and VAL
+`price_levels` config. `evaluate_reclaim_trigger` confirms that the first
+configured follow-up bars hold the reclaimed level and close above the
+configured threshold. It filters bars by close and ingestion availability and
+persists the BTC-092 source level, evaluated bars, thresholds, strategy
+metadata, and reason codes. `calculate_anchored_vwap` builds anchored VWAP
+records from major swing lows/highs, breakout levels, and capitulation events,
+using the configured HLC3/close price source and only bars closed and ingested
+by the signal time. `calculate_volume_profile_levels` builds POC, HVN, VAH, and VAL
 records from deterministic price bins, with bin size, value-area coverage, HVN
 thresholds, minimum bars, and price source controlled by versioned
 `price_levels` config. `cluster_price_levels` combines nearby level records

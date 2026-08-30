@@ -87,6 +87,9 @@ def test_loads_default_strategy_config() -> None:
         "1mo": 100,
         "unknown": 50,
     }
+    assert config.entry_triggers.reclaim.confirmation_bars == 1
+    assert config.entry_triggers.reclaim.hold_buffer_fraction == 0
+    assert config.entry_triggers.reclaim.close_buffer_fraction == 0
     assert config.scoring_weights.entry_conviction["trend"] == 0.2
     assert config.scoring_weights.full_flow["etf_norm_5"] == 0.3
     assert config.scoring_weights.full_flow["spot_dominance"] == 0.1
@@ -331,6 +334,11 @@ confluence = 0.20
 "1mo" = 100
 unknown = 50
 
+[entry_triggers.reclaim]
+confirmation_bars = 1
+hold_buffer_fraction = 0
+close_buffer_fraction = 0
+
 [scoring_weights.entry_conviction]
 trend = 1.0
 
@@ -444,6 +452,20 @@ def test_invalid_anchored_vwap_price_source_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(StrategyConfigError, match="anchored_vwap_price_source"):
+        load_strategy_config(config_path)
+
+
+def test_invalid_reclaim_trigger_config_fails_fast(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_reclaim_trigger.toml"
+    config_path.write_text(
+        DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8").replace(
+            "confirmation_bars = 1",
+            "confirmation_bars = 0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyConfigError, match="confirmation_bars"):
         load_strategy_config(config_path)
 
 

@@ -2959,7 +2959,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-120 Implement reclaim trigger
 - **Description:**
   Complete the ticket scope for implement reclaim trigger.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -2969,6 +2969,20 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `evaluate_reclaim_trigger` in `btc_predictor.signals.reclaim` as the
+    point-in-time confirmation step after a BTC-092 reclaim level is detected.
+  - The first configured number of closed follow-up bars must hold the reclaimed
+    level and close above it; a failed first window is not rescued by later bars.
+  - Confirmation-bar count, hold buffer, and close buffer are loaded from the
+    versioned `[entry_triggers.reclaim]` strategy configuration and validated at
+    startup.
+  - Results persist the complete BTC-092 source record, confirmation-bar prices
+    and timestamps, calculated thresholds, strategy metadata, completion state,
+    detection time, and stable reason codes.
+  - Bars are filtered by series identity, bar-close time, ingestion time, and
+    `as_of`; focused tests cover pending data, strict boundaries, failed holds,
+    deterministic ordering, future-data appends, and the BTC-092 handoff.
 
 #### BTC-121 Implement breakout + retest trigger
 - **Description:**

@@ -1670,7 +1670,7 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 #### BTC-120 Implement reclaim trigger
 - **Description:**
   Complete the ticket scope for implement reclaim trigger.
-- **Status:** TODO
+- **Status:** DONE
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
@@ -1679,6 +1679,14 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added point-in-time `evaluate_reclaim_trigger` confirmation for BTC-092
+    reclaim levels.
+  - The first configured follow-up window must hold the reclaimed level and
+    close above the configured threshold; later bars do not rescue a failure.
+  - Versioned `[entry_triggers.reclaim]` parameters are startup-validated and
+    persisted with source-level and confirmation-bar provenance and stable
+    reason codes.
 
 #### BTC-121 Implement breakout + retest trigger
 - **Description:**

@@ -1766,8 +1766,17 @@ upside move without confirming overheating evidence records
 
 ## BTC-120 — Implement reclaim trigger
 
+**Status:** DONE
 **Priority:** P0  
 **Estimate:** 3
+
+Implemented `evaluate_reclaim_trigger` as the point-in-time confirmation step
+after BTC-092 detects a reclaim. The first configured follow-up window must
+hold the reclaimed level and close above the configured threshold; later bars
+do not rescue a failed window. Confirmation count and hold/close buffers are
+versioned under `[entry_triggers.reclaim]` and validated at startup. Results
+persist the complete source level, evaluated-bar provenance, thresholds,
+strategy metadata, completion/detection state, and stable reason codes.
 
 ---
 

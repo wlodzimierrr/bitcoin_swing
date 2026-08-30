@@ -150,6 +150,11 @@ confluence = 0.20
 "1mo" = 100
 unknown = 50
 
+[entry_triggers.reclaim]
+confirmation_bars = 1
+hold_buffer_fraction = 0
+close_buffer_fraction = 0
+
 [scoring_weights.entry_conviction]
 trend = 0.20
 regime = 0.20

@@ -542,6 +542,34 @@ class PriceLevelParameters:
 
 
 @dataclass(frozen=True)
+class ReclaimTriggerConfig:
+    confirmation_bars: int
+    hold_buffer_fraction: float
+    close_buffer_fraction: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            confirmation_bars=_required_positive_int(data, "confirmation_bars"),
+            hold_buffer_fraction=_required_fraction(data, "hold_buffer_fraction"),
+            close_buffer_fraction=_required_fraction(data, "close_buffer_fraction"),
+        )
+
+
+@dataclass(frozen=True)
+class EntryTriggerConfig:
+    reclaim: ReclaimTriggerConfig
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            reclaim=ReclaimTriggerConfig.from_mapping(
+                _required_mapping(data, "reclaim"),
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class CrowdingFlagConfig:
     funding_zscore_min: float
     basis_zscore_min: float
@@ -810,6 +838,7 @@ class StrategyConfig:
     setup_requirements: SetupRequirements
     regime_thresholds: RegimeThresholds
     price_levels: PriceLevelParameters
+    entry_triggers: EntryTriggerConfig
     scoring_weights: ScoringWeights
     regime_smoothing: RegimeSmoothingConfig
     positioning_flags: PositioningFlagConfig
@@ -841,6 +870,9 @@ class StrategyConfig:
             ),
             price_levels=PriceLevelParameters.from_mapping(
                 _required_mapping(data, "price_levels"),
+            ),
+            entry_triggers=EntryTriggerConfig.from_mapping(
+                _required_mapping(data, "entry_triggers"),
             ),
             scoring_weights=ScoringWeights.from_mapping(
                 _required_mapping(data, "scoring_weights"),
