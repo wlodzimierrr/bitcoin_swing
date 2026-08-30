@@ -1,0 +1,61 @@
+{
+  "breakout_disagreement_rate": "0.125",
+  "candidate_provider": "bitstamp",
+  "candidate_status": "REJECTED",
+  "common_bar_count": 26292,
+  "decision": "REJECTED",
+  "decision_rationale": "Bitstamp had perfect continuity and no material persistent close-price bias versus Coinbase, but source choice changed strategy-relevant outcomes. Bitstamp alone created one swing and its breakout, failed to create a validator-consensus swing/reclaim sequence, and missed a 107270 stop that both validators hit during the 10 October 2025 selloff. Maximum MFE and MAE sensitivities were 2.433 and 4.605 percentage points. Those rare but consequential range differences make the isolated-wick risk unacceptable for a sole V1 canonical structural reference without a separate cross-venue confirmation or composite policy.",
+  "decision_timestamp": "2026-08-29T14:13:30+00:00",
+  "follow_up_candidates": {
+    "bitfinex": "Useful as a required validator, but its persistent close premium, source gaps, and several isolated extremes do not support automatic promotion.",
+    "coinbase": "Worthy of follow-up because closes align closely with Bitstamp, but persistent gaps and isolated Coinbase wicks prevent automatic promotion.",
+    "composite": "Open a separate BTC_REFERENCE_COMPOSITE_V1 research ticket; do not implement or splice it into PRICE_SOURCE_POLICY_V1."
+  },
+  "historical_period_end": "2025-12-31T23:00:00+00:00",
+  "historical_period_start": "2023-01-01T00:00:00+00:00",
+  "isolated_wick_risk_acceptable": false,
+  "known_limitations": "The study covers three calendar years and three spot venues. The 149 weekly 28-day probes measure source sensitivity rather than a full strategy backtest. Root causes of persistent Coinbase and Bitfinex gaps remain UNKNOWN. Coin Metrics history was entitlement-unavailable and was not substituted.",
+  "mae_sensitivity_summary": {
+    "material_pairwise_count": 9,
+    "max_abs": "0.04605450328899157707792711626",
+    "mean_abs": "0.002186659986460590525042154001",
+    "median_abs": "0.000774734365593398094906945995",
+    "observation_count": 298,
+    "p90_abs": "0.00493631346399728098143622445",
+    "p95_abs": "0.0073633578229499555233420090",
+    "p995_abs": "0.03416000830133859084777420359",
+    "p99_abs": "0.0298206729800523876687487407",
+    "standard_deviation_abs": "0.004651165180227838617144298242"
+  },
+  "manual_review_count": 82,
+  "material_systematic_bias_detected": false,
+  "mfe_sensitivity_summary": {
+    "material_pairwise_count": 5,
+    "max_abs": "0.0243290043290043290043290044",
+    "mean_abs": "0.001585217329619384088839482111",
+    "median_abs": "0.00079925018688196019209261365",
+    "observation_count": 298,
+    "p90_abs": "0.0034980531197568773940295673",
+    "p95_abs": "0.0073407915052685754530433134",
+    "p995_abs": "0.0191458874458874458874458875",
+    "p99_abs": "0.01438318563249941181083836561",
+    "standard_deviation_abs": "0.002683590300988417024960845578"
+  },
+  "missing_bar_rates": {
+    "bitfinex": "0.0001520681265206812652068126521",
+    "bitstamp": "0",
+    "coinbase": "0.0003041362530413625304136253041"
+  },
+  "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+  "reclaim_disagreement_rate": "0.5",
+  "reviewer": "Codex BTC-019 empirical review",
+  "schema_version": "BTC019_CANONICAL_DECISION_V1",
+  "stop_touch_disagreement_rate": "0.01006711409395973154362416107",
+  "swing_disagreement_rate": "0.1666666666666666666666666667",
+  "tier_event_counts": {
+    "1": 209567,
+    "2": 4346,
+    "3": 24,
+    "4": 590
+  }
+}

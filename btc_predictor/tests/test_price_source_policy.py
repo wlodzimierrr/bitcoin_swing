@@ -302,8 +302,13 @@ def test_yfinance_short_history_does_not_shorten_required_overlap() -> None:
     )
 
     assert report.overlap_bar_count == hour_count
-    assert report.close_price_divergence.observation_count == (2 * hour_count) + 2
+    # Only the two required validators contribute divergence observations. The
+    # optional yfinance series must not add its two hours to a V1 metric.
+    assert report.close_price_divergence.observation_count == 2 * hour_count
     assert report.policy_decision_ready
+    # Optional provider provenance stays visible even though it drives nothing.
+    profiles = {profile.provider_id: profile for profile in report.series_profiles}
+    assert YFINANCE_PROVIDER_ID in profiles
 
 
 def test_comparison_reports_gaps_duplicates_and_missing_manual_review() -> None:
@@ -418,7 +423,7 @@ def test_wick_research_manual_review_and_divergence_tiers_are_persisted() -> Non
         trade_outcome_impact=True,
         review_conclusion="Keep raw candle but do not redefine structure automatically.",
         review_notes="Deterministic isolated-wick fixture.",
-        reviewed_at=as_of + timedelta(minutes=5),
+        reviewed_at=as_of - timedelta(minutes=5),
     )
 
     with pytest.raises(ValueError, match="ATR-normalized divergence"):
@@ -465,7 +470,7 @@ def test_wick_research_manual_review_and_divergence_tiers_are_persisted() -> Non
     assert persisted["policy_version"] == PRICE_SOURCE_POLICY_VERSION
     assert persisted["manual_reviews"][0]["stop_touch_impact"]
     assert persisted["manual_reviews"][0]["reviewed_at"] == (
-        as_of + timedelta(minutes=5)
+        as_of - timedelta(minutes=5)
     ).isoformat()
 
 

@@ -83,6 +83,15 @@ DIVERGENCE_TIER_PORTFOLIO = 4
 WICK_ANOMALY_CANDIDATE = "WICK_ANOMALY_CANDIDATE"
 CROSS_VENUE_CONFIRMED = "CROSS_VENUE_CONFIRMED"
 CROSS_VENUE_UNCONFIRMED = "CROSS_VENUE_UNCONFIRMED"
+WICK_ANOMALY_POLICY_VERSION = "PRICE_SOURCE_WICK_ANOMALY_V1"
+# Reuses the established cross-venue high/low materiality threshold already frozen
+# as reference_composite.DEFAULT_TWO_PROVIDER_RANGE_DISAGREEMENT_ATR and as the V2
+# protocol's quality_thresholds.high_low_or_range_disagreement_atr. A unique extreme
+# below this ATR distance from the cross-provider median is ordinary independent-venue
+# dispersion, not an isolated exchange wick. The value is duplicated rather than
+# imported so PRICE_SOURCE_POLICY_V1 does not depend on composite research; a test
+# pins the two constants together so they cannot drift apart silently.
+WICK_ANOMALY_ATR_THRESHOLD = Decimal("0.30")
 
 
 @dataclass(frozen=True)
@@ -1040,6 +1049,13 @@ def compare_price_sources(
     normalized_trade_path_probes = tuple(trade_path_probes)
     for probe in normalized_trade_path_probes:
         probe.as_record()
+        _require_probe_within_window(probe, start=window_start, end=window_end)
+    for diagnostic in supplied_access:
+        _require_point_in_time(
+            diagnostic.checked_at,
+            name=f"provider access diagnostic checked_at ({diagnostic.provider_id})",
+            as_of=signal_time,
+        )
     normalized = {
         provider_id: _normalized_hourly_bars(
             bars,
@@ -1058,6 +1074,17 @@ def compare_price_sources(
         supplied=supplied_access,
         checked_at=signal_time,
     )
+    # Every V1 decision-driving metric is computed from the required empirical
+    # provider set (plus the explicit baseline) only. Optional institutional
+    # benchmark and noncanonical sanity-check providers stay visible through
+    # series profiles and access diagnostics but can never move an approval gate.
+    validation_provider_ids = tuple(
+        dict.fromkeys((*required_provider_ids, baseline)),
+    )
+    validation_bars = {
+        provider_id: normalized.get(provider_id, ())
+        for provider_id in validation_provider_ids
+    }
 
     reason_codes = []
     if not normalized or not any(normalized.values()):
@@ -1106,30 +1133,30 @@ def compare_price_sources(
         timeframe="1h",
     )
     close_diffs = _field_pct_differences(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         timestamps=comparison_timestamps,
         field_name="close",
     )
     high_diffs = _field_pct_differences(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         timestamps=comparison_timestamps,
         field_name="high",
     )
     low_diffs = _field_pct_differences(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         timestamps=comparison_timestamps,
         field_name="low",
     )
     wick_diffs = _wick_ratio_differences(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         timestamps=comparison_timestamps,
     )
-    daily_by_provider = _daily_bars_by_provider(normalized, as_of=signal_time)
-    weekly_by_provider = _weekly_bars_by_provider(normalized, as_of=signal_time)
+    daily_by_provider = _daily_bars_by_provider(validation_bars, as_of=signal_time)
+    weekly_by_provider = _weekly_bars_by_provider(validation_bars, as_of=signal_time)
     daily_return_diffs = _daily_return_differences(daily_by_provider, baseline)
     atr_diffs = _atr_differences(daily_by_provider, baseline)
     swing_counts = _swing_level_difference_counts(
@@ -1143,25 +1170,25 @@ def compare_price_sources(
         signal_time,
     )
     stop_touch_difference_count = _stop_touch_difference_count(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         baseline_bars=baseline_bars,
         timestamps=comparison_timestamps,
         stop_levels=normalized_stop_levels,
     )
     stop_touch_difference_count += _probe_stop_touch_difference_count(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         probes=normalized_trade_path_probes,
     )
     mfe_diffs, mae_diffs = _mfe_mae_differences(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         probes=normalized_trade_path_probes,
     )
     wick_high_atr, wick_low_atr, wick_diagnostics = (
         _cross_venue_wick_diagnostics(
-            normalized,
+            validation_bars,
             reference_provider_ids=required_provider_ids,
             baseline_provider_id=baseline,
             daily_by_provider=daily_by_provider,
@@ -1170,7 +1197,7 @@ def compare_price_sources(
         )
     )
     top_events = _top_divergence_events(
-        normalized,
+        validation_bars,
         baseline_provider_id=baseline,
         timestamps=comparison_timestamps,
         top_event_count=top_event_count,
@@ -1178,9 +1205,18 @@ def compare_price_sources(
     reviewed = tuple(manual_reviews)
     for review in reviewed:
         review.as_record()
+        _require_point_in_time(
+            review.reviewed_at,
+            name=(
+                "manual review reviewed_at "
+                f"({review.provider_id} {review.metric} "
+                f"{require_utc_datetime(review.timestamp, 'timestamp').isoformat()})"
+            ),
+            as_of=signal_time,
+        )
         _validate_manual_review_context(
             review,
-            provider_bars=normalized,
+            provider_bars=validation_bars,
             baseline_provider_id=baseline,
             reference_provider_ids=required_provider_ids,
             baseline_daily_bars=daily_by_provider.get(baseline, ()),
@@ -1195,6 +1231,11 @@ def compare_price_sources(
         reason_codes.append("PRICE_SOURCE_POLICY_CANONICAL_DECISION_MISSING")
     else:
         canonical_source_decision.as_record()
+        _require_point_in_time(
+            canonical_source_decision.decided_at,
+            name="canonical source decision decided_at",
+            as_of=signal_time,
+        )
         if canonical_source_decision.provider_id != policy.canonical_candidate_provider_id:
             raise ValueError("canonical decision provider must match policy candidate")
     divergence_tiers = _build_divergence_tiers(
@@ -1341,12 +1382,19 @@ def _cross_venue_wick_diagnostics(
             atr_timestamps,
             timestamp.replace(hour=0, minute=0, second=0, microsecond=0),
         )
-        maximum_high = max(bar.high for bar in synchronized.values())
-        minimum_low = min(bar.low for bar in synchronized.values())
-        maximum_high_count = sum(
-            bar.high == maximum_high for bar in synchronized.values()
+        descending_highs = sorted(
+            (bar.high for bar in synchronized.values()),
+            reverse=True,
         )
-        minimum_low_count = sum(bar.low == minimum_low for bar in synchronized.values())
+        ascending_lows = sorted(bar.low for bar in synchronized.values())
+        maximum_high = descending_highs[0]
+        minimum_high = descending_highs[-1]
+        maximum_low = ascending_lows[-1]
+        minimum_low = ascending_lows[0]
+        # Distance from the most extreme venue to the next most extreme venue.
+        # At least three synchronized providers are guaranteed above.
+        runner_up_high_gap = descending_highs[0] - descending_highs[1]
+        runner_up_low_gap = ascending_lows[1] - ascending_lows[0]
         for provider_id, bar in synchronized.items():
             high_atr_divergence = (
                 abs(bar.high - median_high) / atr_value
@@ -1362,15 +1410,57 @@ def _cross_venue_wick_diagnostics(
                 high_values.append(high_atr_divergence)
             if low_atr_divergence is not None:
                 low_values.append(low_atr_divergence)
+            # Independent venues routinely produce a unique maximum high or
+            # minimum low by a few cents, so holding the extreme is not by
+            # itself a wick anomaly. Materiality is the cross-venue spread of
+            # the field measured against the prior completed ATR. The spread is
+            # used rather than the distance from the median because a move that
+            # two of three venues share drags the median onto the extreme and
+            # would otherwise measure as zero excursion.
+            high_spread_material = (
+                atr_value is not None
+                and atr_value > 0
+                and (maximum_high - minimum_high) / atr_value
+                >= WICK_ANOMALY_ATR_THRESHOLD
+            )
+            low_spread_material = (
+                atr_value is not None
+                and atr_value > 0
+                and (maximum_low - minimum_low) / atr_value
+                >= WICK_ANOMALY_ATR_THRESHOLD
+            )
+            # An extreme is isolated when the venue holding it also stands clear
+            # of the next most extreme venue by a material ATR distance. When
+            # the runner-up is close behind, the move is corroborated across
+            # venues even though the exact prices differ.
+            high_gap_isolated = (
+                atr_value is not None
+                and atr_value > 0
+                and runner_up_high_gap / atr_value >= WICK_ANOMALY_ATR_THRESHOLD
+            )
+            low_gap_isolated = (
+                atr_value is not None
+                and atr_value > 0
+                and runner_up_low_gap / atr_value >= WICK_ANOMALY_ATR_THRESHOLD
+            )
+            holds_high = bar.high == maximum_high
+            holds_low = bar.low == minimum_low
             isolated_extreme = (
-                (bar.high == maximum_high and maximum_high_count == 1)
-                or (bar.low == minimum_low and minimum_low_count == 1)
-            )
-            flags = (
-                (WICK_ANOMALY_CANDIDATE, CROSS_VENUE_UNCONFIRMED)
-                if isolated_extreme
-                else (CROSS_VENUE_CONFIRMED,)
-            )
+                holds_high and high_spread_material and high_gap_isolated
+            ) or (holds_low and low_spread_material and low_gap_isolated)
+            corroborated_extreme = (
+                holds_high and high_spread_material and not high_gap_isolated
+            ) or (holds_low and low_spread_material and not low_gap_isolated)
+            if isolated_extreme:
+                flags = (WICK_ANOMALY_CANDIDATE, CROSS_VENUE_UNCONFIRMED)
+            elif corroborated_extreme:
+                # A material extreme that another venue reached too.
+                flags = (CROSS_VENUE_CONFIRMED,)
+            else:
+                # Ordinary dispersion, a venue that holds no extreme, or no
+                # prior ATR with which to judge materiality: assert neither an
+                # anomaly nor corroboration.
+                flags = ()
             diagnostics.append(
                 CrossVenueWickDiagnostic(
                     timestamp=timestamp,
@@ -1573,15 +1663,17 @@ def _series_profile(
         timestamp for timestamp in expected_timestamps if timestamp not in unique_timestamps
     ]
     duplicate_count = len(timestamps) - len(unique_timestamps)
-    first_bar = bars[0] if bars else None
+    # Provenance comes from the configured instrument policy, never from bars[0]:
+    # a configured and available provider may legitimately return zero bars, and
+    # its exchange/symbol/timeframe must still be reconstructable.
     return PriceSourceSeriesProfile(
         provider_id=provider_id,
         price_source_policy_version=policy_version,
         price_source_roles=instrument_policy.roles,
         fallback_used=False,
-        exchange=first_bar.exchange if first_bar is not None else "",
-        symbol=first_bar.symbol if first_bar is not None else "",
-        timeframe=first_bar.timeframe if first_bar is not None else "1h",
+        exchange=instrument_policy.exchange,
+        symbol=instrument_policy.symbol,
+        timeframe=instrument_policy.timeframe,
         start=start,
         end=end,
         bar_count=len(bars),
@@ -1625,11 +1717,82 @@ def _common_timestamps(
     return tuple(sorted(set.intersection(*timestamp_sets)))
 
 
+def _require_point_in_time(value: datetime, *, name: str, as_of: datetime) -> None:
+    """Reject provenance recorded after the requested historical ``as_of``."""
+
+    recorded_at = require_utc_datetime(value, name)
+    if recorded_at > as_of:
+        raise ValueError(
+            f"{name} is after as_of; a point-in-time BTC-019 report cannot use "
+            f"information recorded at {recorded_at.isoformat()} when as_of is "
+            f"{as_of.isoformat()}",
+        )
+
+
+def _require_probe_within_window(
+    probe: TradePathProbe,
+    *,
+    start: datetime,
+    end: datetime,
+) -> None:
+    """Reject probes whose path would be silently truncated by the window."""
+
+    entry_time = require_utc_datetime(probe.entry_time, "entry_time")
+    exit_time = require_utc_datetime(probe.exit_time, "exit_time")
+    if entry_time < start or exit_time > end:
+        raise ValueError(
+            "trade path probe must lie inside the comparison window "
+            f"[{start.isoformat()}, {end.isoformat()}]; probe "
+            f"[{entry_time.isoformat()}, {exit_time.isoformat()}] would be "
+            "truncated and would misreport MFE/MAE and stop-touch outcomes",
+        )
+
+
+def _revision_payload(bar: OhlcvBar) -> tuple[Any, ...]:
+    return (
+        bar.exchange,
+        bar.symbol,
+        bar.timeframe,
+        bar.provider,
+        bar.open,
+        bar.high,
+        bar.low,
+        bar.close,
+        bar.volume,
+    )
+
+
 def _bars_by_timestamp(bars: Sequence[OhlcvBar]) -> dict[datetime, OhlcvBar]:
-    by_timestamp = {}
-    for bar in sorted(bars, key=lambda value: (value.timestamp, value.ingested_at)):
-        by_timestamp.setdefault(bar.timestamp, bar)
-    return by_timestamp
+    """Select the latest revision known for each observation timestamp.
+
+    Inputs are already filtered to ``ingested_at <= as_of`` by
+    :func:`_normalized_hourly_bars`, so the newest surviving revision is exactly
+    the revision that was known at the requested point in time. Identical
+    duplicates collapse; conflicting bars sharing a timestamp and ``ingested_at``
+    are rejected instead of letting input ordering pick the winner.
+    """
+
+    by_timestamp: dict[datetime, OhlcvBar] = {}
+    for bar in bars:
+        existing = by_timestamp.get(bar.timestamp)
+        if existing is None:
+            by_timestamp[bar.timestamp] = bar
+            continue
+        if bar.ingested_at > existing.ingested_at:
+            by_timestamp[bar.timestamp] = bar
+            continue
+        if bar.ingested_at < existing.ingested_at:
+            continue
+        if _revision_payload(bar) != _revision_payload(existing):
+            raise ValueError(
+                "conflicting duplicate bars share a timestamp and ingested_at; "
+                "revision selection would depend on input ordering: "
+                f"{bar.provider} {bar.timestamp.isoformat()} "
+                f"ingested_at={bar.ingested_at.isoformat()}",
+            )
+    return {
+        timestamp: by_timestamp[timestamp] for timestamp in sorted(by_timestamp)
+    }
 
 
 def _deduplicated_bars(bars: Sequence[OhlcvBar]) -> tuple[OhlcvBar, ...]:
@@ -1859,12 +2022,14 @@ def _breakout_reclaim_difference_counts(
             baseline_provider_id=baseline_provider_id,
             level_type=BREAKOUT_LEVEL_TYPE,
             timestamp_field="confirmation_timestamp",
+            identity_fields=("source_level_timestamp",),
         ),
         "reclaim": _typed_level_difference_count(
             breakout_by_provider,
             baseline_provider_id=baseline_provider_id,
             level_type=RECLAIM_LEVEL_TYPE,
             timestamp_field="confirmation_timestamp",
+            identity_fields=("source_level_timestamp",),
         ),
     }
 
@@ -2103,10 +2268,29 @@ def _typed_level_difference_count(
     baseline_provider_id: str,
     level_type: str,
     timestamp_field: str,
+    identity_fields: Sequence[str] = (),
 ) -> int:
+    """Count structural levels present for one provider but not another.
+
+    Structural identity is deliberately timestamp-based rather than price-based.
+    Two venues that mark the same swing week at prices a few dollars apart have
+    made the same structural decision; the size of that price difference is a
+    separate ATR-normalized measurement (BTC-019B's ATR grid and the frozen V2
+    ``swing_level_disagreement_rate_above_0_50_atr`` gate), not an extra
+    disagreement event here.
+
+    ``identity_fields`` adds further structural coordinates so that genuinely
+    distinct levels are never collapsed. Breakout/reclaim detection emits one
+    level per source swing level, so several distinct levels can share a single
+    confirmation timestamp and must stay distinguishable.
+    """
+
     sets_by_provider = {
         provider_id: {
-            getattr(level, timestamp_field)
+            (
+                getattr(level, timestamp_field),
+                *(getattr(level, field) for field in identity_fields),
+            )
             for level in levels
             if level.level_type == level_type
         }

@@ -1,0 +1,4584 @@
+{
+  "material_path_reviews": [
+    {
+      "assessment": {
+        "review_conclusion": "Bitstamp's isolated 24 March high increased MFE by 1.915 percentage points versus Coinbase.",
+        "review_notes": "No stop or trade-outcome state changed."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-03-09T18:00:00+00:00",
+        "mae": "-0.1528571428571428571428571429",
+        "max_high": "29380.00",
+        "max_high_timestamp": "2023-03-24T14:00:00+00:00",
+        "mfe": "0.2718614718614718614718614719",
+        "min_low": "19569.00",
+        "min_low_timestamp": "2023-03-10T10:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "23100.00",
+      "entry_time": "2023-02-26T00:00:00+00:00",
+      "exit_time": "2023-03-25T23:00:00+00:00",
+      "mae_difference_fraction": "0.0000207792207792207792207792",
+      "material": true,
+      "mfe_difference_fraction": "0.0191458874458874458874458875",
+      "probe_index": 4,
+      "stop_level": "21376.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-03-09T18:00:00+00:00",
+        "mae": "-0.1528779220779220779220779221",
+        "max_high": "28937.73",
+        "max_high_timestamp": "2023-03-22T18:00:00+00:00",
+        "mfe": "0.2527155844155844155844155844",
+        "min_low": "19568.52",
+        "min_low_timestamp": "2023-03-10T10:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "coinbase"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Bitstamp's isolated 24 March high increased MFE by 2.433 percentage points versus Bitfinex.",
+        "review_notes": "This was the largest MFE sensitivity; stop state was unchanged."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-03-09T18:00:00+00:00",
+        "mae": "-0.1528571428571428571428571429",
+        "max_high": "29380.00",
+        "max_high_timestamp": "2023-03-24T14:00:00+00:00",
+        "mfe": "0.2718614718614718614718614719",
+        "min_low": "19569.00",
+        "min_low_timestamp": "2023-03-10T10:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "23100.00",
+      "entry_time": "2023-02-26T00:00:00+00:00",
+      "exit_time": "2023-03-25T23:00:00+00:00",
+      "mae_difference_fraction": "0.0009956709956709956709956710",
+      "material": true,
+      "mfe_difference_fraction": "0.0243290043290043290043290044",
+      "probe_index": 4,
+      "stop_level": "21376.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-03-09T18:00:00+00:00",
+        "mae": "-0.1518614718614718614718614719",
+        "max_high": "28818",
+        "max_high_timestamp": "2023-03-22T18:00:00+00:00",
+        "mfe": "0.2475324675324675324675324675",
+        "min_low": "19592",
+        "min_low_timestamp": "2023-03-10T11:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Venue-specific path highs produced a 1.014 percentage-point MFE difference.",
+        "review_notes": "The Bitstamp 24 March spike remained the primary favorable-extreme difference; stop state was unchanged."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.007664693897351314640535558358",
+        "max_high": "29380.00",
+        "max_high_timestamp": "2023-03-24T14:00:00+00:00",
+        "mfe": "0.4252449791403900261957892694",
+        "min_low": "20456.00",
+        "min_low_timestamp": "2023-03-12T07:00:00+00:00",
+        "stop_touched": false
+      },
+      "entry_price": "20614.00",
+      "entry_time": "2023-03-12T00:00:00+00:00",
+      "exit_time": "2023-04-08T23:00:00+00:00",
+      "mae_difference_fraction": "0.004802561366061899679829242262",
+      "material": true,
+      "mfe_difference_fraction": "0.0101387406616862326574172892",
+      "probe_index": 6,
+      "stop_level": "19569.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.01246725526341321432036480062",
+        "max_high": "29171",
+        "max_high_timestamp": "2023-03-30T02:00:00+00:00",
+        "mfe": "0.4151062384787037935383719802",
+        "min_low": "20357",
+        "min_low_timestamp": "2023-03-12T15:00:00+00:00",
+        "stop_touched": false
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Coinbase's deeper 17 August low increased MAE by 1.230 percentage points.",
+        "review_notes": "The selloff was cross-market and all compared stop states agreed."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-07-24T09:00:00+00:00",
+        "mae": "-0.1402713412586473235274363624",
+        "max_high": "30342.00",
+        "max_high_timestamp": "2023-07-23T19:00:00+00:00",
+        "mfe": "0.01894015716300624622204311908",
+        "min_low": "25601.00",
+        "min_low_timestamp": "2023-08-18T17:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "29778.00",
+      "entry_time": "2023-07-23T00:00:00+00:00",
+      "exit_time": "2023-08-19T23:00:00+00:00",
+      "mae_difference_fraction": "0.0122990126939351198871650212",
+      "material": true,
+      "mfe_difference_fraction": "0.00029216199879105379810598428",
+      "probe_index": 25,
+      "stop_level": "29508.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-07-24T09:00:00+00:00",
+        "mae": "-0.1525703539525824434146013836",
+        "max_high": "30350.7",
+        "max_high_timestamp": "2023-07-23T19:00:00+00:00",
+        "mfe": "0.01923231916179730002014910336",
+        "min_low": "25234.76",
+        "min_low_timestamp": "2023-08-17T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "coinbase"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Bitfinex's deeper 17 August low increased MAE by 2.982 percentage points.",
+        "review_notes": "The selloff was cross-market and stop state agreed."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-07-24T09:00:00+00:00",
+        "mae": "-0.1402713412586473235274363624",
+        "max_high": "30342.00",
+        "max_high_timestamp": "2023-07-23T19:00:00+00:00",
+        "mfe": "0.01894015716300624622204311908",
+        "min_low": "25601.00",
+        "min_low_timestamp": "2023-08-18T17:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "29778.00",
+      "entry_time": "2023-07-23T00:00:00+00:00",
+      "exit_time": "2023-08-19T23:00:00+00:00",
+      "mae_difference_fraction": "0.0298206729800523876687487407",
+      "material": true,
+      "mfe_difference_fraction": "0.00127610987977701658942843710",
+      "probe_index": 25,
+      "stop_level": "29508.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-07-24T09:00:00+00:00",
+        "mae": "-0.1700920142386997111961851031",
+        "max_high": "30380",
+        "max_high_timestamp": "2023-07-23T19:00:00+00:00",
+        "mfe": "0.02021626704278326281147155618",
+        "min_low": "24713",
+        "min_low_timestamp": "2023-08-17T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "The Bitfinex 17 August low increased MAE by 2.171 percentage points.",
+        "review_notes": "No stop-state difference resulted."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-08-01T02:00:00+00:00",
+        "mae": "-0.1361390356108365990799113989",
+        "max_high": "30210.00",
+        "max_high_timestamp": "2023-08-08T21:00:00+00:00",
+        "mfe": "0.02947691259158289316749020276",
+        "min_low": "25350.00",
+        "min_low_timestamp": "2023-08-22T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "29345.00",
+      "entry_time": "2023-07-30T00:00:00+00:00",
+      "exit_time": "2023-08-26T23:00:00+00:00",
+      "mae_difference_fraction": "0.0217072755154200034077355597",
+      "material": true,
+      "mfe_difference_fraction": "0.00252172431419321860623615607",
+      "probe_index": 26,
+      "stop_level": "28842.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-08-01T02:00:00+00:00",
+        "mae": "-0.1578463111262566024876469586",
+        "max_high": "30284",
+        "max_high_timestamp": "2023-08-08T21:00:00+00:00",
+        "mfe": "0.03199863690577611177372635883",
+        "min_low": "24713",
+        "min_low_timestamp": "2023-08-17T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "The Bitfinex 17 August low increased MAE by 2.135 percentage points.",
+        "review_notes": "No stop-state difference resulted."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-08-17T00:00:00+00:00",
+        "mae": "-0.1277716567965844924941468117",
+        "max_high": "30210.00",
+        "max_high_timestamp": "2023-08-08T21:00:00+00:00",
+        "mfe": "0.04014598540145985401459854015",
+        "min_low": "25333.00",
+        "min_low_timestamp": "2023-09-01T17:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "29044.00",
+      "entry_time": "2023-08-06T00:00:00+00:00",
+      "exit_time": "2023-09-02T23:00:00+00:00",
+      "mae_difference_fraction": "0.0213469219115824266629940780",
+      "material": true,
+      "mfe_difference_fraction": "0.00254785842170499931138961575",
+      "probe_index": 27,
+      "stop_level": "28574.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-08-17T00:00:00+00:00",
+        "mae": "-0.1491185787081669191571408897",
+        "max_high": "30284",
+        "max_high_timestamp": "2023-08-08T21:00:00+00:00",
+        "mfe": "0.04269384382316485332598815590",
+        "min_low": "24713",
+        "min_low_timestamp": "2023-08-17T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "The Bitfinex 17 August low increased MAE by 2.107 percentage points.",
+        "review_notes": "No stop-state difference resulted."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2023-08-17T00:00:00+00:00",
+        "mae": "-0.1392116887529731566428814135",
+        "max_high": "29659.00",
+        "max_high_timestamp": "2023-08-14T16:00:00+00:00",
+        "mfe": "0.007781175671083927964661909616",
+        "min_low": "25333.00",
+        "min_low_timestamp": "2023-09-01T17:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "29430.00",
+      "entry_time": "2023-08-13T00:00:00+00:00",
+      "exit_time": "2023-09-09T23:00:00+00:00",
+      "mae_difference_fraction": "0.0210669384981311586816173972",
+      "material": true,
+      "mfe_difference_fraction": "0.001019367991845056065239551478",
+      "probe_index": 28,
+      "stop_level": "28574.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2023-08-17T00:00:00+00:00",
+        "mae": "-0.1602786272511043153244988107",
+        "max_high": "29689",
+        "max_high_timestamp": "2023-08-14T16:00:00+00:00",
+        "mfe": "0.008800543662928984029901461094",
+        "min_low": "24713",
+        "min_low_timestamp": "2023-08-17T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Different April path highs produced a 1.438 percentage-point MFE difference.",
+        "review_notes": "The outcome remained stop-state consistent."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2024-04-17T14:00:00+00:00",
+        "mae": "-0.1137949964708650301937102972",
+        "max_high": "67241.00",
+        "max_high_timestamp": "2024-04-22T23:00:00+00:00",
+        "mfe": "0.05467806446553211512822523724",
+        "min_low": "56500.00",
+        "min_low_timestamp": "2024-05-01T08:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "63755.00",
+      "entry_time": "2024-04-14T00:00:00+00:00",
+      "exit_time": "2024-05-11T23:00:00+00:00",
+      "mae_difference_fraction": "0.0033095443494627872323739314",
+      "material": true,
+      "mfe_difference_fraction": "0.01438318563249941181083836561",
+      "probe_index": 63,
+      "stop_level": "60760.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2024-04-17T15:00:00+00:00",
+        "mae": "-0.1104854521214022429613363658",
+        "max_high": "68158",
+        "max_high_timestamp": "2024-04-22T22:00:00+00:00",
+        "mfe": "0.06906125009803152693906360285",
+        "min_low": "56711",
+        "min_low_timestamp": "2024-05-01T15:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Different April/May path highs produced a 1.043 percentage-point MFE difference.",
+        "review_notes": "The outcome remained stop-state consistent."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2024-04-30T19:00:00+00:00",
+        "mae": "-0.1279922213819394070347105397",
+        "max_high": "67482.00",
+        "max_high_timestamp": "2024-05-17T15:00:00+00:00",
+        "mfe": "0.04150139675582238822094979396",
+        "min_low": "56500.00",
+        "min_low_timestamp": "2024-05-01T08:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "64793.00",
+      "entry_time": "2024-04-21T00:00:00+00:00",
+      "exit_time": "2024-05-18T23:00:00+00:00",
+      "mae_difference_fraction": "0.0032565246245736422144367447",
+      "material": true,
+      "mfe_difference_fraction": "0.01043322581143024709459355177",
+      "probe_index": 64,
+      "stop_level": "59629.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": "2024-04-30T19:00:00+00:00",
+        "mae": "-0.1247356967573657648202737950",
+        "max_high": "68158",
+        "max_high_timestamp": "2024-04-22T22:00:00+00:00",
+        "mfe": "0.05193462256725263531554334573",
+        "min_low": "56711",
+        "min_low_timestamp": "2024-05-01T15:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Bitfinex's 5 December lower wick increased MAE by 1.981 percentage points.",
+        "review_notes": "No stop-state difference resulted."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.07430681655887213596392793749",
+        "max_high": "108364.00",
+        "max_high_timestamp": "2024-12-17T14:00:00+00:00",
+        "mfe": "0.1054618162528308816028400628",
+        "min_low": "90742.00",
+        "min_low_timestamp": "2024-11-26T20:00:00+00:00",
+        "stop_touched": false
+      },
+      "entry_price": "98026.00",
+      "entry_time": "2024-11-24T00:00:00+00:00",
+      "exit_time": "2024-12-21T23:00:00+00:00",
+      "mae_difference_fraction": "0.01981107053230775508538550996",
+      "material": true,
+      "mfe_difference_fraction": "0.0026931630383775732968804194",
+      "probe_index": 95,
+      "stop_level": "66798.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.09411788709117989104931344745",
+        "max_high": "108100",
+        "max_high_timestamp": "2024-12-17T14:00:00+00:00",
+        "mfe": "0.1027686532144533083059596434",
+        "min_low": "88800",
+        "min_low_timestamp": "2024-12-05T22:00:00+00:00",
+        "stop_touched": false
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Bitfinex's isolated 5 December low increased MAE by 3.416 percentage points.",
+        "review_notes": "No stop-state difference resulted."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.04439140811455847255369928401",
+        "max_high": "108364.00",
+        "max_high_timestamp": "2024-12-17T14:00:00+00:00",
+        "mfe": "0.1244578188232852547473280066",
+        "min_low": "92092.00",
+        "min_low_timestamp": "2024-12-05T22:00:00+00:00",
+        "stop_touched": false
+      },
+      "entry_price": "96370.00",
+      "entry_time": "2024-12-01T00:00:00+00:00",
+      "exit_time": "2024-12-28T23:00:00+00:00",
+      "mae_difference_fraction": "0.03416000830133859084777420359",
+      "material": true,
+      "mfe_difference_fraction": "0.0027394417349797654871848085",
+      "probe_index": 96,
+      "stop_level": "66798.00",
+      "stop_touch_disagreement": false,
+      "validator": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.07855141641589706340147348760",
+        "max_high": "108100",
+        "max_high_timestamp": "2024-12-17T14:00:00+00:00",
+        "mfe": "0.1217183770883054892601431981",
+        "min_low": "88800",
+        "min_low_timestamp": "2024-12-05T22:00:00+00:00",
+        "stop_touched": false
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Bitstamp and Coinbase touched the stop while Bitfinex did not.",
+        "review_notes": "Bitstamp was not acting alone, so this disagreement does not count as a candidate-only stop hit."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": "2025-08-30T01:00:00+00:00",
+        "mae": "-0.04897315775024575137930729107",
+        "max_high": "124517.00",
+        "max_high_timestamp": "2025-08-14T00:00:00+00:00",
+        "mfe": "0.1027107926921067313738166296",
+        "min_low": "107389.00",
+        "min_low_timestamp": "2025-08-30T01:00:00+00:00",
+        "stop_touched": true
+      },
+      "entry_price": "112919.00",
+      "entry_time": "2025-08-03T00:00:00+00:00",
+      "exit_time": "2025-08-30T23:00:00+00:00",
+      "mae_difference_fraction": "0.00133724173965408832880206166",
+      "material": true,
+      "mfe_difference_fraction": "0.00776662917666646002887025211",
+      "probe_index": 131,
+      "stop_level": "107471.00",
+      "stop_touch_disagreement": true,
+      "validator": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.04763591601059166305050522941",
+        "max_high": "123640",
+        "max_high_timestamp": "2025-08-14T03:00:00+00:00",
+        "mfe": "0.09494416351544027134494637749",
+        "min_low": "107540",
+        "min_low_timestamp": "2025-08-30T01:00:00+00:00",
+        "stop_touched": false
+      },
+      "validator_provider": "bitfinex"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Coinbase touched the 107270 stop that Bitstamp missed.",
+        "review_notes": "The 10 October cross-market selloff increased MAE by 1.424 percentage points and changed trade outcome state."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.06328830188028587932030381144",
+        "max_high": "126272.00",
+        "max_high_timestamp": "2025-10-06T18:00:00+00:00",
+        "mfe": "0.08861741656824118696817911426",
+        "min_low": "108652.00",
+        "min_low_timestamp": "2025-09-25T18:00:00+00:00",
+        "stop_touched": false
+      },
+      "entry_price": "115993.00",
+      "entry_time": "2025-09-14T00:00:00+00:00",
+      "exit_time": "2025-10-11T23:00:00+00:00",
+      "mae_difference_fraction": "0.01424223875578698714577603821",
+      "material": true,
+      "mfe_difference_fraction": "0.00020690903761433879630667368",
+      "probe_index": 137,
+      "stop_level": "107270.00",
+      "stop_touch_disagreement": true,
+      "validator": {
+        "first_stop_touch_timestamp": "2025-10-10T21:00:00+00:00",
+        "mae": "-0.07753054063607286646607984965",
+        "max_high": "126296",
+        "max_high_timestamp": "2025-10-06T18:00:00+00:00",
+        "mfe": "0.08882432560585552576448578794",
+        "min_low": "107000",
+        "min_low_timestamp": "2025-10-10T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "coinbase"
+    },
+    {
+      "assessment": {
+        "review_conclusion": "Bitfinex touched the 107270 stop that Bitstamp missed.",
+        "review_notes": "Both validators agreed on the stop hit; MAE sensitivity reached 4.605 percentage points."
+      },
+      "bitstamp": {
+        "first_stop_touch_timestamp": null,
+        "mae": "-0.06328830188028587932030381144",
+        "max_high": "126272.00",
+        "max_high_timestamp": "2025-10-06T18:00:00+00:00",
+        "mfe": "0.08861741656824118696817911426",
+        "min_low": "108652.00",
+        "min_low_timestamp": "2025-09-25T18:00:00+00:00",
+        "stop_touched": false
+      },
+      "entry_price": "115993.00",
+      "entry_time": "2025-09-14T00:00:00+00:00",
+      "exit_time": "2025-10-11T23:00:00+00:00",
+      "mae_difference_fraction": "0.04605450328899157707792711626",
+      "material": true,
+      "mfe_difference_fraction": "0.00139663600389678687507004733",
+      "probe_index": 137,
+      "stop_level": "107270.00",
+      "stop_touch_disagreement": true,
+      "validator": {
+        "first_stop_touch_timestamp": "2025-10-10T21:00:00+00:00",
+        "mae": "-0.1093428051692774563982309277",
+        "max_high": "126110",
+        "max_high_timestamp": "2025-10-06T18:00:00+00:00",
+        "mfe": "0.08722078056434440009310906693",
+        "min_low": "103310",
+        "min_low_timestamp": "2025-10-10T21:00:00+00:00",
+        "stop_touched": true
+      },
+      "validator_provider": "bitfinex"
+    }
+  ],
+  "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+  "required_top_price_event_reviews": [
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "26230",
+          "exchange": "bitfinex",
+          "high": "27734",
+          "low": "24713",
+          "open": "27680",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "26401.00",
+          "exchange": "bitstamp",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "26522.46",
+          "exchange": "coinbase",
+          "high": "27847.53",
+          "low": "25234.76",
+          "open": "27644.5",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "1.158730964467005076142131980",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "26401.00",
+          "exchange": "bitstamp",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "26401.00",
+        "cross_provider_median_high": "27734",
+        "cross_provider_median_low": "25234.76",
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": true,
+        "review_conclusion": "A real cross-market selloff was confirmed, but Bitstamp materially underrepresented its depth.",
+        "review_notes": "Hourly lows were 26266 Bitstamp, 25234.76 Coinbase, and 24713 Bitfinex. The difference created validator swing/reclaim sensitivity and MAE differences up to 2.982 percentage points; all compared probes had already touched their stops.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": true,
+        "timestamp": "2023-08-17T21:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "26230",
+          "exchange": "bitfinex",
+          "high": "27734",
+          "low": "24713",
+          "open": "27680",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "1553.00",
+        "baseline_value": "26266.00",
+        "metric": "low",
+        "percentage_difference": "0.05912586613873448564684382852",
+        "provider_id": "bitfinex",
+        "provider_value": "24713",
+        "timestamp": "2023-08-17T21:00:00+00:00"
+      },
+      "rank": 1
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "113840",
+          "exchange": "bitfinex",
+          "high": "115240",
+          "low": "103310",
+          "open": "114480",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "113974.00",
+          "exchange": "bitstamp",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "113874.92",
+          "exchange": "coinbase",
+          "high": "115156.73",
+          "low": "107000",
+          "open": "114323.97",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "1.220555227406969875959834613",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "113974.00",
+          "exchange": "bitstamp",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "113874.92",
+        "cross_provider_median_high": "115240",
+        "cross_provider_median_low": "107000",
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": true,
+        "review_conclusion": "A real selloff was confirmed by all venues, but Bitstamp materially underrepresented the downside and missed a consensus stop hit.",
+        "review_notes": "Lows were 109683 Bitstamp, 107000 Coinbase, and 103310 Bitfinex. Both validators crossed the 107270 probe stop while Bitstamp did not; MAE sensitivity reached 4.605 percentage points.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": true,
+        "swing_impact": true,
+        "timestamp": "2025-10-10T21:00:00+00:00",
+        "trade_outcome_impact": true,
+        "validator_ohlc": {
+          "close": "113840",
+          "exchange": "bitfinex",
+          "high": "115240",
+          "low": "103310",
+          "open": "114480",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "6373.00",
+        "baseline_value": "109683.00",
+        "metric": "low",
+        "percentage_difference": "0.05810380824740388209658743835",
+        "provider_id": "bitfinex",
+        "provider_value": "103310",
+        "timestamp": "2025-10-10T21:00:00+00:00"
+      },
+      "rank": 2
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "84568",
+          "exchange": "bitfinex",
+          "high": "84681",
+          "low": "84427",
+          "open": "84532",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "84615.00",
+          "exchange": "bitstamp",
+          "high": "84732.00",
+          "low": "81188.00",
+          "open": "84584.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "84610.18",
+          "exchange": "coinbase",
+          "high": "84731.47",
+          "low": "84470.09",
+          "open": "84546.51",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.01612132549438802779262426510",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "84615.00",
+          "exchange": "bitstamp",
+          "high": "84732.00",
+          "low": "81188.00",
+          "open": "84584.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "84610.18",
+        "cross_provider_median_high": "84731.47",
+        "cross_provider_median_low": "84427",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick while both validators remained tightly aligned.",
+        "review_notes": "Bitstamp reached 81188 while Coinbase and Bitfinex stayed near 84450. It did not alter the reviewed structural, stop, or material path outcomes, but it is direct evidence of isolated Bitstamp wick risk.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2025-04-02T04:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "84610.18",
+          "exchange": "coinbase",
+          "high": "84731.47",
+          "low": "84470.09",
+          "open": "84546.51",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "3282.09",
+        "baseline_value": "81188.00",
+        "metric": "low",
+        "percentage_difference": "0.04042580184263684288318470710",
+        "provider_id": "coinbase",
+        "provider_value": "84470.09",
+        "timestamp": "2025-04-02T04:00:00+00:00"
+      },
+      "rank": 3
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "84568",
+          "exchange": "bitfinex",
+          "high": "84681",
+          "low": "84427",
+          "open": "84532",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "84615.00",
+          "exchange": "bitstamp",
+          "high": "84732.00",
+          "low": "81188.00",
+          "open": "84584.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "84610.18",
+          "exchange": "coinbase",
+          "high": "84731.47",
+          "low": "84470.09",
+          "open": "84546.51",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+24",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "84615.00",
+          "exchange": "bitstamp",
+          "high": "84732.00",
+          "low": "81188.00",
+          "open": "84584.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "84610.18",
+        "cross_provider_median_high": "84731.47",
+        "cross_provider_median_low": "84427",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick while both validators remained tightly aligned.",
+        "review_notes": "Bitstamp reached 81188 while Coinbase and Bitfinex stayed near 84450. It did not alter the reviewed structural, stop, or material path outcomes, but it is direct evidence of isolated Bitstamp wick risk.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2025-04-02T04:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "84568",
+          "exchange": "bitfinex",
+          "high": "84681",
+          "low": "84427",
+          "open": "84532",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "3239.00",
+        "baseline_value": "81188.00",
+        "metric": "low",
+        "percentage_difference": "0.03989505838301226782283096024",
+        "provider_id": "bitfinex",
+        "provider_value": "84427",
+        "timestamp": "2025-04-02T04:00:00+00:00"
+      },
+      "rank": 4
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "26230",
+          "exchange": "bitfinex",
+          "high": "27734",
+          "low": "24713",
+          "open": "27680",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "26401.00",
+          "exchange": "bitstamp",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "26522.46",
+          "exchange": "coinbase",
+          "high": "27847.53",
+          "low": "25234.76",
+          "open": "27644.5",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+23",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "26401.00",
+          "exchange": "bitstamp",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "26401.00",
+        "cross_provider_median_high": "27734",
+        "cross_provider_median_low": "25234.76",
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": true,
+        "review_conclusion": "A real cross-market selloff was confirmed, but Bitstamp materially underrepresented its depth.",
+        "review_notes": "Hourly lows were 26266 Bitstamp, 25234.76 Coinbase, and 24713 Bitfinex. The difference created validator swing/reclaim sensitivity and MAE differences up to 2.982 percentage points; all compared probes had already touched their stops.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": true,
+        "timestamp": "2023-08-17T21:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "26522.46",
+          "exchange": "coinbase",
+          "high": "27847.53",
+          "low": "25234.76",
+          "open": "27644.5",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "1031.24",
+        "baseline_value": "26266.00",
+        "metric": "low",
+        "percentage_difference": "0.03926140257366938247163633595",
+        "provider_id": "coinbase",
+        "provider_value": "25234.76",
+        "timestamp": "2023-08-17T21:00:00+00:00"
+      },
+      "rank": 5
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "27994",
+          "exchange": "bitfinex",
+          "high": "28253",
+          "low": "27828",
+          "open": "27974",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "28036.00",
+          "exchange": "bitstamp",
+          "high": "29380.00",
+          "low": "27859.00",
+          "open": "28008.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "28029.41",
+          "exchange": "coinbase",
+          "high": "28299.99",
+          "low": "27854.08",
+          "open": "28013.75",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.02875513593845615875513593846",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "28036.00",
+          "exchange": "bitstamp",
+          "high": "29380.00",
+          "low": "27859.00",
+          "open": "28008.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "28029.41",
+        "cross_provider_median_high": "28299.99",
+        "cross_provider_median_low": "27854.08",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "high",
+        "mfe_impact": true,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated high that materially overstated favorable excursion.",
+        "review_notes": "Bitstamp reached 29380 while Coinbase and Bitfinex reached 28299.99 and 28253. This produced the maximum reviewed MFE sensitivity of 2.433 percentage points without changing stop state.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2023-03-24T14:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "27994",
+          "exchange": "bitfinex",
+          "high": "28253",
+          "low": "27828",
+          "open": "27974",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "1127.00",
+        "baseline_value": "29380.00",
+        "metric": "high",
+        "percentage_difference": "0.03835942818243703199455411845",
+        "provider_id": "bitfinex",
+        "provider_value": "28253",
+        "timestamp": "2023-03-24T14:00:00+00:00"
+      },
+      "rank": 6
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "27994",
+          "exchange": "bitfinex",
+          "high": "28253",
+          "low": "27828",
+          "open": "27974",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "28036.00",
+          "exchange": "bitstamp",
+          "high": "29380.00",
+          "low": "27859.00",
+          "open": "28008.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "28029.41",
+          "exchange": "coinbase",
+          "high": "28299.99",
+          "low": "27854.08",
+          "open": "28013.75",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+22",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "28036.00",
+          "exchange": "bitstamp",
+          "high": "29380.00",
+          "low": "27859.00",
+          "open": "28008.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "28029.41",
+        "cross_provider_median_high": "28299.99",
+        "cross_provider_median_low": "27854.08",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "high",
+        "mfe_impact": true,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated high that materially overstated favorable excursion.",
+        "review_notes": "Bitstamp reached 29380 while Coinbase and Bitfinex reached 28299.99 and 28253. This produced the maximum reviewed MFE sensitivity of 2.433 percentage points without changing stop state.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2023-03-24T14:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "28029.41",
+          "exchange": "coinbase",
+          "high": "28299.99",
+          "low": "27854.08",
+          "open": "28013.75",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "1080.01",
+        "baseline_value": "29380.00",
+        "metric": "high",
+        "percentage_difference": "0.03676004084411164057181756297",
+        "provider_id": "coinbase",
+        "provider_value": "28299.99",
+        "timestamp": "2023-03-24T14:00:00+00:00"
+      },
+      "rank": 7
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "96557",
+          "exchange": "bitfinex",
+          "high": "99126",
+          "low": "88800",
+          "open": "99020",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "96810.00",
+          "exchange": "bitstamp",
+          "high": "99143.00",
+          "low": "92092.00",
+          "open": "99010.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "96917.15",
+          "exchange": "coinbase",
+          "high": "99139.62",
+          "low": "92055.86",
+          "open": "99003.24",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.9416609511217617650704458124",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "96810.00",
+          "exchange": "bitstamp",
+          "high": "99143.00",
+          "low": "92092.00",
+          "open": "99010.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "96810.00",
+        "cross_provider_median_high": "99139.62",
+        "cross_provider_median_low": "92055.86",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": true,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed an isolated lower wick that materially increased adverse excursion.",
+        "review_notes": "Bitstamp and Coinbase lows were near 92075 while Bitfinex reached 88800. MAE sensitivity reached 3.416 percentage points, but stop state did not change.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-12-05T22:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "96557",
+          "exchange": "bitfinex",
+          "high": "99126",
+          "low": "88800",
+          "open": "99020",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "3292.00",
+        "baseline_value": "92092.00",
+        "metric": "low",
+        "percentage_difference": "0.03574686183381835555748599227",
+        "provider_id": "bitfinex",
+        "provider_value": "88800",
+        "timestamp": "2024-12-05T22:00:00+00:00"
+      },
+      "rank": 8
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "42797",
+          "exchange": "bitfinex",
+          "high": "43700",
+          "low": "40383",
+          "open": "43700",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "42816.00",
+          "exchange": "bitstamp",
+          "high": "43751.00",
+          "low": "41454.00",
+          "open": "43751.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "42815.1",
+          "exchange": "coinbase",
+          "high": "43755.53",
+          "low": "40625.68",
+          "open": "43751.15",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.1735465086581192215354753026",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "42816.00",
+          "exchange": "bitstamp",
+          "high": "43751.00",
+          "low": "41454.00",
+          "open": "43751.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "42815.1",
+        "cross_provider_median_high": "43751.00",
+        "cross_provider_median_low": "40625.68",
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "The downside move was confirmed on all venues, while Bitstamp recorded the shallowest low.",
+        "review_notes": "Lows were 41454 Bitstamp, 40625.68 Coinbase, and 40383 Bitfinex. No reviewed structural or stop outcome changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-01-03T12:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "42797",
+          "exchange": "bitfinex",
+          "high": "43700",
+          "low": "40383",
+          "open": "43700",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1071.00",
+        "baseline_value": "41454.00",
+        "metric": "low",
+        "percentage_difference": "0.02583586626139817629179331307",
+        "provider_id": "bitfinex",
+        "provider_value": "40383",
+        "timestamp": "2024-01-03T12:00:00+00:00"
+      },
+      "rank": 9
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "113840",
+          "exchange": "bitfinex",
+          "high": "115240",
+          "low": "103310",
+          "open": "114480",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "113974.00",
+          "exchange": "bitstamp",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "113874.92",
+          "exchange": "coinbase",
+          "high": "115156.73",
+          "low": "107000",
+          "open": "114323.97",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+24",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "113974.00",
+          "exchange": "bitstamp",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "113874.92",
+        "cross_provider_median_high": "115240",
+        "cross_provider_median_low": "107000",
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": true,
+        "review_conclusion": "A real selloff was confirmed by all venues, but Bitstamp materially underrepresented the downside and missed a consensus stop hit.",
+        "review_notes": "Lows were 109683 Bitstamp, 107000 Coinbase, and 103310 Bitfinex. Both validators crossed the 107270 probe stop while Bitstamp did not; MAE sensitivity reached 4.605 percentage points.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": true,
+        "swing_impact": true,
+        "timestamp": "2025-10-10T21:00:00+00:00",
+        "trade_outcome_impact": true,
+        "validator_ohlc": {
+          "close": "113874.92",
+          "exchange": "coinbase",
+          "high": "115156.73",
+          "low": "107000",
+          "open": "114323.97",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 4,
+      "event": {
+        "absolute_difference": "2683.00",
+        "baseline_value": "109683.00",
+        "metric": "low",
+        "percentage_difference": "0.02446140240511291631337581941",
+        "provider_id": "coinbase",
+        "provider_value": "107000",
+        "timestamp": "2025-10-10T21:00:00+00:00"
+      },
+      "rank": 10
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "90479",
+          "exchange": "bitfinex",
+          "high": "91462",
+          "low": "90307",
+          "open": "90307",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "90480.00",
+          "exchange": "bitstamp",
+          "high": "91480.00",
+          "low": "90297.00",
+          "open": "90313.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "90478.42",
+          "exchange": "coinbase",
+          "high": "91488.2",
+          "low": "88303.41",
+          "open": "90309.13",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.5642540029112081513828238719",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "90480.00",
+          "exchange": "bitstamp",
+          "high": "91480.00",
+          "low": "90297.00",
+          "open": "90313.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "90479",
+        "cross_provider_median_high": "91480.00",
+        "cross_provider_median_low": "90297.00",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick.",
+        "review_notes": "Bitstamp and Bitfinex remained near 90300 while Coinbase reached 88303.41; no reviewed strategy outcome changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2025-12-05T15:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "90478.42",
+          "exchange": "coinbase",
+          "high": "91488.2",
+          "low": "88303.41",
+          "open": "90309.13",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1993.59",
+        "baseline_value": "90297.00",
+        "metric": "low",
+        "percentage_difference": "0.02207814213096780623940994717",
+        "provider_id": "coinbase",
+        "provider_value": "88303.41",
+        "timestamp": "2025-12-05T15:00:00+00:00"
+      },
+      "rank": 11
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "33339",
+          "exchange": "bitfinex",
+          "high": "33534",
+          "low": "31611",
+          "open": "31648",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "33308.00",
+          "exchange": "bitstamp",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "33320.27",
+          "exchange": "coinbase",
+          "high": "35000",
+          "low": "31612.11",
+          "open": "31653.06",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.9039655172413793103448275862",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "33308.00",
+          "exchange": "bitstamp",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "33320.27",
+        "cross_provider_median_high": "34283.00",
+        "cross_provider_median_low": "31612.11",
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "metric": "high",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "All venues confirmed the rapid upside move, with materially dispersed intrahour highs.",
+        "review_notes": "Coinbase reached 35000, Bitstamp 34283, and Bitfinex 33534. The reviewed weekly structure and material path outcomes were unchanged.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2023-10-23T22:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "33339",
+          "exchange": "bitfinex",
+          "high": "33534",
+          "low": "31611",
+          "open": "31648",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "749.00",
+        "baseline_value": "34283.00",
+        "metric": "high",
+        "percentage_difference": "0.02184756293206545518186856459",
+        "provider_id": "bitfinex",
+        "provider_value": "33534",
+        "timestamp": "2023-10-23T22:00:00+00:00"
+      },
+      "rank": 12
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "98007",
+          "exchange": "bitfinex",
+          "high": "98088",
+          "low": "97716",
+          "open": "97964",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "97882.00",
+          "exchange": "bitstamp",
+          "high": "98029.00",
+          "low": "97540.00",
+          "open": "97805.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "97862.53",
+          "exchange": "coinbase",
+          "high": "98035.28",
+          "low": "95500",
+          "open": "97804.78",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.4986642920747996438112199466",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "97882.00",
+          "exchange": "bitstamp",
+          "high": "98029.00",
+          "low": "97540.00",
+          "open": "97805.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "97882.00",
+        "cross_provider_median_high": "98035.28",
+        "cross_provider_median_low": "97540.00",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick.",
+        "review_notes": "Bitstamp and Bitfinex lows were near 97600 while Coinbase reached 95500; no reviewed decision or portfolio result changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2025-02-12T23:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "97862.53",
+          "exchange": "coinbase",
+          "high": "98035.28",
+          "low": "95500",
+          "open": "97804.78",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "2040.00",
+        "baseline_value": "97540.00",
+        "metric": "low",
+        "percentage_difference": "0.02091449661677260611031371745",
+        "provider_id": "coinbase",
+        "provider_value": "95500",
+        "timestamp": "2025-02-12T23:00:00+00:00"
+      },
+      "rank": 13
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "33339",
+          "exchange": "bitfinex",
+          "high": "33534",
+          "low": "31611",
+          "open": "31648",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "33308.00",
+          "exchange": "bitstamp",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "33320.27",
+          "exchange": "coinbase",
+          "high": "35000",
+          "low": "31612.11",
+          "open": "31653.06",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.8653448275862068965517241379",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "33308.00",
+          "exchange": "bitstamp",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "33320.27",
+        "cross_provider_median_high": "34283.00",
+        "cross_provider_median_low": "31612.11",
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "metric": "high",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "All venues confirmed the rapid upside move, with materially dispersed intrahour highs.",
+        "review_notes": "Coinbase reached 35000, Bitstamp 34283, and Bitfinex 33534. The reviewed weekly structure and material path outcomes were unchanged.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2023-10-23T22:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "33320.27",
+          "exchange": "coinbase",
+          "high": "35000",
+          "low": "31612.11",
+          "open": "31653.06",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "717.00",
+        "baseline_value": "34283.00",
+        "metric": "high",
+        "percentage_difference": "0.02091415570399323279759647639",
+        "provider_id": "coinbase",
+        "provider_value": "35000",
+        "timestamp": "2023-10-23T22:00:00+00:00"
+      },
+      "rank": 14
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "42797",
+          "exchange": "bitfinex",
+          "high": "43700",
+          "low": "40383",
+          "open": "43700",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "42816.00",
+          "exchange": "bitstamp",
+          "high": "43751.00",
+          "low": "41454.00",
+          "open": "43751.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "42815.1",
+          "exchange": "coinbase",
+          "high": "43755.53",
+          "low": "40625.68",
+          "open": "43751.15",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+22",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "42816.00",
+          "exchange": "bitstamp",
+          "high": "43751.00",
+          "low": "41454.00",
+          "open": "43751.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "42815.1",
+        "cross_provider_median_high": "43751.00",
+        "cross_provider_median_low": "40625.68",
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "The downside move was confirmed on all venues, while Bitstamp recorded the shallowest low.",
+        "review_notes": "Lows were 41454 Bitstamp, 40625.68 Coinbase, and 40383 Bitfinex. No reviewed structural or stop outcome changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-01-03T12:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "42815.1",
+          "exchange": "coinbase",
+          "high": "43755.53",
+          "low": "40625.68",
+          "open": "43751.15",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "828.32",
+        "baseline_value": "41454.00",
+        "metric": "low",
+        "percentage_difference": "0.01998166642543542239590871810",
+        "provider_id": "coinbase",
+        "provider_value": "40625.68",
+        "timestamp": "2024-01-03T12:00:00+00:00"
+      },
+      "rank": 15
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "89763",
+          "exchange": "bitfinex",
+          "high": "91689",
+          "low": "89325",
+          "open": "91570",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "89342.00",
+          "exchange": "bitstamp",
+          "high": "91416.00",
+          "low": "87629.00",
+          "open": "91245.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "89300",
+          "exchange": "coinbase",
+          "high": "91423.56",
+          "low": "88188",
+          "open": "91263.16",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.4264816204051012753188297074",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "89342.00",
+          "exchange": "bitstamp",
+          "high": "91416.00",
+          "low": "87629.00",
+          "open": "91245.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "89342.00",
+        "cross_provider_median_high": "91423.56",
+        "cross_provider_median_low": "88188",
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp and Coinbase confirmed a deeper selloff than Bitfinex.",
+        "review_notes": "The move was real across venues, with Bitfinex underrepresenting the downside range; reviewed structure and stop state were unchanged.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2025-02-25T07:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "89763",
+          "exchange": "bitfinex",
+          "high": "91689",
+          "low": "89325",
+          "open": "91570",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1696.00",
+        "baseline_value": "87629.00",
+        "metric": "low",
+        "percentage_difference": "0.01935432334044665578746761917",
+        "provider_id": "bitfinex",
+        "provider_value": "89325",
+        "timestamp": "2025-02-25T07:00:00+00:00"
+      },
+      "rank": 16
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "94737",
+          "exchange": "bitfinex",
+          "high": "95565",
+          "low": "93049",
+          "open": "95269",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "94871.00",
+          "exchange": "bitstamp",
+          "high": "95691.00",
+          "low": "94871.00",
+          "open": "95254.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "94850",
+          "exchange": "coinbase",
+          "high": "95699.99",
+          "low": "94849.2",
+          "open": "95170.79",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.4047017262143717382577278201",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "94871.00",
+          "exchange": "bitstamp",
+          "high": "95691.00",
+          "low": "94871.00",
+          "open": "95254.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "94850",
+        "cross_provider_median_high": "95691.00",
+        "cross_provider_median_low": "94849.2",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed the isolated lower wick.",
+        "review_notes": "Bitstamp and Coinbase were closely aligned near 94860 while Bitfinex reached 93049; reviewed strategy state was unchanged.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2025-02-03T12:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "94737",
+          "exchange": "bitfinex",
+          "high": "95565",
+          "low": "93049",
+          "open": "95269",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1822.00",
+        "baseline_value": "94871.00",
+        "metric": "low",
+        "percentage_difference": "0.01920502577183754782810342465",
+        "provider_id": "bitfinex",
+        "provider_value": "93049",
+        "timestamp": "2025-02-03T12:00:00+00:00"
+      },
+      "rank": 17
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "71290",
+          "exchange": "bitfinex",
+          "high": "71380",
+          "low": "70896",
+          "open": "71099",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "71284.00",
+          "exchange": "bitstamp",
+          "high": "71424.00",
+          "low": "69600.00",
+          "open": "71090.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "71300.39",
+          "exchange": "coinbase",
+          "high": "71459.29",
+          "low": "70856.01",
+          "open": "71100.83",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.01962630582626375937741008203",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "71284.00",
+          "exchange": "bitstamp",
+          "high": "71424.00",
+          "low": "69600.00",
+          "open": "71090.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "71290",
+        "cross_provider_median_high": "71424.00",
+        "cross_provider_median_low": "70856.01",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick.",
+        "review_notes": "Bitstamp reached 69600 while Coinbase and Bitfinex remained near 70875; no reviewed swing, stop, or material path result changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-06-05T19:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "71290",
+          "exchange": "bitfinex",
+          "high": "71380",
+          "low": "70896",
+          "open": "71099",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1296.00",
+        "baseline_value": "69600.00",
+        "metric": "low",
+        "percentage_difference": "0.01862068965517241379310344828",
+        "provider_id": "bitfinex",
+        "provider_value": "70896",
+        "timestamp": "2024-06-05T19:00:00+00:00"
+      },
+      "rank": 18
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "71290",
+          "exchange": "bitfinex",
+          "high": "71380",
+          "low": "70896",
+          "open": "71099",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "71284.00",
+          "exchange": "bitstamp",
+          "high": "71424.00",
+          "low": "69600.00",
+          "open": "71090.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "71300.39",
+          "exchange": "coinbase",
+          "high": "71459.29",
+          "low": "70856.01",
+          "open": "71100.83",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+22",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "71284.00",
+          "exchange": "bitstamp",
+          "high": "71424.00",
+          "low": "69600.00",
+          "open": "71090.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "71290",
+        "cross_provider_median_high": "71424.00",
+        "cross_provider_median_low": "70856.01",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick.",
+        "review_notes": "Bitstamp reached 69600 while Coinbase and Bitfinex remained near 70875; no reviewed swing, stop, or material path result changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-06-05T19:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "71300.39",
+          "exchange": "coinbase",
+          "high": "71459.29",
+          "low": "70856.01",
+          "open": "71100.83",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1256.01",
+        "baseline_value": "69600.00",
+        "metric": "low",
+        "percentage_difference": "0.01804612068965517241379310345",
+        "provider_id": "coinbase",
+        "provider_value": "70856.01",
+        "timestamp": "2024-06-05T19:00:00+00:00"
+      },
+      "rank": 19
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "43526",
+          "exchange": "bitfinex",
+          "high": "44102",
+          "low": "43245",
+          "open": "44035",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "43511.00",
+          "exchange": "bitstamp",
+          "high": "44097.00",
+          "low": "42500.00",
+          "open": "44030.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "43517.5",
+          "exchange": "coinbase",
+          "high": "44108.68",
+          "low": "43208.44",
+          "open": "44025.02",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.02249549509954731244231529908",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "43511.00",
+          "exchange": "bitstamp",
+          "high": "44097.00",
+          "low": "42500.00",
+          "open": "44030.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "43517.5",
+        "cross_provider_median_high": "44102",
+        "cross_provider_median_low": "43208.44",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick relative to closely aligned validators.",
+        "review_notes": "Bitstamp reached 42500 while Coinbase and Bitfinex reached 43208.44 and 43245. No reviewed decision or material path result changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-01-05T14:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "43526",
+          "exchange": "bitfinex",
+          "high": "44102",
+          "low": "43245",
+          "open": "44035",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "745.00",
+        "baseline_value": "42500.00",
+        "metric": "low",
+        "percentage_difference": "0.01752941176470588235294117647",
+        "provider_id": "bitfinex",
+        "provider_value": "43245",
+        "timestamp": "2024-01-05T14:00:00+00:00"
+      },
+      "rank": 20
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "67256",
+          "exchange": "bitfinex",
+          "high": "67834",
+          "low": "67254",
+          "open": "67540",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "67364.00",
+          "exchange": "bitstamp",
+          "high": "67929.00",
+          "low": "67339.00",
+          "open": "67643.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "67367.21",
+          "exchange": "coinbase",
+          "high": "69100",
+          "low": "67325.19",
+          "open": "67597.38",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.3844566389944186482810374748",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "67364.00",
+          "exchange": "bitstamp",
+          "high": "67929.00",
+          "low": "67339.00",
+          "open": "67643.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "67364.00",
+        "cross_provider_median_high": "67929.00",
+        "cross_provider_median_low": "67325.19",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "high",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated upper wick.",
+        "review_notes": "Bitstamp and Bitfinex remained near 67900 while Coinbase reached 69100; no reviewed structural or path outcome changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-04-13T05:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "67367.21",
+          "exchange": "coinbase",
+          "high": "69100",
+          "low": "67325.19",
+          "open": "67597.38",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1171.00",
+        "baseline_value": "67929.00",
+        "metric": "high",
+        "percentage_difference": "0.01723858734855510901087900602",
+        "provider_id": "coinbase",
+        "provider_value": "69100",
+        "timestamp": "2024-04-13T05:00:00+00:00"
+      },
+      "rank": 21
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "43526",
+          "exchange": "bitfinex",
+          "high": "44102",
+          "low": "43245",
+          "open": "44035",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "43511.00",
+          "exchange": "bitstamp",
+          "high": "44097.00",
+          "low": "42500.00",
+          "open": "44030.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "43517.5",
+          "exchange": "coinbase",
+          "high": "44108.68",
+          "low": "43208.44",
+          "open": "44025.02",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0E+22",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "43511.00",
+          "exchange": "bitstamp",
+          "high": "44097.00",
+          "low": "42500.00",
+          "open": "44030.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "43517.5",
+        "cross_provider_median_high": "44102",
+        "cross_provider_median_low": "43208.44",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick relative to closely aligned validators.",
+        "review_notes": "Bitstamp reached 42500 while Coinbase and Bitfinex reached 43208.44 and 43245. No reviewed decision or material path result changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-01-05T14:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "43517.5",
+          "exchange": "coinbase",
+          "high": "44108.68",
+          "low": "43208.44",
+          "open": "44025.02",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "708.44",
+        "baseline_value": "42500.00",
+        "metric": "low",
+        "percentage_difference": "0.01666917647058823529411764706",
+        "provider_id": "coinbase",
+        "provider_value": "43208.44",
+        "timestamp": "2024-01-05T14:00:00+00:00"
+      },
+      "rank": 22
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "54499",
+          "exchange": "bitfinex",
+          "high": "56338",
+          "low": "52209",
+          "open": "56224",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "54427.00",
+          "exchange": "bitstamp",
+          "high": "56262.00",
+          "low": "53091.00",
+          "open": "56168.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "54426.99",
+          "exchange": "coinbase",
+          "high": "56268.9",
+          "low": "52405",
+          "open": "56142.48",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.07428463141936706462004927042",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "54427.00",
+          "exchange": "bitstamp",
+          "high": "56262.00",
+          "low": "53091.00",
+          "open": "56168.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "54427.00",
+        "cross_provider_median_high": "56268.9",
+        "cross_provider_median_low": "52405",
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "All three venues confirmed the sharp selloff, with Bitstamp recording the shallowest low.",
+        "review_notes": "The event did not create a reviewed structural or stop disagreement.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-08-05T01:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "54499",
+          "exchange": "bitfinex",
+          "high": "56338",
+          "low": "52209",
+          "open": "56224",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "882.00",
+        "baseline_value": "53091.00",
+        "metric": "low",
+        "percentage_difference": "0.01661298525173758264112561451",
+        "provider_id": "bitfinex",
+        "provider_value": "52209",
+        "timestamp": "2024-08-05T01:00:00+00:00"
+      },
+      "rank": 23
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "62593",
+          "exchange": "bitfinex",
+          "high": "62766",
+          "low": "62580",
+          "open": "62725",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "62491.00",
+          "exchange": "bitstamp",
+          "high": "62689.00",
+          "low": "62435.00",
+          "open": "62628.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "62471.01",
+          "exchange": "coinbase",
+          "high": "62689.65",
+          "low": "61433",
+          "open": "62621.4",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.3581769436997319034852546917",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "62491.00",
+          "exchange": "bitstamp",
+          "high": "62689.00",
+          "low": "62435.00",
+          "open": "62628.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "62491.00",
+        "cross_provider_median_high": "62689.65",
+        "cross_provider_median_low": "62435.00",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "low",
+        "mfe_impact": false,
+        "provider_id": "coinbase",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick.",
+        "review_notes": "Coinbase reached 61433 while Bitstamp and Bitfinex stayed above 62400; no reviewed strategy state changed.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-05-14T02:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "62471.01",
+          "exchange": "coinbase",
+          "high": "62689.65",
+          "low": "61433",
+          "open": "62621.4",
+          "provider_id": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1002.00",
+        "baseline_value": "62435.00",
+        "metric": "low",
+        "percentage_difference": "0.01604869063826379434611996476",
+        "provider_id": "coinbase",
+        "provider_value": "61433",
+        "timestamp": "2024-05-14T02:00:00+00:00"
+      },
+      "rank": 24
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "68924",
+          "exchange": "bitfinex",
+          "high": "70202",
+          "low": "68637",
+          "open": "68667",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "68876.00",
+          "exchange": "bitstamp",
+          "high": "69105.00",
+          "low": "68579.00",
+          "open": "68579.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "68853.9",
+          "exchange": "coinbase",
+          "high": "69122",
+          "low": "68566.71",
+          "open": "68591.46",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "core_review": {
+        "atr_normalized_divergence": "0.2422766312011280605050634534",
+        "breakout_impact": false,
+        "canonical_candidate_ohlc": {
+          "close": "68876.00",
+          "exchange": "bitstamp",
+          "high": "69105.00",
+          "low": "68579.00",
+          "open": "68579.00",
+          "provider_id": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "cross_provider_median_close": "68876.00",
+        "cross_provider_median_high": "69122",
+        "cross_provider_median_low": "68579.00",
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "metric": "high",
+        "mfe_impact": false,
+        "provider_id": "bitfinex",
+        "providers_involved": [
+          "bitfinex",
+          "bitstamp",
+          "coinbase"
+        ],
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed the isolated upper wick.",
+        "review_notes": "Bitstamp and Coinbase highs were approximately 69100 while Bitfinex reached 70202; reviewed strategy state was unchanged.",
+        "reviewed_at": "2026-08-29T14:13:30+00:00",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "timestamp": "2024-03-27T20:00:00+00:00",
+        "trade_outcome_impact": false,
+        "validator_ohlc": {
+          "close": "68924",
+          "exchange": "bitfinex",
+          "high": "70202",
+          "low": "68637",
+          "open": "68667",
+          "provider_id": "bitfinex",
+          "symbol": "BTC/USD"
+        }
+      },
+      "divergence_tier": 1,
+      "event": {
+        "absolute_difference": "1097.00",
+        "baseline_value": "69105.00",
+        "metric": "high",
+        "percentage_difference": "0.01587439403805802763909992041",
+        "provider_id": "bitfinex",
+        "provider_value": "70202",
+        "timestamp": "2024-03-27T20:00:00+00:00"
+      },
+      "rank": 25
+    }
+  ],
+  "reviewed_at": "2026-08-29T14:13:30+00:00",
+  "reviewer": "Codex BTC-019 empirical review",
+  "schema_version": "BTC019_MANUAL_REVIEWS_V1",
+  "structural_event_reviews": [
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitstamp alone created this swing high.",
+        "notes": "Bitstamp's 25270 high narrowly exceeded the next week; Coinbase's next-week high was higher, while a later Bitfinex gap changed its complete-week confirmation window."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": true,
+      "category": "swing_high",
+      "prices": {
+        "bitstamp": "25270.00"
+      },
+      "providers_present": [
+        "bitstamp"
+      ],
+      "timestamp": "2023-02-13T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitstamp and Coinbase selected 20 May while Bitfinex selected the nearby 3 June high.",
+        "notes": "The two highs differed by less than 0.02%; this is a marginal venue-ordering difference, not a distinct market structure."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_high",
+      "prices": {
+        "bitstamp": "71958.00",
+        "coinbase": "71980"
+      },
+      "providers_present": [
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-05-20T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitfinex alone selected the nearby 3 June high.",
+        "notes": "This is the counterpart to the 20 May disagreement and does not show Bitstamp acting alone."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_high",
+      "prices": {
+        "bitfinex": "71950"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2024-06-03T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitfinex alone created the swing low.",
+        "notes": "Small relative weekly-low ordering differences and a later incomplete Bitfinex week changed the strict classifier window."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_low",
+      "prices": {
+        "bitfinex": "21354"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2023-02-13T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DATA_CONTINUITY_EFFECT",
+        "conclusion": "Bitstamp and Coinbase created this low while Bitfinex could not produce the weekly bar.",
+        "notes": "Two persistent missing Bitfinex hours made the entire complete-week aggregate unavailable."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_low",
+      "prices": {
+        "bitstamp": "19569.00",
+        "coinbase": "19568.52"
+      },
+      "providers_present": [
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-03-06T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Both validators created a swing low that Bitstamp did not.",
+        "notes": "The 17 August selloff reached materially deeper lows on Coinbase and Bitfinex than on Bitstamp."
+      },
+      "candidate_absent_validator_consensus": true,
+      "candidate_alone": false,
+      "category": "swing_low",
+      "prices": {
+        "bitfinex": "24713",
+        "coinbase": "25234.76"
+      },
+      "providers_present": [
+        "coinbase",
+        "bitfinex"
+      ],
+      "timestamp": "2023-08-14T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DATA_CONTINUITY_EFFECT",
+        "conclusion": "Bitfinex selected the earlier low after its later weekly bar became incomplete.",
+        "notes": "The persistent 5 May Bitfinex gap removed the 29 April complete weekly bar from its classifier input."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_low",
+      "prices": {
+        "bitfinex": "59675"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2024-04-15T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DATA_CONTINUITY_EFFECT",
+        "conclusion": "Bitstamp and Coinbase selected the later low while Bitfinex lacked the complete week.",
+        "notes": "The Bitfinex source gap, not a substituted price, caused this difference."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_low",
+      "prices": {
+        "bitstamp": "56500.00",
+        "coinbase": "56500"
+      },
+      "providers_present": [
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-04-29T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitfinex alone created the swing low, while Bitstamp recorded the shallowest crash low.",
+        "notes": "Coinbase also traded below Bitstamp, but a later persistent Coinbase gap affected its complete-week confirmation sequence."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "swing_low",
+      "prices": {
+        "bitfinex": "103310"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2025-10-06T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitstamp alone created this breakout.",
+        "notes": "The event follows directly from the candidate-only 13 February swing high and is material source sensitivity."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": true,
+      "category": "breakout",
+      "prices": {
+        "bitstamp": "25270.00"
+      },
+      "providers_present": [
+        "bitstamp"
+      ],
+      "timestamp": "2023-03-13T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitfinex alone produced the initial reclaim tied to its deeper August low.",
+        "notes": "The source level and confirmation differ because the crash wick was materially deeper on Bitfinex."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "reclaim",
+      "prices": {
+        "bitfinex": "24825"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2023-08-14T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Coinbase alone produced the later reclaim of its August low.",
+        "notes": "Bitstamp lacked the validator swing source level; Bitfinex had already confirmed its own reclaim."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "reclaim",
+      "prices": {
+        "coinbase": "25234.76"
+      },
+      "providers_present": [
+        "coinbase"
+      ],
+      "timestamp": "2023-09-11T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DATA_CONTINUITY_EFFECT",
+        "conclusion": "Bitfinex reclaimed its earlier low after the source-gap-altered swing sequence.",
+        "notes": "The event is downstream of the incomplete 29 April Bitfinex weekly bar."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "reclaim",
+      "prices": {
+        "bitfinex": "59675"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2024-06-24T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DATA_CONTINUITY_EFFECT",
+        "conclusion": "Bitstamp and Coinbase reclaimed the later 29 April low.",
+        "notes": "Bitfinex lacked that complete source week and therefore could not create the same reclaim."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "reclaim",
+      "prices": {
+        "bitstamp": "56500.00",
+        "coinbase": "56500"
+      },
+      "providers_present": [
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-07-08T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Both validators produced a reclaim that Bitstamp did not.",
+        "notes": "This validator-consensus difference occurred in the same broad selloff where Bitstamp missed the reviewed stop."
+      },
+      "candidate_absent_validator_consensus": true,
+      "candidate_alone": false,
+      "category": "reclaim",
+      "prices": {
+        "bitfinex": "107370",
+        "coinbase": "107250"
+      },
+      "providers_present": [
+        "coinbase",
+        "bitfinex"
+      ],
+      "timestamp": "2025-10-06T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitstamp alone produced a later reclaim.",
+        "notes": "The candidate's shallower low and different source-level sequence delayed and changed the reclaim state."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": true,
+      "category": "reclaim",
+      "prices": {
+        "bitstamp": "107270.00"
+      },
+      "providers_present": [
+        "bitstamp"
+      ],
+      "timestamp": "2025-10-13T00:00:00+00:00"
+    },
+    {
+      "assessment": {
+        "classification": "DECISION_DIVERGENCE",
+        "conclusion": "Bitfinex alone produced the later reclaim of its deeper October low.",
+        "notes": "The event is downstream of Bitfinex's venue-specific crash extreme."
+      },
+      "candidate_absent_validator_consensus": false,
+      "candidate_alone": false,
+      "category": "reclaim",
+      "prices": {
+        "bitfinex": "103310"
+      },
+      "providers_present": [
+        "bitfinex"
+      ],
+      "timestamp": "2025-11-03T00:00:00+00:00"
+    }
+  ],
+  "top_atr_wick_reviews": [
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "26230",
+          "exchange": "bitfinex",
+          "high": "27734",
+          "low": "24713",
+          "open": "27680",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "26401.00",
+          "exchange": "bitstamp",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "26522.46",
+          "exchange": "coinbase",
+          "high": "27847.53",
+          "low": "25234.76",
+          "open": "27644.5",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "450.2857142857142857142857143",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.08439086294416243654822335025",
+      "low_atr_divergence": "2.290190355329949238578680203",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "mfe_impact": false,
+        "reclaim_impact": true,
+        "review_conclusion": "A real cross-market selloff was confirmed, but Bitstamp materially underrepresented its depth.",
+        "review_notes": "Hourly lows were 26266 Bitstamp, 25234.76 Coinbase, and 24713 Bitfinex. The difference created validator swing/reclaim sensitivity and MAE differences up to 2.982 percentage points; all compared probes had already touched their stops.",
+        "stop_touch_impact": false,
+        "swing_impact": true,
+        "trade_outcome_impact": false
+      },
+      "median_close": "26401.00",
+      "median_high": "27734",
+      "median_low": "25234.76",
+      "provider_close": "26401.00",
+      "provider_high": "27696.00",
+      "provider_id": "bitstamp",
+      "provider_low": "26266.00",
+      "rank": 1,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-08-17T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "113840",
+          "exchange": "bitfinex",
+          "high": "115240",
+          "low": "103310",
+          "open": "114480",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "113974.00",
+          "exchange": "bitstamp",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "113874.92",
+          "exchange": "coinbase",
+          "high": "115156.73",
+          "low": "107000",
+          "open": "114323.97",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "3023.214285714285714285714286",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+24",
+      "low_atr_divergence": "1.220555227406969875959834613",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "mfe_impact": false,
+        "reclaim_impact": true,
+        "review_conclusion": "A real selloff was confirmed by all venues, but Bitstamp materially underrepresented the downside and missed a consensus stop hit.",
+        "review_notes": "Lows were 109683 Bitstamp, 107000 Coinbase, and 103310 Bitfinex. Both validators crossed the 107270 probe stop while Bitstamp did not; MAE sensitivity reached 4.605 percentage points.",
+        "stop_touch_impact": true,
+        "swing_impact": true,
+        "trade_outcome_impact": true
+      },
+      "median_close": "113874.92",
+      "median_high": "115240",
+      "median_low": "107000",
+      "provider_close": "113840",
+      "provider_high": "115240",
+      "provider_id": "bitfinex",
+      "provider_low": "103310",
+      "rank": 2,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-10-10T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "84568",
+          "exchange": "bitfinex",
+          "high": "84681",
+          "low": "84427",
+          "open": "84532",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "84615.00",
+          "exchange": "bitstamp",
+          "high": "84732.00",
+          "low": "81188.00",
+          "open": "84584.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "84610.18",
+          "exchange": "coinbase",
+          "high": "84731.47",
+          "low": "84470.09",
+          "open": "84546.51",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "2672.857142857142857142857143",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.0001982896846606092998396579369",
+      "low_atr_divergence": "1.211811865312667022982362373",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick while both validators remained tightly aligned.",
+        "review_notes": "Bitstamp reached 81188 while Coinbase and Bitfinex stayed near 84450. It did not alter the reviewed structural, stop, or material path outcomes, but it is direct evidence of isolated Bitstamp wick risk.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "84610.18",
+      "median_high": "84731.47",
+      "median_low": "84427",
+      "provider_close": "84615.00",
+      "provider_high": "84732.00",
+      "provider_id": "bitstamp",
+      "provider_low": "81188.00",
+      "rank": 3,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-04-02T04:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "26230",
+          "exchange": "bitfinex",
+          "high": "27734",
+          "low": "24713",
+          "open": "27680",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "26401.00",
+          "exchange": "bitstamp",
+          "high": "27696.00",
+          "low": "26266.00",
+          "open": "27643.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "26522.46",
+          "exchange": "coinbase",
+          "high": "27847.53",
+          "low": "25234.76",
+          "open": "27644.5",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "450.2857142857142857142857143",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+25",
+      "low_atr_divergence": "1.158730964467005076142131980",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "mfe_impact": false,
+        "reclaim_impact": true,
+        "review_conclusion": "A real cross-market selloff was confirmed, but Bitstamp materially underrepresented its depth.",
+        "review_notes": "Hourly lows were 26266 Bitstamp, 25234.76 Coinbase, and 24713 Bitfinex. The difference created validator swing/reclaim sensitivity and MAE differences up to 2.982 percentage points; all compared probes had already touched their stops.",
+        "stop_touch_impact": false,
+        "swing_impact": true,
+        "trade_outcome_impact": false
+      },
+      "median_close": "26401.00",
+      "median_high": "27734",
+      "median_low": "25234.76",
+      "provider_close": "26230",
+      "provider_high": "27734",
+      "provider_id": "bitfinex",
+      "provider_low": "24713",
+      "rank": 4,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-08-17T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "96557",
+          "exchange": "bitfinex",
+          "high": "99126",
+          "low": "88800",
+          "open": "99020",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "96810.00",
+          "exchange": "bitstamp",
+          "high": "99143.00",
+          "low": "92092.00",
+          "open": "99010.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "96917.15",
+          "exchange": "coinbase",
+          "high": "99139.62",
+          "low": "92055.86",
+          "open": "99003.24",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "3457.571428571428571428571429",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.003939181093252902532743874726",
+      "low_atr_divergence": "0.9416609511217617650704458124",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": true,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed an isolated lower wick that materially increased adverse excursion.",
+        "review_notes": "Bitstamp and Coinbase lows were near 92075 while Bitfinex reached 88800. MAE sensitivity reached 3.416 percentage points, but stop state did not change.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "96810.00",
+      "median_high": "99139.62",
+      "median_low": "92055.86",
+      "provider_close": "96557",
+      "provider_high": "99126",
+      "provider_id": "bitfinex",
+      "provider_low": "88800",
+      "rank": 5,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-12-05T22:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "33339",
+          "exchange": "bitfinex",
+          "high": "33534",
+          "low": "31611",
+          "open": "31648",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "33308.00",
+          "exchange": "bitstamp",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "33320.27",
+          "exchange": "coinbase",
+          "high": "35000",
+          "low": "31612.11",
+          "open": "31653.06",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "828.5714285714285714285714286",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.9039655172413793103448275862",
+      "low_atr_divergence": "0.001339655172413793103448275862",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "All venues confirmed the rapid upside move, with materially dispersed intrahour highs.",
+        "review_notes": "Coinbase reached 35000, Bitstamp 34283, and Bitfinex 33534. The reviewed weekly structure and material path outcomes were unchanged.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "33320.27",
+      "median_high": "34283.00",
+      "median_low": "31612.11",
+      "provider_close": "33339",
+      "provider_high": "33534",
+      "provider_id": "bitfinex",
+      "provider_low": "31611",
+      "rank": 6,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-10-23T22:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "113840",
+          "exchange": "bitfinex",
+          "high": "115240",
+          "low": "103310",
+          "open": "114480",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "113974.00",
+          "exchange": "bitstamp",
+          "high": "115388.00",
+          "low": "109683.00",
+          "open": "114290.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "113874.92",
+          "exchange": "coinbase",
+          "high": "115156.73",
+          "low": "107000",
+          "open": "114323.97",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "3023.214285714285714285714286",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.04895451860602480803307737743",
+      "low_atr_divergence": "0.8874660366213821618428824571",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": true,
+        "mfe_impact": false,
+        "reclaim_impact": true,
+        "review_conclusion": "A real selloff was confirmed by all venues, but Bitstamp materially underrepresented the downside and missed a consensus stop hit.",
+        "review_notes": "Lows were 109683 Bitstamp, 107000 Coinbase, and 103310 Bitfinex. Both validators crossed the 107270 probe stop while Bitstamp did not; MAE sensitivity reached 4.605 percentage points.",
+        "stop_touch_impact": true,
+        "swing_impact": true,
+        "trade_outcome_impact": true
+      },
+      "median_close": "113874.92",
+      "median_high": "115240",
+      "median_low": "107000",
+      "provider_close": "113974.00",
+      "provider_high": "115388.00",
+      "provider_id": "bitstamp",
+      "provider_low": "109683.00",
+      "rank": 7,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-10-10T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "33339",
+          "exchange": "bitfinex",
+          "high": "33534",
+          "low": "31611",
+          "open": "31648",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "33308.00",
+          "exchange": "bitstamp",
+          "high": "34283.00",
+          "low": "31621.00",
+          "open": "31652.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "33320.27",
+          "exchange": "coinbase",
+          "high": "35000",
+          "low": "31612.11",
+          "open": "31653.06",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "828.5714285714285714285714286",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.8653448275862068965517241379",
+      "low_atr_divergence": "0E+23",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "All venues confirmed the rapid upside move, with materially dispersed intrahour highs.",
+        "review_notes": "Coinbase reached 35000, Bitstamp 34283, and Bitfinex 33534. The reviewed weekly structure and material path outcomes were unchanged.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "33320.27",
+      "median_high": "34283.00",
+      "median_low": "31612.11",
+      "provider_close": "33320.27",
+      "provider_high": "35000",
+      "provider_id": "coinbase",
+      "provider_low": "31612.11",
+      "rank": 8,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-10-23T22:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "27994",
+          "exchange": "bitfinex",
+          "high": "28253",
+          "low": "27828",
+          "open": "27974",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "28036.00",
+          "exchange": "bitstamp",
+          "high": "29380.00",
+          "low": "27859.00",
+          "open": "28008.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "28029.41",
+          "exchange": "coinbase",
+          "high": "28299.99",
+          "low": "27854.08",
+          "open": "28013.75",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1634.142857142857142857142857",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.6609030509659935309030509661",
+      "low_atr_divergence": "0.003010752688172043010752688172",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": true,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated high that materially overstated favorable excursion.",
+        "review_notes": "Bitstamp reached 29380 while Coinbase and Bitfinex reached 28299.99 and 28253. This produced the maximum reviewed MFE sensitivity of 2.433 percentage points without changing stop state.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "28029.41",
+      "median_high": "28299.99",
+      "median_low": "27854.08",
+      "provider_close": "28036.00",
+      "provider_high": "29380.00",
+      "provider_id": "bitstamp",
+      "provider_low": "27859.00",
+      "rank": 9,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-03-24T14:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "28910",
+          "exchange": "bitfinex",
+          "high": "28956",
+          "low": "28860",
+          "open": "28878",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "28857.00",
+          "exchange": "bitstamp",
+          "high": "28915.00",
+          "low": "28803.00",
+          "open": "28824.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "28855.37",
+          "exchange": "coinbase",
+          "high": "28915",
+          "low": "28477",
+          "open": "28826.54",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "518.7142857142857142857142857",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+25",
+      "low_atr_divergence": "0.6284770035802809143486642798",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick; the other two venues did not confirm it.",
+        "review_notes": "No reviewed swing, breakout, reclaim, stop, or material path result changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "28857.00",
+      "median_high": "28915",
+      "median_low": "28803.00",
+      "provider_close": "28855.37",
+      "provider_high": "28915",
+      "provider_id": "coinbase",
+      "provider_low": "28477",
+      "rank": 10,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-08-01T04:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "71290",
+          "exchange": "bitfinex",
+          "high": "71380",
+          "low": "70896",
+          "open": "71099",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "71284.00",
+          "exchange": "bitstamp",
+          "high": "71424.00",
+          "low": "69600.00",
+          "open": "71090.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "71300.39",
+          "exchange": "coinbase",
+          "high": "71459.29",
+          "low": "70856.01",
+          "open": "71100.83",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "2037.571428571428571428571429",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+22",
+      "low_atr_divergence": "0.6164250157750823809857673700",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick.",
+        "review_notes": "Bitstamp reached 69600 while Coinbase and Bitfinex remained near 70875; no reviewed swing, stop, or material path result changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "71290",
+      "median_high": "71424.00",
+      "median_low": "70856.01",
+      "provider_close": "71284.00",
+      "provider_high": "71424.00",
+      "provider_id": "bitstamp",
+      "provider_low": "69600.00",
+      "rank": 11,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-06-05T19:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "42797",
+          "exchange": "bitfinex",
+          "high": "43700",
+          "low": "40383",
+          "open": "43700",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "42816.00",
+          "exchange": "bitstamp",
+          "high": "43751.00",
+          "low": "41454.00",
+          "open": "43751.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "42815.1",
+          "exchange": "coinbase",
+          "high": "43755.53",
+          "low": "40625.68",
+          "open": "43751.15",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1398.357142857142857142857143",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+22",
+      "low_atr_divergence": "0.5923522500893906114317821933",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "The downside move was confirmed on all venues, while Bitstamp recorded the shallowest low.",
+        "review_notes": "Lows were 41454 Bitstamp, 40625.68 Coinbase, and 40383 Bitfinex. No reviewed structural or stop outcome changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "42815.1",
+      "median_high": "43751.00",
+      "median_low": "40625.68",
+      "provider_close": "42816.00",
+      "provider_high": "43751.00",
+      "provider_id": "bitstamp",
+      "provider_low": "41454.00",
+      "rank": 12,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-01-03T12:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "90479",
+          "exchange": "bitfinex",
+          "high": "91462",
+          "low": "90307",
+          "open": "90307",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "90480.00",
+          "exchange": "bitstamp",
+          "high": "91480.00",
+          "low": "90297.00",
+          "open": "90313.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "90478.42",
+          "exchange": "coinbase",
+          "high": "91488.2",
+          "low": "88303.41",
+          "open": "90309.13",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "3533.142857142857142857142857",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.002320879831796862364547954068",
+      "low_atr_divergence": "0.5642540029112081513828238719",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick.",
+        "review_notes": "Bitstamp and Bitfinex remained near 90300 while Coinbase reached 88303.41; no reviewed strategy outcome changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "90479",
+      "median_high": "91480.00",
+      "median_low": "90297.00",
+      "provider_close": "90478.42",
+      "provider_high": "91488.2",
+      "provider_id": "coinbase",
+      "provider_low": "88303.41",
+      "rank": 13,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-12-05T15:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "26832",
+          "exchange": "bitfinex",
+          "high": "26914",
+          "low": "25959",
+          "open": "26220",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "26788.00",
+          "exchange": "bitstamp",
+          "high": "26904.00",
+          "low": "26298.00",
+          "open": "26488.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "26786.99",
+          "exchange": "coinbase",
+          "high": "26918.14",
+          "low": "26065.08",
+          "open": "26522.63",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "450.2857142857142857142857143",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.02220812182741116751269035533",
+      "low_atr_divergence": "0.5172715736040609137055837563",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "The follow-through selloff was present across venues with different intrahour ranges.",
+        "review_notes": "This was part of the confirmed 17 August repricing, not a collection or timestamp-alignment failure.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "26788.00",
+      "median_high": "26914",
+      "median_low": "26065.08",
+      "provider_close": "26788.00",
+      "provider_high": "26904.00",
+      "provider_id": "bitstamp",
+      "provider_low": "26298.00",
+      "rank": 14,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-08-17T22:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "74504",
+          "exchange": "bitfinex",
+          "high": "74719",
+          "low": "74211",
+          "open": "74358",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "74516.00",
+          "exchange": "bitstamp",
+          "high": "74721.00",
+          "low": "74208.00",
+          "open": "74384.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "74504.53",
+          "exchange": "coinbase",
+          "high": "75900",
+          "low": "74211.53",
+          "open": "74398.22",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "2352.142857142857142857142857",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.5012450652900091102338293350",
+      "low_atr_divergence": "0.0002253264500455511691466747647",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated upper wick.",
+        "review_notes": "Bitstamp and Bitfinex did not confirm the extreme and no reviewed strategy outcome changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "74504.53",
+      "median_high": "74721.00",
+      "median_low": "74211",
+      "provider_close": "74504.53",
+      "provider_high": "75900",
+      "provider_id": "coinbase",
+      "provider_low": "74211.53",
+      "rank": 15,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-11-06T17:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "98007",
+          "exchange": "bitfinex",
+          "high": "98088",
+          "low": "97716",
+          "open": "97964",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "97882.00",
+          "exchange": "bitstamp",
+          "high": "98029.00",
+          "low": "97540.00",
+          "open": "97805.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "97862.53",
+          "exchange": "coinbase",
+          "high": "98035.28",
+          "low": "95500",
+          "open": "97804.78",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "4090.928571428571428571428571",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+22",
+      "low_atr_divergence": "0.4986642920747996438112199466",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick.",
+        "review_notes": "Bitstamp and Bitfinex lows were near 97600 while Coinbase reached 95500; no reviewed decision or portfolio result changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "97882.00",
+      "median_high": "98035.28",
+      "median_low": "97540.00",
+      "provider_close": "97862.53",
+      "provider_high": "98035.28",
+      "provider_id": "coinbase",
+      "provider_low": "95500",
+      "rank": 16,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-02-12T23:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "41470",
+          "exchange": "bitfinex",
+          "high": "41706",
+          "low": "40849",
+          "open": "41702",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "41526.00",
+          "exchange": "bitstamp",
+          "high": "41729.00",
+          "low": "41415.00",
+          "open": "41729.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "41527.8",
+          "exchange": "coinbase",
+          "high": "41728.89",
+          "low": "41384.03",
+          "open": "41719.5",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1190.714285714285714285714286",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.01922375524895020995800839832",
+      "low_atr_divergence": "0.4493353329334133173365326934",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed the isolated lower wick.",
+        "review_notes": "No evidence supports rewriting the source candle, and no reviewed structural or trade-path outcome changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "41526.00",
+      "median_high": "41728.89",
+      "median_low": "41384.03",
+      "provider_close": "41470",
+      "provider_high": "41706",
+      "provider_id": "bitfinex",
+      "provider_low": "40849",
+      "rank": 17,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-12-05T07:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "34164",
+          "exchange": "bitfinex",
+          "high": "34314",
+          "low": "33480",
+          "open": "33672",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "34137.00",
+          "exchange": "bitstamp",
+          "high": "34238.00",
+          "low": "33498.00",
+          "open": "33630.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "34120.06",
+          "exchange": "coinbase",
+          "high": "34254.19",
+          "low": "33000",
+          "open": "33641.53",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1090.642857142857142857142857",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+22",
+      "low_atr_divergence": "0.4401074071648438011657606917",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower extreme after the cross-market breakout.",
+        "review_notes": "The event was not confirmed by Bitstamp and Bitfinex and did not alter reviewed strategy outcomes.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "34137.00",
+      "median_high": "34254.19",
+      "median_low": "33480",
+      "provider_close": "34120.06",
+      "provider_high": "34254.19",
+      "provider_id": "coinbase",
+      "provider_low": "33000",
+      "rank": 18,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-10-24T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "43526",
+          "exchange": "bitfinex",
+          "high": "44102",
+          "low": "43245",
+          "open": "44035",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "43511.00",
+          "exchange": "bitstamp",
+          "high": "44097.00",
+          "low": "42500.00",
+          "open": "44030.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "43517.5",
+          "exchange": "coinbase",
+          "high": "44108.68",
+          "low": "43208.44",
+          "open": "44025.02",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1625.214285714285714285714286",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.003076517382323210126137212675",
+      "low_atr_divergence": "0.4359055948666109963521293895",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp printed an isolated lower wick relative to closely aligned validators.",
+        "review_notes": "Bitstamp reached 42500 while Coinbase and Bitfinex reached 43208.44 and 43245. No reviewed decision or material path result changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "43517.5",
+      "median_high": "44102",
+      "median_low": "43208.44",
+      "provider_close": "43511.00",
+      "provider_high": "44097.00",
+      "provider_id": "bitstamp",
+      "provider_low": "42500.00",
+      "rank": 19,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-01-05T14:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "123320",
+          "exchange": "bitfinex",
+          "high": "123320",
+          "low": "122810",
+          "open": "123320",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "123898.00",
+          "exchange": "bitstamp",
+          "high": "124517.00",
+          "low": "123307.00",
+          "open": "123360.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "123906.29",
+          "exchange": "coinbase",
+          "high": "124533",
+          "low": "123305.94",
+          "open": "123365.63",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "2767.714285714285714285714286",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.4324868380303499535459894704",
+      "low_atr_divergence": "0.1791875709714049757406833901",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed the isolated upper extreme during the reviewed path.",
+        "review_notes": "The event contributed to path sensitivity but did not alone explain the later pairwise stop disagreement.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "123898.00",
+      "median_high": "124517.00",
+      "median_low": "123305.94",
+      "provider_close": "123320",
+      "provider_high": "123320",
+      "provider_id": "bitfinex",
+      "provider_low": "122810",
+      "rank": 20,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-08-14T00:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "62028",
+          "exchange": "bitfinex",
+          "high": "62163",
+          "low": "61974",
+          "open": "62087",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "61869.00",
+          "exchange": "bitstamp",
+          "high": "61995.00",
+          "low": "61807.00",
+          "open": "61924.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "61849.99",
+          "exchange": "coinbase",
+          "high": "61996.2",
+          "low": "61000",
+          "open": "61905.38",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1880.642857142857142857142857",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+23",
+      "low_atr_divergence": "0.4291085874890804815982376847",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower extreme.",
+        "review_notes": "The other two venues did not confirm the wick and no reviewed strategy state changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "61869.00",
+      "median_high": "61996.2",
+      "median_low": "61807.00",
+      "provider_close": "61849.99",
+      "provider_high": "61996.2",
+      "provider_id": "coinbase",
+      "provider_low": "61000",
+      "rank": 21,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2024-07-02T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "44292",
+          "exchange": "bitfinex",
+          "high": "44488",
+          "low": "43799",
+          "open": "43879",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "44298.00",
+          "exchange": "bitstamp",
+          "high": "44490.00",
+          "low": "43813.00",
+          "open": "43911.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "44308.8",
+          "exchange": "coinbase",
+          "high": "45000",
+          "low": "43800",
+          "open": "43901.8",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "1190.714285714285714285714286",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.4283143371325734853029394120",
+      "low_atr_divergence": "0E+24",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated upper wick.",
+        "review_notes": "Bitstamp and Bitfinex did not confirm the high; no reviewed decision or portfolio state changed.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "44298.00",
+      "median_high": "44490.00",
+      "median_low": "43800",
+      "provider_close": "44308.8",
+      "provider_high": "45000",
+      "provider_id": "coinbase",
+      "provider_low": "43800",
+      "rank": 22,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-12-05T22:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "89763",
+          "exchange": "bitfinex",
+          "high": "91689",
+          "low": "89325",
+          "open": "91570",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "89342.00",
+          "exchange": "bitstamp",
+          "high": "91416.00",
+          "low": "87629.00",
+          "open": "91245.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "89300",
+          "exchange": "coinbase",
+          "high": "91423.56",
+          "low": "88188",
+          "open": "91263.16",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "2666.00",
+      "candidate_flags": [],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.09956489122280570142535633908",
+      "low_atr_divergence": "0.4264816204051012753188297074",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "cross_market_movement",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitstamp and Coinbase confirmed a deeper selloff than Bitfinex.",
+        "review_notes": "The move was real across venues, with Bitfinex underrepresenting the downside range; reviewed structure and stop state were unchanged.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "89342.00",
+      "median_high": "91423.56",
+      "median_low": "88188",
+      "provider_close": "89763",
+      "provider_high": "91689",
+      "provider_id": "bitfinex",
+      "provider_low": "89325",
+      "rank": 23,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-02-25T07:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "84807",
+          "exchange": "bitfinex",
+          "high": "85702",
+          "low": "84234",
+          "open": "85647",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "84847.00",
+          "exchange": "bitstamp",
+          "high": "85741.00",
+          "low": "84192.00",
+          "open": "85740.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "84849.5",
+          "exchange": "coinbase",
+          "high": "85737.11",
+          "low": "83057.97",
+          "open": "85674.64",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "2672.857142857142857142857143",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0E+22",
+      "low_atr_divergence": "0.4242763228220203099946552645",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Coinbase printed the isolated lower wick.",
+        "review_notes": "The move was not confirmed by Bitstamp or Bitfinex and did not alter reviewed strategy state.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "84847.00",
+      "median_high": "85737.11",
+      "median_low": "84192.00",
+      "provider_close": "84849.5",
+      "provider_high": "85737.11",
+      "provider_id": "coinbase",
+      "provider_low": "83057.97",
+      "rank": 24,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2025-04-02T21:00:00+00:00"
+    },
+    {
+      "all_provider_ohlc": {
+        "bitfinex": {
+          "close": "23456",
+          "exchange": "bitfinex",
+          "high": "23857",
+          "low": "23292",
+          "open": "23292",
+          "provider": "bitfinex",
+          "symbol": "BTC/USD"
+        },
+        "bitstamp": {
+          "close": "23450.00",
+          "exchange": "bitstamp",
+          "high": "23489.00",
+          "low": "23310.00",
+          "open": "23310.00",
+          "provider": "bitstamp",
+          "symbol": "BTC/USD"
+        },
+        "coinbase": {
+          "close": "23450.72",
+          "exchange": "coinbase",
+          "high": "23497.55",
+          "low": "23299.89",
+          "open": "23301.74",
+          "provider": "coinbase",
+          "symbol": "BTC-USD"
+        }
+      },
+      "atr_value": "851.2857142857142857142857143",
+      "candidate_flags": [
+        "WICK_ANOMALY_CANDIDATE",
+        "CROSS_VENUE_UNCONFIRMED"
+      ],
+      "divergence_tier": 1,
+      "high_atr_divergence": "0.4222436650444705487497902333",
+      "low_atr_divergence": "0.009268333613022319181070649438",
+      "manual_assessment": {
+        "breakout_impact": false,
+        "event_classification": "venue_specific_anomaly",
+        "mae_impact": false,
+        "mfe_impact": false,
+        "reclaim_impact": false,
+        "review_conclusion": "Bitfinex printed the isolated upper extreme; Bitstamp and Coinbase remained closely aligned.",
+        "review_notes": "The move was not confirmed by the two other venues and did not alter a reviewed structural or trade-path outcome. Raw data remains unchanged.",
+        "stop_touch_impact": false,
+        "swing_impact": false,
+        "trade_outcome_impact": false
+      },
+      "median_close": "23450.72",
+      "median_high": "23497.55",
+      "median_low": "23299.89",
+      "provider_close": "23456",
+      "provider_high": "23857",
+      "provider_id": "bitfinex",
+      "provider_low": "23292",
+      "rank": 25,
+      "reference_provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "timestamp": "2023-01-29T10:00:00+00:00"
+    }
+  ]
+}

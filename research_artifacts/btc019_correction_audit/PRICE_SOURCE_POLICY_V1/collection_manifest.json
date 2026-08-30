@@ -1,0 +1,157 @@
+{
+  "completed_at": "2026-08-29T13:55:46.256605+00:00",
+  "database_persistence": {
+    "status": "persisted",
+    "table": "raw.btc_ohlcv"
+  },
+  "diagnostic_corrections": [
+    {
+      "corrected_at": "2026-08-29T14:56:22.999700+01:00",
+      "field": "database_records_inserted",
+      "reason": "psycopg rowcount is not reliable for batched INSERT ON CONFLICT DO NOTHING; corrected from the known-empty freshly migrated table using persisted post-insert counts."
+    }
+  ],
+  "gap_rechecks": [
+    {
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure.",
+      "missing_timestamps": [
+        "2023-03-04T18:00:00+00:00",
+        "2023-03-04T19:00:00+00:00",
+        "2023-03-04T20:00:00+00:00"
+      ],
+      "provider": "coinbase",
+      "window_end": "2023-03-04T22:00:00+00:00",
+      "window_start": "2023-03-04T16:00:00+00:00"
+    },
+    {
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure.",
+      "missing_timestamps": [
+        "2025-10-25T16:00:00+00:00",
+        "2025-10-25T17:00:00+00:00",
+        "2025-10-25T18:00:00+00:00",
+        "2025-10-25T19:00:00+00:00",
+        "2025-10-25T20:00:00+00:00"
+      ],
+      "provider": "coinbase",
+      "window_end": "2025-10-25T22:00:00+00:00",
+      "window_start": "2025-10-25T14:00:00+00:00"
+    },
+    {
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure.",
+      "missing_timestamps": [
+        "2023-03-06T10:00:00+00:00",
+        "2023-03-06T11:00:00+00:00"
+      ],
+      "provider": "bitfinex",
+      "window_end": "2023-03-06T13:00:00+00:00",
+      "window_start": "2023-03-06T08:00:00+00:00"
+    },
+    {
+      "classification": "UNKNOWN",
+      "conclusion": "Persistent in a direct source recheck with no API error; not a collection failure.",
+      "missing_timestamps": [
+        "2024-05-05T10:00:00+00:00",
+        "2024-05-05T11:00:00+00:00"
+      ],
+      "provider": "bitfinex",
+      "window_end": "2024-05-05T13:00:00+00:00",
+      "window_start": "2024-05-05T08:00:00+00:00"
+    }
+  ],
+  "historical_period_end": "2025-12-31T23:00:00+00:00",
+  "historical_period_start": "2023-01-01T00:00:00+00:00",
+  "persistence_mode": "immutable_gzip_jsonl",
+  "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+  "providers": [
+    {
+      "api_request_count": 27,
+      "collection_api_errors": [],
+      "collection_completed_at": "2026-08-29T13:55:03.509212+00:00",
+      "collection_started_at": "2026-08-29T13:54:54.597433+00:00",
+      "conflicting_duplicate_count": 0,
+      "database_records_inserted": 26304,
+      "database_records_present": 26304,
+      "duplicate_bar_count": 0,
+      "exchange": "bitstamp",
+      "expected_hourly_windows": 26304,
+      "first_timestamp": "2023-01-01T00:00:00+00:00",
+      "gap_classification": "NONE",
+      "gap_count": 0,
+      "instrument": "BTC/USD",
+      "last_timestamp": "2025-12-31T23:00:00+00:00",
+      "longest_gap_hours": 0,
+      "missing_bar_count": 0,
+      "missing_bar_rate": "0",
+      "observed_bars": 26304,
+      "provider": "bitstamp",
+      "provider_outages_identified": 0,
+      "raw_artifact_path": "data/btc019/2023-01-01_2025-12-31/bitstamp_btc_usd_1h.jsonl.gz",
+      "raw_artifact_sha256": "f8243a1ab5c5cdef4172127a6bc769804f4b8ce6d57e6be1e8141e59c5e07679",
+      "raw_artifact_size_bytes": 680800,
+      "timestamp_alignment_anomalies": 0
+    },
+    {
+      "api_request_count": 88,
+      "collection_api_errors": [],
+      "collection_completed_at": "2026-08-29T13:55:30.151286+00:00",
+      "collection_started_at": "2026-08-29T13:55:09.132643+00:00",
+      "conflicting_duplicate_count": 0,
+      "database_records_inserted": 26296,
+      "database_records_present": 26296,
+      "duplicate_bar_count": 0,
+      "exchange": "coinbase",
+      "expected_hourly_windows": 26304,
+      "first_timestamp": "2023-01-01T00:00:00+00:00",
+      "gap_classification": "UNKNOWN",
+      "gap_count": 2,
+      "instrument": "BTC-USD",
+      "last_timestamp": "2025-12-31T23:00:00+00:00",
+      "longest_gap_hours": 5,
+      "missing_bar_count": 8,
+      "missing_bar_rate": "0.0003041362530413625304136253041",
+      "observed_bars": 26296,
+      "provider": "coinbase",
+      "provider_outages_identified": 0,
+      "raw_artifact_path": "data/btc019/2023-01-01_2025-12-31/coinbase_btc_usd_1h.jsonl.gz",
+      "raw_artifact_sha256": "300b283f9bdeca0b9305fe02af5157845a7167561ae88c7c5c9c6e3faff36929",
+      "raw_artifact_size_bytes": 843554,
+      "timestamp_alignment_anomalies": 0
+    },
+    {
+      "api_request_count": 3,
+      "collection_api_errors": [],
+      "collection_completed_at": "2026-08-29T13:55:40.343607+00:00",
+      "collection_started_at": "2026-08-29T13:55:35.712105+00:00",
+      "conflicting_duplicate_count": 0,
+      "database_records_inserted": 26300,
+      "database_records_present": 26300,
+      "duplicate_bar_count": 0,
+      "exchange": "bitfinex",
+      "expected_hourly_windows": 26304,
+      "first_timestamp": "2023-01-01T00:00:00+00:00",
+      "gap_classification": "UNKNOWN",
+      "gap_count": 2,
+      "instrument": "BTC/USD",
+      "last_timestamp": "2025-12-31T23:00:00+00:00",
+      "longest_gap_hours": 2,
+      "missing_bar_count": 4,
+      "missing_bar_rate": "0.0001520681265206812652068126521",
+      "observed_bars": 26300,
+      "provider": "bitfinex",
+      "provider_outages_identified": 0,
+      "raw_artifact_path": "data/btc019/2023-01-01_2025-12-31/bitfinex_btc_usd_1h.jsonl.gz",
+      "raw_artifact_sha256": "b10e9ace4098245bb0dd1343d0ca4808ac341b72d863520e949c31be0ba07fa0",
+      "raw_artifact_size_bytes": 642534,
+      "timestamp_alignment_anomalies": 0
+    }
+  ],
+  "required_provider_ids": [
+    "bitstamp",
+    "coinbase",
+    "bitfinex"
+  ],
+  "schema_version": "BTC019_COLLECTION_MANIFEST_V1"
+}

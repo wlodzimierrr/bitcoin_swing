@@ -375,9 +375,19 @@ def run_empirical_validation(
     }
     start = _parse_utc(manifest["historical_period_start"])
     end = _parse_utc(manifest["historical_period_end"])
-    as_of = max(
+    assessments = _read_json(review_assessments_path)
+    reviewed_at = _parse_utc(assessments["reviewed_at"])
+    decided_at = _parse_utc(assessments["decision"]["decided_at"])
+    # The data cutoff and the point-in-time evaluation instant are distinct.
+    # Bars remain bounded by their own ingestion time, but manual review and the
+    # canonical decision are necessarily recorded after collection finishes, so
+    # the evaluation instant must dominate every piece of recorded provenance.
+    # Widening it cannot expose additional observations: every collected bar was
+    # already ingested by the earlier data cutoff.
+    data_as_of = max(
         bar.ingested_at for bars in provider_bars.values() for bar in bars
     )
+    as_of = max(data_as_of, reviewed_at, decided_at)
     probes = build_weekly_trade_path_probes(
         provider_bars[POLICY_BITSTAMP_PROVIDER_ID],
         start=start,
@@ -387,7 +397,7 @@ def run_empirical_validation(
         ProviderAccessDiagnostic(
             provider_id="coin_metrics_community",
             status="entitlement_unavailable",
-            checked_at=as_of,
+            checked_at=data_as_of,
             details=(
                 "Historical pair-candle retrieval is unavailable without an "
                 "entitled credential; the optional benchmark was not substituted."
@@ -405,8 +415,6 @@ def run_empirical_validation(
         provider_access_diagnostics=access_diagnostics,
         top_event_count=25,
     )
-    assessments = _read_json(review_assessments_path)
-    reviewed_at = _parse_utc(assessments["reviewed_at"])
     reviews = tuple(
         _build_price_event_review(
             event,
