@@ -33,6 +33,18 @@ from btc_predictor.portfolio.entry_execution import (
     restore_simulated_entry_execution,
     simulate_next_bar_entry,
 )
+from btc_predictor.portfolio.add_execution import (
+    ADD_ACTION,
+    ADD_CANCELLED,
+    ADD_EXECUTION_FEATURE_ID,
+    ADD_EXECUTION_POLICY_VERSION,
+    ADD_EXECUTION_REASON_CODES,
+    ADD_EXECUTION_STATUSES,
+    ADD_FILLED,
+    AddExecutionIntent,
+    SimulatedAddExecution,
+    simulate_add_execution,
+)
 from btc_predictor.portfolio.stop_execution import (
     EXIT_ACTION,
     STOP_EXECUTION_FEATURE_ID,
@@ -98,6 +110,16 @@ from btc_predictor.portfolio.state_machine import (
 )
 
 __all__ = [
+    "ADD_ACTION",
+    "ADD_CANCELLED",
+    "ADD_EXECUTION_FEATURE_ID",
+    "ADD_EXECUTION_POLICY_VERSION",
+    "ADD_EXECUTION_REASON_CODES",
+    "ADD_EXECUTION_STATUSES",
+    "ADD_FILLED",
+    "AddExecutionIntent",
+    "SimulatedAddExecution",
+    "simulate_add_execution",
     "EXIT_ACTION",
     "STOP_EXECUTION_FEATURE_ID",
     "STOP_EXECUTION_POLICY_VERSION",

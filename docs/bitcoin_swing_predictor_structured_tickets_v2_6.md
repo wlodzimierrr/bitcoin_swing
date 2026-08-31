@@ -4400,7 +4400,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-163 Implement simulated adds
 - **Description:**
   Complete the ticket scope for implement simulated adds.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4410,6 +4410,42 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/add_execution.py` with
+    `simulate_add_execution()`, policy version `SIMULATED_ADD_EXECUTION_V1`.
+    The ticket description was a placeholder, so scope was derived from the
+    BTC-154 dependency: an add is the composition
+    `requirements -> allocation -> fill -> ledger event`.
+  - **An add is not an entry with a different label.** An entry is triggered by
+    price reaching a zone; an add is triggered by conditions BTC-154 has
+    already judged. No add zone is invented, because the rulebook defines none.
+    The proposal fills at the next full bar's open, moved adversely by the
+    BTC-160 cost policy, which is the honest fill for a decision made after the
+    previous bar closed.
+  - **A refused add produces no fill and keeps the gate's own explanation**,
+    rather than flattening every refusal into one opaque code. An exhausted
+    BTC-155 schedule likewise produces no fill: BTC-154 decides whether an add
+    is permitted, BTC-155 whether one is allocated, and both must say yes. The
+    requirement gate is evaluated first, since an add that was never permitted
+    was never a sizing question.
+  - **The re-check at execution is the substantive part.** BTC-154 judges
+    profitability at the *decision*; the fill happens on the next bar. If price
+    moved against the position in between, filling anyway would average down --
+    rulebook 32 rule 2, which may never be violated. The gate's own standard is
+    re-applied at execution, and the position is dropped rather than filled.
+  - **The re-check uses the bar's open, not the slipped fill.** My first
+    implementation passed the fill price, which meant adverse slippage on a buy
+    made the position read as *more* profitable and could rescue an add that
+    the market had already sunk. Slippage is a cost, not a mark. A regression
+    test pins the case where the slipped price sits above the average entry but
+    the market open sits below it.
+  - When BTC-154's stricter profitability gate is disabled by configuration,
+    BTC-151's never-average-down invariant still applies at execution, so a
+    losing fill is refused while a breakeven one is allowed.
+  - `as_order_record()` maps onto `portfolio.paper_orders` with action `ADD`
+    and status `cancelled` for a refusal -- nothing about the market prevented
+    it, so it is not a miss -- while still recording the quantity that would
+    have been bought. Both upstream decision records travel with the fill.
 
 #### BTC-164 Implement simulated trims
 - **Description:**
