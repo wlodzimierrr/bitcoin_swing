@@ -3772,6 +3772,23 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     26 gate.
   - Event times must be non-decreasing; a refused event never becomes the
     point-in-time watermark, so it cannot block a legitimate later event.
+  - Independent BTC-150 review made the persistence boundary executable rather
+    than documentary: transition records now retain requested and applied
+    quantity separately, round-trip from serialized records, and self-validate
+    state, tranche, quantity, average-entry, timing, action, and reason-code
+    invariants before persistence or further mutation.
+  - `position_events.action` remains intentionally coarse. A versioned
+    `PAPER_POSITION_TRANSITION_V1` JSON payload in the existing `notes` column
+    preserves `DEFEND`, `RECOVER`, refused attempts, stop state, and reason
+    identity, so database rows can reconstruct `DEFENSIVE`; action-only replay
+    is explicitly rejected. Refusals use action `HOLD` with `accepted = false`
+    in the authoritative payload, accurately recording no ledger mutation.
+  - State-only `HOLD`, `DEFEND`, and `RECOVER` events cannot silently move a
+    stop. A missed lifecycle remains quantity-free and uses its terminal time
+    for both schema-required timestamps on the `status = missed` row.
+  - Applying one command twice applies it twice. Event-ID idempotency and
+    concurrent-writer serialization remain persistence-layer responsibilities;
+    the immutable reducer does not claim duplicate-delivery protection.
   - Scope held to the ledger and its invariants. Hold Score (BTC-152), Add
     Score (BTC-153), add requirements (BTC-154), tranche sizing (BTC-155),
     trailing stops (BTC-156), trim rules (BTC-157) and exit rules (BTC-158)

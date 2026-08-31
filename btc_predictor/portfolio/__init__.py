@@ -25,6 +25,7 @@ from btc_predictor.portfolio.state_machine import (
     POSITION_STATE_MACHINE_POLICY_VERSION,
     POSITION_STATE_REASON_CODES,
     POSITION_STATE_TRANSITIONS,
+    POSITION_TRANSITION_RECORD_VERSION,
     POSITION_STATES,
     PRE_POSITION_STATES,
     RECOVER,
@@ -38,7 +39,10 @@ from btc_predictor.portfolio.state_machine import (
     apply_position_event,
     persisted_action_for_event,
     persisted_status_for_state,
+    position_event_records,
+    replay_position_event_records,
     replay_position_lifecycle,
+    restore_position_lifecycle,
     start_position_lifecycle,
 )
 
@@ -67,6 +71,7 @@ __all__ = [
     "POSITION_STATE_MACHINE_POLICY_VERSION",
     "POSITION_STATE_REASON_CODES",
     "POSITION_STATE_TRANSITIONS",
+    "POSITION_TRANSITION_RECORD_VERSION",
     "POSITION_STATES",
     "PRE_POSITION_STATES",
     "RECOVER",
@@ -80,6 +85,9 @@ __all__ = [
     "apply_position_event",
     "persisted_action_for_event",
     "persisted_status_for_state",
+    "position_event_records",
+    "replay_position_event_records",
     "replay_position_lifecycle",
+    "restore_position_lifecycle",
     "start_position_lifecycle",
 ]

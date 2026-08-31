@@ -604,7 +604,7 @@ def test_a_refused_event_is_recorded_without_changing_the_ledger() -> None:
     )
 
     assert refused.transitions[-1].accepted is False
-    assert refused.transitions[-1].persisted_action is None
+    assert refused.transitions[-1].persisted_action == "HOLD"
     assert refused.transitions[-1].to_state == refused.transitions[-1].from_state
     assert len(refused.transitions) == len(lifecycle.transitions) + 1
     assert refused.quantity == lifecycle.quantity
