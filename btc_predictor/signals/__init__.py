@@ -39,6 +39,16 @@ from btc_predictor.signals.higher_low import (
     HigherLowTriggerResult,
     evaluate_higher_low_trigger,
 )
+from btc_predictor.signals.hard_veto import (
+    HARD_VETO_EFFECTS,
+    HARD_VETO_FEATURE_ID,
+    HARD_VETO_INPUT_IDS,
+    HARD_VETO_POLICY_VERSION,
+    HARD_VETO_REASON_CODES,
+    HardVetoInput,
+    HardVetoResult,
+    evaluate_hard_veto,
+)
 from btc_predictor.signals.no_chase import (
     DEFAULT_NO_CHASE_DISTANCE_MODE,
     DEFAULT_NO_CHASE_MAX_DISTANCE_ATR,
@@ -90,6 +100,11 @@ __all__ = [
     "HIGHER_LOW_TRIGGER_FEATURE_ID",
     "HIGHER_LOW_TRIGGER_REASON_CODES",
     "HIGHER_LOW_TRIGGER_TYPE",
+    "HARD_VETO_EFFECTS",
+    "HARD_VETO_FEATURE_ID",
+    "HARD_VETO_INPUT_IDS",
+    "HARD_VETO_POLICY_VERSION",
+    "HARD_VETO_REASON_CODES",
     "NO_CHASE_DIRECTIONS",
     "NO_CHASE_DISTANCE_MODES",
     "NO_CHASE_EFFECTS",
@@ -104,6 +119,8 @@ __all__ = [
     "DataQualityFailure",
     "DataQualityGatedRecommendation",
     "HigherLowTriggerResult",
+    "HardVetoInput",
+    "HardVetoResult",
     "NoChaseResult",
     "RecommendationReasonCode",
     "ReclaimTriggerResult",
@@ -112,6 +129,7 @@ __all__ = [
     "build_recommendation_reason_code_records",
     "evaluate_breakout_retest_trigger",
     "evaluate_higher_low_trigger",
+    "evaluate_hard_veto",
     "evaluate_reclaim_trigger",
     "failures_from_quality_reports",
 ]

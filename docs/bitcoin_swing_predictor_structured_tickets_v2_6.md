@@ -3534,7 +3534,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   85–89  0.50% NAV
   90+    0.60% NAV
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3544,6 +3544,29 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/budget.py` with `calculate_risk_budget()`, policy
+    version `RISK_BUDGET_V1`.
+  - **The schedule is not hardcoded.** `risk.schedule` already existed in the
+    versioned strategy config carrying exactly the rulebook values
+    (0.0035 / 0.005 / 0.006), so the module reads it via
+    `risk_schedule_from_config()` rather than restating the table. A test pins
+    the config bands to the rulebook table.
+  - Bands are half-open `[min, max)`, so a conviction of exactly 85 belongs to
+    the 85-89 band and adjacent bands can never both match.
+  - **Below 80 there is no budget.** Rulebook 14 makes anything under 80 WATCH
+    or IGNORE, so sub-threshold conviction returns
+    `RISK_BUDGET_BELOW_MINIMUM_CONVICTION` with a `None` fraction rather than a
+    silently reduced allocation.
+  - The configured `risk.max_risk_at_stop_fraction_nav` acts as a hard ceiling;
+    a schedule band above it is capped with
+    `RISK_BUDGET_CAPPED_AT_MAXIMUM`. The default schedule sits below the cap,
+    asserted by test.
+  - An optional NAV expresses the budget in currency, which BTC-145 divides by
+    the stop distance. Position sizing itself stays out of scope.
+  - The record persists the selected band and the whole schedule alongside the
+    result, so an assignment is reconstructable rather than merely asserted.
+  - Values remain `PROVISIONAL_PENDING_BTC_185`.
 
 #### BTC-145 Implement initial position sizing
 - **Description:**
