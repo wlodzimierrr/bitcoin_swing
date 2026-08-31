@@ -245,9 +245,12 @@ def _normalize_supported_setups(setups: Any) -> tuple[str, ...]:
     if isinstance(setups, (str, bytes)):
         raise TypeError("supported_setups must be a sequence of strings")
     try:
-        normalized = tuple(str(setup).strip() for setup in setups)
+        supplied = tuple(setups)
     except TypeError as exc:
         raise TypeError("supported_setups must be a sequence of strings") from exc
+    if any(not isinstance(setup, str) for setup in supplied):
+        raise TypeError("supported_setups must contain only strings")
+    normalized = tuple(setup.strip() for setup in supplied)
     if not normalized or any(not setup for setup in normalized):
         raise ValueError("supported_setups must contain non-empty setup names")
     canonical = tuple(setup.casefold() for setup in normalized)

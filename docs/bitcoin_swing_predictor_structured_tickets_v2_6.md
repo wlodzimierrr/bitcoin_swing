@@ -3274,7 +3274,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - severe crowding
   - no-chase violation
   - unsupported setup
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3284,6 +3284,22 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added the versioned `HARD_VETO_V1` policy under
+    `btc_predictor.signals.hard_veto` for new-trade authorization.
+  - Evaluates data quality, structural-stop validity, independent R/R,
+    configured stress blocking, severe crowding, no-chase state, and setup
+    support in a deterministic order.
+  - Required inputs fail closed: unavailable state produces `NO_TRADE`, an
+    explicit `HARD_VETO_INPUT_MISSING` reason, and persisted missing-input IDs.
+  - Stress blocks new trades only when the versioned
+    `volatility_flags.stress.block_new_trades` policy is enabled. Ordinary
+    crowding remains a penalty; the severe-crowding state is the veto input.
+  - Results persist the policy version, resolved inputs, source reason codes,
+    supported setups, stress policy, config identity, effects, completion
+    state, and every active veto reason.
+  - Entry Conviction is intentionally absent from the veto contract, so a
+    high score cannot override a hard veto. BTC-133 remains unchanged.
 
 #### BTC-133 Implement reason-code engine
 - **Description:**
