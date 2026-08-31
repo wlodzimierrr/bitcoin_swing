@@ -3590,7 +3590,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   PositionNotional=
   \frac{NAV\times RiskBudget}{StopDistance\%}
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3600,6 +3600,32 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/sizing.py` with
+    `calculate_initial_position_size()`, policy version
+    `INITIAL_POSITION_SIZE_V1`.
+  - The arithmetic is BTC-047's `max_allowed_notional`, which already
+    implements `NAV * fraction / distance` and already refuses a zero stop
+    distance. This module is the Decimal-facing domain boundary over it, with a
+    parity test pinning the two together.
+  - **A zero stop distance is rejected, not divided by**
+    (`INITIAL_POSITION_SIZE_ZERO_STOP_DISTANCE`). That case is an undefined
+    position, not an unbounded one.
+  - `initial_position_size_for_trade()` is the canonical path: NAV and the risk
+    fraction come from the BTC-144 budget, the stop distance and entry price
+    from the BTC-142 stop, so no consumer restates trade geometry.
+  - A sub-threshold conviction produces no position at all, because BTC-144
+    produces no budget below 80. That propagates as
+    `INITIAL_POSITION_SIZE_NO_RISK_BUDGET`.
+  - Leverage is always reported as `notional_fraction_nav`, since a tight stop
+    can imply multi-x NAV exposure. An optional
+    `maximum_notional_fraction_nav` ceiling is supported but **off by default**:
+    no calibrated leverage limit exists yet, so none is invented.
+  - The record stores every input to the formula, so a size is re-derivable
+    from its own row, and an optional entry price also yields the position in
+    units.
+  - The chain invariant is asserted directly: notional multiplied by the stop
+    distance equals the risk budget, whatever the stop distance.
 
 #### BTC-146 Implement maximum risk-at-stop
 - **Description:**

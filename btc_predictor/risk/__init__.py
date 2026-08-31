@@ -55,6 +55,14 @@ from btc_predictor.risk.reward import (
     reward_risk_for_stop,
     select_reward_reference,
 )
+from btc_predictor.risk.sizing import (
+    INITIAL_POSITION_SIZE_FEATURE_ID,
+    INITIAL_POSITION_SIZE_POLICY_VERSION,
+    INITIAL_POSITION_SIZE_REASON_CODES,
+    InitialPositionSizeResult,
+    calculate_initial_position_size,
+    initial_position_size_for_trade,
+)
 from btc_predictor.risk.stop import (
     INITIAL_STOP_FEATURE_ID,
     INITIAL_STOP_POLICY_VERSION,
@@ -88,6 +96,12 @@ from btc_predictor.risk.invalidation import (
 )
 
 __all__ = [
+    "INITIAL_POSITION_SIZE_FEATURE_ID",
+    "INITIAL_POSITION_SIZE_POLICY_VERSION",
+    "INITIAL_POSITION_SIZE_REASON_CODES",
+    "InitialPositionSizeResult",
+    "calculate_initial_position_size",
+    "initial_position_size_for_trade",
     "RISK_BUDGET_FEATURE_ID",
     "RISK_BUDGET_PARAMETER_STATUS",
     "RISK_BUDGET_POLICY_VERSION",
