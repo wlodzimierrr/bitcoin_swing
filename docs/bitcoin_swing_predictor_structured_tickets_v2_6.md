@@ -4450,7 +4450,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-164 Implement simulated trims
 - **Description:**
   Complete the ticket scope for implement simulated trims.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4460,6 +4460,35 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/trim_execution.py` with
+    `simulate_trim_execution()`, policy version `SIMULATED_TRIM_EXECUTION_V1`.
+    The description was a placeholder, so scope came from BTC-157: that ticket
+    decides *whether* to reduce, this one decides what it costs and what it
+    locks in.
+  - Shares the BTC-163 shape -- conditions trigger it, so it fills at the next
+    full bar's open moved adversely -- but reduces, so a long trim **sells**
+    and a short trim **buys**, the opposite side to an add in the same
+    direction.
+  - **A trim realizes part of the position, and the figure is signed.** That is
+    the point of trimming, so `realized_pnl` is computed net of the fee and
+    reported with `TRIM_EXECUTION_REALIZED_PROFIT` or `..._REALIZED_LOSS`. A
+    defensive trim in the 40-50 Hold band locks in a loss, and reporting that
+    as profit taken would misstate the trade. A test settles the figure
+    straight onto a BTC-160 account, so no second convention is invented.
+  - **A trim must stay strictly partial.** A full reduction is refused with
+    `TRIM_EXECUTION_NOT_PARTIAL` rather than quietly becoming an exit, which is
+    BTC-158's decision with its own rules and which the BTC-150 ledger already
+    rejects as a trim.
+  - **The trim size has no rulebook definition.** Rulebook 20 and 23 give
+    Hold-Score bands that say "trim" without saying how much, so
+    `DEFAULT_TRIM_FRACTION` is an explicit placeholder carrying
+    `PROVISIONAL_RESEARCH_CALIBRATABLE`, overridable per call and persisted on
+    every record. It is not calibrated and does not pretend to be.
+  - The BTC-157 signal is checked before the size, since a trim that was never
+    signalled was never a sizing question, and a refusal keeps the signal's own
+    reason codes. `as_order_record()` maps onto `portfolio.paper_orders` with
+    action `TRIM` and status `cancelled` for a refusal.
 
 #### BTC-165 Implement paper trade accounting
 - **Description:**

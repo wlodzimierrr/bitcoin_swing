@@ -45,6 +45,20 @@ from btc_predictor.portfolio.add_execution import (
     SimulatedAddExecution,
     simulate_add_execution,
 )
+from btc_predictor.portfolio.trim_execution import (
+    DEFAULT_TRIM_FRACTION,
+    TRIM_ACTION,
+    TRIM_CANCELLED,
+    TRIM_EXECUTION_FEATURE_ID,
+    TRIM_EXECUTION_POLICY_VERSION,
+    TRIM_EXECUTION_REASON_CODES,
+    TRIM_EXECUTION_STATUSES,
+    TRIM_FILLED,
+    TRIM_SIZING_PARAMETER_STATUS,
+    SimulatedTrimExecution,
+    TrimExecutionIntent,
+    simulate_trim_execution,
+)
 from btc_predictor.portfolio.stop_execution import (
     EXIT_ACTION,
     STOP_EXECUTION_FEATURE_ID,
@@ -110,6 +124,18 @@ from btc_predictor.portfolio.state_machine import (
 )
 
 __all__ = [
+    "DEFAULT_TRIM_FRACTION",
+    "TRIM_ACTION",
+    "TRIM_CANCELLED",
+    "TRIM_EXECUTION_FEATURE_ID",
+    "TRIM_EXECUTION_POLICY_VERSION",
+    "TRIM_EXECUTION_REASON_CODES",
+    "TRIM_EXECUTION_STATUSES",
+    "TRIM_FILLED",
+    "TRIM_SIZING_PARAMETER_STATUS",
+    "SimulatedTrimExecution",
+    "TrimExecutionIntent",
+    "simulate_trim_execution",
     "ADD_ACTION",
     "ADD_CANCELLED",
     "ADD_EXECUTION_FEATURE_ID",
