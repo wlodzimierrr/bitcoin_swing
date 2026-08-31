@@ -4299,7 +4299,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Realistic next-bar execution
   - No perfect fill assumptions
   - Mark missed entries
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4309,6 +4309,36 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/entry_execution.py` with
+    `simulate_next_bar_entry()` and `restore_simulated_entry_execution()`,
+    policy version `SIMULATED_ENTRY_EXECUTION_V1`.
+  - **Respect entry zone:** a bar whose range never reaches the zone is a miss.
+    The boundary is inclusive -- a high exactly equal to the zone lower bound
+    is a touch, a cent below it is not -- and both sides of that line are
+    pinned by test.
+  - **Realistic next-bar execution:** `next_eligible_bar_timestamp()` resolves
+    the first canonical full-bar boundary at or after the decision, across 1h,
+    1d, 1w and 1mo. A decision inside a forming bar waits for the next one, and
+    the execution bar must be exactly that bar.
+  - **No perfect fill assumptions:** when the bar opens outside the zone the
+    reference is the nearest boundary the bar could have crossed, not the open
+    and not the best price in the range; when it opens inside, the open is the
+    reference. The BTC-160 cost policy then moves that reference adversely and
+    charges the fee, with the slippage cost recorded separately from the fee.
+  - **Mark missed entries:** a miss is terminal and carries `ENTRY_DO_NOT_CHASE`
+    alongside `ENTRY_ZONE_NOT_TOUCHED`, per rulebook 25. A later bar cannot be
+    supplied to fill an intent that already missed, which is enforced rather
+    than left to caller discipline.
+  - `as_order_record()` maps onto the `portfolio.paper_orders` columns and its
+    action and status CHECKs, with a miss carrying no fill time, no fill price,
+    and zero filled quantity. `restore_simulated_entry_execution()` re-simulates
+    from the persisted evidence and rejects any record that does not reproduce
+    exactly, so a tampered row cannot be replayed.
+  - Execution-bar validation rejects impossible OHLC geometry. That check
+    caught four test fixtures which had overridden open/high/low while keeping
+    a default close outside the new range; the fixtures were corrected rather
+    than the check relaxed.
 
 #### BTC-162 Implement simulated stop execution
 - **Description:**
