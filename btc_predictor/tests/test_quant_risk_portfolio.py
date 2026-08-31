@@ -175,6 +175,41 @@ def test_risk_improvement_uses_total_portfolio_risk_before_clipping() -> None:
     )
 
 
+def test_risk_improvement_compares_totals_without_replicating_a_scalar() -> None:
+    # A single aggregate current risk against a three-tranche proposal. Aligning
+    # shapes before summing would count the scalar once per tranche and report
+    # 2700 instead of 700.
+    assert risk_improvement(1_000, [100, 100, 100]) == 700
+    assert risk_improvement([100, 100, 100], 200) == 100
+    assert risk_improvement(1_000, [[100, 100, 100], [400, 400, 100]]).tolist() == [
+        700,
+        100,
+    ]
+
+
+def test_risk_improvement_rejects_incompatible_portfolio_aggregates() -> None:
+    with pytest.raises(NumericInputError, match="identical shapes"):
+        risk_improvement([[100, 100], [100, 100]], [[100, 100], [1, 1], [2, 2]])
+
+
+def test_risk_improvement_can_report_a_signed_delta() -> None:
+    # Floored, a worsened portfolio is indistinguishable from an unchanged one.
+    assert risk_improvement(10_000, 14_000) == 0
+    assert risk_improvement(10_000, 10_000) == 0
+
+    assert risk_improvement(10_000, 14_000, floor_at_zero=False) == -4_000
+    assert risk_improvement(10_000, 10_000, floor_at_zero=False) == 0
+    assert risk_improvement(10_000, 6_000, floor_at_zero=False) == 4_000
+    np.testing.assert_array_equal(
+        risk_improvement(
+            [[500, 500, 200], [100, 100, 100]],
+            [[300, 600, 200], [0, 300, 100]],
+            floor_at_zero=False,
+        ),
+        [100, -100],
+    )
+
+
 def test_max_allowed_notional_reproduces_rulebook_position_sizing() -> None:
     assert max_allowed_notional(100_000, 0.005, 0.10) == pytest.approx(5_000)
     np.testing.assert_allclose(

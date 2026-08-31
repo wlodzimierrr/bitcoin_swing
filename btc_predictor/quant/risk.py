@@ -167,36 +167,61 @@ def risk_improvement(
     current_risk: RiskInput,
     proposed_risk: RiskInput,
     *,
+    floor_at_zero: bool = True,
     nan_policy: NanPolicy = "raise",
 ) -> RiskOutput:
-    """Return aggregate risk reduction for one portfolio or each matrix row."""
+    """Return aggregate risk reduction for one portfolio or each matrix row.
 
-    current, proposed, _ = _aligned_inputs(
+    Both sides are aggregated independently before subtraction, so a scalar
+    total may be compared against a tranche vector without the scalar being
+    replicated to the vector's length. Units are absolute currency, matching
+    the tranche risk that feeds it, never a fraction.
+
+    ``floor_at_zero`` keeps the default non-negative reduction contract. Pass
+    ``False`` for the signed delta when a caller must distinguish an unchanged
+    portfolio from one whose risk grew; both collapse to zero under the floor.
+    """
+
+    current_total = _aggregate_portfolio_risk(
         current_risk,
-        proposed_risk,
+        name="current_risk",
         nan_policy=nan_policy,
     )
-    _validate_non_negative(current, name="current_risk")
-    _validate_non_negative(proposed, name="proposed_risk")
-    current_total = stable_row_sum(
-        current,
-        nan_policy="propagate",
-        name="current_risk",
-    )
-    proposed_total = stable_row_sum(
-        proposed,
-        nan_policy="propagate",
+    proposed_total = _aggregate_portfolio_risk(
+        proposed_risk,
         name="proposed_risk",
+        nan_policy=nan_policy,
     )
-    with np.errstate(over="ignore", invalid="ignore"):
-        improvements = np.maximum(
-            np.asarray(current_total) - np.asarray(proposed_total),
-            np.float64(0),
+    current_array = np.asarray(current_total, dtype=np.float64)
+    proposed_array = np.asarray(proposed_total, dtype=np.float64)
+    if (
+        current_array.ndim
+        and proposed_array.ndim
+        and current_array.shape != proposed_array.shape
+    ):
+        raise NumericInputError(
+            "current and proposed risk must aggregate to identical shapes"
         )
+    with np.errstate(over="ignore", invalid="ignore"):
+        improvements = current_array - proposed_array
+        if floor_at_zero:
+            improvements = np.maximum(improvements, np.float64(0))
+    improvements = np.asarray(improvements, dtype=np.float64)
     reject_infinite_result(improvements, name="risk_improvement")
     if improvements.ndim == 0:
         return float(improvements)
     return np.array(improvements, dtype=np.float64, order="C", copy=True)
+
+
+def _aggregate_portfolio_risk(
+    values: RiskInput,
+    *,
+    name: str,
+    nan_policy: NanPolicy,
+) -> float | FloatArray:
+    array, _ = _coerce_input(values, nan_policy=nan_policy)
+    _validate_non_negative(array, name=name)
+    return stable_row_sum(array, nan_policy="propagate", name=name)
 
 
 def max_allowed_notional(
