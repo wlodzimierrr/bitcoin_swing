@@ -4348,7 +4348,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - gaps
   - slippage
   - partial position state
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -4359,6 +4359,43 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/stop_execution.py` with
+    `simulate_stop_execution()`, `stop_execution_for_position()` and
+    `restore_simulated_stop_execution()`, policy version
+    `SIMULATED_STOP_EXECUTION_V1`.
+  - **Stop touch:** a long fills when the bar trades at or below the stop, a
+    short at or above it; the boundary is inclusive and both sides are pinned
+    by test. Unlike a BTC-161 entry, an untouched stop is **not** terminal --
+    it stays `submitted` and still works on the next bar, so "resting" and
+    "missed" are deliberately different states.
+  - **Gaps are the reason this ticket exists.** The gap test is on the bar's
+    *open*, not its low: a bar that opened beyond the stop never offered the
+    stop price at all, so the fill reference is the open. A test pins that two
+    bars trading equally far below the stop resolve differently depending only
+    on where they opened.
+  - **The record makes broken risk visible.** `planned_loss` is rulebook 19's
+    `Q * |Entry - Stop|`, the number BTC-146 sized the position against;
+    `realized_loss` is what the fill and fee actually cost. A gap through a
+    95000 stop opening at 90000 turns a planned 10,000 loss into 20,269.91 and
+    raises `STOP_LOSS_EXCEEDED_PLANNED_RISK`. With zero-cost assumptions the
+    two are exactly equal, which is the only condition under which the BTC-146
+    assumption holds.
+  - **Slippage** is adverse on the exit side -- a long exit sells and fills
+    below the reference, a short exit buys and fills above -- reusing the
+    BTC-160 cost policy, with fee and slippage cost reported separately.
+  - **Partial position state** means a trimmed position: the stop covers the
+    remaining quantity, never the size originally entered. Partial *fills* of
+    the stop order itself are not modelled, because intrabar liquidity is
+    unknowable from OHLCV; the stop is all-or-nothing on what remains and the
+    module says so rather than inventing a fill ladder.
+  - `stop_execution_for_position()` is the canonical path: direction, standing
+    stop, weighted average entry and remaining quantity all come from the
+    BTC-150 ledger, so a trimmed multi-tranche position cannot be stopped out
+    at the wrong size or against the wrong entry.
+  - A stop cannot fill on a bar that closed before it was placed, and a stop
+    whose price sits on the wrong side of the average entry is rejected, since
+    it would report locked-in profit as a loss.
 
 #### BTC-163 Implement simulated adds
 - **Description:**
