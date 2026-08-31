@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import pytest
 
+from btc_predictor.config import load_strategy_config
 from btc_predictor.portfolio import (
     ADD,
     ENTER,
@@ -16,21 +17,27 @@ from btc_predictor.portfolio import (
 )
 from btc_predictor.risk import (
     CONFIRMATION_STOP,
+    HIGHER_LOW,
     PROFIT_PROTECTION_TRAIL,
     THESIS_STOP,
     TRAILING_STOP_FEATURE_ID,
     TRAILING_STOP_POLICY_VERSION,
     TRAILING_STOP_REASON_CODES,
     TRAILING_STOP_STAGES,
+    ConfirmedTrailingStructure,
+    apply_trailing_stop,
     calculate_trailing_stop,
     calculate_volatility_buffer,
     stop_advance_count,
     trail_stop_for_position,
+    trailing_stop_from_record,
 )
 
 
 SYMBOL = "BTC-USD"
 START = datetime(2024, 7, 1, tzinfo=timezone.utc)
+CONFIG = load_strategy_config()
+METADATA = CONFIG.run_metadata()
 
 
 def at(hours: int) -> datetime:
@@ -43,6 +50,51 @@ def long_trail(**kwargs):
         "previous_stop": "90000",
         "structure_price": "98000",
         "buffer": "1500",
+    }
+    return calculate_trailing_stop(**{**base, **kwargs})
+
+
+def confirmed_structure(
+    *,
+    price: str = "98000",
+    structure_id: str = "higher-low-2024-07-01",
+    detected_at: datetime | None = None,
+) -> ConfirmedTrailingStructure:
+    return ConfirmedTrailingStructure(
+        structure_id=structure_id,
+        source_feature_id="ENTRY_TRIGGER_HIGHER_LOW",
+        direction="long",
+        structure_type=HIGHER_LOW,
+        price=Decimal(price),
+        level_timestamp=at(1),
+        detected_at=detected_at or at(2),
+        config_metadata=METADATA,
+        reason_codes=("HIGHER_LOW_CONFIRMED",),
+    )
+
+
+def complete_buffer(*, atr: str = "5000", noise: str = "1200"):
+    return calculate_volatility_buffer(
+        atr=atr,
+        level_noise_estimate=noise,
+        config_metadata=METADATA,
+    )
+
+
+def persistable_long_trail(**kwargs):
+    base = {
+        "direction": "long",
+        "previous_stop": "90000",
+        "structure_price": "98000",
+        "buffer": "1500",
+        "config_metadata": METADATA,
+        "evaluated_at": at(3),
+        "structure_id": "higher-low-2024-07-01",
+        "structure_source_feature_id": "ENTRY_TRIGGER_HIGHER_LOW",
+        "structure_type": HIGHER_LOW,
+        "structure_level_timestamp": at(1),
+        "structure_detected_at": at(2),
+        "structure_reason_codes": ("HIGHER_LOW_CONFIRMED",),
     }
     return calculate_trailing_stop(**{**base, **kwargs})
 
@@ -197,36 +249,28 @@ def test_no_new_structure_holds_the_standing_stop() -> None:
     assert result.reason_codes == ("TRAILING_STOP_NO_NEW_STRUCTURE",)
 
 
-def test_no_structure_and_no_standing_stop_is_incomplete() -> None:
-    result = calculate_trailing_stop(direction="long", previous_stop=None)
-
-    assert result.complete is False
-    assert result.stop_price is None
-    assert result.reason_codes == (
-        "TRAILING_STOP_NO_NEW_STRUCTURE",
-        "TRAILING_STOP_INPUT_MISSING",
-    )
+def test_no_standing_stop_is_rejected_as_btc142_scope() -> None:
+    with pytest.raises(ValueError, match="previous_stop must be numeric"):
+        calculate_trailing_stop(direction="long", previous_stop=None)
 
 
 def test_an_incomplete_buffer_yields_no_advance() -> None:
     result = long_trail(buffer=None)
 
     assert result.advanced is False
+    assert result.complete is False
     assert result.stop_price == Decimal("90000")
     assert result.reason_codes == ("TRAILING_STOP_BUFFER_INCOMPLETE",)
 
 
-def test_a_first_stop_can_be_established_without_a_standing_one() -> None:
-    result = calculate_trailing_stop(
-        direction="long",
-        previous_stop=None,
-        structure_price="98000",
-        buffer="1500",
-    )
-
-    assert result.stop_price == Decimal("96500")
-    assert result.advanced is True
-    assert result.previous_stop is None
+def test_btc156_cannot_establish_the_initial_thesis_stop() -> None:
+    with pytest.raises(ValueError, match="previous_stop must be numeric"):
+        calculate_trailing_stop(
+            direction="long",
+            previous_stop=None,
+            structure_price="98000",
+            buffer="1500",
+        )
 
 
 # --- guards ---------------------------------------------------------------
@@ -334,7 +378,11 @@ def test_a_held_stop_does_not_advance_the_stage() -> None:
 
 
 def open_position(*, stop: str = "90000"):
-    lifecycle = start_position_lifecycle(symbol=SYMBOL, state=PENDING_ENTRY)
+    lifecycle = start_position_lifecycle(
+        symbol=SYMBOL,
+        state=PENDING_ENTRY,
+        config_metadata=METADATA,
+    )
     return apply_position_event(
         lifecycle,
         event=ENTER,
@@ -350,7 +398,7 @@ def test_the_entry_stop_is_not_counted_as_an_advance() -> None:
 
     # The entry establishes the thesis stop; it does not trail it.
     assert stop_advance_count(lifecycle) == 0
-    assert trail_stop_for_position(lifecycle).stage == THESIS_STOP
+    assert trail_stop_for_position(lifecycle, as_of=at(2)).stage == THESIS_STOP
 
 
 def test_advances_are_counted_from_the_ledger() -> None:
@@ -382,8 +430,9 @@ def test_canonical_path_reads_direction_and_stop_from_the_ledger() -> None:
 
     result = trail_stop_for_position(
         lifecycle,
-        structure_price="98000",
-        buffer="1500",
+        structure=confirmed_structure(),
+        buffer=complete_buffer(),
+        as_of=at(3),
     )
 
     assert result.direction == "long"
@@ -399,8 +448,9 @@ def test_canonical_path_stage_follows_the_stop_history() -> None:
 
     result = trail_stop_for_position(
         lifecycle,
-        structure_price="98000",
-        buffer="1500",
+        structure=confirmed_structure(),
+        buffer=complete_buffer(),
+        as_of=at(3),
     )
 
     # Already advanced once, so this is stage 3, not stage 2.
@@ -410,12 +460,13 @@ def test_canonical_path_stage_follows_the_stop_history() -> None:
 
 def test_canonical_path_accepts_a_btc141_buffer_result() -> None:
     lifecycle = open_position()
-    buffer = calculate_volatility_buffer(atr="5000", level_noise_estimate="1200")
+    buffer = complete_buffer()
 
     result = trail_stop_for_position(
         lifecycle,
-        structure_price="98000",
+        structure=confirmed_structure(),
         buffer=buffer,
+        as_of=at(3),
     )
 
     assert buffer.complete is True
@@ -425,16 +476,18 @@ def test_canonical_path_accepts_a_btc141_buffer_result() -> None:
 
 def test_canonical_path_holds_on_an_incomplete_buffer() -> None:
     lifecycle = open_position()
-    buffer = calculate_volatility_buffer(atr=None)
+    buffer = calculate_volatility_buffer(atr=None, config_metadata=METADATA)
 
     result = trail_stop_for_position(
         lifecycle,
-        structure_price="98000",
+        structure=confirmed_structure(),
         buffer=buffer,
+        as_of=at(3),
     )
 
     assert buffer.complete is False
     assert result.advanced is False
+    assert result.complete is False
     assert result.stop_price == Decimal("90000")
     assert result.reason_codes == ("TRAILING_STOP_BUFFER_INCOMPLETE",)
 
@@ -442,15 +495,12 @@ def test_canonical_path_holds_on_an_incomplete_buffer() -> None:
 def test_an_advanced_stop_is_accepted_by_the_lifecycle() -> None:
     lifecycle = open_position()
     result = trail_stop_for_position(
-        lifecycle, structure_price="98000", buffer="1500"
-    )
-
-    moved = apply_position_event(
         lifecycle,
-        event=STOP_MOVE,
-        event_time=at(2),
-        stop_price=result.stop_price,
+        structure=confirmed_structure(),
+        buffer=complete_buffer(),
+        as_of=at(3),
     )
+    moved = apply_trailing_stop(lifecycle, result, event_time=at(3))
 
     # BTC-150 owns whether a move is recordable; a ratcheted stop always is.
     assert moved.accepted is True
@@ -460,18 +510,15 @@ def test_an_advanced_stop_is_accepted_by_the_lifecycle() -> None:
 def test_a_held_stop_is_a_no_op_the_lifecycle_also_accepts() -> None:
     lifecycle = open_position()
     result = trail_stop_for_position(
-        lifecycle, structure_price="80000", buffer="1500"
-    )
-
-    moved = apply_position_event(
         lifecycle,
-        event=STOP_MOVE,
-        event_time=at(2),
-        stop_price=result.stop_price,
+        structure=confirmed_structure(price="80000"),
+        buffer=complete_buffer(),
+        as_of=at(3),
     )
+    moved = apply_trailing_stop(lifecycle, result, event_time=at(3))
 
     assert result.advanced is False
-    assert moved.accepted is True
+    assert moved == lifecycle
     assert moved.stop_price == Decimal("90000")
 
 
@@ -499,41 +546,38 @@ def test_invalid_inputs_fail_fast(kwargs, match: str) -> None:
 
 
 def test_a_lifecycle_without_a_direction_is_rejected() -> None:
-    with pytest.raises(ValueError, match="direction"):
-        trail_stop_for_position(object())
+    with pytest.raises(TypeError, match="PositionLifecycle"):
+        trail_stop_for_position(object(), as_of=at(3))
 
 
 def test_an_unusable_buffer_type_is_rejected() -> None:
     with pytest.raises(TypeError, match="buffer must be"):
-        trail_stop_for_position(open_position(), structure_price="98000", buffer=object())
+        trail_stop_for_position(
+            open_position(),
+            structure=confirmed_structure(),
+            buffer=object(),
+            as_of=at(3),
+        )
 
 
 # --- persistence ----------------------------------------------------------
 
 
 def test_record_is_persistable_and_reconstructable() -> None:
-    record = long_trail(
-        current_price="99000",
-        config_metadata={"config_version": "strategy_config_v2"},
-    ).as_record()
+    result = persistable_long_trail(current_price="99000")
+    record = result.as_record()
 
-    assert record == {
-        "feature_id": "TRAILING_STOP",
-        "policy_version": "TRAILING_STOP_V1",
-        "direction": "long",
-        "stage": "CONFIRMATION_STOP",
-        "advance_count": 1,
-        "previous_stop": "90000",
-        "structure_price": "98000",
-        "buffer": "1500",
-        "candidate_stop": "96500",
-        "stop_price": "96500",
-        "current_price": "99000",
-        "advanced": True,
-        "config_metadata": {"config_version": "strategy_config_v2"},
-        "complete": True,
-        "reason_codes": ["TRAILING_STOP_ADVANCED"],
-    }
+    assert record["feature_id"] == "TRAILING_STOP"
+    assert record["policy_version"] == "TRAILING_STOP_V1"
+    assert record["structure_id"] == "higher-low-2024-07-01"
+    assert record["structure_detected_at"] == at(2).isoformat()
+    assert record["buffer_feature_id"] == "DIRECT_NUMERIC_BUFFER"
+    assert record["prior_advance_count"] == 0
+    assert record["advance_count"] == 1
+    assert record["stage"] == "CONFIRMATION_STOP"
+    assert record["advanced"] is True
+    assert record["evaluated_at"] == at(3).isoformat()
+    assert trailing_stop_from_record(record) == result
     # The candidate is re-derivable from its own row.
     assert Decimal(record["candidate_stop"]) == Decimal(
         record["structure_price"]
@@ -541,7 +585,7 @@ def test_record_is_persistable_and_reconstructable() -> None:
 
 
 def test_the_record_refuses_a_loosened_long_stop() -> None:
-    result = long_trail()
+    result = persistable_long_trail()
 
     with pytest.raises(ValueError, match="never move lower"):
         replace(result, stop_price=Decimal("85000")).as_record()
@@ -553,6 +597,13 @@ def test_the_record_refuses_a_loosened_short_stop() -> None:
         previous_stop="110000",
         structure_price="102000",
         buffer="1500",
+        config_metadata=METADATA,
+        evaluated_at=at(3),
+        structure_id="lower-high-2024-07-01",
+        structure_source_feature_id="ENTRY_TRIGGER_LOWER_HIGH",
+        structure_type="LOWER_HIGH",
+        structure_level_timestamp=at(1),
+        structure_detected_at=at(2),
     )
 
     with pytest.raises(ValueError, match="never move higher"):
@@ -560,7 +611,7 @@ def test_the_record_refuses_a_loosened_short_stop() -> None:
 
 
 def test_the_record_refuses_a_stage_that_disagrees_with_the_count() -> None:
-    result = long_trail()
+    result = persistable_long_trail()
 
     with pytest.raises(ValueError, match="stage does not match"):
         replace(result, stage=PROFIT_PROTECTION_TRAIL).as_record()
@@ -569,14 +620,14 @@ def test_the_record_refuses_a_stage_that_disagrees_with_the_count() -> None:
 
 
 def test_a_complete_record_requires_a_stop_price() -> None:
-    result = long_trail()
+    result = persistable_long_trail()
 
-    with pytest.raises(ValueError, match="requires a stop price"):
+    with pytest.raises(ValueError, match="stop_price must be numeric"):
         replace(result, stop_price=None).as_record()
 
 
 def test_recomputation_is_deterministic() -> None:
-    assert long_trail().as_record() == long_trail().as_record()
+    assert persistable_long_trail().as_record() == persistable_long_trail().as_record()
 
 
 def test_reason_codes_are_drawn_from_the_declared_set() -> None:
@@ -585,7 +636,6 @@ def test_reason_codes_are_drawn_from_the_declared_set() -> None:
         long_trail(structure_price="80000"),
         long_trail(buffer=None),
         long_trail(current_price="90000"),
-        calculate_trailing_stop(direction="long", previous_stop=None),
         calculate_trailing_stop(
             direction="long", previous_stop="500", structure_price="1000",
             buffer="1000",

@@ -4082,7 +4082,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** BTC-043, BTC-045, BTC-047
+- **Dependencies:** BTC-141, BTC-142, BTC-150
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
@@ -4110,9 +4110,9 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - `trail_stop_for_position()` is the canonical path: direction, the standing
     stop, and the advance count all come from the BTC-150 ledger, and the
     buffer accepts a BTC-141 result directly. `stop_advance_count()` counts
-    accepted post-entry transitions that carried a stop, so the entry's own
-    thesis stop is not miscounted as an advance and a refused stop move counts
-    for nothing. An add that raises the stop does count, per rulebook 26.
+    accepted post-entry transitions only when the stop genuinely tightens, so
+    the entry's own thesis stop, same-stop events, and refused moves count for
+    nothing. An add that raises the stop counts once, per rulebook 26.
   - Two guards beyond the formula: a non-positive candidate is refused, and an
     optional `current_price` refuses a candidate price has already passed,
     which would be an immediate exit dressed up as a stop move.
@@ -4123,6 +4123,13 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     directions, a monotonic sequence that never retreats, tolerance behaviour,
     quiet bars, incomplete buffers, both guards, stage derivation and drift,
     ledger composition, persistence, and determinism.
+  - **Independent xHigh review:** the declared dependencies were corrected to
+    the actual strategy path: BTC-141 owns the buffer, BTC-142 establishes the
+    initial stop, and BTC-150 owns standing state and transition persistence.
+    The review also made confirmed structure identity and availability time
+    mandatory on the canonical path, prevents a used structure from
+    retriggering after buffer changes, counts only genuine stop improvements,
+    and reconstructs persisted results from their formula and provenance.
 
 #### BTC-157 Implement trim rules
 - **Description:**

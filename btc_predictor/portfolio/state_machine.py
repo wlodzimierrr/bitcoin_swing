@@ -276,10 +276,12 @@ class PositionTransition:
     price: Decimal | None
     stop_price: Decimal | None
     reason_codes: tuple[str, ...]
+    source_feature_id: str | None = None
+    source_record_id: str | None = None
 
     def as_record(self) -> dict[str, Any]:
         _validate_transition(self)
-        return {
+        record = {
             "record_version": POSITION_TRANSITION_RECORD_VERSION,
             "sequence": self.sequence,
             "event": self.event,
@@ -294,6 +296,10 @@ class PositionTransition:
             "stop_price": _optional(self.stop_price),
             "reason_codes": list(self.reason_codes),
         }
+        if self.source_feature_id is not None:
+            record["source_feature_id"] = self.source_feature_id
+            record["source_record_id"] = self.source_record_id
+        return record
 
     def as_position_event_record(self) -> dict[str, Any] | None:
         """Return the schema-compatible portion of an accepted DB event row.
@@ -431,6 +437,8 @@ def apply_position_event(
     price: Any | None = None,
     stop_price: Any | None = None,
     reason_codes: Iterable[str] = (),
+    source_feature_id: str | None = None,
+    source_record_id: str | None = None,
 ) -> PositionLifecycle:
     """Return the lifecycle after applying (or refusing) one event."""
 
@@ -441,6 +449,10 @@ def apply_position_event(
         raise ValueError(f"event must be one of {POSITION_EVENTS}")
     moment = _parse_utc(event_time, "event_time")
     supplied = _reason_codes(reason_codes)
+    source_feature, source_record = _source_identity(
+        source_feature_id,
+        source_record_id,
+    )
 
     quantity_value = (
         _positive_decimal(quantity, "quantity") if quantity is not None else None
@@ -458,6 +470,8 @@ def apply_position_event(
             quantity=quantity_value,
             price=price_value,
             stop_price=stop_value,
+            source_feature_id=source_feature,
+            source_record_id=source_record,
             codes=_merge_reason_codes(
                 ("POSITION_STATE_EVENT_OUT_OF_ORDER",),
                 supplied,
@@ -472,6 +486,8 @@ def apply_position_event(
             quantity=quantity_value,
             price=price_value,
             stop_price=stop_value,
+            source_feature_id=source_feature,
+            source_record_id=source_record,
             codes=_merge_reason_codes(
                 (
                     "POSITION_STATE_TERMINAL",
@@ -495,6 +511,8 @@ def apply_position_event(
             quantity=quantity_value,
             price=price_value,
             stop_price=stop_value,
+            source_feature_id=source_feature,
+            source_record_id=source_record,
             codes=_merge_reason_codes(codes, supplied),
         )
 
@@ -513,6 +531,8 @@ def apply_position_event(
             quantity=quantity_value,
             price=price_value,
             stop_price=stop_value,
+            source_feature_id=source_feature,
+            source_record_id=source_record,
             codes=_merge_reason_codes(guard, supplied),
         )
 
@@ -525,6 +545,8 @@ def apply_position_event(
         quantity=quantity_value,
         price=price_value,
         stop_price=stop_value,
+        source_feature_id=source_feature,
+        source_record_id=source_record,
         supplied=supplied,
     )
 
@@ -783,6 +805,8 @@ def _accept(
     quantity: Decimal | None,
     price: Decimal | None,
     stop_price: Decimal | None,
+    source_feature_id: str | None,
+    source_record_id: str | None,
     supplied: tuple[str, ...],
 ) -> PositionLifecycle:
     tranches = lifecycle.tranches
@@ -861,6 +885,8 @@ def _accept(
             (_ACCEPTED_REASON_CODES[event],),
             supplied,
         ),
+        source_feature_id=source_feature_id,
+        source_record_id=source_record_id,
     )
 
     result = PositionLifecycle(
@@ -893,6 +919,8 @@ def _refuse(
     quantity: Decimal | None,
     price: Decimal | None,
     stop_price: Decimal | None,
+    source_feature_id: str | None,
+    source_record_id: str | None,
     codes: tuple[str, ...],
 ) -> PositionLifecycle:
     """Record a refused event without advancing state or the ledger."""
@@ -913,6 +941,8 @@ def _refuse(
         price=price,
         stop_price=stop_price,
         reason_codes=codes,
+        source_feature_id=source_feature_id,
+        source_record_id=source_record_id,
     )
     result = PositionLifecycle(
         feature_id=lifecycle.feature_id,
@@ -986,6 +1016,8 @@ def _replay_transition_record(
         "quantity": expected.requested_quantity,
         "price": expected.price,
         "stop_price": expected.stop_price,
+        "source_feature_id": expected.source_feature_id,
+        "source_record_id": expected.source_record_id,
     }
     probe = apply_position_event(lifecycle, **kwargs)
     base_codes = probe.transitions[-1].reason_codes
@@ -1036,6 +1068,8 @@ def _transition_from_record(record: Mapping[str, Any]) -> PositionTransition:
             "stop_price",
         ),
         reason_codes=_reason_codes(source.get("reason_codes", ())),
+        source_feature_id=source.get("source_feature_id"),
+        source_record_id=source.get("source_record_id"),
     )
     _validate_transition(transition)
     return transition
@@ -1215,6 +1249,7 @@ def _validate_transition(transition: PositionTransition) -> None:
     _optional_positive_decimal(transition.stop_price, "stop_price")
     if not _reason_codes(transition.reason_codes):
         raise ValueError("transition requires at least one reason code")
+    _source_identity(transition.source_feature_id, transition.source_record_id)
 
 
 def _validate_applied_transition_economics(transition: PositionTransition) -> None:
@@ -1304,6 +1339,23 @@ def _config_metadata(value: Mapping[str, Any]) -> dict[str, str]:
             raise ValueError("config_metadata values must be non-empty strings")
         normalized[key] = item
     return normalized
+
+
+def _source_identity(
+    feature_id: Any | None,
+    record_id: Any | None,
+) -> tuple[str | None, str | None]:
+    if (feature_id is None) != (record_id is None):
+        raise ValueError(
+            "source_feature_id and source_record_id must be supplied together",
+        )
+    if feature_id is None:
+        return None, None
+    if not isinstance(feature_id, str) or not feature_id.strip():
+        raise ValueError("source_feature_id must be a non-empty string")
+    if not isinstance(record_id, str) or not record_id.strip():
+        raise ValueError("source_record_id must be a non-empty string")
+    return feature_id, record_id
 
 
 def _reason_codes(values: Iterable[str]) -> tuple[str, ...]:
