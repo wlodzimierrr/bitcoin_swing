@@ -3318,7 +3318,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   ```
 
   Every signal must explain itself.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3328,6 +3328,23 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `REASON_CODE_ENGINE_V1` to aggregate BTC-130 Entry Conviction,
+    BTC-131 entry action, BTC-132 hard-veto output, and domain-owned signal
+    evidence into one recommendation explanation.
+  - Validates that all three required source results use the supplied strategy
+    configuration and that the classified entry score matches the score being
+    explained.
+  - Reasons are validated against the existing database field limits,
+    deduplicated by source and code, and ranked deterministically by severity,
+    source, and stable code order. Contradictory duplicates fail fast.
+  - Added canonical definitions for the nine rulebook examples while keeping
+    numerical interpretation in the originating feature modules.
+  - Persists engine/source versions, source completion state, configuration
+    identity, entry action, veto state, ranked details, and flat reason codes.
+  - Produces rows directly compatible with
+    `signals.recommendation_reason_codes` and preserves upstream hard-veto
+    evidence with its source component.
 
 ## EPIC O — Risk Engine
 
