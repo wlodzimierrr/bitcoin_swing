@@ -252,22 +252,26 @@ def test_a_gap_costs_far_more_than_the_planned_risk() -> None:
 
     # BTC-146 sized this position against a 10,000 loss. The gap more than
     # doubles it, and the record says so rather than absorbing it silently.
-    assert through.planned_loss == Decimal("10000")
-    assert gapped.planned_loss == Decimal("10000")
+    assert through.planned_downside_risk == Decimal("10000")
+    assert gapped.planned_downside_risk == Decimal("10000")
     assert gapped.realized_loss == Decimal("20269.9100000000")
-    assert gapped.realized_loss > 2 * gapped.planned_loss
-    assert gapped.excess_loss == gapped.realized_loss - gapped.planned_loss
+    assert gapped.realized_loss > 2 * gapped.planned_downside_risk
+    assert gapped.excess_loss == (
+        gapped.realized_loss - gapped.planned_downside_risk
+    )
     assert "STOP_LOSS_EXCEEDED_PLANNED_RISK" in gapped.reason_codes
 
 
-def test_planned_loss_is_the_risk_at_stop_quantity_formula() -> None:
+def test_planned_downside_is_the_floored_risk_at_stop_formula() -> None:
     stop = intent()
 
-    # Rulebook 19: Q * |Entry - Stop|, the same quantity form BTC-146 uses.
-    assert stop.planned_loss == stop.open_quantity * abs(
-        stop.average_entry_price - stop.stop_price
+    # BTC-146: protected profit is floored at zero downside rather than turned
+    # back into an absolute-distance loss.
+    assert stop.planned_downside_risk == stop.open_quantity * max(
+        stop.average_entry_price - stop.stop_price,
+        Decimal("0"),
     )
-    assert stop.planned_loss == Decimal("10000")
+    assert stop.planned_downside_risk == Decimal("10000")
 
 
 # --- slippage -------------------------------------------------------------
@@ -308,7 +312,7 @@ def test_zero_cost_assumptions_fill_exactly_at_the_stop() -> None:
     # With no costs the realized loss is exactly the planned loss, which is the
     # only condition under which the BTC-146 assumption holds exactly.
     assert result.average_fill_price == Decimal("95000")
-    assert result.realized_loss == result.planned_loss
+    assert result.realized_loss == result.planned_downside_risk
     assert result.excess_loss == Decimal("0")
     assert "STOP_LOSS_EXCEEDED_PLANNED_RISK" not in result.reason_codes
 
@@ -336,7 +340,7 @@ def test_a_trimmed_position_is_stopped_out_for_what_remains() -> None:
     # never the size originally entered.
     assert full.filled_quantity == Decimal("2")
     assert trimmed.filled_quantity == Decimal("0.5")
-    assert trimmed.planned_loss == Decimal("2500")
+    assert trimmed.planned_downside_risk == Decimal("2500")
     assert trimmed.notional == full.notional / 4
 
 
@@ -389,7 +393,6 @@ def test_canonical_path_reads_the_ledger_rather_than_restating_it() -> None:
         bar(),
         costs=costs(),
         execution_id="stop-canonical",
-        stop_placed_at=PLACED_AT,
         position_id=3,
     )
 
@@ -409,14 +412,13 @@ def test_canonical_path_uses_the_trimmed_quantity_and_weighted_entry() -> None:
         bar(),
         costs=costs(),
         execution_id="stop-canonical",
-        stop_placed_at=PLACED_AT,
     )
 
     # Two tranches averaging 105000, trimmed from 4 to 3 units. Both numbers
     # come from the ledger, so neither can be restated inconsistently.
     assert result.intent.average_entry_price == Decimal("105000")
     assert result.filled_quantity == Decimal("3")
-    assert result.planned_loss == Decimal("30000")
+    assert result.planned_downside_risk == Decimal("30000")
 
 
 def test_canonical_path_requires_a_stop_and_an_average_entry() -> None:
@@ -463,18 +465,6 @@ def test_a_later_bar_can_still_fill_a_resting_stop() -> None:
         (intent(direction="flat"), "direction must be one of"),
         (intent(open_quantity=Decimal("0")), "open_quantity must be positive"),
         (intent(stop_price=Decimal("0")), "stop_price must be positive"),
-        (
-            intent(stop_price=Decimal("100000")),
-            "long stop must sit below the average entry",
-        ),
-        (
-            intent(stop_price=Decimal("101000")),
-            "long stop must sit below the average entry",
-        ),
-        (
-            intent(direction="short", stop_price=Decimal("95000")),
-            "short stop must sit above the average entry",
-        ),
         (intent(config_metadata={}), "config_metadata must exactly contain"),
     ],
 )
@@ -514,7 +504,8 @@ def test_record_round_trip_retains_all_provenance() -> None:
     assert restore_simulated_stop_execution(record) == result
     assert record["order_type"] == STOP_ORDER
     assert record["gapped"] is False
-    assert record["planned_loss"] == "10000"
+    assert record["planned_downside_risk"] == "10000"
+    assert record["planned_gross_pnl"] == "-10000"
     assert record["realized_loss"] == "10284.9050000000"
     assert record["excess_loss"] == "284.9050000000"
 

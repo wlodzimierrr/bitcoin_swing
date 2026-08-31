@@ -9,15 +9,15 @@ The gap case is the reason this ticket exists. A long stop is touched when the
 bar trades at or below it, but the price you actually get depends on how the bar
 opened:
 
-    opened above the stop  -> the stop price is reachable, fill there
-    opened at or below it  -> the market gapped through, fill at the open
+    opened at/above stop (long) -> stop price is reachable, fill there
+    opened below stop (long)    -> market gapped through, fill at the open
 
 Filling a gapped stop at the stop price would quietly assume liquidity that was
-never there, and every downstream risk number would inherit that fiction. So the
-result reports ``planned_loss`` -- the loss BTC-146 sized the position against --
-beside the ``realized_loss`` actually taken, and flags the difference. A gap is
-precisely the event that breaks the risk-at-stop constraint, and it should be
-visible in the record rather than absorbed silently.
+never there, and every downstream risk number would inherit that fiction. The
+result therefore reports BTC-146's tranche-level, floored downside risk
+separately from signed gross and net P&L. A profitable trailing stop has zero
+remaining downside risk and positive P&L; those are different facts and must
+not be collapsed into an absolute-distance "loss".
 
 Partial position state means a trimmed position: BTC-157 may have reduced the
 open quantity, and the stop covers whatever remains, not the size originally
@@ -47,6 +47,13 @@ from btc_predictor.portfolio.account import (
     ExecutionCosts,
 )
 from btc_predictor.portfolio.entry_execution import next_eligible_bar_timestamp
+from btc_predictor.quant.comparisons import (
+    decision_equal,
+    decision_greater,
+    decision_greater_equal,
+    decision_less,
+    decision_less_equal,
+)
 from btc_predictor.quant.portfolio import position_notional
 from btc_predictor.quant.risk import POSITION_SIDES
 
@@ -60,6 +67,7 @@ STOP_EXECUTION_STATUSES = (STOP_FILLED, STOP_RESTING)
 
 EXIT_ACTION = "EXIT"
 STOP_ORDER = "stop"
+STOP_RISK_CONVENTION = "FLOORED_AT_ZERO"
 
 LONG_DIRECTION = "long"
 SHORT_DIRECTION = "short"
@@ -83,6 +91,22 @@ _REQUIRED_CONFIG_METADATA_KEYS = (
 
 
 @dataclass(frozen=True)
+class StopExecutionTranche:
+    """One remaining BTC-150 tranche at stop-evaluation time."""
+
+    tranche_id: str
+    entry_price: Decimal
+    quantity: Decimal
+
+    def as_record(self) -> dict[str, str]:
+        return {
+            "tranche_id": _string(self.tranche_id, "tranche_id"),
+            "entry_price": str(_positive(self.entry_price, "tranche.entry_price")),
+            "quantity": str(_positive(self.quantity, "tranche.quantity")),
+        }
+
+
+@dataclass(frozen=True)
 class StopExecutionIntent:
     """A resting stop over whatever quantity a position still holds."""
 
@@ -96,6 +120,7 @@ class StopExecutionIntent:
     average_entry_price: Decimal
     open_quantity: Decimal
     config_metadata: dict[str, str]
+    tranches: tuple[StopExecutionTranche, ...] = ()
 
     @property
     def side(self) -> str:
@@ -108,10 +133,41 @@ class StopExecutionIntent:
         return next_eligible_bar_timestamp(self.stop_placed_at, self.timeframe)
 
     @property
-    def planned_loss(self) -> Decimal:
-        """The loss BTC-146 sized this position against: Q * |entry - stop|."""
+    def planned_downside_risk(self) -> Decimal:
+        """BTC-146 FLOORED_AT_ZERO downside risk at the standing stop."""
 
-        return self.open_quantity * abs(self.average_entry_price - self.stop_price)
+        return sum(
+            (
+                tranche.quantity
+                * max(
+                    (
+                        tranche.entry_price - self.stop_price
+                        if self.direction == LONG_DIRECTION
+                        else self.stop_price - tranche.entry_price
+                    ),
+                    Decimal("0"),
+                )
+                for tranche in _effective_tranches(self)
+            ),
+            Decimal("0"),
+        )
+
+    @property
+    def planned_gross_pnl(self) -> Decimal:
+        """Signed gross P&L if the stop fills exactly at its price."""
+
+        return sum(
+            (
+                tranche.quantity
+                * (
+                    self.stop_price - tranche.entry_price
+                    if self.direction == LONG_DIRECTION
+                    else tranche.entry_price - self.stop_price
+                )
+                for tranche in _effective_tranches(self)
+            ),
+            Decimal("0"),
+        )
 
     def as_record(self) -> dict[str, Any]:
         values = _validate_intent(self)
@@ -127,7 +183,10 @@ class StopExecutionIntent:
             "eligible_bar_at": values.eligible_bar_at.isoformat(),
             "average_entry_price": str(values.average_entry_price),
             "open_quantity": str(values.open_quantity),
-            "planned_loss": str(values.planned_loss),
+            "risk_at_stop_convention": STOP_RISK_CONVENTION,
+            "planned_downside_risk": str(values.planned_downside_risk),
+            "planned_gross_pnl": str(values.planned_gross_pnl),
+            "tranches": [tranche.as_record() for tranche in values.tranches],
             "config_metadata": dict(values.config_metadata),
         }
 
@@ -151,8 +210,12 @@ class SimulatedStopExecution:
     notional: Decimal
     fee: Decimal
     slippage_cost: Decimal
-    planned_loss: Decimal
+    planned_downside_risk: Decimal
+    planned_gross_pnl: Decimal
+    gross_pnl: Decimal | None
+    net_pnl: Decimal | None
     realized_loss: Decimal | None
+    execution_shortfall: Decimal | None
     excess_loss: Decimal | None
     resolved_at: datetime
     complete: bool
@@ -185,8 +248,12 @@ class SimulatedStopExecution:
             self.notional,
             self.fee,
             self.slippage_cost,
-            self.planned_loss,
+            self.planned_downside_risk,
+            self.planned_gross_pnl,
+            self.gross_pnl,
+            self.net_pnl,
             self.realized_loss,
+            self.execution_shortfall,
             self.excess_loss,
             require_utc_datetime(self.resolved_at, "resolved_at"),
             self.complete,
@@ -211,8 +278,15 @@ class SimulatedStopExecution:
             "notional": str(self.notional),
             "fee": str(self.fee),
             "slippage_cost": str(self.slippage_cost),
-            "planned_loss": str(self.planned_loss),
+            "risk_at_stop_convention": STOP_RISK_CONVENTION,
+            "planned_downside_risk": str(self.planned_downside_risk),
+            "planned_gross_pnl": str(self.planned_gross_pnl),
+            "gross_pnl": _optional_decimal_string(self.gross_pnl),
+            "net_pnl": _optional_decimal_string(self.net_pnl),
             "realized_loss": _optional_decimal_string(self.realized_loss),
+            "execution_shortfall": _optional_decimal_string(
+                self.execution_shortfall
+            ),
             "excess_loss": _optional_decimal_string(self.excess_loss),
             "resolved_at": self.resolved_at.isoformat(),
             "complete": self.complete,
@@ -237,6 +311,12 @@ class SimulatedStopExecution:
         resolved_position_id = (
             position_id if position_id is not None else self.intent.position_id
         )
+        if (
+            position_id is not None
+            and self.intent.position_id is not None
+            and position_id != self.intent.position_id
+        ):
+            raise ValueError("position_id must match the execution intent")
         if resolved_position_id is not None and (
             isinstance(resolved_position_id, bool)
             or not isinstance(resolved_position_id, int)
@@ -291,12 +371,16 @@ def simulate_stop_execution(
         notional=decision[7],
         fee=decision[8],
         slippage_cost=decision[9],
-        planned_loss=decision[10],
-        realized_loss=decision[11],
-        excess_loss=decision[12],
-        resolved_at=decision[13],
-        complete=decision[14],
-        reason_codes=decision[15],
+        planned_downside_risk=decision[10],
+        planned_gross_pnl=decision[11],
+        gross_pnl=decision[12],
+        net_pnl=decision[13],
+        realized_loss=decision[14],
+        execution_shortfall=decision[15],
+        excess_loss=decision[16],
+        resolved_at=decision[17],
+        complete=decision[18],
+        reason_codes=decision[19],
     )
 
 
@@ -306,7 +390,7 @@ def stop_execution_for_position(
     *,
     costs: ExecutionCosts,
     execution_id: str,
-    stop_placed_at: datetime,
+    stop_placed_at: datetime | None = None,
     position_id: int | None = None,
     config_metadata: Mapping[str, str] | None = None,
 ) -> SimulatedStopExecution:
@@ -317,12 +401,35 @@ def stop_execution_for_position(
     out for the size it originally entered.
     """
 
+    from btc_predictor.portfolio.state_machine import PositionLifecycle
+
+    if not isinstance(lifecycle, PositionLifecycle):
+        raise TypeError("lifecycle must be a PositionLifecycle")
     stop_price = getattr(lifecycle, "stop_price", None)
     if stop_price is None:
         raise ValueError("lifecycle must carry a stop price")
     average_entry_price = getattr(lifecycle, "average_entry_price", None)
     if average_entry_price is None:
         raise ValueError("lifecycle must carry an average entry price")
+    if not getattr(lifecycle, "is_open", False):
+        raise ValueError("lifecycle must be an open BTC-150 position")
+    ledger_metadata = _config_metadata(getattr(lifecycle, "config_metadata", {}))
+    if config_metadata is not None and _config_metadata(config_metadata) != ledger_metadata:
+        raise ValueError("config_metadata must match the BTC-150 lifecycle")
+    ledger_stop_placed_at = _stop_placement_time(lifecycle, stop_price)
+    if stop_placed_at is not None and require_utc_datetime(
+        stop_placed_at,
+        "stop_placed_at",
+    ) != ledger_stop_placed_at:
+        raise ValueError("stop_placed_at must match the BTC-150 stop transition")
+    lifecycle_tranches = tuple(
+        StopExecutionTranche(
+            tranche_id=str(getattr(tranche, "tranche_number", "")),
+            entry_price=getattr(tranche, "entry_price", Decimal("0")),
+            quantity=getattr(tranche, "quantity", Decimal("0")),
+        )
+        for tranche in getattr(lifecycle, "tranches", ())
+    )
     intent = StopExecutionIntent(
         execution_id=execution_id,
         position_id=position_id,
@@ -330,12 +437,11 @@ def stop_execution_for_position(
         direction=getattr(lifecycle, "direction", ""),
         timeframe=execution_bar.timeframe,
         stop_price=stop_price,
-        stop_placed_at=stop_placed_at,
+        stop_placed_at=ledger_stop_placed_at,
         average_entry_price=average_entry_price,
         open_quantity=getattr(lifecycle, "quantity", Decimal("0")),
-        config_metadata=dict(
-            config_metadata or getattr(lifecycle, "config_metadata", {})
-        ),
+        config_metadata=ledger_metadata,
+        tranches=lifecycle_tranches,
     )
     return simulate_stop_execution(intent, execution_bar, costs=costs)
 
@@ -351,6 +457,9 @@ def restore_simulated_stop_execution(
     raw_intent = _mapping(source.get("intent"), "intent")
     raw_bar = _mapping(source.get("execution_bar"), "execution_bar")
     raw_costs = _mapping(source.get("costs"), "costs")
+    raw_tranches = raw_intent.get("tranches")
+    if not isinstance(raw_tranches, list):
+        raise ValueError("intent.tranches must be a list")
     intent = StopExecutionIntent(
         execution_id=_string(raw_intent.get("execution_id"), "execution_id"),
         position_id=_optional_positive_integer(
@@ -368,6 +477,23 @@ def restore_simulated_stop_execution(
         ),
         open_quantity=_positive(raw_intent.get("open_quantity"), "open_quantity"),
         config_metadata=_config_metadata(raw_intent.get("config_metadata")),
+        tranches=tuple(
+            StopExecutionTranche(
+                tranche_id=_string(
+                    _mapping(item, "intent.tranche").get("tranche_id"),
+                    "tranche_id",
+                ),
+                entry_price=_positive(
+                    _mapping(item, "intent.tranche").get("entry_price"),
+                    "tranche.entry_price",
+                ),
+                quantity=_positive(
+                    _mapping(item, "intent.tranche").get("quantity"),
+                    "tranche.quantity",
+                ),
+            )
+            for item in raw_tranches
+        ),
     )
     bar = OhlcvBar(
         timestamp=_utc(raw_bar.get("timestamp"), "execution_bar.timestamp"),
@@ -409,10 +535,13 @@ def _simulate(
         next_bar_timestamp(bar.timestamp, bar.timeframe),
         bar.ingested_at,
     )
-    planned_loss = values.planned_loss
+    planned_downside_risk = values.planned_downside_risk
+    planned_gross_pnl = values.planned_gross_pnl
     long_position = values.direction == LONG_DIRECTION
     touched = (
-        bar.low <= values.stop_price if long_position else bar.high >= values.stop_price
+        decision_less_equal(bar.low, values.stop_price)
+        if long_position
+        else decision_greater_equal(bar.high, values.stop_price)
     )
 
     if not touched:
@@ -427,7 +556,11 @@ def _simulate(
             Decimal("0"),
             Decimal("0"),
             Decimal("0"),
-            planned_loss,
+            planned_downside_risk,
+            planned_gross_pnl,
+            None,
+            None,
+            None,
             None,
             None,
             resolved_at,
@@ -438,7 +571,9 @@ def _simulate(
     # The gap test is on the open, not the low: a bar that opened beyond the
     # stop never offered the stop price at all.
     gapped = (
-        bar.open <= values.stop_price if long_position else bar.open >= values.stop_price
+        decision_less(bar.open, values.stop_price)
+        if long_position
+        else decision_greater(bar.open, values.stop_price)
     )
     reference_price = bar.open if gapped else values.stop_price
     reference_reason = (
@@ -450,15 +585,18 @@ def _simulate(
     notional = _quant_notional(values.open_quantity, fill_price)
     fee = costs.fee(notional)
     slippage_cost = abs(notional - reference_notional)
-    realized_loss = (
-        values.open_quantity * (values.average_entry_price - fill_price)
+    gross_pnl = (
+        values.open_quantity * (fill_price - values.average_entry_price)
         if long_position
-        else values.open_quantity * (fill_price - values.average_entry_price)
-    ) + fee
-    excess_loss = realized_loss - planned_loss
+        else values.open_quantity * (values.average_entry_price - fill_price)
+    )
+    net_pnl = gross_pnl - fee
+    realized_loss = max(-net_pnl, Decimal("0"))
+    execution_shortfall = max(planned_gross_pnl - net_pnl, Decimal("0"))
+    excess_loss = max(realized_loss - planned_downside_risk, Decimal("0"))
 
     reasons = ["STOP_TOUCHED", reference_reason, "STOP_EXECUTION_COSTS_APPLIED"]
-    if excess_loss > 0:
+    if decision_greater(excess_loss, 0):
         # BTC-146 sized this position assuming a fill at the stop. A gap or
         # adverse slippage breaks that assumption, and the record says so.
         reasons.append("STOP_LOSS_EXCEEDED_PLANNED_RISK")
@@ -475,8 +613,12 @@ def _simulate(
         notional,
         fee,
         slippage_cost,
-        planned_loss,
+        planned_downside_risk,
+        planned_gross_pnl,
+        gross_pnl,
+        net_pnl,
         realized_loss,
+        execution_shortfall,
         excess_loss,
         resolved_at,
         True,
@@ -497,16 +639,56 @@ def _validate_intent(intent: StopExecutionIntent) -> StopExecutionIntent:
     _positive(intent.stop_price, "stop_price")
     require_utc_datetime(intent.stop_placed_at, "stop_placed_at")
     entry = _positive(intent.average_entry_price, "average_entry_price")
-    # A stop on the wrong side of the entry would report a "loss" that is
-    # actually locked-in profit; BTC-142 and BTC-156 both forbid it.
-    if intent.direction == LONG_DIRECTION:
-        if intent.stop_price >= entry:
-            raise ValueError("a long stop must sit below the average entry price")
-    elif intent.stop_price <= entry:
-        raise ValueError("a short stop must sit above the average entry price")
-    _positive(intent.open_quantity, "open_quantity")
+    quantity = _positive(intent.open_quantity, "open_quantity")
+    if not isinstance(intent.tranches, tuple):
+        raise TypeError("tranches must be a tuple")
+    identifiers: list[str] = []
+    tranche_quantity = Decimal("0")
+    weighted_entry = Decimal("0")
+    for tranche in intent.tranches:
+        if not isinstance(tranche, StopExecutionTranche):
+            raise TypeError("tranches must contain StopExecutionTranche values")
+        tranche.as_record()
+        identifiers.append(tranche.tranche_id)
+        tranche_quantity += tranche.quantity
+        weighted_entry += tranche.quantity * tranche.entry_price
+    if len(identifiers) != len(set(identifiers)):
+        raise ValueError("tranche identifiers must be unique")
+    if intent.tranches:
+        if not decision_equal(tranche_quantity, quantity):
+            raise ValueError("tranche quantity must equal open_quantity")
+        if not decision_equal(weighted_entry / tranche_quantity, entry):
+            raise ValueError("tranches must reproduce average_entry_price")
     _config_metadata(intent.config_metadata)
     return intent
+
+
+def _effective_tranches(
+    intent: StopExecutionIntent,
+) -> tuple[StopExecutionTranche, ...]:
+    if intent.tranches:
+        return intent.tranches
+    return (
+        StopExecutionTranche(
+            tranche_id="aggregate",
+            entry_price=intent.average_entry_price,
+            quantity=intent.open_quantity,
+        ),
+    )
+
+
+def _stop_placement_time(lifecycle: Any, stop_price: Decimal) -> datetime:
+    """Return the authoritative transition that installed the standing stop."""
+
+    for transition in reversed(getattr(lifecycle, "transitions", ())):
+        transition_stop = getattr(transition, "stop_price", None)
+        if (
+            getattr(transition, "accepted", False)
+            and transition_stop is not None
+            and decision_equal(transition_stop, stop_price)
+        ):
+            return require_utc_datetime(transition.event_time, "stop transition time")
+    raise ValueError("lifecycle does not contain the standing stop transition")
 
 
 def _validate_bar(bar: OhlcvBar, intent: StopExecutionIntent) -> OhlcvBar:
@@ -542,12 +724,22 @@ def _validate_costs(costs: ExecutionCosts) -> None:
         raise ValueError(
             f"costs.policy_version must be {EXECUTION_COST_POLICY_VERSION}",
         )
+    _non_negative(costs.fee_bps, "costs.fee_bps")
+    _non_negative(costs.slippage_bps, "costs.slippage_bps")
+    _non_negative(
+        costs.funding_cost_bps_per_day,
+        "costs.funding_cost_bps_per_day",
+    )
 
 
 def _quant_notional(quantity: Decimal, price: Decimal) -> Decimal:
     """Decimal notional pinned to the BTC-047 kernel by parity test."""
 
-    return quantity * price
+    exact = quantity * price
+    kernel = Decimal(str(position_notional(float(quantity), float(price))))
+    if not decision_equal(exact, kernel):
+        raise ArithmeticError("Decimal notional diverged from the BTC-047 kernel")
+    return exact
 
 
 def _bar_record(bar: OhlcvBar) -> dict[str, Any]:
@@ -646,8 +838,10 @@ __all__ = [
     "STOP_FILLED",
     "STOP_ORDER",
     "STOP_RESTING",
+    "STOP_RISK_CONVENTION",
     "SimulatedStopExecution",
     "StopExecutionIntent",
+    "StopExecutionTranche",
     "restore_simulated_stop_execution",
     "simulate_stop_execution",
     "stop_execution_for_position",

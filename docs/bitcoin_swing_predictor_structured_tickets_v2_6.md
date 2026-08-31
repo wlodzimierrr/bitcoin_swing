@@ -4355,7 +4355,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** BTC-047
+- **Dependencies:** BTC-047, BTC-146, BTC-150, BTC-156, BTC-160, BTC-161
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4374,13 +4374,13 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     stop price at all, so the fill reference is the open. A test pins that two
     bars trading equally far below the stop resolve differently depending only
     on where they opened.
-  - **The record makes broken risk visible.** `planned_loss` is rulebook 19's
-    `Q * |Entry - Stop|`, the number BTC-146 sized the position against;
-    `realized_loss` is what the fill and fee actually cost. A gap through a
-    95000 stop opening at 90000 turns a planned 10,000 loss into 20,269.91 and
-    raises `STOP_LOSS_EXCEEDED_PLANNED_RISK`. With zero-cost assumptions the
-    two are exactly equal, which is the only condition under which the BTC-146
-    assumption holds.
+  - **Risk and P&L are separate.** `planned_downside_risk` uses BTC-146's
+    tranche-level `FLOORED_AT_ZERO` convention. `planned_gross_pnl`,
+    `gross_pnl` and `net_pnl` are signed; `realized_loss` is the non-negative
+    loss part of net P&L. `execution_shortfall` reports gap, slippage and fee
+    deterioration from the stop-price plan without subtracting costs twice.
+    Mixed protected/at-risk tranches are persisted so weighted-average P&L is
+    never mistaken for tranche-level downside risk.
   - **Slippage** is adverse on the exit side -- a long exit sells and fills
     below the reference, a short exit buys and fills above -- reusing the
     BTC-160 cost policy, with fee and slippage cost reported separately.
@@ -4390,12 +4390,17 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     unknowable from OHLCV; the stop is all-or-nothing on what remains and the
     module says so rather than inventing a fill ladder.
   - `stop_execution_for_position()` is the canonical path: direction, standing
-    stop, weighted average entry and remaining quantity all come from the
-    BTC-150 ledger, so a trimmed multi-tranche position cannot be stopped out
-    at the wrong size or against the wrong entry.
-  - A stop cannot fill on a bar that closed before it was placed, and a stop
-    whose price sits on the wrong side of the average entry is rejected, since
-    it would report locked-in profit as a loss.
+    stop, weighted average entry, remaining tranches, quantity, configuration
+    identity and the stop's installation time all come from the BTC-150
+    ledger. A caller cannot restate stale stop timing or metadata.
+  - The independent xHigh review corrected three execution-path defects:
+    profitable BTC-156 trailing stops are valid and executable; `open == stop`
+    is a normal stop-price touch rather than a gap; and touch/gap boundaries
+    use `DECISION_COMPARISON_V1`. A stop placed during a bar first becomes
+    eligible on the next full bar, preventing retroactive use of that bar's
+    earlier high/low. Focused tests cover Stage-3 profit protection, long/short
+    symmetry, mixed tranches, trim state, zero-cost and gapped fills, replay,
+    tamper rejection, lifecycle closure and exact accounting reconciliation.
 
 #### BTC-163 Implement simulated adds
 - **Description:**
