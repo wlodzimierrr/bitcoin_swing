@@ -223,7 +223,7 @@ class AddThresholds:
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
-        return cls(
+        thresholds = cls(
             add_min=_required_score(data, "add_min"),
             existing_position_must_be_profitable=_required_bool(
                 data,
@@ -232,6 +232,11 @@ class AddThresholds:
             stop_must_improve=_required_bool(data, "stop_must_improve"),
             no_average_down=_required_bool(data, "no_average_down"),
         )
+        if not thresholds.no_average_down:
+            raise StrategyConfigError(
+                "add_thresholds.no_average_down must be true",
+            )
+        return thresholds
 
 
 @dataclass(frozen=True)

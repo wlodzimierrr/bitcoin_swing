@@ -35,9 +35,9 @@ Scope. This module owns the position ledger and its invariants. It does not
 decide *when* to act: Hold Score (BTC-152), Add Score (BTC-153), add
 requirements (BTC-154), tranche sizing (BTC-155), trailing stop progression
 (BTC-156), trim rules (BTC-157) and exit rules (BTC-158) supply the decisions
-this machine then validates and records. The no-average-down invariant is
-BTC-151 and is deliberately not enforced here; ``average_entry_price`` is
-tracked so that ticket can bolt onto this state without restating the ledger.
+this machine then validates and records. BTC-151's no-average-down rule is a
+ledger invariant, so an ADD is refused when its proposed fill price shows that
+the existing position is losing relative to its weighted average entry.
 
 One invariant is enforced here because it belongs to the ledger rather than to
 any stop policy: rulebook 32 rule 3, "Never widen a stop after entry". BTC-156
@@ -70,6 +70,7 @@ from btc_predictor.risk.invalidation import (
 POSITION_STATE_MACHINE_FEATURE_ID = "PAPER_POSITION_STATE_MACHINE"
 POSITION_STATE_MACHINE_POLICY_VERSION = "PAPER_POSITION_STATE_MACHINE_V1"
 POSITION_TRANSITION_RECORD_VERSION = "PAPER_POSITION_TRANSITION_V1"
+NO_AVERAGE_DOWN_POLICY_VERSION = "NO_AVERAGE_DOWN_V1"
 
 WATCH = "WATCH"
 PENDING_ENTRY = "PENDING_ENTRY"
@@ -211,6 +212,7 @@ POSITION_STATE_REASON_CODES = (
     "POSITION_STATE_MISSED",
     "POSITION_STATE_TRANSITION_NOT_PERMITTED",
     "POSITION_STATE_ADD_REFUSED_WHILE_DEFENSIVE",
+    "POSITION_STATE_ADD_REFUSED_AVERAGE_DOWN",
     "POSITION_STATE_TERMINAL",
     "POSITION_STATE_EVENT_OUT_OF_ORDER",
     "POSITION_STATE_ENTRY_REQUIRES_STOP",
@@ -668,6 +670,27 @@ def persisted_status_for_state(state: str) -> str | None:
     return PERSISTED_POSITION_STATUS[state]
 
 
+def position_is_losing_at_price(
+    *,
+    direction: str,
+    average_entry_price: Any,
+    current_price: Any,
+) -> bool:
+    """Return whether a position has negative P&L at ``current_price``.
+
+    Equality is breakeven, not losing. BTC-154 may separately require strict
+    profitability before an ADD, but BTC-151 only prohibits averaging down.
+    """
+
+    if direction not in INVALIDATION_DIRECTIONS:
+        raise ValueError(f"direction must be one of {INVALIDATION_DIRECTIONS}")
+    average = _positive_decimal(average_entry_price, "average_entry_price")
+    current = _positive_decimal(current_price, "current_price")
+    if direction == LONG_DIRECTION:
+        return decision_less(current, average)
+    return decision_greater(current, average)
+
+
 def _guard_event(
     lifecycle: PositionLifecycle,
     *,
@@ -702,6 +725,16 @@ def _guard_event(
     if event == EXIT and quantity is not None:
         if decision_compare(quantity, lifecycle.quantity) != 0:
             codes.append("POSITION_STATE_EXIT_MUST_BE_FULL")
+
+    if event == ADD and price is not None:
+        if lifecycle.average_entry_price is None:
+            raise ValueError("an open position requires an average entry price")
+        if position_is_losing_at_price(
+            direction=lifecycle.direction,
+            average_entry_price=lifecycle.average_entry_price,
+            current_price=price,
+        ):
+            codes.append("POSITION_STATE_ADD_REFUSED_AVERAGE_DOWN")
 
     if stop_price is not None and _stop_would_widen(lifecycle, stop_price):
         codes.append("POSITION_STATE_STOP_WOULD_WIDEN")
@@ -1332,6 +1365,7 @@ __all__ = [
     "HOLD",
     "MISS",
     "MISSED",
+    "NO_AVERAGE_DOWN_POLICY_VERSION",
     "OBSERVE",
     "OPEN_ADDED",
     "OPEN_BY_TRANCHE_COUNT",
@@ -1360,6 +1394,7 @@ __all__ = [
     "persisted_action_for_event",
     "persisted_status_for_state",
     "position_event_records",
+    "position_is_losing_at_price",
     "replay_position_lifecycle",
     "replay_position_event_records",
     "restore_position_lifecycle",

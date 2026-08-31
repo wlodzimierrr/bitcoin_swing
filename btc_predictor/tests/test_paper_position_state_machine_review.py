@@ -376,17 +376,24 @@ def test_unequal_three_tranche_trim_is_exactly_pro_rata() -> None:
     )
 
 
-@pytest.mark.parametrize("direction", ["long", "short"])
-def test_add_trim_exit_ledger_mechanics_are_side_symmetric(direction: str) -> None:
+@pytest.mark.parametrize(
+    "direction,add_price,expected_average",
+    [("long", "120", "115"), ("short", "80", "85")],
+)
+def test_add_trim_exit_ledger_mechanics_are_side_symmetric(
+    direction: str,
+    add_price: str,
+    expected_average: str,
+) -> None:
     lifecycle = entered(direction=direction)
     lifecycle = apply_position_event(
         lifecycle,
         event=ADD,
         event_time=at(2),
         quantity="3",
-        price="120",
+        price=add_price,
     )
-    assert lifecycle.average_entry_price == Decimal("115")
+    assert lifecycle.average_entry_price == Decimal(expected_average)
     lifecycle = apply_position_event(
         lifecycle,
         event=TRIM,
@@ -394,14 +401,14 @@ def test_add_trim_exit_ledger_mechanics_are_side_symmetric(direction: str) -> No
         quantity="1",
     )
     assert lifecycle.quantity == Decimal("3")
-    assert lifecycle.average_entry_price == Decimal("115")
+    assert lifecycle.average_entry_price == Decimal(expected_average)
     lifecycle = apply_position_event(lifecycle, event=EXIT, event_time=at(4))
     assert lifecycle.state == CLOSED
     assert lifecycle.quantity == 0
     assert lifecycle.tranches == ()
 
 
-def test_no_average_down_policy_has_not_leaked_into_btc150() -> None:
+def test_btc151_blocks_average_down_in_the_lifecycle_guard() -> None:
     lifecycle = apply_position_event(
         entered(),
         event=ADD,
@@ -410,9 +417,13 @@ def test_no_average_down_policy_has_not_leaked_into_btc150() -> None:
         price="90",
     )
 
-    assert lifecycle.accepted is True
-    assert lifecycle.state == OPEN_ADDED
-    assert lifecycle.average_entry_price == Decimal("95")
+    assert lifecycle.accepted is False
+    assert lifecycle.state == OPEN_INITIAL
+    assert lifecycle.quantity == Decimal("1")
+    assert lifecycle.average_entry_price == Decimal("100")
+    assert lifecycle.reason_codes == (
+        "POSITION_STATE_ADD_REFUSED_AVERAGE_DOWN",
+    )
 
 
 def test_repeated_partial_trims_never_leave_zero_quantity_open() -> None:

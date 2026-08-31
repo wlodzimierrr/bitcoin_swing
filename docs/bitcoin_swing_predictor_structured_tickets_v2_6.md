@@ -3792,9 +3792,9 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Scope held to the ledger and its invariants. Hold Score (BTC-152), Add
     Score (BTC-153), add requirements (BTC-154), tranche sizing (BTC-155),
     trailing stops (BTC-156), trim rules (BTC-157) and exit rules (BTC-158)
-    supply the decisions this machine validates and records. The
-    no-average-down invariant is BTC-151 and is deliberately not enforced here;
-    `average_entry_price` is tracked so that ticket can bolt onto this state.
+    supply the decisions this machine validates and records. BTC-151 now
+    attaches the no-average-down invariant directly to this lifecycle boundary;
+    the remaining policy tickets stay external to the ledger reducer.
 
 #### BTC-151 Implement no-average-down rule
 - **Description:**
@@ -3803,7 +3803,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   ```text
   ADD prohibited if position is losing
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3813,6 +3813,25 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added the explicit `NO_AVERAGE_DOWN_V1` policy and a side-aware losing
+    position test against the current weighted average entry: a long is losing
+    below average entry and a short is losing above it.
+  - Every proposed `ADD` is checked at its proposed fill price inside the
+    BTC-150 lifecycle guard. A refusal is atomic: tranches, quantity, weighted
+    average entry, stop, and lifecycle state remain unchanged.
+  - Refusals persist as schema-compatible `HOLD` events with
+    `accepted = false`, the proposed price and quantity, and reason code
+    `POSITION_STATE_ADD_REFUSED_AVERAGE_DOWN`; snapshot and database-event
+    replay reproduce the refusal exactly.
+  - Equality is breakeven and is not losing, so BTC-151 permits it. The stricter
+    requirement that a position must already be profitable belongs to BTC-154.
+  - Strategy startup rejects `add_thresholds.no_average_down = false`; the hard
+    invariant cannot be disabled by configuration. Strategy config identity
+    remains attached to lifecycle records through `config_metadata`.
+  - Focused tests cover long and short positions, exact boundary behavior,
+    invalid numeric inputs, profitable adds, weighted multi-tranche entry after
+    trimming, atomic refusal, deterministic output, and persistence replay.
 
 #### BTC-152 Implement Hold Score
 - **Description:**

@@ -207,6 +207,22 @@ parameter_set_id = "broken"
         load_strategy_config(config_path)
 
 
+def test_no_average_down_cannot_be_disabled(tmp_path: Path) -> None:
+    source = DEFAULT_STRATEGY_CONFIG_PATH.read_text(encoding="utf-8")
+    assert source.count("no_average_down = true") == 1
+    config_path = tmp_path / "average_down_enabled.toml"
+    config_path.write_text(
+        source.replace("no_average_down = true", "no_average_down = false"),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        StrategyConfigError,
+        match="add_thresholds.no_average_down must be true",
+    ):
+        load_strategy_config(config_path)
+
+
 def test_invalid_flow_weight_keys_fail_fast(tmp_path: Path) -> None:
     config_path = tmp_path / "invalid_flow_weights.toml"
     config_path.write_text(
