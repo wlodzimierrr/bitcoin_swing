@@ -4192,7 +4192,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   DATA_RISK
   MANUAL_RESEARCH_OVERRIDE
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4202,6 +4202,38 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.signals.exit_rules` with policy version
+    `EXIT_RULES_V1`, typed direct and canonical composition APIs, and exact
+    record reconstruction. It emits `EXIT` / `FULL_EXIT`; it does not mutate a
+    lifecycle or simulate a fill.
+  - All five declared exit reasons are independent and persist in stable order:
+    `STRUCTURAL_STOP`, `HOLD_SCORE_COLLAPSE`, `REGIME_INVALIDATION`,
+    `DATA_RISK`, and `MANUAL_RESEARCH_OVERRIDE`. Simultaneous reasons are
+    retained rather than collapsed to one headline cause.
+  - Structural-stop touch uses BTC-150's authoritative direction and current
+    standing stop, whether established by BTC-142 or advanced by BTC-156. Long
+    exits trigger at price `<= stop`; short exits mirror at price `>= stop`,
+    using `DECISION_COMPARISON_V1` at equality/tolerance boundaries.
+  - Hold Score collapse is the rulebook's exact configured condition:
+    `HoldScore < hold_thresholds.exit_below`. Equality remains in the trim band;
+    at the default configuration, 40 does not exit and a genuine value below
+    40 does.
+  - The rulebook does not define numerical regime-invalidation or data-risk
+    thresholds. Both are explicit audited booleans from their owning policies;
+    no threshold is invented here. In particular, ordinary
+    `DATA_QUALITY_FAIL` is not silently interpreted as forced liquidation.
+  - Manual research override requires a persisted non-empty explanation.
+    Missing unrelated evidence is surfaced without suppressing a known stop,
+    data-risk, regime, Hold Score, or manual safety exit.
+  - Canonical composition validates BTC-150 and BTC-152 types, config identity,
+    decision time against the lifecycle watermark, and authoritative source
+    evidence. Evaluation is pure and leaves execution to the paper trader.
+  - Focused tests cover all trigger combinations, long/short stop geometry,
+    shared tolerance, exact Hold Score boundaries, no-position precedence,
+    incomplete inputs, manual audit requirements, malformed numerics,
+    persistence tampering, canonical provenance, determinism, and database
+    lifecycle replay.
 
 ## EPIC Q — Paper Trading Engine
 
@@ -4214,7 +4246,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - slippage
   - funding
   - available cash
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4224,6 +4256,40 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/account.py` with `open_paper_account()` and
+    `ExecutionCosts`, policy versions `PAPER_ACCOUNT_V1` and
+    `EXECUTION_COST_V1`.
+  - **All five configurables already existed under `[backtest]`** as
+    `initial_cash`, `fee_bps`, `slippage_bps` and `funding_cost_bps_per_day`,
+    so they are read rather than duplicated into a paper-only block. Rulebook
+    32 rule 15 requires advisory, paper trading and backtesting to share the
+    same assumptions; a parallel `[paper]` fee set would let them silently
+    diverge, which is the failure that rule exists to prevent. A test asserts
+    the account's costs equal the configured backtest assumptions.
+  - **NAV and cash are kept distinct.** BTC-144, BTC-145 and BTC-146 all size
+    against NAV, and NAV is cash plus unrealized position value. Sizing against
+    cash would shrink every position as soon as a trade moved into profit, so
+    `nav(unrealized_pnl=...)` is explicit and a test drives a real BTC-144
+    budget through it.
+  - Available cash is the balance less an optional reserve, floored at zero,
+    and the reserve constrains deployable cash without ever entering the risk
+    denominator. A reserve larger than the account is a configuration error
+    rather than a silently clamped account that would refuse every trade.
+  - Costs are in basis points, stated once as `BASIS_POINT`: 10 bps is 0.10%,
+    verified against an independent `notional * 0.001`. Slippage is always
+    adverse -- a buy fills higher, a sell fills lower -- with no configuration
+    that makes a paper fill better than the reference price.
+    `round_trip_cost()` exists because a 2R target is not 2R after costs.
+  - The shipped funding rate is zero and configured as zero rather than absent,
+    so a later calibration is a config change with a version behind it.
+  - The account is immutable: charging a fee returns a new account, so a
+    rejected or replayed step cannot leave a half-applied balance. Cash is
+    floored at zero with `PAPER_ACCOUNT_CASH_EXHAUSTED`, matching the
+    `paper_accounts_current_cash_non_negative` CHECK.
+  - `as_db_record()` maps onto the `portfolio.paper_accounts` columns and its
+    status CHECK, tested against the live table definition, so no caller
+    invents a mapping the constraint would reject.
 
 #### BTC-161 Implement simulated entry execution
 - **Description:**
