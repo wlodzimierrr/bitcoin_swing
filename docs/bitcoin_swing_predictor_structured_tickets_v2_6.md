@@ -3709,7 +3709,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   CLOSED
   MISSED
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -3720,6 +3720,57 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/state_machine.py` with
+    `start_position_lifecycle()`, `apply_position_event()` and
+    `replay_position_lifecycle()`, policy version
+    `PAPER_POSITION_STATE_MACHINE_V1`.
+  - **The seven states are finer-grained than `positions.status`**, which only
+    distinguishes `open` / `closed` / `missed`. `persisted_status_for_state()`
+    makes that mapping explicit instead of leaving each caller to invent one;
+    `WATCH` and `PENDING_ENTRY` map to no row at all, because no position
+    exists before a fill.
+  - **`PENDING_ENTRY` is read as the order-lifecycle state, not a score state**
+    (an entry order exists and has not filled), which is what makes `MISSED`
+    its terminal under rulebook 25. Whether the miss was a no-chase violation
+    or a decayed setup is a reason code, not another state.
+  - **`OPEN_INITIAL` versus `OPEN_ADDED` is derived from tranche count**, never
+    remembered, so the state cannot drift from the ledger. `RECOVER` out of
+    `DEFENSIVE` therefore returns to whichever open state the ledger implies.
+  - **`DEFENSIVE` refuses `ADD`.** That is its operative content: rulebook 20
+    maps Hold Score 50-60 to "Defensive; tighten / consider trim", and rulebook
+    24 gives STRESS / CROWDING / EUPHORIA the shared effect `NO ADDING`. Every
+    risk-reducing action stays available, and the state is recoverable because
+    Hold Score is recomputed each cycle.
+  - Illegal transitions are **recorded as refused transitions with a reason
+    code, not raised**. A refused add is exactly the audit trail paper trading
+    needs. Malformed input still raises, matching the risk and feature layers.
+  - `PERSISTED_EVENT_ACTIONS` maps every event to a value the
+    `position_events.action` CHECK constraint accepts, asserted by test against
+    `PAPER_ACTIONS`. `DEFEND` and `RECOVER` have no dedicated action and
+    persist as `HOLD`; the state resolution lives in the transition record, so
+    replaying transitions preserves `DEFENSIVE` where replaying actions alone
+    would lose it.
+  - Rulebook 32 rule 3, "never widen a stop after entry", is enforced here
+    because it is a ledger invariant rather than a stop policy: BTC-156 decides
+    where a stop goes, this module refuses to record one that moved the wrong
+    way, in both directions.
+  - A trim is applied **pro-rata across open tranches**, so a partial exit
+    leaves the weighted average entry unchanged rather than silently re-basing
+    it. Average entry is pinned to the BTC-047 `weighted_average_entry` kernel
+    by test, and a closed position retains the average it closed at.
+  - A trim must stay strictly partial and an exit must be full, which is what
+    guarantees the invariant that an open state always holds a positive
+    quantity. Entry additionally requires a structural stop, per the rulebook
+    26 gate.
+  - Event times must be non-decreasing; a refused event never becomes the
+    point-in-time watermark, so it cannot block a legitimate later event.
+  - Scope held to the ledger and its invariants. Hold Score (BTC-152), Add
+    Score (BTC-153), add requirements (BTC-154), tranche sizing (BTC-155),
+    trailing stops (BTC-156), trim rules (BTC-157) and exit rules (BTC-158)
+    supply the decisions this machine validates and records. The
+    no-average-down invariant is BTC-151 and is deliberately not enforced here;
+    `average_entry_price` is tracked so that ticket can bolt onto this state.
 
 #### BTC-151 Implement no-average-down rule
 - **Description:**
