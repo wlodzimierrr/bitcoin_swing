@@ -93,6 +93,20 @@ from btc_predictor.signals.reason_codes import (
     build_reason_code_engine,
     canonical_signal_reason,
 )
+from btc_predictor.signals.trim import (
+    TRIM_ACTION,
+    TRIM_EFFECTS,
+    TRIM_REASON_CODES,
+    TRIM_RULE_INPUT_IDS,
+    TRIM_RULES_PARAMETER_STATUS,
+    TRIM_RULES_POLICY_VERSION,
+    TRIM_SIGNAL_FEATURE_ID,
+    TrimRuleInput,
+    TrimSignalResult,
+    evaluate_trim_rules,
+    flow_score_is_deteriorating,
+    trim_rules_from_results,
+)
 
 __all__ = [
     "BREAKOUT_RETEST_TRIGGER_FEATURE_ID",
@@ -172,4 +186,16 @@ __all__ = [
     "evaluate_hard_veto",
     "evaluate_reclaim_trigger",
     "failures_from_quality_reports",
+    "TRIM_ACTION",
+    "TRIM_EFFECTS",
+    "TRIM_REASON_CODES",
+    "TRIM_RULE_INPUT_IDS",
+    "TRIM_RULES_PARAMETER_STATUS",
+    "TRIM_RULES_POLICY_VERSION",
+    "TRIM_SIGNAL_FEATURE_ID",
+    "TrimRuleInput",
+    "TrimSignalResult",
+    "evaluate_trim_rules",
+    "flow_score_is_deteriorating",
+    "trim_rules_from_results",
 ]

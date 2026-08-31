@@ -4132,7 +4132,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - EUPHORIA
   - CROWDING
   - Flow deterioration
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Trim signals include reason codes
@@ -4142,6 +4142,37 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.signals.trim` with policy version `TRIM_RULES_V1` and
+    a self-validating `TrimSignalResult` persistence contract.
+  - A TRIM requires an open BTC-150 lifecycle and is triggered independently
+    by the configured Hold Score trim band, active EUPHORIA, active CROWDING,
+    or deteriorating Flow Score. Every active trigger receives its own stable
+    reason code and simultaneous reasons are retained in deterministic order.
+  - The configured Hold Score boundaries are exact: `trim_min` is inclusive
+    and `defensive_min` is exclusive. A score below `exit_below` suppresses
+    TRIM with `TRIM_SUPPRESSED_EXIT_BAND` and leaves full-exit ownership to
+    BTC-158. At the default thresholds, 40 is TRIM and values below 40 defer to
+    exit rules.
+  - Phase 1 flow deterioration is the current persisted Flow Score falling
+    below the prior decision's Flow Score under `DECISION_COMPARISON_V1`. No
+    unconfigured lookback or decline threshold is invented; the definition is
+    marked `PROVISIONAL_PENDING_BTC_185` for later robustness research.
+  - Missing evidence is never silently treated as healthy. It is persisted in
+    `missing_inputs` with `TRIM_INPUT_MISSING`; a known risk-reduction trigger
+    can still emit a transparent incomplete signal rather than being erased by
+    an unrelated missing input.
+  - `trim_rules_from_results()` composes authoritative BTC-150, BTC-152,
+    Flow Score, EUPHORIA, and CROWDING results, rejects mixed config identities,
+    and retains every upstream reason code as source evidence.
+  - The signal is explicitly partial: it emits action `TRIM` and effect
+    `PARTIAL_REDUCTION`, never `EXIT`, and deliberately carries no execution
+    quantity. BTC-164 owns simulated trim sizing/fills, while BTC-150 already
+    refuses a TRIM quantity that would remove the full position.
+  - Focused tests cover exact score boundaries, all four triggers, simultaneous
+    reason ordering, no-position and exit precedence, missing inputs, numeric
+    tolerance, persistence drift, real upstream-result composition, config
+    provenance, and deterministic replay.
 
 #### BTC-158 Implement exit rules
 - **Description:**
