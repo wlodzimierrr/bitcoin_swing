@@ -3240,7 +3240,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   85–89   STRONG
   90+     EXCEPTIONAL
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3250,6 +3250,18 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added a configuration-driven `ENTRY_ACTION_CLASSIFICATION_V1` classifier
+    over the persisted BTC-130 Entry Conviction score.
+  - Exact threshold boundaries use the centralized quantitative decision
+    tolerance policy and are loaded from `strategy.entry_thresholds`.
+  - Results persist the source score/version, classification version, complete
+    threshold contract, configuration identity, action reason code, and any
+    incomplete-state reason codes.
+  - Missing scores are surfaced as incomplete with
+    `ENTRY_ACTION_SCORE_MISSING`; they are never interpreted as zero.
+  - Short-entry requirements and hard vetoes remain separate policy layers;
+    BTC-132 is unchanged.
 
 #### BTC-132 Implement hard-veto engine
 - **Description:**
