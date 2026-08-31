@@ -4517,7 +4517,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** BTC-047
+- **Dependencies:** BTC-016, BTC-040, BTC-047, BTC-142, BTC-150, BTC-160, BTC-161, BTC-162, BTC-163, BTC-164
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
@@ -4550,6 +4550,29 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     and reports `TRADE_ACCOUNTING_POSITION_STILL_OPEN`;
     `as_completed_trade_record()` refuses it and otherwise maps onto the
     `portfolio.completed_trades` columns including `realized_r`.
+  - **Independent xHigh review:** closed the release-gate findings in a
+    separate review commit. Funding is now represented by signed, timestamped
+    `FundingEvent` records and reconciled to the quantity held at each event;
+    positive cost is paid and negative cost is received. Aggregate nonzero
+    funding is refused because it has no point-in-time evidence.
+  - MFE/MAE now use
+    `SIGNED_GROSS_PNL_FULL_BARS_AND_FILL_ENDPOINTS_V1`: any OHLC bar containing
+    ENTER, ADD, TRIM, or EXIT is excluded because intrabar order is unknowable,
+    while exact non-entry fill endpoints retain realized trim and gap-stop
+    outcomes. This prevents pre-entry and post-exit extremes from leaking into
+    excursions.
+  - Open trades require an explicit `as_of`, have no exit reason or final R,
+    and retain realized-to-date accounting only. Closed trades require source
+    identities for both the initial stop and exit reason. The canonical
+    lifecycle adapter reconciles every fill to BTC-150 transitions and derives
+    those inputs from their source records.
+  - Serialized accounting now carries all fill, funding, bar, policy, config,
+    and source evidence plus a deterministic evidence digest. Restoration
+    replays the record field-for-field and rejects inconsistent or altered
+    metrics. Migration `0021_trade_accounting` adds every BTC-165 output,
+    convention, and the complete replay record to `portfolio.completed_trades`.
+    `max_size` is explicitly `MAX_OPEN_ENTRY_COST_BASIS_V1`, reported as both
+    base-asset quantity and entry-cost notional rather than market exposure.
 
 #### BTC-166 Persist complete paper trade lifecycle
 - **Description:**

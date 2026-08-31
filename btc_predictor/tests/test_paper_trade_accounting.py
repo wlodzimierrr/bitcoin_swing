@@ -17,12 +17,18 @@ from btc_predictor.portfolio.accounting import (
     PaperTradeAccounting,
     TradeFill,
     calculate_trade_accounting,
+    funding_event_from_rate,
 )
 
 
 UTC = timezone.utc
 START = datetime(2024, 1, 1, tzinfo=UTC)
 STOP = "90000"
+CONFIG = {
+    "config_version": "strategy_config_v2",
+    "strategy_version": "swing_v1.2",
+    "parameter_set_id": "default_phase1",
+}
 
 
 def at(days: float) -> datetime:
@@ -37,6 +43,9 @@ def fill(sequence: int, days: float, action: str, quantity: str, price: str, fee
         quantity=Decimal(quantity),
         price=Decimal(price),
         fee=Decimal(fee),
+        source_event_id=f"fill-{sequence}",
+        execution_bar_at=at(days),
+        execution_bar_timeframe="1d",
     )
 
 
@@ -80,9 +89,41 @@ def account(fills=SIMPLE_FILLS, **kwargs) -> PaperTradeAccounting:
         "symbol": "BTC-USD",
         "direction": "long",
         "initial_stop_price": STOP,
+        "initial_stop_source_id": "stop-1",
         "exit_reason": "STRUCTURAL_INVALIDATION",
+        "exit_reason_source_id": "exit-signal-1",
+        "config_metadata": CONFIG,
     }
-    return calculate_trade_accounting(fills, **{**base, **kwargs})
+    values = {**base, **kwargs}
+    funding = values.pop("funding", None)
+    if funding is not None and Decimal(funding) > 0:
+        midpoint = fills[0].filled_at + (fills[-1].filled_at - fills[0].filled_at) / 2
+        held = sum(
+            (
+                item.quantity if item.action in ("ENTER", "ADD") else -item.quantity
+                for item in fills
+                if item.filled_at < midpoint
+            ),
+            Decimal("0"),
+        )
+        direction = values["direction"]
+        signed_rate = Decimal(funding) / (held * Decimal("100000"))
+        if direction == "short":
+            signed_rate = -signed_rate
+        values["funding_events"] = (
+            funding_event_from_rate(
+                sequence=max(item.sequence for item in fills) + 1,
+                event_id="funding-1",
+                effective_at=midpoint,
+                rate=signed_rate,
+                mark_price="100000",
+                position_quantity=held,
+                direction=direction,
+            ),
+        )
+    elif funding is not None:
+        values["funding"] = funding
+    return calculate_trade_accounting(fills, **values)
 
 
 def test_metadata_and_reason_code_catalog_are_stable() -> None:
@@ -387,7 +428,10 @@ def test_a_position_still_open_is_reported_as_such() -> None:
         (
             fill(1, 0, "ENTER", "2", "100000", "200"),
             fill(2, 10, "TRIM", "1", "120000", "120"),
-        )
+        ),
+        as_of=at(20),
+        exit_reason=None,
+        exit_reason_source_id=None,
     )
 
     # The realized part is still accounted; the trade simply is not finished.
@@ -401,7 +445,10 @@ def test_an_open_position_is_not_a_completed_trade() -> None:
         (
             fill(1, 0, "ENTER", "2", "100000"),
             fill(2, 10, "TRIM", "1", "120000"),
-        )
+        ),
+        as_of=at(20),
+        exit_reason=None,
+        exit_reason_source_id=None,
     )
 
     with pytest.raises(ValueError, match="not a completed trade"):
@@ -447,10 +494,10 @@ def test_invalid_fill_sequences_fail_fast(fills, match: str) -> None:
     ("kwargs", "match"),
     [
         ({"direction": "flat"}, "direction must be one of"),
-        ({"symbol": ""}, "symbol must not be empty"),
-        ({"exit_reason": "  "}, "exit_reason must not be empty"),
+        ({"symbol": ""}, "symbol must be a non-empty string"),
+        ({"exit_reason": "  "}, "exit_reason must be a non-empty string"),
         ({"initial_stop_price": "0"}, "initial_stop_price must be positive"),
-        ({"funding": "-1"}, "funding must be non-negative"),
+        ({"funding": "-1"}, "use funding_events"),
     ],
 )
 def test_invalid_trade_arguments_fail_fast(kwargs, match: str) -> None:
@@ -471,7 +518,7 @@ def test_record_is_persistable_and_self_consistent() -> None:
         PYRAMIDED_FILLS,
         funding="300",
         excursion_bars=BARS,
-        config_metadata={"config_version": "strategy_config_v2"},
+        config_metadata=CONFIG,
     ).as_record()
 
     assert record["feature_id"] == "PAPER_TRADE_ACCOUNTING"
@@ -484,7 +531,7 @@ def test_record_is_persistable_and_self_consistent() -> None:
     assert Decimal(record["holding_days"]) == Decimal("28")
     assert record["add_count"] == 1
     assert len(record["fills"]) == 4
-    assert record["config_metadata"] == {"config_version": "strategy_config_v2"}
+    assert record["config_metadata"] == CONFIG
     assert Decimal(record["net_pnl"]) == (
         Decimal(record["gross_pnl"])
         - Decimal(record["fees"])
@@ -495,7 +542,7 @@ def test_record_is_persistable_and_self_consistent() -> None:
 def test_the_record_rejects_an_inconsistent_net_pnl() -> None:
     result = account()
 
-    with pytest.raises(ValueError, match="net P&L must equal"):
+    with pytest.raises(ValueError, match="replayed evidence"):
         replace(result, net_pnl=Decimal("1")).as_record()
 
 
@@ -533,7 +580,10 @@ def test_reason_codes_are_drawn_from_the_declared_set() -> None:
             (
                 fill(1, 0, "ENTER", "2", "100000"),
                 fill(2, 10, "TRIM", "1", "120000"),
-            )
+            ),
+            as_of=at(20),
+            exit_reason=None,
+            exit_reason_source_id=None,
         ),
         account(
             (

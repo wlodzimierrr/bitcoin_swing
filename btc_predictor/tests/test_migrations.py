@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0020_lifecycle_provenance"
+HEAD_REVISION = "0021_trade_accounting"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:
@@ -267,6 +267,30 @@ def test_paper_portfolio_migration_supports_required_actions() -> None:
     assert "action in ('ENTER', 'HOLD', 'ADD', 'STOP_MOVE', 'TRIM', 'EXIT', 'MISSED')" in sql
     assert "action in ('ENTER', 'ADD', 'TRIM', 'EXIT', 'MISSED')" in sql
     assert "Chronological paper position events supporting full lifecycle replay" in sql
+
+
+def test_completed_trade_migration_persists_accounting_metrics_and_policies() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    for definition in (
+        "gross_pnl NUMERIC(38, 18) NOT NULL",
+        "fees NUMERIC(38, 18) NOT NULL",
+        "funding NUMERIC(38, 18) NOT NULL",
+        "initial_risk NUMERIC(38, 18) NOT NULL",
+        "mfe NUMERIC(38, 18)",
+        "mae NUMERIC(38, 18)",
+        "holding_days NUMERIC(38, 18) NOT NULL",
+        "maximum_quantity NUMERIC(38, 18) NOT NULL",
+        "maximum_entry_notional NUMERIC(38, 18) NOT NULL",
+        "initial_stop_source_id VARCHAR(255) NOT NULL",
+        "exit_reason_source_id VARCHAR(255) NOT NULL",
+        "accounting_evidence_digest VARCHAR(64) NOT NULL",
+        "accounting_policy_version VARCHAR(64) NOT NULL",
+        "funding_convention VARCHAR(64) NOT NULL",
+        "excursion_convention VARCHAR(64) NOT NULL",
+        "accounting_record JSON NOT NULL",
+    ):
+        assert f"ADD COLUMN {definition}" in sql
 
 
 def test_manual_trade_journal_migration_renders_postgresql_sql() -> None:

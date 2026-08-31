@@ -109,13 +109,32 @@ def entry_execution():
 def trade_accounting():
     return calculate_trade_accounting(
         (
-            TradeFill(1, DECISION_AT, "ENTER", Decimal("2"), Decimal("100000"), Decimal("200")),
-            TradeFill(2, CLOSED_AT, "EXIT", Decimal("2"), Decimal("120000"), Decimal("240")),
+            TradeFill(
+                1,
+                DECISION_AT,
+                "ENTER",
+                Decimal("2"),
+                Decimal("100000"),
+                Decimal("200"),
+                "entry-accounting-1",
+            ),
+            TradeFill(
+                2,
+                CLOSED_AT,
+                "EXIT",
+                Decimal("2"),
+                Decimal("120000"),
+                Decimal("240"),
+                "exit-accounting-1",
+            ),
         ),
         symbol="BTC-USD",
         direction="long",
         initial_stop_price="90000",
+        initial_stop_source_id="stop-1",
         exit_reason="HOLD_SCORE_COLLAPSE",
+        exit_reason_source_id="exit-signal-1",
+        config_metadata=CONFIG_METADATA,
     )
 
 
@@ -257,6 +276,16 @@ def test_provenance_overrides_an_executions_own_recommendation_id() -> None:
     assert entry_execution().intent.recommendation_id == 41
     for _, row in rows.all_rows:
         assert row["recommendation_id"] == 99
+
+
+def test_accounting_strategy_identity_cannot_be_relabelled_at_persistence() -> None:
+    mismatched = replace(
+        trade_accounting(),
+        config_metadata={**CONFIG_METADATA, "parameter_set_id": "experiment_b"},
+    )
+
+    with pytest.raises(ValueError, match="parameter_set_id"):
+        build(accounting=mismatched)
 
 
 @pytest.mark.parametrize(

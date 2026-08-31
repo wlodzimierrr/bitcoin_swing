@@ -196,7 +196,9 @@ def build_paper_trade_lifecycle_rows(
         None
         if accounting is None
         else _stamped(
-            accounting.as_completed_trade_record(
+            _accounting_record(
+                accounting,
+                provenance=provenance,
                 account_id=account,
                 position_id=position,
             ),
@@ -267,6 +269,29 @@ def _order_record(
     builder = getattr(execution, "as_order_record", None)
     if not callable(builder):
         raise TypeError("executions must expose as_order_record()")
+    return builder(account_id=account_id, position_id=position_id)
+
+
+def _accounting_record(
+    accounting: Any,
+    *,
+    provenance: LifecycleProvenance,
+    account_id: int,
+    position_id: int,
+) -> dict[str, Any]:
+    metadata = getattr(accounting, "config_metadata", None)
+    if not isinstance(metadata, Mapping):
+        raise TypeError("accounting must expose config_metadata")
+    expected = {
+        "strategy_version": provenance.strategy_version,
+        "parameter_set_id": provenance.parameter_set_id,
+    }
+    for key, value in expected.items():
+        if metadata.get(key) != value:
+            raise ValueError(f"accounting {key} does not match lifecycle provenance")
+    builder = getattr(accounting, "as_completed_trade_record", None)
+    if not callable(builder):
+        raise TypeError("accounting must expose as_completed_trade_record()")
     return builder(account_id=account_id, position_id=position_id)
 
 
