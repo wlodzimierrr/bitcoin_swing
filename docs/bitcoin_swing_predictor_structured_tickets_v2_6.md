@@ -3896,7 +3896,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 
   `HoldScore` is not nested inside Add Score. Hold quality and supportive Regime
   remain separate add requirements / lifecycle context.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3906,6 +3906,41 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.features.add` with typed scalar and float64 batch APIs
+    over the exact five-component `ADD_SCORE_V1_2` contract, mirroring BTC-152.
+  - `HoldScore` has no field, no weight key, and no input route, so the v1.2
+    de-nesting is structural rather than documented. Regime is likewise absent.
+    A test asserts the component set differs from Hold's rather than merely
+    omitting one key: Add replaces Structure with NewStructure and drops Trend,
+    so it is an independent judgement, not a re-weighting.
+  - **`RiskImprovement` is the one component whose natural unit is not a 0-100
+    score.** BTC-047 reports it in absolute currency. Following the BTC-152
+    precedent for Momentum Persistence, the aggregator takes an explicit
+    normalized component and invents no domain semantics for it.
+  - `risk_improvement_component_score()` is offered separately as a versioned
+    bridge (`RISK_IMPROVEMENT_PROPORTIONAL_V1`): the share of current risk that
+    the proposed stop removes, scaled to 0-100. It has no free parameter, so it
+    is a mechanical unit conversion rather than a calibration. A NAV-relative
+    alternative is equally defensible, which is why the choice is versioned and
+    why the aggregator never applies one implicitly.
+  - The bridge calls the BTC-047 kernel with `floor_at_zero=False` rather than
+    restating the formula, and reports `signed_improvement` alongside the
+    floored score. A worsened stop and an unchanged one both score 0; only the
+    signed value separates them, which is what rulebook 18's "stop can improve"
+    requirement needs from BTC-154.
+  - Zero current risk yields no component rather than a perfect one: there is
+    nothing to remove, so the proportion is undefined and the Add Score becomes
+    incomplete instead of silently maximal.
+  - Persisted records carry `ADD_SCORE_V1_2`, parameter status, direct inputs,
+    exact weights, per-component contributions, missing components, config
+    identity, completion state, and deterministic `ADD_SCORE_COMPLETE` /
+    `ADD_SCORE_INPUT_MISSING` reason codes. Config rejects a weight set that is
+    missing a component, carries an extra one such as `hold_score`, or fails to
+    sum to 1.
+  - The `AddScore >= 85` threshold is deliberately not implemented here. Add
+    requirements, hold quality, and supportive regime are BTC-154, consistent
+    with BTC-152 leaving hold action bands to its consumers.
 
 #### BTC-154 Implement add requirements
 - **Description:**
