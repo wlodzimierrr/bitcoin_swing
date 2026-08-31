@@ -27,6 +27,14 @@ PORTFOLIO_SCHEMA = "portfolio"
 
 PAPER_ACTIONS = ("ENTER", "HOLD", "ADD", "STOP_MOVE", "TRIM", "EXIT", "MISSED")
 MANUAL_DECISIONS = ("FOLLOWED", "OVERRIDDEN", "SKIPPED", "MANUAL_ONLY")
+# BTC-166: every persisted lifecycle event carries the strategy identity that
+# produced it, so two parameter sets are never indistinguishable in the record.
+LIFECYCLE_PROVENANCE_COLUMNS = (
+    "recommendation_id",
+    "strategy_version",
+    "parameter_set_id",
+)
+LIFECYCLE_EVENT_TABLES = ("paper_orders", "position_events", "completed_trades")
 
 PAPER_ACCOUNTS_PRIMARY_KEY = ("account_id",)
 POSITIONS_PRIMARY_KEY = ("position_id",)
@@ -144,6 +152,8 @@ paper_orders = Table(
     Column("limit_price", Numeric(precision=38, scale=18), nullable=True),
     Column("stop_price", Numeric(precision=38, scale=18), nullable=True),
     Column("average_fill_price", Numeric(precision=38, scale=18), nullable=True),
+    Column("strategy_version", String(length=64), nullable=False),
+    Column("parameter_set_id", String(length=64), nullable=False),
     ForeignKeyConstraint(
         ["account_id"],
         ["portfolio.paper_accounts.account_id"],
@@ -227,6 +237,8 @@ position_events = Table(
     Column("price", Numeric(precision=38, scale=18), nullable=True),
     Column("risk_fraction_nav", Numeric(precision=12, scale=8), nullable=True),
     Column("notes", Text, nullable=True),
+    Column("strategy_version", String(length=64), nullable=False),
+    Column("parameter_set_id", String(length=64), nullable=False),
     ForeignKeyConstraint(
         ["account_id"],
         ["portfolio.paper_accounts.account_id"],
@@ -276,6 +288,15 @@ completed_trades = Table(
     Column("realized_pnl", Numeric(precision=38, scale=18), nullable=False),
     Column("realized_r", Numeric(precision=18, scale=8), nullable=True),
     Column("max_risk_fraction_nav", Numeric(precision=12, scale=8), nullable=True),
+    Column("recommendation_id", BigInteger, nullable=True),
+    Column("strategy_version", String(length=64), nullable=False),
+    Column("parameter_set_id", String(length=64), nullable=False),
+    ForeignKeyConstraint(
+        ["recommendation_id"],
+        ["signals.recommendations.recommendation_id"],
+        name="fk_pf_completed_trades_recommendation",
+        ondelete="SET NULL",
+    ),
     ForeignKeyConstraint(
         ["position_id"],
         ["portfolio.positions.position_id"],

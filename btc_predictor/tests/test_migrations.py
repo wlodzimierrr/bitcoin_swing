@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0019_reference_composite"
+HEAD_REVISION = "0020_lifecycle_provenance"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:

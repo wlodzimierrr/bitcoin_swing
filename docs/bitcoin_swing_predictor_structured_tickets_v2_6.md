@@ -4560,7 +4560,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   strategy_version
   parameter_set_id
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4570,6 +4570,43 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - **The schema could not satisfy this ticket.** `recommendation_id` already
+    existed, but `strategy_version` and `parameter_set_id` had no column
+    anywhere: BTC-150 kept them inside a JSON note, and `paper_orders` has no
+    note column at all, so an order row carried no strategy identity
+    whatsoever. Migration `0020_lifecycle_provenance` adds both as NOT NULL,
+    blank-checked, indexed columns on `paper_orders`, `position_events` and
+    `completed_trades`. Provenance has to be queryable, or two parameter sets
+    are indistinguishable in the record and no paper-versus-backtest
+    comparison means anything.
+  - `completed_trades` reached its recommendation only through `positions`, so
+    the migration adds a `recommendation_id` column and foreign key there too,
+    making the triple uniform. That gap was found by the module's own row
+    verifier rather than by inspection.
+  - `recommendation_id` is deliberately left nullable. Its foreign keys are
+    `ON DELETE SET NULL`, so a NOT NULL column would make deleting a
+    recommendation fail rather than sever the link. The requirement is enforced
+    in the writer, which is the layer that knows an event is model-driven, and
+    a `None` recommendation is refused there.
+  - Added `btc_predictor/portfolio/lifecycle_persistence.py` with
+    `build_paper_trade_lifecycle_rows()`, policy version
+    `PAPER_LIFECYCLE_PERSISTENCE_V1`. BTC-160 through BTC-165 each shape their
+    own row; what none can know alone is whether the *set* of rows for one
+    trade is complete and consistently attributed.
+  - **Stamping is verified, not trusted.** `verify_lifecycle_rows()` re-checks
+    every row for the full triple, for the same account and position, and for
+    column names the target table actually has, so a builder that drifts from
+    the schema fails there rather than at the first INSERT. `as_record()`
+    re-verifies before persisting.
+  - Provenance overrides an execution's own `recommendation_id`, so a lifecycle
+    written under one recommendation cannot contain rows attributed to another.
+  - A partial lifecycle still persists what it has and reports which part is
+    absent (`NO_ORDERS`, `NO_EVENTS`, `TRADE_NOT_CLOSED`) rather than failing.
+  - One BTC-161 test asserted its order record covered *exactly* every
+    `paper_orders` column. That became false by design and was corrected to
+    state the actual contract: execution knows the fill, not the run, and must
+    not invent a strategy version.
 
 ## EPIC R — Advisory Output
 

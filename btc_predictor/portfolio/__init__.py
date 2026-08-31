@@ -1,5 +1,17 @@
 """Portfolio and paper-trading modules."""
 
+from btc_predictor.portfolio.lifecycle_persistence import (
+    COMPLETED_TRADES_TABLE,
+    EVENTS_TABLE,
+    LIFECYCLE_PERSISTENCE_REASON_CODES,
+    ORDERS_TABLE,
+    PAPER_LIFECYCLE_PERSISTENCE_FEATURE_ID,
+    PAPER_LIFECYCLE_PERSISTENCE_POLICY_VERSION,
+    LifecycleProvenance,
+    PaperTradeLifecycleRows,
+    build_paper_trade_lifecycle_rows,
+    verify_lifecycle_rows,
+)
 from btc_predictor.portfolio.accounting import (
     PAPER_TRADE_ACCOUNTING_FEATURE_ID,
     PAPER_TRADE_ACCOUNTING_POLICY_VERSION,
@@ -137,6 +149,16 @@ from btc_predictor.portfolio.state_machine import (
 )
 
 __all__ = [
+    "COMPLETED_TRADES_TABLE",
+    "EVENTS_TABLE",
+    "LIFECYCLE_PERSISTENCE_REASON_CODES",
+    "ORDERS_TABLE",
+    "PAPER_LIFECYCLE_PERSISTENCE_FEATURE_ID",
+    "PAPER_LIFECYCLE_PERSISTENCE_POLICY_VERSION",
+    "LifecycleProvenance",
+    "PaperTradeLifecycleRows",
+    "build_paper_trade_lifecycle_rows",
+    "verify_lifecycle_rows",
     "PAPER_TRADE_ACCOUNTING_FEATURE_ID",
     "PAPER_TRADE_ACCOUNTING_POLICY_VERSION",
     "R_MULTIPLE_CONVENTION",

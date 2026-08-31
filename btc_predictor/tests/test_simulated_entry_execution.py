@@ -389,7 +389,15 @@ def test_tampered_record_is_rejected_by_replay() -> None:
 def test_order_record_matches_existing_schema_for_fill() -> None:
     order = execute().as_order_record(account_id=7)
 
-    assert set(order) == {column.name for column in paper_orders.columns} - {"order_id"}
+    columns = {column.name for column in paper_orders.columns}
+    assert set(order) <= columns
+    # Execution knows the fill, not the run. BTC-166 stamps strategy identity
+    # onto every row, so this module must not invent one.
+    assert set(order) == columns - {
+        "order_id",
+        "strategy_version",
+        "parameter_set_id",
+    }
     assert order["action"] == "ENTER"
     assert order["side"] == "buy"
     assert order["order_type"] == MARKET_ORDER
