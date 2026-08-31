@@ -62,6 +62,18 @@ from btc_predictor.features.flow import (
     spot_perp_participation_from_rows,
     twenty_day_etf_flow,
 )
+from btc_predictor.features.hold import (
+    HOLD_SCORE_COMPONENT_IDS,
+    HOLD_SCORE_FEATURE_ID,
+    HOLD_SCORE_REASON_CODES,
+    HOLD_SCORE_VERSION,
+    HOLD_SCORE_WEIGHT_SUM_TOLERANCE,
+    HoldScoreBatchResult,
+    HoldScoreInput,
+    HoldScoreResult,
+    calculate_hold_score,
+    calculate_hold_score_batch,
+)
 from btc_predictor.features.momentum import (
     FOUR_WEEK_MOMENTUM_FEATURE_ID,
     FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS,
@@ -706,4 +718,14 @@ __all__ = [
     "calculate_entry_conviction",
     "calculate_entry_conviction_batch",
     "classify_entry_action",
+    "HOLD_SCORE_COMPONENT_IDS",
+    "HOLD_SCORE_FEATURE_ID",
+    "HOLD_SCORE_REASON_CODES",
+    "HOLD_SCORE_VERSION",
+    "HOLD_SCORE_WEIGHT_SUM_TOLERANCE",
+    "HoldScoreBatchResult",
+    "HoldScoreInput",
+    "HoldScoreResult",
+    "calculate_hold_score",
+    "calculate_hold_score_batch",
 ]

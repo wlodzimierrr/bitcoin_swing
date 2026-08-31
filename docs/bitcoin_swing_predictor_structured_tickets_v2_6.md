@@ -3848,7 +3848,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 
   Regime remains separately available for lifecycle context and
   `REGIME_INVALIDATION`; it is not weighted again inside Hold Score.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3858,6 +3858,28 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor.features.hold` with typed scalar and float64 batch APIs
+    over the exact five-component `HOLD_SCORE_V1_2` contract.
+  - Both APIs require a validated `StrategyConfig`; the exact provisional v1.2
+    weights and `config_version`, `strategy_version`, and `parameter_set_id`
+    are carried into every result.
+  - Regime has no field or weighted input route. It remains an independent
+    lifecycle context and `REGIME_INVALIDATION` input as required by v1.2.
+  - Momentum Persistence is accepted as an explicit normalized 0-100 component
+    score. The Hold Score aggregator does not invent domain semantics for that
+    factor, and missing evidence makes the result incomplete rather than being
+    silently zero-filled.
+  - Persisted scalar records contain `HOLD_SCORE_V1_2`, parameter status,
+    direct inputs, exact weights, per-component contributions, missing
+    components, config identity, completion state, and deterministic
+    `HOLD_SCORE_COMPLETE` / `HOLD_SCORE_INPUT_MISSING` reason codes.
+  - Batch scoring delegates to BTC-046, preserves NaN masks, and is parity-
+    tested against scalar calculations. Tests also cover exact arithmetic,
+    contribution and contract drift, invalid numeric values, future-row append
+    invariance, and deterministic recomputation.
+  - Hold action bands and lifecycle transitions are not inferred here; this
+    ticket supplies the explainable score consumed by those later policies.
 
 #### BTC-153 Implement Add Score
 - **Description:**
