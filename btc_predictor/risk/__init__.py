@@ -25,6 +25,20 @@ from btc_predictor.risk.buffer import (
     level_noise_from_zone,
     volatility_buffer_grid,
 )
+from btc_predictor.risk.exposure import (
+    ABSOLUTE_DISTANCE,
+    DEFAULT_RISK_AT_STOP_CONVENTION,
+    DEFAULT_RISK_AT_STOP_TARGET_FRACTION,
+    FLOORED_AT_ZERO,
+    RISK_AT_STOP_CONVENTIONS,
+    RISK_AT_STOP_FEATURE_ID,
+    RISK_AT_STOP_PARAMETER_STATUS,
+    RISK_AT_STOP_POLICY_VERSION,
+    RISK_AT_STOP_REASON_CODES,
+    RiskAtStopResult,
+    TrancheRisk,
+    calculate_risk_at_stop,
+)
 from btc_predictor.risk.budget import (
     RISK_BUDGET_FEATURE_ID,
     RISK_BUDGET_PARAMETER_STATUS,
@@ -96,6 +110,18 @@ from btc_predictor.risk.invalidation import (
 )
 
 __all__ = [
+    "ABSOLUTE_DISTANCE",
+    "DEFAULT_RISK_AT_STOP_CONVENTION",
+    "DEFAULT_RISK_AT_STOP_TARGET_FRACTION",
+    "FLOORED_AT_ZERO",
+    "RISK_AT_STOP_CONVENTIONS",
+    "RISK_AT_STOP_FEATURE_ID",
+    "RISK_AT_STOP_PARAMETER_STATUS",
+    "RISK_AT_STOP_POLICY_VERSION",
+    "RISK_AT_STOP_REASON_CODES",
+    "RiskAtStopResult",
+    "TrancheRisk",
+    "calculate_risk_at_stop",
     "INITIAL_POSITION_SIZE_FEATURE_ID",
     "INITIAL_POSITION_SIZE_POLICY_VERSION",
     "INITIAL_POSITION_SIZE_REASON_CODES",

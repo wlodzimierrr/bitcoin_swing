@@ -3634,7 +3634,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   \[
   RiskAtStop \le 0.75\%-1.00\% NAV
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -3645,6 +3645,37 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/exposure.py` with `calculate_risk_at_stop()`,
+    policy version `RISK_AT_STOP_V1`.
+  - **Scope resolved from rulebook 19: this is an aggregate portfolio
+    constraint, not a per-trade one.** Risk is summed across tranches sharing a
+    single stop. A per-trade-only reading would have duplicated the ceiling
+    BTC-144 already applies to the conviction budget.
+  - **The convention is a versioned, persisted choice.** Rulebook 19 gives two
+    forms and requires the choice be "explicit and consistent across advisory,
+    paper trading, and backtesting". `FLOORED_AT_ZERO` (default, matching the
+    BTC-047 kernels) lets an already-profitable tranche contribute zero
+    downside; `ABSOLUTE_DISTANCE` keeps the unsigned distance. They differ
+    materially and are not interchangeable, so the convention is recorded on
+    every result.
+  - The floored convention is what makes the rulebook's stated objective true:
+    "Notional exposure can increase while total downside risk stays bounded."
+    A test demonstrates exposure doubling while aggregate risk falls, and a
+    companion test shows a large add still raises risk, so adding is not
+    treated as automatically safe.
+  - Both rulebook input forms are accepted and proven equivalent: quantity
+    (`Q_i * |Entry_i - Stop|`) and notional
+    (`N_i * |(Entry_i - Stop) / Entry_i|`).
+  - Three-way verdict against the 0.75%-1.00% NAV band: within target, above
+    target but under the ceiling (warn), or exceeding the configured
+    `max_risk_at_stop_fraction_nav` (breach). The ceiling comes from the
+    versioned strategy config, not a literal, and the boundary is inclusive.
+  - `headroom_amount` reports remaining risk capacity for add decisions and is
+    floored at zero on a breach.
+  - Per-tranche contributions are persisted, so an aggregate is auditable
+    rather than opaque. Parity with the BTC-047 `risk_at_stop` kernel is
+    pinned by test. Thresholds are `PROVISIONAL_PENDING_BTC_185`.
 
 ## EPIC P — Position Lifecycle / Pyramiding
 
