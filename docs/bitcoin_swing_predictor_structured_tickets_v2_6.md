@@ -4075,7 +4075,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   ```text
   STOP MAY NEVER MOVE LOWER FOR A LONG
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -4086,6 +4086,43 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/trailing.py` with `calculate_trailing_stop()` and
+    `trail_stop_for_position()`, policy version `TRAILING_STOP_V1`.
+  - **The hard invariant follows from the ratchet rather than sitting beside
+    it.** `max(Stop_t-1, Candidate)` for a long and `min(...)` for a short
+    already make a loosened stop unreachable; a candidate below the standing
+    stop is discarded as `TRAILING_STOP_HELD`, never recorded. The invariant is
+    re-checked at the persistence boundary so a hand-built or mutated record
+    cannot record a loosened stop either.
+  - Comparison uses `DECISION_COMPARISON_V1`, so a candidate inside tolerance
+    is not an advance and float noise cannot ratchet the stop.
+  - **No structure is a hold, not a failure.** Rulebook 22 advances only when
+    new confirmed structure forms and states that no daily mechanical trailing
+    is required, so an absent structure price yields
+    `TRAILING_STOP_NO_NEW_STRUCTURE` with the standing stop intact and the
+    result still complete.
+  - **The three stages are derived from the advance count, never asserted.**
+    Stage 1 is the wide BTC-142 structural stop before anything advanced,
+    stage 2 the first advance under a new higher low, stage 3 every advance
+    after. `as_record()` rejects a stage that disagrees with its count, the way
+    BTC-150 derives `OPEN_ADDED` from its tranche count.
+  - `trail_stop_for_position()` is the canonical path: direction, the standing
+    stop, and the advance count all come from the BTC-150 ledger, and the
+    buffer accepts a BTC-141 result directly. `stop_advance_count()` counts
+    accepted post-entry transitions that carried a stop, so the entry's own
+    thesis stop is not miscounted as an advance and a refused stop move counts
+    for nothing. An add that raises the stop does count, per rulebook 26.
+  - Two guards beyond the formula: a non-positive candidate is refused, and an
+    optional `current_price` refuses a candidate price has already passed,
+    which would be an immediate exit dressed up as a stop move.
+  - Scope: this decides where the stop goes. BTC-150 still owns whether the
+    move is recordable and refuses one that widens; tests confirm an advanced
+    stop is accepted by the lifecycle and a held one is a no-op it also accepts.
+  - Focused tests cover the long and short formulas, the ratchet in both
+    directions, a monotonic sequence that never retreats, tolerance behaviour,
+    quiet bars, incomplete buffers, both guards, stage derivation and drift,
+    ledger composition, persistence, and determinism.
 
 #### BTC-157 Implement trim rules
 - **Description:**
