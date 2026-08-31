@@ -27,6 +27,8 @@ no_average_down = true
 
 [risk]
 max_risk_at_stop_fraction_nav = 0.01
+# BTC-155 rulebook 18: shares of the final position, anti-martingale.
+tranche_schedule = [0.40, 0.35, 0.25]
 
 [[risk.schedule]]
 min_entry_conviction = 80

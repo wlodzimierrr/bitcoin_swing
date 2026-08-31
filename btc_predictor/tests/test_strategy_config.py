@@ -256,6 +256,7 @@ no_average_down = true
 
 [risk]
 max_risk_at_stop_fraction_nav = 0.01
+tranche_schedule = [0.40, 0.35, 0.25]
 
 [[risk.schedule]]
 min_entry_conviction = 80

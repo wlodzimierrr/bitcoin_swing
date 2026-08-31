@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from pathlib import Path
 import tomllib
 from typing import Any, Self
@@ -11,6 +12,7 @@ from typing import Any, Self
 DEFAULT_STRATEGY_CONFIG_PATH = Path(__file__).parent / "strategy" / "default.toml"
 PERCENT_FRACTION_MIN = 0.0
 PERCENT_FRACTION_MAX = 1.0
+TRANCHE_SCHEDULE_SUM_TOLERANCE = 1e-9
 SCORE_MIN = 0.0
 SCORE_MAX = 100.0
 FULL_FLOW_WEIGHT_KEYS = (
@@ -271,6 +273,7 @@ class RiskBand:
 class RiskConfig:
     schedule: tuple[RiskBand, ...]
     max_risk_at_stop_fraction_nav: float
+    tranche_schedule: tuple[float, ...]
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -280,12 +283,15 @@ class RiskConfig:
 
         schedule = tuple(_risk_band(item) for item in raw_schedule)
         _validate_risk_schedule(schedule)
+        tranche_schedule = _required_positive_float_tuple(data, "tranche_schedule")
+        _validate_tranche_schedule(tranche_schedule)
         return cls(
             schedule=schedule,
             max_risk_at_stop_fraction_nav=_required_fraction(
                 data,
                 "max_risk_at_stop_fraction_nav",
             ),
+            tranche_schedule=tranche_schedule,
         )
 
 
@@ -1152,6 +1158,27 @@ def _validate_risk_schedule(schedule: tuple[RiskBand, ...]) -> None:
             raise StrategyConfigError(
                 "risk.schedule min_entry_conviction values must increase",
             )
+
+
+def _validate_tranche_schedule(schedule: tuple[float, ...]) -> None:
+    """Rulebook 18: shares of the final position, added anti-martingale."""
+
+    if any(value > PERCENT_FRACTION_MAX for value in schedule):
+        raise StrategyConfigError(
+            "risk.tranche_schedule entries must be between 0 and 1",
+        )
+    for previous, current in zip(schedule, schedule[1:]):
+        if current > previous:
+            raise StrategyConfigError(
+                "risk.tranche_schedule must never increase; adding to a winner "
+                "in growing size is martingale behaviour",
+            )
+    total = math.fsum(schedule)
+    if abs(total - 1.0) > TRANCHE_SCHEDULE_SUM_TOLERANCE:
+        raise StrategyConfigError(
+            "risk.tranche_schedule must sum to 1; the schedule allocates a "
+            "whole position sized once by BTC-145",
+        )
 
 
 def _required_mapping(data: dict[str, Any], key: str) -> dict[str, Any]:

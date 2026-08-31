@@ -4011,7 +4011,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   Add #1   35%
   Add #2   25%
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4021,6 +4021,40 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/risk/tranches.py` with `calculate_tranche_size()` and
+    `next_tranche_for_position()`, policy version `TRANCHE_SIZING_V1`.
+  - **The percentages are shares of the final position, so they must sum to 1.**
+    Rulebook 18's column is "Relative Final Position": BTC-145 sizes the whole
+    position once from the risk budget and this schedule only decides how that
+    single size is delivered. A schedule summing to anything else would
+    silently re-size the position, so configuration rejects it at startup.
+  - **The schedule must never increase.** Rulebook 18's anti-martingale
+    principle is "add to winners, never to losers"; adding in growing size is
+    the martingale shape the strategy exists to avoid. A growing schedule is
+    rejected at startup with an explicit message rather than merely discouraged
+    in prose. Equal tranches are permitted, since non-increasing is the rule.
+  - **The schedule length is the add cap.** BTC-154 decides whether an add is
+    permitted; this decides whether one is allocated. A fourth tranche gets
+    `TRANCHE_SIZING_SCHEDULE_EXHAUSTED` and no allocation rather than an
+    extrapolated one, which would size risk nothing authorized.
+  - Both views are reported: `fraction_of_final` sizes the order, and
+    `cumulative_fraction` plus `remaining_fraction` let the ledger be checked.
+    The three stages reconstruct exactly one whole position by test.
+  - `next_tranche_for_position()` is the canonical path: the stage number comes
+    from the BTC-150 tranche count and the whole-position size from the BTC-145
+    result, so neither the off-by-one nor the position size can be restated by
+    a caller. Tranche notional is pinned to the BTC-047 `position_notional`
+    kernel.
+  - The schedule lives in `risk.tranche_schedule` in versioned configuration
+    rather than as a module constant, and carries
+    `PROVISIONAL_RESEARCH_CALIBRATABLE`, because rulebook 18 states plainly
+    that these percentages are research parameters.
+  - Focused tests cover each stage's exact allocation, whole-position
+    reconstruction, the anti-martingale ordering, schedule exhaustion, ledger
+    composition at zero, one, and two adds, incomplete upstream sizing,
+    schedule validation at both the module and config layers, malformed input,
+    persistence, and determinism.
 
 #### BTC-156 Implement trailing stop progression
 - **Description:**
