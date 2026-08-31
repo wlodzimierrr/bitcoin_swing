@@ -4510,7 +4510,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - max size
   - number of adds
   - exit reason
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -4521,6 +4521,35 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/portfolio/accounting.py` with
+    `calculate_trade_accounting()`, policy version
+    `PAPER_TRADE_ACCOUNTING_V1`. All eleven figures come from one walk over the
+    trade's fills, so no two of them can disagree.
+  - **1R is the risk planned at entry**, `initial_quantity * |entry - initial
+    stop|`, fixed once and versioned as `INITIAL_PLANNED_RISK_V1`. Measuring
+    against the trailed stop would inflate R as the stop ratchets, letting a
+    trade report a large R having never risked that much; adds raise P&L
+    without retroactively changing the denominator. A stop at the entry leaves
+    R undefined rather than infinite.
+  - **MFE and MAE are signed peaks of total trade P&L**, including P&L already
+    realized by trims and excluding fees, so they are comparable with gross
+    P&L. Reporting them as unsigned distances would hide a trade that gapped
+    favourably and never came back, whose adverse excursion is a profit -- a
+    case a test pins directly. Excursions track the position actually held at
+    each bar, so a pyramided trade's peak reflects the size it held then.
+  - **Exactness was designed in, not left to rounding.** The final close takes
+    the exact remaining cost basis instead of a second rounded division, so a
+    fully closed trade satisfies `gross P&L == exit notional - entry notional`
+    exactly. Excursions carry the cost basis rather than the average, so
+    `quantity * price - basis` never divides. Max notional is the basis itself.
+  - A trade that is profitable on price but loses after fees and funding raises
+    `TRADE_ACCOUNTING_COSTS_REVERSED_A_GROSS_PROFIT`, which is a distinct
+    outcome rather than a plain loss.
+  - A position that is not fully closed still accounts for its realized part
+    and reports `TRADE_ACCOUNTING_POSITION_STILL_OPEN`;
+    `as_completed_trade_record()` refuses it and otherwise maps onto the
+    `portfolio.completed_trades` columns including `realized_r`.
 
 #### BTC-166 Persist complete paper trade lifecycle
 - **Description:**

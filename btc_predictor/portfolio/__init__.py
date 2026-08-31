@@ -1,5 +1,16 @@
 """Portfolio and paper-trading modules."""
 
+from btc_predictor.portfolio.accounting import (
+    PAPER_TRADE_ACCOUNTING_FEATURE_ID,
+    PAPER_TRADE_ACCOUNTING_POLICY_VERSION,
+    R_MULTIPLE_CONVENTION,
+    TRADE_ACCOUNTING_REASON_CODES,
+    TRADE_DIRECTIONS,
+    TRADE_FILL_ACTIONS,
+    PaperTradeAccounting,
+    TradeFill,
+    calculate_trade_accounting,
+)
 from btc_predictor.portfolio.account import (
     ACCOUNT_ACTIVE,
     ACCOUNT_ARCHIVED,
@@ -126,6 +137,15 @@ from btc_predictor.portfolio.state_machine import (
 )
 
 __all__ = [
+    "PAPER_TRADE_ACCOUNTING_FEATURE_ID",
+    "PAPER_TRADE_ACCOUNTING_POLICY_VERSION",
+    "R_MULTIPLE_CONVENTION",
+    "TRADE_ACCOUNTING_REASON_CODES",
+    "TRADE_DIRECTIONS",
+    "TRADE_FILL_ACTIONS",
+    "PaperTradeAccounting",
+    "TradeFill",
+    "calculate_trade_accounting",
     "DEFAULT_TRIM_FRACTION",
     "TRIM_ACTION",
     "TRIM_CANCELLED",
