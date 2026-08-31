@@ -691,6 +691,28 @@ def position_is_losing_at_price(
     return decision_greater(current, average)
 
 
+def position_is_profitable_at_price(
+    *,
+    direction: str,
+    average_entry_price: Any,
+    current_price: Any,
+) -> bool:
+    """Return whether a position has strictly positive P&L at ``current_price``.
+
+    Breakeven is neither losing nor profitable, so this is not the negation of
+    :func:`position_is_losing_at_price`. BTC-154 requires strict profitability
+    before an ADD; BTC-151 only prohibits averaging down.
+    """
+
+    if direction not in INVALIDATION_DIRECTIONS:
+        raise ValueError(f"direction must be one of {INVALIDATION_DIRECTIONS}")
+    average = _positive_decimal(average_entry_price, "average_entry_price")
+    current = _positive_decimal(current_price, "current_price")
+    if direction == LONG_DIRECTION:
+        return decision_greater(current, average)
+    return decision_less(current, average)
+
+
 def _guard_event(
     lifecycle: PositionLifecycle,
     *,
@@ -1395,6 +1417,7 @@ __all__ = [
     "persisted_status_for_state",
     "position_event_records",
     "position_is_losing_at_price",
+    "position_is_profitable_at_price",
     "replay_position_lifecycle",
     "replay_position_event_records",
     "restore_position_lifecycle",

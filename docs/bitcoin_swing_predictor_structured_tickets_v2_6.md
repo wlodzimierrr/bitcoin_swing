@@ -3954,7 +3954,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - healthy positioning
   - Add Score >= 85
   - risk-at-stop within max
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -3964,6 +3964,43 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/signals/add_requirements.py` with
+    `evaluate_add_requirements()`, policy version `ADD_REQUIREMENTS_V1`,
+    mirroring the BTC-132 fail-closed veto engine.
+  - All eight requirements are conjunctive and each has its own input and its
+    own reason code, so a blocked add explains every reason it was blocked
+    rather than only the first. Effects are `NO_ADD`, matching rulebook 24.
+  - **Fail-closed:** an unresolved input blocks rather than being assumed
+    favourable, and is reported in `missing_inputs`. A lifecycle that is not
+    open resolves profitability to `None`, not `False`.
+  - **Two requirements are deliberately not booleans.** Add Score is compared
+    against `add_thresholds.add_min` under `DECISION_COMPARISON_V1`, so the 85
+    boundary is inclusive and tolerance-stable. "Stop can improve" takes the
+    *signed* currency improvement from BTC-153's bridge over the BTC-047
+    kernel: a floored improvement cannot distinguish an unchanged stop from a
+    worsened one, and both must block. Improvement must be strict.
+  - **Profitability is strict, unlike BTC-151.** `position_is_profitable_at_price`
+    was added beside `position_is_losing_at_price` in the BTC-150 ledger rather
+    than restating the sign convention in a second module; breakeven is neither
+    losing nor profitable, so it is not the negation of its sibling. BTC-151
+    permits a breakeven add, BTC-154 refuses it.
+  - `add_requirements_from_results()` is the canonical path, composing a
+    BTC-150 lifecycle, a BTC-153 `AddScoreResult` and `RiskImprovementComponent`,
+    and a BTC-146 `RiskAtStopResult` computed on the *projected* post-add book.
+    Upstream reason codes are retained as evidence on the persisted record.
+  - The two optional config gates (`existing_position_must_be_profitable`,
+    `stop_must_improve`) are honoured and persisted on every result, so the
+    gate set a run actually used is auditable. `no_average_down` remains
+    non-disableable in BTC-151.
+  - The BTC-150 transition table is not duplicated: a state that forbids ADD is
+    refused by the state machine. Tranche sizing is BTC-155 and the subsequent
+    stop move is BTC-156.
+  - Focused tests cover each requirement independently, multi-failure
+    reporting, every input failing closed, the configured threshold boundary,
+    strict stop improvement, disabled gates, weighted-average-entry
+    profitability across two tranches, incomplete upstream results, evidence
+    retention, persistence drift, and determinism.
 
 #### BTC-155 Implement tranche sizing
 - **Description:**
