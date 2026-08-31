@@ -391,11 +391,13 @@ def test_recomputation_is_deterministic() -> None:
 
 
 def test_record_is_persistable_and_reconstructable() -> None:
+    config = load_strategy_config()
     result = calculate_risk_at_stop(
         [tranche("t1", "1000000", "100000")],
         stop_price="95000",
         nav=NAV,
-        config_metadata={"config_version": "strategy_config_v2"},
+        config=config,
+        config_metadata=config.run_metadata(),
     )
     record = result.as_record()
 
@@ -408,7 +410,7 @@ def test_record_is_persistable_and_reconstructable() -> None:
     assert record["within_maximum"] is True
     # Every tranche contribution is retained, so the total is auditable.
     assert record["tranches"][0]["risk_contribution"] == "50000.00"
-    assert record["config_metadata"] == {"config_version": "strategy_config_v2"}
+    assert record["config_metadata"] == config.run_metadata()
     assert (
         Decimal(record["risk_at_stop"]) / Decimal(record["nav"])
         == Decimal(record["risk_fraction_nav"])

@@ -3693,6 +3693,13 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Per-tranche contributions are persisted, so an aggregate is auditable
     rather than opaque. Parity with the BTC-047 `risk_at_stop` kernel is
     pinned by test. Thresholds are `PROVISIONAL_PENDING_BTC_185`.
+  - Independent BTC-146 review hardened replay integrity: configuration
+    identity and provisional parameter status are now automatic, tranche IDs
+    are required and canonically ordered, duplicate IDs fail fast, raw signed
+    loss distance is persisted, and records self-validate aggregate,
+    contribution, shared-stop, band, and headroom invariants.
+  - Risk-at-stop remains distinct from gross exposure. A bounded stop loss does
+    not assert that leverage is safe; a separate exposure cap remains required.
 
 ## EPIC P — Position Lifecycle / Pyramiding
 
