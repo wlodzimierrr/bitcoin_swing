@@ -4974,6 +4974,11 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Complexity:** L
 - **Risk:** High.
 - **Implementation Notes:**
+  - The independent xHigh review closed a release-blocking single-fold
+    loophole: a schedule must produce at least two complete folds before it can
+    be called a walk-forward validation. Exactly one fold is still the static
+    train/test split this ticket replaces, so it now fails before the strategy
+    factory runs instead of persisting `WALK_FORWARD_COMPLETE`.
   - Added `btc_predictor/backtest/walk_forward.py` with feature
     `WALK_FORWARD_VALIDATION`, policy version `WALK_FORWARD_VALIDATION_V1`,
     split policy `TRAIN_STRICTLY_BEFORE_TEST_V1`, capital policy
@@ -4999,7 +5004,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     the same market twice. A wider step is allowed but declares
     `WALK_FORWARD_OUT_OF_SAMPLE_GAPS`, and leading, skipped, tested, and
     trailing periods must add up to the schedule, so a coverage claim cannot
-    hide untested history. A schedule too short for one complete fold fails
+    hide untested history. A schedule too short for two complete folds fails
     closed with the minimum it needs, and a short tail is reported untested
     instead of tested as a short fold.
   - The engine sees only a fold's out-of-sample bars, so a strategy needing
@@ -5043,11 +5048,11 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     independent fold P&L, the unweighted mean fold return quantized to twelve
     decimal places, and the best and worst folds. Drawdown, regime, and setup
     breakdowns remain with BTC-183/BTC-184/BTC-189.
-  - Added 65 focused tests covering the split contract, expanding and rolling
+  - Added 66 focused tests covering the split contract, expanding and rolling
     windows, embargoes, coverage accounting, the leakage barrier in both
     directions, independent capital, calibration declarations, cost-profile
     pass-through, determinism, persistence, tampering, and configuration; the
-    complete Python 3.12 suite passes with 2408 tests.
+    complete Python 3.12 suite passes with 2409 tests.
 
 #### BTC-183 Implement regime performance breakdown
 - **Description:**

@@ -525,13 +525,17 @@ def walk_forward_windows(
     resolved.as_record()
     timestamps = _validate_schedule(schedule)
     folds = resolved.fold_count(len(timestamps))
-    if folds == 0:
-        # A short schedule is a planning error, not a validation with nothing
-        # in it: silently returning no folds would read as a passed check.
+    if folds < 2:
+        # One fold is still the static train/test split this ticket replaces.
+        # A walk-forward needs at least one subsequent step before it can say
+        # how the rule behaved across changing in-sample windows.
+        minimum = resolved.minimum_periods + resolved.step_periods
         raise ValueError(
+            "walk-forward validation requires at least two complete folds; "
             f"a {resolved.scheme} split of {resolved.train_periods} train, "
             f"{resolved.embargo_periods} embargo and {resolved.test_periods} test "
-            f"periods needs at least {resolved.minimum_periods} scheduled periods; "
+            f"periods stepped by {resolved.step_periods} needs at least {minimum} "
+            "scheduled periods; "
             f"{len(timestamps)} were supplied"
         )
     windows = tuple(

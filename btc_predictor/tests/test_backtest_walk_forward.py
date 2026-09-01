@@ -203,6 +203,7 @@ def test_fold_arithmetic_matches_the_windows_produced() -> None:
     assert resolved.minimum_periods == 5
     assert resolved.fold_count(4) == 0
     assert resolved.fold_count(5) == 1
+    assert resolved.fold_count(7) == 2
     assert resolved.fold_count(6) == 1
     assert resolved.fold_count(len(SCHEDULE)) == len(
         walk_forward_windows(SCHEDULE, plan=resolved)
@@ -277,9 +278,26 @@ def test_a_short_tail_is_left_untested_rather_than_tested_short() -> None:
     assert windows[-1].test_periods == 2
 
 
-def test_a_schedule_too_short_for_one_fold_is_rejected() -> None:
-    with pytest.raises(ValueError, match="needs at least 5 scheduled periods"):
-        walk_forward_windows(SCHEDULE[:4], plan=plan())
+def test_a_single_static_split_is_not_a_walk_forward_validation() -> None:
+    with pytest.raises(
+        ValueError,
+        match="requires at least two complete folds.*needs at least 7 scheduled periods",
+    ):
+        walk_forward_windows(SCHEDULE[:5], plan=plan())
+
+
+def test_a_single_fold_never_reaches_the_strategy_factory() -> None:
+    called = False
+
+    def recording_factory(window: TrainingWindow) -> FoldStrategy:
+        nonlocal called
+        called = True
+        return fixed_rule(window)
+
+    with pytest.raises(ValueError, match="requires at least two complete folds"):
+        run(BARS[:5], strategy_factory=recording_factory)
+
+    assert called is False
 
 
 def test_a_schedule_must_be_ordered_utc_decision_times() -> None:
