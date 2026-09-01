@@ -15,14 +15,15 @@
 - **Current phase:** Phase 1, EPIC S2 extended quantitative research
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** BTC-186, feature interaction research
-- **Last completed ticket:** BTC-185, threshold sweeps
+- **Last completed ticket:** BTC-185, threshold sweeps, including its
+  independent review
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** BTC-186, first by V2 execution order
 - **Other ready tickets in the current epic:** BTC-188 and BTC-189
-- **Latest verified test baseline:** 2487 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `f26dca55e0b559b2496513a2d52be2e23e246727`
-  (`feat: implement BTC-185 threshold sweeps`)
+- **Latest verified test baseline:** 2491 passed with Python 3.12 on 2026-09-01
+- **Last relevant implementation/review commit:** `fed9b8775c3a2c4abf99bb2ca979afa2115a801f`
+  (`fix: close BTC-185 independent review findings`)
 
 ## Price-Reference State
 
