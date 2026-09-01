@@ -5556,7 +5556,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   ```
 
   This allows research into rejected opportunities.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5566,6 +5566,63 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/decision_state.py` with policy version
+    `DECISION_STATE_STORE_V1`. One immutable row per decision date joins the
+    recorded categorical state, the point-in-time scores, and the forward
+    outcomes; `build_decision_state_store()` is the only constructor and
+    `restore_decision_state_store()` the only replay path.
+  - Coverage is enforced, not assumed. `EVERY_DECISION_DATE_REQUIRED_V1`
+    requires the recorded decision states to cover the BTC-048 feature-matrix
+    decision grid exactly: a gap, a duplicate, or a state outside the grid
+    fails closed, so traded dates cannot quietly become the only rows. Rows
+    are ordered by decision timestamp regardless of input order, and
+    `rejected_rows()` returns the non-traded dates the ticket exists for.
+  - Numbers are not recomputed here. Scores are read from the BTC-048
+    `PointInTimeFeatureMatrix` columns named by the versioned definition
+    (default: the six v1.2 composite scores) and the outcomes from the
+    BTC-048 `ForwardTargetMatrix` (default: the six the ticket lists), so the
+    fixed-horizon, MFE, and MAE semantics stay owned by BTC-048 and its
+    target specifications rather than being restated. `hit_2R_before_1R`
+    stays available to a wider definition but is outside the default columns.
+  - Categorical vocabularies are owned elsewhere too: the decision is a
+    `RECOMMENDATION_ACTIONS` value, the setup one of the four Rulebook setups
+    plus the explicit `NO_SETUP` sentinel, the regime a
+    `REGIME_CLASSIFICATION_LABELS` value plus `UNCLASSIFIED`, and reason codes
+    are `RecommendationReasonCode` values. Unknown values fail closed.
+  - Traded and rejected dates are distinguished by observed execution, not by
+    inferring intent from an action label: `TRADED` requires a
+    `trade_reference` and `NOT_TRADED` forbids one, so a missed `ENTER`
+    remains a rejected opportunity.
+  - Nothing is zero-filled. Every score cell carries `AVAILABLE`,
+    `MISSING_VALUE` (observed, value absent), or `NOT_OBSERVED`, and every
+    outcome cell `AVAILABLE`, `MISSING_VALUE`, `PENDING_HORIZON` (the fixed
+    horizon had not elapsed by the extraction time), or `NOT_RECORDED`.
+    Unrecorded cells carry no provenance, so no future metadata leaks into a
+    row; `score_matrix()` and `outcome_matrix()` expose the same values to
+    NumPy consumers as read-only arrays with NaN missing masks.
+  - `OUTCOME_AVAILABLE_BY_EXTRACTION_TIME_V1` keeps the store replayable as of
+    its extraction time: an outcome that only became available afterwards is
+    rejected with instructions to rebuild the forward-target matrix with that
+    cutoff, a target matrix's own `data_available_at` must equal the
+    extraction time, the extraction time may not precede the last decision
+    date, and outcome price-source policy must match the feature-matrix
+    provenance.
+  - Persistence is the deterministic `as_record()` contract used by BTC-048
+    and the other research layers, not a new database table; physical
+    materialization is deliberately out of this ticket's scope. Records carry
+    the definition fingerprint, feature and target definitions and their
+    fingerprints, the provenance config metadata, the input digest, a
+    coverage census, reason codes, `RESEARCH_ONLY_NOT_PRODUCTION`, BTC-193 as
+    the promotion boundary, and a SHA-256 evidence digest. Restoration
+    recomputes the coverage census from the restored rows and rejects
+    tampered values, counts, dropped dates, and unknown columns.
+  - Added 32 focused tests covering complete coverage of traded and rejected
+    dates, point-in-time score selection and late revisions, pending and
+    unrecorded outcomes, recorded-but-valueless cells, coverage census
+    counts, ordering, every fail-closed guard, deterministic replay, record
+    round trips, and tamper rejection. The complete Python 3.12 suite passes
+    with 2589 tests.
 
 #### BTC-191 Create paper-trade outcome dataset
 - **Description:**
