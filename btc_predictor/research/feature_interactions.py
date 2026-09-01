@@ -885,6 +885,48 @@ def _validate_effect(effect: InteractionEffect) -> None:
         value = getattr(effect, name)
         if value is not None and not Decimal("0") <= value <= Decimal("1"):
             raise ValueError(f"{name} must be in [0, 1]")
+    weights = tuple(fold.test_sample_size for fold in available)
+    fold_effects = tuple(fold.effect_size for fold in available)
+    expected_effect = _weighted_mean(fold_effects, weights)
+    expected_dispersion = (
+        _population_std(fold_effects) if len(fold_effects) >= 2 else None
+    )
+    expected_sign_consistency = _sign_consistency(
+        fold_effects, expected_effect
+    )
+    r2_rows = tuple(
+        (fold.incremental_oos_r2, fold.test_sample_size)
+        for fold in available
+        if fold.incremental_oos_r2 is not None
+    )
+    expected_r2 = _weighted_mean(
+        tuple(value for value, _ in r2_rows),
+        tuple(weight for _, weight in r2_rows),
+    )
+    expected_positive_fraction = (
+        None
+        if not r2_rows
+        else _metric(
+            sum(1 for value, _ in r2_rows if value is not None and value > 0)
+            / len(r2_rows)
+        )
+    )
+    expected = (
+        expected_effect,
+        expected_dispersion,
+        expected_sign_consistency,
+        expected_r2,
+        expected_positive_fraction,
+    )
+    actual = (
+        effect.effect_size,
+        effect.effect_size_standard_deviation,
+        effect.effect_sign_consistency,
+        effect.mean_incremental_oos_r2,
+        effect.positive_incremental_fold_fraction,
+    )
+    if actual != expected:
+        raise ValueError("interaction effect aggregates do not match fold evidence")
 
 
 def _validate_analysis(analysis: InteractionAnalysis) -> None:

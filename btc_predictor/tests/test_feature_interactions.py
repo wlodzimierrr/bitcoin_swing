@@ -1,5 +1,6 @@
 """BTC-186: point-in-time feature interaction research."""
 
+import hashlib
 import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -425,6 +426,20 @@ def test_report_is_deterministic_json_replayable_and_tamper_evident() -> None:
     changed = json.loads(json.dumps(record))
     changed["analyses"][0]["effects"][0]["sample_size"] += 1
     with pytest.raises(ValueError, match="evidence does not match digest"):
+        restore_feature_interaction_report(changed)
+
+    changed = json.loads(json.dumps(record))
+    changed["analyses"][0]["effects"][0]["effect_size"] = "999.000000000000"
+    payload = {key: value for key, value in changed.items() if key != "evidence_digest"}
+    changed["evidence_digest"] = hashlib.sha256(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    with pytest.raises(ValueError, match="aggregates do not match fold evidence"):
         restore_feature_interaction_report(changed)
 
 
