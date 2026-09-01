@@ -37,7 +37,6 @@ from typing import Any
 import numpy as np
 
 from btc_predictor.backtest.walk_forward import (
-    WALK_FORWARD_SPLIT_POLICY_VERSION,
     WalkForwardPlan,
     WalkForwardWindow,
     restore_walk_forward_plan,
@@ -113,7 +112,10 @@ class InteractionDefinition:
 
     @property
     def formula(self) -> str:
-        return " * ".join(f"TRAIN_Z({name})" for name in self.feature_names)
+        product = " * ".join(
+            f"TRAIN_Z({name})" for name in self.feature_names
+        )
+        return f"TRAIN_Z({product})"
 
     def as_record(self) -> dict[str, Any]:
         _validate_definition(self)
