@@ -10,7 +10,9 @@ walk-forward split, capital, costs, strategy version, and scoring architecture.
 Only the declared scalar parameter may vary.  Adjacent candidates whose
 objective is within an explicit absolute tolerance of the best result are
 reported as robust plateaus; a lone best candidate is called out as an
-isolated optimum rather than promoted.
+isolated optimum rather than promoted.  A candidate that never traded returns
+exactly zero rather than nothing, so the report also declares when some or all
+candidates produced no trades and a flat region is absence of evidence.
 """
 
 from __future__ import annotations
@@ -105,6 +107,8 @@ THRESHOLD_SWEEP_REASON_CODES = (
     "THRESHOLD_SWEEP_PARAMETER_SETS_PERSISTED",
     "THRESHOLD_SWEEP_SCORE_BAND_SCOPE_EVALUATED",
     "THRESHOLD_SWEEP_ARCHITECTURE_ISOLATED",
+    "THRESHOLD_SWEEP_CANDIDATES_WITHOUT_TRADES",
+    "THRESHOLD_SWEEP_NO_TRADES",
     "THRESHOLD_SWEEP_ROBUST_PLATEAU",
     "THRESHOLD_SWEEP_ISOLATED_OPTIMUM",
     "THRESHOLD_SWEEP_NO_COMPARABLE_OBJECTIVE",
@@ -488,7 +492,9 @@ def _build_report(
         best_parameter_set_id=best_id,
         isolated_optimum=isolated,
         config_metadata=dict(spec.base_config_metadata),
-        reason_codes=_reason_codes(spec, best_id, plateaus, isolated),
+        reason_codes=_reason_codes(
+            spec, tuple(points), best_id, plateaus, isolated
+        ),
     )
     report = replace(report, report_id=_report_id(report))
     _validate_report(report)
@@ -608,7 +614,7 @@ def _validate_comparability(points: tuple[ThresholdSweepPoint, ...]) -> None:
         if _comparison_signature(point.validation) != first:
             raise ValueError(
                 "candidate validations must share schedule, split, capital, costs, "
-                "and scoring-independent run assumptions"
+                "fitting procedure, and scoring-independent run assumptions"
             )
 
 
@@ -639,11 +645,17 @@ def _comparison_signature(validation: WalkForwardValidation) -> dict[str, Any]:
         ],
         "config_version": validation.config_metadata.get("config_version"),
         "strategy_version": validation.config_metadata.get("strategy_version"),
+        "strategy_declaration": (
+            "WALK_FORWARD_STRATEGY_RECALIBRATED"
+            if "WALK_FORWARD_STRATEGY_RECALIBRATED" in validation.reason_codes
+            else "WALK_FORWARD_STRATEGY_CONSTANT"
+        ),
     }
 
 
 def _reason_codes(
     spec: ThresholdSweepSpec,
+    points: tuple[ThresholdSweepPoint, ...],
     best_id: str | None,
     plateaus: tuple[ThresholdPlateau, ...],
     isolated: bool,
@@ -662,6 +674,13 @@ def _reason_codes(
     ):
         codes.append("THRESHOLD_SWEEP_SCORE_BAND_SCOPE_EVALUATED")
     codes.append("THRESHOLD_SWEEP_ARCHITECTURE_ISOLATED")
+    traded = tuple(point for point in points if point.metrics.trade_count > 0)
+    if not traded:
+        # A candidate that never traded still returns exactly zero, so a flat
+        # sweep would otherwise read as a robust plateau built on no evidence.
+        codes.append("THRESHOLD_SWEEP_NO_TRADES")
+    elif len(traded) != len(points):
+        codes.append("THRESHOLD_SWEEP_CANDIDATES_WITHOUT_TRADES")
     if best_id is None:
         codes.append("THRESHOLD_SWEEP_NO_COMPARABLE_OBJECTIVE")
     if plateaus:
@@ -743,7 +762,7 @@ def _validate_report(report: ThresholdSweepReport) -> None:
     ):
         raise ValueError("plateau analysis does not match point evidence")
     if report.reason_codes != _reason_codes(
-        report.spec, best, plateaus, isolated
+        report.spec, report.points, best, plateaus, isolated
     ):
         raise ValueError("reason codes do not describe the threshold sweep")
     if report.report_id != _report_id(report):

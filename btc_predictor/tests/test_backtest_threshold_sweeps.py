@@ -33,6 +33,7 @@ from btc_predictor.backtest import (
     BacktestIntent,
     FoldStrategy,
     ThresholdParameterSet,
+    TrainingWindow,
     restore_threshold_sweep_report,
     run_threshold_sweep,
     run_walk_forward,
@@ -343,3 +344,84 @@ def test_report_lookup_rejects_an_unknown_parameter_set() -> None:
 
     with pytest.raises(KeyError):
         report.point("unknown")
+
+
+def recalibrating_evaluator(recalibrated_value):
+    """Refit one candidate per fold while the others keep a constant rule."""
+
+    def evaluate(parameter_set: ThresholdParameterSet):
+        config = candidate_config(parameter_set)
+        strategy = entering_strategy(parameter_set)
+        refit = parameter_set.value == recalibrated_value
+
+        def factory(training: TrainingWindow):
+            fold_number = training.window.fold_number
+            return FoldStrategy(
+                strategy=strategy,
+                strategy_id=(
+                    f"btc185-{parameter_set.parameter_set_id}-fold{fold_number}"
+                    if refit
+                    else f"btc185-{parameter_set.parameter_set_id}"
+                ),
+                calibration={"refit_fold": fold_number} if refit else None,
+            )
+
+        return run_walk_forward(
+            BARS,
+            strategy_factory=factory,
+            plan=walk_forward_plan(
+                config,
+                train_periods=3,
+                test_periods=2,
+                step_periods=2,
+            ),
+            starting_nav=NAV,
+            strategy_config=config,
+        )
+
+    return evaluate
+
+
+def test_a_flat_sweep_without_trades_is_declared_absence_of_evidence() -> None:
+    report = run_threshold_sweep(spec(), evaluator=evaluator(lambda _value: False))
+
+    assert all(point.metrics.trade_count == 0 for point in report.points)
+    assert all(
+        point.metrics.mean_return_fraction == Decimal("0") for point in report.points
+    )
+    # The zero-return tie still forms a contiguous region, so the report must
+    # not let that read as a robustness claim.
+    assert report.plateaus and report.plateaus[0].point_count == len(report.points)
+    assert "THRESHOLD_SWEEP_NO_TRADES" in report.reason_codes
+    assert "THRESHOLD_SWEEP_CANDIDATES_WITHOUT_TRADES" not in report.reason_codes
+    assert set(report.reason_codes).issubset(THRESHOLD_SWEEP_REASON_CODES)
+    assert restore_threshold_sweep_report(report.as_record()) == report
+
+
+def test_candidates_that_never_traded_are_named_in_a_partly_traded_sweep() -> None:
+    report = run_threshold_sweep(
+        spec(), evaluator=evaluator(lambda value: value == Decimal("80"))
+    )
+
+    assert [point.metrics.trade_count > 0 for point in report.points] == [
+        False,
+        True,
+        False,
+    ]
+    assert "THRESHOLD_SWEEP_CANDIDATES_WITHOUT_TRADES" in report.reason_codes
+    assert "THRESHOLD_SWEEP_NO_TRADES" not in report.reason_codes
+
+
+def test_a_fully_traded_sweep_declares_no_missing_trade_evidence() -> None:
+    report = run_threshold_sweep(spec(), evaluator=evaluator())
+
+    assert all(point.metrics.trade_count > 0 for point in report.points)
+    assert "THRESHOLD_SWEEP_NO_TRADES" not in report.reason_codes
+    assert "THRESHOLD_SWEEP_CANDIDATES_WITHOUT_TRADES" not in report.reason_codes
+
+
+def test_candidates_must_share_one_fitting_procedure() -> None:
+    with pytest.raises(ValueError, match="fitting procedure"):
+        run_threshold_sweep(
+            spec(), evaluator=recalibrating_evaluator(Decimal("85"))
+        )

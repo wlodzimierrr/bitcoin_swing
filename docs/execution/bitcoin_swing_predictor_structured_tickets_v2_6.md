@@ -5269,6 +5269,22 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     dependency regressions pass with 390 tests; the complete Python 3.12 suite
     passes with 2487 tests. Implementation commit:
     `f26dca55e0b559b2496513a2d52be2e23e246727`.
+  - The independent review closed two findings. A candidate that never traded
+    returns exactly zero rather than nothing, so a sweep in which some or all
+    candidates never traded produced a contiguous zero-return region that read
+    as `THRESHOLD_SWEEP_ROBUST_PLATEAU` on no evidence, and named a non-trading
+    candidate as best. The report now also declares
+    `THRESHOLD_SWEEP_NO_TRADES` or `THRESHOLD_SWEEP_CANDIDATES_WITHOUT_TRADES`,
+    carrying BTC-182's `WALK_FORWARD_NO_TRADES` convention up to the sweep.
+  - Comparability now also holds the fitting procedure constant. Candidates
+    refit per fold and candidates running a constant rule previously passed
+    `THRESHOLD_SWEEP_COMPARABLE_RUNS` together, which confounds the swept
+    threshold with the fitting procedure that BTC-182 records as
+    `WALK_FORWARD_STRATEGY_CONSTANT` or `WALK_FORWARD_STRATEGY_RECALIBRATED`.
+  - Added 4 independent regressions for the flat no-trade sweep, the partly
+    traded sweep, a fully traded sweep, and mixed fitting procedures. Focused
+    tests pass with 36 tests; the complete Python 3.12 suite passes with 2491
+    tests.
 
 
 ## EPIC S2 — Extended Quant Research
