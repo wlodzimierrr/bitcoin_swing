@@ -5316,7 +5316,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   \[
   FundingReset \times OIDeleveraging \times FlowImprovement
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Uses only point-in-time Feature Matrix data
@@ -5328,6 +5328,46 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/feature_interactions.py` with policy version
+    `FEATURE_INTERACTION_RESEARCH_V1`. The five ticket candidates are frozen as
+    explicit feature bindings. The three-way reset/deleveraging/improvement
+    hypothesis requires point-in-time columns with those declared semantics;
+    the research layer does not silently reinterpret existing health or level
+    features as improvement signals.
+  - Each BTC-182 fold fits a standardized main-effects OLS baseline and a
+    nested model adding the standardized product term. Training statistics and
+    transformations come only from that fold's training rows; only labels
+    available by the fold's first test timestamp may enter fitting. Incremental
+    out-of-sample R-squared compares the two models on the held-out rows.
+  - Every interaction reports its exact formula and feature names, complete-case
+    sample size, tested sample size, fold effect coefficients, baseline and
+    interaction MSE, incremental out-of-sample R-squared, weighted mean effect,
+    cross-fold effect dispersion, sign consistency, and positive-increment
+    fraction. Zero-variance, rank-deficient, and undersized folds remain
+    explicit unavailable estimates; missing features or targets are never
+    zero-filled.
+  - Reports include a global result plus every observed point-in-time regime
+    and setup segment. Context evidence must be available by its exact decision
+    timestamp, and feature, target, context schedules and strategy/config/
+    parameter-set provenance must agree before analysis begins.
+  - Specifications and reports persist versioned policies, BTC-182 split
+    evidence, feature/target definition fingerprints, deterministic input and
+    context digests, reason codes, research-only status, and the required
+    `BTC-193` promotion boundary. Restoration reconstructs derived evidence and
+    rejects nested tampering.
+  - Added 18 focused tests covering all five interactions, main-effect control,
+    global/regime/setup conditioning, effect size and stability, missing-value
+    handling, unavailable training labels, future-append invariance,
+    point-in-time contexts, provenance and schedule mismatches, explicit
+    three-way bindings, deterministic replay, tamper rejection, invalid
+    definitions, and degenerate designs. Focused dependency regressions pass
+    with 324 tests; the complete Python 3.12 suite passes with 2509 tests.
+    Implementation commits: `fed9b8775c3a2c4abf99bb2ca979afa2115a801f`
+    (module and exports, committed concurrently with the BTC-185 review fix)
+    and `b684c221be77287bcbe7b9e803a39d4203b75e4b` (formula precision and focused
+    verification), followed by `24bf8e07d824601634006fb01429e0303bc319d1`
+    (derived-evidence reconstruction validation).
 
 #### BTC-187 Monte Carlo portfolio risk analysis
 - **Description:**
