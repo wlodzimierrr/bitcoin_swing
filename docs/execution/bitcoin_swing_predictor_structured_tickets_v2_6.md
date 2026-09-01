@@ -5627,7 +5627,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 #### BTC-191 Create paper-trade outcome dataset
 - **Description:**
   Join entry-state features to final outcomes.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5637,6 +5637,69 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/paper_trade_outcomes.py` with policy version
+    `PAPER_TRADE_OUTCOME_DATASET_V1`. One immutable row per completed paper
+    trade puts the BTC-048 entry state and the BTC-165 final outcome in the
+    same row; `build_paper_trade_outcome_dataset()` is the only constructor and
+    `restore_paper_trade_outcome_dataset()` the only replay path.
+  - **Only closed trades are joined.** `CLOSED_TRADES_ONLY_BY_EXTRACTION_TIME_V1`
+    refuses an open position rather than joining its running numbers, because
+    accounting-to-date is not a final outcome, and refuses a trade that closed
+    after the extraction time so the dataset stays replayable as of that time.
+    A row that still carried `TRADE_ACCOUNTING_POSITION_STILL_OPEN` fails
+    closed even if it were constructed directly.
+  - Numbers are not recomputed here. Outcome cells are read from the BTC-165
+    `PaperTradeAccounting` and keep its field names, so `r_multiple` stays
+    `INITIAL_PLANNED_RISK_V1`, the excursions stay
+    `SIGNED_GROSS_PNL_FULL_BARS_AND_FILL_ENDPOINTS_V1`, and `max size` stays
+    `MAX_OPEN_ENTRY_COST_BASIS_V1`. The dataset records those conventions and
+    the accounting policy version and refuses an accounting that disagrees with
+    them. `initial_risk`, `entry_notional`, and `exit_notional` are carried so
+    BTC-187 can normalize outcomes without inventing a return convention here.
+  - Entry state is point-in-time by construction:
+    `ENTRY_STATE_AS_OF_ENTRY_DECISION_TIMESTAMP_V1` reads the BTC-048
+    feature-matrix row for the trade's entry decision timestamp, which must be
+    a decision timestamp on that grid and must not follow the opening fill, and
+    every cell's availability is re-checked against that timestamp. The
+    categorical vocabularies stay owned by BTC-190 (`PAPER_TRADE_DECISIONS`,
+    `PAPER_TRADE_SETUPS`, `PAPER_TRADE_REGIMES`), so a trade and the decision
+    date that produced it carry identical labels for BTC-192.
+  - Nothing is zero-filled. An entry feature is `AVAILABLE`, `MISSING_VALUE`
+    (observed, value absent), or `NOT_OBSERVED`, and unrecorded cells carry no
+    provenance. An outcome BTC-165 could not measure is `NOT_MEASURED` and must
+    cite the BTC-165 reason code that explains it -- `TRADE_ACCOUNTING_R_UNDEFINED`
+    or `TRADE_ACCOUNTING_NO_EXCURSION_BARS` -- and that code must be one the
+    accounting actually raised. `entry_feature_matrix()` and `outcome_matrix()`
+    expose read-only NumPy arrays with NaN missing masks; `outcome_series()`
+    returns the exact `Decimal` values for consumers that must not round.
+  - Provenance is reused, not restated: each row carries the BTC-166
+    `LifecycleProvenance` triple, and `ONE_STRATEGY_PROVENANCE_PER_DATASET_V1`
+    requires the entry, its accounting `config_metadata`, and the feature-matrix
+    provenance to agree on `strategy_version` and `parameter_set_id`. Comparing
+    strategy versions or parameter sets is BTC-192's job across datasets, not a
+    silent mixture inside one. Entry symbol and direction are cross-checked
+    against the executed trade.
+  - Exit reasons are recorded and counted as BTC-165 identifiers without a new
+    frozen vocabulary, because the exit reasons in use are wider than
+    `EXIT_REASON_IDS`; the census reports exactly the reasons observed.
+  - Persistence is the deterministic `as_record()` contract used by BTC-048 and
+    BTC-190, not a new database table. Records carry the definition fingerprint,
+    feature definition and fingerprint, provenance config metadata, accounting
+    conventions, the input digest (which replays every accounting through
+    `PaperTradeAccounting.as_record()`), a coverage census, reason codes,
+    `RESEARCH_ONLY_NOT_PRODUCTION`, BTC-193 as the promotion boundary, and a
+    SHA-256 evidence digest. Restoration recomputes the census and rejects
+    tampered values, dropped rows, altered counts, relabelled provenance, and
+    invented reason codes.
+  - Added 26 focused tests covering the join, point-in-time entry state and late
+    revisions, absent features and unmeasured outcomes, undefined R, open and
+    late-closing trades, unmatched entries and accountings, duplicate trade
+    references, instrument/side and provenance mismatches, deterministic
+    ordering and digests, record round trips, tamper rejection, narrowed
+    definitions, the coverage census, NumPy handoff, and the empty dataset.
+    Focused dependency regressions pass with 222 tests; the complete Python
+    3.12 suite passes with 2615 tests.
 
 #### BTC-192 Create strategy comparison framework
 - **Description:**
