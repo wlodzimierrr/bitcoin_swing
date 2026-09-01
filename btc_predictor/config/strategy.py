@@ -124,6 +124,9 @@ LEVEL_STRENGTH_WEIGHT_KEYS = (
     "confluence",
 )
 LEVEL_STRENGTH_TIMEFRAME_SCORE_KEYS = ("1h", "1d", "1w", "1mo", "unknown")
+# BTC-181: the base rung is the [backtest] triple itself, so only the rungs
+# that deviate from the shared assumption are declared in configuration.
+CONFIGURED_COST_PROFILE_KEYS = ("optimistic", "stress")
 
 
 class StrategyConfigError(ValueError):
@@ -1025,6 +1028,56 @@ class ScoringWeights:
 
 
 @dataclass(frozen=True)
+class CostProfileAssumptions:
+    """One BTC-181 cost rung, in basis points, as declared by configuration."""
+
+    fee_bps: float
+    slippage_bps: float
+    funding_cost_bps_per_day: float
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            fee_bps=_required_non_negative_float(data, "fee_bps"),
+            slippage_bps=_required_non_negative_float(data, "slippage_bps"),
+            funding_cost_bps_per_day=_required_non_negative_float(
+                data,
+                "funding_cost_bps_per_day",
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class BacktestCostProfiles:
+    """The declared rungs of the BTC-181 cost ladder.
+
+    ``base`` is deliberately absent. The base rung is the ``[backtest]``
+    fee/slippage/funding triple itself, which paper trading and advisory
+    already read through ``execution_costs_from_config``. Repeating it here
+    would create a second copy that could silently disagree with the shared
+    assumption, so only the rungs that differ from it are configurable.
+    """
+
+    optimistic: CostProfileAssumptions
+    stress: CostProfileAssumptions
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        unknown = set(data) - set(CONFIGURED_COST_PROFILE_KEYS)
+        if unknown:
+            raise StrategyConfigError(
+                "backtest.cost_profiles accepts only "
+                f"{', '.join(CONFIGURED_COST_PROFILE_KEYS)}; the base rung is the "
+                "[backtest] fee/slippage/funding triple (unexpected: "
+                f"{', '.join(sorted(unknown))})",
+            )
+        return cls(
+            optimistic=_cost_profile_assumptions(data, "optimistic"),
+            stress=_cost_profile_assumptions(data, "stress"),
+        )
+
+
+@dataclass(frozen=True)
 class BacktestAssumptions:
     initial_cash: float
     fee_bps: float
@@ -1033,6 +1086,7 @@ class BacktestAssumptions:
     max_trades_per_year: int
     allow_short_trades: bool
     execution_timing: str
+    cost_profiles: BacktestCostProfiles
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -1047,6 +1101,9 @@ class BacktestAssumptions:
             max_trades_per_year=_required_positive_int(data, "max_trades_per_year"),
             allow_short_trades=_required_bool(data, "allow_short_trades"),
             execution_timing=_required_string(data, "execution_timing"),
+            cost_profiles=BacktestCostProfiles.from_mapping(
+                _required_mapping(data, "cost_profiles"),
+            ),
         )
 
 
@@ -1136,6 +1193,21 @@ def load_strategy_config(path: Path | None = None) -> StrategyConfig:
         raise StrategyConfigError("Strategy config must be a TOML table")
 
     return StrategyConfig.from_mapping(data)
+
+
+def _cost_profile_assumptions(
+    data: dict[str, Any],
+    profile: str,
+) -> CostProfileAssumptions:
+    """Parse one rung, naming the rung in whatever the parser rejects."""
+
+    table = _required_mapping(data, profile)
+    try:
+        return CostProfileAssumptions.from_mapping(table)
+    except StrategyConfigError as error:
+        raise StrategyConfigError(
+            f"backtest.cost_profiles.{profile}: {error}",
+        ) from error
 
 
 def _risk_band(data: Any) -> RiskBand:

@@ -4910,7 +4910,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   base
   stress
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4920,6 +4920,42 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/costs.py` with policy version
+    `REALISTIC_COST_MODEL_V1`, feature `BACKTEST_COST_PROFILE`, and the ordered
+    ladder `("optimistic", "base", "stress")` exposed as `cost_profiles()` and
+    `cost_profile(name)`.
+  - The `base` rung is not a fourth set of numbers. It is
+    `execution_costs_from_config()` itself, the BTC-160 assumption advisory and
+    paper trading already price against, so a base backtest cannot silently
+    disagree with the rest of the system. Only the rungs that deviate are
+    declared, under `[backtest.cost_profiles.optimistic]` and
+    `[backtest.cost_profiles.stress]`; redeclaring `base` in configuration is
+    rejected, as are unknown rung names and negative rates.
+  - Resolving any rung validates the whole ladder and fails closed when a more
+    pessimistic rung prices `fee_bps`, `slippage_bps`, or
+    `funding_cost_bps_per_day` below a cheaper one. Every rung keeps
+    `EXECUTION_COST_V1`, which the BTC-162/BTC-163 execution owners require,
+    and `round_trip_cost()` delegates to the BTC-160 owner rather than
+    re-deriving the round trip.
+  - The shared `[backtest]` cost assumption is deliberately unchanged. This
+    ticket adds the ladder around it; moving the base assumption itself is a
+    versioned strategy-config decision, so the configured rung values are
+    marked `PROVISIONAL_RESEARCH_CALIBRATABLE`.
+  - `run_backtest(..., cost_profile=...)` executes a run under one named rung.
+    It is mutually exclusive with an explicit `costs` override, an account
+    priced off the rung is rejected, and leaving it unset preserves the exact
+    BTC-180 resolution order while recording no profile, because a run that
+    did not select a rung must not claim it did.
+  - The selected rung is part of run identity: it enters `run_id`, is persisted
+    on `BacktestResult` with its costs, round-trip cost fraction, config
+    identity, and reason codes, and is restored by `restore_backtest_result()`.
+    Relabelling a persisted rung fails replay.
+  - Reason codes are `COST_PROFILE_SELECTED`,
+    `COST_PROFILE_SHARED_CONFIG_COSTS` for the base rung, and
+    `COST_PROFILE_FUNDING_UNPRICED` where a rung prices no carry, plus
+    `BACKTEST_COST_PROFILE_APPLIED` on the run itself. A run that prices no
+    funding says so instead of implying carry is free.
 
 #### BTC-182 Implement walk-forward validation
 - **Description:**

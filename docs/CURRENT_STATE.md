@@ -14,17 +14,15 @@
 - **Last updated:** 2026-09-01
 - **Current phase:** Phase 1, EPIC S backtesting and validation research
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-181, realistic cost model
-- **Last completed ticket:** BTC-180, including its required independent xHigh
-  review and review fixes
+- **Current implementation frontier:** BTC-182, walk-forward validation
+- **Last completed ticket:** BTC-181, realistic cost model
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-181, first by V2 execution order
-- **Other ready tickets in the current epic:** BTC-182 and BTC-185
-- **Latest verified test baseline:** 2303 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:**
-  `373b593e9c53556aabc469f60b360032e593d8dc`
-  (`fix: close BTC-180 independent review findings`)
+- **Next dependency-satisfied ticket:** BTC-182, first by V2 execution order
+- **Other ready tickets in the current epic:** BTC-185
+- **Latest verified test baseline:** 2343 passed with Python 3.12 on 2026-09-01
+- **Last relevant implementation/review commit:** `COMMIT_PLACEHOLDER`
+  (`feat: implement BTC-181 realistic cost model`)
 
 ## Price-Reference State
 

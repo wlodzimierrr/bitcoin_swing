@@ -34,6 +34,12 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
+from btc_predictor.backtest.costs import (
+    COST_PROFILES,
+    CostProfile,
+    cost_profile as resolve_cost_profile,
+    restore_cost_profile,
+)
 from btc_predictor.config.strategy import StrategyConfig, load_strategy_config
 from btc_predictor.data import OhlcvBar, next_bar_timestamp, require_utc_datetime
 from btc_predictor.portfolio.account import (
@@ -109,6 +115,7 @@ BACKTEST_END_POLICY_VERSION = "MARK_OPEN_POSITION_NO_FORCED_EXIT_V1"
 BACKTEST_RECONCILIATION_TOLERANCE = Decimal(str(PARITY_ABSOLUTE_TOLERANCE))
 
 SHARED_CALCULATION_SOURCES = (
+    "btc_predictor.backtest.costs",
     "btc_predictor.portfolio.account",
     "btc_predictor.portfolio.accounting",
     "btc_predictor.portfolio.add_execution",
@@ -142,6 +149,7 @@ BACKTEST_ACTIONS = (
 BACKTEST_REASON_CODES = (
     "BACKTEST_COMPLETE",
     "BACKTEST_NO_BARS",
+    "BACKTEST_COST_PROFILE_APPLIED",
     "BACKTEST_ENTRY_FILLED",
     "BACKTEST_ENTRY_MISSED",
     "BACKTEST_ENTRY_UNSIZED",
@@ -315,6 +323,7 @@ class BacktestResult:
     bar_count: int
     input_bars: tuple[OhlcvBar, ...]
     effective_costs: ExecutionCosts
+    cost_profile: CostProfile | None
     account: PaperAccount
     final_lifecycle: PositionLifecycle
     starting_nav: Decimal
@@ -369,10 +378,17 @@ def run_backtest(
     starting_nav: Any | None = None,
     strategy_config: StrategyConfig | None = None,
     costs: ExecutionCosts | None = None,
+    cost_profile: str | None = None,
     account: PaperAccount | None = None,
     strategy_id: str | None = None,
 ) -> BacktestResult:
-    """Replay canonical bars through shared execution, risk, and accounting."""
+    """Replay canonical bars through shared execution, risk, and accounting.
+
+    ``cost_profile`` names one BTC-181 rung to execute under. Leaving it
+    unset keeps the BTC-180 resolution order (explicit costs, else the
+    account's, else configuration) and records no profile, because a run
+    that did not select a ladder rung must not claim it did.
+    """
 
     config = strategy_config if strategy_config is not None else load_strategy_config()
     if not isinstance(config, StrategyConfig):
@@ -381,12 +397,14 @@ def run_backtest(
         raise TypeError("strategy must be callable")
     ordered = _validate_bars(bars, symbol=symbol)
     metadata = config.run_metadata()
+    profile = _resolve_cost_profile(cost_profile, config)
     effective_costs, resolved_account = _resolve_account_and_costs(
         ordered=ordered,
         symbol=symbol,
         config=config,
         metadata=metadata,
         costs=costs,
+        profile=profile,
         account=account,
         starting_nav=starting_nav,
     )
@@ -394,6 +412,7 @@ def run_backtest(
     state = _EngineState(
         config=config,
         costs=effective_costs,
+        cost_profile=profile,
         symbol=symbol,
         metadata=metadata,
         account=resolved_account,
@@ -420,6 +439,12 @@ def restore_backtest_result(record: Mapping[str, Any]) -> BacktestResult:
 
     source = _mapping(record, "record")
     costs = _costs_from_record(_mapping(source.get("effective_costs"), "effective_costs"))
+    profile_record = source.get("cost_profile")
+    profile = (
+        restore_cost_profile(_mapping(profile_record, "cost_profile"))
+        if profile_record is not None
+        else None
+    )
     bars = tuple(
         _bar_from_record(_mapping(item, "input_bar"))
         for item in _record_sequence(source.get("input_bars"), "input_bars")
@@ -494,6 +519,7 @@ def restore_backtest_result(record: Mapping[str, Any]) -> BacktestResult:
         bar_count=_non_negative_integer(source.get("bar_count"), "bar_count"),
         input_bars=bars,
         effective_costs=costs,
+        cost_profile=profile,
         account=account,
         final_lifecycle=lifecycle,
         starting_nav=_decimal(source.get("starting_nav"), "starting_nav"),
@@ -521,6 +547,7 @@ class _EngineState:
         *,
         config: StrategyConfig,
         costs: ExecutionCosts,
+        cost_profile: CostProfile | None,
         symbol: str,
         metadata: dict[str, str],
         account: PaperAccount,
@@ -528,6 +555,7 @@ class _EngineState:
     ) -> None:
         self.config = config
         self.costs = costs
+        self.cost_profile = cost_profile
         self.symbol = symbol
         self.metadata = dict(metadata)
         self.account = account
@@ -551,6 +579,8 @@ class _EngineState:
         self.equity_curve: list[EquityPoint] = []
         self.events: list[BacktestEvent] = []
         self.reason_codes: list[str] = []
+        if cost_profile is not None:
+            self._note("BACKTEST_COST_PROFILE_APPLIED")
         self.missed_entries = 0
         self.stopped_out = 0
         self.ledger_sequence = 0
@@ -1354,12 +1384,18 @@ def _resolve_account_and_costs(
     config: StrategyConfig,
     metadata: dict[str, str],
     costs: ExecutionCosts | None,
+    profile: CostProfile | None,
     account: PaperAccount | None,
     starting_nav: Any | None,
 ) -> tuple[ExecutionCosts, PaperAccount]:
     configured = execution_costs_from_config(config)
     if costs is not None and not isinstance(costs, ExecutionCosts):
         raise TypeError("costs must be an ExecutionCosts")
+    if profile is not None:
+        if costs is not None:
+            # Both would be a silent claim that the run priced the named rung.
+            raise ValueError("costs and cost_profile are mutually exclusive")
+        costs = profile.costs
     if account is not None and not isinstance(account, PaperAccount):
         raise TypeError("account must be a PaperAccount")
     if account is not None:
@@ -1397,6 +1433,17 @@ def _resolve_account_and_costs(
     )
 
 
+def _resolve_cost_profile(
+    profile: str | None,
+    config: StrategyConfig,
+) -> CostProfile | None:
+    if profile is None:
+        return None
+    if profile not in COST_PROFILES:
+        raise ValueError(f"cost_profile must be one of {COST_PROFILES}")
+    return resolve_cost_profile(profile, config=config)
+
+
 def _strategy_identifier(
     strategy: Callable[[BacktestContext], BacktestIntent | None],
     explicit: str | None,
@@ -1415,12 +1462,13 @@ def _strategy_identifier(
 
 
 def _empty_result(state: _EngineState) -> BacktestResult:
-    reasons = ("BACKTEST_NO_BARS",)
+    reasons = tuple(state.reason_codes) + ("BACKTEST_NO_BARS",)
     input_digest = _digest([])
     run_id = _run_id(
         strategy_id=state.strategy_id,
         config_metadata=state.metadata,
         costs=state.costs,
+        cost_profile=state.cost_profile,
         starting_nav=state.starting_nav,
         input_digest=input_digest,
     )
@@ -1439,6 +1487,7 @@ def _empty_result(state: _EngineState) -> BacktestResult:
         bar_count=0,
         input_bars=(),
         effective_costs=state.costs,
+        cost_profile=state.cost_profile,
         account=state.account,
         final_lifecycle=state.lifecycle,
         starting_nav=state.starting_nav,
@@ -1464,6 +1513,7 @@ def _result(state: _EngineState, bars: tuple[OhlcvBar, ...]) -> BacktestResult:
         strategy_id=state.strategy_id,
         config_metadata=state.metadata,
         costs=state.costs,
+        cost_profile=state.cost_profile,
         starting_nav=state.starting_nav,
         input_digest=input_digest,
     )
@@ -1482,6 +1532,7 @@ def _result(state: _EngineState, bars: tuple[OhlcvBar, ...]) -> BacktestResult:
         bar_count=len(bars),
         input_bars=bars,
         effective_costs=state.costs,
+        cost_profile=state.cost_profile,
         account=state.account,
         final_lifecycle=state.lifecycle,
         starting_nav=state.starting_nav,
@@ -1503,6 +1554,7 @@ def _run_id(
     strategy_id: str,
     config_metadata: Mapping[str, str],
     costs: ExecutionCosts,
+    cost_profile: CostProfile | None,
     starting_nav: Decimal,
     input_digest: str,
 ) -> str:
@@ -1511,6 +1563,7 @@ def _run_id(
             "policy": BACKTEST_ENGINE_POLICY_VERSION,
             "funding_policy": BACKTEST_FUNDING_POLICY_VERSION,
             "end_policy": BACKTEST_END_POLICY_VERSION,
+            "cost_profile": cost_profile.profile if cost_profile is not None else None,
             "strategy_id": strategy_id,
             "config": dict(config_metadata),
             "costs": costs.as_record(),
@@ -1535,11 +1588,18 @@ def _validate_result(result: BacktestResult) -> None:
         strategy_id=result.strategy_id,
         config_metadata=result.config_metadata,
         costs=result.effective_costs,
+        cost_profile=result.cost_profile,
         starting_nav=result.starting_nav,
         input_digest=result.input_digest,
     )
     if result.run_id != expected_run_id:
         raise ValueError("run inputs do not match run_id")
+    if result.cost_profile is not None:
+        result.cost_profile.as_record()
+        if result.cost_profile.costs != result.effective_costs:
+            raise ValueError("cost_profile costs must equal effective_costs")
+        if result.cost_profile.config_metadata != result.config_metadata:
+            raise ValueError("cost_profile config_metadata must match result")
     if result.account.costs != result.effective_costs:
         raise ValueError("account costs must equal effective_costs")
     if result.account.config_metadata != result.config_metadata:
@@ -1644,6 +1704,11 @@ def _result_payload(result: BacktestResult) -> dict[str, Any]:
         "bar_count": result.bar_count,
         "input_bars": [_bar_record(item) for item in result.input_bars],
         "effective_costs": result.effective_costs.as_record(),
+        "cost_profile": (
+            result.cost_profile.as_record()
+            if result.cost_profile is not None
+            else None
+        ),
         "starting_nav": str(result.starting_nav),
         "ending_nav": str(result.ending_nav),
         "net_pnl": str(result.net_pnl),

@@ -282,3 +282,23 @@ funding_cost_bps_per_day = 0
 max_trades_per_year = 24
 allow_short_trades = false
 execution_timing = "next_bar"
+
+# BTC-181 cost ladder. The `base` rung is the [backtest] fee/slippage/funding
+# triple above, which advisory and paper trading already share, so it is not
+# repeated here; only the rungs that deviate from that shared assumption are
+# declared. Each rung must be at least as expensive as the previous one
+# (optimistic <= base <= stress), which the BTC-181 owner module enforces.
+# The rung values are provisional research parameters and are calibratable.
+
+# Patient limit fills in liquid conditions on a fee-tiered venue.
+[backtest.cost_profiles.optimistic]
+fee_bps = 5
+slippage_bps = 2
+funding_cost_bps_per_day = 0
+
+# Base-tier taker fees, wide spreads and gapped stop fills, plus crowded-long
+# perpetual carry at roughly 0.02% per 8h funding interval.
+[backtest.cost_profiles.stress]
+fee_bps = 20
+slippage_bps = 25
+funding_cost_bps_per_day = 6
