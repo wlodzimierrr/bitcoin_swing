@@ -4962,7 +4962,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   No single static train/test split.
 
   Use rolling or expanding windows.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -4973,6 +4973,81 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/walk_forward.py` with feature
+    `WALK_FORWARD_VALIDATION`, policy version `WALK_FORWARD_VALIDATION_V1`,
+    split policy `TRAIN_STRICTLY_BEFORE_TEST_V1`, capital policy
+    `INDEPENDENT_FOLD_CAPITAL_V1`, and the schemes `("rolling", "expanding")`.
+  - `walk_forward_windows()` cuts any ordered UTC schedule into complete folds,
+    so BTC-048 decision timestamps fold exactly like bar timestamps for the
+    BTC-186/BTC-189 research consumers. An expanding split keeps every earlier
+    period; a rolling split slides a fixed in-sample window; `embargo_periods`
+    drops periods between train and test so research fitted against forward
+    targets cannot label its own test window.
+  - The leakage barrier is structural rather than advisory.
+    `run_walk_forward()` hands the strategy factory a `TrainingWindow` holding
+    that fold's in-sample bars only, and hands BTC-180 that fold's
+    out-of-sample bars only. Each fold persists the proof: its engine result's
+    `bar_count`, `started_at`, and `ended_at` must equal its window. What the
+    module cannot police is a factory that reaches for data it was not given.
+  - `INDEPENDENT_FOLD_CAPITAL_V1`: every fold opens a pristine account at the
+    same starting NAV. Compounding folds would make fold *k* a function of
+    folds *1..k-1*, which lets one lucky early fold carry a rule that stopped
+    working years ago.
+  - Out-of-sample windows never overlap: `step_periods` below `test_periods` is
+    rejected rather than aggregated, because pooling overlapping windows counts
+    the same market twice. A wider step is allowed but declares
+    `WALK_FORWARD_OUT_OF_SAMPLE_GAPS`, and leading, skipped, tested, and
+    trailing periods must add up to the schedule, so a coverage claim cannot
+    hide untested history. A schedule too short for one complete fold fails
+    closed with the minimum it needs, and a short tail is reported untested
+    instead of tested as a short fold.
+  - The engine sees only a fold's out-of-sample bars, so a strategy needing
+    warm-up history must seed it from the `TrainingWindow`. Warm-up data is
+    in-sample data.
+  - A factory returns a `FoldStrategy` with an explicit `strategy_id` and an
+    optional calibration record; one identity declaring two different
+    calibrations is rejected. The validation records
+    `WALK_FORWARD_STRATEGY_CONSTANT` or `WALK_FORWARD_STRATEGY_RECALIBRATED`
+    from those declarations rather than guessing from closures, because a
+    constant-rule walk-forward is evidence about the rule and not about a
+    fitting procedure that never ran.
+  - `validation_id` covers the policy versions, the plan, the schedule digest,
+    the dataset length, symbol, starting capital, effective costs, any BTC-181
+    rung, and every fold's declared identity, calibration, and `run_id`.
+    `restore_walk_forward_validation()` recomputes each fold summary from
+    restored BTC-180 evidence, so edited headline numbers, moved windows,
+    dropped folds, and rewritten coverage counts all fail replay.
+  - Configuration adds `[backtest.walk_forward]` (`scheme`, `train_periods`,
+    `test_periods`, `step_periods`, `embargo_periods`), defaulting to an
+    expanding 730/182/182/0 daily split and marked
+    `PROVISIONAL_RESEARCH_CALIBRATABLE`. Configuration parses types; the
+    relational rules stay in the owner module, as with the BTC-181 ladder.
+  - BTC-180's bar contract is now exposed as `validate_backtest_bars()` so
+    windows are planned against exactly the dataset the engine would replay;
+    the validation itself is unchanged.
+  - Reason codes are `WALK_FORWARD_ROLLING_WINDOWS`,
+    `WALK_FORWARD_EXPANDING_WINDOWS`, `WALK_FORWARD_EMBARGO_APPLIED`,
+    `WALK_FORWARD_NO_EMBARGO`, `WALK_FORWARD_OUT_OF_SAMPLE_CONTIGUOUS`,
+    `WALK_FORWARD_OUT_OF_SAMPLE_GAPS`,
+    `WALK_FORWARD_INDEPENDENT_FOLD_CAPITAL`,
+    `WALK_FORWARD_COST_PROFILE_APPLIED`, `WALK_FORWARD_STRATEGY_CONSTANT`,
+    `WALK_FORWARD_STRATEGY_RECALIBRATED`, `WALK_FORWARD_FOLD_CALIBRATED`,
+    `WALK_FORWARD_FOLD_UNCALIBRATED`, `WALK_FORWARD_FOLD_NO_TRADES`,
+    `WALK_FORWARD_FOLD_POSITION_OPEN_AT_END`,
+    `WALK_FORWARD_TRAILING_PERIODS_UNTESTED`, `WALK_FORWARD_NO_TRADES`, and
+    `WALK_FORWARD_COMPLETE`. A validation in which no fold traded says so
+    rather than reading as a passed check.
+  - Aggregates stay to what BTC-180 evidence supports: fold count, tested and
+    untested coverage, trade counts, profitable and losing folds, the summed
+    independent fold P&L, the unweighted mean fold return quantized to twelve
+    decimal places, and the best and worst folds. Drawdown, regime, and setup
+    breakdowns remain with BTC-183/BTC-184/BTC-189.
+  - Added 65 focused tests covering the split contract, expanding and rolling
+    windows, embargoes, coverage accounting, the leakage barrier in both
+    directions, independent capital, calibration declarations, cost-profile
+    pass-through, determinism, persistence, tampering, and configuration; the
+    complete Python 3.12 suite passes with 2408 tests.
 
 #### BTC-183 Implement regime performance breakdown
 - **Description:**

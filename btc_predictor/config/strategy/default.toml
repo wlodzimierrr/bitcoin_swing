@@ -302,3 +302,18 @@ funding_cost_bps_per_day = 0
 fee_bps = 20
 slippage_bps = 25
 funding_cost_bps_per_day = 6
+
+# BTC-182 walk-forward split, counted in scheduled periods: daily bars for a
+# backtest, decision timestamps for point-in-time research. Two years of
+# in-sample history before each six-month out-of-sample window, stepped by the
+# same six months so the tested windows are contiguous and never overlap.
+# `embargo_periods` drops periods between train and test; a fixed-rule backtest
+# needs none because BTC-180 is already point-in-time, but research fitting
+# against forward targets must raise it to at least the target horizon.
+# These are provisional research parameters and are calibratable.
+[backtest.walk_forward]
+scheme = "expanding"
+train_periods = 730
+test_periods = 182
+step_periods = 182
+embargo_periods = 0

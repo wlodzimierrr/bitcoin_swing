@@ -395,7 +395,7 @@ def run_backtest(
         raise TypeError("strategy_config must be a StrategyConfig")
     if not callable(strategy):
         raise TypeError("strategy must be callable")
-    ordered = _validate_bars(bars, symbol=symbol)
+    ordered = validate_backtest_bars(bars, symbol=symbol)
     metadata = config.run_metadata()
     profile = _resolve_cost_profile(cost_profile, config)
     effective_costs, resolved_account = _resolve_account_and_costs(
@@ -1336,11 +1336,18 @@ def _bar_days(bar: OhlcvBar) -> Decimal:
     return seconds / Decimal("86400")
 
 
-def _validate_bars(
+def validate_backtest_bars(
     bars: Sequence[OhlcvBar],
     *,
     symbol: str,
 ) -> tuple[OhlcvBar, ...]:
+    """Return the canonical replayable bar sequence, or fail closed.
+
+    This is the bar contract of a run, so BTC-182 plans its windows against the
+    same validated dataset the engine would replay rather than its own reading
+    of it.
+    """
+
     ordered = tuple(bars)
     timeframe = None
     source_identity = None
@@ -1580,7 +1587,8 @@ def _validate_result(result: BacktestResult) -> None:
         raise ValueError(f"end_policy_version must be {BACKTEST_END_POLICY_VERSION}")
     if result.bar_count != len(result.input_bars):
         raise ValueError("bar_count must equal input_bars length")
-    if _validate_bars(result.input_bars, symbol=result.symbol) != result.input_bars:
+    validated = validate_backtest_bars(result.input_bars, symbol=result.symbol)
+    if validated != result.input_bars:
         raise ValueError("input_bars must retain canonical order")
     if result.input_digest != _digest([_bar_record(item) for item in result.input_bars]):
         raise ValueError("input bars do not match input_digest")
@@ -1976,4 +1984,5 @@ __all__ = [
     "EquityPoint",
     "restore_backtest_result",
     "run_backtest",
+    "validate_backtest_bars",
 ]

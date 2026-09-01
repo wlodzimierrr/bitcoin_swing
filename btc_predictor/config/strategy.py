@@ -127,6 +127,9 @@ LEVEL_STRENGTH_TIMEFRAME_SCORE_KEYS = ("1h", "1d", "1w", "1mo", "unknown")
 # BTC-181: the base rung is the [backtest] triple itself, so only the rungs
 # that deviate from the shared assumption are declared in configuration.
 CONFIGURED_COST_PROFILE_KEYS = ("optimistic", "stress")
+# BTC-182 window schemes. The walk-forward owner module re-validates these and
+# the relations between the declared window lengths.
+WALK_FORWARD_SCHEME_KEYS = ("rolling", "expanding")
 
 
 class StrategyConfigError(ValueError):
@@ -1078,6 +1081,33 @@ class BacktestCostProfiles:
 
 
 @dataclass(frozen=True)
+class WalkForwardWindows:
+    """The BTC-182 default split, measured in scheduled periods.
+
+    A period is one entry of whatever schedule is folded: one market bar for a
+    backtest, one decision timestamp for point-in-time research. ``embargo``
+    periods are dropped between train and test so a fitted window's forward
+    labels cannot reach into the window it is evaluated on.
+    """
+
+    scheme: str
+    train_periods: int
+    test_periods: int
+    step_periods: int
+    embargo_periods: int
+
+    @classmethod
+    def from_mapping(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            scheme=_required_choice(data, "scheme", WALK_FORWARD_SCHEME_KEYS),
+            train_periods=_required_positive_int(data, "train_periods"),
+            test_periods=_required_positive_int(data, "test_periods"),
+            step_periods=_required_positive_int(data, "step_periods"),
+            embargo_periods=_required_non_negative_int(data, "embargo_periods"),
+        )
+
+
+@dataclass(frozen=True)
 class BacktestAssumptions:
     initial_cash: float
     fee_bps: float
@@ -1087,6 +1117,7 @@ class BacktestAssumptions:
     allow_short_trades: bool
     execution_timing: str
     cost_profiles: BacktestCostProfiles
+    walk_forward: WalkForwardWindows
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
@@ -1104,6 +1135,7 @@ class BacktestAssumptions:
             cost_profiles=BacktestCostProfiles.from_mapping(
                 _required_mapping(data, "cost_profiles"),
             ),
+            walk_forward=_walk_forward_windows(data),
         )
 
 
@@ -1208,6 +1240,16 @@ def _cost_profile_assumptions(
         raise StrategyConfigError(
             f"backtest.cost_profiles.{profile}: {error}",
         ) from error
+
+
+def _walk_forward_windows(data: dict[str, Any]) -> WalkForwardWindows:
+    """Parse the split, naming the section in whatever the parser rejects."""
+
+    table = _required_mapping(data, "walk_forward")
+    try:
+        return WalkForwardWindows.from_mapping(table)
+    except StrategyConfigError as error:
+        raise StrategyConfigError(f"backtest.walk_forward: {error}") from error
 
 
 def _risk_band(data: Any) -> RiskBand:
@@ -1361,6 +1403,13 @@ def _required_positive_int(data: dict[str, Any], key: str) -> int:
     value = data.get(key)
     if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
         raise StrategyConfigError(f"{key} must be a positive integer")
+    return value
+
+
+def _required_non_negative_int(data: dict[str, Any], key: str) -> int:
+    value = data.get(key)
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise StrategyConfigError(f"{key} must be a non-negative integer")
     return value
 
 
