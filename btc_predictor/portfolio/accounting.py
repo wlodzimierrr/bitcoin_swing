@@ -640,6 +640,9 @@ def calculate_trade_accounting_for_lifecycle(
     funding_events: Iterable[FundingEvent] = (),
     excursion_bars: Sequence[OhlcvBar] | None = None,
     as_of: datetime | None = None,
+    initial_stop_source_id: str | None = None,
+    exit_reason: str | None = None,
+    exit_reason_source_id: str | None = None,
 ) -> PaperTradeAccounting:
     """Account from BTC-150, deriving and reconciling stop/exit provenance."""
 
@@ -680,7 +683,12 @@ def calculate_trade_accounting_for_lifecycle(
         raise ValueError("lifecycle has no authoritative ENTER transition")
     enter = relevant[0]
     if enter.stop_price is None or enter.source_record_id is None:
-        raise ValueError("ENTER transition must identify its authoritative stop source")
+        raise ValueError("ENTER transition must identify its authoritative execution source")
+    stop_source = (
+        _identifier(initial_stop_source_id, "initial_stop_source_id")
+        if initial_stop_source_id is not None
+        else enter.source_record_id
+    )
 
     closed = relevant[-1].event == EXIT
     if closed:
@@ -692,20 +700,32 @@ def calculate_trade_accounting_for_lifecycle(
         )
         if terminal.source_record_id is None or not external_reasons:
             raise ValueError("EXIT transition must identify an authoritative exit signal")
-        exit_reason: str | None = "|".join(external_reasons)
-        exit_source: str | None = terminal.source_record_id
+        derived_exit_reason: str | None = "|".join(external_reasons)
+        derived_exit_source: str | None = terminal.source_record_id
+        accounting_exit_reason = (
+            _identifier(exit_reason, "exit_reason")
+            if exit_reason is not None
+            else derived_exit_reason
+        )
+        accounting_exit_source = (
+            _identifier(exit_reason_source_id, "exit_reason_source_id")
+            if exit_reason_source_id is not None
+            else derived_exit_source
+        )
     else:
-        exit_reason = None
-        exit_source = None
+        if exit_reason is not None or exit_reason_source_id is not None:
+            raise ValueError("an open lifecycle cannot have exit provenance")
+        accounting_exit_reason = None
+        accounting_exit_source = None
 
     return calculate_trade_accounting(
         ordered,
         symbol=lifecycle.symbol,
         direction=lifecycle.direction,
         initial_stop_price=enter.stop_price,
-        initial_stop_source_id=enter.source_record_id,
-        exit_reason=exit_reason,
-        exit_reason_source_id=exit_source,
+        initial_stop_source_id=stop_source,
+        exit_reason=accounting_exit_reason,
+        exit_reason_source_id=accounting_exit_source,
         funding_events=funding_events,
         excursion_bars=excursion_bars,
         as_of=as_of,

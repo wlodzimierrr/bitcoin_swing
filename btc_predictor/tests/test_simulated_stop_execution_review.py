@@ -435,6 +435,46 @@ def test_btc156_profit_protection_stop_executes_and_closes_btc150() -> None:
     assert repeated.quantity == 0
 
 
+def test_initial_entry_bracket_can_resolve_on_the_entry_execution_bar() -> None:
+    lifecycle = start_position_lifecycle(
+        symbol="BTC-USD",
+        state=PENDING_ENTRY,
+        config_metadata=METADATA,
+    )
+    lifecycle = apply_position_event(
+        lifecycle,
+        event=ENTER,
+        event_time=START + timedelta(hours=1, seconds=5),
+        quantity="1",
+        price="100",
+        stop_price="95",
+    )
+
+    result = stop_execution_for_position(
+        lifecycle,
+        bar(),
+        costs=free_costs(),
+        execution_id="entry-bracket-stop",
+        entry_bracket_placed_at=START,
+    )
+
+    assert result.filled is True
+    assert result.intent.stop_placed_at == START
+
+
+def test_entry_bracket_override_cannot_restate_a_later_trailing_stop() -> None:
+    lifecycle = lifecycle_with_profitable_btc156_stop()
+
+    with pytest.raises(ValueError, match="initial ENTER stop"):
+        stop_execution_for_position(
+            lifecycle,
+            bar(open=Decimal("115"), high=Decimal("116"), low=Decimal("109"), close=Decimal("111")),
+            costs=free_costs(),
+            execution_id="invalid-trailing-bracket",
+            entry_bracket_placed_at=START - timedelta(hours=4),
+        )
+
+
 def test_newly_raised_stop_cannot_trigger_retroactively() -> None:
     lifecycle = lifecycle_with_profitable_btc156_stop()
     earlier = replace(

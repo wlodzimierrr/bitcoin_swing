@@ -391,6 +391,7 @@ def stop_execution_for_position(
     costs: ExecutionCosts,
     execution_id: str,
     stop_placed_at: datetime | None = None,
+    entry_bracket_placed_at: datetime | None = None,
     position_id: int | None = None,
     config_metadata: Mapping[str, str] | None = None,
 ) -> SimulatedStopExecution:
@@ -398,7 +399,9 @@ def stop_execution_for_position(
 
     Direction, the standing stop, the weighted average entry and the remaining
     quantity all come from the ledger, so a trimmed position cannot be stopped
-    out for the size it originally entered.
+    out for the size it originally entered. ``entry_bracket_placed_at`` may
+    pre-authorize only the initial ENTER stop, allowing conservative resolution
+    when entry and stop are both touched on the execution bar.
     """
 
     from btc_predictor.portfolio.state_machine import PositionLifecycle
@@ -416,12 +419,32 @@ def stop_execution_for_position(
     ledger_metadata = _config_metadata(getattr(lifecycle, "config_metadata", {}))
     if config_metadata is not None and _config_metadata(config_metadata) != ledger_metadata:
         raise ValueError("config_metadata must match the BTC-150 lifecycle")
-    ledger_stop_placed_at = _stop_placement_time(lifecycle, stop_price)
+    stop_transition = _standing_stop_transition(lifecycle, stop_price)
+    ledger_stop_placed_at = require_utc_datetime(
+        stop_transition.event_time,
+        "stop transition time",
+    )
     if stop_placed_at is not None and require_utc_datetime(
         stop_placed_at,
         "stop_placed_at",
     ) != ledger_stop_placed_at:
         raise ValueError("stop_placed_at must match the BTC-150 stop transition")
+    if entry_bracket_placed_at is not None:
+        bracket_time = require_utc_datetime(
+            entry_bracket_placed_at,
+            "entry_bracket_placed_at",
+        )
+        if stop_placed_at is not None:
+            raise ValueError(
+                "stop_placed_at and entry_bracket_placed_at are mutually exclusive"
+            )
+        if getattr(stop_transition, "event", None) != "ENTER":
+            raise ValueError("entry bracket placement requires the initial ENTER stop")
+        if bracket_time >= ledger_stop_placed_at:
+            raise ValueError("entry bracket must be placed before the ENTER transition")
+        effective_stop_placed_at = bracket_time
+    else:
+        effective_stop_placed_at = ledger_stop_placed_at
     lifecycle_tranches = tuple(
         StopExecutionTranche(
             tranche_id=str(getattr(tranche, "tranche_number", "")),
@@ -437,7 +460,7 @@ def stop_execution_for_position(
         direction=getattr(lifecycle, "direction", ""),
         timeframe=execution_bar.timeframe,
         stop_price=stop_price,
-        stop_placed_at=ledger_stop_placed_at,
+        stop_placed_at=effective_stop_placed_at,
         average_entry_price=average_entry_price,
         open_quantity=getattr(lifecycle, "quantity", Decimal("0")),
         config_metadata=ledger_metadata,
@@ -677,7 +700,7 @@ def _effective_tranches(
     )
 
 
-def _stop_placement_time(lifecycle: Any, stop_price: Decimal) -> datetime:
+def _standing_stop_transition(lifecycle: Any, stop_price: Decimal) -> Any:
     """Return the authoritative transition that installed the standing stop."""
 
     for transition in reversed(getattr(lifecycle, "transitions", ())):
@@ -687,7 +710,7 @@ def _stop_placement_time(lifecycle: Any, stop_price: Decimal) -> datetime:
             and transition_stop is not None
             and decision_equal(transition_stop, stop_price)
         ):
-            return require_utc_datetime(transition.event_time, "stop transition time")
+            return transition
     raise ValueError("lifecycle does not contain the standing stop transition")
 
 

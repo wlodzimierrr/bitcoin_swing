@@ -4861,42 +4861,41 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Implementation is covered by focused tests where practical
   - Output is deterministic and reproducible
   - Relevant configuration and reason codes are persisted where applicable
-- **Dependencies:** BTC-047, BTC-048, BTC-049, BTC-150..158
+- **Dependencies:** BTC-047, BTC-142, BTC-144..146, BTC-150, BTC-154..157,
+  BTC-160..165
 - **Priority:** P0
 - **Complexity:** XL
 - **Risk:** High.
 - **Implementation Notes:**
   - Added `btc_predictor/backtest/engine.py` with `run_backtest()`, policy
     version `EVENT_DRIVEN_BACKTEST_V1`. The engine owns the clock and the
-    routing; every number it reports is produced by the module that already
-    owns that calculation.
-  - **The no-separate-formulas requirement is enforced, not asserted.**
-    `SHARED_CALCULATION_SOURCES` declares the twelve modules the engine
-    delegates to and a test checks each is actually imported. A second test
-    recomputes the entry size independently through BTC-144, BTC-145 and
-    BTC-155 and requires the engine's position to match, so a local sizing
-    formula would drift visibly.
-  - **Point-in-time is structural.** A strategy is handed only bars whose
-    `ingested_at` is at or before the decision bar's, and every decision it
-    returns is queued for the *next* bar. A test asserts the position does not
-    exist on the bar that armed it.
-  - **Within a bar the order is adverse-first:** a resting stop is checked
-    before any queued order. OHLCV cannot say which came first inside a bar,
-    and resolving that tie in the strategy's favour would manufacture returns.
-    A test queues an exit into a stop-out bar and confirms the stop wins.
-  - All twelve listed capabilities route through their owning modules: entry
-    zones and missed entries (BTC-161), structural stops (BTC-162), adds
-    (BTC-163 plus the BTC-154 gate and the BTC-155 schedule), trims (BTC-164
-    with the BTC-157 signal), trailing stops (BTC-156, refusing a loosened
-    stop), fees, slippage and funding (BTC-160), NAV (BTC-160), risk-at-stop
-    (BTC-146 per bar), and trade accounting (BTC-165).
-  - **Two real defects were found by the tests and fixed.** The account was
-    opened from config while executions ran under an override, so
-    `PaperAccount.charge_fee` re-priced fills under a different cost policy;
-    the account is now opened with the engine's costs, and a regression test
-    pins it. Funding was accrued as an opaque aggregate, which BTC-165 rejects
-    as unreplayable; it is now emitted as `FundingEvent` records, charged only
-    on bars without a fill so the recorded quantity matches the ledger.
+    routing while economic calculations stay in their authoritative owner
+    modules.
+  - The independent xHigh review fixed point-in-time decision timestamps,
+    decision-time sizing, stale/final intent handling, adverse-first stop
+    collisions, and trailing-stop provenance/reuse protection.
+  - Entry, ADD, TRIM, structural stop, and discretionary EXIT fills route
+    through shared execution owners. Fill conversion and completed/open-trade
+    accounting route through BTC-165; sizing and per-bar risk route through
+    BTC-144..146 and BTC-155. Delegation is verified with call spies and
+    direct-owner parity tests rather than import checks alone.
+  - The fixed within-bar order is carry for the pre-execution position,
+    resting stop, one previously queued intent, close-marked NAV/risk, then the
+    next strategy decision. A pre-authorized entry bracket resolves a same-bar
+    entry/stop collision through BTC-162 on the adverse path; a newly installed
+    trailing stop remains eligible only on later full bars under BTC-156.
+  - Funding uses `BAR_CLOSE_PRE_EXECUTION_CARRY_V1` and persisted BTC-165
+    `FundingEvent` evidence. ADD/TRIM/EXIT/STOP bars retain valid carry, and
+    positive rates debit longs while crediting shorts.
+  - NAV uses `CASH_PLUS_MARKED_UNREALIZED_V1`. Entry, exit, ADD, TRIM, funding,
+    realized P&L, and open/closed trade evidence reconcile at result creation;
+    unsupported insolvency fails closed instead of returning floored NAV.
+  - Results persist exact bars, input/run/evidence digests, strategy identity,
+    effective costs, event/refusal evidence, account state, lifecycle state,
+    trades, and equity/risk snapshots. `restore_backtest_result()` validates a
+    deterministic round trip and rejects nested evidence tampering.
+  - Phase 1 supports one BTC position, one pending intent, explicit missed-bar
+    expiry, and `MARK_OPEN_POSITION_NO_FORCED_EXIT_V1` at dataset end.
   - The strategy interface is a callable taking a `BacktestContext` and
     returning a `BacktestIntent`, which keeps the engine testable without the
     full feature stack while leaving every policy decision outside it.

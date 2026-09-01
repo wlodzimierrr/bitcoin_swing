@@ -25,7 +25,13 @@ from btc_predictor.config import load_strategy_config
 from btc_predictor.data import OhlcvBar
 from btc_predictor.portfolio.account import ExecutionCosts, execution_costs_from_config
 from btc_predictor.risk.budget import calculate_risk_budget
-from btc_predictor.risk.sizing import calculate_initial_position_size
+from btc_predictor.risk.sizing import initial_position_size_for_trade
+from btc_predictor.risk.stop import calculate_initial_stop
+from btc_predictor.risk.trailing import (
+    HIGHER_LOW,
+    calculate_trailing_stop,
+    stop_advance_count,
+)
 from btc_predictor.risk.tranches import calculate_tranche_size
 from btc_predictor.signals import (
     AddRequirementsInput,
@@ -79,14 +85,42 @@ FALLING = (
 
 
 def entry_intent(**kwargs) -> BacktestIntent:
+    direction = kwargs.get("direction", "long")
+    stop_price = kwargs.pop("stop_price", STOP)
+    initial_stop = calculate_initial_stop(
+        invalidation_price=stop_price,
+        buffer=Decimal("0"),
+        direction=direction,
+        entry_price=ZONE_UPPER,
+        config_metadata=CONFIG.run_metadata(),
+    )
     base = {
         "action": ARM_ENTRY_ACTION,
         "entry_zone_lower": ZONE_LOWER,
         "entry_zone_upper": ZONE_UPPER,
-        "stop_price": STOP,
+        "initial_stop": initial_stop,
         "entry_conviction": Decimal("90"),
     }
     return BacktestIntent(**{**base, **kwargs})
+
+
+def trailing_result(context, *, structure_price: str, structure_id: str = "hl-1"):
+    return calculate_trailing_stop(
+        direction=context.lifecycle.direction,
+        previous_stop=context.standing_stop,
+        structure_price=structure_price,
+        buffer=Decimal("1000"),
+        advance_count=stop_advance_count(context.lifecycle),
+        current_price=context.bar.close,
+        config_metadata=CONFIG.run_metadata(),
+        evaluated_at=context.as_of,
+        structure_id=structure_id,
+        structure_source_feature_id="ENTRY_TRIGGER_HIGHER_LOW",
+        structure_type=HIGHER_LOW,
+        structure_level_timestamp=context.bar.timestamp,
+        structure_detected_at=context.as_of,
+        structure_reason_codes=("HIGHER_LOW_CONFIRMED",),
+    )
 
 
 def add_requirements(**overrides):
@@ -121,7 +155,7 @@ def trim_signal():
 
 def only_entry_on_first_bar(bars=RISING):
     def strategy(context: BacktestContext) -> BacktestIntent | None:
-        if context.as_of == bars[0].timestamp:
+        if context.bar.timestamp == bars[0].timestamp:
             return entry_intent()
         return None
 
@@ -134,6 +168,7 @@ def run(bars=RISING, strategy=None, **kwargs):
         strategy=strategy or only_entry_on_first_bar(bars),
         starting_nav=NAV,
         strategy_config=CONFIG,
+        strategy_id="btc180-test-strategy-v2",
         **kwargs,
     )
 
@@ -160,18 +195,19 @@ def test_position_size_matches_the_shared_sizing_chain() -> None:
 
     # Recomputed independently through BTC-144, BTC-145 and BTC-155. If the
     # engine kept its own sizing formula this would drift.
-    distance = abs(ZONE_UPPER - STOP) / ZONE_UPPER
     budget = calculate_risk_budget(
         entry_conviction="90",
         nav=NAV,
         config=CONFIG,
     )
-    size = calculate_initial_position_size(
-        nav=budget.nav,
-        risk_fraction_nav=budget.risk_fraction_nav,
-        stop_distance_fraction=distance,
+    stop = calculate_initial_stop(
+        invalidation_price=STOP,
+        buffer="0",
+        direction="long",
         entry_price=ZONE_UPPER,
+        config_metadata=CONFIG.run_metadata(),
     )
+    size = initial_position_size_for_trade(budget, stop)
     tranche = calculate_tranche_size(
         tranche_number=1,
         final_position_notional=size.position_notional,
@@ -185,7 +221,7 @@ def test_position_size_matches_the_shared_sizing_chain() -> None:
 
 def test_conviction_below_the_lowest_band_produces_no_position() -> None:
     def strategy(context):
-        if context.as_of == RISING[0].timestamp:
+        if context.bar.timestamp == RISING[0].timestamp:
             return entry_intent(entry_conviction=Decimal("70"))
         return None
 
@@ -204,7 +240,11 @@ def test_a_strategy_never_sees_a_bar_beyond_its_decision_point() -> None:
 
     def strategy(context):
         seen.append((context.as_of, context.bars[-1].timestamp))
-        assert all(item.ingested_at <= context.bar.ingested_at for item in context.bars)
+        assert all(item.ingested_at <= context.as_of for item in context.bars)
+        assert all(
+            item.timestamp + timedelta(days=1) <= context.as_of
+            for item in context.bars
+        )
         return None
 
     run(strategy=strategy)
@@ -268,7 +308,7 @@ def test_an_entry_whose_zone_is_never_touched_is_missed() -> None:
 
 def test_a_short_entry_is_refused_when_config_forbids_shorts() -> None:
     def strategy(context):
-        if context.as_of == RISING[0].timestamp:
+        if context.bar.timestamp == RISING[0].timestamp:
             return entry_intent(direction="short", stop_price=Decimal("105000"))
         return None
 
@@ -294,7 +334,7 @@ def test_a_structural_stop_closes_the_position_and_books_the_trade() -> None:
 
 def test_the_stop_is_checked_before_any_queued_order() -> None:
     def strategy(context):
-        if context.as_of == FALLING[0].timestamp:
+        if context.bar.timestamp == FALLING[0].timestamp:
             return entry_intent()
         if context.position_open:
             # An exit queued on the bar before the stop-out bar. The stop is
@@ -322,19 +362,18 @@ def test_a_stopped_out_trade_reports_r_against_the_planned_risk() -> None:
 
 
 def full_lifecycle_strategy(context):
-    if context.as_of == RISING[0].timestamp:
+    if context.bar.timestamp == RISING[0].timestamp:
         return entry_intent()
-    if context.as_of == RISING[2].timestamp:
+    if context.bar.timestamp == RISING[2].timestamp:
         return BacktestIntent(action=ADD_ACTION, requirements=add_requirements())
-    if context.as_of == RISING[3].timestamp:
+    if context.bar.timestamp == RISING[3].timestamp:
         return BacktestIntent(
             action=TRAIL_ACTION,
-            structure_price=Decimal("104000"),
-            buffer=Decimal("1000"),
+            trailing_stop=trailing_result(context, structure_price="104000"),
         )
-    if context.as_of == RISING[4].timestamp:
+    if context.bar.timestamp == RISING[4].timestamp:
         return BacktestIntent(action=TRIM_ACTION, trim_signal=trim_signal())
-    if context.as_of == RISING[5].timestamp:
+    if context.bar.timestamp == RISING[5].timestamp:
         return BacktestIntent(action=EXIT_ACTION, exit_reason="HOLD_SCORE_COLLAPSE")
     return None
 
@@ -365,9 +404,9 @@ def test_an_add_increases_size_from_the_same_tranche_schedule() -> None:
 
 def test_a_refused_add_leaves_the_position_untouched() -> None:
     def strategy(context):
-        if context.as_of == RISING[0].timestamp:
+        if context.bar.timestamp == RISING[0].timestamp:
             return entry_intent()
-        if context.as_of == RISING[2].timestamp:
+        if context.bar.timestamp == RISING[2].timestamp:
             return BacktestIntent(
                 action=ADD_ACTION,
                 requirements=add_requirements(add_score=Decimal("50")),
@@ -400,13 +439,12 @@ def test_trailing_the_stop_reduces_risk_at_stop() -> None:
 
 def test_a_trail_that_would_loosen_the_stop_is_ignored() -> None:
     def strategy(context):
-        if context.as_of == RISING[0].timestamp:
+        if context.bar.timestamp == RISING[0].timestamp:
             return entry_intent()
-        if context.as_of == RISING[3].timestamp:
+        if context.bar.timestamp == RISING[3].timestamp:
             return BacktestIntent(
                 action=TRAIL_ACTION,
-                structure_price=Decimal("80000"),
-                buffer=Decimal("1000"),
+                trailing_stop=trailing_result(context, structure_price="80000"),
             )
         return None
 
@@ -521,19 +559,23 @@ def test_risk_at_stop_stays_within_the_configured_ceiling() -> None:
 # --- results --------------------------------------------------------------
 
 
-def test_an_open_position_at_the_end_is_closed_and_flagged() -> None:
+def test_an_open_position_at_the_end_is_marked_and_flagged() -> None:
     result = run()
 
     assert "BACKTEST_POSITION_OPEN_AT_END" in result.reason_codes
     assert len(result.trades) == 1
+    assert result.trades[0].closed is False
 
 
 def test_the_equity_curve_covers_every_bar() -> None:
     result = run()
 
     assert len(result.equity_curve) == len(RISING) == result.bar_count
-    assert [point.as_of for point in result.equity_curve] == [
+    assert [point.bar_timestamp for point in result.equity_curve] == [
         item.timestamp for item in RISING
+    ]
+    assert [point.as_of for point in result.equity_curve] == [
+        item.ingested_at for item in RISING
     ]
 
 
@@ -547,6 +589,9 @@ def test_record_is_persistable() -> None:
     assert record["trade_count"] == 1
     assert len(record["equity_curve"]) == len(RISING)
     assert record["config_metadata"]["strategy_version"] == "swing_v1.2"
+    assert record["evidence_digest"]
+    assert record["input_digest"]
+    assert record["effective_costs"]["policy_version"] == "EXECUTION_COST_V1"
 
 
 def test_reason_codes_are_drawn_from_the_declared_set() -> None:
@@ -576,14 +621,14 @@ def test_replaying_the_same_bars_is_deterministic() -> None:
     ("kwargs", "match"),
     [
         ({"action": "LIQUIDATE"}, "action must be one of"),
-        ({"action": ARM_ENTRY_ACTION, "stop_price": None}, "requires stop_price"),
+        ({"action": ARM_ENTRY_ACTION, "initial_stop": None}, "requires initial_stop"),
         (
             {"action": ARM_ENTRY_ACTION, "entry_conviction": None},
             "requires entry_conviction",
         ),
         ({"action": ADD_ACTION}, "requires a BTC-154 requirements result"),
         ({"action": TRIM_ACTION}, "requires a BTC-157 signal"),
-        ({"action": TRAIL_ACTION}, "requires structure_price"),
+        ({"action": TRAIL_ACTION}, "requires a BTC-156 result"),
         ({"action": EXIT_ACTION}, "requires exit_reason"),
     ],
 )
@@ -591,7 +636,13 @@ def test_malformed_intents_fail_fast(kwargs, match: str) -> None:
     base = {
         "entry_zone_lower": ZONE_LOWER,
         "entry_zone_upper": ZONE_UPPER,
-        "stop_price": STOP,
+        "initial_stop": calculate_initial_stop(
+            invalidation_price=STOP,
+            buffer="0",
+            direction="long",
+            entry_price=ZONE_UPPER,
+            config_metadata=CONFIG.run_metadata(),
+        ),
         "entry_conviction": Decimal("90"),
     }
     if kwargs["action"] != ARM_ENTRY_ACTION:

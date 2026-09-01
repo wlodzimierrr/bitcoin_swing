@@ -93,9 +93,14 @@ class ExecutionCosts:
     def funding(self, notional: Any, *, days: Any) -> Decimal:
         """Return the carry charged on ``notional`` held for ``days``."""
 
-        held = _non_negative(days, "days")
         value = _non_negative(notional, "notional")
-        return value * self.funding_cost_bps_per_day * BASIS_POINT * held
+        return value * self.funding_rate(days=days)
+
+    def funding_rate(self, *, days: Any) -> Decimal:
+        """Return the signed-account carry rate for a holding interval."""
+
+        held = _non_negative(days, "days")
+        return self.funding_cost_bps_per_day * BASIS_POINT * held
 
     def round_trip_cost(self, notional: Any) -> Decimal:
         """Return fee plus slippage on both the entry and the exit fill.
@@ -169,6 +174,21 @@ class PaperAccount:
     def charge_funding(self, notional: Any, *, days: Any) -> PaperAccount:
         return self._debit(
             self.costs.funding(notional, days=days),
+            field="funding_paid",
+            reason="PAPER_ACCOUNT_FUNDING_CHARGED",
+        )
+
+    def apply_funding_cost(self, amount: Any) -> PaperAccount:
+        """Apply a signed BTC-165 funding cost without recomputing it.
+
+        Positive values are paid by the account and negative values are
+        receipts. This is the account-side companion to
+        ``funding_event_from_rate`` and keeps long/short funding symmetry in
+        one authoritative path.
+        """
+
+        return self._debit(
+            _decimal(amount, "amount"),
             field="funding_paid",
             reason="PAPER_ACCOUNT_FUNDING_CHARGED",
         )

@@ -64,6 +64,16 @@ from btc_predictor.portfolio.entry_execution import (
     restore_simulated_entry_execution,
     simulate_next_bar_entry,
 )
+from btc_predictor.portfolio.exit_execution import (
+    EXIT_EXECUTION_FEATURE_ID,
+    EXIT_EXECUTION_POLICY_VERSION,
+    EXIT_EXECUTION_REASON_CODES,
+    EXIT_FILLED,
+    ExitExecutionIntent,
+    SimulatedExitExecution,
+    restore_simulated_exit_execution,
+    simulate_exit_execution,
+)
 from btc_predictor.portfolio.add_execution import (
     ADD_ACTION,
     ADD_CANCELLED,
@@ -181,6 +191,14 @@ __all__ = [
     "funding_event_from_rate",
     "restore_trade_accounting",
     "trade_fill_from_execution",
+    "EXIT_EXECUTION_FEATURE_ID",
+    "EXIT_EXECUTION_POLICY_VERSION",
+    "EXIT_EXECUTION_REASON_CODES",
+    "EXIT_FILLED",
+    "ExitExecutionIntent",
+    "SimulatedExitExecution",
+    "restore_simulated_exit_execution",
+    "simulate_exit_execution",
     "EXCURSION_CONVENTION",
     "FUNDING_CONVENTION",
     "MAXIMUM_SIZE_CONVENTION",
