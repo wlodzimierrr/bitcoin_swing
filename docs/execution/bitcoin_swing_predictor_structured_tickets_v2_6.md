@@ -5066,7 +5066,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - pre-ETF
   - ETF era
   - setup type
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5076,6 +5076,67 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/regime_performance.py` with feature
+    `REGIME_PERFORMANCE_BREAKDOWN`, policy version
+    `REGIME_PERFORMANCE_BREAKDOWN_V1`, and a report built only from BTC-182
+    out-of-sample folds. It does not pool training history or independently
+    compound fold capital.
+  - Every filled BTC-180 trade must have exactly one
+    `RegimePerformanceContext`, keyed by fold number and the queued entry
+    intent's `source_id`. The context timestamp must equal the persisted entry
+    decision event, its feature evidence must have been available no later
+    than that decision, its config identity must equal the validation, and
+    missing, duplicate, or unused contexts fail closed.
+  - Context construction accepts the authoritative
+    `RegimeClassificationResult`, `VolatilityScoreResult`, and one complete,
+    detected Phase-1 setup result. Their full records are persisted. The
+    reporting layer groups their declared labels; it does not recompute the
+    regime score, volatility percentile, or setup rules.
+  - `RULEBOOK_DIRECTIONAL_REGIME_BUCKETS_V1` maps Strong Bull, Bull, and Mild
+    Bull to `BULL`; Strong Bear, Bear, and Mild Bear to `BEAR`; and preserves
+    `NEUTRAL`. `VOLATILITY_REGIME_BINARY_BUCKETS_V1` maps the existing
+    `VOLATILITY_REGIME_V1` Compressed/Normal side to `LOW_VOL` and the
+    Elevated/Stressed side to `HIGH_VOL`, using the owner's existing
+    Normal/Elevated boundary rather than introducing a second percentile
+    threshold.
+  - `US_SPOT_BITCOIN_ETF_FIRST_TRADING_DAY_V1` fixes the report's historical
+    era boundary at `2024-01-11T00:00:00Z`: entry decisions before it are
+    `PRE_ETF`, and decisions on or after it are `ETF_ERA`. The timestamp and
+    policy version are persisted in every report.
+  - Setup buckets preserve the four Phase-1 setup identifiers: Bull Trend
+    Continuation, Bullish Reset, Capitulation Reversal, and Bearish
+    Distribution. Every declared bucket is emitted even when it has no trades,
+    so repeated experiments retain a stable schema.
+  - Each bucket records total, closed, and open trades; closed wins, losses,
+    and flats; realized net P&L; marked unrealized P&L; total P&L; available R
+    count/sum/mean; and closed-trade win rate. Missing rates remain `None`, not
+    zero. Rates and means use deterministic twelve-decimal half-even rounding.
+  - `FOLD_END_MARK_TO_MARKET_V1` assigns a fold's BTC-180 ending unrealized P&L
+    to its one permitted open trade while retaining that trade's realized net
+    P&L. Every independent axis must cover every trade exactly once and must
+    reconcile to overall P&L and, within BTC-180's declared Decimal tolerance,
+    to the arithmetic sum of independent fold NAV changes.
+  - `report_id` binds the versioned grouping/marking policies, ETF boundary,
+    BTC-182 validation identity/evidence, and canonicalized context identities.
+    `evidence_digest` covers the complete validation, source feature records,
+    attributions, metrics, configuration metadata, and reason codes;
+    `restore_regime_performance_breakdown()` rebuilds all derived evidence and
+    rejects tampering.
+  - Reason codes are
+    `REGIME_PERFORMANCE_ENTRY_DECISION_CONTEXT`,
+    `REGIME_PERFORMANCE_MARKET_REGIME_GROUPS_APPLIED`,
+    `REGIME_PERFORMANCE_VOLATILITY_GROUPS_APPLIED`,
+    `REGIME_PERFORMANCE_ETF_ERA_GROUPS_APPLIED`,
+    `REGIME_PERFORMANCE_SETUP_GROUPS_APPLIED`,
+    `REGIME_PERFORMANCE_OPEN_TRADES_MARKED`,
+    `REGIME_PERFORMANCE_NO_TRADES`, and
+    `REGIME_PERFORMANCE_COMPLETE`.
+  - Added 32 focused tests covering all seven Rulebook regimes, all four
+    volatility regimes, all four setup types, the ETF boundary, point-in-time
+    matching, open/closed/no-trade economics, complete attribution,
+    deterministic ordering and replay, persistence, and tamper rejection. The
+    complete Python 3.12 suite passes with 2441 tests.
 
 #### BTC-184 Implement setup-level performance report
 - **Description:**
