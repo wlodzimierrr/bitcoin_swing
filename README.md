@@ -2,12 +2,21 @@
 
 Low-frequency Bitcoin swing trading decision-support system.
 
-The initial implementation is organized around the project rulebook and ticket
-backlog:
+## Project Documentation
 
-- `bitcoin_swing_predictor_rulebook_v1.md`
-- `bitcoin_swing_predictor_project_tickets_v1.md`
-- `bitcoin_swing_predictor_project_tickets_structured_v1.md`
+Fresh coding and review sessions start here:
+
+1. [AGENTS.md](AGENTS.md)
+2. [Documentation index](docs/INDEX.md)
+3. [Current project state](docs/CURRENT_STATE.md)
+
+Current Phase-1 execution is governed by
+[Structured Tickets v2.6](docs/execution/bitcoin_swing_predictor_structured_tickets_v2_6.md).
+Strategy v1.2 is specified by the
+[Rulebook v1.2](docs/strategy/bitcoin_swing_predictor_rulebook_v1_2.md), subject
+to applicable newer narrow versioned policies listed in the documentation
+index. Historical v1 ticket documents are retained under `docs/archive/` for
+provenance only.
 
 ## Development
 

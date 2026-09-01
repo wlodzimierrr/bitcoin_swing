@@ -16,7 +16,8 @@ TODO / IN_PROGRESS / BLOCKED / DONE
 ### Authoritative Roadmap / Dependency Policy
 
 This v2.6 document is the **authoritative Phase-1 execution roadmap**.
-`bitcoin_swing_predictor_project_tickets_v1.md` is retained only as historical
+[Project Roadmap & Tickets v1](../archive/bitcoin_swing_predictor_project_tickets_v1.md)
+is retained only as historical
 provenance and must **not** be used to determine current execution order or
 ticket dependencies.
 

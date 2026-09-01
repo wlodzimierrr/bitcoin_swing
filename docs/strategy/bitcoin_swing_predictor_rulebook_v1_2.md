@@ -139,6 +139,21 @@ execution_venue
 
 They are not assumed to be the same.
 
+> [!IMPORTANT]
+> **Current source-policy status**
+>
+> The following subsection records the provisional source policy that existed
+> when Rulebook v1.2 was defined.
+>
+> It is not authoritative for the current empirical price-source decision.
+>
+> Current source-policy authority:
+> [PRICE_SOURCE_POLICY_V1](../policies/price_source_policy_v1.md)
+>
+> Current production canonical reference: **UNRESOLVED**
+>
+> Bitstamp's sole-canonical candidate was empirically **REJECTED**.
+
 ## 3A.1 Provisional Phase 1 Price-Source Policy
 
 Pending final validation, the preferred source hierarchy is:

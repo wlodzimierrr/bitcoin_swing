@@ -1,3 +1,14 @@
+> [!WARNING]
+> HISTORICAL DOCUMENT.
+>
+> This file is retained for provenance only.
+>
+> Do not use it to determine current ticket status, dependencies,
+> execution order, or current strategy behavior.
+>
+> Current Phase-1 execution authority:
+> [Structured Tickets v2.6](../execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
+
 # Bitcoin Swing Predictor — Project Roadmap & Tickets
 
 ## 1. Project Goal
