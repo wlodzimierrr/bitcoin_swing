@@ -15,15 +15,15 @@
 - **Current phase:** Phase 1, EPIC S backtesting and validation research
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** BTC-183, regime performance breakdown
-- **Last completed ticket:** BTC-182, walk-forward validation; its required
-  independent xHigh review is still outstanding
+- **Last completed ticket:** BTC-182, walk-forward validation, including its
+  required independent xHigh review
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** BTC-183, first by V2 execution order
 - **Other ready tickets in the current epic:** BTC-184, BTC-185
-- **Latest verified test baseline:** 2408 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `b3b8d771873da8409cacd5a565c6cc6e5fc0d56c`
-  (`feat: implement BTC-182 walk-forward validation`)
+- **Latest verified test baseline:** 2409 passed with Python 3.12 on 2026-09-01
+- **Last relevant implementation/review commit:** `a7998e52b0a33efd69930b63a765deadda2a104d`
+  (`fix: close BTC-182 independent review finding`)
 
 ## Price-Reference State
 
