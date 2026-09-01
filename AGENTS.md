@@ -140,3 +140,7 @@ dependency-satisfied ticket.
 
 Review agents must report a distinct review-fix commit when fixes are needed.
 If no genuine defect exists, do not create a meaningless commit.
+
+Critical epics may require a separate xHigh integration audit after all
+constituent tickets and their required ticket-level reviews are complete.
+Epic review does not replace ticket-level Review Model requirements.
