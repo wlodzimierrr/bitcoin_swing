@@ -5222,7 +5222,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 
   Retain v1.1 nested scoring only as a benchmark strategy version; do not mix
   v1.1 and v1.2 scores inside one parameter set.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5232,6 +5232,43 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/threshold_sweeps.py` with policy version
+    `ONE_DIMENSIONAL_THRESHOLD_SWEEP_V1`. Each report varies exactly one
+    declared scalar threshold and evaluates every candidate through a complete
+    BTC-182 out-of-sample walk-forward validation; multi-dimensional surfaces
+    remain BTC-188 scope.
+  - The supported vocabulary covers Entry Conviction, Trend, Flow,
+    Positioning, Structure, R/R, ATR stop buffer, Hold, Add, and risk budget.
+    Each specification persists the exact configuration paths being varied and
+    the ticket-required score-band / hard-reject revalidation scope.
+  - Every candidate receives a deterministic parameter-set ID and must persist
+    that identity through its strategy configuration and nested backtest
+    evidence. Candidate comparisons fail closed unless symbol, full schedule,
+    split, capital, costs, tested coverage, and every out-of-sample input digest
+    match.
+  - Net outcome metrics reuse BTC-182/BTC-180 evidence: fold and trade counts,
+    arithmetic total and net P&L across independent folds, mean/best/worst fold
+    return, closed-trade expectancy, and mean available BTC-165 R-multiple.
+    Unavailable closed-trade metrics remain `None`; they are not zero-filled.
+  - `ADJACENT_GLOBAL_BEST_TOLERANCE_V1` reports contiguous candidate regions
+    within an explicit absolute objective tolerance as robust plateaus. A lone
+    best candidate is flagged as an isolated optimum; the research layer never
+    promotes or mutates the production parameter set.
+  - Enforced exact strategy/scoring-architecture pairs so v1.2 direct,
+    de-nested scores and the v1.1 nested benchmark can only be evaluated in
+    separate sweep specifications and parameter sets.
+  - Reports persist versioned policies, objective/tolerance, baseline, candidate
+    configuration, reason codes, full nested validations, deterministic IDs,
+    and a SHA-256 evidence digest. Restoration reconstructs all derived metrics
+    and plateau claims and rejects top-level or nested tampering.
+  - Added 32 focused tests covering all ten dimensions, required revalidation
+    scopes, plateau and isolated-optimum behavior, unavailable metrics,
+    comparable input enforcement, architecture isolation, deterministic replay,
+    persistence, invalid definitions, and tamper rejection. Focused and
+    dependency regressions pass with 390 tests; the complete Python 3.12 suite
+    passes with 2487 tests. Implementation commit:
+    `f26dca55e0b559b2496513a2d52be2e23e246727`.
 
 
 ## EPIC S2 — Extended Quant Research
