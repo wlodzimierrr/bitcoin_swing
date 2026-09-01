@@ -22,7 +22,7 @@
 - **Next dependency-satisfied ticket:** BTC-183, first by V2 execution order
 - **Other ready tickets in the current epic:** BTC-184, BTC-185
 - **Latest verified test baseline:** 2408 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `COMMIT_PLACEHOLDER`
+- **Last relevant implementation/review commit:** `b3b8d771873da8409cacd5a565c6cc6e5fc0d56c`
   (`feat: implement BTC-182 walk-forward validation`)
 
 ## Price-Reference State
