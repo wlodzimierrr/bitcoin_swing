@@ -4737,8 +4737,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     regenerates the output and rejects source, config, or body drift. Eighteen
     focused tests cover deterministic rendering, every action, optional data,
     exact replay, provenance, rank/link validation, veto safety, and text
-    injection. The pre-existing suite passes; concurrent untracked BTC-180
-    backtest work has two separate failures and is outside this ticket.
+    injection; the full project suite passes.
 
 #### BTC-171 Create existing-position management report
 - **Description:**
@@ -4753,7 +4752,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - Add Score
   - risk-at-stop
   - suggested action
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4763,6 +4762,40 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.reporting.position_management` with versioned
+    `POSITION_MANAGEMENT_REPORT_V1` plain-text output over the BTC-170 advisory,
+    BTC-150 lifecycle, BTC-156 trailing stop, BTC-146 aggregate risk-at-stop,
+    and one explicit point-in-time mark.
+  - The report shows the open state, direction, tranche count, quantity, mark
+    price, market notional and NAV exposure, average entry, active stop,
+    candidate stop, unrealized P&L and return, Hold Score, Add Score,
+    risk-at-stop and ceiling state, final portfolio action, advisory reasons,
+    and each upstream source's reason codes.
+  - Current and proposed stop semantics are explicit. `lifecycle.stop_price` is
+    the active stop and BTC-146 risk must be measured there; BTC-156's candidate
+    is shown separately as `MOVE STOP`, `KEEP CURRENT STOP`, or `UNAVAILABLE`.
+    A stop move is not silently folded into the persisted portfolio action.
+  - `HOLD`, `ADD`, `TRIM`, or `EXIT` comes directly from the validated BTC-170
+    recommendation. The renderer does not create a second action-precedence
+    engine. Non-position actions and closed/missed lifecycles are rejected.
+  - Mark-to-market notional and side-aware unrealized P&L call the shared
+    BTC-047 float64 kernels. The mark timestamp must equal the recommendation's
+    UTC evaluation time, lifecycle events cannot lie in the future, and the
+    trailing result must use the same mark.
+  - Config identity, symbol, direction, active stop, and the complete tranche
+    ledger are checked across all sources. Aggregate risk from another position
+    or stop cannot be attached to the report. Added
+    `risk_at_stop_from_record()` so BTC-146 records receive the same exact
+    restoration check already available for lifecycle and trailing-stop data.
+  - `PositionManagementReportResult.as_record()` retains the complete advisory,
+    lifecycle, trailing-stop and risk records, mark provenance, exact derived
+    metrics, config identity, source reason codes, format/version identity, and
+    rendered body. Restoration regenerates metrics and text and rejects drift.
+  - Thirteen focused tests cover long/short P&L, advanced and held stops, all
+    management actions, exact replay, source linkage, config/time/stop/tranche
+    mismatches, closed positions, risk tampering, and line injection. The full
+    project suite passes.
 
 #### BTC-172 Add machine-readable JSON output
 - **Description:**

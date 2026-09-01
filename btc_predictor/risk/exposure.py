@@ -249,6 +249,90 @@ def calculate_risk_at_stop(
     return result
 
 
+def risk_at_stop_from_record(record: Mapping[str, Any]) -> RiskAtStopResult:
+    """Reconstruct and verify a persisted aggregate risk-at-stop result."""
+
+    if not isinstance(record, Mapping):
+        raise TypeError("record must be a mapping")
+    source = dict(record)
+    raw_tranches = source.get("tranches")
+    if not isinstance(raw_tranches, list):
+        raise ValueError("tranches must be a list")
+    result = RiskAtStopResult(
+        feature_id=_record_string(source.get("feature_id"), "feature_id"),
+        policy_version=_record_string(source.get("policy_version"), "policy_version"),
+        parameter_status=_record_string(
+            source.get("parameter_status"),
+            "parameter_status",
+        ),
+        convention=_record_string(source.get("convention"), "convention"),
+        direction=_record_string(source.get("direction"), "direction"),
+        stop_price=_record_optional_decimal(source.get("stop_price"), "stop_price"),
+        nav=_record_optional_decimal(source.get("nav"), "nav"),
+        risk_at_stop=_record_optional_decimal(
+            source.get("risk_at_stop"),
+            "risk_at_stop",
+        ),
+        risk_fraction_nav=_record_optional_decimal(
+            source.get("risk_fraction_nav"),
+            "risk_fraction_nav",
+        ),
+        target_fraction_nav=_decimal(
+            source.get("target_fraction_nav"),
+            "target_fraction_nav",
+        ),
+        maximum_fraction_nav=_decimal(
+            source.get("maximum_fraction_nav"),
+            "maximum_fraction_nav",
+        ),
+        headroom_amount=_record_optional_decimal(
+            source.get("headroom_amount"),
+            "headroom_amount",
+        ),
+        within_maximum=_record_bool(
+            source.get("within_maximum"),
+            "within_maximum",
+        ),
+        tranches=tuple(
+            _tranche_risk_from_record(item) for item in raw_tranches
+        ),
+        config_metadata=_validate_config_metadata(
+            source.get("config_metadata", {}),
+        ),
+        complete=_record_bool(source.get("complete"), "complete"),
+        reason_codes=_record_reason_codes(source.get("reason_codes")),
+    )
+    if result.as_record() != source:
+        raise ValueError("record does not match reconstructed risk-at-stop result")
+    return result
+
+
+def _tranche_risk_from_record(source: Any) -> TrancheRisk:
+    if not isinstance(source, Mapping):
+        raise TypeError("tranche records must be mappings")
+    return TrancheRisk(
+        tranche_id=_tranche_identifier(source.get("tranche_id")),
+        notional=_non_negative_decimal(source.get("notional"), "notional"),
+        entry_price=_positive_decimal(source.get("entry_price"), "entry_price"),
+        signed_loss_fraction=_decimal(
+            source.get("signed_loss_fraction"),
+            "signed_loss_fraction",
+        ),
+        loss_fraction=_non_negative_decimal(
+            source.get("loss_fraction"),
+            "loss_fraction",
+        ),
+        risk_contribution=_non_negative_decimal(
+            source.get("risk_contribution"),
+            "risk_contribution",
+        ),
+        profitable_at_stop=_record_bool(
+            source.get("profitable_at_stop"),
+            "profitable_at_stop",
+        ),
+    )
+
+
 def _tranche_risk(
     tranche: Any,
     *,
@@ -571,6 +655,33 @@ def _fraction_decimal(value: Any, name: str) -> Decimal:
     return result
 
 
+def _record_optional_decimal(value: Any, name: str) -> Decimal | None:
+    return None if value is None else _decimal(value, name)
+
+
+def _record_string(value: Any, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _record_bool(value: Any, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{name} must be a bool")
+    return value
+
+
+def _record_reason_codes(value: Any) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise TypeError("reason_codes must be a sequence")
+    reasons = tuple(value)
+    if any(not isinstance(code, str) or not code.strip() for code in reasons):
+        raise ValueError("reason_codes must contain non-empty strings")
+    if len(reasons) != len(set(reasons)):
+        raise ValueError("reason_codes must not contain duplicates")
+    return reasons
+
+
 __all__ = [
     "ABSOLUTE_DISTANCE",
     "DEFAULT_RISK_AT_STOP_CONVENTION",
@@ -584,4 +695,5 @@ __all__ = [
     "RiskAtStopResult",
     "TrancheRisk",
     "calculate_risk_at_stop",
+    "risk_at_stop_from_record",
 ]

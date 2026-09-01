@@ -38,6 +38,7 @@ from btc_predictor.risk.exposure import (
     RiskAtStopResult,
     TrancheRisk,
     calculate_risk_at_stop,
+    risk_at_stop_from_record,
 )
 from btc_predictor.risk.budget import (
     RISK_BUDGET_FEATURE_ID,
@@ -157,6 +158,7 @@ __all__ = [
     "RiskAtStopResult",
     "TrancheRisk",
     "calculate_risk_at_stop",
+    "risk_at_stop_from_record",
     "TRANCHE_FRACTION_SUM_TOLERANCE",
     "TRANCHE_SCHEDULE_PARAMETER_STATUS",
     "TRANCHE_SIZING_FEATURE_ID",
