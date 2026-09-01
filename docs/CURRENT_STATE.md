@@ -21,7 +21,7 @@
 - **Next dependency-satisfied ticket:** BTC-182, first by V2 execution order
 - **Other ready tickets in the current epic:** BTC-185
 - **Latest verified test baseline:** 2343 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `COMMIT_PLACEHOLDER`
+- **Last relevant implementation/review commit:** `6343f3b10144ac351e722316b1ca2d0e4eba5fd3`
   (`feat: implement BTC-181 realistic cost model`)
 
 ## Price-Reference State
