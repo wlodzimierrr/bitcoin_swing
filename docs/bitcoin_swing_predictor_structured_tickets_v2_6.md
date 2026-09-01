@@ -4800,7 +4800,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 #### BTC-172 Add machine-readable JSON output
 - **Description:**
   Useful for dashboards, notifications, or future automation.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4810,6 +4810,29 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor.reporting.json_output` with canonical schema
+    `ADVISORY_JSON_SCHEMA_V1` and media type `application/json` for both
+    `recommendation` (BTC-170) and `position_management` (BTC-171) documents.
+  - Each JSON envelope declares its document type, schema version, decimal
+    encoding (`decimal_string`), timestamp encoding (`iso8601_utc`), and the
+    complete validated source record. Exact decimal values remain strings, so
+    dashboard consumers do not inherit binary-float rounding.
+  - Encoding uses sorted keys, compact separators, ASCII escaping, and rejects
+    NaN/infinity. It deliberately has no generated-at field, random identifier,
+    locale-sensitive formatting, or other nondeterministic value.
+  - Config identity, renderer/report versions, all ranked reason details,
+    upstream reason codes, marks, risk records, and replay evidence remain in
+    the payload. The persistence record also exposes source feature/version,
+    config metadata, and source/output reason-code identities for indexing.
+  - `advisory_source_from_json()` restores and revalidates standalone documents
+    through the BTC-170/BTC-171 replay functions. Noncanonical JSON, unknown
+    envelope fields/types, changed encoding conventions, altered nested source
+    records, and body/record drift fail closed.
+  - Ten focused tests cover both document types, deterministic bytes,
+    standalone and persistence replay, nested provenance, schema/encoding/type
+    validation, tampering, malformed/noncanonical JSON, and unsupported source
+    objects. The full project suite passes.
 
 ## EPIC S — Backtesting
 

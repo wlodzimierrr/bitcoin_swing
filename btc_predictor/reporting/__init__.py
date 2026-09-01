@@ -25,6 +25,18 @@ from btc_predictor.reporting.position_management import (
     position_management_report_from_record,
     render_position_management_report,
 )
+from btc_predictor.reporting.json_output import (
+    ADVISORY_JSON_DOCUMENT_TYPES,
+    ADVISORY_JSON_ENCODING,
+    ADVISORY_JSON_FEATURE_ID,
+    ADVISORY_JSON_MEDIA_TYPE,
+    ADVISORY_JSON_REASON_CODES,
+    ADVISORY_JSON_SCHEMA_VERSION,
+    AdvisoryJsonResult,
+    advisory_json_from_record,
+    advisory_source_from_json,
+    render_json_output,
+)
 
 __all__ = [
     "RECOMMENDATION_RENDERER_FEATURE_ID",
@@ -48,4 +60,14 @@ __all__ = [
     "PositionMark",
     "position_management_report_from_record",
     "render_position_management_report",
+    "ADVISORY_JSON_DOCUMENT_TYPES",
+    "ADVISORY_JSON_ENCODING",
+    "ADVISORY_JSON_FEATURE_ID",
+    "ADVISORY_JSON_MEDIA_TYPE",
+    "ADVISORY_JSON_REASON_CODES",
+    "ADVISORY_JSON_SCHEMA_VERSION",
+    "AdvisoryJsonResult",
+    "advisory_json_from_record",
+    "advisory_source_from_json",
+    "render_json_output",
 ]
