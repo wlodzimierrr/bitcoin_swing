@@ -14,15 +14,15 @@
 - **Last updated:** 2026-09-01
 - **Current phase:** Phase 1, EPIC S backtesting and validation research
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-184, setup-level performance report
-- **Last completed ticket:** BTC-183, regime performance breakdown
+- **Current implementation frontier:** BTC-185, threshold sweeps
+- **Last completed ticket:** BTC-184, setup-level performance report
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-184, first by V2 execution order
-- **Other ready tickets in the current epic:** BTC-185
-- **Latest verified test baseline:** 2441 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `fe80b78e90ae5e41b4d9dc14a548d0d4bfe2b593`
-  (`feat: implement BTC-183 regime performance breakdown`)
+- **Next dependency-satisfied ticket:** BTC-185, first by V2 execution order
+- **Other ready tickets in the current epic:** None
+- **Latest verified test baseline:** 2455 passed with Python 3.12 on 2026-09-01
+- **Last relevant implementation/review commit:** `08e619756fd9a3c563a1b1727f7c45db9d9aaa0e`
+  (`feat: implement BTC-184 setup performance report`)
 
 ## Price-Reference State
 

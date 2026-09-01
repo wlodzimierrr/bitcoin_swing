@@ -5148,7 +5148,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   Capitulation Reversal
   Bearish Distribution
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5158,6 +5158,41 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/setup_performance.py` with feature
+    `SETUP_LEVEL_PERFORMANCE_REPORT`, report policy
+    `SETUP_LEVEL_PERFORMANCE_REPORT_V1`, closed-outcome metric policy
+    `CLOSED_NET_OUTCOME_METRICS_V1`, and implementation commit `08e6197`.
+  - The report consumes only BTC-182 out-of-sample validation evidence and the
+    exact filled-entry contexts already governed by BTC-183. It delegates
+    attribution to `run_regime_performance_breakdown()` rather than detecting
+    setups, rescoring history, or duplicating point-in-time matching rules.
+  - Every report emits the four Phase-1 setup rows in canonical order: Bull
+    Trend Continuation, Bullish Reset, Capitulation Reversal, and Bearish
+    Distribution. Empty rows remain present so experiment schemas are stable.
+  - Each row compares trade and closed-outcome counts, realized and fold-end
+    marked P&L, fees, funding, total costs, closed net profit/loss, expectancy,
+    win rate, average winner/loser, average closed holding days, and realized-R
+    count/sum/mean. Economic values come from BTC-165 trade accounting and the
+    BTC-183 setup bucket, not parallel formulas.
+  - Open positions contribute realized economics and the BTC-183
+    `FOLD_END_MARK_TO_MARKET_V1` ending mark to total P&L, but do not enter
+    closed-trade expectancy, win rate, profit factor, average outcome, holding
+    period, or R metrics.
+  - Profit factor is versioned as closed net profit divided by absolute closed
+    net loss. Its value remains `None` with explicit statuses for no closed
+    trades, no closed losses (unbounded), and all-flat closed outcomes; missing
+    metrics are never silently zero-filled.
+  - `report_id` binds the metric, profit-factor, and open-mark policies plus the
+    BTC-183 source report identity/evidence. The full source breakdown,
+    configuration metadata, four comparison rows, and reason codes are covered
+    by `evidence_digest`; `restore_setup_performance_report()` reconstructs all
+    derived evidence and rejects top-level or nested tampering.
+  - Added 14 focused tests covering all four setup types, open/closed/no-trade
+    behavior, wins and losses, costs and R delegation, profit-factor statuses,
+    exact source-path parity, deterministic ordering, persistence, and tamper
+    rejection. Focused and dependency tests pass with 112 tests; the complete
+    Python 3.12 suite passes with 2455 tests.
 
 #### BTC-185 Implement threshold sweeps
 - **Description:**
