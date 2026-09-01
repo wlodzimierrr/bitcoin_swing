@@ -12,21 +12,19 @@
 ## Snapshot
 
 - **Last updated:** 2026-09-01
-- **Current phase:** Phase 1, EPIC T research and learning loop; EPIC S2
-  resumes once BTC-190 and BTC-191 unblock BTC-189 and BTC-187
+- **Current phase:** Phase 1, EPIC T research and learning loop; BTC-190 has
+  unblocked BTC-189, so EPIC S2 resumes before the rest of EPIC T
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-190, market state for every decision
-  date
-- **Last completed ticket:** BTC-188, multi-dimensional parameter sensitivity
-  surfaces
+- **Current implementation frontier:** BTC-189, statistical predictor
+  diagnostics
+- **Last completed ticket:** BTC-190, market state for every decision date
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-190, first by V2 execution order
-- **Other ready tickets in the current epic:** BTC-191; EPIC S2 has no further
-  ready tickets because BTC-187 awaits BTC-191 and BTC-189 awaits BTC-190
-- **Latest verified test baseline:** 2557 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `49d2fc7d605f3cac5fc944d83a2942d404ffd60f`
-  (`feat: implement BTC-188 parameter sensitivity surfaces`)
+- **Next dependency-satisfied ticket:** BTC-189, first by V2 execution order
+- **Other ready tickets:** BTC-191; BTC-187 still awaits BTC-191
+- **Latest verified test baseline:** 2589 passed with Python 3.12 on 2026-09-01
+- **Last relevant implementation/review commit:** `6de076439c6c8fcb82a3f350d9037b4ff33806fa`
+  (`feat: implement BTC-190 decision state store`)
 
 ## Price-Reference State
 
