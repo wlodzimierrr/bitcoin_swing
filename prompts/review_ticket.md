@@ -88,3 +88,21 @@ exist:
 
 After fixes and passing tests, the final result may become `PASS`. Do not perform
 unrelated redesign.
+
+## Final Report
+
+Report exactly these items, briefly:
+
+```text
+Ticket
+Reviewed implementation commit
+Review result
+Findings
+Review-fix commit, if any
+Focused tests
+Full test result
+Documentation updated
+Remaining limitations
+Can ticket remain DONE?
+Recommended next dependency-satisfied ticket
+```

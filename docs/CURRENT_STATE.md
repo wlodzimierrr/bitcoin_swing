@@ -46,10 +46,6 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
 
 - Production canonical BTC reference selection remains unresolved under
   BTC-019.
-- The V2 Quant-Refactor Completion Gate still has unchecked BTC-098 and BTC-129
-  checklist entries although their authoritative ticket blocks are `DONE`.
-  Treat this as an unresolved roadmap checklist inconsistency, not as a status
-  override.
 
 ## Important Active Invariants
 

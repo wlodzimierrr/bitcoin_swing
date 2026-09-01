@@ -5436,8 +5436,8 @@ The project must not proceed to trust paper/backtest performance until all of th
 - [x] BTC-047 risk/portfolio mathematics is the single shared implementation
 - [x] BTC-048 point-in-time Feature Matrix is reproducible
 - [x] BTC-049 parity, look-ahead, NaN/inf, and batch-vs-single tests pass
-- [ ] BTC-098 Structure Score v1.2 removes R/R and repeated Confluence from outer weighting
-- [ ] BTC-129 factor-overlap audit confirms de-nested Entry/Hold/Add contracts
+- [x] BTC-098 Structure Score v1.2 removes R/R and repeated Confluence from outer weighting
+- [x] BTC-129 factor-overlap audit confirms de-nested Entry/Hold/Add contracts
 - [ ] Existing completed feature APIs continue to reproduce historical fixtures
 - [ ] No completed ticket is reclassified from DONE solely because its internals were migrated
 - [ ] Any intentional strategy-behavior change receives a new strategy/config version
