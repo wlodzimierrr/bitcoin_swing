@@ -4798,7 +4798,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - risk-at-stop
 
   The backtester must call the same shared quant functions used by the advisory and paper-trading paths; it must not maintain separate formulas for sizing, risk-at-stop, R/R, or portfolio accounting.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -4809,6 +4809,41 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** XL
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/engine.py` with `run_backtest()`, policy
+    version `EVENT_DRIVEN_BACKTEST_V1`. The engine owns the clock and the
+    routing; every number it reports is produced by the module that already
+    owns that calculation.
+  - **The no-separate-formulas requirement is enforced, not asserted.**
+    `SHARED_CALCULATION_SOURCES` declares the twelve modules the engine
+    delegates to and a test checks each is actually imported. A second test
+    recomputes the entry size independently through BTC-144, BTC-145 and
+    BTC-155 and requires the engine's position to match, so a local sizing
+    formula would drift visibly.
+  - **Point-in-time is structural.** A strategy is handed only bars whose
+    `ingested_at` is at or before the decision bar's, and every decision it
+    returns is queued for the *next* bar. A test asserts the position does not
+    exist on the bar that armed it.
+  - **Within a bar the order is adverse-first:** a resting stop is checked
+    before any queued order. OHLCV cannot say which came first inside a bar,
+    and resolving that tie in the strategy's favour would manufacture returns.
+    A test queues an exit into a stop-out bar and confirms the stop wins.
+  - All twelve listed capabilities route through their owning modules: entry
+    zones and missed entries (BTC-161), structural stops (BTC-162), adds
+    (BTC-163 plus the BTC-154 gate and the BTC-155 schedule), trims (BTC-164
+    with the BTC-157 signal), trailing stops (BTC-156, refusing a loosened
+    stop), fees, slippage and funding (BTC-160), NAV (BTC-160), risk-at-stop
+    (BTC-146 per bar), and trade accounting (BTC-165).
+  - **Two real defects were found by the tests and fixed.** The account was
+    opened from config while executions ran under an override, so
+    `PaperAccount.charge_fee` re-priced fills under a different cost policy;
+    the account is now opened with the engine's costs, and a regression test
+    pins it. Funding was accrued as an opaque aggregate, which BTC-165 rejects
+    as unreplayable; it is now emitted as `FundingEvent` records, charged only
+    on bars without a fill so the recorded quantity matches the ledger.
+  - The strategy interface is a callable taking a `BacktestContext` and
+    returning a `BacktestIntent`, which keeps the engine testable without the
+    full feature stack while leaving every policy decision outside it.
 
 #### BTC-181 Add realistic cost model
 - **Description:**
