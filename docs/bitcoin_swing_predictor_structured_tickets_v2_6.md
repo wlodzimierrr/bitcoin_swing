@@ -4692,7 +4692,7 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   ACTION:
   ENTER / WATCH / HOLD / ADD / TRIM / EXIT / NO TRADE
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -4702,6 +4702,43 @@ This epic is a controlled internal refactor. It must not change strategy behavio
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor.reporting.recommendation` with a typed, versioned
+    `RECOMMENDATION_RENDERER_V1` contract over the existing reconstructable
+    `signals.recommendations`, `signals.predictor_runs`, and ranked
+    `signals.recommendation_reason_codes` records. The renderer makes no signal,
+    risk, lifecycle, or action decisions of its own.
+  - The plain-text advisory has stable sections for run identity, regime/setup,
+    final action, entry geometry, risk, suggested exposure, R/R, component
+    scores, positive evidence, warnings, hard blockers, and configured add
+    conditions. Every persisted action has one unambiguous display label;
+    unavailable optional values are shown as `N/A` rather than invented.
+  - Reason rows are linked to the recommendation and displayed by their
+    persisted contiguous `reason_rank`. Their code, source, severity, and detail
+    remain in the replay record; `info`, `warning`, and `veto` evidence is
+    visibly separated. Single-line validation prevents reason text from
+    injecting a false action into the advisory.
+  - The linked predictor run must match the recommendation's `run_id` and UTC
+    evaluation time, and its config identity must match the supplied validated
+    strategy config. An `ENTER` or `ADD` advisory is rejected when any persisted
+    veto remains, preventing contradictory output at the presentation boundary.
+  - Suggested exposure as a fraction of NAV is derived only when the persisted
+    `risk_amount`, `risk_fraction_nav`, and `suggested_notional` establish NAV;
+    otherwise it is explicitly unavailable. The full-precision inputs are
+    retained even though display values are rounded deterministically.
+  - Add conditions reflect the actual BTC-154/config contract: structural
+    confirmation, Add Score threshold, supportive regime/flow/positioning,
+    profitable position, improving stop, no averaging down, and aggregate
+    risk-at-stop ceiling. The example's `Positioning >= 70` is not emitted
+    because no such configured numeric add threshold exists.
+  - `RecommendationRendererResult.as_record()` persists the source
+    recommendation, predictor-run identity, ranked reasons, add-policy values,
+    config identity, renderer version, media type, and body. Restoration
+    regenerates the output and rejects source, config, or body drift. Eighteen
+    focused tests cover deterministic rendering, every action, optional data,
+    exact replay, provenance, rank/link validation, veto safety, and text
+    injection. The pre-existing suite passes; concurrent untracked BTC-180
+    backtest work has two separate failures and is outside this ticket.
 
 #### BTC-171 Create existing-position management report
 - **Description:**
