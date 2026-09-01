@@ -5415,7 +5415,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   \[
   f(StructureMinimum,RRMinimum)
   \]
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
   - Reports robust plateaus rather than only best points
@@ -5427,6 +5427,71 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - Added `btc_predictor/backtest/parameter_surfaces.py` with policy version
+    `MULTI_DIMENSIONAL_PARAMETER_SURFACE_V1`. A specification declares two or
+    more axes over the BTC-185 parameter vocabulary; every cell of the axis
+    aligned grid is evaluated as a separate complete BTC-182 out-of-sample
+    walk-forward validation. Axes are canonically ordered by parameter name so
+    one research question keeps one `surface_id` however it was declared, and
+    two axes may not vary the same parameter or the same configuration path.
+  - The layer reuses BTC-185 as the owner of the shared contract rather than
+    restating it: `threshold_sweep_metrics` for net outcome metrics,
+    `comparable_run_signature` for run comparability,
+    `threshold_parameter_value` and `threshold_parameter_paths` for the
+    parameter domains, `threshold_config_metadata` for the persisted identity,
+    and `validate_scoring_architecture` for v1.2 / v1.1-benchmark isolation.
+    Those six helpers are new public entry points on the BTC-185 module; its
+    existing behaviour is unchanged.
+  - Per cell the report adds the drawdown and risk-adjusted statistics the
+    ticket requires to BTC-185's trade count, expectancy, and average R.
+    `WORST_FOLD_PEAK_TO_TROUGH_NAV_DRAWDOWN_V1` reports the worst within-fold
+    peak-to-trough NAV decline, because BTC-182 restarts capital per fold and
+    stitching folds would invent a compounded equity path that was never run.
+    `POOLED_WITHIN_FOLD_PERIOD_RETURN_ZERO_RF_SHARPE_V1` pools per-period NAV
+    returns inside folds, never across a fold break, and divides the mean by
+    the sample standard deviation. `MEAN_FOLD_RETURN_OVER_MAX_DRAWDOWN_V1`
+    divides the BTC-182 mean fold return by that drawdown. Neither ratio is
+    annualized: the walk-forward layer declares no periods-per-year factor,
+    and the report states this with `SURFACE_RISK_METRICS_UNANNUALIZED`.
+  - Every derived statistic is computed inside an explicit 60-digit decimal
+    context and quantized to `1E-12`, so replay does not depend on the
+    caller's ambient decimal context. Undefined statistics carry an explicit
+    status (`UNDEFINED_ZERO_DISPERSION`, `UNDEFINED_NO_DRAWDOWN`,
+    `UNDEFINED_NON_POSITIVE_NAV`, `UNAVAILABLE_INSUFFICIENT_PERIODS`,
+    `UNAVAILABLE_NO_EQUITY_CURVE`, `UNAVAILABLE_DRAWDOWN`) and remain `None`;
+    they are never zero-filled. A drawdown of exactly zero is a measurement,
+    so Calmar is reported as undefined rather than infinite.
+  - `CONNECTED_GRID_GLOBAL_BEST_TOLERANCE_V1` generalizes the BTC-185 adjacent
+    region to N dimensions: cells within an absolute objective tolerance of
+    the global best form a plateau when they are connected by single steps
+    along one axis. Cells whose objective is unavailable are holes that break
+    connectivity instead of bridging it. A plateau records exact membership by
+    parameter-set ID plus a per-axis bounding box that is explicitly not a
+    membership claim. A best cell in no plateau is reported as
+    `SURFACE_ISOLATED_OPTIMUM_OVERFIT_RISK`; the research layer never promotes
+    or mutates the production parameter set.
+  - Carrying the BTC-185 review forward, a cell that never traded still
+    returns exactly zero, so the report additionally declares
+    `SURFACE_NO_TRADES` or `SURFACE_CELLS_WITHOUT_TRADES` and
+    `SURFACE_UNAVAILABLE_CELL_OBJECTIVE`, so a flat or partly evidenced region
+    cannot read as robustness.
+  - Reports persist versioned policies, objective and tolerance, every axis
+    definition and revalidation scope, deterministic parameter-set IDs, full
+    nested BTC-182 validations, plateau membership, reason codes, and a
+    SHA-256 evidence digest. Restoration reconstructs every derived metric and
+    plateau claim from the nested validations and rejects top-level or nested
+    tampering.
+  - Added 48 focused tests covering the three ticket example surfaces, three
+    dimensional grids, declaration-order invariance, all six required per-cell
+    metrics against independently derived drawdown, Sharpe, and Calmar values,
+    connected and non-adjacent regions, isolated optima, unavailable
+    objectives breaking connectivity, no-trade and partly traded surfaces,
+    undefined risk statistics, comparability and fitting-procedure
+    enforcement, architecture isolation, deterministic replay, persistence,
+    invalid definitions, and tamper rejection. Focused and dependency
+    regressions pass with 318 tests; the complete Python 3.12 suite passes
+    with 2557 tests.
 
 #### BTC-189 Statistical predictor diagnostics
 - **Description:**

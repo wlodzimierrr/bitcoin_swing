@@ -435,6 +435,61 @@ def run_threshold_sweep(
     return _build_report(spec, tuple(validations))
 
 
+def threshold_sweep_metrics(
+    validation: WalkForwardValidation,
+) -> ThresholdSweepMetrics:
+    """Return the BTC-185 net outcome metrics for one validated run.
+
+    Later robustness research (BTC-188) compares the same net outcomes across
+    parameter sets, so this module stays their single owner.
+    """
+
+    if not isinstance(validation, WalkForwardValidation):
+        raise TypeError("validation must be a WalkForwardValidation")
+    validation.as_record()
+    return _metrics(validation)
+
+
+def comparable_run_signature(validation: WalkForwardValidation) -> dict[str, Any]:
+    """Return what must be identical for two runs to be comparable evidence.
+
+    Symbol, schedule, split, capital, costs, tested coverage, every
+    out-of-sample input digest, configuration identity, and the declared
+    fitting procedure must all agree; otherwise a measured difference cannot
+    be attributed to the varied parameter.
+    """
+
+    if not isinstance(validation, WalkForwardValidation):
+        raise TypeError("validation must be a WalkForwardValidation")
+    return _comparison_signature(validation)
+
+
+def threshold_parameter_value(value: Any, parameter: str, *, name: str) -> Decimal:
+    """Validate one candidate value against its declared parameter domain."""
+
+    if parameter not in THRESHOLD_PARAMETERS:
+        raise ValueError(f"parameter must be one of {THRESHOLD_PARAMETERS}")
+    return _parameter_value(value, parameter, name)
+
+
+def threshold_parameter_paths(values: Sequence[str]) -> tuple[str, ...]:
+    """Return canonical, unique, dotted configuration paths."""
+
+    return _paths(values)
+
+
+def threshold_config_metadata(value: Mapping[str, str]) -> dict[str, str]:
+    """Return the exact persisted configuration identity for a research run."""
+
+    return _config_metadata(value)
+
+
+def validate_scoring_architecture(strategy_version: str, architecture: str) -> None:
+    """Reject mixing v1.2 direct scoring with the v1.1 nested benchmark."""
+
+    _validate_architecture(strategy_version, architecture)
+
+
 def restore_threshold_sweep_report(
     record: Mapping[str, Any],
 ) -> ThresholdSweepReport:
