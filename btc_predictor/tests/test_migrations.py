@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0023_discretionary_reasons"
+HEAD_REVISION = "0024_actual_trade_entry"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:
@@ -368,6 +368,35 @@ def test_discretionary_reason_code_migration_renders_postgresql_sql() -> None:
     assert "ALTER COLUMN discretionary_reason_codes DROP DEFAULT" in sql
     assert "CHECK (length(btrim(discretionary_reason_policy_version)) > 0)" in sql
     assert "Ordered BTC-201 codes explaining the operator" in sql
+
+
+def test_actual_trade_entry_migration_persists_decision_metadata() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    for definition in (
+        "strategy_version VARCHAR(64)",
+        "parameter_set_id VARCHAR(64)",
+        "config_version VARCHAR(64)",
+        "decision_journal_policy_version VARCHAR(64)",
+        "decision_decided_at TIMESTAMP WITH TIME ZONE",
+        "decision_reason_codes JSON",
+        "discretionary_reason_policy_version VARCHAR(64)",
+        "discretionary_reason_codes JSON",
+    ):
+        assert f"ADD COLUMN {definition}" in sql
+    assert (
+        "ADD COLUMN execution_journal_policy_version VARCHAR(64) "
+        "DEFAULT 'MANUAL_EXECUTION_JOURNAL_LEGACY' NOT NULL"
+    ) in sql
+    assert "ALTER COLUMN execution_journal_policy_version DROP DEFAULT" in sql
+    assert "BTC-200 decision reason codes snapshotted at execution time" in sql
+    assert "BTC-201 discretionary reason codes snapshotted at execution time" in sql
+    assert "CONSTRAINT ck_manual_trade_journal_actual_trade_v1_fill_complete" in sql
+    assert (
+        "CONSTRAINT ck_manual_trade_journal_actual_trade_v1_attribution_complete"
+    ) in sql
+    assert "decision_decided_at <= actual_entry_time" in sql
+    assert "journaled_at >= actual_entry_time" in sql
 
 
 def test_ingestion_audit_log_migration_renders_postgresql_sql() -> None:

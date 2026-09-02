@@ -1,5 +1,18 @@
 """Manual trade tracking: what the operator did with each advisory."""
 
+from btc_predictor.journal.actual_trade import (
+    ACTUAL_TRADE_FEATURE_ID,
+    ACTUAL_TRADE_POLICY_VERSION,
+    ACTUAL_TRADE_TABLE,
+    FOLLOWED,
+    MANUAL_ONLY,
+    OVERRIDDEN,
+    ActualTradeEntry,
+    actual_trade_entry_from_record,
+    record_actual_trade_entry,
+    verify_actual_trade_entry,
+)
+
 from btc_predictor.journal.decision_journal import (
     APPROVED,
     DECISION_JOURNAL_FEATURE_ID,
@@ -21,6 +34,9 @@ from btc_predictor.journal.decision_journal import (
 )
 
 __all__ = [
+    "ACTUAL_TRADE_FEATURE_ID",
+    "ACTUAL_TRADE_POLICY_VERSION",
+    "ACTUAL_TRADE_TABLE",
     "APPROVED",
     "DECISION_JOURNAL_FEATURE_ID",
     "DECISION_JOURNAL_POLICY_VERSION",
@@ -28,14 +44,21 @@ __all__ = [
     "DECISION_JOURNAL_TABLE",
     "DISCRETIONARY_REASON_CODES",
     "DISCRETIONARY_REASON_POLICY_VERSION",
+    "FOLLOWED",
+    "MANUAL_ONLY",
     "MISSED",
     "MODIFIABLE_ADVISORY_FIELDS",
     "MODIFIED",
     "ORDER_BEARING_ACTIONS",
+    "OVERRIDDEN",
     "RECOMMENDATION_DECISIONS",
     "REJECTED",
+    "ActualTradeEntry",
     "RecommendationDecisionEntry",
+    "actual_trade_entry_from_record",
     "journal_recommendation_decision",
     "recommendation_decision_from_record",
+    "record_actual_trade_entry",
+    "verify_actual_trade_entry",
     "verify_decision_entry",
 ]

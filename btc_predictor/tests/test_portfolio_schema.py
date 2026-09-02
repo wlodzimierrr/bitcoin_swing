@@ -74,6 +74,15 @@ def test_manual_trade_journal_can_compare_recommendation_to_execution() -> None:
         "manual_decision",
         "override_reason",
         "notes",
+        "strategy_version",
+        "parameter_set_id",
+        "config_version",
+        "decision_journal_policy_version",
+        "decision_decided_at",
+        "decision_reason_codes",
+        "discretionary_reason_policy_version",
+        "discretionary_reason_codes",
+        "execution_journal_policy_version",
     ):
         assert column_name in manual_trade_journal.c
 
@@ -140,6 +149,7 @@ def test_paper_portfolio_timestamps_are_timezone_aware() -> None:
         (manual_trade_journal, "journaled_at"),
         (manual_trade_journal, "actual_entry_time"),
         (manual_trade_journal, "actual_exit_time"),
+        (manual_trade_journal, "decision_decided_at"),
         (recommendation_decisions, "evaluation_time"),
         (recommendation_decisions, "decided_at"),
     ):

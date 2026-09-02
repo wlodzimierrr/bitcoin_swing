@@ -381,6 +381,18 @@ manual_trade_journal = Table(
     Column("actual_exit_time", DateTime(timezone=True), nullable=True),
     Column("actual_exit_price", Numeric(precision=38, scale=18), nullable=True),
     Column("notes", Text, nullable=True),
+    # BTC-202 snapshots the validated BTC-200/BTC-201 decision identity and
+    # reasons on a linked execution. MANUAL_ONLY executions leave these fields
+    # null because no model configuration or advisory decision produced them.
+    Column("strategy_version", String(length=64), nullable=True),
+    Column("parameter_set_id", String(length=64), nullable=True),
+    Column("config_version", String(length=64), nullable=True),
+    Column("decision_journal_policy_version", String(length=64), nullable=True),
+    Column("decision_decided_at", DateTime(timezone=True), nullable=True),
+    Column("decision_reason_codes", JSON, nullable=True),
+    Column("discretionary_reason_policy_version", String(length=64), nullable=True),
+    Column("discretionary_reason_codes", JSON, nullable=True),
+    Column("execution_journal_policy_version", String(length=64), nullable=False),
     ForeignKeyConstraint(
         ["recommendation_id"],
         ["signals.recommendations.recommendation_id"],
@@ -420,6 +432,43 @@ manual_trade_journal = Table(
     CheckConstraint(
         "actual_entry_time is null or actual_exit_time is null or actual_exit_time >= actual_entry_time",
         name="manual_trade_journal_actual_time_order",
+    ),
+    CheckConstraint(
+        "length(btrim(execution_journal_policy_version)) > 0",
+        name="execution_journal_policy_version_not_blank",
+    ),
+    CheckConstraint(
+        "execution_journal_policy_version != 'MANUAL_EXECUTION_JOURNAL_V1' or ("
+        "direction in ('long', 'short') and "
+        "manual_decision in ('FOLLOWED', 'OVERRIDDEN', 'MANUAL_ONLY') and "
+        "actual_entry_time is not null and actual_entry_price is not null and "
+        "actual_size is not null and actual_size > 0 and "
+        "actual_size_unit is not null and length(btrim(actual_size_unit)) > 0 and "
+        "journaled_at >= actual_entry_time and "
+        "((actual_exit_time is null and actual_exit_price is null) or "
+        "(actual_exit_time is not null and actual_exit_price is not null and "
+        "journaled_at >= actual_exit_time)))",
+        name="actual_trade_v1_fill_complete",
+    ),
+    CheckConstraint(
+        "execution_journal_policy_version != 'MANUAL_EXECUTION_JOURNAL_V1' or ("
+        "(manual_decision = 'MANUAL_ONLY' and recommendation_id is null and "
+        "strategy_version is null and parameter_set_id is null and "
+        "config_version is null and decision_journal_policy_version is null and "
+        "decision_decided_at is null and decision_reason_codes is null and "
+        "discretionary_reason_policy_version is null and "
+        "discretionary_reason_codes is null and override_reason is null) or "
+        "(manual_decision in ('FOLLOWED', 'OVERRIDDEN') and "
+        "recommendation_id is not null and strategy_version is not null and "
+        "parameter_set_id is not null and config_version is not null and "
+        "decision_journal_policy_version is not null and "
+        "decision_decided_at is not null and decision_reason_codes is not null and "
+        "discretionary_reason_policy_version is not null and "
+        "discretionary_reason_codes is not null and "
+        "decision_decided_at <= actual_entry_time and "
+        "((manual_decision = 'FOLLOWED' and override_reason is null) or "
+        "(manual_decision = 'OVERRIDDEN' and override_reason is not null))))",
+        name="actual_trade_v1_attribution_complete",
     ),
     comment="Manual execution journal linked to model recommendations for suggested-versus-actual comparison.",
 )
