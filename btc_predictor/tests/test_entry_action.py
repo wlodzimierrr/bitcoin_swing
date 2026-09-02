@@ -143,6 +143,115 @@ def test_entry_action_record_rejects_action_or_reason_drift() -> None:
         replace(result, reason_codes=("ENTRY_ACTION_SCORE_MISSING",)).as_record()
 
 
+# --- BTC-220: threshold-contract and persisted-record validation ----------
+
+
+def _config_with_thresholds(**overrides):
+    default = load_strategy_config()
+    return replace(
+        default,
+        entry_thresholds=replace(default.entry_thresholds, **overrides),
+    )
+
+
+def test_watch_min_may_not_sit_below_ignore_below() -> None:
+    with pytest.raises(ValueError, match="watch_min must be >= ignore_below"):
+        classify_entry_action(
+            Decimal("50"),
+            strategy_config=_config_with_thresholds(ignore_below=70, watch_min=60),
+        )
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"valid_trade_min": 85, "strong_setup_min": 85},
+        {"strong_setup_min": 95, "exceptional_min": 90},
+        {"watch_min": 80, "valid_trade_min": 80},
+    ],
+)
+def test_action_thresholds_must_be_strictly_increasing(overrides) -> None:
+    with pytest.raises(ValueError, match="strictly increasing"):
+        classify_entry_action(
+            Decimal("50"),
+            strategy_config=_config_with_thresholds(**overrides),
+        )
+
+
+def test_classification_requires_a_strategy_config() -> None:
+    with pytest.raises(TypeError, match="strategy_config must be a StrategyConfig"):
+        classify_entry_action(Decimal("50"), strategy_config=object())
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("feature_id", "ENTRY", "feature_id must be ENTRY_ACTION"),
+        (
+            "classification_version",
+            "ENTRY_ACTION_CLASSIFICATION_V0",
+            "classification_version must be",
+        ),
+        ("source_feature_id", "ENTRY", "source_feature_id must be ENTRY_CONVICTION"),
+        (
+            "source_score_version",
+            "ENTRY_CONVICTION_V1_1",
+            "source_score_version must be",
+        ),
+    ],
+)
+def test_action_record_rejects_identity_or_provenance_drift(
+    field,
+    value,
+    match,
+) -> None:
+    result = classify_entry_action(
+        Decimal("88"),
+        strategy_config=load_strategy_config(),
+    )
+
+    with pytest.raises(ValueError, match=match):
+        replace(result, **{field: value}).as_record()
+
+
+def test_action_record_rejects_a_complete_flag_that_contradicts_the_action() -> None:
+    result = classify_entry_action(None, strategy_config=load_strategy_config())
+
+    with pytest.raises(ValueError, match="complete state does not match entry action"):
+        replace(result, complete=True).as_record()
+
+
+def test_action_record_rejects_config_metadata_that_is_missing_or_blank() -> None:
+    result = classify_entry_action(
+        Decimal("88"),
+        strategy_config=load_strategy_config(),
+    )
+
+    incomplete = dict(result.config_metadata)
+    del incomplete["config_version"]
+    with pytest.raises(ValueError, match="config_metadata missing"):
+        replace(result, config_metadata=incomplete).as_record()
+
+    blank = dict(result.config_metadata) | {"parameter_set_id": ""}
+    with pytest.raises(
+        ValueError,
+        match="config_metadata.parameter_set_id must be a non-empty string",
+    ):
+        replace(result, config_metadata=blank).as_record()
+
+
+def test_action_record_rejects_a_threshold_set_that_is_not_the_contract() -> None:
+    result = classify_entry_action(
+        Decimal("88"),
+        strategy_config=load_strategy_config(),
+    )
+    thresholds = dict(result.thresholds)
+    thresholds["legacy_min"] = Decimal("50")
+
+    with pytest.raises(ValueError, match="must exactly match"):
+        replace(result, thresholds=thresholds).as_record()
+
+
 def test_entry_action_is_deterministic() -> None:
     config = load_strategy_config()
 

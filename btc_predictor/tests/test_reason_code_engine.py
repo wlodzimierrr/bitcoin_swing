@@ -21,6 +21,7 @@ from btc_predictor.signals import (
     canonical_signal_reason,
     evaluate_hard_veto,
 )
+from btc_predictor.signals.data_quality import RECOMMENDATION_REASON_SEVERITIES
 
 
 def _conviction(*, missing: bool = False):
@@ -338,3 +339,317 @@ def test_unknown_or_malformed_reason_codes_fail_fast() -> None:
             strategy_config=config,
             signal_reasons=(malformed,),
         )
+
+
+# --- BTC-220: engine input, identity, and persisted-record validation ------
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("feature_id", "REASON_CODES", "feature_id must be REASON_CODE_ENGINE"),
+        ("engine_version", "REASON_CODE_ENGINE_V0", "engine_version must be"),
+    ],
+)
+def test_record_rejects_engine_identity_drift(field, value, match) -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    with pytest.raises(ValueError, match=match):
+        replace(result, **{field: value}).as_record()
+
+
+def test_record_rejects_source_version_drift() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+    versions = dict(result.source_versions) | {"hard_veto": "HARD_VETO_V0"}
+
+    with pytest.raises(ValueError, match="source_versions do not match"):
+        replace(result, source_versions=versions).as_record()
+
+
+def test_record_rejects_a_source_completion_map_that_is_not_the_contract() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    extra = dict(result.source_complete) | {"macro": True}
+    with pytest.raises(ValueError, match="source_complete must exactly match"):
+        replace(result, source_complete=extra).as_record()
+
+    non_bool = dict(result.source_complete) | {"hard_veto": 1}
+    with pytest.raises(TypeError, match="source_complete.hard_veto must be a bool"):
+        replace(result, source_complete=non_bool).as_record()
+
+
+def test_record_rejects_config_metadata_that_is_not_the_required_key_set() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    partial = dict(result.config_metadata)
+    del partial["parameter_set_id"]
+    with pytest.raises(ValueError, match="config_metadata must exactly match"):
+        replace(result, config_metadata=partial).as_record()
+
+    blank = dict(result.config_metadata) | {"config_version": "  "}
+    with pytest.raises(
+        ValueError,
+        match="config_metadata.config_version must be a non-empty string",
+    ):
+        replace(result, config_metadata=blank).as_record()
+
+    with pytest.raises(TypeError, match="config_metadata must be a mapping"):
+        replace(result, config_metadata=("config_version", "x")).as_record()
+
+
+def test_record_rejects_a_non_boolean_hard_veto_flag() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    with pytest.raises(TypeError, match="hard_veto_blocked must be a bool"):
+        replace(result, hard_veto_blocked=1).as_record()
+
+
+def test_record_rejects_an_incomplete_action_that_still_carries_a_label() -> None:
+    config = load_strategy_config()
+    conviction = _conviction(missing=True)
+    action = classify_entry_action(conviction.score, strategy_config=config)
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=_clear_veto(),
+        strategy_config=config,
+    )
+
+    assert result.entry_action is None
+    with pytest.raises(
+        ValueError,
+        match="incomplete entry action cannot contain an action",
+    ):
+        replace(result, entry_action="VALID").as_record()
+
+
+def test_record_rejects_an_unsupported_action_label() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="complete entry action must use a supported label",
+    ):
+        replace(result, entry_action="SUPER_STRONG").as_record()
+
+
+@pytest.mark.parametrize(
+    ("source", "match"),
+    [
+        ("entry_conviction", "entry_conviction must be an EntryConvictionResult"),
+        ("entry_action", "entry_action must be an EntryActionResult"),
+        ("hard_veto", "hard_veto must be a HardVetoResult"),
+        ("strategy_config", "strategy_config must be a StrategyConfig"),
+    ],
+)
+def test_engine_requires_the_declared_source_types(source: str, match: str) -> None:
+    config, conviction, action, veto = _complete_sources()
+    sources = {
+        "entry_conviction": conviction,
+        "entry_action": action,
+        "hard_veto": veto,
+        "strategy_config": config,
+    }
+    sources[source] = object()
+
+    with pytest.raises(TypeError, match=match):
+        build_reason_code_engine(**sources)
+
+
+def test_signal_reasons_must_be_a_sequence_of_reason_codes() -> None:
+    config, conviction, action, veto = _complete_sources()
+
+    with pytest.raises(
+        TypeError,
+        match="signal_reasons must be a sequence of reason codes",
+    ):
+        build_reason_code_engine(
+            entry_conviction=conviction,
+            entry_action=action,
+            hard_veto=veto,
+            strategy_config=config,
+            signal_reasons="TREND_12W_POSITIVE",
+        )
+
+    with pytest.raises(
+        TypeError,
+        match="signal_reasons must contain RecommendationReasonCode values",
+    ):
+        build_reason_code_engine(
+            entry_conviction=conviction,
+            entry_action=action,
+            hard_veto=veto,
+            strategy_config=config,
+            signal_reasons=("TREND_12W_POSITIVE",),
+        )
+
+
+def test_canonical_signal_reason_requires_a_string_code() -> None:
+    with pytest.raises(TypeError, match="code must be a string"):
+        canonical_signal_reason(None)
+
+
+@pytest.mark.parametrize(
+    ("reason", "match"),
+    [
+        (
+            RecommendationReasonCode(
+                code="A" * 65,
+                source_component="trend",
+                severity="info",
+                detail="Too long.",
+            ),
+            "UPPER_SNAKE_CASE",
+        ),
+        (
+            RecommendationReasonCode(
+                code="TREND_OK",
+                source_component="c" * 65,
+                severity="info",
+                detail="Component too long.",
+            ),
+            "source_component must be <= 64 characters",
+        ),
+    ],
+)
+def test_reason_fields_are_bounded_and_use_supported_severities(
+    reason,
+    match: str,
+) -> None:
+    config, conviction, action, veto = _complete_sources()
+
+    with pytest.raises(ValueError, match=match):
+        build_reason_code_engine(
+            entry_conviction=conviction,
+            entry_action=action,
+            hard_veto=veto,
+            strategy_config=config,
+            signal_reasons=(reason,),
+        )
+
+
+def test_engine_ranks_exactly_the_shared_reason_severity_vocabulary() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+        signal_reasons=(
+            canonical_signal_reason("TREND_12W_POSITIVE"),
+            canonical_signal_reason("CROWDING_WARNING"),
+        ),
+    )
+
+    assert set(RECOMMENDATION_REASON_SEVERITIES) == {"info", "warning", "veto"}
+    assert {reason.severity for reason in result.reasons} <= set(
+        RECOMMENDATION_REASON_SEVERITIES,
+    )
+    # The engine ranks veto first, then warning, then info; the shared
+    # vocabulary is unordered, so the engine ordering is asserted directly.
+    severities = [reason.severity for reason in result.reasons]
+    assert severities == sorted(
+        severities,
+        key=lambda value: {"veto": 0, "warning": 1, "info": 2}[value],
+    )
+
+
+@pytest.mark.parametrize("setup", [None, "RANGE_SCALP"])
+def test_absent_or_unsupported_setup_vetoes_and_propagates_to_the_engine(
+    setup,
+) -> None:
+    veto = _clear_veto(setup=setup)
+
+    assert veto.blocked is True
+    assert "HARD_VETO_UNSUPPORTED_SETUP" in veto.reason_codes
+
+    config = load_strategy_config()
+    conviction = _conviction()
+    action = classify_entry_action(conviction.score, strategy_config=config)
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    assert result.hard_veto_blocked is True
+    assert "HARD_VETO_UNSUPPORTED_SETUP" in result.reason_codes
+    veto_reasons = [
+        reason
+        for reason in result.reasons
+        if reason.code == "HARD_VETO_UNSUPPORTED_SETUP"
+    ]
+    assert [reason.severity for reason in veto_reasons] == ["veto"]
+
+
+def test_supported_setup_matching_ignores_case_and_surrounding_whitespace() -> None:
+    veto = _clear_veto(setup="  bull_trend_continuation  ")
+
+    assert veto.blocked is False
+    assert veto.reason_codes == ("HARD_VETO_CLEAR",)
+
+    config = load_strategy_config()
+    conviction = _conviction()
+    action = classify_entry_action(conviction.score, strategy_config=config)
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    assert result.hard_veto_blocked is False
+    assert "HARD_VETO_CLEAR" in result.reason_codes
+
+
+def test_record_rejects_reason_entries_that_are_not_reason_codes() -> None:
+    config, conviction, action, veto = _complete_sources()
+    result = build_reason_code_engine(
+        entry_conviction=conviction,
+        entry_action=action,
+        hard_veto=veto,
+        strategy_config=config,
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="reasons must contain RecommendationReasonCode values",
+    ):
+        replace(result, reasons=(*result.reasons, "TREND_12W_POSITIVE")).as_record()

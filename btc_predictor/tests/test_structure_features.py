@@ -1,3 +1,4 @@
+from dataclasses import replace
 from decimal import Decimal
 
 import pytest
@@ -651,3 +652,359 @@ def test_v1_2_invalid_rr_diagnostic_does_not_mark_structure_incomplete() -> None
     assert "STRUCTURE_SCORE_INPUT_MISSING" not in result.reason_codes
     assert result.complete is True
     assert result.as_record()["complete"] is True
+
+
+# --- BTC-220: piecewise component curves and input adapters ---------------
+
+
+def _structure_inputs(**overrides):
+    result = calculate_structure_score_from_clusters(
+        overrides.pop("clusters", cluster_result()),
+        entry_price=overrides.pop("entry_price", "100"),
+        stop_price=overrides.pop("stop_price", "90"),
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_score="80",
+        **overrides,
+    )
+    return result.inputs
+
+
+@pytest.mark.parametrize(
+    ("entry_price", "expected"),
+    [
+        # At or below the support upper bound the entry is fully located.
+        ("98", Decimal("100")),
+        # Exactly the full-score distance fraction (1/100) still scores 100.
+        ("100", Decimal("100")),
+        # At or beyond the zero-score distance fraction the score is zero.
+        ("108", Decimal("0")),
+        ("120", Decimal("0")),
+    ],
+)
+def test_entry_location_curve_saturates_at_both_ends(
+    entry_price: str,
+    expected: Decimal,
+) -> None:
+    assert _structure_inputs(entry_price=entry_price).entry_location == expected
+
+
+def test_entry_location_decreases_monotonically_inside_the_interval() -> None:
+    scores = [
+        _structure_inputs(entry_price=price).entry_location
+        for price in ("101", "103", "105", "107")
+    ]
+
+    assert all(Decimal("0") < score < Decimal("100") for score in scores)
+    assert scores == sorted(scores, reverse=True)
+
+
+@pytest.mark.parametrize(
+    ("target_price", "expected_reward_risk", "expected_rr_quality"),
+    [
+        # Below rr_minimum: linear ramp to 60.
+        ("115", Decimal("1.5"), Decimal("45.0")),
+        # Between rr_minimum and rr_preferred_min: 60 -> 85.
+        ("122", Decimal("2.2"), Decimal("70.0")),
+        # Between rr_preferred_min and rr_preferred_max: 85 -> 100.
+        ("125", Decimal("2.5"), Decimal("85")),
+        ("130", Decimal("3.0"), Decimal("100.0")),
+        # Above rr_preferred_max saturates at 100.
+        ("135", Decimal("3.5"), Decimal("100")),
+    ],
+)
+def test_reward_risk_quality_curve_covers_every_band(
+    target_price: str,
+    expected_reward_risk: Decimal,
+    expected_rr_quality: Decimal,
+) -> None:
+    clusters = (
+        support_cluster(),
+        dict(target_cluster(), center_price=target_price),
+    )
+
+    result = calculate_structure_score_from_clusters(
+        clusters,
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_score="80",
+    )
+
+    assert result.selection.reward_risk == expected_reward_risk
+    assert result.inputs.rr_quality == expected_rr_quality
+
+
+def test_rr_quality_uses_the_supplied_parameters_not_hardcoded_bands() -> None:
+    result = calculate_structure_score_from_clusters(
+        cluster_result(),
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_score="80",
+        rr_minimum="1.0",
+        rr_preferred_min="1.5",
+        rr_preferred_max="2.0",
+    )
+
+    # rr = 2.5 now sits above rr_preferred_max instead of on it.
+    assert result.selection.reward_risk == Decimal("2.5")
+    assert result.inputs.rr_quality == Decimal("100")
+
+
+def test_a_single_cluster_mapping_is_accepted_without_a_container() -> None:
+    result = calculate_structure_score_from_clusters(
+        support_cluster(),
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_score="80",
+    )
+
+    assert result.selection.support_cluster_id == "LEVEL_CLUSTER:support:phase1"
+    assert result.reason_codes == (
+        "STRUCTURE_SCORE_TARGET_MISSING",
+        "STRUCTURE_SCORE_INPUT_MISSING",
+    )
+
+
+def test_cluster_sources_may_expose_as_record() -> None:
+    class Cluster:
+        def __init__(self, record):
+            self._record = record
+
+        def as_record(self):
+            return dict(self._record)
+
+    result = calculate_structure_score_from_clusters(
+        (Cluster(support_cluster()), Cluster(target_cluster())),
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_score="80",
+    )
+
+    assert result.complete is True
+    assert result.selection.support_cluster_id == "LEVEL_CLUSTER:support:phase1"
+
+
+def test_cluster_sources_must_be_mappings_or_expose_as_record() -> None:
+    with pytest.raises(
+        TypeError,
+        match="cluster sources must be mappings or expose as_record",
+    ):
+        calculate_structure_score_from_clusters(
+            ("LEVEL_CLUSTER:support:phase1",),
+            entry_price="100",
+            stop_price="90",
+            level_strength_score="80",
+        )
+
+
+def test_a_cluster_without_a_cluster_id_is_rejected() -> None:
+    anonymous = support_cluster()
+    del anonymous["cluster_id"]
+
+    with pytest.raises(ValueError, match="cluster_id must be a non-empty string"):
+        calculate_structure_score_from_clusters(
+            (anonymous, target_cluster()),
+            entry_price="100",
+            stop_price="90",
+            level_strength_score="80",
+        )
+
+
+def test_a_cluster_without_a_center_price_is_rejected() -> None:
+    unpriced = support_cluster()
+    del unpriced["center_price"]
+
+    with pytest.raises(ValueError, match="center_price must be present"):
+        calculate_structure_score_from_clusters(
+            (unpriced, target_cluster()),
+            entry_price="100",
+            stop_price="90",
+            level_strength_score="80",
+        )
+
+
+@pytest.mark.parametrize(
+    "level_strength_result",
+    [
+        {"feature_id": "LEVEL_STRENGTH", "score": "82", "complete": False},
+        {"feature_id": "LEVEL_STRENGTH", "score": None, "complete": True},
+    ],
+)
+def test_an_unusable_level_strength_result_is_missing_not_zero(
+    level_strength_result,
+) -> None:
+    result = calculate_structure_score_from_clusters(
+        cluster_result(),
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_result=level_strength_result,
+    )
+
+    assert result.inputs.level_strength is None
+    assert result.score is None
+    assert result.complete is False
+    assert result.reason_codes == ("STRUCTURE_SCORE_INPUT_MISSING",)
+
+
+def test_an_explicit_level_strength_score_wins_over_a_result_object() -> None:
+    result = calculate_structure_score_from_clusters(
+        cluster_result(),
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_1,
+        level_strength_score="80",
+        level_strength_result={
+            "feature_id": "LEVEL_STRENGTH",
+            "score": "10",
+            "complete": True,
+        },
+    )
+
+    assert result.inputs.level_strength == Decimal("80")
+
+
+@pytest.mark.parametrize("weight", [Decimal("-0.1"), Decimal("1.1")])
+def test_structure_weights_must_lie_inside_the_unit_interval(weight) -> None:
+    weights = {
+        "level_strength": weight,
+        "entry_location": Decimal("1") - weight,
+    }
+
+    with pytest.raises(ValueError, match="weight must be between 0 and 1"):
+        calculate_structure_score(
+            StructureScoreInput(
+                level_strength=Decimal("80"),
+                entry_location=Decimal("70"),
+                rr_quality=Decimal("90"),
+                confluence=Decimal("75"),
+            ),
+            version=STRUCTURE_SCORE_V1_2,
+            weights=weights,
+        )
+
+
+def test_rr_parameter_bands_must_be_ordered() -> None:
+    with pytest.raises(ValueError, match="rr_preferred_min must be >= rr_minimum"):
+        calculate_structure_score_from_clusters(
+            cluster_result(),
+            entry_price="100",
+            stop_price="90",
+            level_strength_score="80",
+            rr_minimum="2.5",
+            rr_preferred_min="2.0",
+        )
+
+
+def test_an_incomplete_structure_result_has_no_reason_code_suffix() -> None:
+    incomplete = calculate_structure_score(
+        StructureScoreInput(
+            level_strength=None,
+            entry_location=Decimal("70"),
+            rr_quality=Decimal("90"),
+            confluence=Decimal("75"),
+        ),
+        version=STRUCTURE_SCORE_V1_2,
+    )
+    complete = calculate_structure_score(
+        StructureScoreInput(
+            level_strength=Decimal("80"),
+            entry_location=Decimal("70"),
+            rr_quality=Decimal("90"),
+            confluence=Decimal("75"),
+        ),
+        version=STRUCTURE_SCORE_V1_2,
+    )
+
+    assert incomplete.interpretation is None
+    assert incomplete.reason_code is None
+    assert complete.reason_code == (
+        f"{STRUCTURE_SCORE_FEATURE_ID}_{complete.interpretation}"
+    )
+
+
+def test_structure_record_rejects_identity_and_completeness_drift() -> None:
+    result = calculate_structure_score(
+        StructureScoreInput(
+            level_strength=Decimal("80"),
+            entry_location=Decimal("70"),
+            rr_quality=Decimal("90"),
+            confluence=Decimal("75"),
+        ),
+        version=STRUCTURE_SCORE_V1_2,
+    )
+
+    with pytest.raises(ValueError, match="feature_id must be STRUCTURE_SCORE"):
+        replace(result, feature_id="STRUCTURE").as_record()
+    with pytest.raises(ValueError, match="complete structure score requires score"):
+        replace(result, score=None).as_record()
+    with pytest.raises(ValueError, match="contributions missing level_strength"):
+        replace(
+            result,
+            contributions={"entry_location": result.contributions["entry_location"]},
+        ).as_record()
+
+
+def test_absent_optional_cluster_bounds_are_reported_as_none() -> None:
+    bare_support = support_cluster()
+    del bare_support["lower_bound"]
+
+    result = calculate_structure_score_from_clusters(
+        (bare_support, target_cluster()),
+        entry_price="100",
+        stop_price="90",
+        version=STRUCTURE_SCORE_V1_2,
+        level_strength_score="80",
+    )
+
+    assert result.selection.support_lower_bound is None
+    assert result.selection.support_upper_bound == Decimal("99")
+    assert result.complete is True
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        (
+            {"entry_location_full_score_distance_fraction": "0"},
+            "full_score_distance_fraction must be > 0 and <= 1",
+        ),
+        (
+            {"entry_location_zero_score_distance_fraction": "1.5"},
+            "zero_score_distance_fraction must be > 0 and <= 1",
+        ),
+    ],
+)
+def test_entry_location_fractions_must_be_positive_and_at_most_one(
+    kwargs,
+    match: str,
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        calculate_structure_score_from_clusters(
+            cluster_result(),
+            entry_price="100",
+            stop_price="90",
+            level_strength_score="80",
+            **kwargs,
+        )
+
+
+def test_structure_record_rejects_a_negative_contribution() -> None:
+    result = calculate_structure_score(
+        StructureScoreInput(
+            level_strength=Decimal("80"),
+            entry_location=Decimal("70"),
+            rr_quality=Decimal("90"),
+            confluence=Decimal("75"),
+        ),
+        version=STRUCTURE_SCORE_V1_2,
+    )
+
+    with pytest.raises(ValueError, match="entry_location must be >= 0"):
+        replace(
+            result,
+            contributions={**result.contributions, "entry_location": Decimal("-1")},
+        ).as_record()

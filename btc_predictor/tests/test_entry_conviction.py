@@ -10,6 +10,7 @@ from btc_predictor.features.entry import (
     ENTRY_CONVICTION_FEATURE_ID,
     ENTRY_CONVICTION_REASON_CODES,
     ENTRY_CONVICTION_SCORE_VERSION,
+    ENTRY_CONVICTION_WEIGHT_SUM_TOLERANCE,
     EntryConvictionBatchResult,
     EntryConvictionInput,
     EntryConvictionResult,
@@ -287,6 +288,178 @@ def test_result_validation_rejects_reason_code_drift() -> None:
 
     with pytest.raises(ValueError, match="reason_codes do not match"):
         replace(result, reason_codes=()).as_record()
+
+
+# --- BTC-220: persisted-record and weight-contract validation -------------
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("feature_id", "ENTRY", "feature_id must be ENTRY_CONVICTION"),
+        ("score_version", "ENTRY_CONVICTION_V1_1", "score_version must be"),
+        ("parameter_status", "VALIDATED", "parameter_status must be"),
+    ],
+)
+def test_record_rejects_identity_or_version_drift(field, value, match) -> None:
+    result = calculate_entry_conviction(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+
+    with pytest.raises(ValueError, match=match):
+        replace(result, **{field: value}).as_record()
+
+
+def test_record_rejects_a_contribution_component_set_that_is_not_the_contract() -> None:
+    result = calculate_entry_conviction(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+    contributions = dict(result.contributions)
+    contributions["regime"] = Decimal("10")
+
+    with pytest.raises(
+        ValueError,
+        match="contributions must exactly match Entry Conviction components",
+    ):
+        replace(result, contributions=contributions).as_record()
+
+
+def test_record_rejects_config_metadata_that_is_missing_or_blank() -> None:
+    result = calculate_entry_conviction(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+
+    incomplete = dict(result.config_metadata)
+    del incomplete["parameter_set_id"]
+    with pytest.raises(ValueError, match="config_metadata missing"):
+        replace(result, config_metadata=incomplete).as_record()
+
+    blank = dict(result.config_metadata) | {"strategy_version": "   "}
+    with pytest.raises(
+        ValueError,
+        match="config_metadata.strategy_version must be a non-empty string",
+    ):
+        replace(result, config_metadata=blank).as_record()
+
+
+def test_record_rejects_missingness_or_completeness_drift() -> None:
+    config = load_strategy_config()
+    complete = calculate_entry_conviction(complete_input(), strategy_config=config)
+    incomplete = calculate_entry_conviction(
+        replace(complete_input(), flow_score=None),
+        strategy_config=config,
+    )
+
+    with pytest.raises(ValueError, match="missing_components do not match"):
+        replace(complete, missing_components=("flow",)).as_record()
+    with pytest.raises(ValueError, match="contributions do not match"):
+        replace(
+            incomplete,
+            contributions={**incomplete.contributions, "flow": Decimal("0")},
+        ).as_record()
+    with pytest.raises(ValueError, match="complete state does not match"):
+        replace(incomplete, complete=True).as_record()
+
+
+def _config_with_entry_weights(weights: dict[str, Decimal]):
+    default = load_strategy_config()
+    return replace(
+        default,
+        scoring_weights=replace(default.scoring_weights, entry_conviction=weights),
+    )
+
+
+def test_weights_must_be_exactly_the_v1_2_component_set() -> None:
+    with pytest.raises(ValueError, match="must exactly match"):
+        calculate_entry_conviction(
+            complete_input(),
+            strategy_config=_config_with_entry_weights({"trend": Decimal("1")}),
+        )
+
+
+def test_weights_must_sum_to_one_within_the_declared_tolerance() -> None:
+    default = load_strategy_config()
+    inflated = dict(default.scoring_weights.entry_conviction) | {
+        "trend": Decimal("0.5"),
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Entry Conviction weights must sum to 1",
+    ):
+        calculate_entry_conviction(
+            complete_input(),
+            strategy_config=_config_with_entry_weights(inflated),
+        )
+
+
+def test_weight_sum_tolerance_admits_only_negligible_rounding() -> None:
+    default = load_strategy_config()
+    inside = dict(default.scoring_weights.entry_conviction)
+    inside["trend"] = (
+        Decimal(str(inside["trend"])) + ENTRY_CONVICTION_WEIGHT_SUM_TOLERANCE
+    )
+    outside = dict(default.scoring_weights.entry_conviction)
+    outside["trend"] = (
+        Decimal(str(outside["trend"])) + ENTRY_CONVICTION_WEIGHT_SUM_TOLERANCE * 10
+    )
+
+    accepted = calculate_entry_conviction(
+        complete_input(),
+        strategy_config=_config_with_entry_weights(inside),
+    )
+    assert accepted.score is not None
+
+    with pytest.raises(ValueError, match="must sum to 1"):
+        calculate_entry_conviction(
+            complete_input(),
+            strategy_config=_config_with_entry_weights(outside),
+        )
+
+
+def test_negative_weights_are_rejected() -> None:
+    default = load_strategy_config()
+    signed = dict(default.scoring_weights.entry_conviction)
+    signed["trend"] = Decimal("-0.25")
+    signed["flow"] = Decimal("0.75")
+
+    with pytest.raises(ValueError, match="trend must be non-negative"):
+        calculate_entry_conviction(
+            complete_input(),
+            strategy_config=_config_with_entry_weights(signed),
+        )
+
+
+@pytest.mark.parametrize(
+    ("weight", "match"),
+    [
+        (True, "trend must be numeric"),
+        ("abc", "trend must be numeric"),
+        (Decimal("NaN"), "trend must be finite"),
+    ],
+)
+def test_non_numeric_or_non_finite_weights_are_rejected(weight, match) -> None:
+    default = load_strategy_config()
+    broken = dict(default.scoring_weights.entry_conviction) | {"trend": weight}
+
+    with pytest.raises(ValueError, match=match):
+        calculate_entry_conviction(
+            complete_input(),
+            strategy_config=_config_with_entry_weights(broken),
+        )
+
+
+def test_calculation_requires_the_declared_input_and_config_types() -> None:
+    with pytest.raises(TypeError, match="inputs must be an EntryConvictionInput"):
+        calculate_entry_conviction(
+            {"trend_score": Decimal("50")},
+            strategy_config=load_strategy_config(),
+        )
+    with pytest.raises(TypeError, match="strategy_config must be a StrategyConfig"):
+        calculate_entry_conviction(complete_input(), strategy_config=object())
 
 
 def test_repeated_single_and_batch_calculation_is_deterministic() -> None:

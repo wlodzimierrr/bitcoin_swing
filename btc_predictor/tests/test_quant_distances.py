@@ -208,6 +208,124 @@ def test_invalid_distance_inputs_fail_fast(call, match) -> None:
         call()
 
 
+# --- BTC-220: mode/ATR pairing and scalar-parameter contracts -------------
+
+
+def test_entry_distance_score_requires_atr_when_mode_is_atr() -> None:
+    with pytest.raises(NumericInputError, match="atr is required when mode is 'atr'"):
+        entry_distance_score(
+            [100.0],
+            [95.0],
+            full_score_distance=0.0,
+            zero_score_distance=2.0,
+            mode="atr",
+        )
+
+
+def test_entry_distance_score_rejects_atr_outside_atr_mode() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="atr is only valid when mode is 'atr'",
+    ):
+        entry_distance_score(
+            [100.0],
+            [95.0],
+            full_score_distance=0.0,
+            zero_score_distance=0.05,
+            mode="static",
+            atr=5.0,
+        )
+
+
+def test_entry_distance_score_rejects_atr_of_a_different_shape() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="atr must be scalar or have the same shape",
+    ):
+        entry_distance_score(
+            [100.0, 200.0],
+            [95.0, 190.0],
+            full_score_distance=0.0,
+            zero_score_distance=2.0,
+            mode="atr",
+            atr=[5.0, 6.0, 7.0],
+        )
+
+
+def test_entry_distance_score_requires_an_ordered_score_interval() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="zero_score_distance must be greater than full_score_distance",
+    ):
+        entry_distance_score(
+            [100.0],
+            [95.0],
+            full_score_distance=0.05,
+            zero_score_distance=0.05,
+        )
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"full_score_distance": -0.01}, "full_score_distance must be non-negative"),
+        ({"zero_score_distance": 0.0}, "zero_score_distance must be positive"),
+        ({"zero_score_distance": -1.0}, "zero_score_distance must be positive"),
+    ],
+)
+def test_entry_distance_score_bounds_its_scalar_parameters(kwargs, match) -> None:
+    call = {"full_score_distance": 0.0, "zero_score_distance": 0.05} | kwargs
+
+    with pytest.raises(NumericInputError, match=match):
+        entry_distance_score([100.0], [95.0], **call)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [True, np.bool_(True)],
+)
+def test_distance_scalar_parameters_reject_booleans(value) -> None:
+    with pytest.raises(NumericInputError, match="must not be boolean"):
+        entry_distance_score(
+            [100.0],
+            [95.0],
+            full_score_distance=0.0,
+            zero_score_distance=value,
+        )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [[0.05], np.asarray([0.05]), 1 + 2j, "0.05", np.nan, np.inf, None],
+)
+def test_distance_scalar_parameters_must_be_finite_float64_scalars(value) -> None:
+    with pytest.raises(NumericInputError, match="must be a finite float64 scalar"):
+        entry_distance_score(
+            [100.0],
+            [95.0],
+            full_score_distance=0.0,
+            zero_score_distance=value,
+        )
+
+
+def test_cluster_distance_matrix_requires_a_positive_atr_in_atr_mode() -> None:
+    with pytest.raises(NumericInputError, match="atr must be positive"):
+        cluster_distance_matrix([100.0, 105.0], mode="atr", atr=0.0)
+
+
+def test_cluster_distance_matrix_rejects_atr_outside_atr_mode() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="atr is only valid when mode is 'atr'",
+    ):
+        cluster_distance_matrix([100.0, 105.0], mode="static", atr=5.0)
+
+
+def test_ragged_distance_input_is_rejected_before_coercion() -> None:
+    with pytest.raises(NumericInputError, match="regular numeric array"):
+        pairwise_price_distance([[100.0, 101.0], [102.0]], 100.0)
+
+
 def test_price_nan_requires_explicit_propagation() -> None:
     with pytest.raises(NumericInputError, match="NaN"):
         pairwise_price_distance([100, np.nan], 95)

@@ -6516,7 +6516,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - domain wrappers and reason-code behavior
   - de-nested Entry / Structure / Hold / Add score contracts
   - prohibited mechanical nesting / weight-sum validation
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6526,6 +6526,91 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Scope was established by measuring branch coverage of the ticket's named
+    owners rather than by re-listing already-covered behaviour. Existing
+    BTC-042..049 parity, BTC-098, and BTC-129 suites already covered the
+    happy-path mathematics, so this ticket closed the remaining gaps. Combined
+    statement/branch coverage across the fourteen scoped modules moved from
+    93% to 99%; no existing test was weakened or removed.
+  - `quant/comparisons.py` had no focused test at all despite owning every
+    tolerance-aware hard decision in `risk.budget`, `risk.sizing`,
+    `risk.tranches`, `risk.exposure`, `risk.invalidation`, and
+    `levels.clustering`. Added `test_quant_comparisons.py` pinning the frozen
+    `DECISION_COMPARISON_V1` policy version, the default tolerance's identity
+    with `PARITY_TOLERANCE`, the three-valued ordering, absolute and relative
+    band collapse, band selection by the larger operand magnitude,
+    antisymmetry, helper/compare agreement, inclusive-versus-strict disagreement
+    inside the band, and binary-float artifact immunity (`0.1 + 0.2` compares
+    equal to `0.3`). Booleans, non-finite values, non-numerics, and a
+    non-`DecisionTolerance` tolerance are all rejected; a zero tolerance
+    restores exact `Decimal` comparison.
+  - `features/_scoring.py` — the single Decimal/float64 seam all nine v1.2
+    domain score wrappers delegate through — also had no focused test. Added
+    `test_feature_score_boundary.py` proving the boundary delegates to the
+    authoritative `quant.scoring.weighted_score` owner rather than
+    reimplementing it, that the persisted Decimal scale follows the exact
+    `weight * value` template, that `component_ids` controls evaluation and
+    output order, and that a missing component (including a NaN reaching the
+    boundary) is surfaced as `None` with the component named in
+    `missing_components` and never contributes zero. A zero component score is
+    explicitly distinguished from a missing one. Every v1.2 contract in
+    `scoring_contracts` is exercised through the default weight-sum policy,
+    with unconstrained totals opt-in and negative weights rejected.
+  - Added the untested accumulation and result-rejection contracts in
+    `quant/arrays.py`: `stable_row_sum` is exact where naive accumulation
+    cancels, returns a float for a vector and one aggregate per matrix row
+    without flattening, supports empty input, requires explicit NaN
+    propagation, and rejects rank > 2 and totals outside the finite float64
+    range; `reject_infinite_result` admits documented NaN while
+    `reject_non_finite_result` admits neither.
+  - Pinned the scalar-parameter contracts shared by the transform, distance,
+    and scoring kernels — booleans, array-shaped scalars, complex, string,
+    non-finite, and unrepresentable-integer parameters all fail fast — plus
+    ragged-input rejection, `percentile_to_health` domain bounds, the
+    `mode`/`atr` pairing rules in `entry_distance_score` and
+    `cluster_distance_matrix`, ATR shape alignment, the ordered
+    full/zero score interval, the empty component axis, and the
+    `expected_weight_total` / `weight_tolerance` policy scalars.
+  - Risk and portfolio mathematics: added the scalar single-tranche
+    `risk_at_stop` path (equal to its own tranche contribution and to the
+    single-element vector), and rank > 2 and ragged-input rejection for both
+    the risk and portfolio input coercers.
+  - Domain wrappers: Entry Conviction, Entry Action, Hold, Add, and Structure
+    records now reject identity, version, parameter-status, contribution-set,
+    missingness, completeness, threshold-set, and config-metadata drift.
+    Weight validation is pinned for exact component membership, the
+    `0.000001` sum tolerance (accepted at the tolerance, rejected at ten times
+    it), non-negativity, and non-numeric or non-finite weights. Entry action
+    thresholds must be exactly the contract set, `watch_min >= ignore_below`,
+    and strictly increasing.
+  - Structure: added coverage of the previously untested piecewise component
+    curves — entry location saturating at 100 at or inside the full-score
+    distance and at 0 at or beyond the zero-score distance, monotone in
+    between; and R/R quality across all four bands with the bands taken from
+    the supplied parameters rather than hardcoded. Also covered the cluster
+    input adapters (bare mapping, `as_record()` sources, rejection of anything
+    else), the level-strength adapter treating an incomplete or scoreless
+    result as missing rather than zero, and unit-interval weight and fraction
+    validation.
+  - Reason codes: added engine identity, source-version, source-completion,
+    config-metadata, and derived-state validation; source and signal-reason
+    type guards; bounded code and component lengths; and the observable setup
+    behaviour (absent or unsupported setup vetoes and propagates; supported
+    setup matching ignores case and surrounding whitespace).
+  - Scoring contracts: an unknown composite is rejected by
+    `expand_factor_paths`, `effective_weights`, and `audit_factor_overlap`
+    rather than silently returning no paths.
+  - Deliberately not covered: a small number of defence-in-depth guards that
+    no public call can reach — the `RuntimeError` consistency assertions in
+    `features/_scoring.py` and `features/structure.py`, the internal
+    `_restore_output` shape/NaN assertions and the zero-scale interval guard
+    in `quant/transforms.py`, and the reason severity and detail branches that
+    `RecommendationReasonCode.__post_init__` already forecloses. Writing tests
+    for these would require constructing states the public API cannot produce.
+  - Added 233 focused cases. The full Python 3.12.14 suite passes with 3158
+    tests, also passing with `RuntimeWarning` treated as an error; compileall
+    passes.
 
 #### BTC-221 Look-ahead bias test suite
 - **Description:**

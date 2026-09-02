@@ -507,6 +507,71 @@ def test_config_contract_rejects_weight_membership_or_total_drift() -> None:
             )
 
 
+# --- BTC-220: record identity, missingness, and metadata validation -------
+
+
+def test_add_record_rejects_parameter_status_drift() -> None:
+    result = calculate_add_score(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+
+    with pytest.raises(ValueError, match="parameter_status must be"):
+        replace(result, parameter_status="VALIDATED").as_record()
+
+
+def test_add_record_rejects_a_contribution_set_that_is_not_the_contract() -> None:
+    result = calculate_add_score(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+    contributions = dict(result.contributions) | {"hold_score": Decimal("10")}
+
+    with pytest.raises(
+        ValueError,
+        match="contributions must exactly match Add Score components",
+    ):
+        replace(result, contributions=contributions).as_record()
+
+
+def test_add_record_rejects_missingness_or_completeness_drift() -> None:
+    config = load_strategy_config()
+    complete = calculate_add_score(complete_input(), strategy_config=config)
+    incomplete = calculate_add_score(
+        replace(complete_input(), flow_score=None),
+        strategy_config=config,
+    )
+
+    with pytest.raises(ValueError, match="missing_components do not match"):
+        replace(complete, missing_components=("flow",)).as_record()
+    with pytest.raises(ValueError, match="contributions do not match"):
+        replace(
+            incomplete,
+            contributions={**incomplete.contributions, "flow": Decimal("0")},
+        ).as_record()
+    with pytest.raises(ValueError, match="complete state does not match"):
+        replace(incomplete, complete=True).as_record()
+
+
+def test_add_record_rejects_config_metadata_that_is_missing_or_blank() -> None:
+    result = calculate_add_score(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+
+    incomplete = dict(result.config_metadata)
+    del incomplete["strategy_version"]
+    with pytest.raises(ValueError, match="config_metadata missing"):
+        replace(result, config_metadata=incomplete).as_record()
+
+    blank = dict(result.config_metadata) | {"strategy_version": "\t"}
+    with pytest.raises(
+        ValueError,
+        match="config_metadata.strategy_version must be a non-empty string",
+    ):
+        replace(result, config_metadata=blank).as_record()
+
+
 def test_repeated_single_and_batch_calculation_is_deterministic() -> None:
     config = load_strategy_config()
     first = calculate_add_score(complete_input(), strategy_config=config)

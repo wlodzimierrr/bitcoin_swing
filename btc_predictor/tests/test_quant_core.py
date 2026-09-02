@@ -20,8 +20,11 @@ from btc_predictor.quant import (
     is_effectively_zero,
     normal_samples,
     permutation_index_samples,
+    reject_infinite_result,
+    reject_non_finite_result,
     require_probability,
     require_same_shape,
+    stable_row_sum,
     uniform_index_samples,
 )
 
@@ -127,6 +130,7 @@ def test_float64_coercion_returns_owned_contiguous_array_without_mutating_input(
         ([True, False], "boolean"),
         (["1", "2"], "string"),
         ([[1, 2], [3]], "regular numeric array"),
+        ([10**400], "coercible to float64"),
     ],
 )
 def test_invalid_array_inputs_fail_fast(values, match) -> None:
@@ -209,6 +213,108 @@ def test_probability_validation_returns_float64() -> None:
 
     assert result == np.float64(0.95)
     assert isinstance(result, np.float64)
+
+
+# --- BTC-220: accumulation and result-rejection helpers ------------------
+# ``stable_row_sum`` is the shared accumulator behind weighted scoring,
+# ``risk_at_stop``, and net exposure, and the rejection helpers are the guard
+# every quant module funnels its outputs through.
+
+
+def test_require_same_shape_requires_at_least_one_array() -> None:
+    with pytest.raises(NumericInputError, match="at least one array is required"):
+        require_same_shape()
+
+
+def test_numeric_tolerance_rejects_values_that_cannot_become_float64() -> None:
+    with pytest.raises(NumericInputError, match="must be float64 values"):
+        NumericTolerance(absolute="abc")
+
+
+def test_probability_validation_rejects_values_that_cannot_become_float64() -> None:
+    with pytest.raises(NumericInputError, match="must be a float64 value"):
+        require_probability("abc")
+
+
+def test_stable_row_sum_is_exact_where_naive_accumulation_cancels() -> None:
+    values = [1e16, 1.0, -1e16]
+
+    assert stable_row_sum(values) == 1.0
+    assert float(np.sum(values)) == 0.0
+
+
+def test_stable_row_sum_returns_a_float_for_a_vector() -> None:
+    result = stable_row_sum([1.5, 2.25, 3.0])
+
+    assert isinstance(result, float)
+    assert result == 6.75
+
+
+def test_stable_row_sum_returns_one_aggregate_per_matrix_row() -> None:
+    result = stable_row_sum([[1.0, 2.0], [3.0, 4.0], [-1.0, 1.0]])
+
+    assert isinstance(result, np.ndarray)
+    assert result.dtype == np.float64
+    np.testing.assert_array_equal(result, [3.0, 7.0, 0.0])
+
+
+def test_stable_row_sum_does_not_flatten_a_matrix_into_one_total() -> None:
+    matrix = [[1e16, 1.0, -1e16], [2.0, 0.0, 0.0]]
+
+    np.testing.assert_array_equal(stable_row_sum(matrix), [1.0, 2.0])
+
+
+def test_stable_row_sum_supports_empty_vectors_and_matrices() -> None:
+    assert stable_row_sum([]) == 0.0
+    np.testing.assert_array_equal(stable_row_sum(np.zeros((0, 3))), [])
+
+
+def test_stable_row_sum_requires_explicit_nan_propagation() -> None:
+    with pytest.raises(NumericInputError, match="NaN"):
+        stable_row_sum([1.0, np.nan])
+
+    assert np.isnan(stable_row_sum([1.0, np.nan], nan_policy="propagate"))
+
+
+def test_stable_row_sum_rejects_higher_dimensional_input() -> None:
+    with pytest.raises(NumericInputError, match="must be a vector or matrix"):
+        stable_row_sum(np.zeros((2, 2, 2)))
+
+
+def test_stable_row_sum_rejects_a_total_outside_the_finite_float64_range() -> None:
+    with pytest.raises(NumericInputError, match="exceeded the finite float64 range"):
+        stable_row_sum([1e308, 1e308])
+
+
+def test_reject_infinite_result_allows_documented_nan_but_never_infinity() -> None:
+    assert reject_infinite_result([1.0, np.nan]) is None
+
+    for value in (np.inf, -np.inf):
+        with pytest.raises(
+            NumericInputError,
+            match="score exceeded the finite float64 range",
+        ):
+            reject_infinite_result([value], name="score")
+
+
+def test_reject_non_finite_result_rejects_both_nan_and_infinity() -> None:
+    assert reject_non_finite_result([1.0, -2.5]) is None
+
+    for value in (np.nan, np.inf, -np.inf):
+        with pytest.raises(
+            NumericInputError,
+            match="score produced a non-finite float64 result",
+        ):
+            reject_non_finite_result([value], name="score")
+
+
+@pytest.mark.parametrize(
+    "reject",
+    [reject_infinite_result, reject_non_finite_result],
+)
+def test_result_rejection_helpers_require_float64_compatible_output(reject) -> None:
+    with pytest.raises(NumericInputError, match="score must be float64-compatible"):
+        reject(["a"], name="score")
 
 
 def test_seeded_simulation_is_repeatable_and_does_not_use_global_rng() -> None:

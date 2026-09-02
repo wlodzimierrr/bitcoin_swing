@@ -379,6 +379,77 @@ def test_finite_inputs_cannot_silently_overflow_to_infinity(call) -> None:
         call()
 
 
+# --- BTC-220: scalar single-tranche path and input-shape contracts --------
+
+
+def test_scalar_risk_at_stop_returns_the_single_tranche_contribution() -> None:
+    contribution = risk_contribution_by_tranche(
+        100_000.0,
+        50_000.0,
+        45_000.0,
+        side="long",
+    )
+    total = risk_at_stop(100_000.0, 50_000.0, 45_000.0, side="long")
+
+    assert isinstance(contribution, float)
+    assert isinstance(total, float)
+    assert total == contribution == pytest.approx(10_000.0, abs=1e-9)
+
+
+def test_scalar_and_single_element_vector_risk_agree() -> None:
+    scalar = risk_at_stop(100_000.0, 50_000.0, 45_000.0, side="long")
+    vector = risk_at_stop([100_000.0], [50_000.0], [45_000.0], side="long")
+
+    assert scalar == pytest.approx(float(vector), abs=1e-12)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda: risk_at_stop(
+            np.zeros((2, 2, 2)),
+            np.ones((2, 2, 2)),
+            np.ones((2, 2, 2)),
+            side="long",
+        ),
+        lambda: stop_distance(
+            np.ones((2, 2, 2)),
+            np.ones((2, 2, 2)),
+            side="long",
+        ),
+    ],
+)
+def test_risk_inputs_reject_more_than_two_dimensions(call) -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="risk inputs must be scalars, vectors, or matrices",
+    ):
+        call()
+
+
+def test_portfolio_inputs_reject_more_than_two_dimensions() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="portfolio inputs must be scalars, vectors, or matrices",
+    ):
+        gross_exposure(np.ones((2, 2, 2)))
+
+
+def test_ragged_risk_input_is_rejected_before_coercion() -> None:
+    with pytest.raises(NumericInputError, match="regular numeric array"):
+        risk_at_stop(
+            [[1.0, 2.0], [3.0]],
+            [[1.0, 2.0], [3.0]],
+            [[1.0, 2.0], [3.0]],
+            side="long",
+        )
+
+
+def test_ragged_portfolio_input_is_rejected_before_coercion() -> None:
+    with pytest.raises(NumericInputError, match="regular numeric array"):
+        gross_exposure([[1.0, 2.0], [3.0]])
+
+
 def test_repeated_risk_and_portfolio_calculations_are_deterministic() -> None:
     first_risk = risk_contribution_by_tranche(
         [5_000, 3_000],

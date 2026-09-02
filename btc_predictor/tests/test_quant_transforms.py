@@ -268,6 +268,59 @@ def test_invalid_inputs_and_parameters_fail_fast(call, match) -> None:
         call()
 
 
+# --- BTC-220: scalar-parameter and input-shape contracts -----------------
+# Every transform funnels its keyword parameters through one ``_finite_scalar``
+# guard, so the rejected representations are pinned once here.
+
+
+@pytest.mark.parametrize(
+    "midpoint",
+    [True, np.bool_(False)],
+)
+def test_transform_scalar_parameters_reject_booleans(midpoint) -> None:
+    with pytest.raises(NumericInputError, match="must not be boolean"):
+        sigmoid(0.0, midpoint=midpoint)
+
+
+@pytest.mark.parametrize(
+    "midpoint",
+    [
+        [1.0, 2.0],
+        np.asarray([1.0]),
+        1 + 2j,
+        "1.0",
+        np.str_("1.0"),
+        np.nan,
+        np.inf,
+        None,
+        10**400,
+    ],
+)
+def test_transform_scalar_parameters_must_be_finite_float64_scalars(
+    midpoint,
+) -> None:
+    with pytest.raises(NumericInputError, match="must be a finite float64 scalar"):
+        sigmoid(0.0, midpoint=midpoint)
+
+
+@pytest.mark.parametrize("quantile", [-0.1, 1.1])
+def test_winsorize_quantiles_must_be_probabilities(quantile: float) -> None:
+    with pytest.raises(NumericInputError, match="must be between 0 and 1"):
+        winsorize([1.0, 2.0], lower_quantile=quantile)
+
+
+def test_ragged_transform_input_is_rejected_before_coercion() -> None:
+    with pytest.raises(NumericInputError, match="regular numeric array"):
+        sigmoid([[1.0, 2.0], [3.0]])
+
+
+def test_percentile_to_health_rejects_percentiles_outside_the_domain() -> None:
+    with pytest.raises(NumericInputError, match="between 0 and 100"):
+        percentile_to_health([-0.5])
+    with pytest.raises(NumericInputError, match="between 0 and 100"):
+        percentile_to_health([100.5])
+
+
 def test_empty_arrays_are_supported_only_for_elementwise_transforms() -> None:
     result = normal_cdf_score(np.asarray([], dtype=np.float64))
 

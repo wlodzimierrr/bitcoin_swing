@@ -190,6 +190,95 @@ def test_invalid_score_inputs_and_weight_policy_fail_fast(call, match) -> None:
         call()
 
 
+# --- BTC-220: component-axis and weight-policy scalar contracts -----------
+
+
+def test_matrix_without_a_component_axis_is_rejected() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="must contain at least one component",
+    ):
+        weighted_score(np.zeros((3, 0)), {"trend": 1.0}, component_names=("trend",))
+
+
+def test_observations_with_more_than_two_dimensions_are_rejected() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="one-dimensional row or matrix",
+    ):
+        weighted_score(
+            np.zeros((2, 2, 2)),
+            {"trend": 1.0},
+            component_names=("trend",),
+        )
+
+
+def test_empty_component_names_are_rejected() -> None:
+    with pytest.raises(NumericInputError, match="component_names must not be empty"):
+        weighted_score([[50.0]], {}, component_names=())
+
+
+@pytest.mark.parametrize("expected_total", [True, np.bool_(True)])
+def test_expected_weight_total_rejects_booleans(expected_total) -> None:
+    with pytest.raises(NumericInputError, match="must not be boolean"):
+        weighted_score(
+            [50.0],
+            {"trend": 1.0},
+            component_names=("trend",),
+            expected_weight_total=expected_total,
+        )
+
+
+@pytest.mark.parametrize(
+    "expected_total",
+    [[1.0], np.asarray([1.0]), 1 + 0j, "1.0", np.nan, np.inf],
+)
+def test_expected_weight_total_must_be_a_finite_float64_scalar(
+    expected_total,
+) -> None:
+    with pytest.raises(NumericInputError, match="must be a finite float64 scalar"):
+        weighted_score(
+            [50.0],
+            {"trend": 1.0},
+            component_names=("trend",),
+            expected_weight_total=expected_total,
+        )
+
+
+@pytest.mark.parametrize("expected_total", [0.0, -1.0])
+def test_expected_weight_total_must_be_positive(expected_total: float) -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="expected_weight_total must be positive",
+    ):
+        weighted_score(
+            [50.0],
+            {"trend": 1.0},
+            component_names=("trend",),
+            expected_weight_total=expected_total,
+        )
+
+
+def test_weight_tolerance_must_be_a_non_negative_finite_scalar() -> None:
+    with pytest.raises(
+        NumericInputError,
+        match="weight_tolerance must be non-negative",
+    ):
+        weighted_score(
+            [50.0],
+            {"trend": 1.0},
+            component_names=("trend",),
+            weight_tolerance=-1e-6,
+        )
+    with pytest.raises(NumericInputError, match="must be a finite float64 scalar"):
+        weighted_score(
+            [50.0],
+            {"trend": 1.0},
+            component_names=("trend",),
+            weight_tolerance=np.nan,
+        )
+
+
 def test_repeated_calculation_is_deterministic() -> None:
     first = weighted_score([[80, 60, 40]], WEIGHTS, component_names=COMPONENTS)
     second = weighted_score([[80, 60, 40]], WEIGHTS, component_names=COMPONENTS)

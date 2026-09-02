@@ -210,6 +210,15 @@ def test_cycles_in_the_graph_are_rejected() -> None:
         expand_factor_paths("a", graph)
 
 
+def test_an_unknown_composite_is_rejected_rather_than_returning_no_paths() -> None:
+    with pytest.raises(ValueError, match="unknown composite: sentiment"):
+        expand_factor_paths("sentiment", SCORING_GRAPH_V1_2)
+    with pytest.raises(ValueError, match="unknown composite: sentiment"):
+        effective_weights("sentiment", SCORING_GRAPH_V1_2)
+    with pytest.raises(ValueError, match="unknown composite: sentiment"):
+        audit_factor_overlap("sentiment")
+
+
 # --- config enforcement --------------------------------------------------
 
 

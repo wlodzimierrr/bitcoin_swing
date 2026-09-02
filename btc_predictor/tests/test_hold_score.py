@@ -334,6 +334,126 @@ def test_batch_prefix_is_unchanged_when_future_rows_are_appended() -> None:
     )
 
 
+# --- BTC-220: record identity, missingness, and metadata validation -------
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("feature_id", "HOLD", "feature_id must be HOLD_SCORE"),
+        ("parameter_status", "VALIDATED", "parameter_status must be"),
+    ],
+)
+def test_hold_record_rejects_identity_or_status_drift(field, value, match) -> None:
+    result = calculate_hold_score(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+
+    with pytest.raises(ValueError, match=match):
+        replace(result, **{field: value}).as_record()
+
+
+def test_hold_record_rejects_a_contribution_set_that_is_not_the_contract() -> None:
+    result = calculate_hold_score(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+    contributions = dict(result.contributions) | {"regime": Decimal("10")}
+
+    with pytest.raises(
+        ValueError,
+        match="contributions must exactly match Hold Score components",
+    ):
+        replace(result, contributions=contributions).as_record()
+
+
+def test_hold_record_rejects_missingness_or_completeness_drift() -> None:
+    config = load_strategy_config()
+    complete = calculate_hold_score(complete_input(), strategy_config=config)
+    incomplete = calculate_hold_score(
+        replace(complete_input(), flow_score=None),
+        strategy_config=config,
+    )
+
+    with pytest.raises(ValueError, match="missing_components do not match"):
+        replace(complete, missing_components=("flow",)).as_record()
+    with pytest.raises(ValueError, match="contributions do not match"):
+        replace(
+            incomplete,
+            contributions={**incomplete.contributions, "flow": Decimal("0")},
+        ).as_record()
+    with pytest.raises(ValueError, match="complete state does not match"):
+        replace(incomplete, complete=True).as_record()
+
+
+def test_hold_record_rejects_config_metadata_that_is_missing_or_blank() -> None:
+    result = calculate_hold_score(
+        complete_input(),
+        strategy_config=load_strategy_config(),
+    )
+
+    incomplete = dict(result.config_metadata)
+    del incomplete["config_version"]
+    with pytest.raises(ValueError, match="config_metadata missing"):
+        replace(result, config_metadata=incomplete).as_record()
+
+    blank = dict(result.config_metadata) | {"config_version": " "}
+    with pytest.raises(
+        ValueError,
+        match="config_metadata.config_version must be a non-empty string",
+    ):
+        replace(result, config_metadata=blank).as_record()
+
+
+def test_hold_calculation_requires_the_declared_input_and_config_types() -> None:
+    with pytest.raises(TypeError, match="inputs must be a HoldScoreInput"):
+        calculate_hold_score(
+            {"trend_score": Decimal("50")},
+            strategy_config=load_strategy_config(),
+        )
+    with pytest.raises(TypeError, match="strategy_config must be a StrategyConfig"):
+        calculate_hold_score(complete_input(), strategy_config=object())
+
+
+def test_hold_weights_must_be_non_negative() -> None:
+    config = load_strategy_config()
+    signed = dict(config.scoring_weights.hold_score)
+    signed["trend"] = Decimal("-0.2")
+    signed["flow"] = Decimal("0.7333334")
+
+    with pytest.raises(ValueError, match="trend must be non-negative"):
+        calculate_hold_score(
+            complete_input(),
+            strategy_config=replace(
+                config,
+                scoring_weights=replace(config.scoring_weights, hold_score=signed),
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    ("weight", "match"),
+    [
+        (True, "trend must be numeric"),
+        ("abc", "trend must be numeric"),
+        (Decimal("Infinity"), "trend must be finite"),
+    ],
+)
+def test_hold_weights_must_be_finite_numeric_values(weight, match) -> None:
+    config = load_strategy_config()
+    broken = dict(config.scoring_weights.hold_score) | {"trend": weight}
+
+    with pytest.raises(ValueError, match=match):
+        calculate_hold_score(
+            complete_input(),
+            strategy_config=replace(
+                config,
+                scoring_weights=replace(config.scoring_weights, hold_score=broken),
+            ),
+        )
+
+
 def test_repeated_single_and_batch_calculation_is_deterministic() -> None:
     config = load_strategy_config()
     first = calculate_hold_score(complete_input(), strategy_config=config)
