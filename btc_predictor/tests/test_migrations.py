@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0021_trade_accounting"
+HEAD_REVISION = "0022_decision_journal"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:
@@ -314,6 +314,42 @@ def test_manual_trade_journal_migration_renders_postgresql_sql() -> None:
     assert "manual_decision = 'MANUAL_ONLY' or recommendation_id is not null" in sql
     assert "manual_decision != 'OVERRIDDEN' or override_reason is not null" in sql
     assert "Manual execution journal linked to model recommendations" in sql
+
+
+def test_recommendation_decision_journal_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert "CREATE TABLE portfolio.recommendation_decisions" in sql
+    assert "recommendation_id BIGINT NOT NULL" in sql
+    assert "strategy_version VARCHAR(64) NOT NULL" in sql
+    assert "parameter_set_id VARCHAR(64) NOT NULL" in sql
+    assert "config_version VARCHAR(64) NOT NULL" in sql
+    assert "evaluation_time TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "decided_at TIMESTAMP WITH TIME ZONE NOT NULL" in sql
+    assert "decision VARCHAR(16) NOT NULL" in sql
+    assert "advised_action VARCHAR(16) NOT NULL" in sql
+    assert "modified_fields JSON NOT NULL" in sql
+    assert "advisory_schema_version VARCHAR(64) NOT NULL" in sql
+    assert "advisory_body TEXT NOT NULL" in sql
+    assert "advisory_digest VARCHAR(64) NOT NULL" in sql
+    assert "journal_policy_version VARCHAR(64) NOT NULL" in sql
+    assert "reason_codes JSON NOT NULL" in sql
+    assert "CONSTRAINT pk_portfolio_recommendation_decisions PRIMARY KEY" in sql
+    assert (
+        "CONSTRAINT fk_portfolio_recommendation_decision_recommendation FOREIGN KEY"
+    ) in sql
+    assert "ON DELETE RESTRICT" in sql
+    assert (
+        "CONSTRAINT uq_portfolio_recommendation_decisions_recommendation UNIQUE"
+    ) in sql
+    assert "decision in ('APPROVED', 'REJECTED', 'MODIFIED', 'MISSED')" in sql
+    assert (
+        "advised_action in ('NO_TRADE', 'WATCH', 'ENTER', 'HOLD', 'ADD', 'TRIM', 'EXIT')"
+    ) in sql
+    assert "decided_at >= evaluation_time" in sql
+    assert "length(advisory_digest) = 64" in sql
+    assert "Canonical BTC-172 advisory JSON exactly as decided against" in sql
+    assert "Operator decisions recorded against model recommendations" in sql
 
 
 def test_ingestion_audit_log_migration_renders_postgresql_sql() -> None:

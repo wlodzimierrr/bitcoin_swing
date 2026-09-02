@@ -1,3 +1,5 @@
+from sqlalchemy import UniqueConstraint
+
 from btc_predictor.db import (
     COMPLETED_TRADES_PRIMARY_KEY,
     MANUAL_DECISIONS,
@@ -7,10 +9,13 @@ from btc_predictor.db import (
     PAPER_ORDERS_PRIMARY_KEY,
     POSITION_EVENTS_PRIMARY_KEY,
     POSITIONS_PRIMARY_KEY,
+    RECOMMENDATION_DECISIONS,
+    RECOMMENDATION_DECISIONS_PRIMARY_KEY,
     STOPS_PRIMARY_KEY,
     TRANCHES_PRIMARY_KEY,
     completed_trades,
     manual_trade_journal,
+    recommendation_decisions,
     paper_accounts,
     paper_orders,
     position_events,
@@ -29,6 +34,7 @@ def test_paper_portfolio_schema_defines_required_entities() -> None:
     assert POSITION_EVENTS_PRIMARY_KEY == ("event_id",)
     assert COMPLETED_TRADES_PRIMARY_KEY == ("completed_trade_id",)
     assert MANUAL_TRADE_JOURNAL_PRIMARY_KEY == ("manual_trade_id",)
+    assert RECOMMENDATION_DECISIONS_PRIMARY_KEY == ("decision_id",)
 
 
 def test_paper_portfolio_events_support_required_actions() -> None:
@@ -79,6 +85,47 @@ def test_manual_trade_journal_can_compare_recommendation_to_execution() -> None:
     )
 
 
+def test_recommendation_decisions_support_required_decisions() -> None:
+    assert RECOMMENDATION_DECISIONS == ("APPROVED", "REJECTED", "MODIFIED", "MISSED")
+
+
+def test_recommendation_decisions_carry_advisory_and_strategy_provenance() -> None:
+    for column_name in (
+        "recommendation_id",
+        "strategy_version",
+        "parameter_set_id",
+        "config_version",
+        "evaluation_time",
+        "decided_at",
+        "decision",
+        "advised_action",
+        "modified_fields",
+        "note",
+        "advisory_schema_version",
+        "advisory_body",
+        "advisory_digest",
+        "journal_policy_version",
+        "reason_codes",
+    ):
+        assert column_name in recommendation_decisions.c
+
+    assert recommendation_decisions.c.recommendation_id.nullable is False
+    assert any(
+        foreign_key.target_fullname == "signals.recommendations.recommendation_id"
+        for foreign_key in recommendation_decisions.foreign_keys
+    )
+
+
+def test_one_recommendation_carries_one_recorded_decision() -> None:
+    unique_columns = {
+        tuple(column.name for column in constraint.columns)
+        for constraint in recommendation_decisions.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert ("recommendation_id",) in unique_columns
+
+
 def test_paper_portfolio_timestamps_are_timezone_aware() -> None:
     for table, column_name in (
         (paper_accounts, "created_at"),
@@ -91,5 +138,7 @@ def test_paper_portfolio_timestamps_are_timezone_aware() -> None:
         (manual_trade_journal, "journaled_at"),
         (manual_trade_journal, "actual_entry_time"),
         (manual_trade_journal, "actual_exit_time"),
+        (recommendation_decisions, "evaluation_time"),
+        (recommendation_decisions, "decided_at"),
     ):
         assert table.c[column_name].type.timezone is True

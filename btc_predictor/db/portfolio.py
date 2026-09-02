@@ -28,6 +28,10 @@ PORTFOLIO_SCHEMA = "portfolio"
 
 PAPER_ACTIONS = ("ENTER", "HOLD", "ADD", "STOP_MOVE", "TRIM", "EXIT", "MISSED")
 MANUAL_DECISIONS = ("FOLLOWED", "OVERRIDDEN", "SKIPPED", "MANUAL_ONLY")
+# BTC-200: the disposition an operator records against one model recommendation.
+# This is a decision about an advisory, not a record of an executed trade, so it
+# is deliberately separate from the BTC-017 manual execution vocabulary above.
+RECOMMENDATION_DECISIONS = ("APPROVED", "REJECTED", "MODIFIED", "MISSED")
 # BTC-166: every persisted lifecycle event carries the strategy identity that
 # produced it, so two parameter sets are never indistinguishable in the record.
 LIFECYCLE_PROVENANCE_COLUMNS = (
@@ -45,6 +49,7 @@ STOPS_PRIMARY_KEY = ("stop_id",)
 POSITION_EVENTS_PRIMARY_KEY = ("event_id",)
 COMPLETED_TRADES_PRIMARY_KEY = ("completed_trade_id",)
 MANUAL_TRADE_JOURNAL_PRIMARY_KEY = ("manual_trade_id",)
+RECOMMENDATION_DECISIONS_PRIMARY_KEY = ("decision_id",)
 
 portfolio_metadata = MetaData(schema=PORTFOLIO_SCHEMA, naming_convention=NAMING_CONVENTION)
 
@@ -420,3 +425,74 @@ manual_trade_journal = Table(
 )
 Index("ix_portfolio_manual_trade_journal_recommendation", manual_trade_journal.c.recommendation_id)
 Index("ix_portfolio_manual_trade_journal_symbol_time", manual_trade_journal.c.symbol, manual_trade_journal.c.journaled_at)
+
+# BTC-200: a recommendation decision is a record about an advisory, not about a
+# trade. It exists for advisories that were never traded (REJECTED, MISSED), so
+# it cannot live in the BTC-017 execution journal, whose every column describes
+# a fill. The advisory body is stored verbatim because the decision is only
+# auditable against the exact document the operator was shown.
+recommendation_decisions = Table(
+    "recommendation_decisions",
+    portfolio_metadata,
+    Column("decision_id", BigInteger, Identity(always=True), nullable=False),
+    Column("recommendation_id", BigInteger, nullable=False),
+    Column("strategy_version", String(length=64), nullable=False),
+    Column("parameter_set_id", String(length=64), nullable=False),
+    Column("config_version", String(length=64), nullable=False),
+    Column("evaluation_time", DateTime(timezone=True), nullable=False),
+    Column("decided_at", DateTime(timezone=True), nullable=False),
+    Column("decision", String(length=16), nullable=False),
+    Column("advised_action", String(length=16), nullable=False),
+    Column("modified_fields", JSON, nullable=False),
+    Column("note", Text, nullable=True),
+    Column("advisory_schema_version", String(length=64), nullable=False),
+    Column("advisory_body", Text, nullable=False),
+    Column("advisory_digest", String(length=64), nullable=False),
+    Column("journal_policy_version", String(length=64), nullable=False),
+    Column("reason_codes", JSON, nullable=False),
+    ForeignKeyConstraint(
+        ["recommendation_id"],
+        ["signals.recommendations.recommendation_id"],
+        name="fk_portfolio_recommendation_decision_recommendation",
+        ondelete="RESTRICT",
+    ),
+    PrimaryKeyConstraint(
+        *RECOMMENDATION_DECISIONS_PRIMARY_KEY,
+        name="pk_portfolio_recommendation_decisions",
+    ),
+    UniqueConstraint(
+        "recommendation_id",
+        name="uq_portfolio_recommendation_decisions_recommendation",
+    ),
+    CheckConstraint(
+        "decision in ('APPROVED', 'REJECTED', 'MODIFIED', 'MISSED')",
+        name="decision_valid",
+    ),
+    CheckConstraint(
+        "advised_action in ('NO_TRADE', 'WATCH', 'ENTER', 'HOLD', 'ADD', 'TRIM', 'EXIT')",
+        name="advised_action_valid",
+    ),
+    CheckConstraint(
+        "decided_at >= evaluation_time",
+        name="decided_after_evaluation",
+    ),
+    CheckConstraint(
+        "length(btrim(strategy_version)) > 0",
+        name="strategy_version_not_blank",
+    ),
+    CheckConstraint(
+        "length(btrim(parameter_set_id)) > 0",
+        name="parameter_set_id_not_blank",
+    ),
+    CheckConstraint(
+        "length(btrim(config_version)) > 0",
+        name="config_version_not_blank",
+    ),
+    CheckConstraint(
+        "length(advisory_digest) = 64",
+        name="advisory_digest_sha256",
+    ),
+    comment="Operator decisions recorded against model recommendations.",
+)
+Index("ix_portfolio_recommendation_decisions_decision_time", recommendation_decisions.c.decision, recommendation_decisions.c.decided_at)
+Index("ix_portfolio_recommendation_decisions_strategy_identity", recommendation_decisions.c.strategy_version, recommendation_decisions.c.parameter_set_id)
