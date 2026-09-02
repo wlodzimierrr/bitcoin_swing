@@ -100,6 +100,8 @@ def test_recommendation_decisions_carry_advisory_and_strategy_provenance() -> No
         "decision",
         "advised_action",
         "modified_fields",
+        "discretionary_reason_policy_version",
+        "discretionary_reason_codes",
         "note",
         "advisory_schema_version",
         "advisory_body",

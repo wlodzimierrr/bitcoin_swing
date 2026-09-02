@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0022_decision_journal"
+HEAD_REVISION = "0023_discretionary_reasons"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:
@@ -350,6 +350,24 @@ def test_recommendation_decision_journal_migration_renders_postgresql_sql() -> N
     assert "length(advisory_digest) = 64" in sql
     assert "Canonical BTC-172 advisory JSON exactly as decided against" in sql
     assert "Operator decisions recorded against model recommendations" in sql
+
+
+def test_discretionary_reason_code_migration_renders_postgresql_sql() -> None:
+    sql = render_upgrade_sql("postgresql+psycopg://example.invalid/btc_predictor")
+
+    assert (
+        "ADD COLUMN discretionary_reason_policy_version VARCHAR(64) "
+        "DEFAULT 'DISCRETIONARY_REASON_CODES_V1' NOT NULL"
+    ) in sql
+    assert (
+        "ADD COLUMN discretionary_reason_codes JSON DEFAULT '[]'::json NOT NULL"
+    ) in sql
+    assert (
+        "ALTER COLUMN discretionary_reason_policy_version DROP DEFAULT"
+    ) in sql
+    assert "ALTER COLUMN discretionary_reason_codes DROP DEFAULT" in sql
+    assert "CHECK (length(btrim(discretionary_reason_policy_version)) > 0)" in sql
+    assert "Ordered BTC-201 codes explaining the operator" in sql
 
 
 def test_ingestion_audit_log_migration_renders_postgresql_sql() -> None:

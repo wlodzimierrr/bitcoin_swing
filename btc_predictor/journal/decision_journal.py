@@ -28,8 +28,9 @@ Three properties make an entry worth trusting later:
 
 The actual entry, size, stop and exit of any resulting trade stay with BTC-202;
 this module deliberately records which advised values were departed from, never
-the values chosen instead. Discretionary reason codes are BTC-201's scope, so
-``note`` here is free single-line text and nothing in V1 interprets it.
+the values chosen instead. BTC-201 adds a separate, closed vocabulary for the
+operator's discretionary reasons. These are not model-side explanation codes,
+and ``note`` remains free single-line text rather than being interpreted as one.
 """
 
 from __future__ import annotations
@@ -59,6 +60,7 @@ from btc_predictor.reporting.recommendation import RecommendationRendererResult
 DECISION_JOURNAL_FEATURE_ID = "RECOMMENDATION_DECISION_JOURNAL"
 DECISION_JOURNAL_POLICY_VERSION = "RECOMMENDATION_DECISION_JOURNAL_V1"
 DECISION_JOURNAL_TABLE = "recommendation_decisions"
+DISCRETIONARY_REASON_POLICY_VERSION = "DISCRETIONARY_REASON_CODES_V1"
 
 APPROVED = "APPROVED"
 REJECTED = "REJECTED"
@@ -89,6 +91,18 @@ DECISION_JOURNAL_REASON_CODES = (
     "DECISION_JOURNAL_MISSED",
 )
 
+# BTC-201's declared order is also the persistence order. Callers may supply
+# reasons in any order, but identical sets must produce identical records.
+DISCRETIONARY_REASON_CODES = (
+    "MACRO_CONCERN",
+    "ENTRY_TOO_EXTENDED",
+    "LOW_PERSONAL_CONFIDENCE",
+    "ALREADY_EXPOSED",
+    "UNAVAILABLE_TO_TRADE",
+    "MODEL_DISAGREEMENT",
+    "OTHER",
+)
+
 _CONFIG_METADATA_KEYS = ("config_version", "strategy_version", "parameter_set_id")
 _RECORD_KEYS = (
     "feature_id",
@@ -100,6 +114,8 @@ _RECORD_KEYS = (
     "decision",
     "advised_action",
     "modified_fields",
+    "discretionary_reason_policy_version",
+    "discretionary_reason_codes",
     "note",
     "advisory_schema_version",
     "advisory_body",
@@ -125,6 +141,8 @@ class RecommendationDecisionEntry:
     decision: str
     advised_action: str
     modified_fields: tuple[str, ...]
+    discretionary_reason_policy_version: str
+    discretionary_reason_codes: tuple[str, ...]
     note: str | None
     advisory_body: str
     reason_codes: tuple[str, ...]
@@ -170,6 +188,10 @@ class RecommendationDecisionEntry:
             "decision": self.decision,
             "advised_action": self.advised_action,
             "modified_fields": list(self.modified_fields),
+            "discretionary_reason_policy_version": (
+                self.discretionary_reason_policy_version
+            ),
+            "discretionary_reason_codes": list(self.discretionary_reason_codes),
             "note": self.note,
             "advisory_schema_version": self.advisory_schema_version,
             "advisory_body": self.advisory_body,
@@ -191,6 +213,10 @@ class RecommendationDecisionEntry:
             "decision": self.decision,
             "advised_action": self.advised_action,
             "modified_fields": list(self.modified_fields),
+            "discretionary_reason_policy_version": (
+                self.discretionary_reason_policy_version
+            ),
+            "discretionary_reason_codes": list(self.discretionary_reason_codes),
             "note": self.note,
             "advisory_schema_version": self.advisory_schema_version,
             "advisory_body": self.advisory_body,
@@ -215,6 +241,7 @@ def journal_recommendation_decision(
     decided_at: datetime,
     strategy_config: StrategyConfig,
     modified_fields: Sequence[str] = (),
+    discretionary_reason_codes: Sequence[str] = (),
     note: str | None = None,
 ) -> RecommendationDecisionEntry:
     """Record one operator decision against one validated advisory."""
@@ -245,6 +272,10 @@ def journal_recommendation_decision(
             modified_fields,
             decision=recorded,
             advisory=source,
+        ),
+        discretionary_reason_policy_version=DISCRETIONARY_REASON_POLICY_VERSION,
+        discretionary_reason_codes=_discretionary_reason_codes(
+            discretionary_reason_codes,
         ),
         note=_optional_note(note),
         advisory_body=body,
@@ -277,6 +308,13 @@ def recommendation_decision_from_record(
         modified_fields=_string_sequence(
             row.get("modified_fields"),
             "modified_fields",
+        ),
+        discretionary_reason_policy_version=row.get(
+            "discretionary_reason_policy_version",
+        ),
+        discretionary_reason_codes=_string_sequence(
+            row.get("discretionary_reason_codes"),
+            "discretionary_reason_codes",
         ),
         note=row.get("note"),
         advisory_body=_body(row.get("advisory_body")),
@@ -323,6 +361,18 @@ def verify_decision_entry(entry: RecommendationDecisionEntry) -> None:
         advisory=advisory,
     ):
         raise ValueError("modified_fields are not in canonical advisory order")
+    if (
+        entry.discretionary_reason_policy_version
+        != DISCRETIONARY_REASON_POLICY_VERSION
+    ):
+        raise ValueError(
+            "discretionary_reason_policy_version must be "
+            f"{DISCRETIONARY_REASON_POLICY_VERSION}",
+        )
+    if entry.discretionary_reason_codes != _discretionary_reason_codes(
+        entry.discretionary_reason_codes,
+    ):
+        raise ValueError("discretionary reason codes are not in canonical order")
     _optional_note(entry.note)
     if entry.reason_codes != _reason_codes(decision):
         raise ValueError("reason_codes do not match the recorded decision")
@@ -410,6 +460,20 @@ def _reason_codes(decision: str) -> tuple[str, ...]:
     return ("DECISION_JOURNAL_RECORDED", f"DECISION_JOURNAL_{decision}")
 
 
+def _discretionary_reason_codes(value: Any) -> tuple[str, ...]:
+    codes = _string_sequence(value, "discretionary_reason_codes")
+    unknown = set(codes) - set(DISCRETIONARY_REASON_CODES)
+    if unknown:
+        raise ValueError(
+            "discretionary_reason_codes must be drawn from "
+            f"{DISCRETIONARY_REASON_CODES}",
+        )
+    if len(set(codes)) != len(codes):
+        raise ValueError("discretionary_reason_codes must not repeat a code")
+    selected = set(codes)
+    return tuple(code for code in DISCRETIONARY_REASON_CODES if code in selected)
+
+
 def _provenance(source: Mapping[str, Any] | Any) -> LifecycleProvenance:
     if isinstance(source, LifecycleProvenance):
         return source
@@ -494,6 +558,8 @@ __all__ = [
     "DECISION_JOURNAL_POLICY_VERSION",
     "DECISION_JOURNAL_REASON_CODES",
     "DECISION_JOURNAL_TABLE",
+    "DISCRETIONARY_REASON_CODES",
+    "DISCRETIONARY_REASON_POLICY_VERSION",
     "MISSED",
     "MODIFIABLE_ADVISORY_FIELDS",
     "MODIFIED",

@@ -444,6 +444,8 @@ recommendation_decisions = Table(
     Column("decision", String(length=16), nullable=False),
     Column("advised_action", String(length=16), nullable=False),
     Column("modified_fields", JSON, nullable=False),
+    Column("discretionary_reason_policy_version", String(length=64), nullable=False),
+    Column("discretionary_reason_codes", JSON, nullable=False),
     Column("note", Text, nullable=True),
     Column("advisory_schema_version", String(length=64), nullable=False),
     Column("advisory_body", Text, nullable=False),
@@ -487,6 +489,10 @@ recommendation_decisions = Table(
     CheckConstraint(
         "length(btrim(config_version)) > 0",
         name="config_version_not_blank",
+    ),
+    CheckConstraint(
+        "length(btrim(discretionary_reason_policy_version)) > 0",
+        name="discretionary_reason_policy_version_not_blank",
     ),
     CheckConstraint(
         "length(advisory_digest) = 64",

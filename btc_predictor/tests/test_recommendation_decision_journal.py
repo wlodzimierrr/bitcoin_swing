@@ -11,6 +11,8 @@ from btc_predictor.journal import (
     DECISION_JOURNAL_FEATURE_ID,
     DECISION_JOURNAL_POLICY_VERSION,
     DECISION_JOURNAL_REASON_CODES,
+    DISCRETIONARY_REASON_CODES,
+    DISCRETIONARY_REASON_POLICY_VERSION,
     MODIFIABLE_ADVISORY_FIELDS,
     ORDER_BEARING_ACTIONS,
     RecommendationDecisionEntry,
@@ -160,6 +162,95 @@ def test_decision_vocabulary_is_the_persisted_vocabulary() -> None:
 def test_unknown_decision_is_refused() -> None:
     with pytest.raises(ValueError, match="decision must be one of"):
         _entry(decision="FOLLOWED")
+
+
+# --- discretionary reasons -----------------------------------------------
+
+
+def test_declared_discretionary_reason_vocabulary_is_stable() -> None:
+    assert DISCRETIONARY_REASON_CODES == (
+        "MACRO_CONCERN",
+        "ENTRY_TOO_EXTENDED",
+        "LOW_PERSONAL_CONFIDENCE",
+        "ALREADY_EXPOSED",
+        "UNAVAILABLE_TO_TRADE",
+        "MODEL_DISAGREEMENT",
+        "OTHER",
+    )
+
+
+def test_discretionary_reasons_are_optional_and_versioned() -> None:
+    entry = _entry()
+
+    assert entry.discretionary_reason_codes == ()
+    assert (
+        entry.discretionary_reason_policy_version
+        == DISCRETIONARY_REASON_POLICY_VERSION
+    )
+
+
+@pytest.mark.parametrize("reason", DISCRETIONARY_REASON_CODES)
+def test_every_declared_discretionary_reason_is_recordable(reason: str) -> None:
+    entry = _entry(discretionary_reason_codes=(reason,))
+
+    assert entry.discretionary_reason_codes == (reason,)
+
+
+@pytest.mark.parametrize("decision", RECOMMENDATION_DECISIONS)
+def test_every_decision_can_carry_discretionary_reasons(decision: str) -> None:
+    fields = ("initial_stop",) if decision == "MODIFIED" else ()
+
+    entry = _entry(
+        decision=decision,
+        modified_fields=fields,
+        discretionary_reason_codes=("MODEL_DISAGREEMENT",),
+    )
+
+    assert entry.discretionary_reason_codes == ("MODEL_DISAGREEMENT",)
+
+
+def test_discretionary_reasons_are_stored_in_declared_order() -> None:
+    first = _entry(
+        discretionary_reason_codes=(
+            "OTHER",
+            "ENTRY_TOO_EXTENDED",
+            "MACRO_CONCERN",
+        ),
+    )
+    second = _entry(
+        discretionary_reason_codes=(
+            "MACRO_CONCERN",
+            "OTHER",
+            "ENTRY_TOO_EXTENDED",
+        ),
+    )
+
+    expected = ("MACRO_CONCERN", "ENTRY_TOO_EXTENDED", "OTHER")
+    assert first.discretionary_reason_codes == expected
+    assert first.as_record() == second.as_record()
+
+
+def test_unknown_or_repeated_discretionary_reasons_are_refused() -> None:
+    with pytest.raises(ValueError, match="must be drawn from"):
+        _entry(discretionary_reason_codes=("NEWS_CONCERN",))
+    with pytest.raises(ValueError, match="must not repeat"):
+        _entry(
+            discretionary_reason_codes=("MACRO_CONCERN", "MACRO_CONCERN"),
+        )
+
+
+def test_discretionary_reasons_must_be_an_ordered_string_sequence() -> None:
+    with pytest.raises(TypeError, match="sequence of strings"):
+        _entry(discretionary_reason_codes="MACRO_CONCERN")
+    with pytest.raises(ValueError, match="non-empty strings"):
+        _entry(discretionary_reason_codes=("",))
+
+
+def test_other_does_not_invent_a_note_requirement() -> None:
+    entry = _entry(discretionary_reason_codes=("OTHER",))
+
+    assert entry.note is None
+    assert entry.discretionary_reason_codes == ("OTHER",)
 
 
 # --- determinism and advisory evidence ------------------------------------
@@ -357,7 +448,11 @@ def test_note_is_optional_and_single_line() -> None:
 
 
 def test_row_matches_the_decision_journal_table_exactly() -> None:
-    entry = _entry(decision="MODIFIED", modified_fields=("initial_stop",))
+    entry = _entry(
+        decision="MODIFIED",
+        modified_fields=("initial_stop",),
+        discretionary_reason_codes=("ENTRY_TOO_EXTENDED",),
+    )
 
     row = entry.as_row()
 
@@ -372,6 +467,11 @@ def test_row_matches_the_decision_journal_table_exactly() -> None:
     assert row["decision"] == "MODIFIED"
     assert row["advised_action"] == "ENTER"
     assert row["modified_fields"] == ["initial_stop"]
+    assert (
+        row["discretionary_reason_policy_version"]
+        == DISCRETIONARY_REASON_POLICY_VERSION
+    )
+    assert row["discretionary_reason_codes"] == ["ENTRY_TOO_EXTENDED"]
     assert row["journal_policy_version"] == DECISION_JOURNAL_POLICY_VERSION
     assert row["advisory_schema_version"] == "ADVISORY_JSON_SCHEMA_V1"
     assert row["advisory_digest"] == entry.advisory_digest
@@ -394,6 +494,7 @@ def test_record_replays_exactly() -> None:
     entry = _entry(
         decision="MODIFIED",
         modified_fields=("initial_stop",),
+        discretionary_reason_codes=("ENTRY_TOO_EXTENDED", "MODEL_DISAGREEMENT"),
         note="Tightened the stop.",
     )
 
@@ -476,6 +577,27 @@ def test_replay_rejects_modified_fields_out_of_canonical_order() -> None:
     record["modified_fields"] = ["initial_stop", "entry_zone_lower"]
 
     with pytest.raises(ValueError, match="canonical advisory order"):
+        recommendation_decision_from_record(record)
+
+
+def test_replay_rejects_discretionary_reasons_out_of_canonical_order() -> None:
+    record = _entry(
+        discretionary_reason_codes=("MACRO_CONCERN", "MODEL_DISAGREEMENT"),
+    ).as_record()
+    record["discretionary_reason_codes"] = [
+        "MODEL_DISAGREEMENT",
+        "MACRO_CONCERN",
+    ]
+
+    with pytest.raises(ValueError, match="canonical order"):
+        recommendation_decision_from_record(record)
+
+
+def test_replay_rejects_a_foreign_discretionary_reason_policy() -> None:
+    record = _entry().as_record()
+    record["discretionary_reason_policy_version"] = "DISCRETIONARY_REASONS_V2"
+
+    with pytest.raises(ValueError, match="policy_version must be"):
         recommendation_decision_from_record(record)
 
 
