@@ -6032,7 +6032,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   MODIFIED
   MISSED
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6042,6 +6042,52 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/journal/decision_journal.py` with
+    `journal_recommendation_decision()`, policy version
+    `RECOMMENDATION_DECISION_JOURNAL_V1`, and the new `btc_predictor.journal`
+    package for EPIC U. A decision is a statement about an advisory, not about
+    a trade.
+  - **The BTC-017 manual trade journal could not hold this record.** Its
+    `manual_decision` vocabulary (`FOLLOWED`, `OVERRIDDEN`, `SKIPPED`,
+    `MANUAL_ONLY`) is checked in the database and does not contain the four
+    required decisions, and every other column of that table describes a fill.
+    `REJECTED` and `MISSED` advisories produce no fill at all. Migration
+    `0022_decision_journal` adds `portfolio.recommendation_decisions`; BTC-017
+    keeps its own table and vocabulary for BTC-202's actual executions.
+  - Each row carries the BTC-166 provenance triple taken from
+    `LifecycleProvenance`, the authoritative owner, plus `config_version`, so a
+    decision is attributable to the exact strategy version and parameter set
+    that produced the advisory rather than to whatever is configured when the
+    row is read. A decision whose provenance or config identity disagrees with
+    the advisory is refused.
+  - The canonical BTC-172 recommendation document is stored verbatim with a
+    SHA-256 digest over those exact bytes. A decision is only auditable against
+    what the operator was shown, so restoration replays the stored document
+    through `advisory_source_from_json()` and rejects tampered, re-encoded, or
+    noncanonical bodies rather than trusting the entry to describe itself.
+  - Decisions the advisory cannot support are refused. `MODIFIED` names which
+    advised values were departed from, requires the advisory to have stated
+    them, and stores them in canonical field order so identical modifications
+    record identically. Neither `MODIFIED` nor `MISSED` is accepted against an
+    advisory whose action carries no order, because there is nothing to modify
+    or to miss. The advised action itself is not modifiable: taking a different
+    action is a rejection of the advised one.
+  - Chosen values are deliberately not recorded here; actual entry, size, stop
+    and exit remain BTC-202's scope, and discretionary reason codes remain
+    BTC-201's, so `note` is uninterpreted single-line text in V1.
+  - `decided_at` must be UTC and may not precede the advisory's evaluation
+    time, enforced both in the writer and as a database check; the FK to
+    `signals.recommendations` is `ON DELETE RESTRICT` because a decision
+    without its recommendation is unattributable, and one advisory carries at
+    most one recorded disposition.
+  - Fifty-two focused tests cover the four decisions, deterministic records and
+    digests, both advisory input forms, provenance and config-identity
+    matching, point-in-time ordering, `MODIFIED` and `MISSED` semantics, note
+    validation, exact row/column mapping, and replay against tampering. The
+    complete Python 3.12 suite passes with 2813 tests.
+    Implementation commit:
+    `b833f81fe8c6773f173618c3040ecd297a7dbb52`.
 
 #### BTC-201 Add discretionary reason codes
 - **Description:**
