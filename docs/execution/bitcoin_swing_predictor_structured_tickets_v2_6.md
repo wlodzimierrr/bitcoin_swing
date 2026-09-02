@@ -5884,7 +5884,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - strategy_v1.0
   - candidate strategy versions
   - parameter sets
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5894,6 +5894,51 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/strategy_comparison.py` with feature
+    `STRATEGY_COMPARISON` and policy version
+    `STRATEGY_COMPARISON_FRAMEWORK_V1`. The explicit baseline and every
+    candidate are keyed by their persisted `strategy_version` and
+    `parameter_set_id`, so the framework can compare strategy versions,
+    parameter sets within one version, or both without silently merging their
+    evidence.
+  - The two direct dependency evidence modes remain separate. BTC-180
+    historical runs are accepted only when bar digest, symbol, evaluated
+    period, starting capital, effective costs, and selected cost rung agree;
+    their common scope identifier is derived from that evidence. BTC-191
+    paper datasets require a caller-declared campaign/window identifier and
+    must also agree on extraction time and all BTC-165 accounting conventions.
+    Historical and paper evidence cannot be blended in one report.
+  - Metrics use only final closed BTC-165 outcomes: trade/closed/open counts,
+    measured and unmeasured coverage, net P&L, expectancy, win rate, gross
+    profit/loss, profit factor, and mean R. BTC-180 open trades remain counted
+    but are excluded from quality metrics; BTC-191 `net_pnl` and `r_multiple`
+    cells are read directly rather than reconstructed from prices.
+  - Missing evidence is never zero-filled. Empty samples and unmeasured
+    outcomes retain explicit counts and `None`; profit factor distinguishes no
+    measured trades, no losses, and all-flat samples. Every candidate-minus-
+    baseline absolute delta is `AVAILABLE`, `BASELINE_UNAVAILABLE`,
+    `CANDIDATE_UNAVAILABLE`, or `BOTH_UNAVAILABLE`.
+  - Arithmetic uses a fixed 60-digit Decimal context and persisted 12-decimal
+    rate convention. Input order cannot change output: the exact baseline is
+    first and candidates sort by strategy and parameter identity. Duplicate
+    identities, duplicate source IDs, an absent baseline, mixed evidence
+    modes, and incomparable scopes fail closed.
+  - Reports embed the complete BTC-180 or BTC-191 records together with source
+    IDs/digests, metric policy, comparison scope, identities, derived metrics,
+    deltas, configuration metadata, and reason codes. Restoration replays the
+    authoritative source records and rebuilds the report, rejecting source,
+    metric, delta, identity, scope, or policy tampering.
+  - Results are `RESEARCH_ONLY_NOT_PRODUCTION`; BTC-193 is persisted as the
+    required promotion boundary, and the framework has no configuration or
+    live-strategy mutation path.
+  - Added 12 focused tests covering strategy-version and parameter-set
+    comparisons, authoritative backtest and paper outcomes, deterministic
+    ordering, exact deltas, empty/missing metrics, paper scope declarations,
+    like-for-like backtest guards, mixed-mode rejection, duplicate identities,
+    record round trips, tamper rejection, and the promotion boundary. Focused
+    backtest/research regressions pass with 356 tests; the complete Python 3.12
+    suite passes with 2746 tests.
 
 #### BTC-193 Implement controlled strategy promotion process
 - **Description:**

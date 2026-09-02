@@ -15,16 +15,16 @@
 - **Current phase:** Phase 1, EPIC T research and controlled learning loop;
   EPIC S2 extended quant research is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-192, strategy comparison
-  framework
-- **Last completed ticket:** BTC-189, statistical predictor diagnostics
+- **Current implementation frontier:** BTC-193, controlled strategy promotion
+  process
+- **Last completed ticket:** BTC-192, strategy comparison framework
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-192, first by V2 execution order
-- **Other ready tickets:** None; BTC-193 remains blocked on BTC-192
-- **Latest verified test baseline:** 2734 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `e5294e8081487abfef324cc82da14fea52148f26`
-  (`feat: implement BTC-189 statistical predictor diagnostics`)
+- **Next dependency-satisfied ticket:** BTC-193, first by V2 execution order
+- **Other ready tickets:** None
+- **Latest verified test baseline:** 2746 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `8ec069a5b9de3c69497c75588863829d6595e8cf`
+  (`feat: implement BTC-192 strategy comparison framework`)
 
 ## Price-Reference State
 
