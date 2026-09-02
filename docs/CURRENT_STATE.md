@@ -15,15 +15,15 @@
 - **Current phase:** Phase 1, EPIC U manual trade tracking; EPIC T research and
   controlled learning loop is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-201, discretionary reason codes
-- **Last completed ticket:** BTC-200, recommendation decision journal
+- **Current implementation frontier:** BTC-202, actual trade entry
+- **Last completed ticket:** BTC-201, discretionary reason codes
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-201, first by V2 execution order
+- **Next dependency-satisfied ticket:** BTC-202, first by V2 execution order
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 2813 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `b833f81fe8c6773f173618c3040ecd297a7dbb52`
-  (`feat: implement BTC-200 recommendation decision journal`)
+- **Latest verified test baseline:** 2833 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `3d709621518ad526186071158f522582e1c1f53c`
+  (`feat: implement BTC-201 discretionary reason codes`)
 
 ## Price-Reference State
 

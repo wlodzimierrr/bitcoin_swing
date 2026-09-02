@@ -6102,7 +6102,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   MODEL_DISAGREEMENT
   OTHER
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6112,6 +6112,36 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** XS
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Extended the BTC-200 recommendation decision journal with the versioned
+    discretionary-reason policy `DISCRETIONARY_REASON_CODES_V1`. The V1 closed
+    vocabulary is `MACRO_CONCERN`, `ENTRY_TOO_EXTENDED`,
+    `LOW_PERSONAL_CONFIDENCE`, `ALREADY_EXPOSED`, `UNAVAILABLE_TO_TRADE`,
+    `MODEL_DISAGREEMENT`, and `OTHER`.
+  - `journal_recommendation_decision()` accepts zero or more discretionary
+    reasons for every decision type. The ticket defines neither
+    decision-specific requirements nor an `OTHER`-note requirement, so V1 does
+    not invent either rule; `note` remains optional single-line text.
+  - Reasons are validated against the declared vocabulary, duplicates and
+    malformed sequences fail closed, and accepted sets are persisted in the
+    declared policy order. Equivalent sets therefore produce identical records
+    regardless of caller order.
+  - Discretionary reasons remain distinct from the journal's model/system
+    `reason_codes`. Records and database rows persist both the ordered
+    `discretionary_reason_codes` and
+    `discretionary_reason_policy_version`, and replay rejects unknown,
+    reordered, duplicated, or policy-substituted values.
+  - Migration `0023_discretionary_reasons` adds the two non-null columns to
+    `portfolio.recommendation_decisions`. Existing BTC-200 rows are backfilled
+    explicitly with the V1 policy and an empty reason list; migration-only
+    server defaults are then removed so new writes must supply both fields.
+  - Ten focused test functions covering twenty cases exercise the complete
+    vocabulary, all four decision types, optional reasons, canonical ordering,
+    validation, persistence, deterministic replay, and tamper rejection.
+    Journal/schema/migration tests pass with 103 tests, and the complete Python
+    3.12 suite passes with 2833 tests while treating `RuntimeWarning` as an
+    error. Implementation commit:
+    `3d709621518ad526186071158f522582e1c1f53c`.
 
 #### BTC-202 Implement actual trade entry
 - **Description:**
