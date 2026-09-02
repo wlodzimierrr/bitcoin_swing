@@ -16,6 +16,7 @@ UNIFORM_INDEX_POLICY_VERSION = "PCG64_RAW_REJECTION_UNIFORM_INDEX_V1"
 PERMUTATION_INDEX_POLICY_VERSION = "PCG64_RAW_FISHER_YATES_PERMUTATION_V1"
 
 _UINT64_RANGE = 1 << 64
+_INT64_INDEX_BOUND = 1 << 63
 
 
 def normal_samples(
@@ -146,8 +147,8 @@ def _validated_seed(seed: int) -> int:
 def _validated_bound(high: int) -> int:
     if isinstance(high, bool) or not isinstance(high, int) or high < 1:
         raise NumericInputError("high must be a positive integer")
-    if high > _UINT64_RANGE:
-        raise NumericInputError("high must fit in the 64-bit raw stream")
+    if high > _INT64_INDEX_BOUND:
+        raise NumericInputError("high must fit in the signed 64-bit index output")
     return high
 
 

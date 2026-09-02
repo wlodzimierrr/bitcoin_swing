@@ -293,6 +293,32 @@ def test_uniform_index_samples_are_repeatable_and_in_range() -> None:
     assert not np.array_equal(first, uniform_index_samples((3, 5), seed=12, high=7))
 
 
+def test_resampling_index_streams_match_their_frozen_golden_vectors() -> None:
+    np.testing.assert_array_equal(
+        uniform_index_samples((3, 5), seed=11, high=7),
+        np.asarray(
+            (
+                (0, 4, 0, 1, 6),
+                (0, 3, 2, 3, 0),
+                (2, 6, 4, 6, 4),
+            ),
+            dtype=np.int64,
+        ),
+    )
+    np.testing.assert_array_equal(
+        permutation_index_samples(4, seed=2, size=5),
+        np.asarray(
+            (
+                (4, 0, 3, 1, 2),
+                (3, 2, 4, 1, 0),
+                (0, 4, 2, 1, 3),
+                (0, 1, 2, 4, 3),
+            ),
+            dtype=np.int64,
+        ),
+    )
+
+
 def test_uniform_index_samples_cover_the_whole_range_without_bias() -> None:
     drawn = uniform_index_samples(60_000, seed=3, high=6)
     counts = np.bincount(drawn, minlength=6)
@@ -311,7 +337,16 @@ def test_uniform_index_samples_of_a_single_value_are_degenerate() -> None:
 
 @pytest.mark.parametrize(
     "shape,seed,high",
-    [((2, 0), 1, 4), ((), 1, 4), (4, -1, 4), (4, True, 4), (4, 1, 0), (4, 1, True)],
+    [
+        ((2, 0), 1, 4),
+        ((), 1, 4),
+        (4, -1, 4),
+        (4, True, 4),
+        (4, 1, 0),
+        (4, 1, True),
+        (4, 1, (1 << 63) + 1),
+        (4, 1, 1 << 64),
+    ],
 )
 def test_uniform_index_samples_validate_shape_seed_and_bound(shape, seed, high) -> None:
     with pytest.raises(NumericInputError):

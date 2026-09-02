@@ -189,6 +189,8 @@ Policy version: `FLOAT64_V1`.
   bounded-integer convenience method. The bit-generator stream is stable across
   NumPy versions; the algorithm layered on top of it is not guaranteed to be,
   and persisted seeded research evidence must replay on a later NumPy.
+- Resampling indices are signed `int64`; a requested exclusive upper bound may
+  be at most `2**63`, so every accepted draw remains non-negative and in range.
 - Seeded simulations validate every generated sample. Accepted finite
   parameters either return finite `float64` samples or fail deterministically;
   they never return infinity or an unexpected NaN.
