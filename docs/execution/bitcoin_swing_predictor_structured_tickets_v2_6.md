@@ -6207,7 +6207,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   | Max DD | | | |
   | Sharpe | | | |
   | Return/trade | | | |
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6217,6 +6217,54 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/reporting/model_human_comparison.py` with policy
+    version `MODEL_HUMAN_COMPARISON_V1`. The report consumes one self-validating
+    BTC-191 paper-trade outcome dataset and zero or more self-validating BTC-202
+    actual-trade records, embeds those complete sources, and supports
+    deterministic replay through `restore_model_human_comparison()`.
+  - The three columns have explicit V1 membership. `MODEL_PAPER` contains every
+    completed paper outcome in the campaign, `HUMAN_ACTUAL` contains every
+    supplied actual execution including open and `MANUAL_ONLY` trades, and
+    `MODEL_PLUS_HUMAN` is the recommendation-linked subset of the actual arm.
+    A manual-only trade is therefore never silently attributed to the model.
+  - All required quality metrics use normalized closed-trade returns. Paper
+    return is authoritative BTC-165 net P&L divided by entry notional. BTC-202
+    records no live fee or funding fields, so actual return is explicitly the
+    gross directional entry-to-exit price return; V1 persists that limitation
+    as `ACTUAL_GROSS_DIRECTIONAL_PRICE_RETURN_NO_RECORDED_COSTS_V1` rather than
+    estimating costs. Profit factor is gross positive normalized return over
+    absolute gross negative normalized return.
+  - Average R reads the BTC-165 R multiple for paper trades and uses the
+    recorded actual entry, exit and adverse initial stop for human trades.
+    Open trades, absent stops, non-adverse stops, and BTC-165 unmeasured cells
+    retain explicit unavailable statuses and are never zero-filled.
+  - Max drawdown is the peak-to-trough decline of the closed-return sequence
+    under the declared full-notional compounding convention. Sharpe is the
+    unannualized mean closed-trade return divided by its sample standard
+    deviation at zero risk-free rate. Both preserve explicit no-sample,
+    missing-return, zero-dispersion and non-positive-equity states. All derived
+    arithmetic uses a fixed 60-digit Decimal context and 12-decimal output.
+  - Comparisons are point-in-time at the BTC-191 extraction timestamp. Actual
+    records journaled later are rejected; campaign evidence must use one
+    symbol; linked actual trades must match a unique paper recommendation,
+    symbol, direction, and config/strategy/parameter identity; and duplicate
+    records or linked recommendation IDs fail closed. BTC-201 discretionary
+    reason codes and their policy remain embedded in the actual sources and
+    normalized outcomes.
+  - Reports persist every metric and availability policy, canonical trade
+    order, configuration metadata, reason codes, source records, comparison
+    ID, and SHA-256 evidence digest. Restoration replays both upstream owners
+    and rebuilds all three arms, rejecting policy, source, metric, membership,
+    reason-code, ordering, or digest tampering.
+  - Twenty-five focused tests cover the three arm definitions, all seven
+    requested metrics, long/short R math, open and missing evidence, empty
+    samples, cost-policy visibility, point-in-time and comparability guards,
+    deterministic input ordering, record inputs, Decimal-context independence,
+    round trips, and tamper rejection. Focused dependency/reporting regressions
+    pass with 203 tests, and the complete Python 3.12 suite passes with 2887
+    tests while treating `RuntimeWarning` as an error. Implementation commit:
+    `e425afb2c819eea38fc341d9b92cfc2ee5b3c2ac`.
 
 ## EPIC V — Reporting & Monitoring
 

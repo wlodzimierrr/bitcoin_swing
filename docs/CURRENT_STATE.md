@@ -12,18 +12,18 @@
 ## Snapshot
 
 - **Last updated:** 2026-09-02
-- **Current phase:** Phase 1, EPIC U manual trade tracking; EPIC T research and
-  controlled learning loop is complete
+- **Current phase:** Phase 1, EPIC V reporting and monitoring; EPIC U manual
+  trade tracking is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-203, Model vs Human comparison
-- **Last completed ticket:** BTC-202, actual trade entry
+- **Current implementation frontier:** BTC-210, daily system status report
+- **Last completed ticket:** BTC-203, Model vs Human comparison
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-203, first by V2 execution order
+- **Next dependency-satisfied ticket:** BTC-210, first by V2 execution order
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 2862 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `4ae6c9a9c041e5172f2a3a994fda43489f04d43c`
-  (`feat: implement BTC-202 actual trade entry`)
+- **Latest verified test baseline:** 2887 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `e425afb2c819eea38fc341d9b92cfc2ee5b3c2ac`
+  (`feat: implement BTC-203 model human comparison`)
 
 ## Price-Reference State
 
