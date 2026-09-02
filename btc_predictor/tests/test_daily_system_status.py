@@ -321,6 +321,15 @@ def test_report_rejects_future_data_and_future_portfolio_state() -> None:
             position_lifecycles=(future_lifecycle,),
         )
 
+    future_rejected_transition = apply_position_event(
+        _pending_lifecycle(),
+        event=ENTER,
+        event_time=AS_OF + timedelta(seconds=1),
+    )
+    assert future_rejected_transition.last_event_at is None
+    with pytest.raises(ValueError, match="transition cannot be after as_of"):
+        _render_clean(position_lifecycles=(future_rejected_transition,))
+
 
 def test_report_rejects_config_symbol_and_direction_mismatches() -> None:
     bad_metadata = {**METADATA, "parameter_set_id": "other"}

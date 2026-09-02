@@ -529,6 +529,8 @@ def _validate_report(result: DailySystemStatusResult) -> None:
             raise ValueError("lifecycle config identity does not match report")
         if lifecycle.last_event_at is not None and lifecycle.last_event_at > as_of:
             raise ValueError("lifecycle event cannot be after as_of")
+        if any(transition.event_time > as_of for transition in lifecycle.transitions):
+            raise ValueError("lifecycle transition cannot be after as_of")
         if lifecycle.symbol != recommendation.symbol:
             raise ValueError("lifecycle symbol does not match recommendation")
         if lifecycle.is_open and lifecycle.direction != recommendation.direction:
