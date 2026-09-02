@@ -22,7 +22,7 @@
 - **Next dependency-satisfied ticket:** BTC-221, first by V2 execution order
 - **Other ready tickets:** BTC-222, BTC-223, BTC-224
 - **Latest verified test baseline:** 3158 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `COMMIT_PLACEHOLDER`
+- **Last relevant implementation/review commit:** `e4234b0d0a0796109cdac04cb9459a0ea2450521`
   (`test: implement BTC-220 feature calculation unit tests`)
 
 ## Price-Reference State
