@@ -6941,7 +6941,7 @@ The project must not proceed to trust paper/backtest performance until all of th
 #### BTC-224 Golden historical scenarios
 - **Description:**
   Create hand-reviewed BTC periods and expected strategy behavior.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -6952,6 +6952,90 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - The required independent xHigh review is still outstanding; closure is not
+    final until it passes.
+  - Added the frozen fixture `tests/golden/btc_golden_scenarios_v1.json` and
+    the suite `test_golden_scenarios.py`. Six real BTC periods are frozen with
+    their review, the trade plan a reviewer drew on them, and the behaviour the
+    system is expected to produce; each is replayed through the real BTC-180
+    engine and the BTC-141..165 owners it routes to. Everything upstream of
+    this ticket is tested on constructed bars, which can only demonstrate the
+    behaviour their author already had in mind. A golden scenario is the
+    opposite instrument: a period nobody designed, paired with a stated
+    expectation.
+  - Sessions are derived from the pinned BTC-019 Coinbase 1h artifact - the
+    `sha256:300b283f...` its collection manifest records - by the BTC-020 owner
+    `derive_ohlcv_bars`, and each session is decision-available at its own
+    close boundary under `GOLDEN_BAR_AVAILABILITY_SESSION_CLOSE_V1`. Every
+    window is gap-free and carries its own bar digest, so an edited session is
+    a fixture failure rather than a new expectation; the committed bars were
+    verified to reproduce exactly from that artifact.
+  - Three things are separated deliberately. Market facts come from the frozen
+    bars: which session a zone was touched in, where a stop sat, what ATR20
+    was, what a fill cost. Judgement comes from the recorded review: the
+    structural level a stop hangs on, the conviction, and the BTC-154/157/158
+    states no price-only replay can know, written down with their reasoning
+    rather than invented as mechanical proxies. Every figure comes from its
+    owner - BTC-141 buffers, BTC-142 stops, BTC-144/145 sizing, BTC-155
+    tranches, BTC-156 trails, BTC-160..165 execution and accounting.
+  - The periods and what each is for. October 2023's reclaim: an entry at a
+    zone the market opened above, two trails to reviewed higher lows, a second
+    tranche the trail itself authorises, and a position marked rather than
+    force closed when the window ends. The 17 August 2023 range break: a -7.22%
+    session taking out a tight ATR-bound stop. The January 2024 ETF launch: a
+    chased continuation zone terminally missed for nothing, then a reclaim
+    stopped on its own entry session through the pre-authorised bracket, with
+    no excursion evidence because one session holds no intrabar path.
+    February-March 2024: a euphoria trim into the all-time high, +8.5R, and a
+    stop that fired before the queued second trim, which went stale rather than
+    executing against a position that no longer existed. 31 July 2024: a
+    regime-invalidation exit at -0.37R where the standing stop would have paid
+    -1.006R the next session and still been open for the 5 August unwind. And
+    the 10 October 2025 selloff.
+  - A finding real sessions produce and constructed bars hide: no stop in the
+    fixture gaps. A continuously traded series opens each session within a tick
+    of the previous close, so a stop inside a session's range is always offered
+    at its own price and the loss beyond -1R is slippage and fees. The
+    gapped-open path BTC-223 pins with constructed bars is not reachable on
+    this data, which is asserted rather than assumed.
+  - The 10 October 2025 scenario is deliberately source scoped. Its stop at
+    107,623.70 sits between that session's pinned Coinbase low of 107,000 and
+    Bitstamp's 109,683, so the same reviewed plan is stopped out on this series
+    and on Bitfinex and is not stopped out on Bitstamp. That is the event
+    `PRICE_SOURCE_POLICY_V1` uses to reject a single-venue reference. BTC-019
+    remains in progress, so the fixture records `canonical_reference_status`
+    as `UNRESOLVED` and the suite checks the recorded venue lows against the
+    series it ships, rather than letting one venue read as the price of
+    Bitcoin.
+  - Expectations are pinned twice. The reviewed event stream, trades, reason
+    codes, final state and NAV are compared to the fixture; and the same
+    figures are re-derived from the bars on a second convention - fill
+    references from the session geometry, fills, fees and slippage from the
+    bps, the first tranche's planned risk from the conviction budget and stop
+    distance, and the ending NAV from one walk over the fills - so a golden
+    master cannot quietly bless a defect it recorded.
+  - Also asserted per scenario: determinism and a restore round trip; the
+    BTC-221 truncation property applied to the engine on real history; no
+    averaging down, a monotone standing stop, and risk at stop inside the
+    configured ceiling on every session; that the stop was resolved on exactly
+    the sessions it protected, which accounts for the events the expectation
+    does not list; and that the BTC-181 ladder reprices a period - net P&L
+    strictly monotone across the three rungs, carry only on the stress rung and
+    only where a position survived a session boundary - without changing a
+    single reviewed decision.
+  - The reviewed February 2024 plan also added a second tranche on 27 February.
+    That trade cannot be accounted at all: BTC-155 allocates a tranche quantity
+    of notional/price that does not terminate in Decimal's context, and
+    BTC-165's pro-rata trim basis then misses its own cash-flow identity. This
+    is the composition gap BTC-223 recorded and left to its owner. The add is
+    therefore kept out of the replayed plan and pinned instead as the
+    scenario's `known_composition_limit`, which shows the gap is reachable from
+    an ordinary review of an ordinary period and not only from a constructed
+    fixture. It will need updating when the accumulation is made exact.
+  - Added 116 focused cases. The full Python 3.12.14 suite passes with 3412
+    tests, also passing with `RuntimeWarning` treated as an error; compileall
+    passes.
 
 
 ---
