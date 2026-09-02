@@ -157,7 +157,7 @@ def detect_weekly_swing_levels(
         window = available_bars[index - left_bars : index + right_bars + 1]
         left_window = window[:left_bars]
         right_window = window[left_bars + 1 :]
-        detected_at = _swing_detected_at(right_window[-1], timeframe="1w")
+        detected_at = _swing_detected_at(window, timeframe="1w")
         if detected_at > signal_time:
             continue
         if _is_swing_high(candidate, (*left_window, *right_window)):
@@ -214,7 +214,7 @@ def detect_monthly_swing_levels(
         window = available_bars[index - left_bars : index + right_bars + 1]
         left_window = window[:left_bars]
         right_window = window[left_bars + 1 :]
-        detected_at = _swing_detected_at(right_window[-1], timeframe="1mo")
+        detected_at = _swing_detected_at(window, timeframe="1mo")
         if detected_at > signal_time:
             continue
         if _is_swing_high(candidate, (*left_window, *right_window)):
@@ -339,13 +339,22 @@ def _validate_single_series(bars: Sequence[OhlcvBar], *, label: str) -> None:
         raise ValueError(f"{label} swing detection requires one exchange/symbol/provider/timeframe")
 
 
-def _swing_detected_at(confirming_bar: OhlcvBar, *, timeframe: str) -> datetime:
-    confirmation_close = next_bar_timestamp(confirming_bar.timestamp, timeframe)
-    confirmation_ingested_at = require_utc_datetime(
-        confirming_bar.ingested_at,
-        "ingested_at",
+def _swing_detected_at(window_bars: Sequence[OhlcvBar], *, timeframe: str) -> datetime:
+    """Return when the whole confirmation window had arrived.
+
+    A swing level is only knowable once every bar that decides it is both closed
+    and ingested, so availability is the latest of those times across the window,
+    not the confirming bar alone. On a contiguous series ingested in order this
+    is the confirming bar, so canonical detection times are unchanged.
+    """
+
+    return max(
+        max(
+            next_bar_timestamp(bar.timestamp, timeframe),
+            require_utc_datetime(bar.ingested_at, "ingested_at"),
+        )
+        for bar in window_bars
     )
-    return max(confirmation_close, confirmation_ingested_at)
 
 
 def _is_swing_high(candidate: OhlcvBar, comparison_bars: Sequence[OhlcvBar]) -> bool:

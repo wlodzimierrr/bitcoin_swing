@@ -309,7 +309,7 @@ def test_realized_volatility_uses_close_to_close_returns() -> None:
 
     result = realized_volatility_from_daily_bars(
         tuple(reversed(rows)),
-        as_of=datetime(2026, 1, 4, 1, tzinfo=UTC),
+        as_of=datetime(2026, 1, 5, 1, tzinfo=UTC),
         window_days=3,
         annualization_periods=1,
     )
@@ -1311,7 +1311,7 @@ def test_realized_volatility_reports_missing_input_without_zero_fill() -> None:
 def test_realized_volatility_reports_insufficient_history() -> None:
     result = realized_volatility_from_daily_bars(
         daily_bars(("100", "110", "99")),
-        as_of=datetime(2026, 1, 3, 1, tzinfo=UTC),
+        as_of=datetime(2026, 1, 4, 1, tzinfo=UTC),
         window_days=3,
     )
 
@@ -1325,7 +1325,7 @@ def test_realized_volatility_reports_insufficient_history() -> None:
 def test_realized_volatility_reports_non_positive_close() -> None:
     result = realized_volatility_from_daily_bars(
         daily_bars(("100", "110", "0", "108.9")),
-        as_of=datetime(2026, 1, 4, 1, tzinfo=UTC),
+        as_of=datetime(2026, 1, 5, 1, tzinfo=UTC),
         window_days=3,
     )
 
@@ -1338,7 +1338,7 @@ def test_realized_volatility_reports_non_positive_close() -> None:
 def test_realized_volatility_exposes_persistable_payload() -> None:
     result = realized_volatility_from_daily_bars(
         daily_bars(("100", "110", "99", "108.9")),
-        as_of=datetime(2026, 1, 4, 1, tzinfo=UTC),
+        as_of=datetime(2026, 1, 5, 1, tzinfo=UTC),
         window_days=3,
         annualization_periods=1,
     )

@@ -18,14 +18,15 @@
 - **Current implementation frontier:** None; no Phase-1 implementation ticket
   remains open
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its required
-  independent xHigh review is outstanding, as are those of BTC-221 and BTC-222
+  independent xHigh review is outstanding, as is BTC-222's; BTC-221's has now
+  passed with two review fixes
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. The remaining Phase-1 work is
-  BTC-019 and the outstanding independent xHigh reviews of BTC-221, BTC-222 and
+  BTC-019 and the outstanding independent xHigh reviews of BTC-222 and
   BTC-224
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3412 passed with Python 3.12 on 2026-09-02
+- **Latest verified test baseline:** 3414 passed with Python 3.12 on 2026-09-02
 - **Last relevant implementation/review commit:** `9b5bef2b0c08b0e167b4e4e76278fc13581942bc`
   (`test: implement BTC-224 golden historical scenarios`)
 

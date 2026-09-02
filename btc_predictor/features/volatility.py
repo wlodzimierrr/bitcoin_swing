@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from btc_predictor.data import OhlcvBar, require_utc_datetime
+from btc_predictor.data import OhlcvBar, next_bar_timestamp, require_utc_datetime
 from btc_predictor.features._scoring import (
     decimal_bounded_linear,
     decimal_weighted_score,
@@ -1938,7 +1938,10 @@ def _available_daily_bars(
     available_bars = []
     for bar in bars:
         record = bar.as_record()
-        if record["ingested_at"] <= signal_time and record["timestamp"] <= signal_time:
+        if (
+            next_bar_timestamp(record["timestamp"], record["timeframe"]) <= signal_time
+            and record["ingested_at"] <= signal_time
+        ):
             available_bars.append(bar)
     return tuple(sorted(available_bars, key=lambda bar: bar.timestamp))
 

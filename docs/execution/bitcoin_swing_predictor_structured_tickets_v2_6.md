@@ -6633,8 +6633,8 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Complexity:** L
 - **Risk:** High.
 - **Implementation Notes:**
-  - The required independent xHigh review is still outstanding; closure is
-    not final until it passes.
+  - The required independent xHigh review passed after two review fixes; see
+    the review record at the end of these notes.
   - Added the dedicated cross-cutting suite `test_look_ahead_bias.py` for the
     five critical areas. The owner suites already prove that each engine
     filters its own inputs, so this ticket pins the stronger replay property
@@ -6696,19 +6696,72 @@ The project must not proceed to trust paper/backtest performance until all of th
     a suffix, so each guard alone reproduces the other's admitted candidate
     set. The observable contract is still pinned: mutating `_swing_detected_at`
     to time a level from its close and ignore late ingestion is caught.
-  - Two observations are recorded for the independent review rather than
-    silently resolved, since neither is look-ahead and neither is reachable as
-    a defect through the canonical pipeline. First,
+  - Two observations were recorded for the independent review rather than
+    silently resolved. First,
     `features/volatility.py::_available_daily_bars` admits a daily bar whose
     session has not closed when its `ingested_at` is early, unlike the swing
     and AVWAP readers, which require the session to have closed;
     `build_canonical_market_bars` never emits a partial bucket, so no
     behaviour was changed. Second, `levels/swing.py` treats the available bars
     as contiguous, so a bar backfilled into the middle of a series shifts the
-    confirmation window onto non-adjacent neighbours.
+    confirmation window onto non-adjacent neighbours. The review resolved the
+    first and part of the second; see the review record below.
   - Added 35 focused cases. The full Python 3.12.14 suite passes with 3193
     tests, also passing with `RuntimeWarning` treated as an error; compileall
     passes.
+  - **Independent xHigh review (2026-09-02):** the suite covers all five
+    critical areas, its 35 cases pass, and no test encodes an incorrect
+    contract. Both halves of the replay property are genuinely asserted and
+    the discriminating cases in the normalization tests do separate a
+    prior-window kernel from a self-inclusive one. Two look-ahead defects were
+    confirmed by direct probe and fixed, both in the ticket's own critical
+    areas, both latent today because no production decision path calls the
+    affected owners and canonical bars carry uniform ingestion times.
+  - **Review finding 1 (P2, fixed).** `features/volatility.py::_available_daily_bars`
+    gated on `timestamp <= signal_time`, the only bar-availability filter in
+    the repository that does not require the session to have closed. A daily
+    bar published while its session ran therefore contributed an unfinished
+    close to the return window, and the truncation-equivalence property this
+    ticket pins was false for that owner: at a decision inside a running
+    session the full universe returned `observation_time` one day ahead of the
+    truncated universe. The filter now requires
+    `next_bar_timestamp(timestamp, timeframe) <= signal_time`, matching the
+    swing, AVWAP, volume-profile, breakout, reclaim, retest, and higher-low
+    readers and BTC-080's stated contract of a completed observation. Four
+    `test_volatility_features.py` cases whose fixture publishes a daily bar
+    five minutes after the session opens had their decision time moved one day
+    forward; every assertion in them is unchanged.
+  - **Review finding 2 (P2, fixed).** `levels/swing.py::_swing_detected_at`
+    derived a level's availability from the confirming bar alone. When any
+    other bar in the confirmation window was ingested later, the emitted level
+    claimed a `detected_at` earlier than the time the level was derivable, and
+    that time moved *backwards* across decisions: with the week-5 bar
+    backfilled five weeks late, the week-3 swing low reported `detected_at` at
+    week 8 for three consecutive decisions and then restated it to week 7,
+    four weeks before the window existed. Because AVWAP anchors inherit
+    `detected_at` from their source level, the anchor and its VWAP became
+    usable equally early, violating Rulebook v1.2 section 3A.2 for any
+    consumer that replays persisted levels by availability.
+    `_swing_detected_at` now takes the latest close-or-ingestion time across
+    the whole window. On a contiguous series ingested in order this is the
+    confirming bar, so canonical detection times are unchanged and no other
+    test moved.
+  - **Review limitation (P3, not fixed).** The implementer's second
+    observation is only partly resolved. `detect_weekly_swing_levels` and
+    `detect_monthly_swing_levels` still build the confirmation window from
+    whatever bars are available, so a gap admits a window of non-adjacent
+    bars; a level can still be emitted from such a window and then restated
+    *forward* once the gap fills. That direction is not look-ahead, and
+    requiring window contiguity would change which levels exist on gappy data,
+    which is a strategy-semantics change belonging to the swing detector's
+    owner rather than to this test ticket.
+  - **Review regressions.** Added
+    `test_realized_volatility_excludes_a_daily_session_that_has_not_closed`
+    and `test_a_pivot_is_not_backdated_when_a_window_bar_is_backfilled_late`
+    to `test_look_ahead_bias.py`. Both were confirmed to fail against the
+    pre-fix owners and pass after. The suite is now 37 cases; the full Python
+    3.12.14 suite passes with 3414 tests, also passing with `RuntimeWarning`
+    treated as an error, and compileall passes.
 
 #### BTC-222 Risk invariant tests
 - **Description:**

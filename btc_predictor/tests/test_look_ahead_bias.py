@@ -451,6 +451,46 @@ def test_realized_volatility_at_a_decision_ignores_bars_that_close_later() -> No
         )
 
 
+def test_realized_volatility_excludes_a_daily_session_that_has_not_closed() -> None:
+    # A provider that publishes the running day early would otherwise let an
+    # unfinished session's close into the return window.
+    bars = list(canonical_daily_bars(days=12))
+    live_index = 11
+    live_day = bars[live_index]
+    bars[live_index] = _bar(
+        live_day.timestamp,
+        timeframe="1d",
+        open_price=live_day.open,
+        high=live_day.high,
+        low=live_day.low,
+        close=live_day.close,
+        volume=live_day.volume,
+        ingested_at=live_day.timestamp + timedelta(hours=1),
+    )
+    universe = tuple(bars)
+    as_of = live_day.timestamp + timedelta(hours=12)
+    assert live_day.timestamp < as_of < next_bar_timestamp(live_day.timestamp, "1d")
+
+    result = realized_volatility_from_daily_bars(
+        universe,
+        as_of=as_of,
+        window_days=3,
+        annualization_periods=1,
+    )
+
+    assert result.complete is True
+    assert result.observation_time == bars[live_index - 1].timestamp
+    assert (
+        realized_volatility_from_daily_bars(
+            available_bars(universe, as_of),
+            as_of=as_of,
+            window_days=3,
+            annualization_periods=1,
+        ).as_record()
+        == result.as_record()
+    )
+
+
 # ---------------------------------------------------------------------------
 # Future ETF flows unavailable
 # ---------------------------------------------------------------------------
@@ -701,6 +741,53 @@ def test_a_pivot_confirmed_by_a_late_ingested_bar_waits_for_that_ingestion() -> 
         EXPECTED_WEEKLY_SWING_LOW_TIMESTAMP
     ]
     assert confirmed[0].detected_at == backfilled_at
+
+
+def test_a_pivot_is_not_backdated_when_a_window_bar_is_backfilled_late() -> None:
+    # The bar that closes the swing low's confirmation window arrived on time,
+    # but a bar inside the same window was backfilled five weeks later. The
+    # level could not be derived from its full window until that backfill, so
+    # it must never claim the confirming bar's earlier availability, and a
+    # decision already taken must never see its detection time move backwards.
+    backfilled_index = 5
+    bars = list(canonical_weekly_bars())
+    delayed = bars[backfilled_index]
+    backfilled_at = delayed.ingested_at + timedelta(weeks=5)
+    bars[backfilled_index] = _bar(
+        delayed.timestamp,
+        timeframe="1w",
+        open_price=delayed.open,
+        high=delayed.high,
+        low=delayed.low,
+        close=delayed.close,
+        volume=delayed.volume,
+        ingested_at=backfilled_at,
+    )
+    universe = tuple(bars)
+    assert EXPECTED_WEEKLY_SWING_LOW_DETECTED_AT < backfilled_at
+
+    latest_detected_at: dict[tuple[str, datetime], datetime] = {}
+    for as_of in weekly_decision_times():
+        for level in detect_weekly_swing_levels(universe, as_of=as_of):
+            key = (level.level_type, level.level_timestamp)
+            assert level.detected_at <= as_of
+            assert level.detected_at >= latest_detected_at.get(key, level.detected_at)
+            latest_detected_at[key] = level.detected_at
+
+    swing_low = detect_weekly_swing_levels(
+        universe,
+        as_of=SERIES_START + timedelta(weeks=len(WEEKLY_LEVELS) + 1),
+    )[0]
+    assert swing_low.level_type == "swing_low"
+    assert swing_low.level_timestamp == EXPECTED_WEEKLY_SWING_LOW_TIMESTAMP
+    assert swing_low.detected_at == backfilled_at
+    assert detect_weekly_swing_levels(
+        universe,
+        as_of=backfilled_at - timedelta(seconds=1),
+    ) == detect_weekly_swing_levels(
+        available_bars(universe, backfilled_at - timedelta(seconds=1)),
+        as_of=backfilled_at - timedelta(seconds=1),
+    )
 
 
 def test_a_monthly_pivot_waits_for_its_confirming_month_to_close() -> None:
