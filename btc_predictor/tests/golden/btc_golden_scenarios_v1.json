@@ -1,0 +1,3266 @@
+{
+  "schema_version": "GOLDEN_HISTORICAL_SCENARIO_V1",
+  "review_status": "HAND_REVIEWED",
+  "dataset": {
+    "provider": "coinbase",
+    "exchange": "coinbase",
+    "symbol": "BTC-USD",
+    "source_timeframe": "1h",
+    "bar_timeframe": "1d",
+    "source_artifact": "data/btc019/2023-01-01_2025-12-31/coinbase_btc_usd_1h.jsonl.gz",
+    "source_artifact_sha256": "300b283f9bdeca0b9305fe02af5157845a7167561ae88c7c5c9c6e3faff36929",
+    "source_manifest": "data/btc019/2023-01-01_2025-12-31/collection_manifest.json",
+    "source_collection_period": [
+      "2023-01-01T00:00:00+00:00",
+      "2025-12-31T23:00:00+00:00"
+    ],
+    "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+    "price_source_roles": [
+      "independent_validation"
+    ],
+    "canonical_reference_status": "UNRESOLVED",
+    "derivation_owner": "btc_predictor.data.ohlcv.derive_ohlcv_bars",
+    "availability_policy_version": "GOLDEN_BAR_AVAILABILITY_SESSION_CLOSE_V1",
+    "source_scope_note": "Sessions are the pinned Coinbase 1h artifact aggregated to canonical UTC daily bars by the BTC-020 owner, and each session is decision-available at its own close boundary. BTC-019 has approved no canonical BTC reference, so every expectation below is scoped to this source: re-sourcing the fixture requires a fresh review, which the 2025-10 scenario exists to demonstrate."
+  },
+  "scenarios": [
+    {
+      "scenario_id": "2023_10_reclaim_trend_runner",
+      "title": "October 2023 reclaim: a trend still running when the window closed",
+      "period": {
+        "start": "2023-09-20",
+        "end": "2023-11-10"
+      },
+      "review": [
+        "Bitcoin spent six weeks between 26,500 and 28,300 after the August 2023 flush. The 16 October session opened the ETF-anticipation trend: a false approval headline printed 30,000 intraday and the session still closed at 28,520, back above the range.",
+        "The plan does not buy that spike. It waits for the first retest of the reclaimed 28,100-28,650 shelf and arms it on 19 October, with the 11 October low at 26,521 untested and higher lows at 28,083 and 28,122 behind it.",
+        "The 16 October breakout session's low, 27,135.92, is the structural invalidation: below it the reclaim did not happen. The 550-wide zone carries 275 of level noise, which binds over 0.3 x ATR20 in a quiet tape, so the stop sits at 26,860.92.",
+        "20 October opens at 28,734.51, above the zone, and trades down to 28,591.85. The zone is touched from above, so the entry references the zone's upper bound and not the session open.",
+        "23 October confirms the trend (+10.28%, 35,000 intraday). Its low, 29,890.89, is the first higher low worth trailing to, and the trail is taken on 24 October.",
+        "That trail is what authorises the second tranche: the stop moves from 26,860.92 to 29,563.60 on 1.117893 BTC, an improvement of 3,021.30 at the shared stop, so the 25 October add is not buying more of an unimproved risk.",
+        "27 October's 33,400 low is the next higher low. The 3 November trail moves the stop above the average entry, and the trade is still open when the window closes on 10 November."
+      ],
+      "expected_behaviour": [
+        "the entry fills at the zone's upper bound, not at the 20 October open",
+        "two trail advances, each to a reviewed higher low, and the stop is never touched",
+        "the add fills above the running average entry, so the position never averages down",
+        "the position is marked at the last session rather than force closed, and its open accounting carries no R multiple because no closing fill exists"
+      ],
+      "cost_profile": "base",
+      "starting_nav": "1000000",
+      "plan": {
+        "direction": "long",
+        "decisions": [
+          {
+            "on": "2023-10-19",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "28100",
+            "entry_zone_upper": "28650",
+            "invalidation_price": "27135.92",
+            "invalidation_date": "2023-10-16",
+            "invalidation_source": "2023-10-16 breakout session low",
+            "entry_conviction": "87"
+          },
+          {
+            "on": "2023-10-24",
+            "action": "TRAIL",
+            "structure_id": "hl-2023-10-23",
+            "structure_type": "HIGHER_LOW",
+            "structure_price": "29890.89",
+            "structure_level_date": "2023-10-23",
+            "structure_reason_codes": [
+              "HIGHER_LOW_CONFIRMED"
+            ]
+          },
+          {
+            "on": "2023-10-25",
+            "action": "ADD",
+            "add_inputs": {
+              "position_profitable": true,
+              "new_structural_confirmation": true,
+              "signed_risk_improvement": "3021.30",
+              "regime_supportive": true,
+              "flow_supportive": true,
+              "positioning_healthy": true,
+              "add_score": "88",
+              "projected_risk_at_stop_within_maximum": true
+            }
+          },
+          {
+            "on": "2023-11-03",
+            "action": "TRAIL",
+            "structure_id": "hl-2023-10-27",
+            "structure_type": "HIGHER_LOW",
+            "structure_price": "33400",
+            "structure_level_date": "2023-10-27",
+            "structure_reason_codes": [
+              "HIGHER_LOW_CONFIRMED"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "reason_codes": [
+          "BACKTEST_COST_PROFILE_APPLIED",
+          "BACKTEST_ENTRY_FILLED",
+          "BACKTEST_STOP_TRAILED",
+          "BACKTEST_ADDED",
+          "BACKTEST_POSITION_OPEN_AT_END",
+          "BACKTEST_COMPLETE"
+        ],
+        "missed_entries": 0,
+        "stopped_out": 0,
+        "final_state": "OPEN_ADDED",
+        "final_open_quantity": "1.930086132360880280756567726",
+        "final_standing_stop": "33000.82569999999988",
+        "ending_nav": "1011898.214687978346485727413",
+        "events": [
+          {
+            "session": "2023-10-19",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2023-10-20",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ENTRY_ZONE_TOUCHED",
+              "ENTRY_REFERENCE_ZONE_UPPER",
+              "ENTRY_EXECUTION_COSTS_APPLIED",
+              "ENTRY_EXECUTION_FILLED"
+            ],
+            "reference_price": "28650",
+            "average_fill_price": "28664.32500",
+            "filled_quantity": "1.117892995282491559907885617"
+          },
+          {
+            "session": "2023-10-24",
+            "event_type": "INTENT",
+            "action": "TRAIL",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2023-10-25",
+            "event_type": "TRAILING_STOP",
+            "action": "TRAIL",
+            "status": "APPLIED",
+            "reason_codes": [
+              "TRAILING_STOP_ADVANCED"
+            ],
+            "stop_price": "29563.59569999999994"
+          },
+          {
+            "session": "2023-10-25",
+            "event_type": "INTENT",
+            "action": "ADD",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2023-10-26",
+            "event_type": "ADD_EXECUTION",
+            "action": "ADD",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ADD_EXECUTION_REFERENCE_BAR_OPEN",
+              "ADD_EXECUTION_COSTS_APPLIED",
+              "ADD_EXECUTION_FILLED"
+            ],
+            "reference_price": "34504.33",
+            "average_fill_price": "34521.5821650",
+            "filled_quantity": "0.8121931370783887208486821095"
+          },
+          {
+            "session": "2023-11-03",
+            "event_type": "INTENT",
+            "action": "TRAIL",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2023-11-04",
+            "event_type": "TRAILING_STOP",
+            "action": "TRAIL",
+            "status": "APPLIED",
+            "reason_codes": [
+              "TRAILING_STOP_ADVANCED"
+            ],
+            "stop_price": "33000.82569999999988"
+          }
+        ],
+        "trades": [
+          {
+            "opened_session": "2023-10-20",
+            "closed_session": null,
+            "closed": false,
+            "initial_quantity": "1.117892995282491559907885617",
+            "initial_entry_price": "28664.32500",
+            "average_entry_price": "31129.09794031286866483989078",
+            "initial_stop_price": "26860.92",
+            "initial_risk": "2016.013817157421691595680461",
+            "entry_notional": "60081.84024750150915554363137",
+            "exit_notional": "0",
+            "gross_pnl": "0",
+            "fees": "60.08184024750151427258702798",
+            "funding": "0",
+            "net_pnl": "-60.08184024750151427258702798",
+            "r_multiple": null,
+            "add_count": 1,
+            "trim_count": 0,
+            "exit_reason": null
+          }
+        ]
+      },
+      "bar_count": 52,
+      "bars_digest": "sha256:0fc8bcf759c383c3c885007a1de8e56da41dba5c7ed176428002740301c9e66f",
+      "bars": [
+        {
+          "t": "2023-09-20",
+          "o": "27216.52",
+          "h": "27393.78",
+          "l": "26798.98",
+          "c": "27123.94",
+          "v": "11590.24027633"
+        },
+        {
+          "t": "2023-09-21",
+          "o": "27122.65",
+          "h": "27163.48",
+          "l": "26359.7",
+          "c": "26564.54",
+          "v": "11801.98943642"
+        },
+        {
+          "t": "2023-09-22",
+          "o": "26564.54",
+          "h": "26742.86",
+          "l": "26467.94",
+          "c": "26578.4",
+          "v": "8563.05233130"
+        },
+        {
+          "t": "2023-09-23",
+          "o": "26578.4",
+          "h": "26638.58",
+          "l": "26513",
+          "c": "26579.6",
+          "v": "2597.25705711"
+        },
+        {
+          "t": "2023-09-24",
+          "o": "26579.59",
+          "h": "26731.1",
+          "l": "26118.86",
+          "c": "26250.24",
+          "v": "4587.80529114"
+        },
+        {
+          "t": "2023-09-25",
+          "o": "26248.17",
+          "h": "26444.95",
+          "l": "25983.78",
+          "c": "26296.08",
+          "v": "10762.98401397"
+        },
+        {
+          "t": "2023-09-26",
+          "o": "26296.07",
+          "h": "26397.59",
+          "l": "26080",
+          "c": "26208.44",
+          "v": "7016.42122845"
+        },
+        {
+          "t": "2023-09-27",
+          "o": "26208.43",
+          "h": "26830",
+          "l": "26088.37",
+          "c": "26357.62",
+          "v": "14123.89690964"
+        },
+        {
+          "t": "2023-09-28",
+          "o": "26357.56",
+          "h": "27313.86",
+          "l": "26321.37",
+          "c": "27027.14",
+          "v": "18975.87763693"
+        },
+        {
+          "t": "2023-09-29",
+          "o": "27027.44",
+          "h": "27238.9",
+          "l": "26661.71",
+          "c": "26907",
+          "v": "12712.27177691"
+        },
+        {
+          "t": "2023-09-30",
+          "o": "26905.57",
+          "h": "27097.25",
+          "l": "26884.86",
+          "c": "26961",
+          "v": "4413.30948101"
+        },
+        {
+          "t": "2023-10-01",
+          "o": "26961",
+          "h": "28062.62",
+          "l": "26955.25",
+          "c": "27995.46",
+          "v": "8747.06888783"
+        },
+        {
+          "t": "2023-10-02",
+          "o": "27995.46",
+          "h": "28613.37",
+          "l": "27302.3",
+          "c": "27504.04",
+          "v": "25148.25341854"
+        },
+        {
+          "t": "2023-10-03",
+          "o": "27504.03",
+          "h": "27672.12",
+          "l": "27160.47",
+          "c": "27428.96",
+          "v": "14334.10857629"
+        },
+        {
+          "t": "2023-10-04",
+          "o": "27428.96",
+          "h": "27842.38",
+          "l": "27208.65",
+          "c": "27786.75",
+          "v": "10238.17053376"
+        },
+        {
+          "t": "2023-10-05",
+          "o": "27786.12",
+          "h": "28140",
+          "l": "27358.05",
+          "c": "27412.96",
+          "v": "14136.04783544"
+        },
+        {
+          "t": "2023-10-06",
+          "o": "27413.15",
+          "h": "28288.88",
+          "l": "27173.41",
+          "c": "27945.17",
+          "v": "12908.75146274"
+        },
+        {
+          "t": "2023-10-07",
+          "o": "27945.17",
+          "h": "28040.84",
+          "l": "27861.2",
+          "c": "27976.43",
+          "v": "3489.91595717"
+        },
+        {
+          "t": "2023-10-08",
+          "o": "27976.44",
+          "h": "28109.94",
+          "l": "27708.6",
+          "c": "27933.55",
+          "v": "4118.56381073"
+        },
+        {
+          "t": "2023-10-09",
+          "o": "27933.54",
+          "h": "28003.7",
+          "l": "27268.63",
+          "c": "27596.67",
+          "v": "10218.62556021"
+        },
+        {
+          "t": "2023-10-10",
+          "o": "27596.67",
+          "h": "27739.94",
+          "l": "27291.81",
+          "c": "27393.29",
+          "v": "10265.79357936"
+        },
+        {
+          "t": "2023-10-11",
+          "o": "27393.28",
+          "h": "27478.61",
+          "l": "26521.32",
+          "c": "26869.19",
+          "v": "16466.26612207"
+        },
+        {
+          "t": "2023-10-12",
+          "o": "26867.97",
+          "h": "26939.55",
+          "l": "26537.72",
+          "c": "26750.51",
+          "v": "7881.21504857"
+        },
+        {
+          "t": "2023-10-13",
+          "o": "26752.06",
+          "h": "27122.24",
+          "l": "26662.62",
+          "c": "26863.53",
+          "v": "8694.60097059"
+        },
+        {
+          "t": "2023-10-14",
+          "o": "26863.54",
+          "h": "26988.12",
+          "l": "26797",
+          "c": "26851.71",
+          "v": "2786.76009652"
+        },
+        {
+          "t": "2023-10-15",
+          "o": "26851.71",
+          "h": "27301.37",
+          "l": "26806.06",
+          "c": "27186.13",
+          "v": "6215.85130529"
+        },
+        {
+          "t": "2023-10-16",
+          "o": "27186.13",
+          "h": "30000",
+          "l": "27135.92",
+          "c": "28520.24",
+          "v": "36471.75023740"
+        },
+        {
+          "t": "2023-10-17",
+          "o": "28520.24",
+          "h": "28637.21",
+          "l": "28083.19",
+          "c": "28408.83",
+          "v": "14171.43180714"
+        },
+        {
+          "t": "2023-10-18",
+          "o": "28408.51",
+          "h": "28999.98",
+          "l": "28151.6",
+          "c": "28326.51",
+          "v": "11820.68114047"
+        },
+        {
+          "t": "2023-10-19",
+          "o": "28326.24",
+          "h": "28938.96",
+          "l": "28122.57",
+          "c": "28735.34",
+          "v": "12662.68000489"
+        },
+        {
+          "t": "2023-10-20",
+          "o": "28734.51",
+          "h": "30248",
+          "l": "28591.85",
+          "c": "29684.73",
+          "v": "20095.91529217"
+        },
+        {
+          "t": "2023-10-21",
+          "o": "29684.73",
+          "h": "30369",
+          "l": "29475.06",
+          "c": "29924.84",
+          "v": "6369.93475330"
+        },
+        {
+          "t": "2023-10-22",
+          "o": "29925.91",
+          "h": "30275",
+          "l": "29670",
+          "c": "30004.15",
+          "v": "5720.28965895"
+        },
+        {
+          "t": "2023-10-23",
+          "o": "30004.14",
+          "h": "35000",
+          "l": "29890.89",
+          "c": "33087.58",
+          "v": "33228.46734771"
+        },
+        {
+          "t": "2023-10-24",
+          "o": "33079.72",
+          "h": "35157.23",
+          "l": "32851.45",
+          "c": "33922.52",
+          "v": "38506.35962554"
+        },
+        {
+          "t": "2023-10-25",
+          "o": "33921.66",
+          "h": "35144",
+          "l": "33690.91",
+          "c": "34506.35",
+          "v": "18668.45817435"
+        },
+        {
+          "t": "2023-10-26",
+          "o": "34504.33",
+          "h": "34843.04",
+          "l": "33735.86",
+          "c": "34154.71",
+          "v": "15867.44697165"
+        },
+        {
+          "t": "2023-10-27",
+          "o": "34153.35",
+          "h": "34249.99",
+          "l": "33400",
+          "c": "33906.09",
+          "v": "13879.04330119"
+        },
+        {
+          "t": "2023-10-28",
+          "o": "33905.96",
+          "h": "34500",
+          "l": "33867.38",
+          "c": "34085.42",
+          "v": "4372.52724873"
+        },
+        {
+          "t": "2023-10-29",
+          "o": "34085.42",
+          "h": "34763",
+          "l": "33937.31",
+          "c": "34534.48",
+          "v": "5547.09585659"
+        },
+        {
+          "t": "2023-10-30",
+          "o": "34534.48",
+          "h": "34871",
+          "l": "34077.9",
+          "c": "34493.79",
+          "v": "10183.77616922"
+        },
+        {
+          "t": "2023-10-31",
+          "o": "34493.51",
+          "h": "34732.18",
+          "l": "34038.79",
+          "c": "34656.4",
+          "v": "9282.02866788"
+        },
+        {
+          "t": "2023-11-01",
+          "o": "34656.38",
+          "h": "35647.19",
+          "l": "34079.46",
+          "c": "35440.1",
+          "v": "16197.45981756"
+        },
+        {
+          "t": "2023-11-02",
+          "o": "35440.1",
+          "h": "35997.8",
+          "l": "34311.73",
+          "c": "34950",
+          "v": "13455.65527035"
+        },
+        {
+          "t": "2023-11-03",
+          "o": "34947.92",
+          "h": "34954.6",
+          "l": "34100",
+          "c": "34731.27",
+          "v": "13961.70014519"
+        },
+        {
+          "t": "2023-11-04",
+          "o": "34730.32",
+          "h": "35278.4",
+          "l": "34599.85",
+          "c": "35087.01",
+          "v": "4696.70148339"
+        },
+        {
+          "t": "2023-11-05",
+          "o": "35087.43",
+          "h": "35410",
+          "l": "34500",
+          "c": "35035.42",
+          "v": "5892.67329337"
+        },
+        {
+          "t": "2023-11-06",
+          "o": "35035.79",
+          "h": "35294.12",
+          "l": "34753.66",
+          "c": "35059.46",
+          "v": "7088.27153194"
+        },
+        {
+          "t": "2023-11-07",
+          "o": "35059.46",
+          "h": "35963",
+          "l": "34530.67",
+          "c": "35416.28",
+          "v": "13841.59195597"
+        },
+        {
+          "t": "2023-11-08",
+          "o": "35416.63",
+          "h": "36113.59",
+          "l": "35103.14",
+          "c": "35639.13",
+          "v": "12253.15808483"
+        },
+        {
+          "t": "2023-11-09",
+          "o": "35639.13",
+          "h": "37999",
+          "l": "35555.16",
+          "c": "36706.59",
+          "v": "29045.85195583"
+        },
+        {
+          "t": "2023-11-10",
+          "o": "36704.01",
+          "h": "37548.8",
+          "l": "36334.46",
+          "c": "37324.83",
+          "v": "15183.16853500"
+        }
+      ]
+    },
+    {
+      "scenario_id": "2023_08_range_break_stop_out",
+      "title": "17 August 2023: the range break filled at the stop price, not a gap",
+      "period": {
+        "start": "2023-07-20",
+        "end": "2023-08-25"
+      },
+      "review": [
+        "From mid-July to mid-August 2023 Bitcoin held a 29,000-30,200 range on falling realized volatility; ATR20 was under 510 by 13 August, the quietest tape in this fixture.",
+        "The plan buys the range hold on 13 August in 29,100-29,350 with the 7 August low, 28,660.53, as invalidation. The quiet tape is what makes the stop tight: the buffer binds on 0.3 x ATR20 = 152.38 rather than on the zone's own 125 of noise, and the stop sits at 28,508.16.",
+        "14 August opens at 29,275.78, inside the zone, so the entry references the session open.",
+        "On 17 August the range broke: the session opened at 28,700.51 and traded to 25,234.76, -7.22%. The stop was inside that session's range.",
+        "The session opened above the stop, so the fill is at the stop price. A continuously traded 24/7 series has no session gap to open through, which is why a real stop-out here costs -1R plus slippage and fees and nothing more; the gapped-open path BTC-223 pins with constructed bars is not reachable on this data.",
+        "Price never returned to the entry inside the window: the 25 August close was 26,049.39."
+      ],
+      "expected_behaviour": [
+        "one closed trade, stopped out on 17 August with STOP_TOUCHED and STOP_FILL_AT_STOP_PRICE",
+        "a realized R slightly worse than -1, entirely explained by the stop's own slippage and the two legs' fees",
+        "the maximum adverse excursion equals the trade's gross loss: the stop fill was the worst mark the position ever carried"
+      ],
+      "cost_profile": "base",
+      "starting_nav": "1000000",
+      "plan": {
+        "direction": "long",
+        "decisions": [
+          {
+            "on": "2023-08-13",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "29100",
+            "entry_zone_upper": "29350",
+            "invalidation_price": "28660.53",
+            "invalidation_date": "2023-08-07",
+            "invalidation_source": "2023-08-07 range low",
+            "entry_conviction": "84"
+          }
+        ]
+      },
+      "expected": {
+        "reason_codes": [
+          "BACKTEST_COST_PROFILE_APPLIED",
+          "BACKTEST_ENTRY_FILLED",
+          "BACKTEST_STOPPED_OUT",
+          "BACKTEST_COMPLETE"
+        ],
+        "missed_entries": 0,
+        "stopped_out": 1,
+        "final_state": "CLOSED",
+        "final_open_quantity": "0",
+        "final_standing_stop": "28508.15595",
+        "ending_nav": "998579.2849960371698301634982",
+        "events": [
+          {
+            "session": "2023-08-13",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2023-08-14",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ENTRY_ZONE_TOUCHED",
+              "ENTRY_REFERENCE_BAR_OPEN",
+              "ENTRY_EXECUTION_COSTS_APPLIED",
+              "ENTRY_EXECUTION_FILLED"
+            ],
+            "reference_price": "29275.78",
+            "average_fill_price": "29290.4178900",
+            "filled_quantity": "1.663015851926493986623769569"
+          },
+          {
+            "session": "2023-08-17",
+            "event_type": "STOP_EXECUTION",
+            "action": "EXIT",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "STOP_TOUCHED",
+              "STOP_FILL_AT_STOP_PRICE",
+              "STOP_EXECUTION_COSTS_APPLIED",
+              "STOP_LOSS_EXCEEDED_PLANNED_RISK",
+              "STOP_EXECUTION_FILLED"
+            ],
+            "reference_price": "28508.15595",
+            "average_fill_price": "28493.9018720250",
+            "filled_quantity": "1.663015851926493986623769569"
+          }
+        ],
+        "trades": [
+          {
+            "opened_session": "2023-08-14",
+            "closed_session": "2023-08-17",
+            "closed": true,
+            "initial_quantity": "1.663015851926493986623769569",
+            "initial_entry_price": "29290.4178900",
+            "average_entry_price": "29290.41789000000000000000000",
+            "initial_stop_price": "28508.15595",
+            "initial_risk": "1300.914006578771923374644033",
+            "entry_notional": "48710.42926062137043078228088",
+            "exit_notional": "47385.81049641557720815393303",
+            "gross_pnl": "-1324.61876420579322262834785",
+            "fees": "96.09623975703694720815393303",
+            "funding": "0",
+            "net_pnl": "-1420.715003962830169836501783",
+            "r_multiple": "-1.092089866646234891270516387",
+            "add_count": 0,
+            "trim_count": 0,
+            "exit_reason": "STRUCTURAL_STOP"
+          }
+        ]
+      },
+      "bar_count": 37,
+      "bars_digest": "sha256:5ceee4ae776ee997c9ecee1d7896e1ba39bdeba219a38f444f50ea053065b768",
+      "bars": [
+        {
+          "t": "2023-07-20",
+          "o": "29916.69",
+          "h": "30421.29",
+          "l": "29564.19",
+          "c": "29809.13",
+          "v": "11494.95348803"
+        },
+        {
+          "t": "2023-07-21",
+          "o": "29809.13",
+          "h": "30060.28",
+          "l": "29729.48",
+          "c": "29907.98",
+          "v": "7598.61053359"
+        },
+        {
+          "t": "2023-07-22",
+          "o": "29907.15",
+          "h": "30002.38",
+          "l": "29626.86",
+          "c": "29795.03",
+          "v": "3629.48251055"
+        },
+        {
+          "t": "2023-07-23",
+          "o": "29793.62",
+          "h": "30350.7",
+          "l": "29733.55",
+          "c": "30081.61",
+          "v": "4513.83214295"
+        },
+        {
+          "t": "2023-07-24",
+          "o": "30081.61",
+          "h": "30099.99",
+          "l": "28850",
+          "c": "29176.98",
+          "v": "14484.27557634"
+        },
+        {
+          "t": "2023-07-25",
+          "o": "29176.98",
+          "h": "29376.51",
+          "l": "29046",
+          "c": "29225.14",
+          "v": "7140.85368901"
+        },
+        {
+          "t": "2023-07-26",
+          "o": "29225.11",
+          "h": "29686.41",
+          "l": "29089.54",
+          "c": "29353.23",
+          "v": "9635.09206614"
+        },
+        {
+          "t": "2023-07-27",
+          "o": "29350.88",
+          "h": "29571.42",
+          "l": "29075",
+          "c": "29214.92",
+          "v": "7327.45071060"
+        },
+        {
+          "t": "2023-07-28",
+          "o": "29214.93",
+          "h": "29532.45",
+          "l": "29115.32",
+          "c": "29316.15",
+          "v": "7105.49434797"
+        },
+        {
+          "t": "2023-07-29",
+          "o": "29316.05",
+          "h": "29411.09",
+          "l": "29253.44",
+          "c": "29355.71",
+          "v": "2893.05298823"
+        },
+        {
+          "t": "2023-07-30",
+          "o": "29356.65",
+          "h": "29450",
+          "l": "29033",
+          "c": "29281.39",
+          "v": "4387.57256615"
+        },
+        {
+          "t": "2023-07-31",
+          "o": "29280.41",
+          "h": "29526.99",
+          "l": "29102.65",
+          "c": "29230.67",
+          "v": "8793.83887155"
+        },
+        {
+          "t": "2023-08-01",
+          "o": "29230.61",
+          "h": "29726.73",
+          "l": "28477",
+          "c": "29697.27",
+          "v": "17751.31113096"
+        },
+        {
+          "t": "2023-08-02",
+          "o": "29699.25",
+          "h": "30033",
+          "l": "28903.79",
+          "c": "29164.22",
+          "v": "17967.34799565"
+        },
+        {
+          "t": "2023-08-03",
+          "o": "29163.87",
+          "h": "29399.97",
+          "l": "28938.93",
+          "c": "29174.18",
+          "v": "8920.01477716"
+        },
+        {
+          "t": "2023-08-04",
+          "o": "29174.84",
+          "h": "29312.28",
+          "l": "28747.1",
+          "c": "29076.48",
+          "v": "7291.14687702"
+        },
+        {
+          "t": "2023-08-05",
+          "o": "29077.04",
+          "h": "29111.87",
+          "l": "28946.17",
+          "c": "29047.12",
+          "v": "2490.84710469"
+        },
+        {
+          "t": "2023-08-06",
+          "o": "29047.33",
+          "h": "29163.24",
+          "l": "28955",
+          "c": "29040.01",
+          "v": "2461.64012073"
+        },
+        {
+          "t": "2023-08-07",
+          "o": "29040.01",
+          "h": "29246",
+          "l": "28660.53",
+          "c": "29179.21",
+          "v": "9200.08523317"
+        },
+        {
+          "t": "2023-08-08",
+          "o": "29179.28",
+          "h": "30222",
+          "l": "29104.65",
+          "c": "29770.01",
+          "v": "15610.25491294"
+        },
+        {
+          "t": "2023-08-09",
+          "o": "29770.01",
+          "h": "30128.88",
+          "l": "29344.16",
+          "c": "29562.76",
+          "v": "10451.45167511"
+        },
+        {
+          "t": "2023-08-10",
+          "o": "29562.76",
+          "h": "29709.38",
+          "l": "29306",
+          "c": "29424.03",
+          "v": "7104.55622213"
+        },
+        {
+          "t": "2023-08-11",
+          "o": "29424.04",
+          "h": "29534.14",
+          "l": "29213.59",
+          "c": "29400.45",
+          "v": "5961.21744691"
+        },
+        {
+          "t": "2023-08-12",
+          "o": "29400.45",
+          "h": "29477.31",
+          "l": "29349.98",
+          "c": "29416.96",
+          "v": "1906.17079860"
+        },
+        {
+          "t": "2023-08-13",
+          "o": "29417.19",
+          "h": "29447.6",
+          "l": "29247.15",
+          "c": "29275.94",
+          "v": "2128.37437697"
+        },
+        {
+          "t": "2023-08-14",
+          "o": "29275.78",
+          "h": "29665.27",
+          "l": "29072.96",
+          "c": "29405.49",
+          "v": "7063.46806345"
+        },
+        {
+          "t": "2023-08-15",
+          "o": "29405.49",
+          "h": "29464.62",
+          "l": "29046.58",
+          "c": "29170.14",
+          "v": "5815.32226178"
+        },
+        {
+          "t": "2023-08-16",
+          "o": "29170.13",
+          "h": "29231.92",
+          "l": "28690.37",
+          "c": "28700.51",
+          "v": "9669.42535941"
+        },
+        {
+          "t": "2023-08-17",
+          "o": "28700.51",
+          "h": "28751.84",
+          "l": "25234.76",
+          "c": "26627.57",
+          "v": "27723.21087110"
+        },
+        {
+          "t": "2023-08-18",
+          "o": "26627.21",
+          "h": "26834.37",
+          "l": "25610",
+          "c": "26048.89",
+          "v": "21190.13041519"
+        },
+        {
+          "t": "2023-08-19",
+          "o": "26048.9",
+          "h": "26269.11",
+          "l": "25793.11",
+          "c": "26096.42",
+          "v": "6554.05344759"
+        },
+        {
+          "t": "2023-08-20",
+          "o": "26096.4",
+          "h": "26296.78",
+          "l": "25975.01",
+          "c": "26189.14",
+          "v": "4345.07228674"
+        },
+        {
+          "t": "2023-08-21",
+          "o": "26189.36",
+          "h": "26260.25",
+          "l": "25814",
+          "c": "26125.18",
+          "v": "9936.98111023"
+        },
+        {
+          "t": "2023-08-22",
+          "o": "26125.16",
+          "h": "26137.99",
+          "l": "25350",
+          "c": "26042.11",
+          "v": "12418.87289323"
+        },
+        {
+          "t": "2023-08-23",
+          "o": "26041.94",
+          "h": "26818.28",
+          "l": "25796.47",
+          "c": "26427.54",
+          "v": "15743.86437208"
+        },
+        {
+          "t": "2023-08-24",
+          "o": "26427.73",
+          "h": "26567.38",
+          "l": "25850",
+          "c": "26163.49",
+          "v": "10002.33992977"
+        },
+        {
+          "t": "2023-08-25",
+          "o": "26163.49",
+          "h": "26294.53",
+          "l": "25750",
+          "c": "26049.39",
+          "v": "10926.33773703"
+        }
+      ]
+    },
+    {
+      "scenario_id": "2024_01_etf_launch_sell_the_news",
+      "title": "January 2024: a chased zone never touched, then a stop on the entry session",
+      "period": {
+        "start": "2023-12-21",
+        "end": "2024-02-01"
+      },
+      "review": [
+        "The US spot ETFs were approved on 10 January 2024 and listed on 11 January. The 11 January session printed 49,102.29 and closed at 46,342.66; 12 January fell 7.70%.",
+        "The first decision is the mistake the period is known for: arming a continuation zone at 47,800-48,600 under the launch high. Its one eligible session, 12 January, has a high of 46,522.20, below the zone, so the entry is terminally missed rather than chased on a later session, and it costs the account nothing.",
+        "The second decision buys the 22 January capitulation close, 39,524.27, with that session's own low, 39,372.44, as invalidation. Post-launch volatility had widened ATR20 to about 2,192, so the buffer binds on ATR and the stop sits at 38,714.96.",
+        "23 January opens at 39,524.27, inside the zone, and trades to 38,501. Entry and stop both belong to that one session, and the bracket authorised at the 22 January decision resolves the collision against the position: the entry fills, then the stop fills on the same session.",
+        "A trade that opens and closes inside one session leaves no excursion evidence, and BTC-165 reports MFE and MAE as absent rather than inventing an intrabar path."
+      ],
+      "expected_behaviour": [
+        "the first entry is missed with ENTRY_ZONE_NOT_TOUCHED and ENTRY_DO_NOT_CHASE, and no notional, fee or ledger tranche exists for it",
+        "the second entry fills and is stopped out on its own entry session",
+        "the closed trade reports no MFE and no MAE"
+      ],
+      "cost_profile": "base",
+      "starting_nav": "1000000",
+      "plan": {
+        "direction": "long",
+        "decisions": [
+          {
+            "on": "2024-01-11",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "47800",
+            "entry_zone_upper": "48600",
+            "invalidation_price": "44320.01",
+            "invalidation_date": "2024-01-10",
+            "invalidation_source": "2024-01-10 session low",
+            "entry_conviction": "88"
+          },
+          {
+            "on": "2024-01-22",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "39400",
+            "entry_zone_upper": "40100",
+            "invalidation_price": "39372.44",
+            "invalidation_date": "2024-01-22",
+            "invalidation_source": "2024-01-22 capitulation low",
+            "entry_conviction": "86"
+          }
+        ]
+      },
+      "expected": {
+        "reason_codes": [
+          "BACKTEST_COST_PROFILE_APPLIED",
+          "BACKTEST_ENTRY_MISSED",
+          "BACKTEST_ENTRY_FILLED",
+          "BACKTEST_STOPPED_OUT",
+          "BACKTEST_COMPLETE"
+        ],
+        "missed_entries": 1,
+        "stopped_out": 1,
+        "final_state": "CLOSED",
+        "final_open_quantity": "0",
+        "final_standing_stop": "38714.96450000000012",
+        "ending_nav": "998661.8902455529118801108522",
+        "events": [
+          {
+            "session": "2024-01-11",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-01-12",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "MISSED",
+            "reason_codes": [
+              "ENTRY_ZONE_NOT_TOUCHED",
+              "ENTRY_EXECUTION_MISSED",
+              "ENTRY_DO_NOT_CHASE"
+            ],
+            "filled_quantity": "0"
+          },
+          {
+            "session": "2024-01-22",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-01-23",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ENTRY_ZONE_TOUCHED",
+              "ENTRY_REFERENCE_BAR_OPEN",
+              "ENTRY_EXECUTION_COSTS_APPLIED",
+              "ENTRY_EXECUTION_FILLED"
+            ],
+            "reference_price": "39524.27",
+            "average_fill_price": "39544.0321350",
+            "filled_quantity": "1.444006308863563550017856627"
+          },
+          {
+            "session": "2024-01-23",
+            "event_type": "STOP_EXECUTION",
+            "action": "EXIT",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "STOP_TOUCHED",
+              "STOP_FILL_AT_STOP_PRICE",
+              "STOP_EXECUTION_COSTS_APPLIED",
+              "STOP_LOSS_EXCEEDED_PLANNED_RISK",
+              "STOP_EXECUTION_FILLED"
+            ],
+            "reference_price": "38714.96450000000012",
+            "average_fill_price": "38695.6070177500001199400",
+            "filled_quantity": "1.444006308863563550017856627"
+          }
+        ],
+        "trades": [
+          {
+            "opened_session": "2024-01-23",
+            "closed_session": "2024-01-23",
+            "closed": true,
+            "initial_quantity": "1.444006308863563550017856627",
+            "initial_entry_price": "39544.0321350",
+            "average_entry_price": "39544.03213500000000000000000",
+            "initial_stop_price": "38714.96450000000012",
+            "initial_risk": "1197.178895414593996804751538",
+            "entry_notional": "57101.83188084349235252080228",
+            "exit_notional": "55876.70065893618390653819272",
+            "gross_pnl": "-1225.13122190730844598260956",
+            "fees": "112.9785325397796739065381927",
+            "funding": "0",
+            "net_pnl": "-1338.109754447088119889147753",
+            "r_multiple": "-1.117719130843589151417149804",
+            "add_count": 0,
+            "trim_count": 0,
+            "exit_reason": "STRUCTURAL_STOP"
+          }
+        ]
+      },
+      "bar_count": 43,
+      "bars_digest": "sha256:c8cfd4a85c40df247504ad14c6804c15d176d8a8ec3624a40a05b35b3dab2690",
+      "bars": [
+        {
+          "t": "2023-12-21",
+          "o": "43673.11",
+          "h": "44250",
+          "l": "43295.78",
+          "c": "43875.32",
+          "v": "13170.97282220"
+        },
+        {
+          "t": "2023-12-22",
+          "o": "43875.56",
+          "h": "44424.36",
+          "l": "43412.82",
+          "c": "44013.73",
+          "v": "10733.55348079"
+        },
+        {
+          "t": "2023-12-23",
+          "o": "44013.65",
+          "h": "44033.84",
+          "l": "43333.35",
+          "c": "43726.35",
+          "v": "4075.08953972"
+        },
+        {
+          "t": "2023-12-24",
+          "o": "43728.36",
+          "h": "43985.67",
+          "l": "42614.17",
+          "c": "43025.03",
+          "v": "4947.00165569"
+        },
+        {
+          "t": "2023-12-25",
+          "o": "43025.02",
+          "h": "43818.29",
+          "l": "42755.35",
+          "c": "43589.67",
+          "v": "4799.73104807"
+        },
+        {
+          "t": "2023-12-26",
+          "o": "43589.67",
+          "h": "43605",
+          "l": "41600.67",
+          "c": "42515.53",
+          "v": "13035.02745535"
+        },
+        {
+          "t": "2023-12-27",
+          "o": "42521.21",
+          "h": "43709.98",
+          "l": "42111.47",
+          "c": "43474.4",
+          "v": "12917.48404475"
+        },
+        {
+          "t": "2023-12-28",
+          "o": "43469.06",
+          "h": "43830.34",
+          "l": "42265.08",
+          "c": "42581.23",
+          "v": "13583.91599843"
+        },
+        {
+          "t": "2023-12-29",
+          "o": "42581.23",
+          "h": "43137.1",
+          "l": "41300",
+          "c": "42063.45",
+          "v": "16756.43323881"
+        },
+        {
+          "t": "2023-12-30",
+          "o": "42064.22",
+          "h": "42593.73",
+          "l": "41518.19",
+          "c": "42141.03",
+          "v": "11609.82377015"
+        },
+        {
+          "t": "2023-12-31",
+          "o": "42139.32",
+          "h": "42850",
+          "l": "41964.68",
+          "c": "42288.06",
+          "v": "11397.57303743"
+        },
+        {
+          "t": "2024-01-01",
+          "o": "42288.58",
+          "h": "44240.8",
+          "l": "42175.65",
+          "c": "44220.78",
+          "v": "7977.72851143"
+        },
+        {
+          "t": "2024-01-02",
+          "o": "44220.78",
+          "h": "45925.82",
+          "l": "44195.13",
+          "c": "44972.8",
+          "v": "29583.38407747"
+        },
+        {
+          "t": "2024-01-03",
+          "o": "44972.81",
+          "h": "45519.32",
+          "l": "40625.68",
+          "c": "42862.44",
+          "v": "32281.85234351"
+        },
+        {
+          "t": "2024-01-04",
+          "o": "42860.58",
+          "h": "44800",
+          "l": "42650",
+          "c": "44193.29",
+          "v": "18193.81684353"
+        },
+        {
+          "t": "2024-01-05",
+          "o": "44198.35",
+          "h": "44443.37",
+          "l": "42450",
+          "c": "44186.59",
+          "v": "18073.09561495"
+        },
+        {
+          "t": "2024-01-06",
+          "o": "44187.76",
+          "h": "44260.95",
+          "l": "43436.5",
+          "c": "43992.44",
+          "v": "5691.43460343"
+        },
+        {
+          "t": "2024-01-07",
+          "o": "43992.79",
+          "h": "44510.01",
+          "l": "43629.7",
+          "c": "43950.28",
+          "v": "5931.34650683"
+        },
+        {
+          "t": "2024-01-08",
+          "o": "43954.52",
+          "h": "47330",
+          "l": "43200.44",
+          "c": "46995.1",
+          "v": "26447.17326625"
+        },
+        {
+          "t": "2024-01-09",
+          "o": "46995.09",
+          "h": "47901",
+          "l": "44701.54",
+          "c": "46124.08",
+          "v": "26305.56366042"
+        },
+        {
+          "t": "2024-01-10",
+          "o": "46120.79",
+          "h": "47732.5",
+          "l": "44320.01",
+          "c": "46666.11",
+          "v": "36534.39765866"
+        },
+        {
+          "t": "2024-01-11",
+          "o": "46678.54",
+          "h": "49102.29",
+          "l": "45555.55",
+          "c": "46342.66",
+          "v": "38150.89478822"
+        },
+        {
+          "t": "2024-01-12",
+          "o": "46344.96",
+          "h": "46522.2",
+          "l": "41444.97",
+          "c": "42773.03",
+          "v": "46862.43347199"
+        },
+        {
+          "t": "2024-01-13",
+          "o": "42775.1",
+          "h": "43250",
+          "l": "42427",
+          "c": "42839.33",
+          "v": "10998.76404264"
+        },
+        {
+          "t": "2024-01-14",
+          "o": "42839.32",
+          "h": "43064.13",
+          "l": "41680.73",
+          "c": "41697.33",
+          "v": "7834.26155365"
+        },
+        {
+          "t": "2024-01-15",
+          "o": "41698.13",
+          "h": "43331.91",
+          "l": "41680",
+          "c": "42490.16",
+          "v": "10869.45830576"
+        },
+        {
+          "t": "2024-01-16",
+          "o": "42481.69",
+          "h": "43569.23",
+          "l": "42028.02",
+          "c": "43130.45",
+          "v": "18180.44054060"
+        },
+        {
+          "t": "2024-01-17",
+          "o": "43130.35",
+          "h": "43185.47",
+          "l": "42160",
+          "c": "42739.49",
+          "v": "16381.84071590"
+        },
+        {
+          "t": "2024-01-18",
+          "o": "42737.68",
+          "h": "42877.22",
+          "l": "40600.05",
+          "c": "41293.5",
+          "v": "25097.42399202"
+        },
+        {
+          "t": "2024-01-19",
+          "o": "41290.57",
+          "h": "42159.52",
+          "l": "40236.49",
+          "c": "41624.07",
+          "v": "22745.55271173"
+        },
+        {
+          "t": "2024-01-20",
+          "o": "41623.94",
+          "h": "41846.15",
+          "l": "41418.55",
+          "c": "41666.67",
+          "v": "4836.63124969"
+        },
+        {
+          "t": "2024-01-21",
+          "o": "41666.67",
+          "h": "41858.59",
+          "l": "41472.49",
+          "c": "41554.05",
+          "v": "3138.26294449"
+        },
+        {
+          "t": "2024-01-22",
+          "o": "41553.92",
+          "h": "41658",
+          "l": "39372.44",
+          "c": "39524.27",
+          "v": "26539.34338688"
+        },
+        {
+          "t": "2024-01-23",
+          "o": "39524.27",
+          "h": "40144.49",
+          "l": "38501",
+          "c": "39878.3",
+          "v": "21966.56334645"
+        },
+        {
+          "t": "2024-01-24",
+          "o": "39878.28",
+          "h": "40527.26",
+          "l": "39382.15",
+          "c": "40077.78",
+          "v": "17438.97734668"
+        },
+        {
+          "t": "2024-01-25",
+          "o": "40079.87",
+          "h": "40282.87",
+          "l": "39503",
+          "c": "39941.66",
+          "v": "12978.73312050"
+        },
+        {
+          "t": "2024-01-26",
+          "o": "39941.66",
+          "h": "42243.14",
+          "l": "39805.95",
+          "c": "41814.8",
+          "v": "19359.37921096"
+        },
+        {
+          "t": "2024-01-27",
+          "o": "41814.96",
+          "h": "42199.99",
+          "l": "41383.94",
+          "c": "42126.55",
+          "v": "3774.45056434"
+        },
+        {
+          "t": "2024-01-28",
+          "o": "42126.55",
+          "h": "42839.07",
+          "l": "41617.53",
+          "c": "42034.59",
+          "v": "4298.44263812"
+        },
+        {
+          "t": "2024-01-29",
+          "o": "42034.57",
+          "h": "43326.77",
+          "l": "41787.35",
+          "c": "43306.18",
+          "v": "12529.09255982"
+        },
+        {
+          "t": "2024-01-30",
+          "o": "43303.3",
+          "h": "43872.99",
+          "l": "42680.2",
+          "c": "42942.78",
+          "v": "16384.61219735"
+        },
+        {
+          "t": "2024-01-31",
+          "o": "42937.72",
+          "h": "43741.94",
+          "l": "42265.77",
+          "c": "42548.08",
+          "v": "15320.62044085"
+        },
+        {
+          "t": "2024-02-01",
+          "o": "42545.47",
+          "h": "43276.19",
+          "l": "41846.04",
+          "c": "43078.81",
+          "v": "11526.63383073"
+        }
+      ]
+    },
+    {
+      "scenario_id": "2024_02_ath_trend_tranches",
+      "title": "February-March 2024: trimmed into the all-time high, then stopped",
+      "period": {
+        "start": "2024-01-20",
+        "end": "2024-03-20"
+      },
+      "review": [
+        "February 2024 was the first ETF-flow trend. Bitcoin left the 42,000-44,000 January range on 8-9 February and ran to the 73,835.57 all-time high on 14 March.",
+        "The plan arms the 48,300-49,300 shelf on 12 February with the 11 February low, 47,590.30, as invalidation. 13 February opens at 49,941.95, above the zone, and trades to 48,327.81: a zone-upper-bound fill at 49,324.65 against a 47,090.30 stop.",
+        "The 23 February low, 50,513.01, is the last higher low before the 26-28 February expansion (+5.42%, +4.66%, +9.53%). The 26 February trail lifts the stop to 50,001.75, above the entry.",
+        "11-12 March is the euphoria: 72,943.98 intraday, then a 68,603 washout inside two sessions. The 12 March decision reads euphoria as active with the hold score at 62 - above the 50 defensive band - so the trim is carried by the euphoria flag and not by the score band.",
+        "The 9 March low, 68,047.62, is the trailing structure taken on 13 March. The resulting 67,015.67 stop survives 14 March (low 68,454.47) and is taken out on 15 March (low 65,565.70).",
+        "The second trim, decided on 14 March, never executes. The stop resolves before the queued intent on 15 March, so the trim is refused as stale instead of being applied to a position that no longer exists."
+      ],
+      "expected_behaviour": [
+        "one closed trade of about +8.5R, trimmed once and stopped out",
+        "the trim leaves the weighted average entry untouched, so the R denominator is still the risk taken at entry",
+        "the stop that fires first makes the queued second trim stale rather than executing it"
+      ],
+      "cost_profile": "base",
+      "starting_nav": "1000000",
+      "plan": {
+        "direction": "long",
+        "decisions": [
+          {
+            "on": "2024-02-12",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "48300",
+            "entry_zone_upper": "49300",
+            "invalidation_price": "47590.30",
+            "invalidation_date": "2024-02-11",
+            "invalidation_source": "2024-02-11 session low",
+            "entry_conviction": "88"
+          },
+          {
+            "on": "2024-02-26",
+            "action": "TRAIL",
+            "structure_id": "hl-2024-02-23",
+            "structure_type": "HIGHER_LOW",
+            "structure_price": "50513.01",
+            "structure_level_date": "2024-02-23",
+            "structure_reason_codes": [
+              "HIGHER_LOW_CONFIRMED"
+            ]
+          },
+          {
+            "on": "2024-03-12",
+            "action": "TRIM",
+            "trim_inputs": {
+              "hold_score": "62",
+              "euphoria_active": true,
+              "crowding_active": false,
+              "current_flow_score": "71",
+              "prior_flow_score": "74"
+            }
+          },
+          {
+            "on": "2024-03-13",
+            "action": "TRAIL",
+            "structure_id": "hl-2024-03-09",
+            "structure_type": "HIGHER_LOW",
+            "structure_price": "68047.62",
+            "structure_level_date": "2024-03-09",
+            "structure_reason_codes": [
+              "HIGHER_LOW_CONFIRMED"
+            ]
+          },
+          {
+            "on": "2024-03-14",
+            "action": "TRIM",
+            "trim_inputs": {
+              "hold_score": "55",
+              "euphoria_active": false,
+              "crowding_active": true,
+              "current_flow_score": "58",
+              "prior_flow_score": "71"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "reason_codes": [
+          "BACKTEST_COST_PROFILE_APPLIED",
+          "BACKTEST_ENTRY_FILLED",
+          "BACKTEST_STOP_TRAILED",
+          "BACKTEST_TRIMMED",
+          "BACKTEST_STOPPED_OUT",
+          "BACKTEST_INTENT_STALE",
+          "BACKTEST_COMPLETE"
+        ],
+        "missed_entries": 0,
+        "stopped_out": 1,
+        "final_state": "CLOSED",
+        "final_open_quantity": "0",
+        "final_standing_stop": "67015.6737000000003",
+        "ending_nav": "1017206.012374936090595748835",
+        "events": [
+          {
+            "session": "2024-02-12",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-02-13",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ENTRY_ZONE_TOUCHED",
+              "ENTRY_REFERENCE_ZONE_UPPER",
+              "ENTRY_EXECUTION_COSTS_APPLIED",
+              "ENTRY_EXECUTION_FILLED"
+            ],
+            "reference_price": "49300",
+            "average_fill_price": "49324.65000",
+            "filled_quantity": "0.9051002398515635606643435757"
+          },
+          {
+            "session": "2024-02-26",
+            "event_type": "INTENT",
+            "action": "TRAIL",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-02-27",
+            "event_type": "TRAILING_STOP",
+            "action": "TRAIL",
+            "status": "APPLIED",
+            "reason_codes": [
+              "TRAILING_STOP_ADVANCED"
+            ],
+            "stop_price": "50001.75315000000021"
+          },
+          {
+            "session": "2024-03-12",
+            "event_type": "INTENT",
+            "action": "TRIM",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-03-13",
+            "event_type": "TRIM_EXECUTION",
+            "action": "TRIM",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "TRIM_EXECUTION_REFERENCE_BAR_OPEN",
+              "TRIM_EXECUTION_COSTS_APPLIED",
+              "TRIM_EXECUTION_REALIZED_PROFIT",
+              "TRIM_EXECUTION_FILLED"
+            ],
+            "reference_price": "71473.43",
+            "average_fill_price": "71437.6932850",
+            "filled_quantity": "0.2986830791510159750192333800"
+          },
+          {
+            "session": "2024-03-13",
+            "event_type": "INTENT",
+            "action": "TRAIL",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-03-14",
+            "event_type": "TRAILING_STOP",
+            "action": "TRAIL",
+            "status": "APPLIED",
+            "reason_codes": [
+              "TRAILING_STOP_ADVANCED"
+            ],
+            "stop_price": "67015.6737000000003"
+          },
+          {
+            "session": "2024-03-14",
+            "event_type": "INTENT",
+            "action": "TRIM",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-03-15",
+            "event_type": "STOP_EXECUTION",
+            "action": "EXIT",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "STOP_TOUCHED",
+              "STOP_FILL_AT_STOP_PRICE",
+              "STOP_EXECUTION_COSTS_APPLIED",
+              "STOP_EXECUTION_FILLED"
+            ],
+            "reference_price": "67015.6737000000003",
+            "average_fill_price": "66982.165863150000299850",
+            "filled_quantity": "0.6064171607005475856451101957"
+          },
+          {
+            "session": "2024-03-15",
+            "event_type": "INTENT",
+            "action": "TRIM",
+            "status": "STALE",
+            "reason_codes": [
+              "POSITION_STATE_CHANGED_BEFORE_EXECUTION"
+            ]
+          }
+        ],
+        "trades": [
+          {
+            "opened_session": "2024-02-13",
+            "closed_session": "2024-03-15",
+            "closed": true,
+            "initial_quantity": "0.9051002398515635606643435757",
+            "initial_entry_price": "49324.65000",
+            "average_entry_price": "49324.65000000000000000000000",
+            "initial_stop_price": "47090.30",
+            "initial_risk": "2022.310720912341041770376068",
+            "entry_notional": "44643.75254559442458252251435",
+            "exit_notional": "61956.36503811422383210345294",
+            "gross_pnl": "17312.61249251979924958093859",
+            "fees": "106.6001175837086538321034529",
+            "funding": "0",
+            "net_pnl": "17206.01237493609059574883514",
+            "r_multiple": "8.508095317406914626049231551",
+            "add_count": 0,
+            "trim_count": 1,
+            "exit_reason": "STRUCTURAL_STOP"
+          }
+        ]
+      },
+      "bar_count": 61,
+      "bars_digest": "sha256:b1ecca282f67530e4d1c691064f86c33b39377b9f11a459c1e474304c8da7d61",
+      "bars": [
+        {
+          "t": "2024-01-20",
+          "o": "41623.94",
+          "h": "41846.15",
+          "l": "41418.55",
+          "c": "41666.67",
+          "v": "4836.63124969"
+        },
+        {
+          "t": "2024-01-21",
+          "o": "41666.67",
+          "h": "41858.59",
+          "l": "41472.49",
+          "c": "41554.05",
+          "v": "3138.26294449"
+        },
+        {
+          "t": "2024-01-22",
+          "o": "41553.92",
+          "h": "41658",
+          "l": "39372.44",
+          "c": "39524.27",
+          "v": "26539.34338688"
+        },
+        {
+          "t": "2024-01-23",
+          "o": "39524.27",
+          "h": "40144.49",
+          "l": "38501",
+          "c": "39878.3",
+          "v": "21966.56334645"
+        },
+        {
+          "t": "2024-01-24",
+          "o": "39878.28",
+          "h": "40527.26",
+          "l": "39382.15",
+          "c": "40077.78",
+          "v": "17438.97734668"
+        },
+        {
+          "t": "2024-01-25",
+          "o": "40079.87",
+          "h": "40282.87",
+          "l": "39503",
+          "c": "39941.66",
+          "v": "12978.73312050"
+        },
+        {
+          "t": "2024-01-26",
+          "o": "39941.66",
+          "h": "42243.14",
+          "l": "39805.95",
+          "c": "41814.8",
+          "v": "19359.37921096"
+        },
+        {
+          "t": "2024-01-27",
+          "o": "41814.96",
+          "h": "42199.99",
+          "l": "41383.94",
+          "c": "42126.55",
+          "v": "3774.45056434"
+        },
+        {
+          "t": "2024-01-28",
+          "o": "42126.55",
+          "h": "42839.07",
+          "l": "41617.53",
+          "c": "42034.59",
+          "v": "4298.44263812"
+        },
+        {
+          "t": "2024-01-29",
+          "o": "42034.57",
+          "h": "43326.77",
+          "l": "41787.35",
+          "c": "43306.18",
+          "v": "12529.09255982"
+        },
+        {
+          "t": "2024-01-30",
+          "o": "43303.3",
+          "h": "43872.99",
+          "l": "42680.2",
+          "c": "42942.78",
+          "v": "16384.61219735"
+        },
+        {
+          "t": "2024-01-31",
+          "o": "42937.72",
+          "h": "43741.94",
+          "l": "42265.77",
+          "c": "42548.08",
+          "v": "15320.62044085"
+        },
+        {
+          "t": "2024-02-01",
+          "o": "42545.47",
+          "h": "43276.19",
+          "l": "41846.04",
+          "c": "43078.81",
+          "v": "11526.63383073"
+        },
+        {
+          "t": "2024-02-02",
+          "o": "43080.38",
+          "h": "43700",
+          "l": "42527.58",
+          "c": "43181.66",
+          "v": "12202.24125895"
+        },
+        {
+          "t": "2024-02-03",
+          "o": "43183.62",
+          "h": "43358.13",
+          "l": "42863.58",
+          "c": "43010.67",
+          "v": "2254.45335539"
+        },
+        {
+          "t": "2024-02-04",
+          "o": "43007.82",
+          "h": "43100",
+          "l": "42228.01",
+          "c": "42568.55",
+          "v": "2643.25164900"
+        },
+        {
+          "t": "2024-02-05",
+          "o": "42571.91",
+          "h": "43520",
+          "l": "42235",
+          "c": "42657.67",
+          "v": "8756.87806894"
+        },
+        {
+          "t": "2024-02-06",
+          "o": "42658.3",
+          "h": "43372.79",
+          "l": "42516.07",
+          "c": "43095.79",
+          "v": "7940.36830921"
+        },
+        {
+          "t": "2024-02-07",
+          "o": "43097.16",
+          "h": "44430",
+          "l": "42760.44",
+          "c": "44343.61",
+          "v": "12440.36853251"
+        },
+        {
+          "t": "2024-02-08",
+          "o": "44345.94",
+          "h": "45637.38",
+          "l": "44335",
+          "c": "45305.2",
+          "v": "19283.80580787"
+        },
+        {
+          "t": "2024-02-09",
+          "o": "45304.83",
+          "h": "48230.02",
+          "l": "45252.93",
+          "c": "47160.41",
+          "v": "22108.85067543"
+        },
+        {
+          "t": "2024-02-10",
+          "o": "47157.01",
+          "h": "48179.43",
+          "l": "46889.53",
+          "c": "47767.06",
+          "v": "5663.30989100"
+        },
+        {
+          "t": "2024-02-11",
+          "o": "47767.06",
+          "h": "48614",
+          "l": "47590.3",
+          "c": "48316.3",
+          "v": "5243.12607060"
+        },
+        {
+          "t": "2024-02-12",
+          "o": "48321.14",
+          "h": "50363.42",
+          "l": "47715.67",
+          "c": "49941.81",
+          "v": "18545.08725852"
+        },
+        {
+          "t": "2024-02-13",
+          "o": "49941.95",
+          "h": "50423.42",
+          "l": "48327.81",
+          "c": "49725.36",
+          "v": "20471.56790372"
+        },
+        {
+          "t": "2024-02-14",
+          "o": "49724.55",
+          "h": "52111",
+          "l": "49253.92",
+          "c": "51858.59",
+          "v": "20249.94369733"
+        },
+        {
+          "t": "2024-02-15",
+          "o": "51858.51",
+          "h": "52890",
+          "l": "51353.49",
+          "c": "51934.29",
+          "v": "18465.04404385"
+        },
+        {
+          "t": "2024-02-16",
+          "o": "51935.23",
+          "h": "52608.2",
+          "l": "51597.87",
+          "c": "52162.64",
+          "v": "13816.27351282"
+        },
+        {
+          "t": "2024-02-17",
+          "o": "52162.65",
+          "h": "52214.05",
+          "l": "50642.36",
+          "c": "51666.22",
+          "v": "5387.34865760"
+        },
+        {
+          "t": "2024-02-18",
+          "o": "51666.23",
+          "h": "52400",
+          "l": "51174.38",
+          "c": "52153.63",
+          "v": "3997.17143898"
+        },
+        {
+          "t": "2024-02-19",
+          "o": "52153.63",
+          "h": "52501.01",
+          "l": "51687.98",
+          "c": "51787.05",
+          "v": "6009.01451962"
+        },
+        {
+          "t": "2024-02-20",
+          "o": "51787.05",
+          "h": "53000",
+          "l": "50764.01",
+          "c": "52277.52",
+          "v": "15888.87599974"
+        },
+        {
+          "t": "2024-02-21",
+          "o": "52277.53",
+          "h": "52394.91",
+          "l": "50628.6",
+          "c": "51851.67",
+          "v": "13735.03407249"
+        },
+        {
+          "t": "2024-02-22",
+          "o": "51851.46",
+          "h": "52076",
+          "l": "50905.65",
+          "c": "51258.7",
+          "v": "13104.51408087"
+        },
+        {
+          "t": "2024-02-23",
+          "o": "51260.29",
+          "h": "51512.68",
+          "l": "50513.01",
+          "c": "50747.05",
+          "v": "11679.16625824"
+        },
+        {
+          "t": "2024-02-24",
+          "o": "50746.98",
+          "h": "51696.19",
+          "l": "50576.55",
+          "c": "51570.65",
+          "v": "3448.96576791"
+        },
+        {
+          "t": "2024-02-25",
+          "o": "51568.63",
+          "h": "51967.82",
+          "l": "51275.01",
+          "c": "51731",
+          "v": "3617.40106809"
+        },
+        {
+          "t": "2024-02-26",
+          "o": "51730.96",
+          "h": "54980",
+          "l": "50901.23",
+          "c": "54533.48",
+          "v": "22422.38763854"
+        },
+        {
+          "t": "2024-02-27",
+          "o": "54530.32",
+          "h": "57646.81",
+          "l": "54490.8",
+          "c": "57077.07",
+          "v": "28791.48651731"
+        },
+        {
+          "t": "2024-02-28",
+          "o": "57077.08",
+          "h": "64100",
+          "l": "56723.48",
+          "c": "62518.9",
+          "v": "48265.67211710"
+        },
+        {
+          "t": "2024-02-29",
+          "o": "62520.06",
+          "h": "63675.48",
+          "l": "60355.61",
+          "c": "61179.03",
+          "v": "36825.89535085"
+        },
+        {
+          "t": "2024-03-01",
+          "o": "61179.03",
+          "h": "63267.18",
+          "l": "60788.33",
+          "c": "62436.72",
+          "v": "24696.65692545"
+        },
+        {
+          "t": "2024-03-02",
+          "o": "62439.74",
+          "h": "62500",
+          "l": "61623.39",
+          "c": "62045.78",
+          "v": "6882.38410251"
+        },
+        {
+          "t": "2024-03-03",
+          "o": "62045.78",
+          "h": "63260",
+          "l": "61388",
+          "c": "63154.49",
+          "v": "7314.17629968"
+        },
+        {
+          "t": "2024-03-04",
+          "o": "63155.74",
+          "h": "68602.98",
+          "l": "62300",
+          "c": "68360.14",
+          "v": "40600.36656889"
+        },
+        {
+          "t": "2024-03-05",
+          "o": "68356.7",
+          "h": "69324.58",
+          "l": "59224.68",
+          "c": "63800.78",
+          "v": "65575.09537327"
+        },
+        {
+          "t": "2024-03-06",
+          "o": "63802.15",
+          "h": "67654.06",
+          "l": "62832.39",
+          "c": "66122.28",
+          "v": "34655.98799427"
+        },
+        {
+          "t": "2024-03-07",
+          "o": "66115.48",
+          "h": "68098.09",
+          "l": "65599.63",
+          "c": "66938.21",
+          "v": "22228.36739914"
+        },
+        {
+          "t": "2024-03-08",
+          "o": "66938.21",
+          "h": "70199",
+          "l": "66157.09",
+          "c": "68289.16",
+          "v": "33749.52797544"
+        },
+        {
+          "t": "2024-03-09",
+          "o": "68289.16",
+          "h": "68700.41",
+          "l": "68047.62",
+          "c": "68480",
+          "v": "9005.50992187"
+        },
+        {
+          "t": "2024-03-10",
+          "o": "68480.01",
+          "h": "70000",
+          "l": "68221.13",
+          "c": "69032.12",
+          "v": "12163.05713369"
+        },
+        {
+          "t": "2024-03-11",
+          "o": "69032.8",
+          "h": "72943.98",
+          "l": "67112.21",
+          "c": "72110.98",
+          "v": "32332.72583229"
+        },
+        {
+          "t": "2024-03-12",
+          "o": "72110.98",
+          "h": "73027.63",
+          "l": "68603",
+          "c": "71475.93",
+          "v": "29420.19277654"
+        },
+        {
+          "t": "2024-03-13",
+          "o": "71473.43",
+          "h": "73709.99",
+          "l": "71337.3",
+          "c": "73135.04",
+          "v": "21455.92195688"
+        },
+        {
+          "t": "2024-03-14",
+          "o": "73135.04",
+          "h": "73835.57",
+          "l": "68454.47",
+          "c": "71364.58",
+          "v": "34226.60261800"
+        },
+        {
+          "t": "2024-03-15",
+          "o": "71364.58",
+          "h": "72414.96",
+          "l": "65565.7",
+          "c": "69506.88",
+          "v": "40195.84231178"
+        },
+        {
+          "t": "2024-03-16",
+          "o": "69514.87",
+          "h": "70050",
+          "l": "64774.05",
+          "c": "65254.22",
+          "v": "16532.82530300"
+        },
+        {
+          "t": "2024-03-17",
+          "o": "65254.22",
+          "h": "68877.82",
+          "l": "64505",
+          "c": "68343.64",
+          "v": "12631.85084112"
+        },
+        {
+          "t": "2024-03-18",
+          "o": "68354.29",
+          "h": "68933.71",
+          "l": "66562.65",
+          "c": "67613.04",
+          "v": "20057.37580028"
+        },
+        {
+          "t": "2024-03-19",
+          "o": "67609.39",
+          "h": "68136.39",
+          "l": "61506",
+          "c": "61906.27",
+          "v": "40111.97553957"
+        },
+        {
+          "t": "2024-03-20",
+          "o": "61902.57",
+          "h": "68150",
+          "l": "60771.14",
+          "c": "67858.8",
+          "v": "38590.78345488"
+        }
+      ],
+      "known_composition_limit": {
+        "description": "The reviewed plan also added a second tranche on 27 February, after the 26 February trail improved the stop. That trade cannot currently be accounted: BTC-155 allocates a tranche quantity of notional/price that does not terminate in Decimal's 28-digit context, and BTC-165's pro-rata trim basis then misses the exact cash-flow identity by about 1e-23. BTC-223 recorded the same composition gap and left it to its owner, so the add is pinned here as a known limit on real history rather than quietly dropped from the review.",
+        "owner_reference": "BTC-223 composition gap; BTC-155/BTC-165 scope",
+        "expected_error": "exact cash-flow identity",
+        "decision": {
+          "on": "2024-02-27",
+          "action": "ADD",
+          "add_inputs": {
+            "position_profitable": true,
+            "new_structural_confirmation": true,
+            "signed_risk_improvement": "2022.31",
+            "regime_supportive": true,
+            "flow_supportive": true,
+            "positioning_healthy": true,
+            "add_score": "88",
+            "projected_risk_at_stop_within_maximum": true
+          }
+        }
+      }
+    },
+    {
+      "scenario_id": "2024_07_regime_invalidation_exit",
+      "title": "31 July 2024: the discretionary exit that beat the stop and missed the crash",
+      "period": {
+        "start": "2024-07-01",
+        "end": "2024-08-12"
+      },
+      "review": [
+        "The plan buys the 26 July reclaim (+3.24%, closing 67,924.08) in 66,600-68,000 with the 25 July low, 63,412.46, as invalidation. ATR20 was about 2,550, so the buffer binds on ATR and the stop sits at 62,647.43. The 27 July session opens inside the zone at 67,921.46.",
+        "The reclaim failed within three sessions: 29 July -2.16%, 30 July -0.90%, 31 July -2.36%. The 30 July decision reads the regime as invalidated with the hold score at 44 - above the 40 exit band - so the exit is carried by REGIME_INVALIDATION alone and not by a hold-score collapse.",
+        "The exit fills on 31 July at 66,136.60 for a 0.37R loss. The stop was still untouched: the 31 July low was 64,500.",
+        "The counterfactual is the point of the period. On 1 August the low was 62,212.81, so the stop would have filled at 62,616.10 for a full -1.006R before fees, 3,520.49 a coin worse than the exit; and the position would still have been open for the 5 August carry unwind, which opened at 58,131.31 and traded to 49,050.01, 25.8% below the exit."
+      ],
+      "expected_behaviour": [
+        "one closed trade with exit reason REGIME_INVALIDATION, filled at the 31 July open less slippage",
+        "the standing stop is never touched before the exit",
+        "the exit price is better than the price the standing stop would have filled at on 1 August",
+        "the account carries no exposure through the 5 August capitulation"
+      ],
+      "cost_profile": "base",
+      "starting_nav": "1000000",
+      "plan": {
+        "direction": "long",
+        "decisions": [
+          {
+            "on": "2024-07-26",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "66600",
+            "entry_zone_upper": "68000",
+            "invalidation_price": "63412.46",
+            "invalidation_date": "2024-07-25",
+            "invalidation_source": "2024-07-25 session low",
+            "entry_conviction": "86"
+          },
+          {
+            "on": "2024-07-30",
+            "action": "EXIT",
+            "exit_inputs": {
+              "hold_score": "44",
+              "regime_invalidated": true,
+              "data_risk_exit_required": false,
+              "manual_research_override": false
+            }
+          }
+        ]
+      },
+      "expected": {
+        "reason_codes": [
+          "BACKTEST_COST_PROFILE_APPLIED",
+          "BACKTEST_ENTRY_FILLED",
+          "BACKTEST_EXITED",
+          "BACKTEST_COMPLETE"
+        ],
+        "missed_entries": 0,
+        "stopped_out": 0,
+        "final_state": "CLOSED",
+        "final_open_quantity": "0",
+        "final_standing_stop": "62647.42685000000021",
+        "ending_nav": "999270.2883151106491389137449",
+        "events": [
+          {
+            "session": "2024-07-26",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-07-27",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ENTRY_ZONE_TOUCHED",
+              "ENTRY_REFERENCE_BAR_OPEN",
+              "ENTRY_EXECUTION_COSTS_APPLIED",
+              "ENTRY_EXECUTION_FILLED"
+            ],
+            "reference_price": "67921.46",
+            "average_fill_price": "67955.4207300",
+            "filled_quantity": "0.3736520630269200671207890425"
+          },
+          {
+            "session": "2024-07-30",
+            "event_type": "INTENT",
+            "action": "EXIT",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2024-07-31",
+            "event_type": "EXIT_EXECUTION",
+            "action": "EXIT",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "EXIT_EXECUTION_REFERENCE_BAR_OPEN",
+              "EXIT_EXECUTION_COSTS_APPLIED",
+              "EXIT_EXECUTION_FILLED"
+            ],
+            "reference_price": "66169.68",
+            "average_fill_price": "66136.5951600",
+            "filled_quantity": "0.3736520630269200671207890425"
+          }
+        ],
+        "trades": [
+          {
+            "opened_session": "2024-07-27",
+            "closed_session": "2024-07-31",
+            "closed": true,
+            "initial_quantity": "0.3736520630269200671207890425",
+            "initial_entry_price": "67955.4207300",
+            "average_entry_price": "67955.42072999999999999999999",
+            "initial_stop_price": "62647.42685000000021",
+            "initial_risk": "1983.342863796265913059404223",
+            "entry_notional": "25391.68314962683047727305911",
+            "exit_notional": "24712.07522311021666084765172",
+            "gross_pnl": "-679.60792651661381642540739",
+            "fees": "50.10375837273704466084765172",
+            "funding": "0",
+            "net_pnl": "-729.7116848893508610862550417",
+            "r_multiple": "-0.3679200899700359245013534690",
+            "add_count": 0,
+            "trim_count": 0,
+            "exit_reason": "REGIME_INVALIDATION"
+          }
+        ]
+      },
+      "bar_count": 43,
+      "bars_digest": "sha256:daeade41cd2e714b529acb65bca680605b2ae216ef3c26802a0fdd446fa0230e",
+      "bars": [
+        {
+          "t": "2024-07-01",
+          "o": "62669.14",
+          "h": "63801.26",
+          "l": "62448.46",
+          "c": "62830.13",
+          "v": "12326.70696465"
+        },
+        {
+          "t": "2024-07-02",
+          "o": "62830.94",
+          "h": "63223.57",
+          "l": "61000",
+          "c": "62040.22",
+          "v": "10688.64132628"
+        },
+        {
+          "t": "2024-07-03",
+          "o": "62039.44",
+          "h": "62197.01",
+          "l": "59332.76",
+          "c": "60145.01",
+          "v": "12066.71677065"
+        },
+        {
+          "t": "2024-07-04",
+          "o": "60145.01",
+          "h": "60429.27",
+          "l": "56709.73",
+          "c": "57042.14",
+          "v": "17969.35692426"
+        },
+        {
+          "t": "2024-07-05",
+          "o": "57036.45",
+          "h": "57515.6",
+          "l": "53499.9",
+          "c": "56639.43",
+          "v": "28052.41501655"
+        },
+        {
+          "t": "2024-07-06",
+          "o": "56634.53",
+          "h": "58481.97",
+          "l": "56020.32",
+          "c": "58244.75",
+          "v": "6449.32501293"
+        },
+        {
+          "t": "2024-07-07",
+          "o": "58240.36",
+          "h": "58448.89",
+          "l": "55717.23",
+          "c": "55854.09",
+          "v": "5320.91645368"
+        },
+        {
+          "t": "2024-07-08",
+          "o": "55852.61",
+          "h": "58200",
+          "l": "54278.93",
+          "c": "56699.43",
+          "v": "19043.04861272"
+        },
+        {
+          "t": "2024-07-09",
+          "o": "56701.18",
+          "h": "58295.31",
+          "l": "56276.37",
+          "c": "58047.86",
+          "v": "11757.76025902"
+        },
+        {
+          "t": "2024-07-10",
+          "o": "58047.86",
+          "h": "59481.93",
+          "l": "57157.28",
+          "c": "57712.59",
+          "v": "11619.63229345"
+        },
+        {
+          "t": "2024-07-11",
+          "o": "57713.4",
+          "h": "59533.06",
+          "l": "57036.41",
+          "c": "57340.77",
+          "v": "11433.53379518"
+        },
+        {
+          "t": "2024-07-12",
+          "o": "57343.66",
+          "h": "58550",
+          "l": "56538.33",
+          "c": "57909.03",
+          "v": "10516.60400149"
+        },
+        {
+          "t": "2024-07-13",
+          "o": "57908.61",
+          "h": "59875",
+          "l": "57770.92",
+          "c": "59224.58",
+          "v": "4255.10545721"
+        },
+        {
+          "t": "2024-07-14",
+          "o": "59224.58",
+          "h": "61428.67",
+          "l": "59209.2",
+          "c": "60808.42",
+          "v": "6132.37403058"
+        },
+        {
+          "t": "2024-07-15",
+          "o": "60804.97",
+          "h": "64943.61",
+          "l": "60666.59",
+          "c": "64757.16",
+          "v": "20601.73387957"
+        },
+        {
+          "t": "2024-07-16",
+          "o": "64757.16",
+          "h": "65405.89",
+          "l": "62410.33",
+          "c": "65088.99",
+          "v": "14691.92002303"
+        },
+        {
+          "t": "2024-07-17",
+          "o": "65086.55",
+          "h": "66139",
+          "l": "63853.99",
+          "c": "64085.81",
+          "v": "10647.79709095"
+        },
+        {
+          "t": "2024-07-18",
+          "o": "64085.82",
+          "h": "65130.88",
+          "l": "63222.6",
+          "c": "63982.86",
+          "v": "7637.52760383"
+        },
+        {
+          "t": "2024-07-19",
+          "o": "63977.64",
+          "h": "67504.22",
+          "l": "63289.15",
+          "c": "66707.61",
+          "v": "15163.05745737"
+        },
+        {
+          "t": "2024-07-20",
+          "o": "66707.61",
+          "h": "67635",
+          "l": "66271",
+          "c": "67163.83",
+          "v": "4671.38885135"
+        },
+        {
+          "t": "2024-07-21",
+          "o": "67163.82",
+          "h": "68380",
+          "l": "65820.18",
+          "c": "68181.28",
+          "v": "6027.86201344"
+        },
+        {
+          "t": "2024-07-22",
+          "o": "68181.16",
+          "h": "68495",
+          "l": "66569.42",
+          "c": "67558.22",
+          "v": "11844.79119584"
+        },
+        {
+          "t": "2024-07-23",
+          "o": "67560.03",
+          "h": "67786.84",
+          "l": "65444.3",
+          "c": "65939.24",
+          "v": "10791.03782177"
+        },
+        {
+          "t": "2024-07-24",
+          "o": "65939.24",
+          "h": "67131.17",
+          "l": "65090.61",
+          "c": "65366.4",
+          "v": "7702.25551129"
+        },
+        {
+          "t": "2024-07-25",
+          "o": "65358.86",
+          "h": "66161.98",
+          "l": "63412.46",
+          "c": "65795.42",
+          "v": "10452.25571747"
+        },
+        {
+          "t": "2024-07-26",
+          "o": "65795.52",
+          "h": "68216.66",
+          "l": "65705.6",
+          "c": "67924.08",
+          "v": "9315.20918753"
+        },
+        {
+          "t": "2024-07-27",
+          "o": "67921.46",
+          "h": "69418.15",
+          "l": "66635.28",
+          "c": "67899.41",
+          "v": "10233.62198513"
+        },
+        {
+          "t": "2024-07-28",
+          "o": "67901.81",
+          "h": "68308.82",
+          "l": "67021.8",
+          "c": "68244.3",
+          "v": "3505.54836910"
+        },
+        {
+          "t": "2024-07-29",
+          "o": "68244.3",
+          "h": "70000",
+          "l": "66400.01",
+          "c": "66771.45",
+          "v": "13641.48475825"
+        },
+        {
+          "t": "2024-07-30",
+          "o": "66767.14",
+          "h": "66994.15",
+          "l": "65283.68",
+          "c": "66169.68",
+          "v": "8733.57157991"
+        },
+        {
+          "t": "2024-07-31",
+          "o": "66169.68",
+          "h": "66837.4",
+          "l": "64500",
+          "c": "64609.62",
+          "v": "8986.37529253"
+        },
+        {
+          "t": "2024-08-01",
+          "o": "64609.61",
+          "h": "65593.56",
+          "l": "62212.81",
+          "c": "65288.18",
+          "v": "15636.72205775"
+        },
+        {
+          "t": "2024-08-02",
+          "o": "65293.48",
+          "h": "65557.86",
+          "l": "61150",
+          "c": "61418.06",
+          "v": "15390.00963957"
+        },
+        {
+          "t": "2024-08-03",
+          "o": "61418.06",
+          "h": "62171.58",
+          "l": "59819.13",
+          "c": "60674.93",
+          "v": "8019.39450918"
+        },
+        {
+          "t": "2024-08-04",
+          "o": "60674.93",
+          "h": "61082.3",
+          "l": "57123",
+          "c": "58130.95",
+          "v": "10319.01091658"
+        },
+        {
+          "t": "2024-08-05",
+          "o": "58131.31",
+          "h": "58282.83",
+          "l": "49050.01",
+          "c": "54029.12",
+          "v": "59125.78926672"
+        },
+        {
+          "t": "2024-08-06",
+          "o": "54037.9",
+          "h": "57091.16",
+          "l": "53965.57",
+          "c": "56048.08",
+          "v": "16897.67519536"
+        },
+        {
+          "t": "2024-08-07",
+          "o": "56048.07",
+          "h": "57757.15",
+          "l": "54564.15",
+          "c": "55148.1",
+          "v": "13971.51518710"
+        },
+        {
+          "t": "2024-08-08",
+          "o": "55144.14",
+          "h": "62755.24",
+          "l": "54737.32",
+          "c": "61705.58",
+          "v": "20623.04985861"
+        },
+        {
+          "t": "2024-08-09",
+          "o": "61704.05",
+          "h": "61764.38",
+          "l": "59552.46",
+          "c": "60862.13",
+          "v": "11569.80744379"
+        },
+        {
+          "t": "2024-08-10",
+          "o": "60864.71",
+          "h": "61500",
+          "l": "60255.61",
+          "c": "60935.02",
+          "v": "3157.63609699"
+        },
+        {
+          "t": "2024-08-11",
+          "o": "60935.01",
+          "h": "61868.69",
+          "l": "58312.63",
+          "c": "58722.49",
+          "v": "5229.37008498"
+        },
+        {
+          "t": "2024-08-12",
+          "o": "58717.44",
+          "h": "60721.77",
+          "l": "57653.31",
+          "c": "59358.78",
+          "v": "12183.92944247"
+        }
+      ]
+    },
+    {
+      "scenario_id": "2025_10_source_sensitive_stop",
+      "title": "10 October 2025: a stop the pinned source touched and Bitstamp did not",
+      "period": {
+        "start": "2025-09-05",
+        "end": "2025-10-17"
+      },
+      "review": [
+        "The 10 October 2025 selloff is the event PRICE_SOURCE_POLICY_V1 uses to reject a single-venue reference: both validators touched a 107,270 stop that Bitstamp missed.",
+        "The plan buys the 1-6 October breakout on its first retest: zone 120,500-122,500 armed on 6 October with the 25 September low, 108,623.70, as invalidation. The 2,000-wide zone carries 1,000 of level noise, which binds over 0.3 x ATR20, so the stop sits at 107,623.70 - within 354 of the stop the BTC-019 study found source sensitive.",
+        "7 October opens at 124,723.57, above the zone, and trades to 120,636: a zone-upper fill at 122,561.25.",
+        "10 October opened at 121,714.51 and traded to 107,000 on this series. The stop is touched and fills at the stop price for -1.02R.",
+        "The stop was not a shakeout: the 17 October low, 103,516.75, is 3.8% below it, and the window closes with price under the stop."
+      ],
+      "expected_behaviour": [
+        "one closed trade stopped out on 10 October at the stop price",
+        "a realized R of about -1.02, the stop's slippage and the two legs' fees beyond -1R",
+        "the expectation holds for the pinned source only: the recorded venue lows put the stop between what Bitstamp traded and what this series traded"
+      ],
+      "cost_profile": "base",
+      "starting_nav": "1000000",
+      "plan": {
+        "direction": "long",
+        "decisions": [
+          {
+            "on": "2025-10-06",
+            "action": "ARM_ENTRY",
+            "entry_zone_lower": "120500",
+            "entry_zone_upper": "122500",
+            "invalidation_price": "108623.70",
+            "invalidation_date": "2025-09-25",
+            "invalidation_source": "2025-09-25 session low",
+            "entry_conviction": "90"
+          }
+        ]
+      },
+      "expected": {
+        "reason_codes": [
+          "BACKTEST_COST_PROFILE_APPLIED",
+          "BACKTEST_ENTRY_FILLED",
+          "BACKTEST_STOPPED_OUT",
+          "BACKTEST_COMPLETE"
+        ],
+        "missed_entries": 0,
+        "stopped_out": 1,
+        "final_state": "CLOSED",
+        "final_open_quantity": "0",
+        "final_standing_stop": "107623.70",
+        "ending_nav": "997544.3098639070198891506355",
+        "events": [
+          {
+            "session": "2025-10-06",
+            "event_type": "INTENT",
+            "action": "ARM_ENTRY",
+            "status": "QUEUED",
+            "reason_codes": [
+              "INTENT_QUEUED"
+            ]
+          },
+          {
+            "session": "2025-10-07",
+            "event_type": "ENTRY_EXECUTION",
+            "action": "ARM_ENTRY",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "ENTRY_ZONE_TOUCHED",
+              "ENTRY_REFERENCE_ZONE_UPPER",
+              "ENTRY_EXECUTION_COSTS_APPLIED",
+              "ENTRY_EXECUTION_FILLED"
+            ],
+            "reference_price": "122500",
+            "average_fill_price": "122561.25000",
+            "filled_quantity": "0.1613304383482451953778829414"
+          },
+          {
+            "session": "2025-10-10",
+            "event_type": "STOP_EXECUTION",
+            "action": "EXIT",
+            "status": "EXECUTED",
+            "reason_codes": [
+              "STOP_TOUCHED",
+              "STOP_FILL_AT_STOP_PRICE",
+              "STOP_EXECUTION_COSTS_APPLIED",
+              "STOP_LOSS_EXCEEDED_PLANNED_RISK",
+              "STOP_EXECUTION_FILLED"
+            ],
+            "reference_price": "107623.70",
+            "average_fill_price": "107569.8881500",
+            "filled_quantity": "0.1613304383482451953778829414"
+          }
+        ],
+        "trades": [
+          {
+            "opened_session": "2025-10-07",
+            "closed_session": "2025-10-10",
+            "closed": true,
+            "initial_quantity": "0.1613304383482451953778829414",
+            "initial_entry_price": "122561.25000",
+            "average_entry_price": "122561.2500000000000000000000",
+            "initial_stop_price": "107623.70",
+            "initial_risk": "2409.881489348830018216895331",
+            "entry_notional": "19772.86018700886645200755565",
+            "exit_notional": "17354.29720831120641557376499",
+            "gross_pnl": "-2418.56297869766003643379066",
+            "fees": "37.12715739532007441557376499",
+            "funding": "0",
+            "net_pnl": "-2455.690136092980110849364425",
+            "r_multiple": "-1.019008671981014290134270122",
+            "add_count": 0,
+            "trim_count": 0,
+            "exit_reason": "STRUCTURAL_STOP"
+          }
+        ]
+      },
+      "bar_count": 43,
+      "bars_digest": "sha256:14ec86ab1dc02e03608c3e803bb6ac26f0770cb6aeab5f3832c12163f8fb81ac",
+      "bars": [
+        {
+          "t": "2025-09-05",
+          "o": "110714.48",
+          "h": "113390",
+          "l": "110202.36",
+          "c": "110670.02",
+          "v": "7218.59124481"
+        },
+        {
+          "t": "2025-09-06",
+          "o": "110670.02",
+          "h": "111317.65",
+          "l": "109993",
+          "c": "110212.6",
+          "v": "1621.65017738"
+        },
+        {
+          "t": "2025-09-07",
+          "o": "110214.21",
+          "h": "111600",
+          "l": "110200.01",
+          "c": "111129.61",
+          "v": "1646.11764246"
+        },
+        {
+          "t": "2025-09-08",
+          "o": "111120.38",
+          "h": "112940.84",
+          "l": "110600",
+          "c": "112072.57",
+          "v": "5158.43294831"
+        },
+        {
+          "t": "2025-09-09",
+          "o": "112072.57",
+          "h": "113292.96",
+          "l": "110765.72",
+          "c": "111549.32",
+          "v": "5158.45733241"
+        },
+        {
+          "t": "2025-09-10",
+          "o": "111546.61",
+          "h": "114362.1",
+          "l": "110919.55",
+          "c": "113983.97",
+          "v": "7249.99346721"
+        },
+        {
+          "t": "2025-09-11",
+          "o": "113983.98",
+          "h": "115554.53",
+          "l": "113433.92",
+          "c": "115540",
+          "v": "5575.36074070"
+        },
+        {
+          "t": "2025-09-12",
+          "o": "115540.01",
+          "h": "116833.25",
+          "l": "114774.19",
+          "c": "116106.03",
+          "v": "6493.57632751"
+        },
+        {
+          "t": "2025-09-13",
+          "o": "116106.03",
+          "h": "116378.04",
+          "l": "115177.53",
+          "c": "115968.35",
+          "v": "2173.49651785"
+        },
+        {
+          "t": "2025-09-14",
+          "o": "115968.33",
+          "h": "116226.61",
+          "l": "115166",
+          "c": "115314.13",
+          "v": "1967.88683794"
+        },
+        {
+          "t": "2025-09-15",
+          "o": "115314.12",
+          "h": "116802",
+          "l": "114395.84",
+          "c": "115381.08",
+          "v": "6142.67859527"
+        },
+        {
+          "t": "2025-09-16",
+          "o": "115381.07",
+          "h": "117000",
+          "l": "114750",
+          "c": "116832.56",
+          "v": "6012.58313417"
+        },
+        {
+          "t": "2025-09-17",
+          "o": "116832.56",
+          "h": "117327.24",
+          "l": "114724.57",
+          "c": "116484.4",
+          "v": "7151.30033814"
+        },
+        {
+          "t": "2025-09-18",
+          "o": "116484.4",
+          "h": "117998.17",
+          "l": "116125.08",
+          "c": "117117.99",
+          "v": "7140.41942024"
+        },
+        {
+          "t": "2025-09-19",
+          "o": "117117.99",
+          "h": "117516.36",
+          "l": "115132.71",
+          "c": "115690.55",
+          "v": "5874.11552075"
+        },
+        {
+          "t": "2025-09-20",
+          "o": "115690.55",
+          "h": "116194.63",
+          "l": "115463.22",
+          "c": "115752.4",
+          "v": "2830.85025420"
+        },
+        {
+          "t": "2025-09-21",
+          "o": "115752.9",
+          "h": "115900.02",
+          "l": "115237.16",
+          "c": "115282.27",
+          "v": "2071.01892785"
+        },
+        {
+          "t": "2025-09-22",
+          "o": "115282.26",
+          "h": "115441.37",
+          "l": "111761.22",
+          "c": "112736.59",
+          "v": "8494.41958744"
+        },
+        {
+          "t": "2025-09-23",
+          "o": "112736.59",
+          "h": "113357",
+          "l": "111502.08",
+          "c": "112017.21",
+          "v": "4512.04618772"
+        },
+        {
+          "t": "2025-09-24",
+          "o": "112017.21",
+          "h": "113999.98",
+          "l": "111066.07",
+          "c": "113348.17",
+          "v": "4932.88303511"
+        },
+        {
+          "t": "2025-09-25",
+          "o": "113348.16",
+          "h": "113561.35",
+          "l": "108623.7",
+          "c": "109035.72",
+          "v": "9197.26639402"
+        },
+        {
+          "t": "2025-09-26",
+          "o": "109036",
+          "h": "110369.99",
+          "l": "108645.02",
+          "c": "109697.29",
+          "v": "6826.16968974"
+        },
+        {
+          "t": "2025-09-27",
+          "o": "109697.29",
+          "h": "109815.08",
+          "l": "109116",
+          "c": "109681.16",
+          "v": "1950.48703402"
+        },
+        {
+          "t": "2025-09-28",
+          "o": "109681.15",
+          "h": "112385.84",
+          "l": "109230.98",
+          "c": "112197.67",
+          "v": "2397.09714427"
+        },
+        {
+          "t": "2025-09-29",
+          "o": "112197.66",
+          "h": "114490",
+          "l": "111582.65",
+          "c": "114365.07",
+          "v": "5553.41779958"
+        },
+        {
+          "t": "2025-09-30",
+          "o": "114361.66",
+          "h": "114850",
+          "l": "112695.85",
+          "c": "114067.71",
+          "v": "5044.09158186"
+        },
+        {
+          "t": "2025-10-01",
+          "o": "114067.71",
+          "h": "118718.8",
+          "l": "113975.5",
+          "c": "118659.97",
+          "v": "9687.12288810"
+        },
+        {
+          "t": "2025-10-02",
+          "o": "118662.72",
+          "h": "121111",
+          "l": "118336.01",
+          "c": "120621.32",
+          "v": "8816.90252269"
+        },
+        {
+          "t": "2025-10-03",
+          "o": "120621.33",
+          "h": "123996.81",
+          "l": "119327.83",
+          "c": "122318.4",
+          "v": "11835.08733617"
+        },
+        {
+          "t": "2025-10-04",
+          "o": "122318.39",
+          "h": "122896",
+          "l": "121572.64",
+          "c": "122458.56",
+          "v": "2705.28818527"
+        },
+        {
+          "t": "2025-10-05",
+          "o": "122458.55",
+          "h": "125750",
+          "l": "122195.28",
+          "c": "123520.79",
+          "v": "5820.77013157"
+        },
+        {
+          "t": "2025-10-06",
+          "o": "123520.8",
+          "h": "126296",
+          "l": "123115.77",
+          "c": "124720.09",
+          "v": "9135.30864520"
+        },
+        {
+          "t": "2025-10-07",
+          "o": "124723.57",
+          "h": "125226.34",
+          "l": "120636",
+          "c": "121393.95",
+          "v": "8699.84065383"
+        },
+        {
+          "t": "2025-10-08",
+          "o": "121393.96",
+          "h": "124254.31",
+          "l": "121090.06",
+          "c": "123343.25",
+          "v": "6727.94848453"
+        },
+        {
+          "t": "2025-10-09",
+          "o": "123343.24",
+          "h": "123822.08",
+          "l": "119713.65",
+          "c": "121714.51",
+          "v": "6980.15210285"
+        },
+        {
+          "t": "2025-10-10",
+          "o": "121714.51",
+          "h": "122600",
+          "l": "107000",
+          "c": "112980.28",
+          "v": "22432.34375511"
+        },
+        {
+          "t": "2025-10-11",
+          "o": "112976.01",
+          "h": "113439.99",
+          "l": "109683.96",
+          "c": "110768.89",
+          "v": "10041.88198008"
+        },
+        {
+          "t": "2025-10-12",
+          "o": "110768.9",
+          "h": "115847",
+          "l": "109687.46",
+          "c": "115067.98",
+          "v": "9699.03564495"
+        },
+        {
+          "t": "2025-10-13",
+          "o": "115067.96",
+          "h": "116077.51",
+          "l": "113700.27",
+          "c": "115274.03",
+          "v": "8147.76104518"
+        },
+        {
+          "t": "2025-10-14",
+          "o": "115274.03",
+          "h": "115514.91",
+          "l": "109945.86",
+          "c": "113068",
+          "v": "11955.35437582"
+        },
+        {
+          "t": "2025-10-15",
+          "o": "113072.18",
+          "h": "113671.99",
+          "l": "110185.87",
+          "c": "110804.12",
+          "v": "7440.03782479"
+        },
+        {
+          "t": "2025-10-16",
+          "o": "110804.11",
+          "h": "112021.07",
+          "l": "107464.53",
+          "c": "108198",
+          "v": "14792.78754529"
+        },
+        {
+          "t": "2025-10-17",
+          "o": "108197.99",
+          "h": "109269.97",
+          "l": "103516.75",
+          "c": "106463.3",
+          "v": "13824.34463474"
+        }
+      ],
+      "source_sensitivity": {
+        "session": "2025-10-10",
+        "venue_lows": {
+          "coinbase": "107000",
+          "bitstamp": "109683",
+          "bitfinex": "103310"
+        },
+        "policy_reference": "PRICE_SOURCE_POLICY_V1 empirical decision",
+        "note": "The scenario's stop at 107,623.70 lies between the Bitstamp session low and the pinned Coinbase session low, so the same reviewed plan is stopped out on this source and on Bitfinex and is not stopped out on Bitstamp. BTC-019 remains in progress and no canonical reference is approved, so this scenario's expectation is explicitly source scoped."
+      }
+    }
+  ]
+}
