@@ -22,9 +22,9 @@
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** BTC-189, first by V2 execution order
 - **Other ready tickets:** BTC-192
-- **Latest verified test baseline:** 2681 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `07d636780ad485ea6574d45478f35d7d42fae46d`
-  (`feat: implement BTC-187 monte carlo portfolio risk analysis`)
+- **Latest verified test baseline:** 2684 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `849c02d2946d65276cd18966eb68f39d266194bc`
+  (`fix: bound BTC-187 resampling indices`)
 
 ## Price-Reference State
 

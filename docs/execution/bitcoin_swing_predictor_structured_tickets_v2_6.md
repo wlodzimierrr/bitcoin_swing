@@ -5467,6 +5467,14 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     the strategy actually uses; the module has no promotion or mutation path
     and records `RESEARCH_ONLY_NOT_PRODUCTION` with BTC-193 as the required
     promotion boundary.
+  - **Independent review:** fixed a P2 boundary defect in the public raw-index
+    sampler. Bounds above the signed `int64` output domain had been accepted,
+    allowing returned indices to wrap negative or raise an implementation
+    overflow instead of satisfying `[0, high)`. The helper now fails closed
+    above `2**63`, and frozen uniform/permutation golden vectors protect the
+    persisted replay stream across dependency upgrades. Focused review tests
+    pass with 104 tests; dependency regressions pass with 185 tests; the full
+    Python 3.12 suite passes with 2684 tests.
 
 #### BTC-188 Multi-dimensional parameter sensitivity surfaces
 - **Description:**
