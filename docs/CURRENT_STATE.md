@@ -27,8 +27,8 @@
   BTC-224
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 3414 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `9b5bef2b0c08b0e167b4e4e76278fc13581942bc`
-  (`test: implement BTC-224 golden historical scenarios`)
+- **Last relevant implementation/review commit:** `4fac6f16a873e8437a92456cc1a1893848c84a10`
+  (`fix: BTC-221 review fixes for two look-ahead defects`)
 
 ## Price-Reference State
 
