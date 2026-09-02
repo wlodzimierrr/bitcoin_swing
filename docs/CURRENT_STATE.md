@@ -15,15 +15,15 @@
 - **Current phase:** Phase 1, EPIC V reporting and monitoring; EPIC U manual
   trade tracking is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-210, daily system status report
-- **Last completed ticket:** BTC-203, Model vs Human comparison
+- **Current implementation frontier:** BTC-211, weekly strategy report
+- **Last completed ticket:** BTC-210, daily system status report
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-210, first by V2 execution order
-- **Other ready tickets:** None
-- **Latest verified test baseline:** 2887 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `e425afb2c819eea38fc341d9b92cfc2ee5b3c2ac`
-  (`feat: implement BTC-203 model human comparison`)
+- **Next dependency-satisfied ticket:** BTC-211, first by V2 execution order
+- **Other ready tickets:** BTC-212
+- **Latest verified test baseline:** 2900 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `93a2082b67e78d109fab49cc22710a5a9660ecb6`
+  (`fix: enforce BTC-210 lifecycle cutoff`)
 
 ## Price-Reference State
 

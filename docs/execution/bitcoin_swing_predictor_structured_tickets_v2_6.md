@@ -6278,7 +6278,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - active setup
   - current recommendation
   - paper portfolio status
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6288,6 +6288,47 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/reporting/daily_status.py` with versioned
+    `DAILY_SYSTEM_STATUS_REPORT_V1` plain-text output. The report is a
+    presentation boundary: regime, setup, and action come directly from the
+    validated BTC-170 advisory; the report does not create a second decision
+    path.
+  - Latest-data time is an explicit UTC point-in-time input and must not be
+    later than the recommendation evaluation time. Its factual source ID is
+    retained without implying that the source is canonical, because BTC-019's
+    production reference remains unresolved and V1 fallback splicing is
+    prohibited.
+  - OHLCV and derivatives quality reports are normalized into a stable,
+    component-sorted `PASS`/`FAIL` summary. Failed component reason codes are
+    retained and must agree with the advisory's persisted
+    `DATA_QUALITY_FAIL` evidence; a failed report cannot coexist with an
+    `ENTER` or `ADD` action.
+  - Paper status composes the BTC-160 account and zero or more BTC-150 current
+    lifecycle snapshots into explicit `ACTIVE_FLAT`, `ACTIVE_MONITORING`,
+    `ACTIVE_OPEN`, or `ARCHIVED` states. Existing-position actions require an
+    open lifecycle, and account/lifecycle configuration, symbol, direction,
+    and accepted or rejected transition times are checked against the current
+    advisory.
+  - The complete BTC-170 advisory, BTC-172 canonical recommendation JSON,
+    account, lifecycle records, data-source provenance, component quality
+    codes, strategy/config/parameter identity, output reason codes, and body
+    are retained by `as_record()`. `daily_system_status_from_record()` restores
+    every upstream owner and rejects source, summary, body, JSON, metadata, or
+    ordering drift.
+  - Input mappings and lifecycle sequences are canonically sorted, source
+    identifiers are single-line validated, and missing optional portfolio
+    values display as `N/A`; no runtime clock, random ID, locale-dependent
+    formatting, or silent numerical zero-fill is introduced.
+  - Thirteen focused tests cover all six requested report fields, clean and
+    failed quality, monitoring and open portfolio states, canonical ordering,
+    complete provenance/config/reason persistence, exact replay, tamper
+    rejection, owner identity, point-in-time checks, lifecycle consistency,
+    and injection guards. Focused dependency regressions pass with 298 tests,
+    and the complete Python 3.12 suite passes with 2900 tests while treating
+    `RuntimeWarning` as an error. Implementation commits:
+    `3a878aa6d2f0b12c294cb9eed194905a2819d5aa` and
+    `93a2082b67e78d109fab49cc22710a5a9660ecb6`.
 
 #### BTC-211 Create weekly strategy report
 - **Description:**
