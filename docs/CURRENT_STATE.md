@@ -11,20 +11,20 @@
 
 ## Snapshot
 
-- **Last updated:** 2026-09-01
-- **Current phase:** Phase 1, EPIC T research and learning loop; BTC-191 has
-  unblocked BTC-187, so EPIC S2 finishes before the rest of EPIC T
+- **Last updated:** 2026-09-02
+- **Current phase:** Phase 1, EPIC S2 extended quant research; BTC-189 is the
+  last EPIC S2 ticket before the rest of EPIC T
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-187, Monte Carlo portfolio risk
-  analysis
-- **Last completed ticket:** BTC-191, paper-trade outcome dataset
+- **Current implementation frontier:** BTC-189, statistical predictor
+  diagnostics
+- **Last completed ticket:** BTC-187, Monte Carlo portfolio risk analysis
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-187, first by V2 execution order
-- **Other ready tickets:** BTC-189; BTC-192 is now dependency-satisfied
-- **Latest verified test baseline:** 2615 passed with Python 3.12 on 2026-09-01
-- **Last relevant implementation/review commit:** `b4a8183acbc05bb4f81880a0b72d58b27192912f`
-  (`feat: implement BTC-191 paper-trade outcome dataset`)
+- **Next dependency-satisfied ticket:** BTC-189, first by V2 execution order
+- **Other ready tickets:** BTC-192
+- **Latest verified test baseline:** 2681 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `07d636780ad485ea6574d45478f35d7d42fae46d`
+  (`feat: implement BTC-187 monte carlo portfolio risk analysis`)
 
 ## Price-Reference State
 

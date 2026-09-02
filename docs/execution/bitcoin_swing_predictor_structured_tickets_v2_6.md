@@ -5384,7 +5384,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   Probability DD > 15%
   Risk-of-ruin style tail metrics
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Supports configurable simulation count and deterministic random seeds
@@ -5397,6 +5397,76 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/monte_carlo_risk.py` with policy version
+    `MONTE_CARLO_PORTFOLIO_RISK_V1`. `monte_carlo_risk_spec()` freezes one
+    research question and binds it to the digest of the observed universe;
+    `run_monte_carlo_risk_analysis()` is the only way to produce evidence and
+    `restore_monte_carlo_risk_report()` the only replay path, which rebuilds
+    the whole seeded analysis and compares it to the record rather than
+    trusting persisted numbers.
+  - The resampled universe is the *observed* record, never a fitted
+    distribution. `trade_outcome_samples_from_dataset()` reads BTC-191 rows and
+    `trade_outcome_samples_from_backtest()` reads a BTC-180 run's trades, both
+    under `CLOSED_TRADE_OUTCOME_SAMPLES_V1`. Numbers are not recomputed: the R
+    multiple stays the BTC-165 `INITIAL_PLANNED_RISK_V1` value. BTC-180 allows
+    a run to end holding a position, so that trade is carried as an excluded
+    sample citing `TRADE_ACCOUNTING_POSITION_STILL_OPEN` rather than resampled
+    as though it had finished or discarded along with the run's closed trades.
+  - Two bases, never mixed inside one analysis. Under `r_multiple` a
+    schedule's declared fraction is capital *risked at the stop*
+    (`RISK_FRACTION_OF_NAV_AT_STOP_V1`), matching Rulebook 17 / BTC-144, so NAV
+    moves by `f * R`. Under `net_return_fraction` -- net P&L over entry
+    notional, `NET_PNL_OVER_ENTRY_NOTIONAL_V1`, using the `entry_notional`
+    BTC-191 carries for exactly this -- the same fraction means capital
+    *deployed* (`NOTIONAL_FRACTION_OF_NAV_V1`). The two answer different sizing
+    questions and are recorded as different `analysis_id`s.
+  - `FIXED_FRACTIONAL_COMPOUNDING_V1` walks each path trade by trade;
+    `PATH_PEAK_TO_TROUGH_NAV_DRAWDOWN_V1` measures the worst decline along the
+    realized path (not across paths); `RUIN_STOPS_THE_PATH_V1` ends a path at
+    the declared ruin NAV, so `trades_taken` is itself tail evidence.
+    `PATH_TOTAL_RETURN_OVER_MAX_DRAWDOWN_V1` divides path total return by that
+    drawdown and is deliberately unannualized -- a resampled trade sequence
+    declares no calendar. A path that never drew down reports Calmar as
+    `UNDEFINED_NO_DRAWDOWN` rather than infinite, and those paths are counted.
+  - Distributions, not averages. Every metric reports
+    `NEAREST_RANK_PERCENTILE_V1` percentiles over a configurable grid (default
+    1/5/10/25/50/75/90/95/99) beside mean, minimum, and maximum, so a reported
+    percentile is an observed path. Alongside them each schedule reports the
+    ticket's exceedance probabilities (default drawdown worse than 10% and 15%,
+    configurable), probability of loss, and probability of ruin.
+  - `COMMON_RESAMPLED_PATHS_ACROSS_SCHEDULES_V1`: the index paths are drawn
+    once and every compared schedule is walked over the identical paths, so a
+    difference between two budgets is the budget and not sampling noise. That
+    also makes the comparison monotone -- on a shared path a larger fraction
+    can only deepen the drawdown -- which is asserted as an invariant.
+  - Determinism is owned by `btc_predictor.quant.simulation`, which gained
+    `uniform_index_samples()` (`PCG64_RAW_REJECTION_UNIFORM_INDEX_V1`) and
+    `permutation_index_samples()` (`PCG64_RAW_FISHER_YATES_PERMUTATION_V1`).
+    Both read the raw 64-bit `PCG64` words with modulo rejection instead of a
+    `Generator` bounded-integer convenience method: the bit-generator stream is
+    stable across NumPy versions while the algorithm layered on it is not
+    guaranteed to be, and persisted seeded evidence must replay on a later
+    NumPy. Every derived statistic is computed in an explicit 60-digit decimal
+    context and quantized to `1E-12`, so replay does not depend on the caller's
+    ambient decimal context. Schedules are canonically ordered by NAV fraction,
+    so one research question keeps one `analysis_id` however it was declared.
+  - Nothing is zero-filled. A trade whose basis outcome BTC-165 could not
+    measure is excluded by name carrying the BTC-165 reason code that explains
+    it, and a zero entry notional makes the net return
+    `MONTE_CARLO_NET_RETURN_UNDEFINED_ZERO_ENTRY_NOTIONAL` rather than zero.
+    The report accounts for every sample as included or excluded, and declares
+    `MONTE_CARLO_SMALL_SAMPLE_UNIVERSE` below 30 usable trades because
+    resampling cannot manufacture evidence the observed record lacks. IID
+    bootstrap declares `MONTE_CARLO_SERIAL_DEPENDENCE_NOT_PRESERVED`;
+    permutation declares `MONTE_CARLO_TRADE_MULTISET_PRESERVED`.
+  - The layer challenges a risk budget and cannot change one.
+    `config_risk_per_trade_schedules()` reads the candidates the versioned
+    strategy config already declares -- the BTC-144 conviction bands and the
+    configured maximum risk at stop -- so a comparison challenges the budgets
+    the strategy actually uses; the module has no promotion or mutation path
+    and records `RESEARCH_ONLY_NOT_PRODUCTION` with BTC-193 as the required
+    promotion boundary.
 
 #### BTC-188 Multi-dimensional parameter sensitivity surfaces
 - **Description:**
