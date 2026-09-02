@@ -1076,4 +1076,3 @@ def _optional_finite_decimal(value: Any, name: str) -> None:
         return
     if not isinstance(value, Decimal) or not value.is_finite():
         raise StrategyComparisonError(f"{name} must be a finite Decimal or None")
-
