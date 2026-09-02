@@ -6621,7 +6621,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - future confirmed pivots unavailable
   - rolling normalization past-only
   - AVWAP anchors point-in-time valid
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -6632,6 +6632,83 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Priority:** P0
 - **Complexity:** L
 - **Risk:** High.
+- **Implementation Notes:**
+  - The required independent xHigh review is still outstanding; closure is
+    not final until it passes.
+  - Added the dedicated cross-cutting suite `test_look_ahead_bias.py` for the
+    five critical areas. The owner suites already prove that each engine
+    filters its own inputs, so this ticket pins the stronger replay property
+    those filters exist for under Rulebook v1.2 section 3A.2: an as-of result
+    computed from the full universe is identical to the same result computed
+    from a universe physically truncated to what was available, and appending
+    future observations never rewrites an earlier decision. Both halves are
+    asserted, because truncation equivalence alone cannot see an engine that
+    ignores its cutoff, and append invariance alone is satisfied vacuously by
+    an engine that ignores its inputs.
+  - Future bars: canonical market bars at a cutoff carry that cutoff as their
+    availability, expose only sessions closed and ingested by it, never emit a
+    partially observed bucket (a month is withheld until its final hour is
+    ingested, and an hour published before it closes cannot complete a day or
+    a week), grow strictly as a prefix across decisions, and are unchanged
+    both by appended future hours and by truncating the hourly universe.
+    Realized volatility repeats the same three-way comparison.
+  - Future ETF flows: the 5-day, 20-day, and acceleration records at a
+    decision equal those built from a universe truncated to
+    `available_at <= as_of`; unpublished observation dates never move an
+    earlier decision; a restated revision moves only decisions taken after it
+    is published; a window taken before first publication is reported
+    `ETF_FLOW_INPUT_MISSING` with `None` sums rather than zero; and the
+    selected observation date never runs past the latest available row.
+  - Future confirmed pivots: the expected weekly and monthly swings are pinned
+    with their level timestamps, prices, and detection times; a pivot is
+    unavailable until its confirmation window closes; a pivot whose confirming
+    bar is backfilled late waits for that ingestion and records the ingestion
+    time as `detected_at`; confirmed sets grow monotonically and are never
+    restated; and every emitted level satisfies
+    `level_timestamp < detected_at <= as_of`.
+  - Rolling normalization: prior-window kernels exclude the current
+    observation (a value far outside its own prior window reaches the
+    percentile and normalization ceiling and a z-score above `sqrt(window)`),
+    a degenerate prior window is missing rather than zero, no kernel —
+    prior-window or inclusive — lets a later observation change an earlier
+    output, and every streaming prefix reproduces the batch result exactly.
+    The Decimal domain wrappers keep warm-up as `None`, and
+    `volatility_percentile` ranks against strictly prior history and is
+    unchanged by a future result.
+  - AVWAP anchors: an anchor inherits its confirmed pivot's detection time and
+    source provenance; an anchor backdated before its source is rejected; the
+    VWAP is incomplete with `ANCHORED_VWAP_ANCHOR_NOT_DETECTED` and a `None`
+    value before detection; accumulation covers exactly the bars closed and
+    ingested by the decision, excluding a session published while still
+    running; coverage grows monotonically; and appended future bars change
+    nothing.
+  - A cross-cutting replay evaluates all five owners at six decision
+    timestamps spanning both weekly pivot confirmations and asserts that the
+    full universe, the future-polluted universe, and the truncated universe
+    produce identical records. A companion test asserts the same records for
+    reversed input ordering.
+  - Suite value was measured rather than assumed: twelve single-line
+    look-ahead defects were injected into the owners and the suite re-run.
+    Nine are caught. The three that are not are equivalent mutants on a
+    contiguous canonical series — `levels/swing.py` gates emission both by
+    filtering `_available_bars` and by its `detected_at > signal_time` check,
+    and for a gap-free series with monotone ingestion the filter removes only
+    a suffix, so each guard alone reproduces the other's admitted candidate
+    set. The observable contract is still pinned: mutating `_swing_detected_at`
+    to time a level from its close and ignore late ingestion is caught.
+  - Two observations are recorded for the independent review rather than
+    silently resolved, since neither is look-ahead and neither is reachable as
+    a defect through the canonical pipeline. First,
+    `features/volatility.py::_available_daily_bars` admits a daily bar whose
+    session has not closed when its `ingested_at` is early, unlike the swing
+    and AVWAP readers, which require the session to have closed;
+    `build_canonical_market_bars` never emits a partial bucket, so no
+    behaviour was changed. Second, `levels/swing.py` treats the available bars
+    as contiguous, so a bar backfilled into the middle of a series shifts the
+    confirmation window onto non-adjacent neighbours.
+  - Added 35 focused cases. The full Python 3.12.14 suite passes with 3193
+    tests, also passing with `RuntimeWarning` treated as an error; compileall
+    passes.
 
 #### BTC-222 Risk invariant tests
 - **Description:**
