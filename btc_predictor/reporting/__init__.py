@@ -57,6 +57,18 @@ from btc_predictor.reporting.daily_status import (
     daily_system_status_from_record,
     render_daily_system_status,
 )
+from btc_predictor.reporting.weekly_strategy import (
+    WEEKLY_STRATEGY_REPORT_FEATURE_ID,
+    WEEKLY_STRATEGY_REPORT_LOOKBACK,
+    WEEKLY_STRATEGY_REPORT_MEDIA_TYPE,
+    WEEKLY_STRATEGY_REPORT_REASON_CODES,
+    WEEKLY_STRATEGY_REPORT_VERSION,
+    ScoreMovement,
+    StrategyStateChange,
+    WeeklyStrategyReportResult,
+    render_weekly_strategy_report,
+    weekly_strategy_report_from_record,
+)
 
 __all__ = [
     "RECOMMENDATION_RENDERER_FEATURE_ID",
@@ -108,6 +120,16 @@ __all__ = [
     "PaperPortfolioStatus",
     "daily_system_status_from_record",
     "render_daily_system_status",
+    "WEEKLY_STRATEGY_REPORT_FEATURE_ID",
+    "WEEKLY_STRATEGY_REPORT_LOOKBACK",
+    "WEEKLY_STRATEGY_REPORT_MEDIA_TYPE",
+    "WEEKLY_STRATEGY_REPORT_REASON_CODES",
+    "WEEKLY_STRATEGY_REPORT_VERSION",
+    "ScoreMovement",
+    "StrategyStateChange",
+    "WeeklyStrategyReportResult",
+    "render_weekly_strategy_report",
+    "weekly_strategy_report_from_record",
     "DRAWDOWN_AVAILABLE",
     "DRAWDOWN_MISSING_RETURNS",
     "DRAWDOWN_NO_CLOSED_TRADES",
