@@ -1161,6 +1161,21 @@ def _distribution(
     )
 
 
+def nearest_rank(percentile: Any, count: int) -> int:
+    """Public ``NEAREST_RANK_PERCENTILE_V1`` rank for an ordered sample.
+
+    BTC-189 reports bootstrap percentile intervals, so the percentile
+    convention stays owned here rather than restated there.
+    """
+
+    resolved = _decimal(percentile, "percentile")
+    if resolved <= 0 or resolved > 100:
+        raise MonteCarloRiskError("percentile must fall in (0, 100]")
+    if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+        raise MonteCarloRiskError("count must be a positive integer")
+    return _nearest_rank(resolved, count)
+
+
 def _nearest_rank(percentile: Decimal, count: int) -> int:
     """Return the 1-based nearest rank, so a percentile is an observed value."""
 

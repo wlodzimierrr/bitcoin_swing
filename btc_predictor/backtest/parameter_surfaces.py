@@ -687,6 +687,23 @@ def _cell_metrics(validation: WalkForwardValidation) -> SurfaceCellMetrics:
     )
 
 
+def walk_forward_max_drawdown(
+    validation: WalkForwardValidation,
+) -> tuple[Decimal | None, str]:
+    """Public ``WORST_FOLD_PEAK_TO_TROUGH_NAV_DRAWDOWN_V1`` measurement.
+
+    BTC-189 ablation research reports the drawdown change between comparable
+    walk-forward runs, so the formula stays owned here rather than restated
+    there.  The decimal context matches the one the surface cells use.
+    """
+
+    if not isinstance(validation, WalkForwardValidation):
+        raise TypeError("validation must be a WalkForwardValidation")
+    validation.as_record()
+    with localcontext(Context(prec=SURFACE_DECIMAL_PRECISION)):
+        return _max_drawdown(validation)
+
+
 def _max_drawdown(
     validation: WalkForwardValidation,
 ) -> tuple[Decimal | None, str]:

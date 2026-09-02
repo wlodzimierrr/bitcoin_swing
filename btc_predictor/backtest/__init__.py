@@ -79,6 +79,7 @@ from btc_predictor.backtest.parameter_surfaces import (
     run_parameter_surface,
     surface_axis,
     surface_parameter_sets,
+    walk_forward_max_drawdown,
 )
 from btc_predictor.backtest.regime_performance import (
     BEAR_BUCKET,
@@ -374,6 +375,7 @@ __all__ = [
     "setup_performance_report_from_breakdown",
     "surface_axis",
     "surface_parameter_sets",
+    "walk_forward_max_drawdown",
     "threshold_config_metadata",
     "threshold_parameter_paths",
     "threshold_parameter_sets",
