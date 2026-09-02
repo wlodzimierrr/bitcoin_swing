@@ -5594,7 +5594,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   setup-conditioned stability
   MFE / MAE relationships
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Uses point-in-time Feature Matrix rows
@@ -5611,6 +5611,104 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** L
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/predictor_diagnostics.py` with feature
+    `PREDICTOR_DIAGNOSTICS` and policy version
+    `STATISTICAL_PREDICTOR_DIAGNOSTICS_V1`, and
+    `btc_predictor/research/component_ablation.py` with
+    `SINGLE_COMPONENT_ABLATION_V1`. The two halves of the ticket ask different
+    questions of different evidence: the first reads BTC-048 rows, the second
+    re-runs BTC-182 validations, so they are separate versioned reports rather
+    than one report with two unrelated failure modes.
+  - Predictors are the BTC-048 point-in-time feature columns and outcomes are
+    the separately versioned forward targets. `FORWARD_TARGETS_RETROSPECTIVE_ONLY_V1`
+    is structural, not advisory: a feature matrix whose columns include a
+    target name is rejected, nothing here is fitted, and no target value can
+    reach a predictor value.
+  - Every estimate reports its own sample size and uncertainty. Pearson and
+    Spearman ICs come with a seeded percentile bootstrap
+    (`SEEDED_IID_PERCENTILE_BOOTSTRAP_V1`) drawn from the BTC-049
+    `uniform_index_samples` stream and cut with BTC-187's
+    `NEAREST_RANK_PERCENTILE_V1`, which was exposed as `nearest_rank()` rather
+    than restated. Each estimate's stream is derived from the spec and that
+    estimate's own identity, so an interval replays on its own regardless of
+    how many other segments were evaluated first.
+  - Missing values are complete-case excluded per pair and never zero-filled.
+    A sample below `minimum_sample_size` reports `INSUFFICIENT_SAMPLES` with no
+    coefficient, no interval, and zero resample counts; a constant predictor or
+    target reports which side was constant. Correlation matrices use one shared
+    complete-case mask across all components, because a pairwise-deleted matrix
+    can be non-positive-semidefinite and would make the eigenvalue diagnostic
+    meaningless.
+  - `EQUAL_COUNT_SORTED_POSITION_BUCKETS_V1` cuts buckets by sorted position,
+    so counts differ by at most one. Tied predictor values can therefore
+    straddle a boundary; the boundary values are persisted and the straddle is
+    declared in `tied_bucket_boundaries` rather than hidden. Buckets carry
+    conditional expectancy, and `BUCKET_MEAN_RANK_CORRELATION_MONOTONICITY_V1`
+    turns them into the conviction-monotonicity answer: the rank correlation of
+    bucket ordinal against bucket mean, plus the step counts, so "mostly
+    increasing" is distinguishable from monotone.
+  - A specification must declare both a raw feature and a composite score, and
+    must name the conviction predictor as one of its composite scores. The
+    comparison and monotonicity reason codes are therefore always true of the
+    report that carries them rather than aspirational.
+  - Empirical correlation and mechanical nesting are reported side by side and
+    never merged. The Pearson and rank matrices measure co-movement and each
+    carries BTC-129's `MECHANICAL_VS_EMPIRICAL_NOTE`; the structural question
+    is answered by `effective_weight_report()` embedded verbatim, so the v1.1
+    nested and v1.2 de-nested decompositions come from the scoring-contract
+    owner rather than being recomputed here.
+  - `CORRELATION_EIGENVALUE_ENTROPY_EFFECTIVE_RANK_V1` reports the component
+    correlation matrix's eigenvalues, the largest eigenvalue share, and the
+    effective rank as the exponential of the eigenvalue-share entropy, so `k`
+    distinct components score `k` and one repeated direction scores `1`.
+  - MFE/MAE are related on jointly complete rows
+    (`PAIRED_FORWARD_EXCURSION_BUCKET_RELATIONSHIP_V1`), so a bucket's upside
+    and downside are the same trades rather than two different samples.
+  - Every statistic is emitted globally and for each observed regime and setup,
+    and `SEGMENT_WEIGHTED_RANK_IC_STABILITY_V1` summarizes cross-segment rank-IC
+    dispersion and sign consistency. Rank IC is the stability statistic because
+    it is least sensitive to one extreme outcome inside a thin segment.
+  - Ablation removes exactly one direct component of a declared BTC-129
+    composite and renormalizes the survivors proportionally
+    (`PROPORTIONAL_RENORMALIZATION_OF_REMAINING_COMPONENTS_V1`), so every
+    surviving component keeps its relative importance and no unrelated rule is
+    refitted. The declared scoring architecture selects the BTC-129 graph and
+    contracts version, so a v1.1 benchmark study is audited against v1.1.
+    Weights are read from the owner and re-checked against it; they are never
+    restated here.
+  - Like BTC-185 and BTC-188, ablation does not rescore or mutate config: a
+    caller receives a versioned parameter-set identity per variant and returns
+    that variant's complete BTC-182 validation. Variants that differ in
+    anything but `parameter_set_id` are rejected, and
+    `comparable_run_signature()` must agree across every run before anything is
+    compared.
+  - Outcome metrics stay owned by BTC-185's `threshold_sweep_metrics()` and the
+    drawdown by BTC-188, whose `WORST_FOLD_PEAK_TO_TROUGH_NAV_DRAWDOWN_V1`
+    measurement was exposed as `walk_forward_max_drawdown()` instead of being
+    duplicated. Each ablation reports its trade-decision overlap keyed by
+    `FOLD_ENTRY_TIMESTAMP_TRADE_OVERLAP_V1` — fold number and the bar the
+    position opened on, because run-local event IDs are not comparable across
+    runs — and its change in trade count, mean return, expectancy, average R,
+    and drawdown. A change whose baseline or variant value is undefined is
+    declared `BASELINE_UNDEFINED`, `VARIANT_UNDEFINED`, or `BOTH_UNDEFINED`
+    rather than reported as zero, and a study in which nothing traded says so.
+  - Both reports are `RESEARCH_ONLY_NOT_PRODUCTION` with BTC-193 as the
+    promotion boundary and no strategy or configuration mutation path.
+    Persistence is the deterministic `as_record()` contract; restoration
+    rebuilds and rejects edited coefficients, dropped analyses, moved segments,
+    relabelled production status, unknown reason codes, and a substituted
+    effective-weight decomposition.
+  - Added 50 focused tests (31 diagnostics, 19 ablation) covering IC signs and
+    rank/linear separation, seeded interval replay, complete-case exclusion,
+    insufficient and zero-variance samples, bucket partitioning and boundary
+    ties, monotonicity in both directions, raw-versus-composite comparison,
+    regime and setup stability, correlation matrices, factor concentration,
+    excursion pairing, point-in-time revision selection, target separation,
+    proportional renormalization, run comparability, overlap in the identical,
+    partial, and empty cases, undefined metric changes, the v1.1 nesting
+    benchmark, determinism, record round trips, and tamper rejection. The
+    complete Python 3.12 suite passes with 2734 tests.
 
 
 ## EPIC T — Research & Learning Loop
