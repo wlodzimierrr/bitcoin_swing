@@ -6830,7 +6830,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   - trim
   - exit
   - funding and fees
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6840,6 +6840,103 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added the dedicated cross-cutting suite `test_paper_execution.py` for the
+    seven named scenarios. Each already has an owner suite, and every one of
+    those stubs the others - a BTC-161 test invents a lifecycle, a BTC-150 test
+    invents a fill price, a BTC-165 test invents both - so this ticket pins
+    what none of them can see: whether a scenario survives the whole chain.
+    Each scenario is driven through the real BTC-160 account, BTC-161 to
+    BTC-164 executions, the BTC-150 ledger, BTC-165 accounting and BTC-166
+    persistence, and asserted in three parts: the scenario's execution
+    semantics still hold in composition, every owner agrees about the same
+    trade with no figure recomputed on a second convention, and the result is
+    deterministic and replays from its own record.
+  - Missed entry: with no fill there is no notional, so a miss costs the
+    account nothing; the ledger reaches `MISSED` with no tranche, no quantity
+    and no average entry; BTC-165 refuses to account a trade with no fills
+    rather than inventing a zero-quantity one; and BTC-166 persists the missed
+    order and event while reporting `TRADE_NOT_CLOSED`. Rulebook 32 rule 8 is
+    checked at both owners - the execution refuses any bar that is not its one
+    eligible bar, and the terminal ledger refuses a later entry.
+  - Gap through stop: two bars trading equally far below the stop resolve
+    differently on their opens alone, and the gap's extra loss is not absorbed
+    anywhere - it reaches the trade's realized R, which is worse than the
+    touched stop's, itself already worse than -1R once costs are paid. The R
+    denominator BTC-165 uses is the same number BTC-162 planned at the stop. An
+    untouched stop stays `submitted` and changes nothing, unlike a missed
+    entry.
+  - Multiple tranches: every quantity is BTC-155's allocation, never a
+    hand-picked size; each add fills strictly above the running average, so
+    rulebook 32 rule 2 holds at the fill and not only at the decision; the
+    schedule caps the book and the fourth add is refused for free; a
+    gate-blocked add records the allocation it declined while filling nothing;
+    and the stop covers the aggregate quantity with a planned risk equal to the
+    per-tranche sum that BTC-146 independently reports for the same ledger.
+  - Stop move: the execution reads the stop the ledger now carries rather than
+    the entry stop or a caller's restatement; a stop moved mid-bar cannot fill
+    on the bar whose low is already history; a loosening is held and the
+    tighter stop still governs; and a ratchet into profit leaves BTC-146's
+    floored downside at zero while BTC-165's `INITIAL_PLANNED_RISK_V1` keeps 1R
+    the risk actually taken at entry, so a travelling stop cannot inflate R.
+  - Trim: on one tranche the trim's realized P&L is exactly the gross BTC-165
+    attributes to that fill, so a re-based average would break the identity;
+    across tranches the pro-rata reduction leaves the weighted average entry
+    and the tranche prices unchanged; the following stop covers only what
+    remains; a full-size reduction is refused by both owners rather than
+    quietly becoming an exit; and a defensive trim settles the signed loss it
+    locked in, not its magnitude.
+  - Exit: the BTC-158 reason travels from the signal through the execution and
+    the ledger transition into `completed_trades`, keeping the execution's own
+    codes rather than being summarised away; an exit closes everything at both
+    owners; and a closed trade persists orders, events and the completed trade
+    under one provenance triple.
+  - Funding and fees: the non-zero rate comes from the versioned `stress` cost
+    profile rather than an invented number. Every leg pays the configured fee
+    on its own slipped notional, slippage is adverse on all four legs in both
+    directions, a long pays carry and a short receives it, funding is
+    reconciled to the quantity the ledger held at each event, and a trade that
+    is profitable on price but loses after costs raises
+    `TRADE_ACCOUNTING_COSTS_REVERSED_A_GROSS_PROFIT`. The account walked the
+    BTC-180 way - each leg's fee, each signed funding event, then gross P&L
+    once - ends at exactly `starting NAV + net P&L`. The shipped base profile
+    prices funding at a configured zero, and an aggregate figure with no
+    point-in-time evidence is still refused.
+  - A whole-trade test composes entry, a pyramided add, a trim, a ratcheted
+    stop, carried funding and a signalled exit into one lifecycle and
+    reconciles the ledger walk, the source identity of every transition, the
+    accounting, the account and the persisted rows, then replays the ledger
+    from its own event records and reproduces every record from the same
+    inputs.
+  - Suite value was measured rather than assumed: fifteen single-line
+    composition defects were injected into the owners (a stop sized for the
+    entry tranche rather than what the ledger holds, a trim re-basing the
+    average entry, a trim reporting P&L before its fee, an add's notional
+    missing from the entry basis, the gap test reading the low, a miss filling
+    at the zone boundary, the account not accumulating a charged fee, funding
+    signed the wrong way, unstamped lifecycle rows, an exit filling at the bar
+    close, R measured against the closing stop, a refused add reporting a
+    filled quantity, an add filling at the close, a trim filling at the high,
+    and the ratchet accepting a loosening) and the suite re-run. All fifteen
+    are caught, and the discretionary exit filling at the bar close is caught
+    by no owner suite.
+  - Two observations are recorded rather than silently resolved. First, the
+    BTC-180 discretionary-exit boundary exposes no `as_order_record`, unlike
+    BTC-161 through BTC-164 and BTC-162's stop, so a signalled exit contributes
+    no `paper_orders` row to a BTC-166 lifecycle; the exit is still fully
+    attributed through its BTC-150 event row and the completed trade, and
+    adding an order mapping is BTC-166 and BTC-180 scope. Second, BTC-165
+    removes a trim's cost basis as `cost_basis * quantity / open`, so when the
+    open quantity does not terminate in Decimal's 28-digit context - which
+    BTC-155 produces routinely, since it divides a notional by a price - the
+    closed trade misses the exact cash-flow identity by about 1e-23 and is
+    refused outright. Refusing is the right response to that situation, and a
+    silently wrong gross P&L would be far worse, but the situation is reachable
+    from an ordinary add-then-trim trade. Both are pinned by test and left to
+    their owners.
+  - Added 44 focused cases. The full Python 3.12.14 suite passes with 3296
+    tests, also passing with `RuntimeWarning` treated as an error; compileall
+    passes.
 
 #### BTC-224 Golden historical scenarios
 - **Description:**

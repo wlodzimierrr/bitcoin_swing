@@ -15,16 +15,17 @@
 - **Current phase:** Phase 1, EPIC W testing; EPIC V reporting and monitoring
   is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-223, paper execution tests
-- **Last completed ticket:** BTC-222, risk invariant tests; its required
-  independent xHigh review is outstanding, as is BTC-221's
+- **Current implementation frontier:** BTC-224, golden historical scenarios
+- **Last completed ticket:** BTC-223, paper execution tests; it requires no
+  independent review, so its closure is final. The required independent xHigh
+  reviews of BTC-221 and BTC-222 remain outstanding
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-223, first by V2 execution order
-- **Other ready tickets:** BTC-224
-- **Latest verified test baseline:** 3252 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `a88f2f355b64696cd302fbd1101f65fee1c2d39d`
-  (`test: implement BTC-222 risk invariant tests`)
+- **Next dependency-satisfied ticket:** BTC-224, the last open Phase-1 ticket
+- **Other ready tickets:** None
+- **Latest verified test baseline:** 3296 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `68eed08f674efbca75cc8d40b512f38d5d5fc5de`
+  (`test: implement BTC-223 paper execution tests`)
 
 ## Price-Reference State
 
@@ -46,6 +47,10 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
 
 - Production canonical BTC reference selection remains unresolved under
   BTC-019.
+- BTC-223 surfaced two paper-execution composition gaps left to their owners:
+  the BTC-180 discretionary-exit boundary shapes no `paper_orders` row, and a
+  BTC-155 tranche quantity that does not terminate in Decimal's context makes
+  BTC-165 refuse an add-then-trim trade outright.
 
 ## Important Active Invariants
 
