@@ -10,6 +10,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 FloatArray: TypeAlias = NDArray[np.float64]
+IntArray: TypeAlias = NDArray[np.int64]
 ScalarOrFloatArray: TypeAlias = float | FloatArray
 NanPolicy: TypeAlias = Literal["raise", "propagate"]
 NAN_POLICIES = ("raise", "propagate")

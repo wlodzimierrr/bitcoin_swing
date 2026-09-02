@@ -19,8 +19,10 @@ from btc_predictor.quant import (
     as_float64_vector,
     is_effectively_zero,
     normal_samples,
+    permutation_index_samples,
     require_probability,
     require_same_shape,
+    uniform_index_samples,
 )
 
 
@@ -272,3 +274,82 @@ def test_numeric_policy_documents_required_conventions_and_future_omit_scope() -
         "BTC-043",
     ):
         assert requirement in policy
+
+
+# --- BTC-187 seeded resampling index streams ------------------------------
+
+
+def test_uniform_index_samples_are_repeatable_and_in_range() -> None:
+    np.random.seed(999)
+    first = uniform_index_samples((3, 5), seed=11, high=7)
+    np.random.seed(1)
+    second = uniform_index_samples((3, 5), seed=11, high=7)
+
+    np.testing.assert_array_equal(first, second)
+    assert first.shape == (3, 5)
+    assert first.dtype == np.int64
+    assert first.min() >= 0
+    assert first.max() < 7
+    assert not np.array_equal(first, uniform_index_samples((3, 5), seed=12, high=7))
+
+
+def test_uniform_index_samples_cover_the_whole_range_without_bias() -> None:
+    drawn = uniform_index_samples(60_000, seed=3, high=6)
+    counts = np.bincount(drawn, minlength=6)
+
+    assert counts.size == 6
+    assert counts.min() > 0
+    # A rejection-sampled uniform draw should not favour the low residues.
+    assert stats.chisquare(counts).pvalue > 0.001
+
+
+def test_uniform_index_samples_of_a_single_value_are_degenerate() -> None:
+    np.testing.assert_array_equal(
+        uniform_index_samples(4, seed=0, high=1), np.zeros(4, dtype=np.int64)
+    )
+
+
+@pytest.mark.parametrize(
+    "shape,seed,high",
+    [((2, 0), 1, 4), ((), 1, 4), (4, -1, 4), (4, True, 4), (4, 1, 0), (4, 1, True)],
+)
+def test_uniform_index_samples_validate_shape_seed_and_bound(shape, seed, high) -> None:
+    with pytest.raises(NumericInputError):
+        uniform_index_samples(shape, seed=seed, high=high)
+
+
+def test_permutation_index_samples_are_permutations_of_every_row() -> None:
+    drawn = permutation_index_samples(200, seed=5, size=6)
+
+    assert drawn.shape == (200, 6)
+    assert drawn.dtype == np.int64
+    for row in drawn:
+        np.testing.assert_array_equal(np.sort(row), np.arange(6))
+    # Reordering must actually reorder rather than return the identity.
+    assert not np.array_equal(drawn, np.tile(np.arange(6), (200, 1)))
+
+
+def test_permutation_index_samples_are_repeatable_for_a_fixed_seed() -> None:
+    np.random.seed(7)
+    first = permutation_index_samples(12, seed=2, size=5)
+    np.random.seed(8)
+    second = permutation_index_samples(12, seed=2, size=5)
+
+    np.testing.assert_array_equal(first, second)
+    assert not np.array_equal(first, permutation_index_samples(12, seed=3, size=5))
+
+
+def test_permutation_index_samples_reach_every_order() -> None:
+    drawn = permutation_index_samples(600, seed=4, size=3)
+    seen = {tuple(int(value) for value in row) for row in drawn}
+
+    assert len(seen) == 6
+
+
+@pytest.mark.parametrize(
+    "count,seed,size",
+    [(0, 1, 3), (2, -1, 3), (2, 1, 0), (True, 1, 3), (2, 1, True)],
+)
+def test_permutation_index_samples_validate_count_seed_and_size(count, seed, size) -> None:
+    with pytest.raises(NumericInputError):
+        permutation_index_samples(count, seed=seed, size=size)

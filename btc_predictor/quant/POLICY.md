@@ -182,6 +182,13 @@ Policy version: `FLOAT64_V1`.
 ## Determinism And Boundaries
 
 - Simulation requires an explicit non-negative seed and uses NumPy `PCG64`.
+- Resampling indices are drawn from the raw `PCG64` 64-bit words with modulo
+  rejection (`PCG64_RAW_REJECTION_UNIFORM_INDEX_V1`) and permuted by
+  Fisher-Yates over that same stream
+  (`PCG64_RAW_FISHER_YATES_PERMUTATION_V1`), not through a `Generator`
+  bounded-integer convenience method. The bit-generator stream is stable across
+  NumPy versions; the algorithm layered on top of it is not guaranteed to be,
+  and persisted seeded research evidence must replay on a later NumPy.
 - Seeded simulations validate every generated sample. Accepted finite
   parameters either return finite `float64` samples or fail deterministically;
   they never return infinity or an unexpected NaN.

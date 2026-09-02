@@ -9,6 +9,7 @@ from btc_predictor.quant.arrays import (
     PARITY_TOLERANCE,
     QUANT_POLICY_VERSION,
     FloatArray,
+    IntArray,
     NanPolicy,
     NumericInputError,
     NumericTolerance,
@@ -92,7 +93,13 @@ from btc_predictor.quant.scoring import (
     WeightInput,
     weighted_score,
 )
-from btc_predictor.quant.simulation import normal_samples
+from btc_predictor.quant.simulation import (
+    PERMUTATION_INDEX_POLICY_VERSION,
+    UNIFORM_INDEX_POLICY_VERSION,
+    normal_samples,
+    permutation_index_samples,
+    uniform_index_samples,
+)
 from btc_predictor.quant.transforms import (
     PENALTY_DIRECTIONS,
     PenaltyDirection,
@@ -120,9 +127,11 @@ __all__ = [
     "PARITY_RELATIVE_TOLERANCE",
     "PARITY_TOLERANCE",
     "PENALTY_DIRECTIONS",
+    "PERMUTATION_INDEX_POLICY_VERSION",
     "POSITION_SIDES",
     "QUANT_POLICY_VERSION",
     "ROLLING_NAN_POLICIES",
+    "UNIFORM_INDEX_POLICY_VERSION",
     "ClusterDistanceMode",
     "ComparisonResult",
     "CompleteOutput",
@@ -131,6 +140,7 @@ __all__ = [
     "DecisionTolerance",
     "DecisionValue",
     "FloatArray",
+    "IntArray",
     "NanPolicy",
     "NumericInputError",
     "NumericTolerance",
@@ -177,6 +187,7 @@ __all__ = [
     "normal_samples",
     "pairwise_price_distance",
     "percentile_to_health",
+    "permutation_index_samples",
     "position_notional",
     "realized_pnl",
     "realized_volatility",
@@ -198,6 +209,7 @@ __all__ = [
     "stable_row_sum",
     "stop_distance",
     "true_range",
+    "uniform_index_samples",
     "unrealized_pnl",
     "weighted_average_entry",
     "weighted_score",
