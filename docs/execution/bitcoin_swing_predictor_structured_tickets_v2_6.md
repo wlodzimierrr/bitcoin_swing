@@ -6412,7 +6412,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   STRESS
   EUPHORIA
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6422,6 +6422,61 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/reporting/alerts.py` with versioned `ALERTS_V1`
+    batches, canonical schema `ALERTS_JSON_V1`, and media type
+    `application/json`. Alerts are a notification boundary over existing
+    owners: the module never re-scores a setup, re-derives data quality, or
+    chooses a trading action.
+  - Every alert type is projected from one already validated owner.
+    `ACTIONABLE_SETUP`, `NEW_ADD_SIGNAL`, `TRIM_SIGNAL`, and `EXIT_SIGNAL`
+    come from the persisted BTC-170 action; `STOP_MOVE` comes from the BTC-156
+    trailing-stop `advanced` transition carried by a BTC-171 report;
+    `DATA_QUALITY_FAIL` comes from the BTC-210 component summary; `STRESS` and
+    `EUPHORIA` come from the typed hard-flag feature results. Each alert
+    retains its source feature ID and that source's own reason codes.
+  - Emission order is the alert order documented by this ticket, and position
+    reports are canonically ordered by their BTC-150 lifecycle record, so an
+    identical evaluation always produces byte-identical output. The body is
+    canonical JSON with sorted keys, compact separators, ASCII escaping, and
+    no NaN/infinity, runtime clock, random identifier, or binary float.
+  - `ENTRY_ZONE_REACHED` requires one explicit point-in-time price observation
+    whose timestamp equals the batch `as_of`. Membership is an exact inclusive
+    Decimal comparison against the advisory's own entry zone. When a zone
+    exists but no observation is supplied, the batch records
+    `ALERTS_ENTRY_ZONE_PRICE_MISSING` and `complete = False`; a missing price
+    is never treated as "zone not reached". The observation's source ID is
+    retained as factual provenance only and promotes no provider to a
+    canonical price role while BTC-019 remains unresolved.
+  - Config identity is checked across the BTC-210 status, every BTC-171
+    report, and both hard flags. The batch `as_of` must equal the daily
+    status timestamp, each current open lifecycle must be covered by exactly
+    one BTC-171 report, and each report's advisory and mark time must match
+    the daily status. Incomplete stress or euphoria inputs surface
+    `ALERTS_STRESS_SOURCE_INCOMPLETE` / `ALERTS_EUPHORIA_SOURCE_INCOMPLETE`
+    and clear `complete` instead of being silently zero-filled.
+  - `AlertsResult.as_record()` retains the complete BTC-210 record (including
+    its embedded BTC-172 advisory JSON), all BTC-171 records, the stress and
+    euphoria records, the price observation, every alert with its details,
+    config identity, output reason codes, and the exact body.
+    `alerts_from_record()` restores every owner and rejects alert, body,
+    reason-code, completeness, source, ordering, or extra-field drift; result
+    reason codes must also belong to `ALERTS_REASON_CODES`.
+  - Scope decision: an alert batch is a projection of one evaluation plus the
+    transitions its owners already compute (`STOP_MOVE`). The ticket does not
+    define cross-evaluation alert history, so `NEW_ADD_SIGNAL` is scoped to
+    the current persisted `ADD` action and no second state history is
+    invented here. Each alert carries `alert_type`, `as_of`, and
+    `recommendation_id`, which is sufficient for a delivery layer to suppress
+    repeats.
+  - Fifteen focused tests cover all nine alert types, the quiet no-alert
+    state, exact entry-zone bounds, missing-price and incomplete-flag
+    surfacing, canonical ordering and input-order independence, complete
+    provenance and config persistence, exact replay, alert/body/reason/source
+    tampering, open-position coverage, config and point-in-time drift, forged
+    owner identity, and injection-prone provenance. Focused dependency
+    regressions pass with 61 tests, and the complete Python 3.12 suite passes
+    with 2925 tests while treating `RuntimeWarning` as an error.
 
 
 ## V2 Quant-Refactor Completion Gate

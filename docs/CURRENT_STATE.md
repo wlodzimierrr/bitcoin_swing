@@ -12,18 +12,19 @@
 ## Snapshot
 
 - **Last updated:** 2026-09-02
-- **Current phase:** Phase 1, EPIC V reporting and monitoring; EPIC U manual
-  trade tracking is complete
+- **Current phase:** Phase 1, EPIC W testing; EPIC V reporting and monitoring
+  is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-212, alerts
-- **Last completed ticket:** BTC-211, weekly strategy report
+- **Current implementation frontier:** BTC-220, unit tests for feature
+  calculations
+- **Last completed ticket:** BTC-212, alerts
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-212, first by V2 execution order
-- **Other ready tickets:** None in EPIC V
-- **Latest verified test baseline:** 2910 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `c9929906f9114a5606ac43b63f9bad8192339d90`
-  (`feat: implement BTC-211 weekly strategy report`)
+- **Next dependency-satisfied ticket:** BTC-220, first by V2 execution order
+- **Other ready tickets:** BTC-221, BTC-222, BTC-223, BTC-224
+- **Latest verified test baseline:** 2925 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `a5e63f8f51457e41f4a64e7dcaf9144f361eee49`
+  (`feat: implement BTC-212 alerts`)
 
 ## Price-Reference State
 
