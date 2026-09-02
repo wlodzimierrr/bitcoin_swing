@@ -6340,7 +6340,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   - current paper trades
   - risk
   - recent score movement
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6350,6 +6350,52 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/reporting/weekly_strategy.py` with versioned
+    `WEEKLY_STRATEGY_REPORT_V1` plain-text output. It is a presentation
+    boundary over BTC-210 daily status snapshots and BTC-171 current-position
+    reports; it does not reclassify regimes/setups, recalculate strategy
+    scores, choose actions, or replace the shared risk owner.
+  - The report uses a deterministic rolling seven-day window ending at the
+    latest supplied daily status. Daily inputs are canonically time-sorted,
+    timestamps and recommendation IDs must be unique, and all observations
+    must retain one market, timeframe, config identity, and paper-account
+    identity. The report states its first available observation and count so
+    sparse history is visible rather than implied complete.
+  - Every observed regime and setup transition is linked to the previous and
+    current recommendation IDs. Recent movement covers Trend, Regime, Flow,
+    Positioning, Volatility, Structure, Entry Conviction, Hold, and Add scores
+    as first-to-current exact Decimal deltas. A one-observation window or an
+    unavailable optional score retains an unavailable baseline/delta and
+    renders `N/A`; it is never converted to zero or described as stable.
+  - Current entry zone, invalidation, and initial stop come directly from the
+    latest BTC-170 advisory. Active stop, candidate stop, mark, current paper
+    trade economics, and risk-at-stop come directly from BTC-171 reports. Each
+    latest open BTC-150 lifecycle must have exactly one matching current
+    position report, whose advisory and mark time must match the latest
+    BTC-210 snapshot.
+  - Recommendation risk remains distinct from current-position risk. The
+    current risk amount, NAV fraction, configured maximum, persisted
+    convention, verdict, and owner reason codes are displayed without
+    aggregating a second risk formula. Mark/source provenance is retained as
+    factual evidence and does not promote any provider to a canonical price
+    role while BTC-019 remains unresolved.
+  - `WeeklyStrategyReportResult.as_record()` retains all BTC-210 records
+    (including their BTC-172 canonical advisory JSON), all BTC-171 records,
+    computed transition and score summaries, complete config/source/reason
+    provenance, the versioned window, and the exact rendered body.
+    `weekly_strategy_report_from_record()` restores every owner and rejects
+    source, ordering, summary, metadata, body, or extra-field drift.
+  - Report-level reason codes distinguish changed, stable, and insufficient
+    regime/setup history; open versus absent paper trades; and available
+    versus unavailable risk. Ten focused tests cover all six requested report
+    areas, transition ordering, score movement and missing-data semantics,
+    current-position coverage, point-in-time linkage, canonical ordering,
+    exact replay, tamper rejection, account identity, and the seven-day bound.
+    Focused dependency regressions pass with 356 tests, and the complete
+    Python 3.12 suite passes with 2910 tests while treating `RuntimeWarning` as
+    an error. Implementation commit:
+    `c9929906f9114a5606ac43b63f9bad8192339d90`.
 
 #### BTC-212 Create alerts
 - **Description:**
