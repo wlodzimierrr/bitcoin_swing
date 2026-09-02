@@ -6722,7 +6722,7 @@ The project must not proceed to trust paper/backtest performance until all of th
   No add when CROWDING rule blocks
   No trade during DATA_QUALITY_FAIL
   ```
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Review Model:** GPT-5.6 Sol — Extra High (xhigh)
 - **Acceptance Criteria:**
@@ -6733,6 +6733,91 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - The required independent xHigh review is still outstanding; closure is
+    not final until it passes.
+  - Added the dedicated cross-cutting suite `test_risk_invariants.py`. Each of
+    the six invariants already has an owner suite proving that its own engine
+    refuses a violating input, so this ticket pins the property those refusals
+    exist for and no single owner can see: no path reaches a violating state.
+    Every invariant is asserted at all three consumers rulebook 19 names -
+    advisory gates, the BTC-150 ledger with its simulated executions, and the
+    BTC-180 replay - and in both halves, because a refusal that still mutated
+    the ledger would satisfy "refused" alone and an engine that refused
+    everything would satisfy "unchanged" alone.
+  - No averaging down: the weighted average entry may only move in the
+    position's favour across an arbitrary long or short sequence of adds,
+    trims and stop moves; disabling BTC-154's optional profitability gate does
+    not open a path around BTC-151, and `no_average_down: false` is rejected by
+    configuration; an add the gate permitted at the decision is cancelled when
+    its fill bar gaps under the average, and the ledger refuses the same fill
+    independently; the execution re-check judges the market reference rather
+    than the slipped fill, so a buy that fills higher never reads as healthier
+    than the market it filled in.
+  - Stops never widen: the standing stop is monotone across mixed accepted and
+    refused move sequences in both directions; a refused widening survives
+    `position_event_records` replay and snapshot restore as a refusal; BTC-156
+    and BTC-150 refuse the same loosening independently; and with tranches
+    untouched a ratcheting stop can only lower BTC-146 risk at stop.
+  - Risk-at-stop within the limit: BTC-144, BTC-142, BTC-145 and BTC-146
+    compose so that a sized entry spends exactly its risk budget, swept across
+    conviction bands and stop distances; the budget and exposure owners read
+    one configured ceiling; a projected post-add book above the ceiling is
+    refused by the gate, by the execution (which retains the gate's own reason
+    code) and leaves the ledger unchanged; every permitted add in a size sweep
+    leaves a realized book equal to the approved projection and within the
+    ceiling; and a breach is reported with zero headroom rather than silently
+    clipped.
+  - No add when STRESS: the flag declares rulebook 24's `NO_ADD` effect and the
+    BTC-150 `DEFENSIVE` state is where the ledger carries it - an otherwise
+    perfect add is refused from both `OPEN_INITIAL` and `OPEN_ADDED`, only
+    `RECOVER` restores it, and because BTC-180 routes every accepted add
+    through `apply_position_event`, the same refusal applies on the replay
+    path. Blocking new trades stays optional and versioned: the flag and the
+    hard veto read the same `volatility_flags.stress.block_new_trades` field,
+    and the unconditional `NO_ADD` effect does not depend on it.
+  - No add when CROWDING blocks: the flag declares `NO_ADD`; rulebook 18.1
+    requirement 6 ("Positioning is not crowded") is the named gate input where
+    it lands, and the crowding reason codes persist with the refusal rather
+    than being summarised away; a crowding-blocked add never fills, costs
+    nothing, and still records the allocation it declined; severe crowding
+    blocks a new trade at the hard veto with no configuration switch to
+    disable it.
+  - No trade during DATA_QUALITY_FAIL: swept over every recommendation action,
+    a failure never yields `ENTER` or `ADD` while existing-position actions are
+    preserved at warning rather than veto severity; the gate and the hard veto
+    agree; the failure and its component evidence persist as ordered veto rows;
+    an ordinary failure is not a forced liquidation; and the `ADD` to `HOLD`
+    downgrade is what protects the book, since the requested add would have
+    changed it.
+  - A ten-bar BTC-180 replay proposes exactly the decisions the invariants must
+    refuse or allow - an underwater add, a crowded add, a loosening trail, a
+    tightening trail and a legitimate add - and the recorded evidence is walked
+    to re-derive the average-entry and stop monotonicity, the per-refusal
+    reason codes, and a reported risk-at-stop at every open bar. The run is
+    deterministic and its record restores unchanged.
+  - Suite value was measured rather than assumed: seventeen single-line
+    invariant defects were injected into the owners (stop-widen guard off,
+    average-down guard off, `DEFENSIVE` permitting `ADD`, the add re-check
+    reading the slipped fill, the execution ignoring a blocked gate, the gate
+    ignoring the risk ceiling or crowding, the data-quality gate passing
+    through, the hard veto ignoring data quality, severe crowding or the stress
+    policy, the risk ceiling always satisfied, trailing accepting a loosening,
+    either flag losing its `NO_ADD` effect, sizing doubling the budget, and a
+    trim re-basing the average entry) and the suite re-run. All seventeen are
+    caught.
+  - One observation is recorded for the independent review rather than silently
+    resolved. Rulebook 24 gives STRESS an unconditional NO ADDING effect, but
+    no module binds a `StressFlagResult` to an add decision: BTC-154's eight
+    inputs have no stress input, and the implemented carrier is the BTC-150
+    `DEFENSIVE` state, which BTC-180 exposes no action to enter. A
+    stress-driven no-add therefore reaches a backtest only through whatever the
+    strategy resolves into the gate's own inputs. Nothing was changed, because
+    inventing that binding would be new strategy semantics; CROWDING has no
+    such gap, since rulebook 18.1 requirement 6 names its gate input directly.
+  - Added 59 focused cases. The full Python 3.12.14 suite passes with 3252
+    tests, also passing with `RuntimeWarning` treated as an error; compileall
+    passes.
 
 #### BTC-223 Paper execution tests
 - **Description:**

@@ -15,16 +15,16 @@
 - **Current phase:** Phase 1, EPIC W testing; EPIC V reporting and monitoring
   is complete
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** BTC-222, risk invariant tests
-- **Last completed ticket:** BTC-221, look-ahead bias test suite; its required
-  independent xHigh review is outstanding
+- **Current implementation frontier:** BTC-223, paper execution tests
+- **Last completed ticket:** BTC-222, risk invariant tests; its required
+  independent xHigh review is outstanding, as is BTC-221's
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** BTC-222, first by V2 execution order
-- **Other ready tickets:** BTC-223, BTC-224
-- **Latest verified test baseline:** 3193 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `9867a4b6e60fe4fe46ff3ea9d92bc39ed3121a99`
-  (`test: implement BTC-221 look-ahead bias test suite`)
+- **Next dependency-satisfied ticket:** BTC-223, first by V2 execution order
+- **Other ready tickets:** BTC-224
+- **Latest verified test baseline:** 3252 passed with Python 3.12 on 2026-09-02
+- **Last relevant implementation/review commit:** `a88f2f355b64696cd302fbd1101f65fee1c2d39d`
+  (`test: implement BTC-222 risk invariant tests`)
 
 ## Price-Reference State
 
