@@ -6146,7 +6146,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 #### BTC-202 Implement actual trade entry
 - **Description:**
   Record real manual execution.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -6156,6 +6156,43 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P1
 - **Complexity:** S
 - **Risk:** Low.
+- **Implementation Notes:**
+  - Added `btc_predictor/journal/actual_trade.py` with
+    `record_actual_trade_entry()`, deterministic replay through
+    `actual_trade_entry_from_record()`, and policy version
+    `MANUAL_EXECUTION_JOURNAL_V1`. Actual entry time, price, positive size and
+    size unit are required; stop and the paired exit time/price remain explicit
+    nullable facts and are never zero-filled.
+  - A recommendation-linked fill must consume a self-validating BTC-200
+    `RecommendationDecisionEntry`. Only `APPROVED` and `MODIFIED` decisions on
+    an `ENTER` advisory can produce an actual trade entry, mapping respectively
+    to the BTC-017 `FOLLOWED` and `OVERRIDDEN` vocabulary. Symbol, direction and
+    chronology must agree with the stored advisory and decision; `REJECTED`,
+    `MISSED`, non-entry advisories and mismatched attribution fail closed.
+  - `MANUAL_ONLY` remains supported for real trades that did not originate in
+    an advisory. Such rows deliberately persist no recommendation, strategy,
+    config or decision metadata rather than assigning an unrelated current
+    configuration after the fact. The schema's `SKIPPED` value is not emitted
+    by the actual-execution writer because it describes no fill.
+  - Linked execution rows snapshot the BTC-166 strategy/config identity, the
+    BTC-200 decision timestamp, policy and reason codes, and the BTC-201
+    discretionary-reason policy and ordered codes. `MODIFIED` executions also
+    require the existing human-readable `override_reason`; the API derives the
+    execution classification instead of accepting a potentially inconsistent
+    caller value.
+  - Migration `0024_actual_trade_entry` extends the BTC-017 table with the
+    attribution and version fields. Existing rows retain nullable attribution
+    under the explicit `MANUAL_EXECUTION_JOURNAL_LEGACY` marker; PostgreSQL
+    checks enforce complete V1 fills, coherent exit pairs, event ordering and
+    linked-versus-manual-only attribution for all new V1 rows.
+  - Twenty-eight focused tests cover linked, modified and manual-only entries;
+    config/reason persistence; advisory identity and time checks; finite
+    positive values; explicit missing values; exit pairing; exact row mapping;
+    deterministic replay; migration SQL; and tamper rejection. The focused
+    journal/schema/migration suite passes with 132 tests, and the complete
+    Python 3.12 suite passes with 2862 tests while treating `RuntimeWarning` as
+    an error. Implementation commit:
+    `4ae6c9a9c041e5172f2a3a994fda43489f04d43c`.
 
 #### BTC-203 Build Model vs Human comparison
 - **Description:**
