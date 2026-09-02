@@ -5967,7 +5967,7 @@ These tickets begin only after the deterministic strategy, risk engine, and back
   ### Rule
 
   The live strategy may **not self-modify automatically**.
-- **Status:** TODO
+- **Status:** DONE
 - **Model:** GPT-5.6 Sol — High
 - **Acceptance Criteria:**
   - Implementation is covered by focused tests where practical
@@ -5977,6 +5977,48 @@ These tickets begin only after the deterministic strategy, risk engine, and back
 - **Priority:** P0
 - **Complexity:** M
 - **Risk:** Medium.
+- **Implementation Notes:**
+  - Added `btc_predictor/research/strategy_promotion.py` with feature
+    `CONTROLLED_STRATEGY_PROMOTION`, policy version
+    `CONTROLLED_STRATEGY_PROMOTION_V1`, exact-identity evidence policy
+    `EXACT_IDENTITY_REPLAYABLE_EVIDENCE_CHAIN_V1`, explicit manual approval
+    policy `EXPLICIT_MANUAL_HUMAN_DECISION_V1`, and deployment policy
+    `RECORD_ONLY_NO_CONFIG_MUTATION_V1`.
+  - `prepare_strategy_promotion()` composes the existing authoritative owners
+    instead of recalculating their metrics. A complete packet requires a
+    BTC-192 paper-trade comparison, both BTC-189 predictor-diagnostic and
+    component-ablation reports, a BTC-192 historical-backtest comparison, a
+    standalone BTC-182 walk-forward validation, and at least one BTC-185
+    threshold-robustness sweep.
+  - Every stage is bound to the exact current-production and candidate
+    `config_version`, `strategy_version`, and `parameter_set_id`. The paper and
+    historical comparisons must use their correct evidence modes, current
+    production must be their explicit baseline, the candidate must be present,
+    and research/walk-forward/robustness provenance must match the candidate.
+  - The roadmap and Rulebook specify no automatic statistical promotion
+    threshold, so BTC-193 does not invent one or reinterpret dependency
+    metrics. A complete packet always stops at `AWAITING_MANUAL_APPROVAL`.
+    `record_manual_promotion_decision()` requires an explicit approve/reject
+    decision, named approver, UTC decision time, and rationale tied to the
+    packet's content-addressed ID.
+  - Approval produces an immutable `PROMOTED` record whose resulting production
+    identity is the candidate; rejection produces `REJECTED` and retains the
+    current identity. Both outcomes persist configuration identities, the full
+    replayable evidence chain, decision metadata, policy versions, and reason
+    codes. Neither path writes, swaps, or reloads live configuration, and every
+    final record states `config_mutation_performed = false`.
+  - Packet, manual-decision, and final-record restoration reject missing,
+    substituted, reordered, or edited evidence and derived-outcome tampering.
+    Robustness inputs sort deterministically and duplicate report or parameter
+    coverage fails closed.
+  - Added 11 focused tests covering the complete workflow, deterministic
+    evidence handling, missing evidence, version and mode mismatch, explicit
+    manual approval and rejection, UTC/manual metadata, cross-packet decision
+    reuse, record-only deployment behavior, deterministic round trips, and
+    tamper rejection. Dependency-focused regressions pass with 175 tests; an
+    isolated Python 3.12 HEAD-plus-BTC-193 suite passes with 2757 tests.
+    Implementation commit:
+    `bc5dda69bfe8c6ef4b0384e9fa9c147857c2f4fb`.
 
 ## EPIC U — Manual Trade Tracking
 
