@@ -70,4 +70,57 @@ __all__ = [
     "advisory_json_from_record",
     "advisory_source_from_json",
     "render_json_output",
+    "DRAWDOWN_AVAILABLE",
+    "DRAWDOWN_MISSING_RETURNS",
+    "DRAWDOWN_NO_CLOSED_TRADES",
+    "DRAWDOWN_NON_POSITIVE_EQUITY",
+    "HUMAN_ACTUAL",
+    "MODEL_HUMAN_ACTUAL_RETURN_POLICY_VERSION",
+    "MODEL_HUMAN_ARMS",
+    "MODEL_HUMAN_COMPARISON_FEATURE_ID",
+    "MODEL_HUMAN_COMPARISON_POLICY_VERSION",
+    "MODEL_HUMAN_COMPARISON_REASON_CODES",
+    "MODEL_HUMAN_DRAWDOWN_POLICY_VERSION",
+    "MODEL_HUMAN_PAPER_RETURN_POLICY_VERSION",
+    "MODEL_HUMAN_SHARPE_POLICY_VERSION",
+    "MODEL_PAPER",
+    "MODEL_PLUS_HUMAN",
+    "PROFIT_FACTOR_ALL_FLAT",
+    "PROFIT_FACTOR_AVAILABLE",
+    "PROFIT_FACTOR_NO_LOSSES",
+    "PROFIT_FACTOR_NO_MEASURED_TRADES",
+    "RETURN_AVAILABLE",
+    "RETURN_NOT_MEASURED",
+    "RETURN_OPEN",
+    "R_AVAILABLE",
+    "R_MISSING_INITIAL_STOP",
+    "R_NON_ADVERSE_INITIAL_STOP",
+    "R_NOT_MEASURED",
+    "R_OPEN",
+    "SHARPE_AVAILABLE",
+    "SHARPE_INSUFFICIENT_TRADES",
+    "SHARPE_MISSING_RETURNS",
+    "SHARPE_ZERO_DISPERSION",
+    "ModelHumanArm",
+    "ModelHumanComparisonError",
+    "ModelHumanComparisonReport",
+    "ModelHumanMetrics",
+    "ModelHumanTradeOutcome",
+    "build_model_human_comparison",
+    "restore_model_human_comparison",
 ]
+
+
+_MODEL_HUMAN_EXPORTS = frozenset(
+    __all__[__all__.index("DRAWDOWN_AVAILABLE") :]
+)
+
+
+def __getattr__(name: str):
+    """Load BTC-203 exports without cycling through the decision journal."""
+
+    if name not in _MODEL_HUMAN_EXPORTS:
+        raise AttributeError(name)
+    from btc_predictor.reporting import model_human_comparison
+
+    return getattr(model_human_comparison, name)
