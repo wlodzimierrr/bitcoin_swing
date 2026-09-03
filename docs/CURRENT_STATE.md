@@ -20,17 +20,17 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
-- **Last epic integration audit:** EPIC Q, paper trading engine (2026-09-03),
-  PASS WITH NON-BLOCKING FINDINGS after one P1, two P2 and two P3 review
-  fixes. EPIC P, EPIC O, EPIC E and EPIC E2 were audited earlier the same day
+- **Last epic integration audit:** EPIC S, backtesting (2026-09-03), PASS
+  WITH NON-BLOCKING FINDINGS after one P2 and two P3 review fixes. EPIC Q,
+  EPIC P, EPIC O, EPIC E and EPIC E2 were audited earlier the same day
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3502 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `b8861e0`
-  (`fix: close EPIC Q integration review findings`)
+- **Latest verified test baseline:** 3514 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** `EPIC_S_FIX`
+  (`fix: close EPIC S integration review findings`)
 
 ## Price-Reference State
 
@@ -73,6 +73,19 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   than closed in review, because choosing the mapping is a strategy decision.
   BTC-152 through BTC-158 also still have no production consumer; only BTC-150
   and BTC-155 are reached from BTC-180.
+- The EPIC S integration audit left two non-blocking items. BTC-180 treats
+  `ingested_at` as per-bar live availability, but `derive_ohlcv_bars` and
+  `build_canonical_market_bars` stamp one ingestion time on a whole backfill,
+  so a dataset built the repository's own way replays with no executable
+  decision at all. The engine now says so plainly, and BTC-182 and BTC-185
+  already carry the empty result up as `WALK_FORWARD_NO_TRADES` and
+  `THRESHOLD_SWEEP_NO_TRADES`, but nothing yet produces backtest bars carrying
+  live availability; BTC-224 synthesises it. Separately, a fill on a bar whose
+  ingestion lags past the following bar's start would stamp the lifecycle ahead
+  of bars the run still replays; BTC-162 refuses it, which is fail-closed but
+  attributes the cause to the stop owner, and choosing between refusing the
+  execution and refusing the dataset is a BTC-180 policy decision. Both are
+  pinned by test.
 - The EPIC Q integration audit left two non-blocking items with their owners.
   BTC-163 adds and BTC-164 trims have no restore/replay function, unlike
   BTC-161, BTC-162 and BTC-180, because their records embed BTC-154, BTC-155

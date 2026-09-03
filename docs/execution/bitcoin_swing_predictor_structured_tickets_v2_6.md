@@ -5060,6 +5060,25 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - The strategy interface is a callable taking a `BacktestContext` and
     returning a `BacktestIntent`, which keeps the engine testable without the
     full feature stack while leaving every policy decision outside it.
+  - **EPIC S integration review.** An ADD's BTC-154 requirements and a TRIM's
+    BTC-157 signal are now held to the run's `config_metadata`, as the entry
+    stop and the trailing stop already were. Both are strategy-supplied policy
+    evidence that authorises an economic mutation and is persisted as the run's
+    own evidence, so a result fitted under one parameter set could previously
+    book an add or a trim inside a run declaring another, silently: BTC-182,
+    BTC-183, BTC-184 and BTC-185 all compare `config_metadata` at their own
+    boundaries and would all have agreed, because the run itself claimed the
+    candidate identity. BTC-185 varies exactly those thresholds through
+    `parameter_set_id`.
+  - **EPIC S integration review.** An unnamed intent's default `source_id` is
+    minted from the decision bar rather than from `decision_at`. Bar
+    availability is not unique per decision -- `derive_ohlcv_bars` and
+    `build_canonical_market_bars` stamp one ingestion time on a whole backfill
+    -- and `source_id` is the key BTC-165 carries on every fill and the key
+    BTC-183 joins entry contexts on. The bar contract keeps decision bars
+    strictly increasing, so the default is now unique by construction. On such
+    a dataset no decision can execute at all, and the refusal now names the
+    dataset property that caused it instead of the strategy's bookkeeping.
 
 #### BTC-181 Add realistic cost model
 - **Description:**

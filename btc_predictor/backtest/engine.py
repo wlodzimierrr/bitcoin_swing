@@ -417,6 +417,7 @@ def run_backtest(
         metadata=metadata,
         account=resolved_account,
         strategy_id=resolved_strategy_id,
+        dataset_end=ordered[-1].timestamp if ordered else _EPOCH,
     )
 
     if not ordered:
@@ -552,6 +553,7 @@ class _EngineState:
         metadata: dict[str, str],
         account: PaperAccount,
         strategy_id: str,
+        dataset_end: datetime,
     ) -> None:
         self.config = config
         self.costs = costs
@@ -560,6 +562,7 @@ class _EngineState:
         self.metadata = dict(metadata)
         self.account = account
         self.strategy_id = strategy_id
+        self.dataset_end = dataset_end
         self.starting_nav = account.starting_nav
         self.lifecycle = start_position_lifecycle(
             symbol=symbol,
@@ -600,14 +603,26 @@ class _EngineState:
         if intent is None:
             return
         decision_at = _bar_available_at(bar)
+        # The decision bar is strictly increasing by the bar contract; an
+        # availability timestamp is not, because a backfill gives a whole
+        # stretch of history one ingestion time.
         source_id = intent.source_id or (
-            f"{intent.action.lower()}-{decision_at.isoformat()}"
+            f"{intent.action.lower()}-{bar.timestamp.isoformat()}"
         )
         if source_id in self.intent_source_ids:
             raise ValueError("intent source_id must be unique within a backtest run")
         self.intent_source_ids.add(source_id)
         if self.pending is not None:
-            raise ValueError("strategy cannot queue a second intent while one is pending")
+            raise ValueError(
+                "strategy cannot queue a second intent while one is pending"
+                + (
+                    "; the pending intent waits for a bar this run never reaches,"
+                    " which is what a dataset whose bars share one ingestion"
+                    " timestamp produces"
+                    if self.pending.eligible_bar_at > self.dataset_end
+                    else ""
+                )
+            )
         if intent.action == ARM_ENTRY_ACTION and self.lifecycle.quantity > 0:
             self._refuse_intent(intent, source_id, decision_at, "POSITION_ALREADY_OPEN")
             return
@@ -923,6 +938,9 @@ class _EngineState:
     def _execute_add(self, queued: _QueuedIntent, bar: OhlcvBar) -> None:
         if self.position_size is None:
             raise RuntimeError("open lifecycle has no BTC-145 position size")
+        self._require_decision_config(
+            queued.intent.requirements, "add requirements"
+        )
         tranche = next_tranche_for_position(
             self.lifecycle,
             self.position_size,
@@ -987,6 +1005,7 @@ class _EngineState:
         self._note("BACKTEST_ADDED")
 
     def _execute_trim(self, queued: _QueuedIntent, bar: OhlcvBar) -> None:
+        self._require_decision_config(queued.intent.trim_signal, "trim signal")
         intent = TrimExecutionIntent(
             execution_id=queued.source_id,
             position_id=None,
@@ -1271,6 +1290,21 @@ class _EngineState:
             side=self.lifecycle.direction,
         )
         return Decimal(str(value))
+
+    def _require_decision_config(self, decision: Any, name: str) -> None:
+        """Reject strategy-supplied policy evidence from another parameter set.
+
+        The entry stop and the trailing stop are already held to the run's
+        configuration identity. An ADD's BTC-154 requirements and a TRIM's
+        BTC-157 signal decide the same kind of question and are persisted as
+        the run's own evidence, so a result fitted under one parameter set
+        must not authorise an economic mutation booked under another. BTC-185
+        varies exactly those thresholds through ``parameter_set_id``.
+        """
+
+        metadata = getattr(decision, "config_metadata", None)
+        if metadata != self.metadata:
+            raise ValueError(f"{name} config_metadata must match the run")
 
     def _refuse_intent(
         self,
