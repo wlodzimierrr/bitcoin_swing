@@ -3873,6 +3873,20 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     supply the decisions this machine validates and records. BTC-151 now
     attaches the no-average-down invariant directly to this lifecycle boundary;
     the remaining policy tickets stay external to the ledger reducer.
+  - **EPIC P integration review:** a pro-rata trim now rescales the tranche
+    ledger onto one common quantum instead of rounding each tranche
+    independently. The scaled quantities are not representable in general, so
+    the rounded ledger stopped summing to the position and the module's own
+    "quantity must equal the tranche ledger" invariant *raised* on an ordinary
+    permitted trim of a multi-tranche position -- aborting a BTC-180 run rather
+    than refusing. The requested quantity remains the applied quantity, and the
+    average entry moves by around 1e-26 relative at worst, fourteen orders of
+    magnitude below `DECISION_COMPARISON_V1`. The same review stopped a
+    refusal recorded *before* the fill from writing a `position_events` row:
+    accepted pre-position transitions never wrote one, so persisting the
+    refused ones skipped the arming that moved the state and made the row set
+    unreplayable. Pre-fill refusals stay in the authoritative snapshot; post-fill
+    refusals still persist.
 
 #### BTC-151 Implement no-average-down rule
 - **Description:**
@@ -4079,6 +4093,22 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     strict stop improvement, disabled gates, weighted-average-entry
     profitability across two tranches, incomplete upstream results, evidence
     retention, persistence drift, and determinism.
+  - **EPIC P integration review:** `add_requirements_from_results` now
+    identifies each upstream result rather than duck-typing it, and refuses a
+    mixed parameter set, the way BTC-157 and BTC-158 already did. A
+    `HoldScoreResult` also exposes `score` and `complete`, so the canonical
+    path had been authorizing pyramid adds from Hold Score -- undoing by
+    composition exactly the v1.2 de-nesting BTC-153 exists to make structural,
+    and persisting `HOLD_SCORE_COMPLETE` as the evidence for it. Results
+    carrying a foreign `strategy_version` / `parameter_set_id` were likewise
+    accepted and then recorded under the local config.
+  - **Open composition limit:** rulebook 24 gives STRESS / CROWDING / EUPHORIA
+    the shared effect `NO ADDING`, and BTC-150 makes `DEFENSIVE` the state that
+    enforces it, but no module in EPIC P emits `DEFEND` and this gate has no
+    hard-flag requirement. BTC-157 consumes the same flags for TRIM. The
+    composed chain therefore permits an add while CROWDING is active. Pinned by
+    `test_no_epic_module_maps_a_hard_flag_onto_the_add_gate` rather than closed
+    in review: choosing the mapping is a strategy decision.
 
 #### BTC-155 Implement tranche sizing
 - **Description:**
@@ -4133,6 +4163,15 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     composition at zero, one, and two adds, incomplete upstream sizing,
     schedule validation at both the module and config layers, malformed input,
     persistence, and determinism.
+  - **EPIC P integration review:** `next_tranche_for_position` no longer falls
+    back to BTC-145's original entry price for a *later* tranche. The schedule
+    is a share of the final **notional**, so pairing that share with a stale
+    price returned a quantity worth more than the share it reported: an add at
+    +30% delivered 130% of its authorized notional while `allocation.notional`
+    still said 100%. A later tranche without its own fill price now yields
+    `TRANCHE_SIZING_NO_ADD_PRICE` and no allocation, which BTC-163 already
+    fails closed on. The first tranche still uses the price BTC-145 sized it
+    at. BTC-180 always passed the execution bar's open, so no run was affected.
 
 #### BTC-156 Implement trailing stop progression
 - **Description:**
@@ -4208,6 +4247,12 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     mandatory on the canonical path, prevents a used structure from
     retriggering after buffer changes, counts only genuine stop improvements,
     and reconstructs persisted results from their formula and provenance.
+  - **EPIC P integration review:** `trail_stop_for_position` now refuses an
+    `as_of` earlier than the BTC-150 watermark. The standing stop and the
+    advance count are read off the ledger as it stands, so a result stamped
+    before the ledger's own last accepted event claimed to have been evaluated
+    on state that did not exist yet. BTC-158 already refused the same
+    composition.
 
 #### BTC-157 Implement trim rules
 - **Description:**

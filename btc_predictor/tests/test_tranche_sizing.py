@@ -32,6 +32,8 @@ SYMBOL = "BTC-USD"
 START = datetime(2024, 6, 1, tzinfo=timezone.utc)
 FINAL_NOTIONAL = "1000000"
 ENTRY = "100000"
+# BTC-155 sizes a later tranche at the price it will fill at, not the entry.
+ADD_PRICE = "110000"
 
 
 def at(hours: int) -> datetime:
@@ -194,7 +196,11 @@ def test_the_next_stage_comes_from_the_ledger_not_a_caller_counter(
     expected_number: int,
     expected_fraction: str,
 ) -> None:
-    result = next_tranche_for_position(open_position(adds=adds), position_size())
+    result = next_tranche_for_position(
+        open_position(adds=adds),
+        position_size(),
+        entry_price=ADD_PRICE,
+    )
 
     # tranche_count is what has been filled, so the next stage is count + 1.
     assert result.tranche_number == expected_number

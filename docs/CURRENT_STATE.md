@@ -20,17 +20,17 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
-- **Last epic integration audit:** EPIC O, the risk engine (2026-09-03),
-  PASS WITH NON-BLOCKING FINDINGS after one P1 and five P2/P3 review fixes.
-  EPIC E and EPIC E2 were audited earlier the same day
+- **Last epic integration audit:** EPIC P, position lifecycle / pyramiding
+  (2026-09-03), PASS WITH NON-BLOCKING FINDINGS after two P1 and three P2
+  review fixes. EPIC O, EPIC E and EPIC E2 were audited earlier the same day
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3461 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `606d27a`
-  (`fix: close EPIC O integration review findings`)
+- **Latest verified test baseline:** 3494 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** the EPIC P review-fix commit
+  (`fix: close EPIC P integration review findings`)
 
 ## Price-Reference State
 
@@ -57,7 +57,10 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   BTC-155 tranche quantity that does not terminate in Decimal's context makes
   BTC-165 refuse an add-then-trim trade outright. BTC-224 found the second gap
   reachable from an ordinary review of February 2024 and pins it there as a
-  known composition limit.
+  known composition limit. The EPIC P audit fixed the BTC-150 half of that
+  family -- the ledger no longer raises on such a trim -- but BTC-165's
+  `cost_basis * quantity / open` removal is its own defect and stays open with
+  its owner.
 - The EPIC E/E2 integration audit left three non-blocking items with their own
   owners. `atr_from_daily_bars` (EPIC O) is now closed: it delegates to the
   BTC-041 bar boundary. Still open with their owners:
@@ -65,6 +68,14 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   contiguous, three BTC-019 research helpers restate the true-range formula
   instead of using the BTC-041 owner, and BTC-048 feature/target matrices
   serialize but have no restore or tamper-validation path.
+- The EPIC P integration audit left one non-blocking item with a strategy
+  owner: rulebook 24 gives STRESS / CROWDING / EUPHORIA the shared effect
+  `NO ADDING`, and BTC-150 makes `DEFENSIVE` the state that enforces it, but no
+  module emits `DEFEND` and BTC-154 has no hard-flag requirement, so the
+  composed chain permits an add while CROWDING is active. Pinned by test rather
+  than closed in review, because choosing the mapping is a strategy decision.
+  BTC-152 through BTC-158 also still have no production consumer; only BTC-150
+  and BTC-155 are reached from BTC-180.
 - The EPIC O integration audit left three non-blocking items. BTC-141 still
   carries its ATR multiplier and window as module literals rather than reading
   the versioned `stop_buffers` config the way BTC-144 reads `risk.schedule`;

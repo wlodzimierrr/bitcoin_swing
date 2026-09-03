@@ -39,11 +39,19 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from btc_predictor.config import StrategyConfig
+from btc_predictor.features.add import (
+    ADD_SCORE_FEATURE_ID,
+    RISK_IMPROVEMENT_NORMALIZATION_VERSION,
+    AddScoreResult,
+    RiskImprovementComponent,
+)
 from btc_predictor.portfolio.state_machine import (
     OPEN_POSITION_STATES,
+    PositionLifecycle,
     position_is_profitable_at_price,
 )
 from btc_predictor.quant.comparisons import decision_greater, decision_greater_equal
+from btc_predictor.risk.exposure import RISK_AT_STOP_FEATURE_ID, RiskAtStopResult
 
 
 ADD_REQUIREMENTS_FEATURE_ID = "ADD_REQUIREMENTS"
@@ -250,11 +258,11 @@ def evaluate_add_requirements(
 
 def add_requirements_from_results(
     *,
-    lifecycle: Any,
+    lifecycle: PositionLifecycle,
     current_price: Any,
-    add_score: Any,
-    risk_improvement: Any,
-    projected_risk_at_stop: Any,
+    add_score: AddScoreResult,
+    risk_improvement: RiskImprovementComponent,
+    projected_risk_at_stop: RiskAtStopResult,
     new_structural_confirmation: bool | None,
     regime_supportive: bool | None,
     flow_supportive: bool | None,
@@ -269,41 +277,80 @@ def add_requirements_from_results(
     ``RiskImprovementComponent``, and the ceiling test from a BTC-146
     ``RiskAtStopResult`` computed on the *projected* post-add book. An
     incomplete upstream result resolves to ``None`` and blocks the add.
+
+    Each upstream result is identified rather than duck-typed, the way BTC-157
+    and BTC-158 identify theirs. A ``HoldScoreResult`` also exposes ``score``
+    and ``complete``, so structural typing alone would let the v1.2 de-nesting
+    that BTC-153 exists to enforce be undone here by composition -- an add
+    authorized by Hold Score, with the persisted evidence saying so and nothing
+    refusing it. Config identity is checked for the same reason: a run must not
+    mix parameter sets and then record itself under only one of them.
     """
+
+    if not isinstance(lifecycle, PositionLifecycle):
+        raise TypeError("lifecycle must be a PositionLifecycle")
+    if not isinstance(add_score, AddScoreResult):
+        raise TypeError("add_score must be an AddScoreResult")
+    if not isinstance(risk_improvement, RiskImprovementComponent):
+        raise TypeError("risk_improvement must be a RiskImprovementComponent")
+    if not isinstance(projected_risk_at_stop, RiskAtStopResult):
+        raise TypeError("projected_risk_at_stop must be a RiskAtStopResult")
+    if not isinstance(strategy_config, StrategyConfig):
+        raise TypeError("strategy_config must be a StrategyConfig")
+    if add_score.feature_id != ADD_SCORE_FEATURE_ID:
+        raise ValueError("add_score feature_id must be ADD_SCORE")
+    if projected_risk_at_stop.feature_id != RISK_AT_STOP_FEATURE_ID:
+        raise ValueError("projected_risk_at_stop feature_id must be RISK_AT_STOP")
+    if (
+        risk_improvement.normalization_version
+        != RISK_IMPROVEMENT_NORMALIZATION_VERSION
+    ):
+        raise ValueError(
+            "risk_improvement normalization_version must be "
+            f"{RISK_IMPROVEMENT_NORMALIZATION_VERSION}",
+        )
+    add_score.as_record()
+    projected_risk_at_stop.as_record()
+    risk_improvement.as_record()
+
+    metadata = _validate_config_metadata(strategy_config.run_metadata())
+    for source, source_metadata in (
+        ("lifecycle", lifecycle.config_metadata),
+        ("add_score", add_score.config_metadata),
+        ("projected_risk_at_stop", projected_risk_at_stop.config_metadata),
+    ):
+        if dict(source_metadata) != metadata:
+            raise ValueError(f"{source} config_metadata does not match strategy_config")
 
     evidence = {
         key: tuple(codes) for key, codes in dict(source_reason_codes or {}).items()
     }
 
-    lifecycle_state = getattr(lifecycle, "state", None)
-    average_entry = getattr(lifecycle, "average_entry_price", None)
-    direction = getattr(lifecycle, "direction", None)
     profitable: bool | None = None
     if (
-        lifecycle_state in OPEN_POSITION_STATES
-        and average_entry is not None
-        and direction is not None
+        lifecycle.state in OPEN_POSITION_STATES
+        and lifecycle.average_entry_price is not None
     ):
         profitable = position_is_profitable_at_price(
-            direction=direction,
-            average_entry_price=average_entry,
+            direction=lifecycle.direction,
+            average_entry_price=lifecycle.average_entry_price,
             current_price=current_price,
         )
-    if getattr(lifecycle, "reason_codes", None):
+    if lifecycle.reason_codes:
         evidence.setdefault("lifecycle", tuple(lifecycle.reason_codes))
 
-    score = add_score.score if getattr(add_score, "complete", False) else None
-    if getattr(add_score, "reason_codes", None):
+    score = add_score.score if add_score.complete else None
+    if add_score.reason_codes:
         evidence.setdefault("add_score", tuple(add_score.reason_codes))
 
-    signed = getattr(risk_improvement, "signed_improvement", None)
+    signed = risk_improvement.signed_improvement
 
     within_maximum = (
         projected_risk_at_stop.within_maximum
-        if getattr(projected_risk_at_stop, "complete", False)
+        if projected_risk_at_stop.complete
         else None
     )
-    if getattr(projected_risk_at_stop, "reason_codes", None):
+    if projected_risk_at_stop.reason_codes:
         evidence.setdefault(
             "projected_risk_at_stop",
             tuple(projected_risk_at_stop.reason_codes),

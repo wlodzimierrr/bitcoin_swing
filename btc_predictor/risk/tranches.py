@@ -46,6 +46,7 @@ TRANCHE_SIZING_REASON_CODES = (
     "TRANCHE_SIZING_ASSIGNED",
     "TRANCHE_SIZING_SCHEDULE_EXHAUSTED",
     "TRANCHE_SIZING_NO_POSITION_SIZE",
+    "TRANCHE_SIZING_NO_ADD_PRICE",
     "TRANCHE_SIZING_INPUT_MISSING",
 )
 
@@ -236,13 +237,21 @@ def next_tranche_for_position(
     The stage number comes from the BTC-150 tranche count rather than from a
     caller's own counter, and the whole-position size from the BTC-145 result,
     so neither the off-by-one nor the position size can be restated.
+
+    ``entry_price`` is the price this tranche will actually fill at. BTC-145's
+    own entry price stands in only for the *first* tranche, which is the one it
+    priced. Reusing it for a later tranche would pair a share of the final
+    **notional** with a stale price and hand back a quantity worth more than
+    the share it reports: an add at +30% would deliver 130% of its authorized
+    notional while the record still says 100%. A later tranche therefore gets
+    no allocation until its own price is supplied, which BTC-163 refuses on.
     """
 
     size_record = _as_record(position_size, "position_size")
     filled = _tranche_count(lifecycle)
     metadata = dict(config_metadata or {})
 
-    if not size_record.get("complete"):
+    def unallocated(reason: str) -> TrancheSizingResult:
         fractions = (
             validate_tranche_schedule(schedule)
             if schedule is not None
@@ -254,15 +263,28 @@ def next_tranche_for_position(
             notional=None,
             entry=None,
             metadata=metadata,
-            reason_codes=("TRANCHE_SIZING_NO_POSITION_SIZE",),
+            reason_codes=(reason,),
         )
+
+    if not size_record.get("complete"):
+        return unallocated("TRANCHE_SIZING_NO_POSITION_SIZE")
+
+    price = entry_price
+    if price is None and filled == 0:
+        price = size_record.get("entry_price")
+    if price is None and filled < len(
+        validate_tranche_schedule(schedule)
+        if schedule is not None
+        else tranche_schedule_from_config(config)
+    ):
+        # An exhausted schedule has no allocation whatever the price, so that
+        # cause stays the one reported.
+        return unallocated("TRANCHE_SIZING_NO_ADD_PRICE")
 
     return calculate_tranche_size(
         tranche_number=filled + 1,
         final_position_notional=size_record.get("position_notional"),
-        entry_price=(
-            entry_price if entry_price is not None else size_record.get("entry_price")
-        ),
+        entry_price=price,
         schedule=schedule,
         config=config,
         config_metadata=metadata,

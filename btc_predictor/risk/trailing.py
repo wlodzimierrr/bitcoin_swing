@@ -375,6 +375,12 @@ def trail_stop_for_position(
     if lifecycle.stop_price is None:
         raise ValueError("open lifecycle must contain a standing stop")
     signal_time = require_utc_datetime(as_of, "as_of")
+    if lifecycle.last_event_at is not None and signal_time < lifecycle.last_event_at:
+        # The standing stop and the advance count are read off the ledger as it
+        # stands now, so a result stamped before the ledger's own watermark
+        # would claim to have been evaluated on state that did not exist yet.
+        # BTC-158 refuses the same composition for the same reason.
+        raise ValueError("as_of must not precede the lifecycle watermark")
     metadata = _validate_config_metadata(lifecycle.config_metadata)
 
     structure_values: dict[str, Any] = {

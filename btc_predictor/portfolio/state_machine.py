@@ -51,7 +51,7 @@ import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_DOWN, Decimal, InvalidOperation, getcontext
 from typing import Any
 
 from btc_predictor.data import require_utc_datetime
@@ -302,15 +302,28 @@ class PositionTransition:
         return record
 
     def as_position_event_record(self) -> dict[str, Any] | None:
-        """Return the schema-compatible portion of an accepted DB event row.
+        """Return the schema-compatible portion of a DB event row, if any.
 
         Account, position, and recommendation identifiers belong to the caller.
         The versioned transition payload lives in ``notes`` because the legacy
         action enum is deliberately coarser than the lifecycle event enum.
+
+        A transition that both starts and ends before a fill writes no row: a
+        ``position_events`` row belongs to a ``positions`` row that does not
+        exist yet. That already held for accepted pre-position events, which
+        have no schema action; it must hold for refused ones too, or the row
+        set skips the accepted arming that moved the state and can no longer be
+        replayed. Pre-position refusals stay in the authoritative lifecycle
+        snapshot instead.
         """
 
         record = self.as_record()
         if self.persisted_action is None:
+            return None
+        if (
+            self.from_state in PRE_POSITION_STATES
+            and self.to_state in PRE_POSITION_STATES
+        ):
             return None
         quantity = self.requested_quantity
         if quantity is None and self.quantity_delta is not None:
@@ -623,11 +636,11 @@ def position_event_records(
 ) -> tuple[dict[str, Any], ...]:
     """Return transition rows compatible with ``position_events``.
 
-    Accepted pre-position transitions have no schema action and remain in the
-    authoritative lifecycle snapshot. Refusals persist as schema-valid HOLD
-    rows whose versioned payload keeps ``accepted = false`` and the attempted
-    event. Rows are rebased to a contiguous replay sequence because accepted
-    pre-position transitions have no ``positions`` row.
+    Transitions that begin and end before a fill have no ``positions`` row and
+    remain in the authoritative lifecycle snapshot only. Post-fill refusals do
+    persist, as schema-valid HOLD rows whose versioned payload keeps
+    ``accepted = false`` and the attempted event. Rows are rebased to a
+    contiguous replay sequence.
     """
 
     _validate_lifecycle(lifecycle)
@@ -834,18 +847,7 @@ def _accept(
         if quantity is None:
             raise ValueError("a trim requires a quantity")
         remaining = total - quantity
-        # Pro-rata across open tranches, so a partial exit leaves the weighted
-        # average entry unchanged instead of silently re-basing it.
-        factor = remaining / total
-        tranches = tuple(
-            Tranche(
-                tranche_number=tranche.tranche_number,
-                entry_price=tranche.entry_price,
-                quantity=tranche.quantity * factor,
-                opened_at=tranche.opened_at,
-            )
-            for tranche in tranches
-        )
+        tranches = _prorata_trim(tranches, total=total, remaining=remaining)
         total = remaining
         delta = -quantity
     elif event == EXIT:
@@ -1109,10 +1111,7 @@ def _validate_lifecycle(lifecycle: PositionLifecycle) -> None:
         _validate_tranche(tranche)
         if tranche.tranche_number != expected_number:
             raise ValueError("tranche numbers must be contiguous in ledger order")
-    ledger_quantity = sum(
-        (item.quantity for item in lifecycle.tranches),
-        Decimal("0"),
-    )
+    ledger_quantity = _ledger_quantity(lifecycle.tranches)
 
     if lifecycle.state in PRE_POSITION_STATES:
         if lifecycle.tranches or quantity != 0:
@@ -1290,6 +1289,69 @@ def _validate_tranche(tranche: Tranche) -> None:
     _positive_decimal(tranche.entry_price, "entry_price")
     _positive_decimal(tranche.quantity, "quantity")
     _parse_utc(tranche.opened_at, "opened_at")
+
+
+def _prorata_trim(
+    tranches: tuple[Tranche, ...],
+    *,
+    total: Decimal,
+    remaining: Decimal,
+) -> tuple[Tranche, ...]:
+    """Scale every open tranche by ``remaining / total`` onto an exact ledger.
+
+    Pro-rata is what keeps a partial exit from silently re-basing the weighted
+    average entry. The scaled quantities are not representable in general --
+    trimming two of three units needs a third -- so rounding each one
+    independently leaves a ledger that misses ``remaining`` by an ulp, and
+    "position quantity must equal the tranche ledger" then rejects an ordinary
+    permitted trim by raising rather than refusing. Scaling onto one common
+    quantum instead makes every addition in that sum exact. The truncation
+    residual is handed back a quantum at a time, largest tranche first, so the
+    ledger sums to ``remaining`` exactly and the requested quantity remains the
+    applied quantity. A quantum is the last digit of the context, so the
+    average entry moves by around 1e-26 relative at worst -- fourteen orders of
+    magnitude below DECISION_COMPARISON_V1's tolerance, and zero whenever the
+    split is exactly representable.
+    """
+
+    quantum = Decimal(1).scaleb(remaining.adjusted() - (getcontext().prec - 1))
+    factor = remaining / total
+    scaled = [
+        (tranche.quantity * factor).quantize(quantum, rounding=ROUND_DOWN)
+        for tranche in tranches
+    ]
+    # The rescaled factor can round either way, so the residual has a sign.
+    residual = remaining - _ledger_quantity_of(scaled)
+    step = quantum if residual > 0 else -quantum
+    order = sorted(range(len(scaled)), key=lambda index: (-scaled[index], index))
+    applied = 0
+    limit = 8 * len(order) + 8
+    while residual != 0:
+        if applied >= limit:
+            raise ValueError("pro-rata trim did not converge onto an exact ledger")
+        index = order[applied % len(order)]
+        scaled[index] = scaled[index] + step
+        residual = residual - step
+        applied += 1
+    return tuple(
+        Tranche(
+            tranche_number=tranche.tranche_number,
+            entry_price=tranche.entry_price,
+            quantity=quantity,
+            opened_at=tranche.opened_at,
+        )
+        for tranche, quantity in zip(tranches, scaled)
+    )
+
+
+def _ledger_quantity_of(quantities: Iterable[Decimal]) -> Decimal:
+    return sum(quantities, Decimal("0"))
+
+
+def _ledger_quantity(tranches: tuple[Tranche, ...]) -> Decimal:
+    """Total open quantity, summed exactly as :func:`_validate_lifecycle` does."""
+
+    return _ledger_quantity_of(tranche.quantity for tranche in tranches)
 
 
 def _average_entry(tranches: tuple[Tranche, ...]) -> Decimal | None:

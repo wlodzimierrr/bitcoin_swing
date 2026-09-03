@@ -282,8 +282,13 @@ def test_default_config_keeps_both_optional_gates_enabled() -> None:
 # --- canonical path over real upstream results ---------------------------
 
 
-def open_position(*, add_price: str | None = None):
-    lifecycle = start_position_lifecycle(symbol=SYMBOL, state=PENDING_ENTRY)
+def open_position(*, add_price: str | None = None, config=None):
+    metadata = (config or load_strategy_config()).run_metadata()
+    lifecycle = start_position_lifecycle(
+        symbol=SYMBOL,
+        state=PENDING_ENTRY,
+        config_metadata=metadata,
+    )
     lifecycle = apply_position_event(
         lifecycle,
         event=ENTER,
@@ -410,7 +415,10 @@ def test_canonical_path_blocks_when_a_lifecycle_is_not_open() -> None:
     config = load_strategy_config()
 
     result = add_requirements_from_results(
-        lifecycle=start_position_lifecycle(symbol=SYMBOL),
+        lifecycle=start_position_lifecycle(
+            symbol=SYMBOL,
+            config_metadata=config.run_metadata(),
+        ),
         current_price="118000",
         **upstream(config, score="90", current="10000", proposed="6000"),
         new_structural_confirmation=True,
