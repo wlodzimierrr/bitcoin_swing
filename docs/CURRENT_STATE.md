@@ -20,14 +20,16 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
+- **Last epic integration audit:** EPIC E and EPIC E2 (2026-09-03),
+  PASS WITH NON-BLOCKING FINDINGS after one P1 review fix
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3427 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `75bc0761`
-  (`fix: BTC-224 review fix for the golden money reconciliation`)
+- **Latest verified test baseline:** 3433 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** `e9e28ae`
+  (`fix: close EPIC E integration review findings`)
 
 ## Price-Reference State
 
@@ -55,6 +57,12 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   BTC-165 refuse an add-then-trim trade outright. BTC-224 found the second gap
   reachable from an ordinary review of February 2024 and pins it there as a
   known composition limit.
+- The EPIC E/E2 integration audit left three non-blocking items with their own
+  owners: `realized_volatility_from_daily_bars` (EPIC I) and
+  `atr_from_daily_bars` (EPIC O) still read a gapped daily series as
+  contiguous, three BTC-019 research helpers restate the true-range formula
+  instead of using the BTC-041 owner, and BTC-048 feature/target matrices
+  serialize but have no restore or tamper-validation path.
 
 ## Important Active Invariants
 
