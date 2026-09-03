@@ -833,12 +833,37 @@ def test_every_entry_is_sized_from_its_conviction_budget_and_stop_distance(
         )
 
 
+def carried_funding(result: BacktestResult) -> Decimal:
+    """Re-derive the carry from the sessions rather than from the engine.
+
+    Funding is charged at the start of a session on the quantity the ledger
+    carried into it -- the previous session's closing quantity -- and a
+    canonical daily session is one day of carry. Taking the engine's own
+    funding number instead would leave carry as the one cost in this
+    reconciliation that is never independently derived.
+    """
+
+    rate = result.effective_costs.funding_cost_bps_per_day / BASIS_POINT
+    carried = Decimal("0")
+    total = Decimal("0")
+    for bar, point in zip(result.input_bars, result.equity_curve, strict=True):
+        total += carried * bar.close * rate
+        carried = point.open_quantity
+    return total
+
+
+@pytest.mark.parametrize("cost_profile", COST_PROFILES)
 def test_the_money_reconciles_from_the_fills_alone(
     scenario: dict[str, Any],
+    cost_profile: str,
 ) -> None:
-    """Walk the fills once, on one convention, and land on the engine's NAV."""
+    """Walk the fills once, on one convention, and land on the engine's NAV.
 
-    result = golden_result(scenario["scenario_id"])
+    Run on every rung, because the base rung prices no carry: a reconciliation
+    that only ever sees a zero funding term is not reconciling one.
+    """
+
+    result = golden_result(scenario["scenario_id"], cost_profile)
     fee_rate = result.effective_costs.fee_bps / BASIS_POINT
     opening_notional = Decimal("0")
     closing_notional = Decimal("0")
@@ -857,7 +882,7 @@ def test_the_money_reconciles_from_the_fills_alone(
     trade = result.trades[-1] if result.trades else None
     average_entry = trade.average_entry_price if trade is not None else Decimal("0")
     gross = closing_notional - average_entry * closed_quantity
-    funding = sum((item.funding for item in result.trades), Decimal("0"))
+    funding = carried_funding(result)
     open_quantity = result.equity_curve[-1].open_quantity
     unrealized = (
         (result.input_bars[-1].close - average_entry) * open_quantity
@@ -868,11 +893,23 @@ def test_the_money_reconciles_from_the_fills_alone(
 
     assert abs(result.account.fees_paid - fees) < Decimal("0.000000001")
     assert abs(result.ending_nav - nav) < Decimal("0.000000001")
+    total_funding = sum((item.funding for item in result.trades), Decimal("0"))
+    assert abs(total_funding - funding) < Decimal("0.000000001")
     if trade is not None and trade.closed:
         assert abs(trade.gross_pnl - gross) < Decimal("0.000000001")
         assert abs(trade.net_pnl - (gross - fees - funding)) < Decimal("0.000000001")
         assert opening_notional == trade.entry_notional
         assert closing_notional == trade.exit_notional
+        # R is the reviewed headline of every scenario, so it is re-derived
+        # here too rather than resting on the recorded expectation alone: net
+        # of every cost, over the risk the entry actually took.
+        initial_risk = trade.initial_quantity * (
+            trade.initial_entry_price - trade.initial_stop_price
+        )
+        assert initial_risk > 0
+        assert abs(
+            trade.r_multiple - (gross - fees - funding) / initial_risk
+        ) < Decimal("0.000000001")
 
 
 def test_no_scenario_averages_down_widens_a_stop_or_leaves_the_risk_ceiling(
