@@ -264,7 +264,7 @@ def test_charges_and_settlements_accumulate() -> None:
 
     final = (
         opened.charge_fee(NOTIONAL)
-        .charge_funding(NOTIONAL, days=10)
+        .charge_funding(NOTIONAL, days=10, direction="long")
         .settle_realized_pnl("5000")
         .charge_fee(NOTIONAL)
     )
@@ -273,6 +273,74 @@ def test_charges_and_settlements_accumulate() -> None:
     assert final.realized_pnl == Decimal("5000")
     assert final.total_costs_paid == final.fees_paid + final.funding_paid
     assert final.cash == Decimal("100000") - final.total_costs_paid + Decimal("5000")
+
+
+def test_cash_exhaustion_survives_the_step_that_caused_it() -> None:
+    """A floored balance is not a balance, and the record must keep saying so.
+
+    Flooring at zero keeps the row insertable under the
+    ``paper_accounts_current_cash_non_negative`` CHECK, but it throws the
+    deficit away. When the code cleared on the next charge, a consumer reading
+    only the final account saw a clean zero with nothing to distinguish it
+    from an account that simply spent everything exactly.
+    """
+
+    wiped = account(starting_nav="100").settle_realized_pnl("-1000")
+
+    assert wiped.cash == Decimal("0")
+    assert wiped.cash_exhausted is True
+    assert "PAPER_ACCOUNT_CASH_EXHAUSTED" in wiped.reason_codes
+    # The deficit really is gone from cash; realized P&L still records it.
+    assert wiped.realized_pnl == Decimal("-1000")
+
+    for later in (
+        wiped.charge_fee(NOTIONAL),
+        wiped.settle_realized_pnl("50"),
+        wiped.apply_funding_cost("-10"),
+        wiped.archive(),
+    ):
+        assert later.cash_exhausted is True
+        assert "PAPER_ACCOUNT_CASH_EXHAUSTED" in later.reason_codes
+
+    # A healthy account never claims exhaustion.
+    healthy = account(starting_nav="100000").charge_fee(NOTIONAL)
+    assert healthy.cash_exhausted is False
+    assert healthy.reason_codes == ("PAPER_ACCOUNT_FEE_CHARGED",)
+
+
+def test_funding_is_signed_by_the_side_that_pays_it() -> None:
+    """A long pays the carry and a short receives it, the BTC-165 convention.
+
+    ``ExecutionCosts.funding`` returns an unsigned magnitude, so an account
+    that defaulted the side would debit a short the carry it actually
+    collects, and the two funding paths in the epic would disagree about the
+    same position.
+    """
+
+    costs = ExecutionCosts(
+        policy_version="EXECUTION_COST_V1",
+        fee_bps=Decimal("0"),
+        slippage_bps=Decimal("0"),
+        funding_cost_bps_per_day=Decimal("10"),
+    )
+    opened = account(starting_nav="100000", costs=costs)
+    magnitude = costs.funding(NOTIONAL, days=10)
+
+    paid = opened.charge_funding(NOTIONAL, days=10, direction="long")
+    received = opened.charge_funding(NOTIONAL, days=10, direction="short")
+
+    assert magnitude > 0
+    assert paid.funding_paid == magnitude
+    assert paid.cash == opened.cash - magnitude
+    assert received.funding_paid == -magnitude
+    assert received.cash == opened.cash + magnitude
+    # The signed figure is the one BTC-165 would produce for the same event.
+    assert received.funding_paid == opened.apply_funding_cost(-magnitude).funding_paid
+
+
+def test_funding_refuses_an_unknown_side() -> None:
+    with pytest.raises(ValueError, match="direction must be one of"):
+        account().charge_funding(NOTIONAL, days=1, direction="flat")
 
 
 def test_a_realized_loss_reduces_cash() -> None:
@@ -381,7 +449,7 @@ def test_reason_codes_are_drawn_from_the_declared_set() -> None:
     accounts = [
         account(),
         account().charge_fee(NOTIONAL),
-        account().charge_funding(NOTIONAL, days=1),
+        account().charge_funding(NOTIONAL, days=1, direction="long"),
         account().settle_realized_pnl("100"),
         account(starting_nav="100").settle_realized_pnl("-1000"),
         account().archive(),

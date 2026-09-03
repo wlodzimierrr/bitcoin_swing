@@ -4413,6 +4413,15 @@ This epic is a controlled internal refactor. It must not change strategy behavio
   - `as_db_record()` maps onto the `portfolio.paper_accounts` columns and its
     status CHECK, tested against the live table definition, so no caller
     invents a mapping the constraint would reject.
+  - **EPIC Q integration review.** `charge_funding()` now requires a
+    `direction` and signs the carry the way BTC-165's
+    `funding_event_from_rate` does: a long pays it and a short receives it.
+    `ExecutionCosts.funding()` is documented as the unsigned magnitude, so the
+    account is the only place a side is applied and the two funding paths in
+    the epic cannot disagree about the same position. Cash exhaustion is also
+    sticky now, exposed as `cash_exhausted`: flooring at zero keeps the row
+    insertable under the CHECK but discards the deficit, and that fact must
+    outlive the step that caused it rather than being cleared by the next fee.
 
 #### BTC-161 Implement simulated entry execution
 - **Description:**
@@ -4462,6 +4471,15 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     caught four test fixtures which had overridden open/high/low while keeping
     a default close outside the new range; the fixtures were corrected rather
     than the check relaxed.
+  - **EPIC Q integration review.** The notional is now the exact Decimal
+    product, pinned to the BTC-047 kernel by parity check exactly as BTC-162
+    does it, instead of being rounded through float64. The float detour made
+    this the one execution in the epic whose notional -- and therefore whose
+    fee -- disagreed with the product BTC-165 books for the same fill; the
+    golden scenarios' recorded fees, net P&L, R and ending NAV moved in their
+    last digits as a result. Zone touch and reference selection also use
+    `DECISION_COMPARISON_V1`, so an entry zone and a BTC-162 stop answer the
+    identical "did price reach this level" question under one policy.
 
 #### BTC-162 Implement simulated stop execution
 - **Description:**
@@ -4696,6 +4714,19 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     convention, and the complete replay record to `portfolio.completed_trades`.
     `max_size` is explicitly `MAX_OPEN_ENTRY_COST_BASIS_V1`, reported as both
     base-asset quantity and entry-cost notional rather than market exposure.
+  - **EPIC Q integration review.** The position walk is now exact rational
+    arithmetic. A pro-rata basis removal is `cost_basis * closed / open`, which
+    repeats for any open quantity that does not terminate in Decimal's 28-digit
+    context -- and BTC-155 produces those routinely, because it divides a
+    notional by a price. The rounded removal left the amount taken out of the
+    basis and the amount added to realized P&L disagreeing by about 1e-23, so
+    an ordinary add-then-trim trade failed the exact cash-flow identity and was
+    refused outright. Cost basis, realized P&L, entry and exit notional and the
+    excursion walk are carried as `Fraction` and converted once at the
+    boundary; a terminating value converts exactly and only a still-open
+    trade's repeating pro-rata figure is rounded. Reported values are
+    unchanged apart from trailing zeros. BTC-223 and BTC-224 had both pinned
+    this gap as a known limit; both are now positive regressions.
 
 #### BTC-166 Persist complete paper trade lifecycle
 - **Description:**
@@ -4753,6 +4784,13 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     `paper_orders` column. That became false by design and was corrected to
     state the actual contract: execution knows the fill, not the run, and must
     not invent a strategy version.
+  - **EPIC Q integration review.** Only the BTC-165 accounting had its strategy
+    identity checked against the provenance; every BTC-161..164 execution and
+    the BTC-150 ledger were stamped on trust. A trade run under one parameter
+    set could therefore be persisted as another and `verify_lifecycle_rows()`
+    would still pass, which would make the queryable provenance the ticket
+    exists to create fiction. Every contributor's own `config_metadata` is now
+    verified against the stamp before its rows are built.
 
 ## EPIC R — Advisory Output
 

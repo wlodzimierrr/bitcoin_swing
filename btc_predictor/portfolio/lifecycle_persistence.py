@@ -174,16 +174,25 @@ def build_paper_trade_lifecycle_rows(
 
     orders = tuple(
         _stamped(
-            _order_record(execution, account_id=account, position_id=position),
+            _order_record(
+                execution,
+                provenance=provenance,
+                account_id=account,
+                position_id=position,
+            ),
             columns,
             table=ORDERS_TABLE,
         )
         for execution in executions
     )
-    events = (
-        ()
-        if lifecycle is None
-        else tuple(
+    events = ()
+    if lifecycle is not None:
+        _verify_strategy_identity(
+            getattr(lifecycle, "config_metadata", None),
+            provenance=provenance,
+            source="lifecycle",
+        )
+        events = tuple(
             _stamped(
                 {**row, "account_id": account, "position_id": position},
                 columns,
@@ -191,7 +200,6 @@ def build_paper_trade_lifecycle_rows(
             )
             for row in position_event_records(lifecycle)
         )
-    )
     completed_trade = (
         None
         if accounting is None
@@ -263,13 +271,46 @@ def verify_lifecycle_rows(rows: PaperTradeLifecycleRows) -> None:
 def _order_record(
     execution: Any,
     *,
+    provenance: LifecycleProvenance,
     account_id: int,
     position_id: int,
 ) -> dict[str, Any]:
     builder = getattr(execution, "as_order_record", None)
     if not callable(builder):
         raise TypeError("executions must expose as_order_record()")
+    _verify_strategy_identity(
+        getattr(getattr(execution, "intent", None), "config_metadata", None),
+        provenance=provenance,
+        source="execution",
+    )
     return builder(account_id=account_id, position_id=position_id)
+
+
+def _verify_strategy_identity(
+    metadata: Any,
+    *,
+    provenance: LifecycleProvenance,
+    source: str,
+) -> None:
+    """Raise unless a contributor was produced under the stamped identity.
+
+    Stamping a row is not evidence that the stamp is true. Every contributor
+    -- each BTC-161..164 execution, the BTC-150 ledger, and the BTC-165
+    accounting -- already carries the config identity it ran under, so the
+    stamp is checked against that rather than trusted. Without this a trade
+    executed under one parameter set could be persisted as another, and the
+    queryable provenance BTC-166 exists to create would be fiction.
+    """
+
+    if not isinstance(metadata, Mapping):
+        raise TypeError(f"{source} must expose config_metadata")
+    expected = {
+        "strategy_version": provenance.strategy_version,
+        "parameter_set_id": provenance.parameter_set_id,
+    }
+    for key, value in expected.items():
+        if metadata.get(key) != value:
+            raise ValueError(f"{source} {key} does not match lifecycle provenance")
 
 
 def _accounting_record(
@@ -279,16 +320,11 @@ def _accounting_record(
     account_id: int,
     position_id: int,
 ) -> dict[str, Any]:
-    metadata = getattr(accounting, "config_metadata", None)
-    if not isinstance(metadata, Mapping):
-        raise TypeError("accounting must expose config_metadata")
-    expected = {
-        "strategy_version": provenance.strategy_version,
-        "parameter_set_id": provenance.parameter_set_id,
-    }
-    for key, value in expected.items():
-        if metadata.get(key) != value:
-            raise ValueError(f"accounting {key} does not match lifecycle provenance")
+    _verify_strategy_identity(
+        getattr(accounting, "config_metadata", None),
+        provenance=provenance,
+        source="accounting",
+    )
     builder = getattr(accounting, "as_completed_trade_record", None)
     if not callable(builder):
         raise TypeError("accounting must expose as_completed_trade_record()")

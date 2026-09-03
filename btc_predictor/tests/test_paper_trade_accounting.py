@@ -523,9 +523,15 @@ def test_record_is_persistable_and_self_consistent() -> None:
 
     assert record["feature_id"] == "PAPER_TRADE_ACCOUNTING"
     assert record["r_multiple_convention"] == "INITIAL_PLANNED_RISK_V1"
-    assert record["gross_pnl"] == "70000.0000000000000000000000"
-    assert record["net_pnl"] == "69010.0000000000000000000000"
-    assert record["r_multiple"] == "3.4505000000000000000000"
+    # The exact rational walk serializes a figure at its own scale rather than
+    # at whatever scale the accumulation happened to leave behind. The values
+    # are unchanged; only the trailing zeros are.
+    assert record["gross_pnl"] == "70000"
+    assert Decimal(record["gross_pnl"]) == Decimal("70000")
+    assert record["net_pnl"] == "69010.000"
+    assert Decimal(record["net_pnl"]) == Decimal("69010")
+    assert record["r_multiple"] == "3.4505"
+    assert Decimal(record["r_multiple"]) == Decimal("3.4505")
     # Serialized scale follows from the seconds division; the value is exact.
     assert record["holding_days"] == "28.0"
     assert Decimal(record["holding_days"]) == Decimal("28")

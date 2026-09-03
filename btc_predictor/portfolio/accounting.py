@@ -25,6 +25,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
+from fractions import Fraction
 from typing import Any
 
 from btc_predictor.data import OhlcvBar, next_bar_timestamp, require_utc_datetime
@@ -146,13 +147,26 @@ class FundingEvent:
 
 @dataclass(frozen=True)
 class _PositionState:
+    """One point on the position walk.
+
+    ``cost_basis`` and ``realized_gross`` are exact rationals, not Decimals.
+    A pro-rata basis removal is ``cost_basis * closed / open``, which repeats
+    for any open quantity that is not a terminating decimal -- and BTC-155
+    produces those routinely, because it divides a notional by a price.
+    Rounding that removal to the Decimal context leaves the amount taken out
+    of the basis and the amount added to realized P&L disagreeing in the last
+    place, so the telescoping identities this module is built on stop holding
+    exactly. Keeping the walk rational makes the removal cancel exactly and
+    only the final reported figure is converted.
+    """
+
     filled_at: datetime
     sequence: int
     action: str
     fill_price: Decimal
     quantity: Decimal
-    cost_basis: Decimal
-    realized_gross: Decimal
+    cost_basis: Fraction
+    realized_gross: Fraction
 
 
 @dataclass(frozen=True)
@@ -389,27 +403,28 @@ def calculate_trade_accounting(
 
     long_position = direction == LONG_DIRECTION
     quantity = Decimal("0")
-    cost_basis = Decimal("0")
+    cost_basis = Fraction(0)
     opened_quantity = Decimal("0")
-    realized = Decimal("0")
+    realized = Fraction(0)
     fees = Decimal("0")
-    entry_notional = Decimal("0")
-    exit_notional = Decimal("0")
+    entry_notional = Fraction(0)
+    exit_notional = Fraction(0)
     maximum_quantity = Decimal("0")
-    maximum_entry_notional = Decimal("0")
+    maximum_entry_notional = Fraction(0)
     add_count = 0
     trim_count = 0
     timeline: list[_PositionState] = []
 
     for index, fill in enumerate(ordered):
         fees += fill.fee
+        fill_notional = Fraction(fill.notional)
         if fill.opening:
             if quantity == 0 and fill.action != ENTER_ACTION:
                 raise ValueError("ADD requires an open position")
             quantity += fill.quantity
             opened_quantity += fill.quantity
-            cost_basis += fill.notional
-            entry_notional += fill.notional
+            cost_basis += fill_notional
+            entry_notional += fill_notional
             if fill.action == ADD_ACTION:
                 add_count += 1
             maximum_quantity = max(maximum_quantity, quantity)
@@ -429,12 +444,12 @@ def calculate_trade_accounting(
             removed = (
                 cost_basis
                 if fill.quantity == quantity
-                else cost_basis * fill.quantity / quantity
+                else cost_basis * Fraction(fill.quantity) / Fraction(quantity)
             )
             realized += (
-                fill.notional - removed if long_position else removed - fill.notional
+                fill_notional - removed if long_position else removed - fill_notional
             )
-            exit_notional += fill.notional
+            exit_notional += fill_notional
             cost_basis -= removed
             quantity -= fill.quantity
             if fill.action == TRIM_ACTION:
@@ -489,17 +504,23 @@ def calculate_trade_accounting(
     )
     funding_total = sum((event.funding_cost for event in events), Decimal("0"))
     initial_risk = opening.quantity * abs(opening.price - stop_price)
-    gross_pnl = realized
-    net_pnl = gross_pnl - fees - funding_total
 
     if closed:
+        # The walk is rational, so this holds exactly for every trade shape,
+        # including a pyramided position that was trimmed before it closed.
         expected_gross = (
             exit_notional - entry_notional
             if long_position
             else entry_notional - exit_notional
         )
-        if gross_pnl != expected_gross:
+        if realized != expected_gross:
             raise ValueError("closed trade does not satisfy the exact cash-flow identity")
+
+    entry_notional_value = _from_fraction(entry_notional)
+    exit_notional_value = _from_fraction(exit_notional)
+    maximum_entry_notional_value = _from_fraction(maximum_entry_notional)
+    gross_pnl = _from_fraction(realized)
+    net_pnl = gross_pnl - fees - funding_total
     r_multiple = None if not closed or initial_risk == 0 else net_pnl / initial_risk
     bars = tuple(excursion_bars or ())
     favourable, adverse = _excursions(
@@ -571,9 +592,9 @@ def calculate_trade_accounting(
         initial_stop_price=stop_price,
         initial_stop_source_id=stop_source,
         initial_risk=initial_risk,
-        average_entry_price=entry_notional / opened_quantity,
-        entry_notional=entry_notional,
-        exit_notional=exit_notional,
+        average_entry_price=entry_notional_value / opened_quantity,
+        entry_notional=entry_notional_value,
+        exit_notional=exit_notional_value,
         gross_pnl=gross_pnl,
         fees=fees,
         funding=funding_total,
@@ -590,7 +611,7 @@ def calculate_trade_accounting(
             None if adverse is None or initial_risk == 0 else adverse / initial_risk
         ),
         maximum_quantity=maximum_quantity,
-        maximum_entry_notional=maximum_entry_notional,
+        maximum_entry_notional=maximum_entry_notional_value,
         add_count=add_count,
         trim_count=trim_count,
         exit_reason=normalized_exit_reason,
@@ -782,6 +803,8 @@ def _excursions(
     terminal_at: datetime,
     accounting_as_of: datetime,
 ) -> tuple[Decimal | None, Decimal | None]:
+    """Return signed MFE and MAE, converted from the exact rational walk."""
+
     if not bars:
         return None, None
     execution_bars: set[tuple[datetime, str]] = set()
@@ -792,7 +815,7 @@ def _excursions(
             )
         execution_bars.add((fill.execution_bar_at, fill.execution_bar_timeframe))
 
-    observations: list[tuple[Decimal, Decimal]] = []
+    observations: list[tuple[Fraction, Fraction]] = []
     previous_timestamp: datetime | None = None
     seen: set[tuple[Any, ...]] = set()
     for bar in bars:
@@ -841,8 +864,8 @@ def _excursions(
     if not observations:
         return None, None
     return (
-        max(best for best, _ in observations),
-        min(worst for _, worst in observations),
+        _from_fraction(max(best for best, _ in observations)),
+        _from_fraction(min(worst for _, worst in observations)),
     )
 
 
@@ -872,9 +895,9 @@ def _validate_excursion_bar(
 
 
 def _unrealized(
-    quantity: Decimal, price: Decimal, basis: Decimal, long_position: bool
-) -> Decimal:
-    marked = quantity * price
+    quantity: Decimal, price: Decimal, basis: Fraction, long_position: bool
+) -> Fraction:
+    marked = Fraction(quantity) * Fraction(price)
     return marked - basis if long_position else basis - marked
 
 
@@ -885,8 +908,8 @@ def _empty_state(at: datetime) -> _PositionState:
         action=ENTER_ACTION,
         fill_price=Decimal("0"),
         quantity=Decimal("0"),
-        cost_basis=Decimal("0"),
-        realized_gross=Decimal("0"),
+        cost_basis=Fraction(0),
+        realized_gross=Fraction(0),
     )
 
 
@@ -1164,6 +1187,32 @@ def _identifier(value: Any, name: str) -> str:
 
 def _optional_identifier(value: Any, name: str) -> str | None:
     return None if value is None else _identifier(value, name)
+
+
+def _from_fraction(value: Fraction) -> Decimal:
+    """Return the exact Decimal of a terminating rational, else round it.
+
+    Every figure this module reports from the position walk is a sum or
+    difference of fill notionals, so the exact branch is the one the cash-flow
+    and excursion identities depend on. Only a pro-rata basis removal on a
+    still-open trade can repeat, and that is rounded by the same context
+    division the walk used before this became rational.
+    """
+
+    remaining = value.denominator
+    twos = 0
+    while remaining % 2 == 0:
+        remaining //= 2
+        twos += 1
+    fives = 0
+    while remaining % 5 == 0:
+        remaining //= 5
+        fives += 1
+    if remaining != 1:
+        return Decimal(value.numerator) / Decimal(value.denominator)
+    exponent = max(twos, fives)
+    scaled = value.numerator * (10**exponent // value.denominator)
+    return Decimal(f"{scaled}E-{exponent}")
 
 
 def _decimal(value: Any, name: str) -> Decimal:

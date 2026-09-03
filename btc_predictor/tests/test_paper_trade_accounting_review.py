@@ -3,6 +3,7 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from fractions import Fraction
 
 import pytest
 
@@ -198,6 +199,62 @@ def test_decimal_property_grid_preserves_exact_close_identity() -> None:
         assert result.gross_pnl == sells - buys
         assert result.entry_notional == buys
         assert result.exit_notional == sells
+
+
+def test_non_terminating_quantity_grid_preserves_exact_close_identity() -> None:
+    """The axis that used to break: a quantity that fills the Decimal context.
+
+    The grid above varies prices, which BTC-165 could always absorb because a
+    price never enters the pro-rata basis divisor. An open quantity does, and
+    BTC-155 produces non-terminating ones routinely by dividing a notional by
+    a price. Every expectation here is rational, because a Decimal expression
+    would round exactly the digits under test.
+    """
+
+    non_terminating = 0
+    for case in range(1, 51):
+        entry_quantity = Decimal(case) / Decimal("7")
+        add_quantity = Decimal(case) / Decimal("11")
+        open_quantity = entry_quantity + add_quantity
+        trim_quantity = Decimal(case) / Decimal("13")
+        exit_quantity = open_quantity - trim_quantity
+        if open_quantity != open_quantity.quantize(Decimal("1e-20")):
+            non_terminating += 1
+        for direction, opening, closing in (
+            ("long", ("ENTER", "ADD"), ("TRIM", "EXIT")),
+            ("short", ("ENTER", "ADD"), ("TRIM", "EXIT")),
+        ):
+            prices = (
+                ("100", "104", "112", "118")
+                if direction == "long"
+                else ("118", "112", "104", "100")
+            )
+            fills = (
+                fill(1, 0, opening[0], str(entry_quantity), prices[0]),
+                fill(2, 1, opening[1], str(add_quantity), prices[1]),
+                fill(3, 2, closing[0], str(trim_quantity), prices[2]),
+                fill(4, 3, closing[1], str(exit_quantity), prices[3]),
+            )
+            stop = "80" if direction == "long" else "140"
+            result = account(fills, direction=direction, initial_stop_price=stop)
+
+            buys = Fraction(fills[0].notional) + Fraction(fills[1].notional)
+            sells = Fraction(fills[2].notional) + Fraction(fills[3].notional)
+            expected = sells - buys if direction == "long" else buys - sells
+
+            signed = (
+                result.exit_notional - result.entry_notional
+                if direction == "long"
+                else result.entry_notional - result.exit_notional
+            )
+            assert result.closed is True
+            assert Fraction(result.entry_notional) == buys
+            assert Fraction(result.exit_notional) == sells
+            assert Fraction(result.gross_pnl) == expected
+            assert result.gross_pnl == signed
+
+    # The grid is only evidence if most of it really does repeat.
+    assert non_terminating >= 45
 
 
 def test_excursion_inputs_require_execution_bar_provenance() -> None:

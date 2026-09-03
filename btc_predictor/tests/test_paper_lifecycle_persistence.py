@@ -288,6 +288,53 @@ def test_accounting_strategy_identity_cannot_be_relabelled_at_persistence() -> N
         build(accounting=mismatched)
 
 
+def test_execution_strategy_identity_cannot_be_relabelled_at_persistence() -> None:
+    """An order row must be stamped with the identity its fill actually ran under."""
+
+    execution = entry_execution()
+    mismatched = replace(
+        execution,
+        intent=replace(
+            execution.intent,
+            config_metadata={**CONFIG_METADATA, "parameter_set_id": "experiment_b"},
+        ),
+    )
+
+    with pytest.raises(ValueError, match="execution parameter_set_id"):
+        build(executions=[mismatched])
+
+
+def test_lifecycle_strategy_identity_cannot_be_relabelled_at_persistence() -> None:
+    """The BTC-150 ledger's own identity governs its event rows."""
+
+    mismatched = replace(
+        closed_lifecycle(),
+        config_metadata={**CONFIG_METADATA, "strategy_version": "swing_v9.9"},
+    )
+
+    with pytest.raises(ValueError, match="lifecycle strategy_version"):
+        build(lifecycle=mismatched)
+
+
+def test_every_contributor_is_checked_not_only_the_accounting() -> None:
+    """A trade run under one parameter set cannot be persisted as another.
+
+    Before this check only BTC-165 was verified, so a whole set of order and
+    event rows could carry a stamp no contributor had ever run under and
+    ``verify_lifecycle_rows`` would still pass -- which would make the
+    queryable provenance the ticket exists to create fiction.
+    """
+
+    foreign = provenance(parameter_set_id="experiment_b")
+
+    with pytest.raises(ValueError, match="parameter_set_id"):
+        build(provenance=foreign, lifecycle=None, accounting=None)
+    with pytest.raises(ValueError, match="parameter_set_id"):
+        build(provenance=foreign, executions=[], accounting=None)
+    with pytest.raises(ValueError, match="parameter_set_id"):
+        build(provenance=foreign, executions=[], lifecycle=None)
+
+
 @pytest.mark.parametrize(
     ("kwargs", "expected"),
     [

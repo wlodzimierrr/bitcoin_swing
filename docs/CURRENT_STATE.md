@@ -20,17 +20,17 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
-- **Last epic integration audit:** EPIC P, position lifecycle / pyramiding
-  (2026-09-03), PASS WITH NON-BLOCKING FINDINGS after two P1 and three P2
-  review fixes. EPIC O, EPIC E and EPIC E2 were audited earlier the same day
+- **Last epic integration audit:** EPIC Q, paper trading engine (2026-09-03),
+  PASS WITH NON-BLOCKING FINDINGS after one P1, two P2 and two P3 review
+  fixes. EPIC P, EPIC O, EPIC E and EPIC E2 were audited earlier the same day
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3494 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `410e329`
-  (`fix: close EPIC P integration review findings`)
+- **Latest verified test baseline:** 3502 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** `REVIEW_FIX_COMMIT`
+  (`fix: close EPIC Q integration review findings`)
 
 ## Price-Reference State
 
@@ -52,15 +52,12 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
 
 - Production canonical BTC reference selection remains unresolved under
   BTC-019.
-- BTC-223 surfaced two paper-execution composition gaps left to their owners:
-  the BTC-180 discretionary-exit boundary shapes no `paper_orders` row, and a
-  BTC-155 tranche quantity that does not terminate in Decimal's context makes
-  BTC-165 refuse an add-then-trim trade outright. BTC-224 found the second gap
-  reachable from an ordinary review of February 2024 and pins it there as a
-  known composition limit. The EPIC P audit fixed the BTC-150 half of that
-  family -- the ledger no longer raises on such a trim -- but BTC-165's
-  `cost_basis * quantity / open` removal is its own defect and stays open with
-  its owner.
+- BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
+  now closed: the EPIC Q audit made the position walk exact rational
+  arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche
+  quantity accounts normally, and the BTC-223 and BTC-224 tests that pinned the
+  refusal are now positive regressions. Still open with its owner: the BTC-180
+  discretionary-exit boundary shapes no `paper_orders` row.
 - The EPIC E/E2 integration audit left three non-blocking items with their own
   owners. `atr_from_daily_bars` (EPIC O) is now closed: it delegates to the
   BTC-041 bar boundary. Still open with their owners:
@@ -76,6 +73,15 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   than closed in review, because choosing the mapping is a strategy decision.
   BTC-152 through BTC-158 also still have no production consumer; only BTC-150
   and BTC-155 are reached from BTC-180.
+- The EPIC Q integration audit left two non-blocking items with their owners.
+  BTC-163 adds and BTC-164 trims have no restore/replay function, unlike
+  BTC-161, BTC-162 and BTC-180, because their records embed BTC-154, BTC-155
+  and BTC-157 decision objects that have no restore path of their own; a
+  persisted ADD or TRIM order row therefore has no tamper validator, though the
+  trade's economics remain replayable through BTC-165. BTC-163 also has no
+  canonical `add_execution_for_position` the way BTC-162 has
+  `stop_execution_for_position`, so an add's `average_entry_price` is
+  caller-supplied rather than read from the BTC-150 ledger.
 - The EPIC O integration audit left three non-blocking items. BTC-141 still
   carries its ATR multiplier and window as module literals rather than reading
   the versioned `stop_buffers` config the way BTC-144 reads `risk.schedule`;

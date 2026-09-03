@@ -34,6 +34,7 @@ from typing import Any
 from btc_predictor.config.strategy import StrategyConfig, load_strategy_config
 from btc_predictor.data import require_utc_datetime
 from btc_predictor.quant.comparisons import decision_greater, decision_less_equal
+from btc_predictor.quant.risk import POSITION_SIDES
 
 
 PAPER_ACCOUNT_FEATURE_ID = "PAPER_ACCOUNT"
@@ -91,7 +92,12 @@ class ExecutionCosts:
         return reference + drift if side == BUY_SIDE else reference - drift
 
     def funding(self, notional: Any, *, days: Any) -> Decimal:
-        """Return the carry charged on ``notional`` held for ``days``."""
+        """Return the unsigned carry magnitude on ``notional`` held for ``days``.
+
+        This is a magnitude, not an account effect: which side pays is a
+        property of the position, not of the rate. ``PaperAccount.charge_funding``
+        applies the sign.
+        """
 
         value = _non_negative(notional, "notional")
         return value * self.funding_rate(days=days)
@@ -156,6 +162,17 @@ class PaperAccount:
     def is_active(self) -> bool:
         return self.status == ACCOUNT_ACTIVE
 
+    @property
+    def cash_exhausted(self) -> bool:
+        """Whether a charge or loss has been floored away from this balance.
+
+        Once true, ``cash`` is a floor rather than a balance and NAV no longer
+        reconciles to realized P&L less costs. Consumers should test this
+        rather than trusting the number.
+        """
+
+        return "PAPER_ACCOUNT_CASH_EXHAUSTED" in self.reason_codes
+
     def nav(self, *, unrealized_pnl: Any = Decimal("0")) -> Decimal:
         """Return cash plus the unrealized value of open positions.
 
@@ -171,11 +188,27 @@ class PaperAccount:
             reason="PAPER_ACCOUNT_FEE_CHARGED",
         )
 
-    def charge_funding(self, notional: Any, *, days: Any) -> PaperAccount:
-        return self._debit(
-            self.costs.funding(notional, days=days),
-            field="funding_paid",
-            reason="PAPER_ACCOUNT_FUNDING_CHARGED",
+    def charge_funding(
+        self,
+        notional: Any,
+        *,
+        days: Any,
+        direction: str,
+    ) -> PaperAccount:
+        """Apply the configured carry for a position held ``days``.
+
+        ``direction`` is required rather than defaulted. Funding is signed by
+        side -- a long pays the rate and a short receives it, the same rule
+        BTC-165's ``funding_event_from_rate`` applies -- so a silent long
+        default would debit a short account the carry it actually collects and
+        the two funding paths would disagree about the same position.
+        """
+
+        if direction not in POSITION_SIDES:
+            raise ValueError(f"direction must be one of {POSITION_SIDES}")
+        magnitude = self.costs.funding(notional, days=days)
+        return self.apply_funding_cost(
+            magnitude if direction == POSITION_SIDES[0] else -magnitude
         )
 
     def apply_funding_cost(self, amount: Any) -> PaperAccount:
@@ -202,10 +235,9 @@ class PaperAccount:
             self,
             cash=cash if cash > 0 else Decimal("0"),
             realized_pnl=self.realized_pnl + value,
-            reason_codes=(
-                ("PAPER_ACCOUNT_PNL_SETTLED", "PAPER_ACCOUNT_CASH_EXHAUSTED")
-                if cash <= 0
-                else ("PAPER_ACCOUNT_PNL_SETTLED",)
+            reason_codes=self._reason_codes(
+                "PAPER_ACCOUNT_PNL_SETTLED",
+                exhausted=cash <= 0,
             ),
         )
 
@@ -213,7 +245,10 @@ class PaperAccount:
         return replace(
             self,
             status=ACCOUNT_ARCHIVED,
-            reason_codes=("PAPER_ACCOUNT_ARCHIVED",),
+            reason_codes=self._reason_codes(
+                "PAPER_ACCOUNT_ARCHIVED",
+                exhausted=False,
+            ),
         )
 
     def _debit(self, amount: Decimal, *, field: str, reason: str) -> PaperAccount:
@@ -222,11 +257,24 @@ class PaperAccount:
         return replace(
             self,
             cash=cash if not exhausted else Decimal("0"),
-            reason_codes=(
-                (reason, "PAPER_ACCOUNT_CASH_EXHAUSTED") if exhausted else (reason,)
-            ),
+            reason_codes=self._reason_codes(reason, exhausted=exhausted),
             **{field: getattr(self, field) + amount},
         )
+
+    def _reason_codes(self, reason: str, *, exhausted: bool) -> tuple[str, ...]:
+        """Return this step's codes, keeping an earlier exhaustion visible.
+
+        Flooring cash at zero keeps the row insertable under the
+        ``paper_accounts_current_cash_non_negative`` CHECK, but it discards the
+        deficit: the balance is no longer the account's true position. That
+        fact has to outlive the step that caused it. Otherwise the next fee
+        clears the code and a consumer reading only the final account sees a
+        clean zero with nothing saying the record was truncated.
+        """
+
+        if exhausted or self.cash_exhausted:
+            return (reason, "PAPER_ACCOUNT_CASH_EXHAUSTED")
+        return (reason,)
 
     def as_record(self) -> dict[str, Any]:
         if self.status not in PAPER_ACCOUNT_STATUSES:

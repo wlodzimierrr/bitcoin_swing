@@ -31,6 +31,7 @@ the accounting -- passes every owner suite and fails here.
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from fractions import Fraction
 
 import pytest
 
@@ -671,6 +672,70 @@ def test_a_missed_entry_is_never_chased_by_a_later_bar_or_a_later_entry() -> Non
     assert chased.state == MISSED
     assert chased.tranches == ()
     assert chased.quantity == 0
+
+
+def test_entry_and_stop_answer_touch_under_the_same_comparison_policy() -> None:
+    """One "did price reach this level" question, one policy across the epic.
+
+    BTC-162's review moved stop touch and gap boundaries onto
+    ``DECISION_COMPARISON_V1``. An entry zone asks the identical question, so
+    a high inside the decision band of the zone boundary must be a touch here
+    too -- otherwise the same tick is a fill for a stop and a terminal miss
+    for an entry. A real cent is still outside the band and still a miss.
+    """
+
+    zone_lower = ENTRY_ZONE[0]
+    # Inside the band: 1e-12 relative at 99,000 is about 1e-7 of a dollar.
+    inside_band = zone_lower - Decimal("0.00000001")
+    a_cent_below = zone_lower - Decimal("0.01")
+
+    touched = enter(
+        execution_bar=entry_bar(
+            1, open_="98950", high=str(inside_band), low="98900", close="98960"
+        )
+    )
+    missed = enter(
+        execution_bar=entry_bar(
+            1, open_="98950", high=str(a_cent_below), low="98900", close="98960"
+        )
+    )
+
+    assert touched.filled is True
+    assert "ENTRY_ZONE_TOUCHED" in touched.reason_codes
+    assert missed.missed is True
+    assert "ENTRY_ZONE_NOT_TOUCHED" in missed.reason_codes
+
+    # The mirrored stop boundary, resolved by the same policy.
+    position = opened(enter())
+    stop_touched = stop_execution_for_position(
+        position,
+        bar(
+            2,
+            "97000",
+            high="97200",
+            low=str(INITIAL_STOP + Decimal("0.00000001")),
+            close="97100",
+        ),
+        costs=COSTS,
+        execution_id="stop-band",
+        position_id=POSITION_ID,
+    )
+    stop_resting = stop_execution_for_position(
+        position,
+        bar(
+            2,
+            "97000",
+            high="97200",
+            low=str(INITIAL_STOP + Decimal("0.01")),
+            close="97100",
+        ),
+        costs=COSTS,
+        execution_id="stop-cent",
+        position_id=POSITION_ID,
+    )
+
+    assert stop_touched.filled is True
+    assert stop_resting.resting is True
 
 
 def test_a_missed_entry_is_deterministic_and_replays_from_its_record() -> None:
@@ -2008,25 +2073,23 @@ def test_the_whole_lifecycle_is_reproducible_from_the_same_inputs() -> None:
     assert restore_trade_accounting(first_accounting.as_record()) == first_accounting
 
 
-# --- a composition limit this suite surfaces -----------------------------
+# --- a composition limit this suite used to surface ----------------------
 
 
-def test_a_trim_whose_pro_rata_basis_cannot_be_represented_is_refused() -> None:
-    """BTC-165 refuses rather than misreports, and the refusal is reachable.
+def test_a_trim_on_a_non_terminating_tranche_accounts_exactly() -> None:
+    """An ordinary add-then-trim trade must reach a closed accounting.
 
     Removing a trim's cost basis pro rata is ``cost_basis * quantity / open``.
-    When the open quantity does not terminate in Decimal's 28-digit context --
-    which BTC-155 produces routinely, since it divides a notional by a price --
-    the removal rounds and the closed trade misses the exact cash-flow identity
-    by about 1e-23. Refusing is the correct response to that situation: a
-    silently wrong gross P&L would be far worse.
+    BTC-155 produces open quantities that do not terminate in Decimal's
+    28-digit context routinely, because it divides a notional by a price, so
+    that removal used to round and the closed trade used to miss the exact
+    cash-flow identity by about 1e-23 -- which BTC-165 refused outright. An
+    add at 105,000 is an ordinary tranche and a trade that adds and then trims
+    is an ordinary trade, so this was a reachable failure of BTC-160..166 in
+    composition rather than a pathological fixture.
 
-    The situation itself should not arise. An add at 105,000 is an ordinary
-    tranche, and a trade that adds and then trims is an ordinary trade, so this
-    is a reachable failure of BTC-160..166 in composition rather than a
-    pathological fixture. It is recorded on the ticket for follow-up in the
-    owner's scope; nothing is changed here, and this test will need updating
-    when the accumulation is made exact.
+    The EPIC Q integration review made the position walk rational, so the
+    removal now cancels exactly. This pins the trade that used to fail.
     """
 
     costs = STRESS.costs
@@ -2042,16 +2105,10 @@ def test_a_trim_whose_pro_rata_basis_cannot_be_represented_is_refused() -> None:
     lifecycle = record_add(lifecycle, addition)
 
     # BTC-155's own allocation, not a contrived quantity: a notional divided
-    # by a price, which here repeats and cannot be multiplied back exactly.
+    # by a price, which here repeats and fills the Decimal context.
     allocation = tranche(2, entry_price=Decimal("105000")).allocation
     assert addition.filled_quantity == allocation.quantity
-    # 87500 / 105000 repeats: the quantity fills the context rather than
-    # terminating, which is what the pro-rata removal below cannot undo.
     assert allocation.quantity != allocation.quantity.quantize(Decimal("1e-20"))
-    assert tranche(2, entry_price=Decimal("112000")).allocation.quantity == (
-        tranche(2, entry_price=Decimal("112000"))
-        .allocation.quantity.quantize(Decimal("1e-20"))
-    )
 
     reduction = trim(
         lifecycle,
@@ -2071,22 +2128,58 @@ def test_a_trim_whose_pro_rata_basis_cannot_be_represented_is_refused() -> None:
         costs=costs,
     )
     closed = record_exit(lifecycle, closing, reason=signal.exit_reasons[0])
+    executions = (entry_execution, addition, reduction, closing)
 
-    with pytest.raises(ValueError, match="exact cash-flow identity"):
-        calculate_trade_accounting_for_lifecycle(
-            closed,
-            tuple(
-                trade_fill_from_execution(execution, sequence=sequence)
-                for execution, sequence in zip(
-                    (entry_execution, addition, reduction, closing),
-                    (1, 2, 3, 4),
-                )
-            ),
-        )
+    accounting = calculate_trade_accounting_for_lifecycle(
+        closed,
+        tuple(
+            trade_fill_from_execution(execution, sequence=sequence)
+            for execution, sequence in zip(executions, (1, 2, 3, 4))
+        ),
+    )
 
-    # The same trade with a terminating tranche quantity accounts normally, so
-    # nothing about adding then trimming is itself unsupported.
-    _, _, _, _, _, accounting = complete_trade()
+    assert accounting.closed is True
     assert accounting.add_count == 1
     assert accounting.trim_count == 1
-    assert accounting.gross_pnl == accounting.exit_notional - accounting.entry_notional
+    # The identity holds exactly, not to a tolerance.
+    assert accounting.gross_pnl == (
+        accounting.exit_notional - accounting.entry_notional
+    )
+    # Independently: gross P&L is every sale less every purchase, at the
+    # quantities and fill prices the executions actually produced. The
+    # expectation is rational because a Decimal expression would round the
+    # very digits this test exists to protect.
+    def exact(*executions) -> Fraction:
+        return sum(
+            (
+                Fraction(execution.filled_quantity * execution.average_fill_price)
+                for execution in executions
+            ),
+            Fraction(0),
+        )
+
+    assert Fraction(accounting.entry_notional) == exact(entry_execution, addition)
+    assert Fraction(accounting.exit_notional) == exact(reduction, closing)
+    assert Fraction(accounting.gross_pnl) == exact(reduction, closing) - exact(
+        entry_execution, addition
+    )
+    assert accounting.net_pnl == accounting.gross_pnl - accounting.fees
+    assert restore_trade_accounting(accounting.as_record()) == accounting
+
+    # Every leg's notional is the exact product of its quantity and its fill
+    # price, so the fee each leg pays is charged on the same figure BTC-165
+    # books. A float64 detour in one execution would show up here as a fee
+    # that no longer matches the notional the accounting walked.
+    for execution in executions:
+        assert execution.notional == (
+            execution.filled_quantity * execution.average_fill_price
+        )
+        assert execution.fee == costs.fee(execution.notional)
+    assert accounting.fees == sum(
+        (execution.fee for execution in executions),
+        Decimal("0"),
+    )
+
+    # The account reaches the same money the accounting reports.
+    paper = settle(accounting, executions, funding_events=(), costs=costs)
+    assert paper.cash == NAV + accounting.net_pnl

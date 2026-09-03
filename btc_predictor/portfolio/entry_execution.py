@@ -24,6 +24,11 @@ from btc_predictor.portfolio.account import (
     SELL_SIDE,
     ExecutionCosts,
 )
+from btc_predictor.quant.comparisons import (
+    decision_equal,
+    decision_greater,
+    decision_less,
+)
 from btc_predictor.quant.portfolio import position_notional
 from btc_predictor.quant.risk import POSITION_SIDES
 
@@ -330,7 +335,13 @@ def _simulate(
     bar = _validate_bar(execution_bar, values)
     _validate_costs(costs)
     resolved_at = max(next_bar_timestamp(bar.timestamp, bar.timeframe), bar.ingested_at)
-    if bar.high < values.entry_zone_lower or bar.low > values.entry_zone_upper:
+    # "Did price reach this level" is a hard decision boundary, and BTC-162
+    # answers the identical question about a stop under DECISION_COMPARISON_V1.
+    # Using bare Decimal comparisons here would let the same tick count as a
+    # touch for a stop and a miss for an entry zone.
+    if decision_less(bar.high, values.entry_zone_lower) or decision_greater(
+        bar.low, values.entry_zone_upper
+    ):
         return (
             ENTRY_MISSED,
             MISSED_ACTION,
@@ -349,10 +360,10 @@ def _simulate(
             ),
         )
 
-    if bar.open < values.entry_zone_lower:
+    if decision_less(bar.open, values.entry_zone_lower):
         reference_price = values.entry_zone_lower
         reference_reason = "ENTRY_REFERENCE_ZONE_LOWER"
-    elif bar.open > values.entry_zone_upper:
+    elif decision_greater(bar.open, values.entry_zone_upper):
         reference_price = values.entry_zone_upper
         reference_reason = "ENTRY_REFERENCE_ZONE_UPPER"
     else:
@@ -444,9 +455,20 @@ def _validate_costs(costs: ExecutionCosts) -> None:
 
 
 def _quant_notional(quantity: Decimal, price: Decimal) -> Decimal:
-    """Use the BTC-047 float64 kernel and retain a persistence-safe decimal."""
+    """Decimal notional pinned to the BTC-047 kernel by parity check.
 
-    return Decimal(str(position_notional(float(quantity), float(price))))
+    Rounding through float64 would make this the one execution in the epic
+    whose notional -- and therefore whose fee -- disagrees with the exact
+    product BTC-162 fills, BTC-163 adds, BTC-164 trims and BTC-165 accounting
+    all use for the same quantity and price. The kernel stays the authority on
+    the formula; only the Decimal result is kept.
+    """
+
+    exact = quantity * price
+    kernel = Decimal(str(position_notional(float(quantity), float(price))))
+    if not decision_equal(exact, kernel):
+        raise ArithmeticError("Decimal notional diverged from the BTC-047 kernel")
+    return exact
 
 
 def _bar_record(bar: OhlcvBar) -> dict[str, Any]:

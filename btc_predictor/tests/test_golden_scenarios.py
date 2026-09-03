@@ -1248,22 +1248,22 @@ def test_the_october_2025_stop_is_scoped_to_the_pinned_source() -> None:
     assert result.input_bars[-1].close < trade.initial_stop_price
 
 
-def test_the_reviewed_february_2024_add_is_still_refused_in_composition() -> None:
-    """A limit this period reaches on real sessions, recorded rather than hidden.
+def test_the_reviewed_february_2024_add_replays_and_accounts_exactly() -> None:
+    """The composition limit this period used to reach, now closed.
 
     The reviewed plan added a second tranche on 27 February. BTC-155 allocates
     that tranche as a notional divided by a price, which does not terminate in
-    Decimal's context, and BTC-165's pro-rata trim basis then misses its own
-    cash-flow identity. BTC-223 found the same composition gap on constructed
-    bars and left it to its owner; this pins that the gap is reachable from an
-    ordinary review of an ordinary period, so the replayed plan carries the
-    trim and the add is held here until the owner makes the basis exact.
+    Decimal's context, and BTC-165's pro-rata trim basis then missed its own
+    cash-flow identity, so the whole trade refused to account. BTC-223 found
+    the same gap on constructed bars; this pins that it was reachable from an
+    ordinary review of an ordinary period, and that the EPIC Q rational walk
+    closes it on real history rather than only on a fixture.
     """
 
     scenario = scenario_by_id("2024_02_ath_trend_tranches")
-    limit = scenario["known_composition_limit"]
+    reviewed_add = scenario["reviewed_second_tranche"]
     decisions = sorted(
-        [*scenario["plan"]["decisions"], limit["decision"]],
+        [*scenario["plan"]["decisions"], reviewed_add["decision"]],
         key=lambda decision: decision["on"],
     )
     reviewed = {
@@ -1271,6 +1271,27 @@ def test_the_reviewed_february_2024_add_is_still_refused_in_composition() -> Non
         "plan": {**scenario["plan"], "decisions": decisions},
     }
 
-    assert limit["decision"]["action"] == ADD_ACTION
-    with pytest.raises(ValueError, match=limit["expected_error"]):
-        replay(reviewed)
+    assert reviewed_add["decision"]["action"] == ADD_ACTION
+    result = replay(reviewed)
+    trade = result.trades[0]
+
+    # The add reached the ledger; the base plan of this period carries none.
+    assert trade.add_count == 1
+    assert trade.trim_count == 1
+    assert golden_result(scenario["scenario_id"]).trades[0].add_count == 0
+    assert trade.maximum_quantity > trade.initial_quantity
+    # The tranche BTC-155 allocated is exactly the quantity that used to make
+    # the pro-rata basis unrepresentable.
+    assert trade.maximum_quantity != trade.maximum_quantity.quantize(
+        Decimal("1e-20")
+    )
+    # The identity holds exactly, and the trade closes on the same structural
+    # stop the base plan reaches.
+    assert trade.gross_pnl == trade.exit_notional - trade.entry_notional
+    assert trade.net_pnl == trade.gross_pnl - trade.fees - trade.funding
+    assert trade.exit_reason == "STRUCTURAL_STOP"
+    # Pyramiding raised P&L without rewriting the entry-risk denominator.
+    assert trade.initial_risk == trade.initial_quantity * (
+        trade.initial_entry_price - trade.initial_stop_price
+    )
+    assert trade.r_multiple > golden_result(scenario["scenario_id"]).trades[0].r_multiple

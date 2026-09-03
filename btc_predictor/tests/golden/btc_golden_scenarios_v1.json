@@ -113,7 +113,7 @@
         "final_state": "OPEN_ADDED",
         "final_open_quantity": "1.930086132360880280756567726",
         "final_standing_stop": "33000.82569999999988",
-        "ending_nav": "1011898.214687978346485727413",
+        "ending_nav": "1011898.214687978346490844456",
         "events": [
           {
             "session": "2023-10-19",
@@ -214,9 +214,9 @@
             "entry_notional": "60081.84024750150915554363137",
             "exit_notional": "0",
             "gross_pnl": "0",
-            "fees": "60.08184024750151427258702798",
+            "fees": "60.08184024750150915554363137",
             "funding": "0",
-            "net_pnl": "-60.08184024750151427258702798",
+            "net_pnl": "-60.08184024750150915554363137",
             "r_multiple": null,
             "add_count": 1,
             "trim_count": 0,
@@ -694,7 +694,7 @@
         "final_state": "CLOSED",
         "final_open_quantity": "0",
         "final_standing_stop": "28508.15595",
-        "ending_nav": "998579.2849960371698301634982",
+        "ending_nav": "998579.2849960371698297327160",
         "events": [
           {
             "session": "2023-08-13",
@@ -750,10 +750,10 @@
             "entry_notional": "48710.42926062137043078228088",
             "exit_notional": "47385.81049641557720815393303",
             "gross_pnl": "-1324.61876420579322262834785",
-            "fees": "96.09623975703694720815393303",
+            "fees": "96.09623975703694763893621391",
             "funding": "0",
-            "net_pnl": "-1420.715003962830169836501783",
-            "r_multiple": "-1.092089866646234891270516387",
+            "net_pnl": "-1420.715003962830170267284064",
+            "r_multiple": "-1.092089866646234891601654555",
             "add_count": 0,
             "trim_count": 0,
             "exit_reason": "STRUCTURAL_STOP"
@@ -1120,7 +1120,7 @@
         "final_state": "CLOSED",
         "final_open_quantity": "0",
         "final_standing_stop": "38714.96450000000012",
-        "ending_nav": "998661.8902455529118801108522",
+        "ending_nav": "998661.8902455529118777583314",
         "events": [
           {
             "session": "2024-01-11",
@@ -1197,10 +1197,10 @@
             "entry_notional": "57101.83188084349235252080228",
             "exit_notional": "55876.70065893618390653819272",
             "gross_pnl": "-1225.13122190730844598260956",
-            "fees": "112.9785325397796739065381927",
+            "fees": "112.9785325397796762590589950",
             "funding": "0",
-            "net_pnl": "-1338.109754447088119889147753",
-            "r_multiple": "-1.117719130843589151417149804",
+            "net_pnl": "-1338.109754447088122241668555",
+            "r_multiple": "-1.117719130843589153382203490",
             "add_count": 0,
             "trim_count": 0,
             "exit_reason": "STRUCTURAL_STOP"
@@ -1652,7 +1652,7 @@
         "final_state": "CLOSED",
         "final_open_quantity": "0",
         "final_standing_stop": "67015.6737000000003",
-        "ending_nav": "1017206.012374936090595748835",
+        "ending_nav": "1017206.012374936090601166313",
         "events": [
           {
             "session": "2024-02-12",
@@ -1787,10 +1787,10 @@
             "entry_notional": "44643.75254559442458252251435",
             "exit_notional": "61956.36503811422383210345294",
             "gross_pnl": "17312.61249251979924958093859",
-            "fees": "106.6001175837086538321034529",
+            "fees": "106.6001175837086484146259673",
             "funding": "0",
-            "net_pnl": "17206.01237493609059574883514",
-            "r_multiple": "8.508095317406914626049231551",
+            "net_pnl": "17206.01237493609060116631262",
+            "r_multiple": "8.508095317406914628728086696",
             "add_count": 0,
             "trim_count": 1,
             "exit_reason": "STRUCTURAL_STOP"
@@ -2289,10 +2289,9 @@
           "v": "38590.78345488"
         }
       ],
-      "known_composition_limit": {
-        "description": "The reviewed plan also added a second tranche on 27 February, after the 26 February trail improved the stop. That trade cannot currently be accounted: BTC-155 allocates a tranche quantity of notional/price that does not terminate in Decimal's 28-digit context, and BTC-165's pro-rata trim basis then misses the exact cash-flow identity by about 1e-23. BTC-223 recorded the same composition gap and left it to its owner, so the add is pinned here as a known limit on real history rather than quietly dropped from the review.",
-        "owner_reference": "BTC-223 composition gap; BTC-155/BTC-165 scope",
-        "expected_error": "exact cash-flow identity",
+      "reviewed_second_tranche": {
+        "description": "The reviewed plan also added a second tranche on 27 February, after the 26 February trail improved the stop. That trade could not be accounted while BTC-165 walked the position in Decimal: BTC-155 allocates a tranche quantity of notional/price that does not terminate in the 28-digit context, and the pro-rata trim basis then missed the exact cash-flow identity by about 1e-23. The EPIC Q integration review made the walk rational, so the add now replays and the trade closes on the identity exactly. It is kept separate from the base plan so this period still proves both shapes.",
+        "owner_reference": "EPIC Q integration review; BTC-155/BTC-165 scope",
         "decision": {
           "on": "2024-02-27",
           "action": "ADD",
@@ -2367,7 +2366,7 @@
         "final_state": "CLOSED",
         "final_open_quantity": "0",
         "final_standing_stop": "62647.42685000000021",
-        "ending_nav": "999270.2883151106491389137449",
+        "ending_nav": "999270.2883151106491364364718",
         "events": [
           {
             "session": "2024-07-26",
@@ -2430,10 +2429,10 @@
             "entry_notional": "25391.68314962683047727305911",
             "exit_notional": "24712.07522311021666084765172",
             "gross_pnl": "-679.60792651661381642540739",
-            "fees": "50.10375837273704466084765172",
+            "fees": "50.10375837273704713812071083",
             "funding": "0",
-            "net_pnl": "-729.7116848893508610862550417",
-            "r_multiple": "-0.3679200899700359245013534690",
+            "net_pnl": "-729.7116848893508635635281008",
+            "r_multiple": "-0.3679200899700359257503927069",
             "add_count": 0,
             "trim_count": 0,
             "exit_reason": "REGIME_INVALIDATION"
@@ -2837,7 +2836,7 @@
         "final_state": "CLOSED",
         "final_open_quantity": "0",
         "final_standing_stop": "107623.70",
-        "ending_nav": "997544.3098639070198891506355",
+        "ending_nav": "997544.3098639070198906986279",
         "events": [
           {
             "session": "2025-10-06",
@@ -2893,10 +2892,10 @@
             "entry_notional": "19772.86018700886645200755565",
             "exit_notional": "17354.29720831120641557376499",
             "gross_pnl": "-2418.56297869766003643379066",
-            "fees": "37.12715739532007441557376499",
+            "fees": "37.12715739532007286758132064",
             "funding": "0",
-            "net_pnl": "-2455.690136092980110849364425",
-            "r_multiple": "-1.019008671981014290134270122",
+            "net_pnl": "-2455.690136092980109301371981",
+            "r_multiple": "-1.019008671981014289491918018",
             "add_count": 0,
             "trim_count": 0,
             "exit_reason": "STRUCTURAL_STOP"
