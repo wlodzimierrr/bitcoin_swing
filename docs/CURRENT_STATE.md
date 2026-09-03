@@ -29,7 +29,7 @@
   Phase-1 work
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 3514 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `EPIC_S_FIX`
+- **Last relevant implementation/review commit:** `5b15768`
   (`fix: close EPIC S integration review findings`)
 
 ## Price-Reference State
