@@ -84,6 +84,15 @@ Policy version: `FLOAT64_V1`.
 - Warm-up and undefined results remain NaN in the NumPy layer and convert to
   `None` only at existing Decimal-facing feature boundaries.
 - Appending future observations cannot change an earlier result.
+- The raw kernels index observations, not calendar sessions: element `i - 1` is
+  the preceding observation whatever its timestamp. Temporal kernels therefore
+  carry an adjacency precondition that only a caller holding timestamps can
+  discharge. `btc_predictor.features.rolling` is that boundary for
+  `OhlcvBar` series: it refuses a series that is not one regularly spaced
+  timeframe, and reports the true range of a bar whose preceding session is
+  absent — a BTC-040 bucket dropped as incomplete — as missing rather than as a
+  range measured against an older close. An ATR window covering that absent
+  session is missing for the same reason.
 
 ## Nonlinear Transforms
 

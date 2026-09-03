@@ -1256,6 +1256,10 @@ Do not overwrite raw history when the preferred provider changes.
     provider approved by the persisted `PRICE_SOURCE_POLICY_V1` decision may be
     exposed as the strategy-canonical series; do not splice validation venues
     into historical gaps.
+  - **EPIC E integration review:** only complete buckets are emitted, so a source
+    outage removes that whole session and the canonical series may be
+    non-contiguous. That is the intended `PRICE_SOURCE_POLICY_V1` behaviour, and
+    BTC-041 now keeps the omission explicit instead of measuring across it.
 
 #### BTC-041 Build rolling statistics framework
 - **Description:**
@@ -1280,8 +1284,17 @@ Do not overwrite raw history when the preferred provider changes.
   - Kept rolling means, volatility, and ATR on trailing windows through the current completed observation.
   - Kept z-scores, percentiles, and historical normalization on prior-history windows that exclude the current value from the baseline.
   - Added lookahead-safety tests proving earlier outputs do not change when future values or bars are appended.
-  - **V2 migration note:** this pure-Python implementation remains the reference/parity oracle while BTC-043 introduces the NumPy production kernel.
+  - **V2 migration note:** BTC-043 replaced the pure-Python arithmetic with the
+    NumPy production kernel. The independent Decimal reference oracle now lives
+    in `test_quant_rolling_parity.py`, and `btc_predictor/features/rolling.py`
+    is the Decimal-facing boundary over the kernel.
   - The public behavior and point-in-time semantics of BTC-041 must not change during vectorization.
+  - **EPIC E integration review:** the kernels index observations, not sessions,
+    so the bar-accepting boundary owns the adjacency precondition. `true_ranges`
+    and `average_true_range` refuse a series that is not one regularly spaced
+    timeframe, and report the range of a bar whose preceding session is absent
+    from a BTC-040 series, plus any ATR window covering it, as missing rather
+    than as a range measured against a several-sessions-older close.
 
 
 ## EPIC E2 — Quantitative Core Refactor

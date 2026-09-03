@@ -137,6 +137,14 @@ They use `1h` BTC source bars that were closed and ingested by the
 00:00 UTC, weekly bars start Monday 00:00 UTC, and monthly bars start on the
 first calendar day at 00:00 UTC.
 
+Only complete buckets are emitted, so a source outage removes that whole
+session from the canonical series instead of producing a partial bar. The
+series can therefore be non-contiguous. `true_ranges` and `average_true_range`
+read the preceding bar as the preceding session, so they report the range of a
+bar whose preceding session is absent, and any ATR window covering it, as
+missing rather than measuring against a several-sessions-older close. A series
+that is not one regularly spaced timeframe is refused outright.
+
 BTC derivatives collection is provider-injected through
 `DerivativesCollectionRequest` and `collect_btc_derivatives`. Funding, open
 interest, futures basis, liquidations, and perpetual volume are normalized into

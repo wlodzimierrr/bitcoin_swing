@@ -8,9 +8,8 @@ from typing import TypeAlias
 
 import numpy as np
 
-from btc_predictor.data import OhlcvBar
+from btc_predictor.data import OhlcvBar, next_bar_timestamp
 from btc_predictor.quant.rolling import (
-    average_true_range as quant_average_true_range,
     historical_normalize as quant_historical_normalize,
     rolling_mean as quant_rolling_mean,
     rolling_percentile as quant_rolling_percentile,
@@ -121,12 +120,15 @@ def historical_normalize(
     )
 
 
-def true_ranges(bars: Sequence[OhlcvBar]) -> tuple[Decimal, ...]:
-    """Return true range values using each bar and the previous close only."""
+def true_ranges(bars: Sequence[OhlcvBar]) -> OptionalDecimalSeries:
+    """Return true range values using each bar and the previous close only.
 
-    ordered = tuple(sorted(bars, key=lambda bar: bar.timestamp))
-    highs, lows, closes = _bar_arrays(ordered)
-    return _decimals(quant_true_range(highs, lows, closes))
+    The range of a bar whose preceding session is absent from the series is
+    ``None`` rather than a measurement taken against an older close.
+    """
+
+    ordered, gaps = _ordered_bar_series(bars)
+    return _optional_decimals(_bar_true_ranges(ordered, gaps))
 
 
 def average_true_range(
@@ -135,19 +137,73 @@ def average_true_range(
     window: int,
     min_periods: int | None = None,
 ) -> OptionalDecimalSeries:
-    """Return trailing ATR from true ranges through the current bar."""
+    """Return trailing ATR from true ranges through the current bar.
 
-    ordered = tuple(sorted(bars, key=lambda bar: bar.timestamp))
-    highs, lows, closes = _bar_arrays(ordered)
+    A window that spans an absent session has no defined mean true range and
+    is reported as ``None``.
+    """
+
+    ordered, gaps = _ordered_bar_series(bars)
     return _optional_decimals(
-        quant_average_true_range(
-            highs,
-            lows,
-            closes,
+        quant_rolling_mean(
+            _bar_true_ranges(ordered, gaps),
             window=window,
             min_periods=min_periods,
+            nan_policy="propagate",
         )
     )
+
+
+def _ordered_bar_series(
+    bars: Sequence[OhlcvBar],
+) -> tuple[tuple[OhlcvBar, ...], tuple[int, ...]]:
+    """Order bars in time and report which of them follow an absent session.
+
+    True range reads the preceding element as the preceding period. A canonical
+    BTC-040 market-bar series legitimately omits an incomplete bucket, so a
+    series handed to BTC-041 can be regularly spaced or can carry an outage.
+    The outage stays visible as an undefined observation instead of being
+    absorbed into a range measured against a close several periods older.
+    A series that is not one regularly spaced timeframe at all — mixed
+    timeframes, a repeated timestamp, or an off-cadence timestamp — has no such
+    reading and is refused.
+    """
+
+    ordered = tuple(sorted(bars, key=lambda bar: bar.timestamp))
+    if not ordered:
+        return ordered, ()
+    timeframes = {bar.timeframe for bar in ordered}
+    if len(timeframes) > 1:
+        raise ValueError(
+            "true range requires one bar timeframe; received: "
+            f"{', '.join(sorted(timeframes))}"
+        )
+    timeframe = ordered[0].timeframe
+    gaps = []
+    for index, (previous, current) in enumerate(zip(ordered, ordered[1:]), start=1):
+        expected = next_bar_timestamp(previous.timestamp, timeframe)
+        if current.timestamp == expected:
+            continue
+        if current.timestamp < expected:
+            raise ValueError(
+                "true range requires one regularly spaced bar series; "
+                f"{previous.timestamp.isoformat()} is followed by "
+                f"{current.timestamp.isoformat()} rather than "
+                f"{expected.isoformat()}"
+            )
+        gaps.append(index)
+    return ordered, tuple(gaps)
+
+
+def _bar_true_ranges(
+    bars: Sequence[OhlcvBar],
+    gaps: Sequence[int],
+) -> np.ndarray:
+    highs, lows, closes = _bar_arrays(bars)
+    ranges = quant_true_range(highs, lows, closes)
+    for index in gaps:
+        ranges[index] = np.nan
+    return ranges
 
 
 def _float_values(values: Sequence[NumericValue]) -> tuple[float, ...]:
@@ -172,10 +228,6 @@ def _bar_arrays(
 
 def _optional_decimals(values: np.ndarray) -> OptionalDecimalSeries:
     return tuple(None if np.isnan(value) else _float_decimal(value) for value in values)
-
-
-def _decimals(values: np.ndarray) -> tuple[Decimal, ...]:
-    return tuple(_float_decimal(value) for value in values)
 
 
 def _float_decimal(value: np.float64) -> Decimal:
