@@ -17,17 +17,17 @@
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** None; no Phase-1 implementation ticket
   remains open
-- **Last completed ticket:** BTC-224, golden historical scenarios. Its required
-  independent xHigh review is outstanding; BTC-221's and BTC-222's have now
-  passed, with two review fixes and one respectively
+- **Last completed ticket:** BTC-224, golden historical scenarios. Its
+  required independent xHigh review has now passed with one review fix, as
+  have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** None. The remaining Phase-1 work is
-  BTC-019 and the outstanding independent xHigh review of BTC-224
+- **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
+  Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3415 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `5b199819`
-  (`fix: BTC-222 review fix for the replay risk-at-stop assertion`)
+- **Latest verified test baseline:** 3427 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** `75bc0761`
+  (`fix: BTC-224 review fix for the golden money reconciliation`)
 
 ## Price-Reference State
 

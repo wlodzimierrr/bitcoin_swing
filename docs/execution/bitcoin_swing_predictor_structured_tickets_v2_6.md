@@ -7067,8 +7067,6 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Complexity:** L
 - **Risk:** High.
 - **Implementation Notes:**
-  - The required independent xHigh review is still outstanding; closure is not
-    final until it passes.
   - Added the frozen fixture `tests/golden/btc_golden_scenarios_v1.json` and
     the suite `test_golden_scenarios.py`. Six real BTC periods are frozen with
     their review, the trade plan a reviewer drew on them, and the behaviour the
@@ -7150,6 +7148,50 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Added 116 focused cases. The full Python 3.12.14 suite passes with 3412
     tests, also passing with `RuntimeWarning` treated as an error; compileall
     passes.
+  - **Independent xHigh review (2026-09-03):** the fixture's provenance is
+    genuine and the expectations do not encode a defect. The pinned artifact
+    still hashes to the recorded `300b283f...`, and all 279 fixture sessions
+    were re-derived from it through `derive_ohlcv_bars` outside the suite and
+    matched digit for digit on every OHLCV field, so the committed bars are
+    the artifact's own daily aggregation rather than a transcription. The
+    recorded February 2024 composition limit reproduces exactly, raising
+    `closed trade does not satisfy the exact cash-flow identity` from
+    BTC-165's accounting, so it is a real reachable limit and not a
+    placeholder. The double-pinning was measured rather than assumed: defects
+    injected into the cost policy, the entry zone cap, the stop fill
+    reference, the fee rate and the conviction budget were all caught by the
+    re-derivation tests and not only by the recorded master. Two figures were
+    pinned once; one review finding covers both, and is fixed.
+  - **Review finding (P3, fixed).** `test_the_money_reconciles_from_the_fills_alone`
+    took `funding` straight from `result.trades` and then used that same value
+    on both sides of the NAV identity, so the identity held for any funding
+    rate: tripling the rate the engine charges left all 116 cases passing.
+    The base rung prices no carry, so the term was zero on every scenario in
+    any case. Separately, the R multiple -- the reviewed headline of every
+    scenario -- was pinned only by the recorded expectation; switching the
+    convention from net to gross P&L failed nothing but
+    `test_each_scenario_reproduces_its_reviewed_trades`, because every
+    hand-derived R bound in the scenario tests is coarse enough to survive a
+    few bps, so a regenerated fixture would have blessed it. The
+    reconciliation now runs on all three BTC-181 rungs, derives the carry from
+    the sessions themselves -- the quantity the ledger carried into each
+    session, marked at that session's close, one day per canonical daily bar
+    -- and derives R from the reconciled net over the risk the entry actually
+    took. Both defects were confirmed to pass the suite before and to fail it
+    after. Both are also caught by their owner suites, which is why this is
+    P3 rather than higher: the gap was in this ticket's own stated
+    double-pinning property, not in the repository's coverage of the owners.
+  - **Review limitation (P3, not fixed).** The suite checks the source
+    artifact's digest for shape only; it never hashes the artifact itself, so
+    a re-sourced fixture would still pass. That check was done by hand in this
+    review and is deliberately not automated here, because the artifact is a
+    2.1 MB collection input rather than a test fixture and BTC-019 has
+    approved no canonical reference for it to be pinned against.
+  - **Review regression.** `test_the_money_reconciles_from_the_fills_alone` is
+    now parametrized over `COST_PROFILES` and derives the carry and the R
+    multiple independently. The suite is now 128 cases; the full Python
+    3.12.14 suite passes with 3427 tests, also passing with `RuntimeWarning`
+    treated as an error, and compileall passes.
 
 
 ---
