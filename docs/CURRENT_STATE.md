@@ -29,7 +29,7 @@
   Phase-1 work
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 3494 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** the EPIC P review-fix commit
+- **Last relevant implementation/review commit:** `410e329`
   (`fix: close EPIC P integration review findings`)
 
 ## Price-Reference State
