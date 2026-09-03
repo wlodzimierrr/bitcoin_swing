@@ -33,16 +33,25 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from btc_predictor.features.rolling import (
+    average_true_range as bar_average_true_range,
+)
 from btc_predictor.quant.comparisons import decision_greater_equal, decision_less_equal
-from btc_predictor.quant.rolling import average_true_range
 
 
 VOLATILITY_BUFFER_FEATURE_ID = "VOLATILITY_BUFFER"
 VOLATILITY_BUFFER_POLICY_VERSION = "VOLATILITY_BUFFER_V1"
 
-# Rulebook 16.1 initial research formula.
+# Rulebook 16.1 initial research formula. These are module defaults, not the
+# run's parameters: the versioned strategy config also declares them under
+# ``stop_buffers``, and a caller executing under a config that overrides them
+# must pass them through. A test pins the two together so they cannot diverge
+# unnoticed.
 DEFAULT_BUFFER_ATR_MULTIPLIER = Decimal("0.30")
 DEFAULT_BUFFER_ATR_WINDOW_DAYS = 20
+# Rulebook 16.1 measures the buffer in ATR_20 of daily sessions, so the bridge
+# accepts only canonical 1d bars. A different cadence is a different identity.
+DAILY_ATR_TIMEFRAME = "1d"
 # The rulebook's declared robustness grid. Exposed so BTC-185 can sweep it;
 # deliberately NOT calibrated here. The exact value must be backtested.
 BUFFER_ATR_MULTIPLIER_GRID = (
@@ -82,6 +91,7 @@ VOLATILITY_BUFFER_REASON_CODES = (
     "VOLATILITY_BUFFER_LEVEL_NOISE_UNAVAILABLE",
     "VOLATILITY_BUFFER_LEVEL_NOISE_DERIVED",
     "VOLATILITY_BUFFER_LEVEL_NOISE_NOT_DERIVED",
+    "VOLATILITY_BUFFER_INVALIDATION_INCOMPLETE",
 )
 
 
@@ -279,12 +289,39 @@ def volatility_buffer_for_invalidation(
 
     When the selection carries a bounded zone the noise term is always derived
     from it. ATR-only is used only when the selection genuinely has no usable
-    zone width, and that state is recorded explicitly.
+    zone width, and that state is recorded explicitly. A selection that BTC-140
+    refused is neither: it yields an incomplete buffer carrying
+    ``VOLATILITY_BUFFER_INVALIDATION_INCOMPLETE`` so the upstream cause is not
+    relabelled as a legitimate fallback.
     """
 
     record = _invalidation_record(invalidation)
     lower = record.get("selected_zone_lower_bound")
     upper = record.get("selected_zone_upper_bound")
+
+    if record.get("complete") is False:
+        # A refused selection is not "structure has no usable width". Reporting
+        # it as one would relabel an upstream refusal -- including a look-ahead
+        # rejection -- as a legitimate ATR-only buffer, and would hand a
+        # complete buffer to consumers that never see BTC-140 at all.
+        return VolatilityBufferResult(
+            feature_id=VOLATILITY_BUFFER_FEATURE_ID,
+            policy_version=VOLATILITY_BUFFER_POLICY_VERSION,
+            buffer=None,
+            atr=None if atr is None else _positive_decimal(atr, "atr"),
+            atr_window=int(atr_window),
+            atr_multiplier=_non_negative_decimal(atr_multiplier, "atr_multiplier"),
+            atr_component=None,
+            level_noise_estimate=None,
+            level_noise_version=LEVEL_NOISE_ESTIMATE_VERSION,
+            level_noise_source=LEVEL_NOISE_UNAVAILABLE,
+            zone_lower_bound=None,
+            zone_upper_bound=None,
+            binding_term=None,
+            config_metadata=dict(config_metadata or {}),
+            complete=False,
+            reason_codes=("VOLATILITY_BUFFER_INVALIDATION_INCOMPLETE",),
+        )
 
     if lower is None or upper is None:
         # Genuinely no usable structure: an explicitly diagnosed ATR-only
@@ -368,42 +405,55 @@ def level_noise_from_zone(
 
 
 def atr_from_daily_bars(
-    highs: Sequence[Any],
-    lows: Sequence[Any],
-    closes: Sequence[Any],
+    bars: Sequence[Any],
     *,
     window: int = DEFAULT_BUFFER_ATR_WINDOW_DAYS,
 ) -> Decimal | None:
-    """Latest ATR over ``window`` completed daily bars, or None while warming up.
+    """Latest ATR over ``window`` completed daily bars, or None when undefined.
 
-    Delegates the rolling arithmetic to the BTC-043 float64 primitive and
-    returns a Decimal at this boundary.
+    Delegates to the BTC-041 bar-accepting boundary rather than the BTC-043
+    float64 primitive, because only a bar carries the timestamp that decides
+    whether the preceding element really is the preceding session. A canonical
+    BTC-040 series legitimately omits a whole session during a provider outage
+    (PRICE_SOURCE_POLICY_V1: "Provider outages remain explicit gaps"), and a
+    window spanning such a gap has no defined mean true range. It is reported
+    as ``None`` -- no buffer, therefore no stop -- rather than as an ATR
+    measured against a close several sessions older.
+
+    ``None`` is also returned during warm-up. Both cases make BTC-141
+    incomplete, which is the only safe reading: a silently inflated ATR would
+    widen the stop, shrink the position and misstate R/R for the trade.
     """
 
     if window < 1:
         raise ValueError("window must be >= 1")
-    if not (len(highs) == len(lows) == len(closes)):
-        raise ValueError("high, low and close series must be the same length")
-    if len(closes) <= window:
+    ordered = tuple(bars)
+    for bar in ordered:
+        timeframe = getattr(bar, "timeframe", None)
+        if timeframe != DAILY_ATR_TIMEFRAME:
+            raise ValueError(
+                f"the volatility buffer requires canonical "
+                f"{DAILY_ATR_TIMEFRAME} bars",
+            )
+    if len(ordered) <= window:
         return None
-    values = average_true_range(
-        [float(value) for value in highs],
-        [float(value) for value in lows],
-        [float(value) for value in closes],
-        window=window,
-        nan_policy="propagate",
-    )
+    values = bar_average_true_range(ordered, window=window)
     latest = values[-1]
-    if latest != latest:  # NaN while the window is incomplete
-        return None
-    return Decimal(str(float(latest)))
+    return None if latest is None else latest
 
 
 def _decimal(value: Any, name: str) -> Decimal:
     try:
-        return Decimal(str(value))
+        result = Decimal(str(value))
     except Exception as error:  # noqa: BLE001 - surfaced as a domain error
         raise ValueError(f"{name} must be numeric") from error
+    # NaN and infinity are rejected here as named domain errors. Left to the
+    # bare comparisons they surface as decimal.InvalidOperation, an
+    # ArithmeticError carrying no field name, and NaN silently poisons every
+    # downstream max/sum instead of refusing the input.
+    if not result.is_finite():
+        raise ValueError(f"{name} must be finite")
+    return result
 
 
 def _positive_decimal(value: Any, name: str) -> Decimal:

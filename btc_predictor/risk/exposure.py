@@ -159,7 +159,7 @@ def calculate_risk_at_stop(
     nav: Any | None,
     direction: str = LONG_DIRECTION,
     convention: str = DEFAULT_RISK_AT_STOP_CONVENTION,
-    target_fraction_nav: Any = DEFAULT_RISK_AT_STOP_TARGET_FRACTION,
+    target_fraction_nav: Any | None = None,
     maximum_fraction_nav: Any | None = None,
     config: StrategyConfig | None = None,
     config_metadata: Mapping[str, str] | None = None,
@@ -168,21 +168,33 @@ def calculate_risk_at_stop(
 
     Each tranche supplies an ``entry_price`` and either a ``notional`` or a
     ``quantity``; the two rulebook forms are equivalent and both are accepted.
+
+    ``target_fraction_nav`` defaults to the low end of the rulebook 19 band,
+    tightened to the configured ceiling when a versioned config sets one below
+    it. A config that is *more* conservative than the rulebook's soft target is
+    legitimate -- BTC-144 already accepts one as its budget cap -- so it must
+    not make this owner unusable. An explicitly supplied target above the
+    ceiling is still a caller error and is refused.
     """
 
     if direction not in INVALIDATION_DIRECTIONS:
         raise ValueError(f"direction must be one of {INVALIDATION_DIRECTIONS}")
     if convention not in RISK_AT_STOP_CONVENTIONS:
         raise ValueError(f"convention must be one of {RISK_AT_STOP_CONVENTIONS}")
-    target = _fraction_decimal(target_fraction_nav, "target_fraction_nav")
     resolved_config = config if config is not None else load_strategy_config()
     maximum = (
         _fraction_decimal(maximum_fraction_nav, "maximum_fraction_nav")
         if maximum_fraction_nav is not None
         else _configured_maximum(resolved_config)
     )
-    if decision_greater(target, maximum):
-        raise ValueError("target_fraction_nav must not exceed maximum_fraction_nav")
+    if target_fraction_nav is None:
+        target = min(DEFAULT_RISK_AT_STOP_TARGET_FRACTION, maximum)
+    else:
+        target = _fraction_decimal(target_fraction_nav, "target_fraction_nav")
+        if decision_greater(target, maximum):
+            raise ValueError(
+                "target_fraction_nav must not exceed maximum_fraction_nav",
+            )
     metadata = _resolve_config_metadata(resolved_config, config_metadata)
     nav_value = _positive_decimal(nav, "nav") if nav is not None else None
     stop = (

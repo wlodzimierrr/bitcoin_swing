@@ -34,6 +34,12 @@ AS_OF = datetime(2026, 6, 1, tzinfo=UTC)
 DETECTED = datetime(2026, 1, 1, tzinfo=UTC)
 
 
+def level(price: str, *, detected_at: datetime = DETECTED) -> dict[str, object]:
+    """A structural level carrying the availability evidence BTC-143 requires."""
+
+    return {"price": price, "detected_at": detected_at}
+
+
 def resistance(
     cluster_id: str,
     lower: str,
@@ -77,9 +83,10 @@ def test_priority_1_beats_a_nearer_lower_tier_reference() -> None:
     reference, _ = select_reward_reference(
         entry_price="10000",
         resistance_clusters=[resistance("weekly", "11000", "11200")],
-        swing_highs=["10100"],
-        range_highs=["10050"],
-        measured_move="10020",
+        swing_highs=[level("10100")],
+        range_highs=[level("10050")],
+        measured_move=level("10020"),
+        as_of=AS_OF,
     )
 
     # The rulebook order is strict: a nearer swing high does not override a
@@ -92,11 +99,11 @@ def test_priority_1_beats_a_nearer_lower_tier_reference() -> None:
 @pytest.mark.parametrize(
     ("kwargs", "expected_type", "expected_price"),
     [
-        ({"swing_highs": ["10500"], "range_highs": ["10800"]},
+        ({"swing_highs": [level("10500")], "range_highs": [level("10800")]},
          PRIOR_LOCAL_SWING_HIGH, Decimal("10500")),
-        ({"range_highs": ["10800"], "measured_move": "10400"},
+        ({"range_highs": [level("10800")], "measured_move": level("10400")},
          PRIOR_RANGE_HIGH, Decimal("10800")),
-        ({"measured_move": "10400"},
+        ({"measured_move": level("10400")},
          CONSERVATIVE_MEASURED_MOVE, Decimal("10400")),
     ],
 )
@@ -105,7 +112,9 @@ def test_each_tier_is_used_when_higher_tiers_are_empty(
     expected_type: str,
     expected_price: Decimal,
 ) -> None:
-    reference, _ = select_reward_reference(entry_price="10000", **kwargs)
+    reference, _ = select_reward_reference(
+        entry_price="10000", as_of=AS_OF, **kwargs
+    )
 
     assert reference.reference_type == expected_type
     assert reference.price == expected_price
@@ -118,6 +127,7 @@ def test_nearest_reference_wins_within_a_tier() -> None:
             resistance("far", "12000", "12200"),
             resistance("near", "10500", "10700"),
         ],
+        as_of=AS_OF,
     )
 
     assert reference.source_id == "near"
@@ -129,7 +139,8 @@ def test_only_major_timeframe_clusters_qualify_for_priority_1() -> None:
     reference, considered = select_reward_reference(
         entry_price="10000",
         resistance_clusters=[resistance("daily", "10200", "10300", timeframe="1d")],
-        swing_highs=["10600"],
+        swing_highs=[level("10600")],
+        as_of=AS_OF,
     )
 
     # A daily cluster is not a "major weekly/monthly" reference, so the swing
@@ -145,6 +156,7 @@ def test_monthly_clusters_also_qualify() -> None:
     reference, _ = select_reward_reference(
         entry_price="10000",
         resistance_clusters=[resistance("monthly", "11000", "11500", timeframe="1mo")],
+        as_of=AS_OF,
     )
 
     assert reference.reference_type == MAJOR_RESISTANCE_CLUSTER
@@ -154,7 +166,8 @@ def test_references_at_or_below_entry_are_not_credible() -> None:
     reference, considered = select_reward_reference(
         entry_price="10000",
         resistance_clusters=[resistance("below", "9000", "9500")],
-        swing_highs=["10000", "9800"],
+        swing_highs=[level("10000"), level("9800")],
+        as_of=AS_OF,
     )
 
     # Nothing above entry means no reward is available at all.
@@ -180,6 +193,7 @@ def test_short_side_measures_reward_downward() -> None:
         entry_price="10000",
         direction="short",
         resistance_clusters=[resistance("support", "9000", "9400", zone_type="support")],
+        as_of=AS_OF,
     )
 
     assert reference.reference_type == MAJOR_RESISTANCE_CLUSTER
@@ -358,7 +372,9 @@ def test_canonical_path_filters_a_btc142_stop() -> None:
     stop = long_stop()
 
     result = reward_risk_for_stop(
-        stop, resistance_clusters=[resistance("weekly", "11500", "11800")]
+        stop,
+        resistance_clusters=[resistance("weekly", "11500", "11800")],
+        as_of=AS_OF,
     )
 
     # stop 9400 - 150 buffer = 9250, so risk is 750 against 1500 reward.
@@ -373,7 +389,9 @@ def test_canonical_path_takes_geometry_from_the_stop() -> None:
     stop = long_stop()
 
     result = reward_risk_for_stop(
-        stop, resistance_clusters=[resistance("weekly", "11500", "11800")]
+        stop,
+        resistance_clusters=[resistance("weekly", "11500", "11800")],
+        as_of=AS_OF,
     )
 
     assert result.entry_price == stop.entry_price
@@ -386,15 +404,17 @@ def test_canonical_path_accepts_a_persisted_stop_record() -> None:
     clusters = [resistance("weekly", "11500", "11800")]
 
     assert (
-        reward_risk_for_stop(stop, resistance_clusters=clusters).as_record()
+        reward_risk_for_stop(
+            stop, resistance_clusters=clusters, as_of=AS_OF
+        ).as_record()
         == reward_risk_for_stop(
-            stop.as_record(), resistance_clusters=clusters
+            stop.as_record(), resistance_clusters=clusters, as_of=AS_OF
         ).as_record()
     )
 
 
 def test_canonical_path_fails_when_no_structure_exists_above_entry() -> None:
-    result = reward_risk_for_stop(long_stop(), resistance_clusters=[])
+    result = reward_risk_for_stop(long_stop(), resistance_clusters=[], as_of=AS_OF)
 
     assert result.passes is False
     assert result.reason_codes == ("REWARD_RISK_NO_REWARD_REFERENCE",)
@@ -408,7 +428,9 @@ def test_an_incomplete_stop_propagates_as_a_failure() -> None:
     stop = initial_stop_for_setup(empty, buffer)
 
     result = reward_risk_for_stop(
-        stop, resistance_clusters=[resistance("weekly", "11500", "11800")]
+        stop,
+        resistance_clusters=[resistance("weekly", "11500", "11800")],
+        as_of=AS_OF,
     )
 
     assert stop.complete is False
@@ -423,8 +445,8 @@ def test_recomputation_is_deterministic() -> None:
     stop = long_stop()
     clusters = [resistance("weekly", "11500", "11800")]
 
-    first = reward_risk_for_stop(stop, resistance_clusters=clusters)
-    second = reward_risk_for_stop(stop, resistance_clusters=clusters)
+    first = reward_risk_for_stop(stop, resistance_clusters=clusters, as_of=AS_OF)
+    second = reward_risk_for_stop(stop, resistance_clusters=clusters, as_of=AS_OF)
 
     assert first.as_record() == second.as_record()
 
@@ -433,7 +455,8 @@ def test_record_persists_the_selected_reference_and_is_reproducible() -> None:
     result = reward_risk_for_stop(
         long_stop(),
         resistance_clusters=[resistance("weekly", "11500", "11800")],
-        swing_highs=["10800"],
+        swing_highs=[level("10800")],
+        as_of=AS_OF,
         config_metadata={"config_version": "strategy_config_v2"},
     )
     record = result.as_record()

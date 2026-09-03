@@ -15,6 +15,21 @@ selected in strict priority order:
 If no credible reference exists the filter fails. It never falls back to an
 arbitrary target, and it never invents one from the stop distance.
 
+Interpretation note
+-------------------
+``RiskToInvalidation`` admits two readings: the distance to the bare BTC-140
+invalidation level, or the distance to the BTC-142 stop that sits a volatility
+buffer beyond it. ``REWARD_RISK_FILTER_V1`` takes the **stop**, because
+rulebook 16.2 makes the stop the level that represents thesis invalidation and
+rulebook 17 measures initial risk at the stop. It is also the more conservative
+of the two, since the stop is always further from entry. Changing the reading
+would loosen a hard entry gate and therefore requires a new policy version.
+
+A reference is usable only if it was available at the decision time. ``as_of``
+is required, and a reference carrying no ``detected_at`` cannot be shown to
+have been available, so it is not credible: rulebook 3A.2 is not satisfied by
+an optimistic assumption.
+
 The R/R produced here is a hard asymmetry filter. BTC-098 removed R/R from
 Structure Score arithmetic precisely so it could stay independent, so this
 module gates entry rather than contributing to any score.
@@ -67,6 +82,16 @@ REWARD_REFERENCE_PRIORITY = (
     CONSERVATIVE_MEASURED_MOVE,
 )
 
+# The versioned config keys the per-setup R/R minimum by lowercase setup name.
+# BTC-140 and BTC-113 both label setups in upper case, so the mapping is
+# explicit rather than a string transform that could silently mismatch.
+_SETUP_REQUIREMENT_ATTRIBUTES = {
+    "BULL_TREND_CONTINUATION": "bull_trend_continuation",
+    "BULLISH_RESET": "bullish_reset",
+    "CAPITULATION_REVERSAL": "capitulation_reversal",
+    "BEARISH_DISTRIBUTION": "bearish_distribution",
+}
+
 REWARD_RISK_REASON_CODES = (
     "REWARD_RISK_PASS",
     "REWARD_RISK_BELOW_MINIMUM",
@@ -74,12 +99,19 @@ REWARD_RISK_REASON_CODES = (
     "REWARD_RISK_INPUT_MISSING",
     "REWARD_RISK_INVALID_RISK",
     "REWARD_RISK_PREFERRED_BAND",
+    "REWARD_RISK_REFERENCE_NOT_YET_AVAILABLE",
 )
 
 
 @dataclass(frozen=True)
 class RewardReference:
-    """The structural level potential reward is measured to."""
+    """The structural level potential reward is measured to.
+
+    Every reference of a tier that was evaluated appears in a result's
+    ``considered_references``, including those refused for availability or for
+    sitting behind entry. Clusters outside the major timeframes are not
+    priority-1 candidates at all and are not recorded there.
+    """
 
     reference_type: str
     priority: int
@@ -120,6 +152,7 @@ class RewardRiskResult:
     config_metadata: dict[str, str]
     complete: bool
     reason_codes: tuple[str, ...] = ()
+    as_of: datetime | None = None
 
     def as_record(self) -> dict[str, Any]:
         if self.passes and self.reward_risk is None:
@@ -146,6 +179,14 @@ class RewardRiskResult:
             "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
+            # The decision time the availability filter ran against. Without it
+            # a persisted verdict cannot be re-checked for point-in-time
+            # correctness, and a tampered reference detected_at is undetectable.
+            "as_of": (
+                require_utc_datetime(self.as_of, "as_of").isoformat()
+                if self.as_of is not None
+                else None
+            ),
         }
 
 
@@ -157,48 +198,49 @@ def select_reward_reference(
     swing_highs: Sequence[Any] = (),
     range_highs: Sequence[Any] = (),
     measured_move: Any | None = None,
-    as_of: datetime | None = None,
+    as_of: datetime,
     major_timeframes: Sequence[str] = MAJOR_REWARD_TIMEFRAMES,
 ) -> tuple[RewardReference | None, tuple[RewardReference, ...]]:
     """Return the highest-priority credible reference and everything considered.
 
-    A reference is credible only if it lies beyond entry in the reward
-    direction. Within a tier the nearest such reference is taken; across tiers
-    the rulebook order is strict.
+    A reference is credible only if it was **available at** ``as_of`` and lies
+    beyond entry in the reward direction. Within a tier the nearest such
+    reference is taken; across tiers the rulebook order is strict.
+
+    ``as_of`` is required, matching BTC-140. Rulebook 3A.2 permits only
+    information available at the decision time, and a reference carrying no
+    ``detected_at`` cannot be shown to have been available, so it is not
+    credible either. Every reference remains in the returned ``considered``
+    tuple, including those refused for availability, so a verdict stays
+    reconstructable from its own record.
     """
 
     if direction not in INVALIDATION_DIRECTIONS:
         raise ValueError(f"direction must be one of {INVALIDATION_DIRECTIONS}")
     entry = _positive_decimal(entry_price, "entry_price")
-    signal_time = (
-        require_utc_datetime(as_of, "as_of") if as_of is not None else None
-    )
+    signal_time = require_utc_datetime(as_of, "as_of")
 
     tiers: dict[str, list[RewardReference]] = {
         MAJOR_RESISTANCE_CLUSTER: _cluster_references(
             resistance_clusters,
             direction=direction,
             major_timeframes=tuple(major_timeframes),
-            signal_time=signal_time,
         ),
         PRIOR_LOCAL_SWING_HIGH: _level_references(
             swing_highs,
             reference_type=PRIOR_LOCAL_SWING_HIGH,
             priority=2,
-            signal_time=signal_time,
         ),
         PRIOR_RANGE_HIGH: _level_references(
             range_highs,
             reference_type=PRIOR_RANGE_HIGH,
             priority=3,
-            signal_time=signal_time,
         ),
         CONSERVATIVE_MEASURED_MOVE: (
             _level_references(
                 [measured_move],
                 reference_type=CONSERVATIVE_MEASURED_MOVE,
                 priority=4,
-                signal_time=signal_time,
             )
             if measured_move is not None
             else []
@@ -212,7 +254,8 @@ def select_reward_reference(
             (
                 item
                 for item in tiers[reference_type]
-                if _is_beyond_entry(item.price, entry, direction)
+                if _is_available(item, signal_time)
+                and _is_beyond_entry(item.price, entry, direction)
             ),
             key=lambda item: (
                 abs(item.price - entry),
@@ -234,18 +277,28 @@ def evaluate_reward_risk(
     considered_references: Sequence[RewardReference] = (),
     minimum_reward_risk: Any = DEFAULT_MINIMUM_REWARD_RISK,
     config_metadata: Mapping[str, str] | None = None,
+    as_of: datetime | None = None,
+    refused_for_availability: bool = False,
 ) -> RewardRiskResult:
     """Apply the hard ``RR >= minimum`` asymmetry filter.
 
     Missing structure is a filter failure, not a pass and not a neutral
     outcome: without a credible reward reference there is no evidence of
     asymmetry, so the trade is not permitted.
+
+    ``as_of`` is the decision time the reference was selected at and is
+    persisted so the verdict stays re-checkable. ``refused_for_availability``
+    distinguishes "there is no structure" from "the only structure was not yet
+    available", which are different causes with the same verdict.
     """
 
     if direction not in INVALIDATION_DIRECTIONS:
         raise ValueError(f"direction must be one of {INVALIDATION_DIRECTIONS}")
     minimum = _positive_decimal(minimum_reward_risk, "minimum_reward_risk")
     metadata = dict(config_metadata or {})
+    signal_time = (
+        require_utc_datetime(as_of, "as_of") if as_of is not None else None
+    )
     considered = tuple(considered_references)
     entry = (
         _positive_decimal(entry_price, "entry_price")
@@ -269,9 +322,13 @@ def evaluate_reward_risk(
             metadata=metadata,
             reason_codes=("REWARD_RISK_INPUT_MISSING",),
             complete=False,
+            as_of=signal_time,
         )
 
     if reward_reference is None:
+        reasons = ["REWARD_RISK_NO_REWARD_REFERENCE"]
+        if refused_for_availability:
+            reasons.append("REWARD_RISK_REFERENCE_NOT_YET_AVAILABLE")
         return _failed(
             direction=direction,
             entry=entry,
@@ -280,8 +337,9 @@ def evaluate_reward_risk(
             considered=considered,
             minimum=minimum,
             metadata=metadata,
-            reason_codes=("REWARD_RISK_NO_REWARD_REFERENCE",),
+            reason_codes=tuple(reasons),
             complete=True,
+            as_of=signal_time,
         )
 
     risk = entry - stop if direction == LONG_DIRECTION else stop - entry
@@ -303,6 +361,7 @@ def evaluate_reward_risk(
             complete=True,
             reward=reward,
             risk=risk,
+            as_of=signal_time,
         )
 
     ratio = reward / risk
@@ -329,6 +388,7 @@ def evaluate_reward_risk(
         config_metadata=metadata,
         complete=True,
         reason_codes=tuple(reason_codes),
+        as_of=signal_time,
     )
 
 
@@ -339,14 +399,22 @@ def reward_risk_for_stop(
     swing_highs: Sequence[Any] = (),
     range_highs: Sequence[Any] = (),
     measured_move: Any | None = None,
-    as_of: datetime | None = None,
-    minimum_reward_risk: Any = DEFAULT_MINIMUM_REWARD_RISK,
+    as_of: datetime,
+    setup: str | None = None,
+    minimum_reward_risk: Any | None = None,
+    config: Any | None = None,
     config_metadata: Mapping[str, str] | None = None,
 ) -> RewardRiskResult:
     """Canonical path: filter a BTC-142 stop against structural reward.
 
     Entry, stop and direction all come from the BTC-142 result so the trade
-    geometry cannot be restated inconsistently.
+    geometry cannot be restated inconsistently. ``as_of`` is required so the
+    availability filter always runs.
+
+    ``minimum_reward_risk`` defaults to the versioned strategy config for
+    ``setup`` when one is named, and to the rulebook 15 baseline otherwise.
+    Naming the setup is what keeps this filter and BTC-113's setup requirements
+    on one threshold; see :func:`minimum_reward_risk_from_config`.
     """
 
     record = _as_record(stop, "stop")
@@ -354,6 +422,12 @@ def reward_risk_for_stop(
     entry = record.get("entry_price")
     stop_price = record.get("stop_price")
     metadata = dict(config_metadata or {})
+    minimum = (
+        _positive_decimal(minimum_reward_risk, "minimum_reward_risk")
+        if minimum_reward_risk is not None
+        else minimum_reward_risk_from_config(setup, config=config)
+    )
+    signal_time = require_utc_datetime(as_of, "as_of")
 
     if not record.get("complete") or entry is None or stop_price is None:
         return _failed(
@@ -362,10 +436,11 @@ def reward_risk_for_stop(
             stop=None,
             reference=None,
             considered=(),
-            minimum=_positive_decimal(minimum_reward_risk, "minimum_reward_risk"),
+            minimum=minimum,
             metadata=metadata,
             reason_codes=("REWARD_RISK_INPUT_MISSING",),
             complete=False,
+            as_of=signal_time,
         )
 
     reference, considered = select_reward_reference(
@@ -375,7 +450,7 @@ def reward_risk_for_stop(
         swing_highs=swing_highs,
         range_highs=range_highs,
         measured_move=measured_move,
-        as_of=as_of,
+        as_of=signal_time,
     )
     return evaluate_reward_risk(
         entry_price=entry,
@@ -383,9 +458,45 @@ def reward_risk_for_stop(
         direction=direction,
         reward_reference=reference,
         considered_references=considered,
-        minimum_reward_risk=minimum_reward_risk,
+        minimum_reward_risk=minimum,
         config_metadata=metadata,
+        as_of=signal_time,
+        refused_for_availability=(
+            reference is None
+            and any(not _is_available(item, signal_time) for item in considered)
+        ),
     )
+
+
+def minimum_reward_risk_from_config(
+    setup: str | None,
+    *,
+    config: Any | None = None,
+) -> Decimal:
+    """Resolve the hard R/R minimum for ``setup`` from the versioned config.
+
+    Rulebook 15 states ``RR >= 2`` for entry generally, but the versioned
+    strategy config declares a per-setup ``setup_requirements.<setup>.
+    minimum_rr`` that BTC-113 enforces independently -- 2.5 for a bearish
+    distribution short, where the rulebook demands stronger evidence than for a
+    long. Reading it here is what stops this filter and the setup detector from
+    rendering two different verdicts on the same rulebook gate.
+
+    ``None`` resolves to the rulebook 15 baseline, for callers that genuinely
+    have no active setup.
+    """
+
+    if setup is None:
+        return DEFAULT_MINIMUM_REWARD_RISK
+    attribute = _SETUP_REQUIREMENT_ATTRIBUTES.get(setup)
+    if attribute is None:
+        raise ValueError(f"setup must be one of {tuple(_SETUP_REQUIREMENT_ATTRIBUTES)}")
+    if config is None:
+        from btc_predictor.config.strategy import load_strategy_config
+
+        config = load_strategy_config()
+    requirements = getattr(config.setup_requirements, attribute)
+    return _positive_decimal(requirements["minimum_rr"], "minimum_rr")
 
 
 def _cluster_references(
@@ -393,7 +504,6 @@ def _cluster_references(
     *,
     direction: str,
     major_timeframes: tuple[str, ...],
-    signal_time: datetime | None,
 ) -> list[RewardReference]:
     required_zone = "resistance" if direction == LONG_DIRECTION else "support"
     references = []
@@ -402,10 +512,6 @@ def _cluster_references(
         if record.get("zone_type") != required_zone:
             continue
         detected_at = _optional_utc(record.get("detected_at"))
-        if signal_time is not None and detected_at is not None and (
-            detected_at > signal_time
-        ):
-            continue
         timeframes = _cluster_timeframes(record)
         if major_timeframes and not (set(timeframes) & set(major_timeframes)):
             continue
@@ -435,7 +541,6 @@ def _level_references(
     *,
     reference_type: str,
     priority: int,
-    signal_time: datetime | None,
 ) -> list[RewardReference]:
     references = []
     for level in levels:
@@ -455,10 +560,6 @@ def _level_references(
             detected_at = None
             source_id = None
             timeframe = None
-        if signal_time is not None and detected_at is not None and (
-            detected_at > signal_time
-        ):
-            continue
         references.append(
             RewardReference(
                 reference_type=reference_type,
@@ -486,6 +587,19 @@ def _cluster_timeframes(record: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(timeframes)
 
 
+def _is_available(reference: RewardReference, signal_time: datetime) -> bool:
+    """Return whether a reference is provably available at the decision time.
+
+    An unknown ``detected_at`` is not treated as "available": unknown
+    availability must not be resolved optimistically, or a level read from a
+    future bar would silently pass the hard R/R gate.
+    """
+
+    if reference.detected_at is None:
+        return False
+    return reference.detected_at <= signal_time
+
+
 def _is_beyond_entry(price: Decimal, entry: Decimal, direction: str) -> bool:
     if direction == LONG_DIRECTION:
         return decision_greater(price, entry)
@@ -505,6 +619,7 @@ def _failed(
     complete: bool,
     reward: Decimal | None = None,
     risk: Decimal | None = None,
+    as_of: datetime | None = None,
 ) -> RewardRiskResult:
     return RewardRiskResult(
         feature_id=REWARD_RISK_FEATURE_ID,
@@ -522,6 +637,7 @@ def _failed(
         config_metadata=metadata,
         complete=complete,
         reason_codes=reason_codes,
+        as_of=as_of,
     )
 
 
@@ -552,6 +668,8 @@ def _positive_decimal(value: Any, name: str) -> Decimal:
         result = Decimal(str(value))
     except Exception as error:  # noqa: BLE001 - surfaced as a domain error
         raise ValueError(f"{name} must be numeric") from error
+    if not result.is_finite():
+        raise ValueError(f"{name} must be finite")
     if decision_less_equal(result, 0):
         raise ValueError(f"{name} must be positive")
     return result
@@ -574,6 +692,7 @@ __all__ = [
     "RewardReference",
     "RewardRiskResult",
     "evaluate_reward_risk",
+    "minimum_reward_risk_from_config",
     "reward_risk_for_stop",
     "select_reward_reference",
 ]

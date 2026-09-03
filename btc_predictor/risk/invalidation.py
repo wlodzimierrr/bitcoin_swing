@@ -141,6 +141,7 @@ class StructuralInvalidationResult:
     candidates: tuple[InvalidationCandidate, ...]
     config_metadata: dict[str, str]
     complete: bool
+    as_of: datetime | None = None
     reason_codes: tuple[str, ...] = ()
 
     def as_record(self) -> dict[str, Any]:
@@ -184,6 +185,14 @@ class StructuralInvalidationResult:
             "config_metadata": dict(self.config_metadata),
             "complete": self.complete,
             "reason_codes": list(self.reason_codes),
+            # The decision time every candidate's detected_at was filtered
+            # against. A selection whose record omits it cannot later be
+            # re-checked for point-in-time correctness.
+            "as_of": (
+                require_utc_datetime(self.as_of, "as_of").isoformat()
+                if self.as_of is not None
+                else None
+            ),
         }
 
 
@@ -201,9 +210,14 @@ def select_structural_invalidation(
 ) -> StructuralInvalidationResult:
     """Select the invalidation level for an active setup from nearby structure.
 
-    Every considered zone is retained in ``candidates`` with an explicit
-    eligibility verdict, so a selection is always reconstructable from the
-    persisted record.
+    Every zone on the trade's own side -- support for a long, resistance for a
+    short -- is retained in ``candidates`` with an explicit eligibility
+    verdict, so a selection is always reconstructable from the persisted
+    record. A zone of the opposite type could never invalidate this thesis and
+    is not a candidate at all.
+
+    ``as_of`` is persisted alongside the candidates so a stored selection can
+    later be re-checked against the availability rule it was made under.
     """
 
     signal_time = require_utc_datetime(as_of, "as_of")
@@ -223,6 +237,7 @@ def select_structural_invalidation(
             entry=entry,
             thresholds=thresholds,
             metadata=metadata,
+            as_of=signal_time,
             reason_codes=("STRUCTURAL_INVALIDATION_UNSUPPORTED_SETUP",),
         )
     direction, selection_mode = SETUP_INVALIDATION_POLICY[setup]
@@ -237,6 +252,7 @@ def select_structural_invalidation(
             entry=entry,
             thresholds=thresholds,
             metadata=metadata,
+            as_of=signal_time,
             reason_codes=("STRUCTURAL_INVALIDATION_INPUT_MISSING",),
         )
 
@@ -275,6 +291,7 @@ def select_structural_invalidation(
             entry=entry,
             thresholds=thresholds,
             metadata=metadata,
+            as_of=signal_time,
             reason_codes=tuple(reasons),
             candidates=ordered,
         )
@@ -297,6 +314,7 @@ def select_structural_invalidation(
         candidates=ordered,
         config_metadata=metadata,
         complete=True,
+        as_of=signal_time,
         reason_codes=("STRUCTURAL_INVALIDATION_SELECTED",),
     )
 
@@ -377,6 +395,7 @@ def _empty_result(
     thresholds: dict[str, Decimal],
     metadata: dict[str, str],
     reason_codes: tuple[str, ...],
+    as_of: datetime | None = None,
     candidates: tuple[InvalidationCandidate, ...] = (),
 ) -> StructuralInvalidationResult:
     return StructuralInvalidationResult(
@@ -396,6 +415,7 @@ def _empty_result(
         candidates=candidates,
         config_metadata=metadata,
         complete=False,
+        as_of=as_of,
         reason_codes=reason_codes,
     )
 
@@ -426,11 +446,14 @@ def _cluster_records(clusters: Any) -> tuple[dict[str, Any], ...]:
         return ()
     if isinstance(clusters, Mapping):
         if "clusters" in clusters:
-            return tuple(_record(item) for item in clusters["clusters"])
+            return _expand_cluster_container(clusters)
         return (_record(clusters),)
     if isinstance(clusters, Sequence) and not isinstance(clusters, str | bytes):
         return tuple(_record(item) for item in clusters)
-    return (_record(clusters),)
+    record = _record(clusters)
+    if "clusters" in record:
+        return _expand_cluster_container(record)
+    return (record,)
 
 
 def _record(source: Any) -> dict[str, Any]:
@@ -442,6 +465,17 @@ def _record(source: Any) -> dict[str, Any]:
     raise TypeError("cluster must be a mapping or expose as_record()")
 
 
+def _expand_cluster_container(record: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
+    """Unwrap a BTC-097 clustering *result* into its individual zones.
+
+    The owner's ``LevelClusterResult`` is the natural thing to hand this
+    function; only its ``as_record()`` mapping was previously understood, so
+    passing the object itself failed on a missing ``zone_type``.
+    """
+
+    return tuple(_record(item) for item in record["clusters"])
+
+
 def _required_string(record: Mapping[str, Any], key: str) -> str:
     value = record.get(key)
     if not isinstance(value, str) or not value.strip():
@@ -451,9 +485,16 @@ def _required_string(record: Mapping[str, Any], key: str) -> str:
 
 def _decimal(value: Any, name: str) -> Decimal:
     try:
-        return Decimal(str(value))
+        result = Decimal(str(value))
     except Exception as error:  # noqa: BLE001 - surfaced as a domain error
         raise ValueError(f"{name} must be numeric") from error
+    # NaN and infinity are rejected here as named domain errors. Left to the
+    # bare comparisons they surface as decimal.InvalidOperation, an
+    # ArithmeticError carrying no field name, and NaN silently poisons every
+    # downstream max/sum instead of refusing the input.
+    if not result.is_finite():
+        raise ValueError(f"{name} must be finite")
+    return result
 
 
 def _positive_decimal(value: Any, name: str) -> Decimal:

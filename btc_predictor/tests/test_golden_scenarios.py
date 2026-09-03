@@ -212,9 +212,7 @@ class GoldenScenarioStrategy:
 
     def _atr(self, context: BacktestContext) -> Decimal | None:
         return atr_from_daily_bars(
-            [bar.high for bar in context.bars],
-            [bar.low for bar in context.bars],
-            [bar.close for bar in context.bars],
+            context.bars,
             window=CONFIG.stop_buffers.atr_period,
         )
 

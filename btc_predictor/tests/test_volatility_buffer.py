@@ -1,8 +1,11 @@
 """BTC-141: volatility buffer for structural stops."""
 
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
+
+from btc_predictor.data import OhlcvBar
 
 from btc_predictor.risk import (
     ATR_BOUND,
@@ -185,34 +188,57 @@ def test_level_noise_from_zone_composes_with_the_buffer() -> None:
     assert result.binding_term == LEVEL_NOISE_BOUND
 
 
-# --- ATR bridge to BTC-043 ----------------------------------------------
+# --- ATR bridge to the BTC-041 bar boundary -----------------------------
+
+ATR_ORIGIN = datetime(2026, 1, 1, tzinfo=UTC)
+
+
+def daily_bar(day: int, *, timeframe: str = "1d") -> OhlcvBar:
+    timestamp = ATR_ORIGIN + timedelta(days=day)
+    return OhlcvBar(
+        timestamp=timestamp,
+        exchange="coinbase",
+        symbol="BTC-USD",
+        timeframe=timeframe,
+        open=Decimal("100"),
+        high=Decimal("101"),
+        low=Decimal("99"),
+        close=Decimal("100"),
+        volume=Decimal("1"),
+        provider="ccdata",
+        ingested_at=timestamp + timedelta(days=1),
+    )
 
 
 def test_atr_from_daily_bars_uses_the_shared_rolling_primitive() -> None:
-    highs = [Decimal("101")] * 25
-    lows = [Decimal("99")] * 25
-    closes = [Decimal("100")] * 25
-
-    atr = atr_from_daily_bars(highs, lows, closes, window=20)
+    atr = atr_from_daily_bars([daily_bar(day) for day in range(25)], window=20)
 
     # Constant 2-wide bars give a true range of 2 throughout.
     assert atr == Decimal("2.0")
 
 
 def test_atr_from_daily_bars_returns_none_while_warming_up() -> None:
-    highs = [Decimal("101")] * 5
-    lows = [Decimal("99")] * 5
-    closes = [Decimal("100")] * 5
-
     # Warm-up must be None, never a partial-window number.
-    assert atr_from_daily_bars(highs, lows, closes, window=20) is None
+    assert atr_from_daily_bars([daily_bar(day) for day in range(5)], window=20) is None
 
 
 def test_atr_from_daily_bars_validates_its_inputs() -> None:
-    with pytest.raises(ValueError, match="same length"):
-        atr_from_daily_bars([1, 2], [1], [1], window=2)
     with pytest.raises(ValueError, match="window must be >= 1"):
-        atr_from_daily_bars([1], [1], [1], window=0)
+        atr_from_daily_bars([daily_bar(0)], window=0)
+    with pytest.raises(ValueError, match="canonical 1d bars"):
+        atr_from_daily_bars(
+            [daily_bar(day, timeframe="1w") for day in range(25)],
+            window=20,
+        )
+
+
+def test_a_window_spanning_an_absent_session_has_no_atr() -> None:
+    # PRICE_SOURCE_POLICY_V1 keeps a provider outage as an explicit gap, and a
+    # true range measured across it is not a session's range. The buffer must
+    # be incomplete rather than inflated, so no stop is placed at all.
+    days = [day for day in range(25) if day != 20]
+
+    assert atr_from_daily_bars([daily_bar(day) for day in days], window=20) is None
 
 
 # --- determinism and persistence ----------------------------------------
@@ -380,7 +406,10 @@ def test_a_bounded_zone_cannot_silently_forget_its_noise_calculation() -> None:
 
 
 def test_genuine_unavailability_uses_a_diagnosed_atr_only_fallback() -> None:
-    result = volatility_buffer_for_invalidation(invalidation_for([]), atr="500")
+    # Genuine unavailability is a caller that brings no zone at all -- the
+    # trailing path, for instance, whose structure is a swing rather than a
+    # cluster. A *refused* BTC-140 selection is a different state; see below.
+    result = volatility_buffer_for_invalidation({}, atr="500")
 
     assert result.complete is True
     assert result.buffer == Decimal("150.00")
@@ -388,6 +417,34 @@ def test_genuine_unavailability_uses_a_diagnosed_atr_only_fallback() -> None:
     assert result.level_noise_source == LEVEL_NOISE_UNAVAILABLE
     assert "VOLATILITY_BUFFER_LEVEL_NOISE_UNAVAILABLE" in result.reason_codes
     assert result.binding_term == ATR_BOUND
+
+
+def test_a_refused_invalidation_is_not_a_legitimate_atr_only_fallback() -> None:
+    # A BTC-140 result either selected a bounded zone or refused; there is no
+    # complete selection without one. Reading a refusal as "structure has no
+    # usable width" would relabel the upstream cause and hand a complete buffer
+    # to consumers that never see BTC-140.
+    refused = invalidation_for([])
+    assert refused.complete is False
+
+    result = volatility_buffer_for_invalidation(refused, atr="500")
+
+    assert result.complete is False
+    assert result.buffer is None
+    assert result.reason_codes == ("VOLATILITY_BUFFER_INVALIDATION_INCOMPLETE",)
+
+
+def test_a_look_ahead_refusal_survives_into_the_buffer() -> None:
+    # The composition, not either owner, is what must stay point-in-time safe.
+    future_zone = support_zone("9000", "9600")
+    future_zone["detected_at"] = HARDENING_AS_OF + timedelta(days=1)
+    refused = invalidation_for([future_zone])
+    assert "STRUCTURAL_INVALIDATION_NOT_YET_DETECTED" in refused.reason_codes
+
+    result = volatility_buffer_for_invalidation(refused, atr="500")
+
+    assert result.complete is False
+    assert result.reason_codes == ("VOLATILITY_BUFFER_INVALIDATION_INCOMPLETE",)
 
 
 def test_canonical_path_accepts_the_persisted_invalidation_record() -> None:

@@ -20,16 +20,17 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
-- **Last epic integration audit:** EPIC E and EPIC E2 (2026-09-03),
-  PASS WITH NON-BLOCKING FINDINGS after one P1 review fix
+- **Last epic integration audit:** EPIC O, the risk engine (2026-09-03),
+  PASS WITH NON-BLOCKING FINDINGS after one P1 and five P2/P3 review fixes.
+  EPIC E and EPIC E2 were audited earlier the same day
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3433 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `e9e28ae`
-  (`fix: close EPIC E integration review findings`)
+- **Latest verified test baseline:** 3461 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** the EPIC O review-fix commit
+  (`fix: close EPIC O integration review findings`)
 
 ## Price-Reference State
 
@@ -58,11 +59,22 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   reachable from an ordinary review of February 2024 and pins it there as a
   known composition limit.
 - The EPIC E/E2 integration audit left three non-blocking items with their own
-  owners: `realized_volatility_from_daily_bars` (EPIC I) and
-  `atr_from_daily_bars` (EPIC O) still read a gapped daily series as
+  owners. `atr_from_daily_bars` (EPIC O) is now closed: it delegates to the
+  BTC-041 bar boundary. Still open with their owners:
+  `realized_volatility_from_daily_bars` (EPIC I) reads a gapped daily series as
   contiguous, three BTC-019 research helpers restate the true-range formula
   instead of using the BTC-041 owner, and BTC-048 feature/target matrices
   serialize but have no restore or tamper-validation path.
+- The EPIC O integration audit left three non-blocking items. BTC-141 still
+  carries its ATR multiplier and window as module literals rather than reading
+  the versioned `stop_buffers` config the way BTC-144 reads `risk.schedule`;
+  they are pinned equal by test, and `stop_buffers.minimum_level_noise_multiplier`
+  is consumed nowhere. `entry_thresholds.short_valid_trade_min` duplicates
+  `setup_requirements.bearish_distribution.entry_conviction_min` and is
+  likewise unused; only the setup-requirements copy is enforced. BTC-140
+  through BTC-143 have no production consumer yet -- the backtest engine takes
+  a ready-made BTC-142 stop from its intent -- so the invalidation-to-stop
+  chain is exercised only by tests.
 
 ## Important Active Invariants
 

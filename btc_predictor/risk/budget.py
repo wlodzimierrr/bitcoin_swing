@@ -245,9 +245,16 @@ def _optional(value: Decimal | None) -> str | None:
 
 def _decimal(value: Any, name: str) -> Decimal:
     try:
-        return Decimal(str(value))
+        result = Decimal(str(value))
     except Exception as error:  # noqa: BLE001 - surfaced as a domain error
         raise ValueError(f"{name} must be numeric") from error
+    # NaN and infinity are rejected here as named domain errors. Left to the
+    # bare comparisons they surface as decimal.InvalidOperation, an
+    # ArithmeticError carrying no field name, and NaN silently poisons every
+    # downstream max/sum instead of refusing the input.
+    if not result.is_finite():
+        raise ValueError(f"{name} must be finite")
+    return result
 
 
 def _score_decimal(value: Any, name: str) -> Decimal:

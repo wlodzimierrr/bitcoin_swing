@@ -3407,6 +3407,12 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     own buffer sizing.
   - Distance and confluence thresholds are marked
     `PROVISIONAL_RESEARCH_CALIBRATABLE` pending BTC-185.
+  - EPIC O integration review: the record now persists `as_of`, so a stored
+    selection can be re-checked against the availability rule it was made
+    under; `_cluster_records` now unwraps a BTC-097 `LevelClusterResult`
+    object, which previously failed with a misleading `zone_type` error while
+    its `as_record()` mapping worked; and non-finite inputs are refused as
+    named domain errors instead of raising `decimal.InvalidOperation`.
 
 #### BTC-141 Implement volatility buffer
 - **Description:**
@@ -3469,9 +3475,32 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     estimate is permitted and the maximum degenerates to the ATR term.
   - `binding_term` records which of the two terms governed, and both terms stay
     persisted, so a buffer is reconstructable rather than just its winner.
-  - `atr_from_daily_bars()` bridges to the BTC-043 `average_true_range`
-    primitive and returns `None` during warm-up rather than a partial-window
-    value.
+  - `atr_from_daily_bars()` returns `None` during warm-up rather than a
+    partial-window value.
+  - EPIC O integration review: `atr_from_daily_bars()` now takes canonical 1d
+    `OhlcvBar`s and delegates to the BTC-041 bar boundary
+    (`btc_predictor.features.rolling.average_true_range`) instead of the raw
+    BTC-043 float primitive. Only a bar carries the timestamp that decides
+    whether the preceding element is the preceding session, so the previous
+    sequence-based bridge read a provider outage as an ordinary session and
+    labelled the result `atr_window=20` when the window covered more sessions
+    than that. A window spanning an absent session is now `None`, which makes
+    the buffer, and therefore the stop, incomplete. A non-daily series is
+    refused rather than relabelled.
+  - EPIC O integration review: `volatility_buffer_for_invalidation()` no longer
+    turns a *refused* BTC-140 selection into a complete ATR-only buffer. A
+    BTC-140 result either selected a bounded zone or refused, so a refusal was
+    being reported as `level_noise_source = UNAVAILABLE`, the code reserved for
+    structure that genuinely has no width. It now yields an incomplete buffer
+    with `VOLATILITY_BUFFER_INVALIDATION_INCOMPLETE`, preserving the upstream
+    cause -- including a look-ahead rejection -- for consumers such as BTC-156
+    that never see BTC-140.
+  - The module's `0.30` / `20` defaults are pinned by test against the
+    versioned `stop_buffers` config. They are module defaults, not a run's
+    parameters: a run executing under a config that overrides them must pass
+    them through. Reading `stop_buffers` directly, as BTC-144 reads
+    `risk.schedule`, remains open; `stop_buffers.minimum_level_noise_multiplier`
+    is currently consumed nowhere.
 
 #### BTC-142 Implement initial stop
 - **Description:**
@@ -3571,6 +3600,28 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     kernel so the two cannot drift.
   - The `2.5`-`3.0` preferred band is reported as a reason code without
     changing the pass/fail verdict. Thresholds are provisional pending BTC-185.
+  - EPIC O integration review closed a look-ahead defect. `as_of` was optional
+    and defaulted to no availability filtering at all, so the canonical path
+    passed the hard gate on a resistance cluster detected after the decision
+    time -- while BTC-140, selecting from the same cluster family, required
+    `as_of`. `as_of` is now required on `select_reward_reference()` and
+    `reward_risk_for_stop()`, a reference carrying no `detected_at` is not
+    credible (rulebook 3A.2 is not satisfied by an optimistic assumption), and
+    references refused for availability stay in `considered_references` under
+    `REWARD_RISK_REFERENCE_NOT_YET_AVAILABLE`. The record now persists `as_of`.
+  - EPIC O integration review: the hard minimum had two owners. This module's
+    `DEFAULT_MINIMUM_REWARD_RISK = 2` disagreed with the versioned
+    `setup_requirements.bearish_distribution.minimum_rr = 2.5` that BTC-113
+    enforces, so a short at R/R 2.1 passed here and failed there.
+    `minimum_reward_risk_from_config()` resolves the per-setup minimum from the
+    versioned config, and `reward_risk_for_stop(setup=...)` uses it. With no
+    setup named the rulebook 15 baseline of 2 still applies.
+  - **Interpretation recorded:** rulebook 15's `RiskToInvalidation` admits two
+    readings. `REWARD_RISK_FILTER_V1` measures risk to the BTC-142 **stop**,
+    not to the bare BTC-140 invalidation level, because rulebook 16.2 makes the
+    stop the level representing thesis invalidation and rulebook 17 measures
+    initial risk at the stop. It is also the more conservative reading.
+    Changing it loosens a hard gate and requires a new policy version.
 
 #### BTC-144 Implement conviction-based risk budget
 - **Description:**
@@ -3657,6 +3708,11 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     units.
   - The chain invariant is asserted directly: notional multiplied by the stop
     distance equals the risk budget, whatever the stop distance.
+  - EPIC O integration review corrected the module docstring: BTC-047's
+    `max_allowed_notional` is *not* called. The sizing decision is taken in
+    exact `Decimal` so a rounding artefact cannot move a position, and the two
+    implementations are held together by a parity test rather than by
+    delegation. Non-finite inputs are now refused as named domain errors.
 
 #### BTC-146 Implement maximum risk-at-stop
 - **Description:**
@@ -3714,6 +3770,14 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     contribution, shared-stop, band, and headroom invariants.
   - Risk-at-stop remains distinct from gross exposure. A bounded stop loss does
     not assert that leverage is safe; a separate exposure cap remains required.
+  - EPIC O integration review: the soft target no longer makes a legitimate
+    config unusable. `DEFAULT_RISK_AT_STOP_TARGET_FRACTION` (0.75% NAV) was
+    validated against the configured ceiling unconditionally, so a versioned
+    config setting `max_risk_at_stop_fraction_nav` below it -- a *more*
+    conservative choice, which BTC-144 accepts as its budget cap -- made every
+    `calculate_risk_at_stop()` call raise. The default target is now tightened
+    to the configured ceiling; an explicitly supplied target above the ceiling
+    is still refused.
 
 ## EPIC P — Position Lifecycle / Pyramiding
 

@@ -4,9 +4,11 @@ Rulebook 17:
 
     PositionNotional = NAV * RiskBudget / StopDistance%
 
-The arithmetic is BTC-047's ``max_allowed_notional``. This module is the
-Decimal-facing domain boundary over it, composing the BTC-144 risk budget with
-the BTC-142 stop so the three inputs cannot be assembled inconsistently.
+BTC-047's ``max_allowed_notional`` is the float64 owner of the same formula.
+This module does not call it: the sizing decision is taken in exact ``Decimal``
+so a rounding artefact cannot move a position, and the two are held together by
+a parity test rather than by delegation. It composes the BTC-144 risk budget
+with the BTC-142 stop so the three inputs cannot be assembled inconsistently.
 
 A zero stop distance is rejected rather than divided by. That case is not a
 very large position, it is an undefined one, and BTC-047 already refuses it in
@@ -255,9 +257,16 @@ def _optional(value: Decimal | None) -> str | None:
 
 def _decimal(value: Any, name: str) -> Decimal:
     try:
-        return Decimal(str(value))
+        result = Decimal(str(value))
     except Exception as error:  # noqa: BLE001 - surfaced as a domain error
         raise ValueError(f"{name} must be numeric") from error
+    # NaN and infinity are rejected here as named domain errors. Left to the
+    # bare comparisons they surface as decimal.InvalidOperation, an
+    # ArithmeticError carrying no field name, and NaN silently poisons every
+    # downstream max/sum instead of refusing the input.
+    if not result.is_finite():
+        raise ValueError(f"{name} must be finite")
+    return result
 
 
 def _positive_decimal(value: Any, name: str) -> Decimal:

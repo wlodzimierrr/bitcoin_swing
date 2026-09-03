@@ -67,6 +67,7 @@ from btc_predictor.risk.reward import (
     RewardReference,
     RewardRiskResult,
     evaluate_reward_risk,
+    minimum_reward_risk_from_config,
     reward_risk_for_stop,
     select_reward_reference,
 )
@@ -200,6 +201,7 @@ __all__ = [
     "RewardReference",
     "RewardRiskResult",
     "evaluate_reward_risk",
+    "minimum_reward_risk_from_config",
     "reward_risk_for_stop",
     "select_reward_reference",
     "CONFIRMATION_STOP",
