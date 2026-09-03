@@ -1423,6 +1423,50 @@ def test_a_full_replay_reports_risk_at_stop_at_every_open_bar() -> None:
     assert ledger_risk(lifecycle, nav=result.ending_nav).within_maximum is True
 
 
+def book_at(result, as_of):
+    """The BTC-150 ledger exactly as the replay held it at ``as_of``."""
+
+    rows = [
+        row
+        for row in position_event_records(result.final_lifecycle)
+        if row["event_time"] <= as_of
+    ]
+    return replay_position_event_records(
+        rows,
+        symbol=SYMBOL,
+        direction=result.final_lifecycle.direction,
+        config_metadata=METADATA,
+    )
+
+
+def test_the_replayed_risk_at_stop_is_the_shared_owner_on_its_own_book() -> None:
+    # Reporting a number that is merely present and non-negative is not the
+    # third invariant. Rulebook 19 requires one explicit convention across
+    # advisory, paper trading and backtesting, and rulebook 32 rule 15 requires
+    # the same shared formulas, so what the replay reports must be BTC-146
+    # measured on the ledger the replay actually held at that bar -- and must
+    # stay under the ceiling at that bar's NAV, not only at the last one.
+    result = invariant_run()
+
+    checked = 0
+    for point in result.equity_curve:
+        if point.open_quantity <= 0:
+            continue
+        book = book_at(result, point.as_of)
+        assert book.quantity == point.open_quantity
+        assert book.stop_price is not None
+
+        expected = ledger_risk(book, nav=point.nav)
+        assert decision_equal(point.risk_at_stop, expected.risk_at_stop)
+        assert decision_equal(point.risk_fraction_nav, expected.risk_fraction_nav)
+        assert expected.within_maximum is True
+        assert point.risk_fraction_nav <= MAXIMUM_RISK_FRACTION
+        checked += 1
+
+    # The entry fills on the bar after it is armed, so every later bar is open.
+    assert checked == len(INVARIANT_BARS) - 1
+
+
 def test_the_invariant_replay_is_deterministic_and_persists_its_evidence() -> None:
     first = invariant_run()
     second = invariant_run()
