@@ -11,24 +11,23 @@
 
 ## Snapshot
 
-- **Last updated:** 2026-09-02
+- **Last updated:** 2026-09-03
 - **Current phase:** Phase 1, EPIC W testing is implemented; every Phase-1
   implementation ticket except BTC-019 is now DONE
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** None; no Phase-1 implementation ticket
   remains open
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its required
-  independent xHigh review is outstanding, as is BTC-222's; BTC-221's has now
-  passed with two review fixes
+  independent xHigh review is outstanding; BTC-221's and BTC-222's have now
+  passed, with two review fixes and one respectively
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. The remaining Phase-1 work is
-  BTC-019 and the outstanding independent xHigh reviews of BTC-222 and
-  BTC-224
+  BTC-019 and the outstanding independent xHigh review of BTC-224
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3414 passed with Python 3.12 on 2026-09-02
-- **Last relevant implementation/review commit:** `4fac6f16a873e8437a92456cc1a1893848c84a10`
-  (`fix: BTC-221 review fixes for two look-ahead defects`)
+- **Latest verified test baseline:** 3415 passed with Python 3.12 on 2026-09-03
+- **Last relevant implementation/review commit:** `5b199819`
+  (`fix: BTC-222 review fix for the replay risk-at-stop assertion`)
 
 ## Price-Reference State
 

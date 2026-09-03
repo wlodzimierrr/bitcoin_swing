@@ -6787,8 +6787,6 @@ The project must not proceed to trust paper/backtest performance until all of th
 - **Complexity:** M
 - **Risk:** Medium.
 - **Implementation Notes:**
-  - The required independent xHigh review is still outstanding; closure is
-    not final until it passes.
   - Added the dedicated cross-cutting suite `test_risk_invariants.py`. Each of
     the six invariants already has an owner suite proving that its own engine
     refuses a violating input, so this ticket pins the property those refusals
@@ -6871,6 +6869,69 @@ The project must not proceed to trust paper/backtest performance until all of th
   - Added 59 focused cases. The full Python 3.12.14 suite passes with 3252
     tests, also passing with `RuntimeWarning` treated as an error; compileall
     passes.
+  - **Independent xHigh review (2026-09-03):** all six named invariants are
+    covered, the 59 cases pass, and no test encodes an incorrect contract. The
+    both-halves discipline is real rather than decorative: `economics()` pins
+    exactly the state a refusal must leave untouched, and the discriminating
+    cases do separate a refusing engine from an engine that refuses
+    everything. Suite value was re-measured independently of the implementer's
+    seventeen: twenty-five further single-line defects were injected across
+    the state machine, add execution, add requirements, data-quality gate,
+    hard veto, trailing stop, risk exposure and the backtest engine, including
+    both long/short asymmetries. All but the four below were caught. One
+    review finding was confirmed and fixed.
+  - **Review finding (P2, fixed).** The third invariant was pinned at the gate
+    and at the ledger but not at the BTC-180 replay.
+    `test_a_full_replay_reports_risk_at_stop_at_every_open_bar` asserted only
+    that each open bar's risk was present and non-negative, and that the final
+    book was within the ceiling when re-measured at `ending_nav`, the most
+    forgiving NAV in a profitable run. Four injected defects in the engine's
+    equity reporting therefore passed the suite unchanged: computing the
+    fraction against a wrong NAV, measuring under the other rulebook 19
+    convention, dropping a tranche from the aggregate, and measuring against a
+    stop the ledger never held. The convention and the dropped tranche were
+    caught by no suite in the repository, and both make the replay silently
+    under-report risk, which is the composition defect this ticket exists to
+    catch. Rulebook 19 requires one explicit convention across advisory, paper
+    trading and backtesting and rulebook 32 rule 15 requires the same shared
+    formulas, so the assertion those rules ask for is a reconciliation against
+    the owner, not a presence check.
+    `test_the_replayed_risk_at_stop_is_the_shared_owner_on_its_own_book` now
+    rebuilds the ledger the replay held at each open bar from its own
+    persisted event rows and requires the reported risk to equal BTC-146
+    measured on that book at that bar's NAV, and to be within the configured
+    ceiling there. All four defects were confirmed to fail against it. A
+    *global* convention change is deliberately still not caught here, because
+    it moves both sides of the reconciliation together and is BTC-146's own
+    contract, whose suite catches it with fifteen failures.
+  - **Review correction to the notes (P3).** The implementer's STRESS
+    observation is confirmed: `DEFEND` has no emitter outside the state
+    machine, and BTC-154's eight inputs carry no stress input, so nothing
+    binds a `StressFlagResult` to an add decision. The accompanying claim that
+    "CROWDING has no such gap" is overstated and is corrected here. Nothing
+    binds a `CrowdingFlagResult` to `positioning_healthy` either:
+    `add_requirements_from_results` takes that state as a caller-supplied
+    boolean and has no caller outside its own owner suite, as do
+    `evaluate_add_requirements`, `evaluate_hard_veto` and
+    `apply_data_quality_gate`. The real asymmetry is narrower than the note
+    claimed -- rulebook 18.1 requirement 6 names where a crowding flag should
+    land, while rulebook 24's STRESS effect names no landing site at all -- and
+    both bindings remain unmade. Neither was invented here, for the reason the
+    implementer gave.
+  - **Review limitation (P3, not fixed).** Two invariants are asserted at the
+    gate and the ledger but argued rather than run at the replay. A
+    stress-driven refusal is argued from BTC-180 routing every accepted add
+    through `apply_position_event`, and DATA_QUALITY_FAIL has no replay
+    scenario at all. Neither is constructible today: the engine exposes no
+    action that enters `DEFENSIVE` and takes no data-quality input, so running
+    them would require new strategy semantics rather than a new test. The
+    suite docstring's "asserted at all three consumers" should be read with
+    that exception.
+  - **Review regression.** Added
+    `test_the_replayed_risk_at_stop_is_the_shared_owner_on_its_own_book`. The
+    suite is now 60 cases; the full Python 3.12.14 suite passes with 3415
+    tests, also passing with `RuntimeWarning` treated as an error, and
+    compileall passes.
 
 #### BTC-223 Paper execution tests
 - **Description:**
