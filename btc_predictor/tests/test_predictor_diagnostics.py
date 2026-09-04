@@ -1,5 +1,6 @@
 """BTC-189: statistical predictor diagnostics for features and scores."""
 
+import decimal
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -669,3 +670,18 @@ def test_every_predictor_reports_every_segment_and_target() -> None:
         RETURN_TARGET, scope=GLOBAL_SCOPE, segment=GLOBAL_SEGMENT
     )
     assert global_diagnostic.segment == GLOBAL_SEGMENT
+
+
+def test_evidence_does_not_depend_on_the_ambient_decimal_context() -> None:
+    # EPIC S2 integration review.  A BTC-189 report is embedded in a BTC-193
+    # promotion packet and restored from it, so a report that replays
+    # differently under another caller's decimal context would be rejected as
+    # tampered evidence.  The embedded BTC-129 effective-weight decomposition
+    # is covered too, because it is persisted verbatim inside this record.
+    record = _report().as_record()
+
+    for precision in (14, 10, 6, 2):
+        with decimal.localcontext() as context:
+            context.prec = precision
+            assert _report().as_record() == record
+            assert restore_predictor_diagnostics_report(record).as_record() == record

@@ -805,11 +805,14 @@ def _plateau_analysis(
         key=lambda item: (item[1], -item[0].ordinal),
     )
     assert best_value is not None
-    eligible = {
-        cell.coordinates: cell
-        for cell, value in comparable
-        if value is not None and best_value - value <= spec.plateau_tolerance
-    }
+    with localcontext(Context(prec=SURFACE_DECIMAL_PRECISION)):
+        # Plateau membership is a research conclusion, so the tolerance
+        # comparison is resolved here rather than in the caller's context.
+        eligible = {
+            cell.coordinates: cell
+            for cell, value in comparable
+            if value is not None and best_value - value <= spec.plateau_tolerance
+        }
     plateaus: list[SurfacePlateau] = []
     seen: set[tuple[int, ...]] = set()
     for cell in cells:

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Context, Decimal, localcontext
 from typing import Any
 
 
@@ -209,6 +209,18 @@ class FactorOverlapAudit:
         }
 
 
+# Path weights are products of the declared graph weights.  They are
+# computed in an explicit context so the analytical decomposition BTC-189
+# persists and BTC-193 replays does not depend on the caller's ambient
+# decimal context.  Every value is already exact at this precision.
+SCORING_DECIMAL_PRECISION = 60
+
+
+def _declared_total(weights: Mapping[str, Decimal]) -> Decimal:
+    with localcontext(Context(prec=SCORING_DECIMAL_PRECISION)):
+        return sum(weights.values(), Decimal("0"))
+
+
 def expand_factor_paths(
     composite: str,
     graph: Mapping[str, Mapping[str, Decimal]],
@@ -232,8 +244,9 @@ def expand_factor_paths(
         for name, component_weight in components.items():
             walk(name, (*prefix, node), weight * component_weight)
 
-    for name, component_weight in graph[composite].items():
-        walk(name, (composite,), component_weight)
+    with localcontext(Context(prec=SCORING_DECIMAL_PRECISION)):
+        for name, component_weight in graph[composite].items():
+            walk(name, (composite,), component_weight)
     return tuple(paths)
 
 
@@ -244,8 +257,10 @@ def effective_weights(
     """Sum every path weight per leaf factor, fully expanding nested scores."""
 
     totals: dict[str, Decimal] = {}
-    for item in expand_factor_paths(composite, graph):
-        totals[item.leaf] = totals.get(item.leaf, Decimal("0")) + item.weight
+    paths = expand_factor_paths(composite, graph)
+    with localcontext(Context(prec=SCORING_DECIMAL_PRECISION)):
+        for item in paths:
+            totals[item.leaf] = totals.get(item.leaf, Decimal("0")) + item.weight
     return totals
 
 
@@ -280,11 +295,13 @@ def audit_factor_overlap(
         if parent in reachable and child in graph.get(parent, {})
     )
     totals = effective_weights(composite, graph)
+    with localcontext(Context(prec=SCORING_DECIMAL_PRECISION)):
+        total = sum(totals.values(), Decimal("0"))
     return FactorOverlapAudit(
         contracts_version=contracts_version,
         composite=composite,
         effective_weights=totals,
-        effective_weight_total=sum(totals.values(), Decimal("0")),
+        effective_weight_total=total,
         findings=findings,
         prohibited_nesting=violations,
     )
@@ -322,7 +339,7 @@ def effective_weight_report() -> dict[str, Any]:
                 for key, value in SCORING_GRAPH_V1_2[composite].items()
             },
             "v1_2_declared_weight_total": str(
-                sum(SCORING_GRAPH_V1_2[composite].values(), Decimal("0")),
+                _declared_total(SCORING_GRAPH_V1_2[composite]),
             ),
             "v1_2_effective_weights": {
                 key: str(value) for key, value in current.effective_weights.items()

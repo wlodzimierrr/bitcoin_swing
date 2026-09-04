@@ -31,7 +31,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
-from decimal import ROUND_HALF_EVEN, Decimal
+from decimal import ROUND_HALF_EVEN, Context, Decimal, localcontext
 from typing import Any
 
 import numpy as np
@@ -64,6 +64,9 @@ INTERACTION_PROMOTION_POLICY_VERSION = "BTC_193_REQUIRED_V1"
 INTERACTION_PRODUCTION_STATUS = "RESEARCH_ONLY_NOT_PRODUCTION"
 INTERACTION_PROMOTION_TICKET = "BTC-193"
 INTERACTION_METRIC_EXPONENT = Decimal("1E-12")
+# Derived statistics are computed in an explicit context so persisted
+# evidence does not depend on the caller's ambient decimal context.
+INTERACTION_DECIMAL_PRECISION = 60
 
 GLOBAL_SCOPE = "GLOBAL"
 REGIME_SCOPE = "REGIME"
@@ -1167,13 +1170,18 @@ def _weighted_mean(
     total_weight = sum(weights)
     if total_weight <= 0:
         return None
-    total = sum(
-        (value * weight for value, weight in zip(values, weights) if value is not None),
-        Decimal("0"),
-    )
-    return (total / total_weight).quantize(
-        INTERACTION_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
-    )
+    with localcontext(Context(prec=INTERACTION_DECIMAL_PRECISION)):
+        total = sum(
+            (
+                value * weight
+                for value, weight in zip(values, weights)
+                if value is not None
+            ),
+            Decimal("0"),
+        )
+        return (total / total_weight).quantize(
+            INTERACTION_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
+        )
 
 
 def _population_std(values: Sequence[Decimal | None]) -> Decimal | None:
@@ -1205,9 +1213,10 @@ def _sign_consistency(
 def _metric(value: float) -> Decimal:
     if not np.isfinite(value):
         raise ValueError("interaction metric must be finite")
-    return Decimal(str(value)).quantize(
-        INTERACTION_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
-    )
+    with localcontext(Context(prec=INTERACTION_DECIMAL_PRECISION)):
+        return Decimal(str(value)).quantize(
+            INTERACTION_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
+        )
 
 
 def _optional_decimal(value: Decimal | None) -> str | None:

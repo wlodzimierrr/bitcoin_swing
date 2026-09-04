@@ -1,5 +1,6 @@
 """BTC-189: single-component ablation of a composite score."""
 
+import decimal
 from dataclasses import replace
 from decimal import Decimal
 
@@ -428,3 +429,20 @@ def test_reports_are_deterministic_for_the_same_evidence() -> None:
     second = run_component_ablation(spec(), evaluator=evaluator(partial=("flow",)))
     assert second.as_record() == first.as_record()
     assert second.report_id == first.report_id
+
+
+def test_variants_do_not_depend_on_the_ambient_decimal_context() -> None:
+    # EPIC S2 integration review.  The renormalized weights were pinned to an
+    # explicit context but the surviving weight total, the overlap fraction and
+    # the metric changes were not, so the persisted variant identity moved with
+    # the caller's ambient precision.
+    declared = spec()
+    variants = [item.as_record() for item in ablation_variants(declared)]
+
+    for precision in (14, 10, 6, 2):
+        with decimal.localcontext() as context:
+            context.prec = precision
+            assert spec().as_record() == declared.as_record()
+            assert [
+                item.as_record() for item in ablation_variants(spec())
+            ] == variants

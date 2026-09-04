@@ -1177,12 +1177,19 @@ def nearest_rank(percentile: Any, count: int) -> int:
 
 
 def _nearest_rank(percentile: Decimal, count: int) -> int:
-    """Return the 1-based nearest rank, so a percentile is an observed value."""
+    """Return the 1-based nearest rank, so a percentile is an observed value.
 
-    scaled = percentile * Decimal(count) / Decimal(100)
-    rank = int(scaled)
-    if Decimal(rank) < scaled:
-        rank += 1
+    The rank is resolved in the module's own context.  BTC-189 calls the public
+    entry point from outside this module's computations, so one declared
+    percentile convention must not resolve to two ranks depending on the
+    caller's ambient decimal context.
+    """
+
+    with localcontext(Context(prec=MONTE_CARLO_DECIMAL_PRECISION)):
+        scaled = percentile * Decimal(count) / Decimal(100)
+        rank = int(scaled)
+        if Decimal(rank) < scaled:
+            rank += 1
     if rank < 1:
         rank = 1
     if rank > count:

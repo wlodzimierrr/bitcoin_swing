@@ -38,7 +38,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from decimal import ROUND_HALF_EVEN, Decimal
+from decimal import ROUND_HALF_EVEN, Context, Decimal, localcontext
 from typing import Any
 
 import numpy as np
@@ -93,6 +93,9 @@ DIAGNOSTICS_PROMOTION_POLICY_VERSION = "BTC_193_REQUIRED_V1"
 DIAGNOSTICS_PRODUCTION_STATUS = "RESEARCH_ONLY_NOT_PRODUCTION"
 DIAGNOSTICS_PROMOTION_TICKET = "BTC-193"
 DIAGNOSTIC_METRIC_EXPONENT = Decimal("1E-12")
+# Derived statistics are computed in an explicit context so persisted
+# evidence does not depend on the caller's ambient decimal context.
+DIAGNOSTIC_DECIMAL_PRECISION = 60
 
 # BTC-186 owns the decision-time regime/setup context contract; BTC-189 reads
 # exactly the same evidence, so it reuses that type instead of declaring a
@@ -1034,9 +1037,11 @@ def _correlation_estimate(
             resample_count=spec.bootstrap_resamples,
             defined_resample_count=0,
         )
-    tail = (Decimal("100") - spec.bootstrap_confidence) / Decimal("2")
+    with localcontext(Context(prec=DIAGNOSTIC_DECIMAL_PRECISION)):
+        tail = (Decimal("100") - spec.bootstrap_confidence) / Decimal("2")
+        upper = Decimal("100") - tail
     lower_rank = nearest_rank(tail, int(defined.size))
-    upper_rank = nearest_rank(Decimal("100") - tail, int(defined.size))
+    upper_rank = nearest_rank(upper, int(defined.size))
     estimate = CorrelationEstimate(
         method=method,
         sample_size=size,
@@ -1613,17 +1618,18 @@ def _weighted_mean(
     total_weight = sum(weights)
     if total_weight <= 0:
         return None
-    total = sum(
-        (
-            value * weight
-            for value, weight in zip(values, weights)
-            if value is not None
-        ),
-        Decimal("0"),
-    )
-    return (total / total_weight).quantize(
-        DIAGNOSTIC_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
-    )
+    with localcontext(Context(prec=DIAGNOSTIC_DECIMAL_PRECISION)):
+        total = sum(
+            (
+                value * weight
+                for value, weight in zip(values, weights)
+                if value is not None
+            ),
+            Decimal("0"),
+        )
+        return (total / total_weight).quantize(
+            DIAGNOSTIC_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
+        )
 
 
 def _population_std(values: Sequence[Decimal | None]) -> Decimal | None:
@@ -1676,9 +1682,10 @@ def _metric(value: float | Decimal) -> Decimal:
         resolved = Decimal(str(value))
     if not resolved.is_finite():
         raise PredictorDiagnosticsError("diagnostic metric must be finite")
-    return resolved.quantize(
-        DIAGNOSTIC_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
-    )
+    with localcontext(Context(prec=DIAGNOSTIC_DECIMAL_PRECISION)):
+        return resolved.quantize(
+            DIAGNOSTIC_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN
+        )
 
 
 def _optional_metric(value: float | None) -> Decimal | None:

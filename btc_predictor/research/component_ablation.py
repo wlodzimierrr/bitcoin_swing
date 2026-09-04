@@ -519,14 +519,16 @@ def _variant(
     else:
         declared = {item.component: item.weight for item in spec.baseline_weights}
         removed_weight = declared.pop(removed)
-        remaining = sum(declared.values(), Decimal("0"))
-        if remaining <= 0:
-            raise ComponentAblationError(
-                f"removing {removed!r} leaves no weighted component behind"
-            )
-        if removed_weight < 0:
-            raise ComponentAblationError("component weights must be non-negative")
         with localcontext(Context(prec=ABLATION_DECIMAL_PRECISION)):
+            remaining = sum(declared.values(), Decimal("0"))
+            if remaining <= 0:
+                raise ComponentAblationError(
+                    f"removing {removed!r} leaves no weighted component behind"
+                )
+            if removed_weight < 0:
+                raise ComponentAblationError(
+                    "component weights must be non-negative"
+                )
             weights = tuple(
                 ComponentWeight(
                     component=name,
@@ -534,7 +536,7 @@ def _variant(
                 )
                 for name in sorted(declared)
             )
-    total = sum((item.weight for item in weights), Decimal("0"))
+    total = _weight_total(weights)
     token = _digest(
         {
             "spec_id": spec.spec_id,
@@ -676,9 +678,7 @@ def _overlap(
         shared_entry_count=shared,
         baseline_only_entry_count=baseline_count - shared,
         variant_only_entry_count=variant_count - shared,
-        overlap_fraction=(
-            _quantize(Decimal(shared) / Decimal(union)) if union else None
-        ),
+        overlap_fraction=_overlap_fraction(shared, union),
     )
     _validate_overlap(overlap)
     return overlap
@@ -709,9 +709,9 @@ def _change(
         closed_trade_count_change=(
             variant.outcome.closed_trade_count - baseline.outcome.closed_trade_count
         ),
-        mean_return_fraction_change=_quantize(
-            variant.outcome.mean_return_fraction
-            - baseline.outcome.mean_return_fraction
+        mean_return_fraction_change=_subtract(
+            baseline.outcome.mean_return_fraction,
+            variant.outcome.mean_return_fraction,
         ),
         closed_trade_expectancy_change=expectancy,
         expectancy_change_status=expectancy_status,
@@ -735,7 +735,7 @@ def _difference(
         return None, CHANGE_BASELINE_UNDEFINED
     if variant is None:
         return None, CHANGE_VARIANT_UNDEFINED
-    return _quantize(variant - baseline), CHANGE_AVAILABLE
+    return _subtract(baseline, variant), CHANGE_AVAILABLE
 
 
 def _reason_codes(
@@ -798,7 +798,7 @@ def _validate_variant(variant: AblationVariant) -> None:
             raise ComponentAblationError(
                 "an ablated component must not keep a weight"
             )
-    total = sum((item.weight for item in variant.weights), Decimal("0"))
+    total = _weight_total(variant.weights)
     if variant.weight_total != total:
         raise ComponentAblationError("weight_total does not match the weights")
     if abs(total - Decimal("1")) > ABLATION_WEIGHT_TOLERANCE:
@@ -975,7 +975,7 @@ def _validate_spec(
             raise ComponentAblationError(
                 "baseline weights must match the declared scoring contract"
             )
-    total = sum((item.weight for item in spec.baseline_weights), Decimal("0"))
+    total = _weight_total(spec.baseline_weights)
     if abs(total - Decimal("1")) > ABLATION_WEIGHT_TOLERANCE:
         raise ComponentAblationError("baseline component weights must sum to one")
     components = _string_tuple(spec.ablated_components, "ablated_components")
@@ -1244,10 +1244,30 @@ def _weight(value: Any, name: str) -> Decimal:
     return resolved
 
 
+def _weight_total(weights: Sequence[ComponentWeight]) -> Decimal:
+    """Sum component weights in the pinned context the weights were built in."""
+
+    with localcontext(Context(prec=ABLATION_DECIMAL_PRECISION)):
+        return sum((item.weight for item in weights), Decimal("0"))
+
+
+def _overlap_fraction(shared: int, union: int) -> Decimal | None:
+    if not union:
+        return None
+    with localcontext(Context(prec=ABLATION_DECIMAL_PRECISION)):
+        return _quantize(Decimal(shared) / Decimal(union))
+
+
+def _subtract(baseline: Decimal, variant: Decimal) -> Decimal:
+    with localcontext(Context(prec=ABLATION_DECIMAL_PRECISION)):
+        return _quantize(variant - baseline)
+
+
 def _quantize(value: Decimal) -> Decimal:
     if not isinstance(value, Decimal) or not value.is_finite():
         raise ComponentAblationError("ablation metrics must be finite Decimals")
-    return value.quantize(ABLATION_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN)
+    with localcontext(Context(prec=ABLATION_DECIMAL_PRECISION)):
+        return value.quantize(ABLATION_METRIC_EXPONENT, rounding=ROUND_HALF_EVEN)
 
 
 def _optional_decimal(value: Decimal | None) -> str | None:

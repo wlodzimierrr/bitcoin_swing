@@ -1,5 +1,6 @@
 """BTC-186: point-in-time feature interaction research."""
 
+import decimal
 import hashlib
 import json
 from dataclasses import replace
@@ -487,3 +488,18 @@ def test_constant_features_surface_unavailable_status_instead_of_fake_effect() -
     assert effect.effect_size is None
     assert effect.eligible_fold_count == 0
     assert {fold.status for fold in effect.folds} == {"ZERO_VARIANCE_FEATURE"}
+
+
+def test_evidence_does_not_depend_on_the_ambient_decimal_context() -> None:
+    # EPIC S2 integration review.  BTC-187 and BTC-188 pin an explicit decimal
+    # context so persisted evidence replays whatever the caller's context is.
+    # BTC-186 did not, so a reduced ambient precision silently changed the
+    # report and made a valid record fail restore as though it were tampered.
+    report = _report()
+    record = report.as_record()
+
+    for precision in (14, 10, 6, 2):
+        with decimal.localcontext() as context:
+            context.prec = precision
+            assert _report().as_record() == record
+            assert restore_feature_interaction_report(record).as_record() == record

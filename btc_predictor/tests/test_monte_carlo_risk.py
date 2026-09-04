@@ -1,5 +1,6 @@
 """BTC-187: Monte Carlo portfolio risk analysis over resampled trade outcomes."""
 
+import decimal
 import sys
 from datetime import UTC, datetime
 from decimal import Context, Decimal, localcontext
@@ -63,6 +64,7 @@ from btc_predictor.research import (
     TradeOutcomeSampleSet,
     config_risk_per_trade_schedules,
     monte_carlo_risk_spec,
+    nearest_rank,
     restore_monte_carlo_risk_report,
     restore_trade_outcome_samples,
     risk_per_trade_schedule,
@@ -784,3 +786,16 @@ def test_an_end_to_end_dataset_analysis_replays(monkeypatch) -> None:
     assert restore_monte_carlo_risk_report(record).as_record() == record
     assert report.spec.sample_set_digest == samples.input_digest
     assert report.samples.source_id == dataset.dataset_id
+
+
+def test_the_shared_percentile_rank_ignores_the_ambient_decimal_context() -> None:
+    # EPIC S2 integration review.  BTC-189 delegates to this public rank rather
+    # than restating NEAREST_RANK_PERCENTILE_V1, and it calls it outside this
+    # module's own pinned computations, so one declared convention must not
+    # resolve to two ranks depending on the caller's decimal context.
+    expected = [(nearest_rank("2.5", 937), nearest_rank("97.5", 937))]
+
+    for precision in (14, 6, 3, 2, 1):
+        with decimal.localcontext() as context:
+            context.prec = precision
+            assert [(nearest_rank("2.5", 937), nearest_rank("97.5", 937))] == expected
