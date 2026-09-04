@@ -30,7 +30,7 @@
   Phase-1 work
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 3545 passed with Python 3.12 on 2026-09-04
-- **Last relevant implementation/review commit:** `8762f05`
+- **Last relevant implementation/review commit:** `33ea563`
   (`research: assess the BTC-019 completion gate as blocked`)
 
 ## Price-Reference State
