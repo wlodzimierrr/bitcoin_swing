@@ -6021,6 +6021,22 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     counts, ordering, every fail-closed guard, deterministic replay, record
     round trips, and tamper rejection. The complete Python 3.12 suite passes
     with 2589 tests.
+  - **EPIC T integration review.** No defect. The store composes correctly with
+    BTC-191: a traded date and the paper row it produced carry identical
+    decision, setup, and regime labels and the same `trade_reference`, and a
+    score revised after the decision reaches neither layer. Two non-blocking
+    items are left with their owners. The store is the only EPIC T evidence
+    BTC-193 cannot accept, so its persisted `BTC_193_REQUIRED_V1` boundary is a
+    statement rather than an enforced gate, unlike BTC-191's, which BTC-193
+    reaches through the BTC-192 paper comparison. And because the store is the
+    epic's only proof that a campaign's traded dates are all of them, nothing
+    stops a BTC-192 paper arm from being an unrepresentative subset of the
+    trades its declared scope covers; binding the two is a versioned BTC-192
+    policy decision rather than a review fix. Composition is pinned by
+    `btc_predictor/tests/test_research_epic_t_integration.py`. `future_MFE` and
+    `future_MAE` declare no horizon, so an unrecorded excursion is
+    `NOT_RECORDED` rather than `PENDING_HORIZON`; that follows the documented
+    status semantics, which scope `PENDING_HORIZON` to fixed horizons.
 
 #### BTC-191 Create paper-trade outcome dataset
 - **Description:**
@@ -6098,6 +6114,19 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     definitions, the coverage census, NumPy handoff, and the empty dataset.
     Focused dependency regressions pass with 222 tests; the complete Python
     3.12 suite passes with 2615 tests.
+  - **EPIC T integration review.** No defect in this ticket; its narrowed
+    definition surfaced one in BTC-192, which read `net_pnl` and `r_multiple`
+    out of a row without requiring the dataset to declare them and reported the
+    absence as an outcome BTC-165 could not measure. BTC-192 now fails closed
+    the way BTC-187's Monte Carlo sampler and the model/human comparison
+    already did. Long and short rows keep the BTC-165 signs of `net_pnl` and
+    `r_multiple` into the comparison's win/loss classification. One
+    non-blocking item is left with BTC-165's owner: `r_multiple` is the one
+    accounting output resolved in the caller's ambient decimal context, so a
+    dataset built under a narrowed precision carries a differently rounded R.
+    Every other outcome is exact, no EPIC T restore path re-executes the
+    accounting, and pinning that division is a repository-wide accounting
+    convention change rather than a research-layer fix.
 
 #### BTC-192 Create strategy comparison framework
 - **Description:**
@@ -6161,6 +6190,25 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     record round trips, tamper rejection, and the promotion boundary. Focused
     backtest/research regressions pass with 356 tests; the complete Python 3.12
     suite passes with 2746 tests.
+  - **EPIC T integration review.** Two defects, both fixed in `18f0358`. The
+    profit factor took the magnitude of the gross loss with `abs`, which rounds
+    in the caller's ambient decimal context, before handing it to the `_ratio`
+    helper that pins an explicit 60-digit context, so one set of BTC-191
+    outcomes produced two profit factors and two evidence digests and a valid
+    record failed restoration with a tampering-shaped error; BTC-193 embeds and
+    replays this report, so sound promotion evidence would have been rejected
+    as tampered. `copy_abs` now takes the magnitude without rounding, and no
+    value changes at the default context. Separately, the metric columns were
+    read inside a `try/except KeyError` returning `None`, so a BTC-191 dataset
+    that never declared `net_pnl` or `r_multiple` was summarized as a strategy
+    whose every closed trade went unmeasured, raising
+    `STRATEGY_COMPARISON_UNMEASURED_OUTCOMES` with no BTC-165 reason code to
+    cite; `STRATEGY_COMPARISON_REQUIRED_PAPER_OUTCOMES` now requires the
+    columns the metrics read. One non-blocking item is left with this ticket's
+    owner: paper comparison scope stays caller-declared, so the epic's own
+    BTC-190 coverage evidence does not constrain which trades an arm contains.
+    Summed closed-trade net P&L reconciles exactly with the BTC-180 NAV change
+    under fees, slippage, and funding.
 
 #### BTC-193 Implement controlled strategy promotion process
 - **Description:**
@@ -6241,6 +6289,18 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     isolated Python 3.12 HEAD-plus-BTC-193 suite passes with 2757 tests.
     Implementation commit:
     `bc5dda69bfe8c6ef4b0384e9fa9c147857c2f4fb`.
+  - **EPIC T integration review.** No defect. The packet binds every stage to
+    the exact candidate identity, the record-only deployment policy holds --
+    no module in the epic reads, writes, or reloads live configuration -- and
+    BTC-191 evidence survives byte-identically into the packet record. Two
+    non-blocking observations are left with this ticket's owner. The packet
+    reason codes are a fixed tuple, so they assert
+    `STRATEGY_PROMOTION_EVIDENCE_CHAIN_COMPLETE` even when both comparisons
+    contain zero trades; the causes are not lost, because the embedded BTC-192
+    records still carry `STRATEGY_COMPARISON_NO_TRADES`, but nothing lifts them
+    to the packet's own summary. And identity binding is not scope binding: the
+    walk-forward, robustness, and historical evidence must belong to the
+    candidate but need not cover comparable periods or bars.
 
 ## EPIC U — Manual Trade Tracking
 

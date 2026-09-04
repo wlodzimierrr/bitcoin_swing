@@ -20,18 +20,18 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
-- **Last epic integration audit:** EPIC S2, extended quant research
-  (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after one P2 review fix.
-  EPIC S, EPIC Q, EPIC P, EPIC O, EPIC E and EPIC E2 were audited on
-  2026-09-03
+- **Last epic integration audit:** EPIC T, research and learning loop
+  (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
+  EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
+  EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3518 passed with Python 3.12 on 2026-09-04
-- **Last relevant implementation/review commit:** `4f2dc1d`
-  (`fix: close EPIC S2 integration review findings`)
+- **Latest verified test baseline:** 3529 passed with Python 3.12 on 2026-09-04
+- **Last relevant implementation/review commit:** `18f0358`
+  (`fix: close EPIC T integration review findings`)
 
 ## Price-Reference State
 
@@ -100,6 +100,26 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   an enforced gate for those three. BTC-189's two bucket cutters and its four
   statistics helpers restate BTC-186's; the formulas agree and are pinned by
   test.
+- The EPIC T integration audit left five non-blocking items with their owners.
+  BTC-190 is the one EPIC T output BTC-193 cannot accept, so the
+  `BTC_193_REQUIRED_V1` boundary it persists is a statement rather than an
+  enforced gate; BTC-191's is enforced transitively through the BTC-192 paper
+  comparison. Relatedly, BTC-190 is the epic's only evidence that a campaign's
+  traded dates are all of them, but BTC-192 paper scope stays caller-declared,
+  so a paper arm may be an unrepresentative subset of the trades its scope
+  covers; binding the two is a versioned BTC-192 policy decision. BTC-165's
+  `r_multiple` is the one accounting output resolved in the caller's ambient
+  decimal context, so a BTC-191 dataset built under a narrowed precision
+  carries a differently rounded R -- every other outcome is exact and no
+  EPIC T restore path re-executes the accounting, but pinning that division is
+  a repository-wide accounting convention change. BTC-193's packet reason codes
+  are a fixed tuple that asserts `EVIDENCE_CHAIN_COMPLETE` even when both
+  comparisons hold zero trades, though the embedded BTC-192 records still carry
+  `STRATEGY_COMPARISON_NO_TRADES`; and BTC-193 binds evidence to the candidate
+  identity without requiring its stages to cover comparable periods or bars.
+  The same ambient-context `abs` the audit fixed in BTC-192 also stands in
+  `reporting/model_human_comparison.py` and `backtest/setup_performance.py`,
+  with their own epics' owners.
 - The EPIC Q integration audit left two non-blocking items with their owners.
   BTC-163 adds and BTC-164 trims have no restore/replay function, unlike
   BTC-161, BTC-162 and BTC-180, because their records embed BTC-154, BTC-155
