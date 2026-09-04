@@ -3204,6 +3204,13 @@ This epic is a controlled internal refactor. It must not change strategy behavio
     `strategy_config_v1` -> `strategy_config_v2`, `swing_v1.0` -> `swing_v1.2`.
   - Weights and Entry/Hold/Add thresholds are marked
     `PROVISIONAL_PENDING_BTC_185`.
+  - **EPIC S2 integration review:** `expand_factor_paths()` multiplied the
+    declared graph weights in the caller's ambient decimal context, so the
+    analytical effective-weight decomposition BTC-189 persists verbatim and
+    BTC-193 replays could differ between the producing and the restoring
+    process. The path products, the per-leaf totals, and the declared totals
+    are now resolved in an explicit 60-digit context. Every reported weight
+    is already exact at any precision at or above 20, so no value changed.
 
 #### BTC-130 Implement Entry Conviction
 - **Description:**
@@ -5547,6 +5554,15 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     and `b684c221be77287bcbe7b9e803a39d4203b75e4b` (formula precision and focused
     verification), followed by `24bf8e07d824601634006fb01429e0303bc319d1`
     (derived-evidence reconstruction validation).
+  - **EPIC S2 integration review.** Derived statistics were computed in the
+    caller's ambient decimal context rather than an explicit one, unlike
+    BTC-187 and BTC-188. Under a reduced precision the module silently
+    produced a different report for identical inputs, and a previously valid
+    record failed `restore_feature_interaction_report()` with an aggregate
+    mismatch that reads as tampering. `_metric()` and `_weighted_mean()` now
+    pin `INTERACTION_DECIMAL_PRECISION`; every value at the default context
+    is unchanged. Pinned by a regression that replays the report and its
+    record at four reduced precisions.
 
 #### BTC-187 Monte Carlo portfolio risk analysis
 - **Description:**
@@ -5654,6 +5670,13 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     persisted replay stream across dependency upgrades. Focused review tests
     pass with 104 tests; dependency regressions pass with 185 tests; the full
     Python 3.12 suite passes with 2684 tests.
+  - **EPIC S2 integration review.** The public `nearest_rank()` is the owner
+    BTC-189 delegates to for `NEAREST_RANK_PERCENTILE_V1`, and BTC-189 calls
+    it from outside this module's own pinned computations. It resolved the
+    rank in the caller's ambient context, so one declared convention could
+    yield two ranks for the same percentile and sample size. The rank is now
+    resolved in `MONTE_CARLO_DECIMAL_PRECISION`; internal percentile
+    reporting was already inside that context and is unchanged.
 
 #### BTC-188 Multi-dimensional parameter sensitivity surfaces
 - **Description:**
@@ -5749,6 +5772,11 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     invalid definitions, and tamper rejection. Focused and dependency
     regressions pass with 318 tests; the complete Python 3.12 suite passes
     with 2557 tests.
+  - **EPIC S2 integration review.** Per-cell metrics were already computed in
+    an explicit context, but the plateau tolerance comparison
+    `best_value - value <= plateau_tolerance` was not. Plateau membership is
+    a research conclusion rather than a formatting detail, so it is now
+    resolved in `SURFACE_DECIMAL_PRECISION` as well.
 
 #### BTC-189 Statistical predictor diagnostics
 - **Description:**
@@ -5888,6 +5916,21 @@ These tickets begin only after the deterministic strategy, risk engine, and back
     partial, and empty cases, undefined metric changes, the v1.1 nesting
     benchmark, determinism, record round trips, and tamper rejection. The
     complete Python 3.12 suite passes with 2734 tests.
+  - **EPIC S2 integration review.** A BTC-189 report is embedded in a BTC-193
+    promotion packet and restored from it, so evidence that replays
+    differently under another process's decimal context would be rejected as
+    tampered. `predictor_diagnostics` now pins `DIAGNOSTIC_DECIMAL_PRECISION`
+    around `_metric()`, `_weighted_mean()`, and the bootstrap tail
+    percentile; `component_ablation` extends its existing pin to the
+    surviving weight total, the overlap fraction, and the metric changes,
+    which sat outside it. The embedded BTC-129 decomposition was corrected in
+    its own module. No reported value changes at the default context.
+  - **EPIC S2 integration review, not a defect.** `_buckets()` and
+    `_excursion_buckets()` both cut `EQUAL_COUNT_SORTED_POSITION_BUCKETS_V1`
+    edges, and `_weighted_mean` / `_population_std` / `_sign_consistency` /
+    `_metric` restate BTC-186's private helpers. The formulas agree and are
+    pinned by test; a shared owner would have to cross the two modules'
+    distinct error types, so the duplication is recorded rather than merged.
 
 
 ## EPIC T — Research & Learning Loop

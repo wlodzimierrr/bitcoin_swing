@@ -11,7 +11,7 @@
 
 ## Snapshot
 
-- **Last updated:** 2026-09-03
+- **Last updated:** 2026-09-04
 - **Current phase:** Phase 1, EPIC W testing is implemented; every Phase-1
   implementation ticket except BTC-019 is now DONE
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
@@ -20,17 +20,18 @@
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
-- **Last epic integration audit:** EPIC S, backtesting (2026-09-03), PASS
-  WITH NON-BLOCKING FINDINGS after one P2 and two P3 review fixes. EPIC Q,
-  EPIC P, EPIC O, EPIC E and EPIC E2 were audited earlier the same day
+- **Last epic integration audit:** EPIC S2, extended quant research
+  (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after one P2 review fix.
+  EPIC S, EPIC Q, EPIC P, EPIC O, EPIC E and EPIC E2 were audited on
+  2026-09-03
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3514 passed with Python 3.12 on 2026-09-03
-- **Last relevant implementation/review commit:** `5b15768`
-  (`fix: close EPIC S integration review findings`)
+- **Latest verified test baseline:** 3518 passed with Python 3.12 on 2026-09-04
+- **Last relevant implementation/review commit:** `4f2dc1d`
+  (`fix: close EPIC S2 integration review findings`)
 
 ## Price-Reference State
 
@@ -86,6 +87,19 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   attributes the cause to the stop owner, and choosing between refusing the
   execution and refusing the dataset is a BTC-180 policy decision. Both are
   pinned by test.
+- The EPIC S2 integration audit left three non-blocking items. BTC-186's
+  frozen fifth candidate binds `FUNDING_RESET`, `OI_DELEVERAGING` and
+  `FLOW_IMPROVEMENT`, which the versioned BTC-048 feature contract does not
+  declare and no module produces, so the epic's own default candidate set
+  fails closed on the repository's own feature matrix; the binding is
+  deliberate, because reinterpreting the existing health features would invent
+  their lag and direction semantics. BTC-186, BTC-187 and BTC-188 record
+  BTC-193 as their required promotion boundary, but the BTC-193 packet accepts
+  only BTC-182, BTC-185, BTC-189 and BTC-192 evidence, matching its own
+  declared dependencies, so that boundary is presently a statement rather than
+  an enforced gate for those three. BTC-189's two bucket cutters and its four
+  statistics helpers restate BTC-186's; the formulas agree and are pinned by
+  test.
 - The EPIC Q integration audit left two non-blocking items with their owners.
   BTC-163 adds and BTC-164 trims have no restore/replay function, unlike
   BTC-161, BTC-162 and BTC-180, because their records embed BTC-154, BTC-155
