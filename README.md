@@ -131,6 +131,20 @@ No V2 external validation was performed and the sealed 2015-2019 candidate
 sample was not opened. BTC-019 remains in progress; normal Phase-1 development
 may resume before a later validator opens that sample against the frozen hash.
 
+The BTC-019 completion gate is assessed under
+`research_artifacts/btc019_completion_gate/`. Its outcome is
+`BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT`: no candidate is approved, and the
+sealed sample must stay shut because cross-provider weekly structural
+comparison indexes its confirmation window by row rather than by calendar week,
+so a session a provider outage removed is read as if the weeks either side of
+it were neighbours. Reproduce the assessment with Python 3.12+:
+
+```bash
+python -c "from pathlib import Path; \
+from btc_predictor.research.btc019_completion_gate import assess_completion_gate; \
+print(assess_completion_gate(Path('.'))['totals'])"
+```
+
 Canonical market bars can be generated with `build_canonical_market_bars`.
 They use `1h` BTC source bars that were closed and ingested by the
 `data_available_at` cutoff. The canonical session is UTC: daily bars start at

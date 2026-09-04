@@ -29,9 +29,9 @@
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3529 passed with Python 3.12 on 2026-09-04
-- **Last relevant implementation/review commit:** `18f0358`
-  (`fix: close EPIC T integration review findings`)
+- **Latest verified test baseline:** 3545 passed with Python 3.12 on 2026-09-04
+- **Last relevant implementation/review commit:** `8762f05`
+  (`research: assess the BTC-019 completion gate as blocked`)
 
 ## Price-Reference State
 
@@ -42,6 +42,7 @@ BTC_REFERENCE_COMPOSITE_V1 = RESEARCH_INCONCLUSIVE
 BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
+BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -49,10 +50,25 @@ reference-price boundaries. Final authoritative strategy calibration and
 certification remain blocked until the production canonical reference is
 resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
 
+`BTC019_COMPLETION_GATE_ASSESSMENT_V1` under
+`research_artifacts/btc019_completion_gate/` records why no candidate can be
+approved yet. Cross-provider weekly structural comparison indexes its
+confirmation window by row, so a session a provider outage removed is read as
+if the weeks either side of it were neighbours; 24 of the 40 recomputed
+structural differences across both collected samples sit inside that reach.
+Six `BTC_REFERENCE_COMPOSITE_V2` approval gates, four hard, are computed from
+that comparison, so the sealed 2015-2019 sample stays shut. The frozen
+`BITSTAMP = REJECTED` decision is unaffected: its 10 October 2025 consensus
+stop and its MFE/MAE sensitivities are Tier 4 comparisons on synchronized
+hourly bars.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
-  BTC-019.
+  BTC-019. The smallest legitimate next step is a versioned calendar-contiguity
+  contract for cross-provider structural comparison, then re-measuring the
+  already-inspected 2019-2022 and 2023-2025 samples under it, and only then
+  building the hash-bound V2 validator.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche
@@ -63,9 +79,14 @@ resolved. See [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md).
   owners. `atr_from_daily_bars` (EPIC O) is now closed: it delegates to the
   BTC-041 bar boundary. Still open with their owners:
   `realized_volatility_from_daily_bars` (EPIC I) reads a gapped daily series as
-  contiguous, three BTC-019 research helpers restate the true-range formula
-  instead of using the BTC-041 owner, and BTC-048 feature/target matrices
-  serialize but have no restore or tamper-validation path.
+  contiguous and BTC-048 feature/target matrices serialize but have no restore
+  or tamper-validation path. The three BTC-019 research helpers that restate the
+  true-range formula are now measured rather than only noted: 348 published
+  observations across the two collected samples cross a session the BTC-041
+  owner leaves undefined, and they are preserved deliberately so the frozen
+  BTC-019 artifacts stay reproducible. `detect_weekly_swing_levels` (EPIC E) has
+  the same row-versus-session reading and is pinned by test; changing it is a
+  strategy-semantics decision for its own owner.
 - The EPIC P integration audit left one non-blocking item with a strategy
   owner: rulebook 24 gives STRESS / CROWDING / EUPHORIA the shared effect
   `NO ADDING`, and BTC-150 makes `DEFENSIVE` the state that enforces it, but no

@@ -830,6 +830,16 @@ Normal Phase-1 implementation may continue with an injectable/versioned referenc
 price abstraction, but final authoritative strategy calibration/certification
 remains blocked until the production canonical reference is resolved.
 
+The `BTC019_COMPLETION_GATE_ASSESSMENT_V1` record under
+`research_artifacts/btc019_completion_gate/` states the current blocker:
+`BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT`. Cross-provider weekly structural
+comparison indexes its confirmation window by row, so a week a provider outage
+removed is read as if the weeks either side of it were neighbours. Six V2
+approval gates, four of them hard, are computed from that comparison, so the
+sealed sample must not be opened until the comparison carries an explicit
+calendar-contiguity contract and the already-inspected samples have been
+re-measured under it.
+
 ### Persistence requirements
 
 Every raw/canonical price observation must preserve enough provenance to answer:
@@ -991,6 +1001,69 @@ Do not overwrite raw history when the preferred provider changes.
     remains `RESEARCH_INCONCLUSIVE`, BTC-019B remains `MIXED`, and the V2 protocol
     remains byte-identical with SHA-256
     `bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a`.
+  - **Completion-gate assessment (`BTC019_COMPLETION_GATE_ASSESSMENT_V1`).** The
+    remaining acceptance criterion — an explicitly approved canonical
+    reference-price provider — is **not satisfied**, and the assessment
+    persisted under `research_artifacts/btc019_completion_gate/` records why
+    without moving a threshold, gate, comparison definition or frozen artifact.
+    Outcome: `BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT`. Bitstamp stays
+    `REJECTED`; Coinbase and Bitfinex have never been affirmatively evaluated as
+    sole references; `BTC_REFERENCE_COMPOSITE_V1` stays `RESEARCH_INCONCLUSIVE`
+    on two missed external gates; `BTC_REFERENCE_COMPOSITE_V2` stays an
+    unvalidated frozen protocol.
+  - **The sealed V2 sample was not opened, and must not be yet.** Three
+    conditions of its own governance fail: no validator is bound to the frozen
+    definition hash, the 2015-07-20..2019-11-30 history is not collected, and an
+    unresolved implementation defect would invalidate the evaluation.
+  - **The defect, measured.** `build_canonical_market_bars` drops an incomplete
+    bucket, so a provider outage removes a whole canonical session, but
+    `detect_weekly_swing_levels` indexes its confirmation window by row. Removing
+    one week from a contiguous series therefore confirms a swing the complete
+    calendar does not contain. On the collected samples Coinbase omits 2 and 3
+    weekly sessions and Bitfinex 2 and 5, while Bitstamp omits none. Recomputing
+    BTC-019's own structural comparison reproduces the corrected frozen counts
+    exactly — 4 swing highs, 7 swing lows, 4 breakouts, 9 reclaims — and 24 of
+    the 40 differences across both samples sit inside the detector's own
+    ±3-week reach of a week one compared series does not have. Two are
+    unambiguous: Bitstamp's swing lows at `2023-03-06` and `2024-04-29` fall on
+    the exact weeks Bitfinex omits. The same mechanism explains BTC-019B's four
+    exact-timestamp swing disagreements, which are two adjacent-week pairs around
+    the two weekly buckets the composite omitted. Six V2 approval gates, four of
+    them hard, are computed from this comparison.
+  - **What the defect does not overturn.** `BITSTAMP = REJECTED` stands. Only the
+    first two pillars of its rationale are adjacency-exposed; the 10 October 2025
+    consensus stop and the 2.433/4.605 percentage-point MFE/MAE sensitivities are
+    Tier 4 comparisons on synchronized hourly bars, and BTC-224's golden scenario
+    corroborates the stop independently. Tier 1 divergence, the wick diagnostics
+    and the 82 manual reviews all normalize on the gap-free Bitstamp baseline.
+    Rejecting a venue remains sound; approving one is what depends on the
+    structural evidence.
+  - **Shared-formula ownership.** `_atr_fraction_series`, `_atr_value_series` and
+    `_baseline_atr_before` restate true range, and `_daily_returns` restates the
+    close-to-close move, over `zip(ordered, ordered[1:])`. 348 published
+    observations across the two samples cross a session the BTC-041 owner reports
+    as undefined. Where no session is absent they agree with the owner to the
+    digit, and Bitstamp bridges nothing, so the duplication is preserved to keep
+    the frozen artifacts reproducible rather than corrected in place. Any future
+    canonical-selection run must read the BTC-041 owner or carry parity evidence
+    before its result can support an approval.
+  - **Owner boundary.** `btc_predictor/levels/swing.py` is EPIC E's and feeds
+    structure scores, stops and setups, so it is proven and pinned, not changed
+    here. BTC-019 also owns no part of the historical-availability finding:
+    `derive_ohlcv_bars` and `build_canonical_market_bars` stamp one `ingested_at`
+    per backfill, which stays with BTC-020 and BTC-180, and there is no approved
+    canonical path here to supply per-bar availability from.
+  - **Smallest legitimate next step**, in order: give cross-provider structural
+    comparison an explicit calendar-contiguity contract under its own version;
+    re-measure structural disagreement on the already-inspected 2019-2022 and
+    2023-2025 samples; and only then build the hash-bound validator, collect
+    2015-2019, and open the sealed sample once.
+  - Added `btc_predictor/research/btc019_completion_gate.py` and 16 focused tests
+    in `test_btc019_completion_gate.py` covering the non-approval, sealed-sample
+    containment, collected-artifact digests, the weekly-row/week defect and all
+    four restated helpers, BTC-041 parity where no session is absent, the
+    uncontaminated Bitstamp baseline, deterministic recomputation of the
+    persisted assessment, and production/research separation.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
