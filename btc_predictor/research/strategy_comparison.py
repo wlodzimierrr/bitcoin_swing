@@ -28,6 +28,7 @@ from btc_predictor.backtest.engine import BacktestResult, restore_backtest_resul
 from btc_predictor.research.paper_trade_outcomes import (
     TRADE_OUTCOME_AVAILABLE,
     PaperTradeOutcomeDataset,
+    PaperTradeOutcomeRow,
     restore_paper_trade_outcome_dataset,
 )
 
@@ -89,6 +90,12 @@ STRATEGY_COMPARISON_METRICS = (
 
 STRATEGY_COMPARISON_RATE_EXPONENT = Decimal("1E-12")
 STRATEGY_COMPARISON_DECIMAL_PRECISION = 60
+
+# A BTC-191 dataset may narrow its declared outcome columns.  A column the
+# dataset never declared is not an outcome BTC-165 failed to measure, so paper
+# evidence must carry the columns these metrics read rather than be summarized
+# as a strategy whose every closed trade went unmeasured.
+STRATEGY_COMPARISON_REQUIRED_PAPER_OUTCOMES = ("net_pnl", "r_multiple")
 
 STRATEGY_COMPARISON_REASON_CODES = (
     "STRATEGY_COMPARISON_BASELINE_EXPLICIT",
@@ -571,6 +578,16 @@ def _backtest_arm(result: BacktestResult) -> StrategyComparisonArm:
 
 
 def _paper_arm(dataset: PaperTradeOutcomeDataset) -> StrategyComparisonArm:
+    missing = tuple(
+        name
+        for name in STRATEGY_COMPARISON_REQUIRED_PAPER_OUTCOMES
+        if name not in dataset.definition.outcome_names
+    )
+    if missing:
+        raise StrategyComparisonError(
+            "paper-trade evidence must declare the BTC-165 outcome columns the "
+            "comparison reads; missing: " + ", ".join(missing)
+        )
     metadata = _string_mapping(dataset.config_metadata, "config_metadata")
     variant = _variant_from_metadata(metadata)
     net_values = tuple(_paper_outcome(row, "net_pnl") for row in dataset.rows)
@@ -591,11 +608,8 @@ def _paper_arm(dataset: PaperTradeOutcomeDataset) -> StrategyComparisonArm:
     )
 
 
-def _paper_outcome(row: Any, name: str) -> Decimal | None:
-    try:
-        outcome = row.outcome(name)
-    except KeyError:
-        return None
+def _paper_outcome(row: PaperTradeOutcomeRow, name: str) -> Decimal | None:
+    outcome = row.outcome(name)
     return outcome.value if outcome.status == TRADE_OUTCOME_AVAILABLE else None
 
 
@@ -656,7 +670,12 @@ def _profit_factor(
         return None, PROFIT_FACTOR_NO_MEASURED_TRADES
     assert gross_profit is not None and gross_loss is not None
     if gross_loss < 0:
-        return _ratio(gross_profit, abs(gross_loss)), PROFIT_FACTOR_AVAILABLE
+        # ``abs`` rounds to the caller's ambient context; ``copy_abs`` does not,
+        # so the magnitude entering the pinned ratio stays exact.
+        return (
+            _ratio(gross_profit, gross_loss.copy_abs()),
+            PROFIT_FACTOR_AVAILABLE,
+        )
     if gross_profit > 0:
         return None, PROFIT_FACTOR_NO_LOSSES
     return None, PROFIT_FACTOR_ALL_FLAT

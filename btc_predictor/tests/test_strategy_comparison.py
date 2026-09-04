@@ -1,5 +1,6 @@
 """BTC-192: deterministic strategy and parameter-set comparisons."""
 
+import decimal
 import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -29,6 +30,7 @@ from btc_predictor.research import (
     STRATEGY_COMPARISON_POLICY_VERSION,
     STRATEGY_COMPARISON_PRODUCTION_STATUS,
     STRATEGY_COMPARISON_PROMOTION_TICKET,
+    TRADE_OUTCOME_AVAILABLE,
     FeatureMatrixDefinition,
     FeatureMatrixProvenance,
     FeatureObservation,
@@ -166,6 +168,8 @@ def _paper_dataset(
     parameter_set_id: str,
     *,
     exit_price: str,
+    extra_trades: tuple[tuple[str, str, str], ...] = (),
+    outcome_names: tuple[str, ...] = ("net_pnl", "r_multiple"),
 ):
     metadata = {
         "config_version": f"config-for-{strategy_version}-{parameter_set_id}",
@@ -189,63 +193,72 @@ def _paper_dataset(
         (START,),
         definition=definition,
     )
-    entry = PaperTradeEntry(
-        trade_reference=f"trade-{strategy_version}-{parameter_set_id}",
-        entry_decision_timestamp=START,
-        data_available_at=START,
-        symbol="BTC-USD",
-        direction="long",
-        decision="ENTER",
-        setup="BULL_TREND_CONTINUATION",
-        regime="BULL",
-        provenance=LifecycleProvenance(
-            recommendation_id=1,
-            strategy_version=strategy_version,
-            parameter_set_id=parameter_set_id,
-        ),
-        source_id="paper-campaign",
-    )
-    fills = (
-        TradeFill(
-            sequence=1,
-            filled_at=START + timedelta(hours=12),
-            action="ENTER",
-            quantity=Decimal("1"),
-            price=Decimal("100000"),
-            fee=Decimal("0"),
-            source_event_id="entry-fill",
-            execution_bar_at=START,
-            execution_bar_timeframe="1d",
-        ),
-        TradeFill(
-            sequence=2,
-            filled_at=START + timedelta(days=2),
-            action="EXIT",
-            quantity=Decimal("1"),
-            price=Decimal(exit_price),
-            fee=Decimal("0"),
-            source_event_id="exit-fill",
-            execution_bar_at=START + timedelta(days=2),
-            execution_bar_timeframe="1d",
-        ),
-    )
-    accounting = calculate_trade_accounting(
-        fills,
-        symbol="BTC-USD",
-        direction="long",
-        initial_stop_price="95000",
-        initial_stop_source_id="stop-1",
-        exit_reason="HOLD_SCORE_COLLAPSE",
-        exit_reason_source_id="exit-1",
-        config_metadata=metadata,
-    )
+    legs = (("1", "100000", exit_price), *extra_trades)
+    entries = []
+    accountings = {}
+    for index, (quantity, entry_price, leg_exit_price) in enumerate(legs, start=1):
+        reference = f"trade-{strategy_version}-{parameter_set_id}"
+        if index > 1:
+            reference = f"{reference}-{index}"
+        entries.append(
+            PaperTradeEntry(
+                trade_reference=reference,
+                entry_decision_timestamp=START,
+                data_available_at=START,
+                symbol="BTC-USD",
+                direction="long",
+                decision="ENTER",
+                setup="BULL_TREND_CONTINUATION",
+                regime="BULL",
+                provenance=LifecycleProvenance(
+                    recommendation_id=index,
+                    strategy_version=strategy_version,
+                    parameter_set_id=parameter_set_id,
+                ),
+                source_id="paper-campaign",
+            )
+        )
+        fills = (
+            TradeFill(
+                sequence=1,
+                filled_at=START + timedelta(hours=12),
+                action="ENTER",
+                quantity=Decimal(quantity),
+                price=Decimal(entry_price),
+                fee=Decimal("0"),
+                source_event_id=f"entry-fill-{index}",
+                execution_bar_at=START,
+                execution_bar_timeframe="1d",
+            ),
+            TradeFill(
+                sequence=2,
+                filled_at=START + timedelta(days=2),
+                action="EXIT",
+                quantity=Decimal(quantity),
+                price=Decimal(leg_exit_price),
+                fee=Decimal("0"),
+                source_event_id=f"exit-fill-{index}",
+                execution_bar_at=START + timedelta(days=2),
+                execution_bar_timeframe="1d",
+            ),
+        )
+        accountings[reference] = calculate_trade_accounting(
+            fills,
+            symbol="BTC-USD",
+            direction="long",
+            initial_stop_price="95000",
+            initial_stop_source_id="stop-1",
+            exit_reason="HOLD_SCORE_COLLAPSE",
+            exit_reason_source_id="exit-1",
+            config_metadata=metadata,
+        )
     outcome_definition = PaperTradeOutcomeDefinition(
         entry_feature_names=("TREND_SCORE",),
-        outcome_names=("net_pnl", "r_multiple"),
+        outcome_names=outcome_names,
     )
     return build_paper_trade_outcome_dataset(
-        (entry,),
-        {entry.trade_reference: accounting},
+        tuple(entries),
+        accountings,
         features,
         extraction_time=START + timedelta(days=30),
         definition=outcome_definition,
@@ -461,3 +474,66 @@ def test_comparison_is_research_only_and_cannot_imply_promotion() -> None:
     assert report.promotion_ticket == STRATEGY_COMPARISON_PROMOTION_TICKET
     assert "STRATEGY_COMPARISON_RESEARCH_ONLY" in report.reason_codes
     assert "STRATEGY_COMPARISON_BTC_193_PROMOTION_REQUIRED" in report.reason_codes
+
+
+def test_metrics_do_not_depend_on_the_ambient_decimal_context() -> None:
+    # EPIC T integration review.  ``_ratio`` pinned an explicit 60-digit
+    # context, but the profit factor took the magnitude of the gross loss with
+    # ``abs`` in the caller's ambient context first, so one set of BTC-191
+    # outcomes produced two profit factors and two evidence digests.
+    baseline = _paper_dataset(
+        BASELINE_VERSION,
+        BASELINE_PARAMETERS,
+        exit_price="300000.77",
+        extra_trades=(("7", "100000.13", "12345.11"),),
+    )
+    candidate = _paper_dataset(
+        CANDIDATE_VERSION,
+        CANDIDATE_PARAMETERS,
+        exit_price="400000.31",
+        extra_trades=(("7", "100000.13", "9876.55"),),
+    )
+
+    def compare():
+        return compare_paper_trade_strategies(
+            (baseline, candidate),
+            comparison_scope_id="paper-campaign-2024-q1",
+            baseline_strategy_version=BASELINE_VERSION,
+            baseline_parameter_set_id=BASELINE_PARAMETERS,
+        )
+
+    report = compare()
+    record = report.as_record()
+    assert report.baseline_arm.metrics.gross_loss == Decimal("-613585.14")
+    assert report.baseline_arm.metrics.profit_factor is not None
+
+    for precision in (14, 10, 8, 6):
+        with decimal.localcontext() as context:
+            context.prec = precision
+            assert compare().as_record() == record
+            assert restore_strategy_comparison_report(record) == report
+
+
+def test_paper_evidence_must_declare_the_outcome_columns_the_metrics_read() -> None:
+    # EPIC T integration review.  A BTC-191 dataset may narrow its declared
+    # outcome columns.  Reading an undeclared column as ``None`` reported every
+    # closed trade as an outcome BTC-165 could not measure, without the BTC-165
+    # reason code BTC-191 requires such a claim to cite.
+    baseline = _paper_dataset(
+        BASELINE_VERSION, BASELINE_PARAMETERS, exit_price="105000"
+    )
+    narrowed = _paper_dataset(
+        CANDIDATE_VERSION,
+        CANDIDATE_PARAMETERS,
+        exit_price="110000",
+        outcome_names=("holding_days",),
+    )
+
+    assert narrowed.rows[0].outcome("holding_days").status == TRADE_OUTCOME_AVAILABLE
+    with pytest.raises(StrategyComparisonError, match="net_pnl, r_multiple"):
+        compare_paper_trade_strategies(
+            (baseline, narrowed),
+            comparison_scope_id="paper-campaign-2024-q1",
+            baseline_strategy_version=BASELINE_VERSION,
+            baseline_parameter_set_id=BASELINE_PARAMETERS,
+        )
