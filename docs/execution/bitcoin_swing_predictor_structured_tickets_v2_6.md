@@ -840,6 +840,17 @@ sealed sample must not be opened until the comparison carries an explicit
 calendar-contiguity contract and the already-inspected samples have been
 re-measured under it.
 
+`CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` under
+`research_artifacts/btc019_structure_comparison_v2/` has now done both, without
+changing a frozen threshold, gate or artifact and without opening the sealed
+sample. 26 of the 40 prior structural differences are `NOT_COMPARABLE` rather
+than disagreements and 14 remain genuine. The remaining blocker moved: every
+affected gate is measurable, but the frozen thresholds were calibrated over an
+undeclared denominator, and the verdict against the identical frozen number
+changes between the comparable-event and all-event denominators on four of the
+five hard structural gates. That denominator must be declared under its own
+version, bound to the frozen definition hash, before the validator is built.
+
 ### Persistence requirements
 
 Every raw/canonical price observation must preserve enough provenance to answer:
@@ -1064,6 +1075,70 @@ Do not overwrite raw history when the preferred provider changes.
     four restated helpers, BTC-041 parity where no session is absent, the
     uncontaminated Bitstamp baseline, deterministic recomputation of the
     persisted assessment, and production/research separation.
+  - **`CROSS_PROVIDER_STRUCTURE_COMPARISON_V2`.** Step 1 and step 2 of that
+    sequence are now done. `btc_predictor/research/cross_provider_structure_comparison.py`
+    adds a versioned research adapter in front of the unchanged production
+    detectors: a candidate swing at week `T` is comparable between two series
+    only when both hold every calendar week of the detector's own `T-3 .. T+3`
+    reach, and a derived breakout/reclaim only when both hold every week from
+    the source level through the later confirmation -- or through the end of the
+    shared calendar when either series never confirms. Sessions are canonical
+    UTC Monday buckets classified `PRESENT`, `ABSENT`, `PENDING` or
+    `OUT_OF_COVERAGE` at the sample's own latest ingestion instant, so a week
+    that has not arrived is never read as a week a provider lost. Comparison is
+    pairwise on the shared calendar, canonicalised by sorted series id, so
+    provider order cannot change a record. Outcomes are `STRUCTURAL_AGREEMENT`,
+    `STRUCTURAL_DISAGREEMENT` or `NOT_COMPARABLE` with the side and the exact
+    missing sessions named, and every rate declares whether its denominator is
+    the comparable event union or the V1 all-event union.
+  - **Both already-inspected samples re-measured; the sealed sample untouched.**
+    The V1 comparison still reproduces its own frozen numbers -- 4 swing highs,
+    7 swing lows, 4 breakouts, 9 reclaims on 2023-2025, and both samples'
+    completion-gate counts, 40 in total -- and runs beside the new contract
+    rather than being replaced by it. Under V2, 26 of those 40 differences are
+    `NOT_COMPARABLE` (13 an absent required week, 10 a derived level whose
+    source swing is blocked by one, 3 a derived level the pair has no shared
+    source swing for) and 14 remain genuine: 1 swing high, 5 swing lows, 8
+    reclaims and no breakouts. None became an agreement. `2023-03-06` and
+    `2024-04-29` are the exact weeks Bitfinex omits; the `2023-02-13` swing and
+    its `2023-03-13` breakout are blocked by Coinbase's `2023-02-27` and
+    Bitfinex's `2023-03-06`; and all four BTC-019B exact-timestamp
+    disagreements -- `2020-03-09`/`2020-03-16` and `2021-04-05`/`2021-04-12` --
+    have one of the composite's own two omitted buckets inside their
+    confirmation window. The contract also moves events the other way: the
+    `2025-09-01` reclaim that Bitstamp confirms on `2025-10-13` and Coinbase on
+    `2025-10-06` is comparable and genuinely disagrees, because Coinbase's
+    omitted `2025-10-20` is not in its required calendar.
+  - **V2 gate measurability: `RESEARCH_INCONCLUSIVE`.** All six affected frozen
+    gates are now defined on an explicit comparable denominator across all six
+    pairwise comparisons, and none is availability-dominated: 230 comparable
+    structural events against 83 not-comparable. No threshold, gate, direction
+    or protocol was changed; they are read from the frozen definition only. The
+    unresolved item is which denominator those frozen numbers were ever defined
+    over. They were calibrated on BTC-019B's all-event denominator, and on five
+    of the six gates -- four of them hard -- the verdict against the identical
+    frozen number flips when the denominator changes; every one of the six
+    `breakout_disagreement_rate` measurements fails on the prior denominator and
+    passes on the comparable one, because all 14 breakout disagreement
+    candidates turn out to be availability. Declaring that denominator under its
+    own version, bound to the frozen definition hash, is the next step, and it
+    must precede validator construction. The classification rule is predeclared
+    in the module, so the outcome is read off the evidence.
+  - Evidence is persisted under `research_artifacts/btc019_structure_comparison_v2/`
+    (`CROSS_PROVIDER_STRUCTURE_COMPARISON_V2_REPORT_V1`). Added 48 focused tests
+    in `test_cross_provider_structure_comparison.py` covering the calendar
+    contract derived independently from the detector's reach, agreement and
+    genuine disagreement on contiguous series, a missing disqualifying week, a
+    missing week outside the reach, missing weeks either side, per-side and
+    both-side attribution, series-edge coverage, point-in-time pending
+    confirmation, future-append invariance, provider-order invariance, derived
+    breakout/reclaim from a non-comparable swing, the full derived confirmation
+    calendar, denominator completeness, an undefined rate reported as `None`,
+    ambient-Decimal independence, the named historical cases, artifact
+    restore/recompute parity, tamper rejection, and every fail-closed boundary.
+  - `btc_predictor/levels/swing.py` and `breakout.py` are untouched. A
+    production swing-gap policy remains a separate certification concern for
+    EPIC E's owner.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

@@ -30,8 +30,9 @@
   Phase-1 work
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 3545 passed with Python 3.12 on 2026-09-04
-- **Last relevant implementation/review commit:** `33ea563`
-  (`research: assess the BTC-019 completion gate as blocked`)
+- **Last relevant implementation/review commit:** the
+  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` re-measurement of the two collected
+  BTC-019 samples
 
 ## Price-Reference State
 
@@ -43,6 +44,7 @@ BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
 BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
+CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -62,13 +64,33 @@ that comparison, so the sealed 2015-2019 sample stays shut. The frozen
 stop and its MFE/MAE sensitivities are Tier 4 comparisons on synchronized
 hourly bars.
 
+`CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` under
+`research_artifacts/btc019_structure_comparison_v2/` closes the comparison
+defect. A versioned research adapter in front of the unchanged production
+detectors requires every calendar week of a candidate's own confirmation reach
+to be present in both compared series before their verdicts may be compared, so
+an absent session becomes `NOT_COMPARABLE` with the side and the missing weeks
+named instead of a venue disagreement. Both already-inspected samples were
+re-measured and the sealed sample stayed shut. The V1 comparison still
+reproduces its frozen counts beside it. 26 of the 40 prior differences are not
+comparable and 14 remain genuine -- 1 swing high, 5 swing lows, 8 reclaims, no
+breakouts -- and all four BTC-019B exact-timestamp disagreements fall away.
+Every affected gate is now measurable on an explicit denominator, but the
+outcome is `RESEARCH_INCONCLUSIVE`: the frozen thresholds were calibrated over
+an undeclared denominator, and the verdict against the identical frozen number
+changes between the comparable-event and all-event denominators on four of the
+five hard structural gates.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
-  BTC-019. The smallest legitimate next step is a versioned calendar-contiguity
-  contract for cross-provider structural comparison, then re-measuring the
-  already-inspected 2019-2022 and 2023-2025 samples under it, and only then
-  building the hash-bound V2 validator.
+  BTC-019. The calendar-contiguity contract and the re-measurement of the
+  already-inspected 2019-2022 and 2023-2025 samples are now done under
+  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2`. The next step is to declare, under
+  its own version bound to the frozen V2 definition hash, which denominator the
+  six affected structural gates are evaluated over and how a not-comparable
+  event is treated; no threshold moves. Only then may the hash-bound validator
+  be built, 2015-2019 collected, and the sealed sample opened once.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche
@@ -85,8 +107,10 @@ hourly bars.
   observations across the two collected samples cross a session the BTC-041
   owner leaves undefined, and they are preserved deliberately so the frozen
   BTC-019 artifacts stay reproducible. `detect_weekly_swing_levels` (EPIC E) has
-  the same row-versus-session reading and is pinned by test; changing it is a
-  strategy-semantics decision for its own owner.
+  the same row-versus-session reading and is still pinned by test rather than
+  changed; BTC-019 research now reads around it through the
+  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` adapter, but a production swing-gap
+  policy remains a strategy-semantics decision for its own owner.
 - The EPIC P integration audit left one non-blocking item with a strategy
   owner: rulebook 24 gives STRESS / CROWDING / EUPHORIA the shared effect
   `NO ADDING`, and BTC-150 makes `DEFENSIVE` the state that enforces it, but no
