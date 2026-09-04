@@ -1,0 +1,609 @@
+{
+  "affected_metrics": [
+    "exact_timestamp_swing_disagreement_rate",
+    "within_1_week_swing_disagreement_rate",
+    "within_2_week_swing_disagreement_rate",
+    "structural_state_disagreement_rate",
+    "breakout_disagreement_rate",
+    "reclaim_disagreement_rate"
+  ],
+  "artifact_digest": "f30e652e7a846bca6988d6e1d0eff58cd0eb1a88c0be4c1fecdc6e8b8edd2cee",
+  "btc019_status": "IN PROGRESS",
+  "classification": {
+    "metrics_with_recoverable_but_defective_denominator": [
+      "exact_timestamp_swing_disagreement_rate",
+      "within_1_week_swing_disagreement_rate",
+      "within_2_week_swing_disagreement_rate",
+      "structural_state_disagreement_rate"
+    ],
+    "metrics_with_unportable_threshold": [
+      "exact_timestamp_swing_disagreement_rate",
+      "within_1_week_swing_disagreement_rate",
+      "within_2_week_swing_disagreement_rate",
+      "structural_state_disagreement_rate",
+      "breakout_disagreement_rate",
+      "reclaim_disagreement_rate"
+    ],
+    "metrics_with_unrecoverable_denominator": [
+      "breakout_disagreement_rate",
+      "reclaim_disagreement_rate"
+    ],
+    "outcome": "NEW_PROTOCOL_VERSION_REQUIRED",
+    "reason_codes": [
+      "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+      "CANDIDATE_UNIVERSE_AMBIGUOUS",
+      "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+      "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR",
+      "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+      "NO_CALIBRATION_ARTIFACT_EXISTS",
+      "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+      "PRE_EXISTING_FORMULAS_DISAGREE",
+      "SUCCESSOR_REQUIRED_BY_PARENT_GOVERNANCE",
+      "THRESHOLD_ALLOWANCE_NOT_BOUND_TO_A_UNIVERSE",
+      "THRESHOLD_ANCHOR_ENTIRELY_AVAILABILITY_DRIVEN",
+      "THRESHOLD_ANCHOR_EXCEEDS_FROZEN_THRESHOLD"
+    ]
+  },
+  "classification_rule": "CLARIFICATION_VALID only when the frozen definition, the code that predates the defect, or a calibration artifact fixes each affected metric's denominator AND that recovered denominator is admissible, so writing it down changes no statistical rule; BLOCKED_BY_UNRESOLVED_EVIDENCE when required pre-existing evidence is missing or contradictory and neither conclusion can be justified; NEW_PROTOCOL_VERSION_REQUIRED otherwise -- in particular when the only recoverable denominator is the known correctness defect, when a metric's candidate universe was never determinable, or when a frozen threshold's meaning does not survive the denominator being written down.",
+  "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+  "coverage_contract": {
+    "completeness_invariant": "comparable_event_count + not_comparable_event_count == all_detected_event_count, and comparable_candidate_count + not_comparable_candidate_count == candidate_event_count, for every pair and every family.",
+    "existing_parent_defences": [
+      "reference_usable_rate (hard, minimum 0.995)",
+      "reference_unavailable_rate (hard, maximum 0.005)",
+      "daily_bucket_usable_rate (hard, minimum 0.995)",
+      "weekly_bucket_usable_rate (hard, minimum 0.990)",
+      "silent_incomplete_bucket_omission_count (hard, equal 0)",
+      "unrecorded_quality_state_count (hard, equal 0)"
+    ],
+    "new_numeric_gate_created": false,
+    "new_threshold_created": false,
+    "not_comparable_rate": "1 - structural_comparability_rate.",
+    "parent_defence_limitation": "Those gates bind the candidate reference series only. The other side of a comparison is a raw provider whose availability nothing gates, so comparability evidence is the only place a gap-heavy comparison series becomes visible.",
+    "provenance_requirement": {
+      "derivation": "Not a calibrated rate. It is the parent protocol's own zero-count provenance principle -- unrecorded_quality_state_count and silent_incomplete_bucket_omission_count are both hard equal-0 gates -- applied to the category the parent did not have: every excluded event must be individually reconstructable, with its reason code, its side and its missing sessions.",
+      "direction": "equal",
+      "hard": true,
+      "metric": "unrecorded_not_comparable_event_count",
+      "new_in_successor": true,
+      "threshold": 0
+    },
+    "purpose": "Excluding an unevaluable event from a structural rate must never let an outage look like quality. Coverage is therefore published beside every structural rate, per pair and per event family.",
+    "required_evidence": [
+      "candidate_event_count",
+      "all_detected_event_count",
+      "comparable_event_count",
+      "not_comparable_event_count",
+      "structural_comparability_rate",
+      "not_comparable_rate",
+      "not_comparable_reason_counts",
+      "availability_gap_side_counts"
+    ],
+    "structural_comparability_rate": "comparable_event_count / all_detected_event_count, resolved in an explicit Decimal context, reported as null when the denominator is zero rather than as zero.",
+    "why_no_numeric_floor": "A minimum comparability rate would be a threshold, and this task may not calibrate one. The successor therefore requires the evidence and defers the question of a floor to the separate pre-sealed threshold calibration task, which must decide it before any sealed evaluation."
+  },
+  "denominator_interpretations_considered": [
+    {
+      "basis": "A structurally unevaluable event is neither an agreement nor a disagreement: it carries no information about whether two series read structure the same way, so it belongs in neither the numerator nor the denominator of a rate named 'structural disagreement'. The parent protocol already gates availability separately and hard, so removing availability from the structural rate does not remove it from the approval decision.",
+      "id": "comparable_detected_event_union",
+      "label": "A. comparable_detected_event_union",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "verdict": "ADOPTED"
+    },
+    {
+      "basis": "Silently converts an unanswered question into a favourable answer. It is also monotone in the wrong direction: every additional outage adds a free agreement, so a series that publishes less scores better. No pre-existing artifact defines it; it is a reading invented by the question, not recovered from the record.",
+      "id": "all_detected_event_union",
+      "label": "B. all_detected_event_union, not-comparable counted as agreement",
+      "not_comparable_treatment": "COUNTED_AS_AGREEMENT_IN_DENOMINATOR_ONLY",
+      "verdict": "REJECTED"
+    },
+    {
+      "basis": "This is what the pre-existing formulas actually do, because they have no third outcome: a one-sided detection caused by an absent week lands in the symmetric difference and in the union. It is therefore the only denominator that can be recovered from the record -- and it is exactly the correctness defect BTC019_COMPLETION_GATE_ASSESSMENT_V1 recorded and CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 closed. Recovering it would reinstate the defect; replacing it is new semantics. That is the whole reason this resolution is not a clarification.",
+      "id": "all_detected_event_union",
+      "label": "B0. all_detected_event_union, not-comparable counted as disagreement -- the frozen protocol's only executable behaviour",
+      "not_comparable_treatment": "COUNTED_AS_DISAGREEMENT_IN_NUMERATOR_AND_DENOMINATOR",
+      "verdict": "REJECTED"
+    },
+    {
+      "basis": "The candidate universe is every weekly session, so the denominator measures how long the sample is rather than how often the two series disagree, and any threshold on it would be a function of sample length. Both pre-existing formulas use detected-event unions, so this has no support in the record either.",
+      "id": "comparable_candidate_sessions",
+      "label": "C. every comparable candidate session, detected or not",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "verdict": "REJECTED"
+    },
+    {
+      "basis": "Recovered, not invented: BTC-019B's own pre-existing formula subtracts the matched pair count from the union, and a 'within N week matched' rate is meaningless if a structure both series found, one week apart, still counts twice in its denominator. This is the one place where the six metrics do not share a denominator, and the pre-existing record is explicit about it (33 for exact and structural-state, 31 for within-N).",
+      "id": "comparable_detected_event_union_matched_pairs_merged",
+      "label": "D. A, with tolerance-matched pairs merged -- for the within-N-week metrics only",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "verdict": "ADOPTED_FOR_WITHIN_N_WEEK_METRICS"
+    }
+  ],
+  "denominator_materiality": {
+    "admitted_for": "materiality only",
+    "hard_metrics_with_any_verdict_flip": 5,
+    "metrics_with_any_verdict_flip": 6,
+    "per_metric": [
+      {
+        "fails_on_prior_denominator": 3,
+        "fails_on_resolved_denominator": 0,
+        "hard": false,
+        "measured_pair_count": 6,
+        "metric": "exact_timestamp_swing_disagreement_rate",
+        "undefined_measurement_count": 0,
+        "verdict_flips_between_denominators": 3
+      },
+      {
+        "fails_on_prior_denominator": 5,
+        "fails_on_resolved_denominator": 2,
+        "hard": true,
+        "measured_pair_count": 6,
+        "metric": "within_1_week_swing_disagreement_rate",
+        "undefined_measurement_count": 0,
+        "verdict_flips_between_denominators": 3
+      },
+      {
+        "fails_on_prior_denominator": 6,
+        "fails_on_resolved_denominator": 4,
+        "hard": true,
+        "measured_pair_count": 6,
+        "metric": "within_2_week_swing_disagreement_rate",
+        "undefined_measurement_count": 0,
+        "verdict_flips_between_denominators": 2
+      },
+      {
+        "fails_on_prior_denominator": 5,
+        "fails_on_resolved_denominator": 1,
+        "hard": true,
+        "measured_pair_count": 6,
+        "metric": "structural_state_disagreement_rate",
+        "undefined_measurement_count": 0,
+        "verdict_flips_between_denominators": 4
+      },
+      {
+        "fails_on_prior_denominator": 6,
+        "fails_on_resolved_denominator": 0,
+        "hard": true,
+        "measured_pair_count": 6,
+        "metric": "breakout_disagreement_rate",
+        "undefined_measurement_count": 0,
+        "verdict_flips_between_denominators": 6
+      },
+      {
+        "fails_on_prior_denominator": 6,
+        "fails_on_resolved_denominator": 5,
+        "hard": true,
+        "measured_pair_count": 6,
+        "metric": "reclaim_disagreement_rate",
+        "undefined_measurement_count": 0,
+        "verdict_flips_between_denominators": 1
+      }
+    ],
+    "resolved_denominator_is_uniformly_favourable": false,
+    "samples": "already-inspected 2019-2022 and 2023-2025 only",
+    "sealed_sample_used": false,
+    "source": "research_artifacts/btc019_structure_comparison_v2/comparison_report.json",
+    "source_sha256": "b66d03b9104e8d0e658a8b28a354dd4f7826736487f0b0619a6e0ab79f4ebc21",
+    "totals": {
+      "availability_gap_side_counts": {
+        "bitfinex": 59,
+        "both": 11,
+        "coinbase": 24
+      },
+      "breakout_not_comparable_event_count": 26,
+      "breakout_true_disagreement_count": 0,
+      "candidate_session_count": 948,
+      "comparable_event_count": 230,
+      "legacy_difference_count": 40,
+      "legacy_difference_now_agreement_count": 0,
+      "legacy_difference_now_not_comparable_count": 26,
+      "legacy_difference_still_disagreement_count": 14,
+      "not_comparable_event_count": 83,
+      "pairwise_comparison_count": 6,
+      "reclaim_not_comparable_event_count": 16,
+      "reclaim_true_disagreement_count": 5,
+      "sample_count": 2,
+      "swing_high_not_comparable_event_count": 20,
+      "swing_high_true_disagreement_count": 2,
+      "swing_low_not_comparable_event_count": 21,
+      "swing_low_true_disagreement_count": 5
+    }
+  },
+  "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+  "examined_evidence": [
+    {
+      "digest_pinned": true,
+      "establishes": "Declares metric name, threshold, direction, hard flag, rationale and validation stage for each of the six gates, and a validation_metric_families listing. It declares no numerator, no denominator, no candidate universe, no comparison basis and no treatment of an unevaluable event, for any of the six.",
+      "identifier": "BTC_REFERENCE_COMPOSITE_V2 frozen definition",
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V2/protocol_definition.json",
+      "predates_defect_discovery": true,
+      "sha256": "adfbd36395220fb5f7ae9f5e97e24a5ca809a0e6a09fd8f3b20f75d928862d5e",
+      "symbol": "",
+      "tier": 1
+    },
+    {
+      "digest_pinned": false,
+      "establishes": "_structural_comparison: per category (swing_high, swing_low, breakout, reclaim), rate = |events XOR consensus| / |events OR consensus| against a two-of-three raw-provider consensus; plus a combined_swing union across the two swing families. A one-sided detection caused by an absent week is counted as a disagreement, because no other outcome exists.",
+      "identifier": "BTC_REFERENCE_COMPOSITE_V1 structural comparison formula",
+      "path": "btc_predictor/research/reference_composite_empirical.py",
+      "predates_defect_discovery": true,
+      "sha256": null,
+      "symbol": "_structural_comparison",
+      "tier": 2
+    },
+    {
+      "digest_pinned": false,
+      "establishes": "_swing_metric_summary: exact_timestamp and structural_state over len(exact_union); within_1_week and within_2_week over len(exact_union) - matched_pair_count. The named calibration source for four of the six frozen thresholds. It also has no third outcome, and it computes no breakout or reclaim rate.",
+      "identifier": "BTC-019B swing gate diagnostics formula",
+      "path": "btc_predictor/research/btc019b_diagnostics.py",
+      "predates_defect_discovery": true,
+      "sha256": null,
+      "symbol": "_swing_metric_summary",
+      "tier": 3
+    },
+    {
+      "digest_pinned": true,
+      "establishes": "The frozen numbers behind the thresholds: exact_timestamp 4/33 = 12.1212%, structural_state 2/33 = 6.0606%, within_1_week and within_2_week 0/31. Two denominators, 33 and 31, in one artifact.",
+      "identifier": "BTC-019B frozen swing diagnostics",
+      "path": "research_artifacts/btc019b/swing_disagreement_diagnostics.json",
+      "predates_defect_discovery": true,
+      "sha256": "d916bf9906cd50c8c86dab0510478283d2714d523a76adad65ab4676984002a5",
+      "symbol": "",
+      "tier": 3
+    },
+    {
+      "digest_pinned": true,
+      "establishes": "exact_swing_gate_assessment: 'Exact timestamps are too brittle as a standalone weekly-structure gate, but the failure exposed real omitted-week level and breakout state changes.' Pre-existing design intent that treats a week the candidate itself omitted as an economically real structural difference -- the opposite reading to excluding an unevaluable event, and never reconciled with it in any frozen artifact.",
+      "identifier": "BTC-019B frozen governance assessment",
+      "path": "research_artifacts/btc019b/final_diagnostic_decision.json",
+      "predates_defect_discovery": true,
+      "sha256": "d911b7dba49ae3f4d05307efb655b0b18b3cc8fcb2ee8c9791ae42033c97a73d",
+      "symbol": "",
+      "tier": 4
+    },
+    {
+      "digest_pinned": true,
+      "establishes": "The V1 frozen gate set contains one structural rate, external_combined_swing_disagreement_rate_maximum = 0.10, over the combined swing union. No frozen V1 breakout or reclaim gate exists for V2's two to inherit a universe from.",
+      "identifier": "BTC_REFERENCE_COMPOSITE_V1 frozen candidate definition",
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/candidate_definition.json",
+      "predates_defect_discovery": true,
+      "sha256": "c2ca6c24363e3964bb1332a35242c2b7dfc93421034f8e5bf8e702a406d8561e",
+      "symbol": "",
+      "tier": 4
+    },
+    {
+      "digest_pinned": true,
+      "establishes": "Records the row-versus-calendar defect that makes the recoverable denominator inadmissible, and that six V2 approval gates are computed from the affected comparison.",
+      "identifier": "BTC019_COMPLETION_GATE_ASSESSMENT_V1",
+      "path": "research_artifacts/btc019_completion_gate/completion_gate_assessment.json",
+      "predates_defect_discovery": false,
+      "sha256": "2ffaa4239f06597ece2f27e4dea62ba46ec1dd17ff2cb24631fa5ba931cdd592",
+      "symbol": "",
+      "tier": 6
+    },
+    {
+      "digest_pinned": true,
+      "establishes": "Supplies the comparability contract this resolution binds, and the already-inspected measurements used here only to show that the denominator choice is material.",
+      "identifier": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+      "path": "research_artifacts/btc019_structure_comparison_v2/comparison_report.json",
+      "predates_defect_discovery": false,
+      "sha256": "b66d03b9104e8d0e658a8b28a354dd4f7826736487f0b0619a6e0ab79f4ebc21",
+      "symbol": "",
+      "tier": 6
+    }
+  ],
+  "frozen_gate_directions_changed": false,
+  "frozen_gates_read": [
+    {
+      "direction": "maximum",
+      "hard": false,
+      "metric": "exact_timestamp_swing_disagreement_rate",
+      "rationale": "Retain exact-label sensitivity without making it the sole structural gate.",
+      "source_of_rationale": "BTC-019B observed 12.1212% caused by two adjacent-week shifts.",
+      "threshold": "0.15",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "within_1_week_swing_disagreement_rate",
+      "rationale": "Weekly structures should match after allowing one label week of tolerance.",
+      "source_of_rationale": "BTC-019B diagnostic rate was zero; 5% allows sparse unexplained events.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "within_2_week_swing_disagreement_rate",
+      "rationale": "Two-week unmatched structures indicate more than label timing noise.",
+      "source_of_rationale": "BTC-019B diagnostic rate was zero; stricter 2% tail allowance.",
+      "threshold": "0.02",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "structural_state_disagreement_rate",
+      "rationale": "Reference choice should rarely change support/resistance state.",
+      "source_of_rationale": "BTC-019B separated structural effects from exact timestamp labels.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "breakout_disagreement_rate",
+      "rationale": "Breakout eligibility must be stable across robust references.",
+      "source_of_rationale": "Economic reasoning using existing deterministic breakout logic.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "reclaim_disagreement_rate",
+      "rationale": "Reclaim eligibility must be stable across robust references.",
+      "source_of_rationale": "Economic reasoning using existing deterministic reclaim logic.",
+      "threshold": "0.05",
+      "validation_stage": "historical_oos"
+    }
+  ],
+  "frozen_thresholds_changed": false,
+  "may_build_sealed_validator": false,
+  "may_collect_sealed_sample": false,
+  "may_open_sealed_sample": false,
+  "metric_resolutions": [
+    {
+      "absent_source_level_treatment": "Not applicable; a swing candidate has no source level.",
+      "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+      "agreement_treatment": "Both series detect, or both series decline to detect, a comparable candidate. Only the detected ones enter the denominator; a candidate neither series detects is not an event.",
+      "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: a required session is absent inside a series' own coverage. Excluded, and separately gated by the parent protocol's hard availability metrics.",
+      "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+      "denominator": "Swing candidates at least one series detects and both series can evaluate, i.e. both hold every session of the detector's own T-3..T+3 confirmation reach.",
+      "denominator_id": "comparable_detected_event_union",
+      "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+      "disagreement_treatment": "Exactly one series detects a comparable candidate: one event in the numerator and one in the denominator.",
+      "frozen_direction": "maximum",
+      "frozen_hard": false,
+      "frozen_threshold": "0.15",
+      "frozen_validation_stage": "historical_oos",
+      "metric": "exact_timestamp_swing_disagreement_rate",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "numerator": "Comparable detected swing candidates that exactly one series detects.",
+      "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: a required session had not closed or not been ingested at the sample's evaluation instant. Excluded, so appending later history cannot rewrite a past verdict.",
+      "reason_codes": [
+        "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+        "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+        "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+        "THRESHOLD_ANCHOR_ENTIRELY_AVAILABILITY_DRIVEN",
+        "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+        "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+      ],
+      "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B observed 12.1212% caused by two adjacent-week shifts'. That figure is 4/33 in btc_predictor/research/btc019b_diagnostics.py::_swing_metric_summary, whose denominator is the all-detected-event union of the compared swing sets, so the frozen 0.15 was fixed to sit above it. All four of those numerator events are NOT_COMPARABLE availability gaps under the comparison contract, so under the resolved denominator the anchor observation is not rescaled, it is zero.",
+      "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+    },
+    {
+      "absent_source_level_treatment": "Not applicable; a swing candidate has no source level.",
+      "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+      "agreement_treatment": "As the exact-timestamp metric, plus: a matched pair within the tolerance is an agreement about one merged structure.",
+      "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded before matching, so an availability gap can neither create nor absorb a matched pair.",
+      "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+      "denominator": "The comparable detected swing event union with each matched pair counted once rather than twice, because a structure both series found one week apart is one structure.",
+      "denominator_id": "comparable_detected_event_union_matched_pairs_merged",
+      "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+      "disagreement_treatment": "An unmatched comparable one-sided detection, counted once in the numerator and once in the unmerged part of the denominator.",
+      "frozen_direction": "maximum",
+      "frozen_hard": true,
+      "frozen_threshold": "0.05",
+      "frozen_validation_stage": "historical_oos",
+      "metric": "within_1_week_swing_disagreement_rate",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "numerator": "Comparable one-sided swing disagreements that no opposing comparable one-sided disagreement of the same family sits within one weekly session of; matching is nearest-admissible-pair first, so it is independent of provider and dictionary order.",
+      "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded before matching.",
+      "reason_codes": [
+        "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+        "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+        "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+        "THRESHOLD_ALLOWANCE_NOT_BOUND_TO_A_UNIVERSE",
+        "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+        "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+      ],
+      "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B diagnostic rate was zero; 5% allows sparse unexplained events'. A zero numerator is denominator-invariant, so the observation carries no denominator information; the pair-merged denominator itself is recoverable from btc_predictor/research/btc019b_diagnostics.py::_swing_metric_summary (33 - matched pairs = 31). What is not recoverable is the allowance: 0.05 was a round economic tolerance never bound to a stated universe, and the measured verdict against that identical number moves between the two denominators.",
+      "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+    },
+    {
+      "absent_source_level_treatment": "Not applicable; a swing candidate has no source level.",
+      "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+      "agreement_treatment": "As within_1_week with a two weekly-session matching tolerance.",
+      "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded before matching.",
+      "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+      "denominator": "As within_1_week with a two weekly-session matching tolerance.",
+      "denominator_id": "comparable_detected_event_union_matched_pairs_merged",
+      "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+      "disagreement_treatment": "An unmatched comparable one-sided detection at two weeks of tolerance, which the frozen rationale reads as more than label timing noise.",
+      "frozen_direction": "maximum",
+      "frozen_hard": true,
+      "frozen_threshold": "0.02",
+      "frozen_validation_stage": "historical_oos",
+      "metric": "within_2_week_swing_disagreement_rate",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "numerator": "As within_1_week with a two weekly-session matching tolerance.",
+      "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded before matching.",
+      "reason_codes": [
+        "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+        "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+        "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+        "THRESHOLD_ALLOWANCE_NOT_BOUND_TO_A_UNIVERSE",
+        "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+        "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+      ],
+      "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B diagnostic rate was zero; stricter 2% tail allowance'. Same structure as within_1_week: the pair-merged denominator is recoverable, the zero observation is denominator-invariant, and the 0.02 tail allowance was never bound to a universe.",
+      "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+    },
+    {
+      "absent_source_level_treatment": "NOT_COMPARABLE_SOURCE_LEVEL on the derived candidate consulted for the state change: the swing itself stays in the denominator only if the swing is comparable, and contributes to the numerator only on a confirmed derived level.",
+      "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+      "agreement_treatment": "A comparable swing candidate whose downstream breakout/reclaim state is the same on both series, including every candidate both series agree about.",
+      "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded.",
+      "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+      "denominator": "The comparable detected swing event union, unmerged: the same universe as the exact-timestamp metric, because this metric asks how often a swing difference propagates, not how often one occurs.",
+      "denominator_id": "comparable_detected_event_union",
+      "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+      "disagreement_treatment": "One event in the numerator per comparable one-sided swing whose structural state changed.",
+      "frozen_direction": "maximum",
+      "frozen_hard": true,
+      "frozen_threshold": "0.05",
+      "frozen_validation_stage": "historical_oos",
+      "metric": "structural_state_disagreement_rate",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "numerator": "Comparable one-sided swing disagreements whose level the detecting series also confirmed a breakout or reclaim from, so the difference changed downstream support/resistance state rather than only a label.",
+      "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded.",
+      "reason_codes": [
+        "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+        "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+        "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+        "THRESHOLD_ANCHOR_ENTIRELY_AVAILABILITY_DRIVEN",
+        "THRESHOLD_ANCHOR_EXCEEDS_FROZEN_THRESHOLD",
+        "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+        "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+      ],
+      "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B separated structural effects from exact timestamp labels' -- an attribution of the concept, not of the number. BTC-019B measured 2/33 = 6.0606%, which exceeds the frozen 0.05, so the threshold was never an accommodation of its own calibration observation; and both numerator events belong to the two BTC-019B pairs that are NOT_COMPARABLE availability gaps under the comparison contract.",
+      "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+    },
+    {
+      "absent_source_level_treatment": "NOT_COMPARABLE_SOURCE_LEVEL: a breakout whose source swing is itself not comparable, or which the two series hold no shared source swing for, is excluded. The upstream swing disagreement is already counted once in the swing metrics; counting its shadow again would double-count one difference.",
+      "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+      "agreement_treatment": "Both series confirm in the same week, or neither ever confirms across the whole shared remaining calendar. Only confirmed candidates enter the denominator.",
+      "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded, with the missing confirmation weeks named.",
+      "candidate_universe": "Breakout candidates on the pair's common weekly calendar: one per shared source swing high, keyed by that source level, not by the confirmation week.",
+      "denominator": "Breakout candidates at least one series confirms and both series can evaluate, i.e. both hold every week from the source swing through the later confirmation, or through the end of the shared calendar when either series never confirms.",
+      "denominator_id": "comparable_detected_event_union",
+      "denominator_intent": "DENOMINATOR_INTENT_NOT_RECOVERABLE",
+      "disagreement_treatment": "One event in numerator and denominator per comparable candidate with a differing confirmation.",
+      "frozen_direction": "maximum",
+      "frozen_hard": true,
+      "frozen_threshold": "0.05",
+      "frozen_validation_stage": "historical_oos",
+      "metric": "breakout_disagreement_rate",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "numerator": "Comparable breakout candidates the two series resolve differently -- exactly one confirms, or both confirm in different weeks.",
+      "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded. 'Never confirms' is a claim about every remaining week, so it may only be made where every remaining week has arrived.",
+      "reason_codes": [
+        "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+        "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+        "CANDIDATE_UNIVERSE_AMBIGUOUS",
+        "PRE_EXISTING_FORMULAS_DISAGREE",
+        "NO_CALIBRATION_ARTIFACT_EXISTS",
+        "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+        "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+      ],
+      "threshold_intent_evidence": "The frozen source_of_rationale is 'Economic reasoning using existing deterministic breakout logic'. No calibration artifact exists: BTC-019B computed no breakout rate at all, and the frozen V2 protocol lists breakout under its 'swings' metric family while the only pre-existing implementation, btc_predictor/research/reference_composite_empirical.py::_structural_comparison, measures it over a per-category breakout event union against a two-of-three provider consensus. Those are different denominators and the frozen definition does not choose between them.",
+      "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+    },
+    {
+      "absent_source_level_treatment": "NOT_COMPARABLE_SOURCE_LEVEL: as breakouts.",
+      "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+      "agreement_treatment": "Both series confirm in the same week, or neither ever confirms across the whole shared remaining calendar.",
+      "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded, with the missing confirmation weeks named.",
+      "candidate_universe": "Reclaim candidates on the pair's common weekly calendar: one per shared source swing low, keyed by that source level, not by the confirmation week.",
+      "denominator": "Reclaim candidates at least one series confirms and both series can evaluate, on the same confirmation calendar rule as breakouts.",
+      "denominator_id": "comparable_detected_event_union",
+      "denominator_intent": "DENOMINATOR_INTENT_NOT_RECOVERABLE",
+      "disagreement_treatment": "One event in numerator and denominator per comparable candidate with a differing confirmation.",
+      "frozen_direction": "maximum",
+      "frozen_hard": true,
+      "frozen_threshold": "0.05",
+      "frozen_validation_stage": "historical_oos",
+      "metric": "reclaim_disagreement_rate",
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "numerator": "Comparable reclaim candidates the two series resolve differently -- exactly one confirms, or both confirm in different weeks.",
+      "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded, as breakouts.",
+      "reason_codes": [
+        "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+        "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+        "CANDIDATE_UNIVERSE_AMBIGUOUS",
+        "PRE_EXISTING_FORMULAS_DISAGREE",
+        "NO_CALIBRATION_ARTIFACT_EXISTS",
+        "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+        "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+      ],
+      "threshold_intent_evidence": "The frozen source_of_rationale is 'Economic reasoning using existing deterministic reclaim logic'. Identical position to breakout: no calibration artifact, and two incompatible pre-existing candidate universes.",
+      "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+    }
+  ],
+  "next_steps": [
+    "Pre-sealed threshold calibration and governance for the six BTC_REFERENCE_COMPOSITE_V3 structural metrics, using the already-inspected samples only.",
+    "Then freeze the successor definition and build the sealed validator bound to the frozen successor hash.",
+    "Then collect 2015-2019, and only then open the sealed sample once."
+  ],
+  "outcome_driven_reasoning": {
+    "already_inspected_outcomes_influenced_denominator_choice": false,
+    "same_decision_if_verdicts_reversed": true,
+    "why": "Every load-bearing finding is a fact about the frozen text and the code that predates the defect: the definition names no denominator, the only recoverable one is the known defect, two pre-existing formulas disagree, and breakout and reclaim have no calibration artifact at all. None of those was read off a verdict, and the adopted denominator is not the favourable one."
+  },
+  "parent_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+  "parent_definition_unchanged": true,
+  "parent_protocol_version": "BTC_REFERENCE_COMPOSITE_V2",
+  "production_canonical_reference": "UNRESOLVED",
+  "production_strategy_semantics_changed": false,
+  "rejected_as_post_hoc": [
+    {
+      "admitted_for": "Showing that the denominator choice changes verdicts, which is what makes this a governance question rather than an editorial one.",
+      "evidence": "The measured pass/fail verdicts of the six gates on the 2019-2022 and 2023-2025 samples",
+      "refused_for": "Choosing a denominator. The adopted denominator is not the favourable one: under it reclaim still fails five of six measured pairs and within_2_week four of six."
+    },
+    {
+      "admitted_for": "Establishing what is known and unresolved today.",
+      "evidence": "Prose written after the defect was found -- the CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 report, the BTC-019 completion-gate report, the ticket Implementation Notes and CURRENT_STATE",
+      "refused_for": "Establishing what the frozen protocol intended in 2026-08. None of it existed when the V2 definition hash was taken."
+    },
+    {
+      "admitted_for": "Nothing.",
+      "evidence": "The observation that the comparable denominator would let breakout_disagreement_rate pass on all six measured pairs",
+      "refused_for": "Every purpose. It is the single most outcome-favourable fact available and it is precisely the fact a contaminated process would lean on."
+    }
+  ],
+  "research_only": true,
+  "resolution_version": "STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1",
+  "schema_version": "STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_RECORD_V1",
+  "sealed_sample": {
+    "collected": false,
+    "end": "2019-11-30T23:00:00+00:00",
+    "opened": false,
+    "start": "2015-07-20T21:00:00+00:00",
+    "statistics_derived": false
+  },
+  "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1",
+  "successor_definition_sha256": "1ac5438a2eaf742c72bde285ba8289629d17986e1ec00fbee61d724b38417baa",
+  "successor_protocol_version": "BTC_REFERENCE_COMPOSITE_V3",
+  "successor_status": "PROPOSED_PENDING_THRESHOLD_CALIBRATION",
+  "task": "STRUCTURAL_GATE_DENOMINATOR_RESOLUTION",
+  "threshold_intent_anchor": {
+    "exact_timestamp": {
+      "frozen_denominator": 33,
+      "frozen_denominator_id": "all_detected_event_union",
+      "frozen_numerator": 4,
+      "frozen_rate": "0.1212121212121212121212121212",
+      "numerator_events_not_comparable": 4,
+      "numerator_under_resolved_denominator": 0,
+      "rate_under_resolved_denominator_numerator": "0"
+    },
+    "finding": "The one numeric anchor the frozen structural thresholds have is an all-detected-event rate whose numerator is entirely availability, and the structural_state observation of 6.0606% exceeds the 0.05 that was frozen for it. Neither number survives as an anchor once the denominator is written down.",
+    "source": "frozen BTC-019B artifacts and the frozen CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 known-case probe",
+    "structural_state": {
+      "frozen_denominator": 33,
+      "frozen_denominator_id": "all_detected_event_union",
+      "frozen_numerator": 2,
+      "frozen_rate": "0.06060606060606060606060606061"
+    },
+    "within_week_denominator": 31,
+    "within_week_denominator_id": "all_detected_event_union_matched_pairs_merged"
+  }
+}

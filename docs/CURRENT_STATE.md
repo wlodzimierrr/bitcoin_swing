@@ -29,10 +29,10 @@
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3545 passed with Python 3.12 on 2026-09-04
+- **Latest verified test baseline:** 3632 passed with Python 3.12 on 2026-09-04
 - **Last relevant implementation/review commit:** the
-  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` re-measurement of the two collected
-  BTC-019 samples
+  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` governance resolution of the six
+  BTC-019 structural approval gates
 
 ## Price-Reference State
 
@@ -45,6 +45,8 @@ BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
 BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
+STRUCTURAL_GATE_DENOMINATOR_RESOLUTION = NEW_PROTOCOL_VERSION_REQUIRED
+BTC_REFERENCE_COMPOSITE_V3 = PROPOSED_PENDING_THRESHOLD_CALIBRATION
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -78,19 +80,43 @@ breakouts -- and all four BTC-019B exact-timestamp disagreements fall away.
 Every affected gate is now measurable on an explicit denominator, but the
 outcome is `RESEARCH_INCONCLUSIVE`: the frozen thresholds were calibrated over
 an undeclared denominator, and the verdict against the identical frozen number
-changes between the comparable-event and all-event denominators on four of the
-five hard structural gates.
+changes between the comparable-event and all-event denominators on every one of
+the six structural gates, all five hard ones included.
+
+`STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` under
+`research_artifacts/btc019_gate_denominator_resolution/` settles that
+denominator as governance. Outcome: `NEW_PROTOCOL_VERSION_REQUIRED`. The frozen
+V2 artifact declares only metric, threshold, direction, hard flag and rationale
+for the six -- no numerator, denominator, candidate universe or comparison
+basis; the two formulas that predate the defect disagree with each other; the
+breakout and reclaim gates have no calibration artifact at all; and the only
+denominator recoverable from the record is the one that counts an availability
+gap as a disagreement, which is the defect. `BTC_REFERENCE_COMPOSITE_V2`, its
+hash `bc312f3e...6106a`, its thresholds and its gate directions are unchanged
+and stay the immutable record of what was frozen. The successor is
+`BTC_REFERENCE_COMPOSITE_V3`, the tier the frozen V2 governance clause already
+names, proposed and not frozen: it defines each metric's numerator, denominator
+and pairwise aggregation, excludes a `NOT_COMPARABLE` event from both, requires
+comparability and coverage evidence beside every rate, and carries the six
+frozen numbers across verbatim and explicitly uncalibrated. No threshold moved
+and none was optimised. The sealed sample stays shut: a separate pre-sealed
+threshold calibration and governance task must bind a threshold to each of the
+six new denominators before the hash-bound validator is built, 2015-2019 is
+collected, and the sample is opened once.
 
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
-  BTC-019. The calendar-contiguity contract and the re-measurement of the
-  already-inspected 2019-2022 and 2023-2025 samples are now done under
-  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2`. The next step is to declare, under
-  its own version bound to the frozen V2 definition hash, which denominator the
-  six affected structural gates are evaluated over and how a not-comparable
-  event is treated; no threshold moves. Only then may the hash-bound validator
-  be built, 2015-2019 collected, and the sealed sample opened once.
+  BTC-019. The calendar-contiguity contract, the re-measurement of the
+  already-inspected 2019-2022 and 2023-2025 samples, and the denominator
+  declaration are now all done, under
+  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` and
+  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1`. The next step is a separate
+  pre-sealed threshold calibration and governance task that binds a threshold to
+  each of the six `BTC_REFERENCE_COMPOSITE_V3` structural denominators, using
+  the already-inspected samples only. Only then may the successor be frozen, the
+  validator bound to its complete executable definition hash be built, 2015-2019
+  be collected, and the sealed sample be opened once.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche

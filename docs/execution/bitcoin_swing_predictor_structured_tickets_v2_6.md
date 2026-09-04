@@ -847,9 +847,26 @@ sample. 26 of the 40 prior structural differences are `NOT_COMPARABLE` rather
 than disagreements and 14 remain genuine. The remaining blocker moved: every
 affected gate is measurable, but the frozen thresholds were calibrated over an
 undeclared denominator, and the verdict against the identical frozen number
-changes between the comparable-event and all-event denominators on four of the
-five hard structural gates. That denominator must be declared under its own
-version, bound to the frozen definition hash, before the validator is built.
+changes between the comparable-event and all-event denominators on every one of
+the six structural gates, all five hard ones included.
+
+`STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` under
+`research_artifacts/btc019_gate_denominator_resolution/` resolves that
+denominator as a governance decision, changing no frozen artifact and leaving
+the V2 definition hash exactly as it stands. Outcome:
+`NEW_PROTOCOL_VERSION_REQUIRED`. The frozen protocol declares no numerator,
+denominator, candidate universe or comparison basis for any of the six; the two
+pre-existing formulas disagree with each other; `breakout_disagreement_rate`
+and `reclaim_disagreement_rate` have no calibration artifact at all; and the
+only reading recoverable from the record is the one that counts an availability
+gap as a disagreement — the defect itself. The successor is
+`BTC_REFERENCE_COMPOSITE_V3`, as the frozen V2 governance clause
+`material_change_requires` already prescribes, proposed and not frozen. It
+defines every metric's numerator, denominator and aggregation, excludes a
+`NOT_COMPARABLE` event from both, requires comparability/coverage evidence
+beside every rate, and carries the six frozen numbers across unchanged and
+explicitly uncalibrated. A separate pre-sealed calibration task must bind them
+before any validator is built.
 
 ### Persistence requirements
 
@@ -1139,6 +1156,89 @@ Do not overwrite raw history when the preferred provider changes.
   - `btc_predictor/levels/swing.py` and `breakout.py` are untouched. A
     production swing-gap policy remains a separate certification concern for
     EPIC E's owner.
+  - **`STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1`.** Step 1 of that sequence is
+    now done as governance, not as measurement.
+    `btc_predictor/research/structural_gate_denominator_resolution.py` reads the
+    frozen V2 definition, the two formulas that predate the defect and the
+    frozen BTC-019B calibration evidence, and asks of each of the six metrics
+    whether a denominator was ever intended. Outcome:
+    **`NEW_PROTOCOL_VERSION_REQUIRED`**. The frozen artifact declares only
+    metric, threshold, direction, hard flag and rationale — no numerator, no
+    denominator, no candidate universe, no comparison basis, and no treatment of
+    an unevaluable event. `reference_composite_empirical.py::_structural_comparison`
+    measures per category against a two-of-three consensus;
+    `btc019b_diagnostics.py::_swing_metric_summary` pools the swing families and
+    uses two denominators of its own, 33 for exact/structural-state and 31 for
+    the within-N-week metrics. They disagree, and neither computes a breakout or
+    reclaim rate, so those two V2 gates have no pre-existing candidate universe
+    and no calibration artifact whatsoever. Decisively, no pre-existing formula
+    has a third outcome: an availability gap lands in the symmetric difference
+    and in the union because nothing else exists to put it in. The only
+    recoverable denominator is therefore the correctness defect itself, so
+    writing an admissible one down is new statistical semantics rather than a
+    clarification.
+  - **Threshold semantics: not recoverable, on all six.** The one numeric anchor
+    the frozen thresholds have is `exact_timestamp`'s 12.1212% = 4/33, and all
+    four of those numerator events are `NOT_COMPARABLE` availability gaps, so
+    under the resolved denominator the anchor is zero rather than rescaled.
+    `structural_state`'s BTC-019B observation was 2/33 = 6.0606%, already above
+    the 0.05 that was frozen for it, so that number never accommodated its own
+    calibration observation either. `within_1_week` and `within_2_week` observed
+    zero, which is denominator-invariant and therefore carries no denominator
+    information; their 0.05 and 0.02 were round allowances never bound to a
+    universe. Breakout and reclaim were never calibrated. Every frozen number is
+    carried across verbatim and marked `CARRIED_FORWARD_UNCALIBRATED`; none is
+    moved, optimised or replaced here.
+  - **Successor: `BTC_REFERENCE_COMPOSITE_V3`, proposed, not frozen.** The
+    frozen V2 governance clause `material_change_requires` already reads
+    `BTC_REFERENCE_COMPOSITE_V3 or later`, so a "V2.1" would be a tier the
+    frozen protocol does not recognise and a decimal point implying a minor
+    clarification this is not. Status
+    `PROPOSED_PENDING_THRESHOLD_CALIBRATION`, with its own definition hash and
+    an explicit `parent_definition_sha256` of `bc312f3e…6106a`, which is
+    unchanged and stays the immutable record of what was frozen. It inherits
+    every parent gate, threshold, direction, MEDIAN_OHLC_V2, the quality-state
+    and higher-timeframe contracts, the provider set and the sealed-sample
+    guard. It adds: pairwise comparison on the two series' common weekly
+    calendar canonicalised by sorted series id with no quorum formed; per-metric
+    numerator, denominator and candidate universe; `NOT_COMPARABLE` excluded
+    from both numerator and denominator, because an unevaluable event is
+    neither an agreement nor a disagreement — counting it as agreement would
+    make every extra outage buy a free agreement; the within-N-week pair-merged
+    denominator, recovered from BTC-019B's own formula rather than invented; and
+    mandatory comparability/coverage evidence. One hard requirement is new,
+    `unrecorded_not_comparable_event_count == 0`, derived from the parent's own
+    zero-count provenance gates rather than calibrated. No comparability floor
+    is set, because that would be a threshold this task may not choose.
+  - **Not outcome-driven.** The already-inspected 2019-2022 and 2023-2025
+    measurements are admitted only to show materiality — every one of the six
+    gates, and all five hard ones, flips verdict against the identical frozen
+    number on at least one of six pairwise comparisons. They are refused for
+    choosing the denominator, and the adopted denominator is not the favourable
+    one: `reclaim_disagreement_rate` still fails five of six measured pairs and
+    `within_2_week` four of six. The earlier prose reading "five of the six
+    gates, four of them hard" understates its own artifact, whose
+    `classification.denominator_sensitive_hard_gates` already lists all five;
+    the historical report is left unchanged as evidence and the accurate figures
+    are recorded in the new artifact.
+  - Evidence is persisted under
+    `research_artifacts/btc019_gate_denominator_resolution/`
+    (`denominator_resolution.json`, `successor_protocol_definition.json`,
+    `DENOMINATOR_RESOLUTION_REPORT.md`). Added 39 focused tests in
+    `test_structural_gate_denominator_resolution.py` covering the unchanged
+    frozen V2 hash, bytes, thresholds and directions, the sealed-sample guard,
+    explicit denominator and `NOT_COMPARABLE` semantics on all six metrics, the
+    refusal of a silently defaulted denominator, unknown schema and
+    denominator-semantics versions, a wrong parent hash, tampered record and
+    successor artifacts, ambient-Decimal independence, deterministic rebuild in
+    an isolated root that contains no collected history at all, and the fact
+    that the adopted denominator is not the uniformly favourable one.
+  - **Sealed sample still shut.** Validator construction, 2015-2019 collection
+    and opening all remain refused. The exact prerequisite is a separate
+    pre-sealed threshold calibration and governance task binding a threshold to
+    each of the six `BTC_REFERENCE_COMPOSITE_V3` structural denominators, using
+    the already-inspected samples only; the validator must then bind the frozen
+    successor's own complete executable definition hash, not the parent's.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
