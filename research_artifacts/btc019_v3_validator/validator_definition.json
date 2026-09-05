@@ -1,0 +1,800 @@
+{
+  "binding": {
+    "binding_rule": "Before any validation logic runs, the frozen BTC_REFERENCE_COMPOSITE_V3 definition is rebuilt from the repository and restored from its persisted artifact, and both must digest to 4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a exactly. The restored artifact must also name bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a as its parent. Anything else is REFUSE_TO_RUN: there is no fallback by version name, no fallback to the parent, and no 'latest V3'.",
+    "binding_rule_id": "REFUSE_TO_RUN_UNLESS_V3_HASH_REPRODUCES_EXACTLY_V1",
+    "bound_protocol_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+    "bound_protocol_version": "BTC_REFERENCE_COMPOSITE_V3",
+    "freeze_implementation_commit": "b60ecc7f36840b429f27a8742b7245d417cf52db",
+    "on_mismatch": "REFUSE_TO_RUN",
+    "parent_protocol_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+    "parent_protocol_version": "BTC_REFERENCE_COMPOSITE_V2",
+    "review_commit": "e2df3ce036c0e7045361c871f8d303b51533f18d",
+    "review_result": "PASS_WITH_NON_BLOCKING_FINDINGS"
+  },
+  "certification_rule": {
+    "arithmetic": "Decimal in an explicit Context(prec=34, rounding=ROUND_HALF_EVEN), never the caller's ambient context and never a binary float. The point-rate comparison is additionally cross-checked in exact rational arithmetic, and a disagreement between the two refuses rather than resolves.",
+    "boundary_vectors": [
+      {
+        "denominator": 15,
+        "numerator": 0,
+        "outcome": "PAIR_INSUFFICIENT_EVIDENCE"
+      },
+      {
+        "denominator": 16,
+        "numerator": 0,
+        "outcome": "PAIR_CERTIFIED"
+      },
+      {
+        "denominator": 24,
+        "numerator": 1,
+        "outcome": "PAIR_INSUFFICIENT_EVIDENCE"
+      },
+      {
+        "denominator": 25,
+        "numerator": 1,
+        "outcome": "PAIR_CERTIFIED"
+      },
+      {
+        "denominator": 32,
+        "numerator": 2,
+        "outcome": "PAIR_INSUFFICIENT_EVIDENCE"
+      },
+      {
+        "denominator": 33,
+        "numerator": 2,
+        "outcome": "PAIR_CERTIFIED"
+      },
+      {
+        "denominator": 39,
+        "numerator": 3,
+        "outcome": "PAIR_INSUFFICIENT_EVIDENCE"
+      },
+      {
+        "denominator": 40,
+        "numerator": 3,
+        "outcome": "PAIR_CERTIFIED"
+      }
+    ],
+    "confidence_level_percent": "95",
+    "continuity_correction_applied": false,
+    "equality_behaviour": "Equality certifies. A rate exactly at the limit passes and an upper bound exactly at the limit certifies, matching the repository's inclusive gate-boundary convention.",
+    "formula": "U = ( p_hat + z^2/(2n) + z * sqrt( p_hat*(1 - p_hat)/n + z^2/(4*n^2) ) ) / ( 1 + z^2/n ), with p_hat = k/n, k the disagreement count, n the comparable event count and z the hash-bound normal quantile. This is the uncorrected two-sided Wilson score interval's upper limit. No continuity correction is applied, no platform statistics library is consulted, the quantile is never rounded or re-derived, and the result is clamped at 1.",
+    "formula_id": "WILSON_SCORE_UPPER_BOUND_UNCORRECTED_V1",
+    "normal_quantile": "1.959963984540054235631",
+    "outcomes": [
+      "PAIR_CERTIFIED",
+      "PAIR_MATERIAL_FAILURE",
+      "PAIR_INSUFFICIENT_EVIDENCE"
+    ],
+    "point_rate_semantics": "A rate strictly greater than the limit is PAIR_MATERIAL_FAILURE. A rate exactly at the limit is not a material failure by point rate; the confidence rule may still make it insufficient.",
+    "refused_variants": [
+      "the continuity-corrected (Newcombe) Wilson upper limit, which refuses the frozen boundary pairs 0/16, 1/25, 2/33 and 3/40 and is therefore a different rule, not a stricter reading of the same one",
+      "any scipy, statsmodels or other library default whose variant is not verified formula-for-formula against this expression",
+      "a freshly looked-up normal quantile in place of the hash-bound one",
+      "binary floating point anywhere in the comparison chain"
+    ],
+    "rule_id": "PER_PAIR_WILSON_UPPER_BOUND_V1",
+    "zero_denominator": "n = 0 has no interval and no rate. The rate is null, never 0.0, and the pair is PAIR_INSUFFICIENT_EVIDENCE with NO_COMPARABLE_EVENTS."
+  },
+  "composition": {
+    "composition_rule": "The final verdict is a deterministic function of the seven hard requirement outcomes and of nothing else. No soft outcome, no diagnostic value and no free-text review opinion is a parameter of it. Every requirement is hard, so the candidate is approved only when all seven pass; the composition's job is to name which of the two do-not-approve labels applies.",
+    "composition_rule_id": "V3_COMPOSED_HARD_APPROVAL_CONJUNCTION_V1",
+    "hard_requirement_ids": [
+      "structural_state_hard_gate",
+      "raw_provider_structural_dispersion_guard",
+      "structural_comparability_sufficiency",
+      "required_gate_pair_completeness",
+      "unrecorded_not_comparable_event_count",
+      "unreviewed_derived_level_disagreement_count",
+      "inherited_approval_hard_gates"
+    ],
+    "requirement_outcomes": [
+      "PASS",
+      "FAIL",
+      "UNDEFINED_INSUFFICIENT_EVIDENCE"
+    ],
+    "requirements_that_can_fail": [
+      "inherited_approval_hard_gates",
+      "unrecorded_not_comparable_event_count",
+      "structural_state_hard_gate",
+      "raw_provider_structural_dispersion_guard"
+    ],
+    "single_composition_point": "validate_v3_candidate",
+    "state_space_is_total": true
+  },
+  "diagnostic_requirements": {
+    "can_veto_approval": false,
+    "census_verification": "The census of observed derived-level disagreements is verified against the frozen breakout and reclaim diagnostics rather than believed. The frozen requirement is that *every observed* comparable breakout and reclaim disagreement on a required gate pair carries a structured review, so a census that under-reports what was observed would satisfy the requirement by omission -- the exact fail-open the review fix closed for comparability evidence. The diagnostics are the only in-protocol record of what was observed, and diagnostic_semantics.required_fields makes `count` mandatory on each of them, so for every required gate pair the census must hold exactly the diagnostics' breakout and reclaim counts. A missing, duplicated or malformed diagnostic row leaves the census unverifiable and refuses. This consults a diagnostic *count* through a frozen evidence-completeness rule and never a diagnostic *rate*: no diagnostic value enters the hard composition, and this path can only refuse, never approve.",
+    "enter_the_hard_composition": false,
+    "metrics": [
+      "breakout_disagreement_rate",
+      "reclaim_disagreement_rate",
+      "within_1_week_swing_disagreement_rate",
+      "within_2_week_swing_disagreement_rate"
+    ],
+    "required_fields": [
+      "calendar_displacement_weeks",
+      "comparable_event_count",
+      "count",
+      "matched_pair_count",
+      "not_comparable_event_count",
+      "not_comparable_reason_counts",
+      "rate",
+      "reason_codes"
+    ],
+    "role": "DIAGNOSTIC_ONLY",
+    "rule": "Diagnostics are validated for completeness and published per required pair. They carry no threshold, no pass and no fail, and are not parameters of the composition. They may reach a verdict only through a separately frozen evidence-completeness rule, which in V3 is the derived-level review census: the breakout and reclaim `count` fields bound how large that census must be, and no diagnostic rate is read anywhere."
+  },
+  "evidence_completeness": {
+    "missing_is_never_satisfied": true,
+    "nullable_pair_fields": [
+      "not_comparable_rate",
+      "structural_comparability_rate"
+    ],
+    "nullable_semantics": "structural_comparability_rate and not_comparable_rate are null exactly when the pair detected no events at all. Null is insufficient evidence, never a satisfied floor and never a rate of 0.0. No other field may be absent or null.",
+    "required_pair_evidence": [
+      "all_detected_event_count",
+      "candidate_event_count",
+      "comparable_event_count",
+      "comparison_id",
+      "denominator",
+      "metric",
+      "not_comparable_event_count",
+      "not_comparable_rate",
+      "not_comparable_reason_counts",
+      "numerator",
+      "series_pair",
+      "state",
+      "structural_comparability_rate"
+    ],
+    "required_pair_state": "PAIR_ADMISSIBLE",
+    "rule": "A required pair must explicitly carry an established PAIR_ADMISSIBLE state, a present structural comparability rate, a numerator, a denominator, its canonical comparison identity, both provider identities and its complete not-comparable reason and event counters. An omitted field is evidence of absence and can only refuse; it never defaults to a pass."
+  },
+  "hard_requirements": [
+    {
+      "can_fail": true,
+      "evaluated_on": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "fails_when": "any required pair's observed point rate exceeds the limit",
+      "insufficient_when": "any required pair is missing, inadmissible, carries no comparability evidence, has a zero comparable denominator, or has a point rate at or below the limit whose Wilson upper bound is not",
+      "limit": "0.20",
+      "metric": "structural_state_disagreement_rate",
+      "requirement": "structural_state_hard_gate",
+      "role": "HARD_APPROVAL_GATE",
+      "rule_id": "ALL_REQUIRED_PAIRS_MUST_CERTIFY_V1"
+    },
+    {
+      "can_fail": true,
+      "evaluated_on": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "fails_when": "any required provider pair is a material failure",
+      "insufficient_when": "any required provider pair is missing, inadmissible, undefined or insufficient",
+      "limit": "0.20",
+      "metric": "structural_state_disagreement_rate",
+      "requirement": "raw_provider_structural_dispersion_guard",
+      "role": "HARD_APPROVAL_GATE",
+      "rule_id": "RAW_PROVIDER_STRUCTURAL_DISPERSION_CEILING_V1"
+    },
+    {
+      "can_fail": false,
+      "evaluated_on": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "fails_when": "never; comparability is an evidence requirement",
+      "floor": "0.50",
+      "insufficient_when": "any required gate pair is absent, is not established PAIR_ADMISSIBLE, omits any required comparability field, carries a null comparability rate, or sits below the floor",
+      "required_evidence": [
+        "all_detected_event_count",
+        "candidate_event_count",
+        "comparable_event_count",
+        "not_comparable_event_count",
+        "not_comparable_rate",
+        "not_comparable_reason_counts",
+        "structural_comparability_rate"
+      ],
+      "requirement": "structural_comparability_sufficiency",
+      "role": "HARD_APPROVAL_GATE",
+      "rule_id": "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V2"
+    },
+    {
+      "can_fail": false,
+      "evaluated_on": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase",
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "fails_when": "never; an absent pair is silence, not a measured defect",
+      "insufficient_when": "any required gate pair or guard pair is absent",
+      "required_gate_pair_count": 3,
+      "required_transfer_guard_pair_count": 3,
+      "requirement": "required_gate_pair_completeness",
+      "role": "HARD_APPROVAL_GATE",
+      "rule_id": "CANDIDATE_VERSUS_INDEPENDENT_RAW_PROVIDER_PAIRS_V1",
+      "structural_violation_disposition": "REFUSE_TO_RUN. A duplicated, unexpected, wrongly-rolled or wrongly-identified pair makes the bundle ambiguous about which measurement governs, and an ambiguous bundle is not evidence about the candidate at all. A required pair that is simply absent is different: it is recorded and makes its requirement UNDEFINED_INSUFFICIENT_EVIDENCE.",
+      "structural_violations": [
+        "CANDIDATE_ABSENT_FROM_APPROVAL_GATE_PAIR",
+        "CANDIDATE_PRESENT_IN_TRANSFER_GUARD_PAIR",
+        "DUPLICATE_PAIR_MEASUREMENT",
+        "PROVIDER_IDENTITY_MISMATCH",
+        "PAIR_MEASURES_ANOTHER_METRIC",
+        "PAIR_ROLE_MISMATCH",
+        "PAIR_NOT_IN_REQUIRED_UNIVERSE"
+      ]
+    },
+    {
+      "can_fail": true,
+      "direction": "equal",
+      "fails_when": "the count is present and greater than zero",
+      "insufficient_when": "the count is absent or null",
+      "interpretation": "not_comparable_semantics.unrecorded_not_comparable_event_count is frozen as a structured gate -- direction 'equal', threshold 0, hard true -- in the same zero-count idiom as the parent's point_in_time_violation_count and historical_fallback_splice_count. Under the repository's own threshold convention a present measurement that violates its threshold is a gate FAIL, and only an absent or null measurement is UNDEFINED. A positive count is therefore a material hard failure, not an insufficiency: an event the contract could not evaluate and that nothing recorded is a defect in the measurement itself, and the frozen semantics make excluding it from both numerator and denominator conditional on its being recorded. A missing count is insufficient evidence.",
+      "requirement": "unrecorded_not_comparable_event_count",
+      "role": "HARD_APPROVAL_GATE",
+      "threshold": 0
+    },
+    {
+      "can_fail": false,
+      "census_verification": "The census of observed derived-level disagreements is verified against the frozen breakout and reclaim diagnostics rather than believed. The frozen requirement is that *every observed* comparable breakout and reclaim disagreement on a required gate pair carries a structured review, so a census that under-reports what was observed would satisfy the requirement by omission -- the exact fail-open the review fix closed for comparability evidence. The diagnostics are the only in-protocol record of what was observed, and diagnostic_semantics.required_fields makes `count` mandatory on each of them, so for every required gate pair the census must hold exactly the diagnostics' breakout and reclaim counts. A missing, duplicated or malformed diagnostic row leaves the census unverifiable and refuses. This consults a diagnostic *count* through a frozen evidence-completeness rule and never a diagnostic *rate*: no diagnostic value enters the hard composition, and this path can only refuse, never approve.",
+      "fails_when": "never; an unreviewed event is unassessed evidence",
+      "insufficient_when": "the count is absent, the census or review records are absent, the recomputed backlog is greater than zero, or the census does not match the frozen breakout and reclaim diagnostics on every required gate pair",
+      "interpretation": "unreviewed_derived_level_disagreement_count == 0 must hold before PASS. The frozen artifact declares it hard in prose without the structured direction/threshold pair its NOT_COMPARABLE sibling carries, and the reference approval_verdict treats a positive count as blocking rather than failing. A backlog of unreviewed events is missing evidence about events that have not been assessed, not a measured defect, so a positive count is UNDEFINED_INSUFFICIENT_EVIDENCE and so is a missing count.",
+      "manual_review_semantics": "Review completeness is hard; review opinion is not a gate. The validator verifies that a structured review record exists for every observed comparable breakout and reclaim disagreement on a required gate pair, that it carries every required field, that its event identity matches the census entry, and that its provenance is present. It never reads the reviewer's prose as a pass or a fail. Human prose is not an unhashable decision input, so a negative assessment cannot reject a candidate the hard evidence approves and a positive assessment cannot rescue one the hard evidence fails.",
+      "required_review_fields": [
+        "comparison_id",
+        "economic_assessment",
+        "event_id",
+        "family",
+        "reviewed_at",
+        "reviewer",
+        "week"
+      ],
+      "requirement": "unreviewed_derived_level_disagreement_count",
+      "role": "HARD_APPROVAL_GATE",
+      "threshold": 0
+    },
+    {
+      "can_fail": true,
+      "fails_when": "any inherited hard gate's measurement violates its threshold",
+      "formula_parity": "The validator never rederives a Tier-4 quantity. Stop-touch sensitivity, stop preservation, MFE, MAE, eligibility, action, risk size, regime and setup classification are measured by the existing owners under PRICE_SOURCE_POLICY_V1, and the validator compares those measurements against the frozen thresholds using the repository's own direction convention -- maximum: value <= threshold passes; minimum: value >= threshold passes; equal: value == threshold passes -- in exact Decimal, with equality passing in every direction. A bundle that names a different comparison contract, detector version or price-source policy than the bound definition is refused rather than compared.",
+      "hard_gate_count": 29,
+      "insufficient_when": "any inherited hard gate has no measurement",
+      "requirement": "inherited_approval_hard_gates",
+      "role": "HARD_APPROVAL_GATE",
+      "soft_gate_count": 4,
+      "soft_gates_can_veto": false,
+      "tier4_hard_gates": [
+        "stop_touch_disagreement_rate",
+        "cross_market_confirmed_stop_preservation_rate",
+        "isolated_venue_stop_suppression_rate",
+        "gap_through_stop_consensus_agreement_rate",
+        "mfe_median_absolute_difference",
+        "mfe_p95_absolute_difference",
+        "mae_median_absolute_difference",
+        "mae_p95_absolute_difference",
+        "trade_eligibility_disagreement_rate",
+        "trade_action_disagreement_rate",
+        "risk_size_p95_relative_difference",
+        "regime_classification_disagreement_rate",
+        "setup_classification_disagreement_rate"
+      ],
+      "total_gate_count": 33
+    }
+  ],
+  "input_schema": {
+    "bound_measurement_identities": {
+      "candidate_method_version": "MEDIAN_OHLC_V2",
+      "candidate_series_id": "MEDIAN_OHLC_V2",
+      "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+      "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+      "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+      "provider_ids": [
+        "bitfinex",
+        "bitstamp",
+        "coinbase"
+      ],
+      "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1"
+    },
+    "derived_level_review_required_keys": [
+      "observed_disagreements",
+      "reviews",
+      "unreviewed_derived_level_disagreement_count"
+    ],
+    "identity_required_keys": [
+      "candidate_method_version",
+      "candidate_series_id",
+      "comparison_contract_version",
+      "denominator_semantics_version",
+      "price_source_policy_version",
+      "provider_ids",
+      "source_detector_version"
+    ],
+    "pair_optional_keys": [
+      "matched_pair_count",
+      "measurement_state",
+      "pair_purpose",
+      "rate",
+      "reason_codes",
+      "uncertainty"
+    ],
+    "pair_required_keys": [
+      "all_detected_event_count",
+      "candidate_event_count",
+      "comparable_event_count",
+      "comparison_id",
+      "denominator",
+      "metric",
+      "not_comparable_event_count",
+      "not_comparable_rate",
+      "not_comparable_reason_counts",
+      "numerator",
+      "series_pair",
+      "state",
+      "structural_comparability_rate"
+    ],
+    "provenance_required_keys": [
+      "evidence_builder_version",
+      "measurement_record_digest",
+      "sample_manifest_digest"
+    ],
+    "required_keys": [
+      "derived_level_review",
+      "diagnostics",
+      "gate_pair_measurements",
+      "identities",
+      "inherited_gate_measurements",
+      "not_comparable_accounting",
+      "provenance",
+      "sample",
+      "schema_version",
+      "soft_gate_pair_measurements",
+      "transfer_guard_pair_measurements"
+    ],
+    "sample_required_keys": [
+      "end",
+      "sample_id",
+      "start"
+    ],
+    "schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_EVIDENCE_BUNDLE_V1",
+    "unknown_fields": "REFUSED"
+  },
+  "material_change_requires": "A change to any verdict-affecting field of this contract requires BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2 or later and a new validator definition hash. A change to a verdict-affecting semantic of the bound protocol requires BTC_REFERENCE_COMPOSITE_V4 or later; this validator may never make one.",
+  "not_a_price_reference_protocol": true,
+  "not_comparable_handling": {
+    "excluded_from_numerator_and_denominator": true,
+    "interpretation": "not_comparable_semantics.unrecorded_not_comparable_event_count is frozen as a structured gate -- direction 'equal', threshold 0, hard true -- in the same zero-count idiom as the parent's point_in_time_violation_count and historical_fallback_splice_count. Under the repository's own threshold convention a present measurement that violates its threshold is a gate FAIL, and only an absent or null measurement is UNDEFINED. A positive count is therefore a material hard failure, not an insufficiency: an event the contract could not evaluate and that nothing recorded is a defect in the measurement itself, and the frozen semantics make excluding it from both numerator and denominator conditional on its being recorded. A missing count is insufficient evidence.",
+    "missing_count": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+    "positive_count": "FAIL",
+    "states": [
+      "NOT_COMPARABLE_AVAILABILITY_GAP",
+      "NOT_COMPARABLE_CONFIRMATION_PENDING",
+      "NOT_COMPARABLE_SERIES_COVERAGE",
+      "NOT_COMPARABLE_SOURCE_LEVEL"
+    ],
+    "zero_count": "PASS"
+  },
+  "operative_field_precedence": {
+    "examples": [
+      {
+        "field": "structural_state_disagreement_rate",
+        "historical_v2_provenance": "frozen_threshold 0.05, frozen_hard true",
+        "operative_v3_authority": "materiality.absolute_limit 0.20, gate_architecture.roles HARD_APPROVAL_GATE",
+        "operative_value_used": "0.20"
+      },
+      {
+        "field": "exact_timestamp_swing_disagreement_rate",
+        "historical_v2_provenance": "frozen_threshold 0.15, frozen_hard false",
+        "operative_v3_authority": "gate_architecture.roles SOFT_WARNING_GATE, soft_gate_semantics",
+        "operative_value_used": "0.20 as a warning trigger that cannot reject"
+      },
+      {
+        "field": "within_1_week_swing_disagreement_rate",
+        "historical_v2_provenance": "frozen_threshold 0.05, frozen_hard true",
+        "operative_v3_authority": "gate_architecture.roles DIAGNOSTIC_ONLY",
+        "operative_value_used": "none; a diagnostic carries no threshold"
+      },
+      {
+        "field": "within_2_week_swing_disagreement_rate",
+        "historical_v2_provenance": "frozen_threshold 0.02, frozen_hard true",
+        "operative_v3_authority": "gate_architecture.roles DIAGNOSTIC_ONLY",
+        "operative_value_used": "none; a diagnostic carries no threshold"
+      },
+      {
+        "field": "breakout_disagreement_rate",
+        "historical_v2_provenance": "frozen_threshold 0.05, frozen_hard true",
+        "operative_v3_authority": "gate_architecture.roles DIAGNOSTIC_ONLY",
+        "operative_value_used": "none; a diagnostic carries no threshold"
+      },
+      {
+        "field": "reclaim_disagreement_rate",
+        "historical_v2_provenance": "frozen_threshold 0.05, frozen_hard true",
+        "operative_v3_authority": "gate_architecture.roles DIAGNOSTIC_ONLY",
+        "operative_value_used": "none; a diagnostic carries no threshold"
+      }
+    ],
+    "historical_provenance_only_fields": [
+      "frozen_direction",
+      "frozen_hard",
+      "frozen_threshold",
+      "frozen_validation_stage"
+    ],
+    "operative_v3_authority_fields": [
+      "comparability_policy",
+      "derived_level_protection",
+      "diagnostic_semantics",
+      "gate_architecture",
+      "gate_pair_universe",
+      "inherited_approval_gates",
+      "materiality",
+      "new_hard_requirements",
+      "not_comparable_semantics",
+      "soft_gate_semantics",
+      "transfer_guard"
+    ],
+    "precedence_id": "OPERATIVE_V3_FIELDS_OVERRIDE_HISTORICAL_V2_PROVENANCE_V1",
+    "rule": "Where the frozen V3 architecture supersedes a parent gate, the operative authority is the V3 block and never the historical record beside it. `metric_definitions[*].frozen_threshold`, `frozen_hard`, `frozen_direction` and `frozen_validation_stage` are BTC_REFERENCE_COMPOSITE_V2 provenance preserved for audit; no validator path reads them. `structural_state_disagreement_rate` therefore carries the operative materiality limit of 0.20 and not the historical 0.05, and `within_1_week`, `within_2_week`, `breakout` and `reclaim` carry the operative role DIAGNOSTIC_ONLY and not the historical `frozen_hard: true`. A diagnostic has no threshold, no pass and no fail, and is not a parameter of the approval composition at all."
+  },
+  "output_schema": {
+    "fields": [
+      "bound_protocol_definition_sha256",
+      "bound_protocol_version",
+      "composition",
+      "diagnostics",
+      "execution_mode",
+      "hard_requirement_outcomes",
+      "hard_requirements",
+      "input_evidence_digest",
+      "parent_protocol_definition_sha256",
+      "primary_reason",
+      "provenance",
+      "reason_codes",
+      "schema_version",
+      "soft_gate",
+      "statistical_limitation",
+      "validation_record_digest",
+      "validator_definition_sha256",
+      "validator_version",
+      "verdict"
+    ],
+    "record_schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATION_RECORD_V1",
+    "sealed_execution_record_requirements": [
+      "sealed_execution_id",
+      "bound_protocol_definition_sha256",
+      "validator_definition_sha256",
+      "sample_manifest_digest",
+      "input_evidence_digest",
+      "verdict",
+      "primary_reason",
+      "reason_codes",
+      "hard_requirement_outcomes",
+      "execution_timestamp_non_semantic"
+    ]
+  },
+  "reason_vocabulary": {
+    "primary_reason_rule": "The primary classification is the first applicable reason in the declared precedence order, which is part of this definition's hash. Every applicable reason is also published as a complete sorted set. No dictionary ordering can select the primary reason and ties cannot arise.",
+    "reasons": [
+      "STRUCTURAL_STATE_GATE_MATERIAL_FAILURE",
+      "RAW_PROVIDER_DISPERSION_GUARD_FAILED",
+      "INHERITED_HARD_APPROVAL_GATE_FAILED",
+      "UNRECORDED_NOT_COMPARABLE_EVENTS_PRESENT",
+      "STRUCTURAL_STATE_GATE_INSUFFICIENT_EVIDENCE",
+      "RAW_PROVIDER_DISPERSION_GUARD_UNDEFINED",
+      "STRUCTURAL_COMPARABILITY_INSUFFICIENT",
+      "REQUIRED_GATE_PAIR_UNIVERSE_INCOMPLETE",
+      "NOT_COMPARABLE_ACCOUNTING_MISSING",
+      "DERIVED_LEVEL_REVIEW_INCOMPLETE",
+      "INHERITED_HARD_GATE_EVIDENCE_MISSING",
+      "ALL_HARD_REQUIREMENTS_SATISFIED"
+    ]
+  },
+  "required_gate_pairs": [
+    "MEDIAN_OHLC_V2_vs_bitfinex",
+    "MEDIAN_OHLC_V2_vs_bitstamp",
+    "MEDIAN_OHLC_V2_vs_coinbase"
+  ],
+  "required_transfer_guard_pairs": [
+    "bitfinex_vs_bitstamp",
+    "bitfinex_vs_coinbase",
+    "bitstamp_vs_coinbase"
+  ],
+  "sealed_sample": {
+    "collection_authorized": false,
+    "end": "2019-11-30T23:00:00+00:00",
+    "execution_modes": [
+      "DRY_RUN_SYNTHETIC",
+      "SEALED_EXECUTION"
+    ],
+    "opening_authorized": false,
+    "sealed_execution_authorized": false,
+    "sealed_execution_rule": "SEALED_EXECUTION is refused unconditionally at this validator revision. It becomes reachable only after this validator has passed its own independent xHigh review and the one-time sealed opening is separately authorised. DRY_RUN_SYNTHETIC is the only mode that runs, and in it the inherited guard_untouched_validation_sample refuses any bundle whose window overlaps 2015-07-20T21:00:00+00:00..2019-11-30T23:00:00+00:00.",
+    "start": "2015-07-20T21:00:00+00:00"
+  },
+  "soft_requirements": {
+    "cannot_reject_alone": true,
+    "enters_the_hard_composition": false,
+    "limit": "0.20",
+    "metric": "exact_timestamp_swing_disagreement_rate",
+    "outcomes": [
+      "OK",
+      "WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED"
+    ],
+    "role": "SOFT_WARNING_GATE",
+    "undefined_behaviour": "A missing, inadmissible or undefined required pair warns. Absent evidence never reads as OK."
+  },
+  "statistical_limitation": {
+    "cross_pair": "No cross-pair independence is assumed anywhere: no band is pooled across pairs and no family-wise survival probability is multiplied. Aggregation is a deterministic conjunction over an enumerated pair set.",
+    "is_a_gate": false,
+    "limitation_id": "WITHIN_PAIR_CLUSTERING_LIMITATION_V1",
+    "repeats_the_frozen_conservatism_claim": false,
+    "within_pair": "The uncorrected Wilson bound treats the comparable structural events inside a single pair as exchangeable Bernoulli-type observations. Weekly structure is serially dependent and one episode can produce two adjacent-week disagreements, so they are not. Positive within-pair dependence widens the count's distribution in both tails, so nominal 95% coverage is not attained and the residual risk includes a false certification, not only a false refusal: against a beta-binomial with the same mean, a pair whose true structural disagreement rate is 0.30 certifies with probability 0.115 at n=30 under an intra-cluster correlation of 0.2, against 0.0003 under exchangeability. The frozen artifact's claim that this violation can only push a pair towards insufficiency or failure is wrong in direction, and this validator does not repeat it. The deterministic point-rate limit remains an assumption-free floor that the bound only tightens, so the gate is never weaker than having no bound at all. This is recorded provenance about a frozen rule the validator implements unchanged; it is not a new gate and it moves no verdict."
+  },
+  "tier4_inheritance": {
+    "bound_source": {
+      "bound_protocol_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+      "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+      "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+      "measurement_owner_policy_version": "PRICE_SOURCE_POLICY_V1",
+      "parent_protocol_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+      "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1"
+    },
+    "comparison_convention": "The validator never rederives a Tier-4 quantity. Stop-touch sensitivity, stop preservation, MFE, MAE, eligibility, action, risk size, regime and setup classification are measured by the existing owners under PRICE_SOURCE_POLICY_V1, and the validator compares those measurements against the frozen thresholds using the repository's own direction convention -- maximum: value <= threshold passes; minimum: value >= threshold passes; equal: value == threshold passes -- in exact Decimal, with equality passing in every direction. A bundle that names a different comparison contract, detector version or price-source policy than the bound definition is refused rather than compared.",
+    "gates": [
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "atr_median_absolute_fractional_difference",
+        "threshold": "0.02"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "atr_p95_absolute_fractional_difference",
+        "threshold": "0.10"
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "cross_market_confirmed_stop_preservation_rate",
+        "threshold": "1.0"
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "daily_bucket_usable_rate",
+        "threshold": "0.995"
+      },
+      {
+        "direction": "equal",
+        "hard": true,
+        "metric": "deterministic_rerun_hash_match",
+        "threshold": true
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "gap_through_stop_consensus_agreement_rate",
+        "threshold": "0.99"
+      },
+      {
+        "direction": "equal",
+        "hard": true,
+        "metric": "historical_fallback_splice_count",
+        "threshold": 0
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "isolated_venue_stop_suppression_rate",
+        "threshold": "0.95"
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "live_shadow_days",
+        "threshold": 90
+      },
+      {
+        "direction": "maximum",
+        "hard": false,
+        "metric": "mae_max_absolute_difference",
+        "threshold": "0.05"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "mae_median_absolute_difference",
+        "threshold": "0.0025"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "mae_p95_absolute_difference",
+        "threshold": "0.01"
+      },
+      {
+        "direction": "maximum",
+        "hard": false,
+        "metric": "mfe_max_absolute_difference",
+        "threshold": "0.05"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "mfe_median_absolute_difference",
+        "threshold": "0.0025"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "mfe_p95_absolute_difference",
+        "threshold": "0.01"
+      },
+      {
+        "direction": "equal",
+        "hard": true,
+        "metric": "point_in_time_violation_count",
+        "threshold": 0
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "provenance_complete_rate",
+        "threshold": "1.0"
+      },
+      {
+        "direction": "equal",
+        "hard": true,
+        "metric": "raw_observation_mutation_count",
+        "threshold": 0
+      },
+      {
+        "direction": "maximum",
+        "hard": false,
+        "metric": "reference_degraded_rate",
+        "threshold": "0.020"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "reference_unavailable_rate",
+        "threshold": "0.005"
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "reference_usable_rate",
+        "threshold": "0.995"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "regime_classification_disagreement_rate",
+        "threshold": "0.02"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "risk_size_p95_relative_difference",
+        "threshold": "0.10"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "setup_classification_disagreement_rate",
+        "threshold": "0.01"
+      },
+      {
+        "direction": "equal",
+        "hard": true,
+        "metric": "silent_incomplete_bucket_omission_count",
+        "threshold": 0
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "stop_touch_disagreement_rate",
+        "threshold": "0.01"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "swing_level_disagreement_rate_above_0_50_atr",
+        "threshold": "0.05"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "trade_action_disagreement_rate",
+        "threshold": "0.01"
+      },
+      {
+        "direction": "maximum",
+        "hard": true,
+        "metric": "trade_eligibility_disagreement_rate",
+        "threshold": "0.01"
+      },
+      {
+        "direction": "equal",
+        "hard": true,
+        "metric": "unrecorded_quality_state_count",
+        "threshold": 0
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "validation_period_days",
+        "threshold": 1460
+      },
+      {
+        "direction": "maximum",
+        "hard": false,
+        "metric": "venue_disagreement_rate",
+        "threshold": "0.005"
+      },
+      {
+        "direction": "minimum",
+        "hard": true,
+        "metric": "weekly_bucket_usable_rate",
+        "threshold": "0.990"
+      }
+    ],
+    "hard_gate_count": 29,
+    "named_tier4_hard_gates": [
+      "stop_touch_disagreement_rate",
+      "cross_market_confirmed_stop_preservation_rate",
+      "isolated_venue_stop_suppression_rate",
+      "gap_through_stop_consensus_agreement_rate",
+      "mfe_median_absolute_difference",
+      "mfe_p95_absolute_difference",
+      "mae_median_absolute_difference",
+      "mae_p95_absolute_difference",
+      "trade_eligibility_disagreement_rate",
+      "trade_action_disagreement_rate",
+      "risk_size_p95_relative_difference",
+      "regime_classification_disagreement_rate",
+      "setup_classification_disagreement_rate"
+    ],
+    "soft_gate_count": 4,
+    "soft_gates_can_regain_a_hard_veto": false,
+    "total_gate_count": 33
+  },
+  "validator_definition_sha256": "b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194",
+  "validator_schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_DEFINITION_V1",
+  "validator_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1",
+  "verdict_precedence": {
+    "fail_condition": "at least one hard requirement is a material failure",
+    "insufficient_condition": "no material hard failure, and at least one hard requirement missing, undefined, inadmissible, insufficient or incomplete",
+    "pass_condition": "every hard requirement passes",
+    "precedence_id": "MATERIAL_FAILURE_OUTRANKS_INSUFFICIENT_EVIDENCE_V1",
+    "reason_precedence": [
+      "STRUCTURAL_STATE_GATE_MATERIAL_FAILURE",
+      "RAW_PROVIDER_DISPERSION_GUARD_FAILED",
+      "INHERITED_HARD_APPROVAL_GATE_FAILED",
+      "UNRECORDED_NOT_COMPARABLE_EVENTS_PRESENT",
+      "STRUCTURAL_STATE_GATE_INSUFFICIENT_EVIDENCE",
+      "RAW_PROVIDER_DISPERSION_GUARD_UNDEFINED",
+      "STRUCTURAL_COMPARABILITY_INSUFFICIENT",
+      "REQUIRED_GATE_PAIR_UNIVERSE_INCOMPLETE",
+      "NOT_COMPARABLE_ACCOUNTING_MISSING",
+      "DERIVED_LEVEL_REVIEW_INCOMPLETE",
+      "INHERITED_HARD_GATE_EVIDENCE_MISSING",
+      "ALL_HARD_REQUIREMENTS_SATISFIED"
+    ],
+    "repository_evidence": "The frozen gate_architecture.aggregation states the same precedence within one gate -- 'a definite material failure outranks missing evidence, so one bad pair cannot be hidden behind another pair's silence' -- and transfer_guard.rule repeats it for the guard. The reference approval_verdict composes across requirements the same way: it collects failing and blocking requirements separately and returns FAIL whenever anything is failing, regardless of what is blocking. Lifting the within-gate rule to the cross-gate composition is the only reading consistent with both, and it is the reading the reference implementation already exhibits. The alternative -- letting an unresolved requirement mask a definite failure -- is refused by the frozen invariant that insufficient evidence can only refuse, never decide.",
+    "rule": "if any hard requirement is a material failure: FAIL; else if any hard requirement is missing, undefined, inadmissible, insufficient or incomplete: UNDEFINED_INSUFFICIENT_EVIDENCE; else: PASS."
+  },
+  "verdict_vocabulary": [
+    "PASS",
+    "FAIL",
+    "UNDEFINED_INSUFFICIENT_EVIDENCE"
+  ]
+}

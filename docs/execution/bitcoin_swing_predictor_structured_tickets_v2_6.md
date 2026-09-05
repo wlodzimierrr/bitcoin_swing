@@ -1795,6 +1795,128 @@ Do not overwrite raw history when the preferred provider changes.
     `4232e886...bf71a` and not to the parent. 2015-2019 collection and opening
     remain refused until that validator exists and has passed its own
     independent review. No further evidence round is authorised.
+  - **`BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1`.** The hash-bound validator is
+    built, under `btc_predictor/research/reference_composite_v3_validator.py`,
+    with its contract persisted at
+    `research_artifacts/btc019_v3_validator/`. Outcome:
+    **`VALIDATOR_READY_FOR_INDEPENDENT_REVIEW`**. It is an executable
+    interpretation contract, not a new price-reference protocol: it authors no
+    threshold, moves no frozen byte, and resolves only what the frozen
+    definition left to a validator. Its own definition hashes to
+    `b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194`, so a
+    future sealed execution record binds both that and
+    `4232e886...bf71a`. No sealed data was collected or opened, no candidate
+    was constructed, and no new evidence was gathered.
+  - **Binding is to the hash, and refusing is the only alternative.**
+    `bind_frozen_v3` rebuilds the definition from the repository and restores
+    it from the persisted artifact, requires both to digest to
+    `4232e886...bf71a` and to be byte-equal as canonical JSON, requires the
+    named parent to be `bc312f3e...6106a` and not the bound hash, and refuses
+    a definition claiming sealed access. Anything else is `REFUSE_TO_RUN`:
+    there is no fallback by version name, none to the parent and no "latest
+    V3". One changed hex digit refuses.
+  - **P2-3 closed: operative fields outrank historical provenance.**
+    `OPERATIVE_V3_FIELDS_OVERRIDE_HISTORICAL_V2_PROVENANCE_V1` declares
+    `gate_architecture`, `materiality`, `comparability_policy`,
+    `gate_pair_universe`, `transfer_guard`, `new_hard_requirements`,
+    `not_comparable_semantics`, `inherited_approval_gates`,
+    `diagnostic_semantics`, `soft_gate_semantics` and
+    `derived_level_protection` operative, and `frozen_threshold`,
+    `frozen_hard`, `frozen_direction` and `frozen_validation_stage` historical
+    parent provenance that no validator path reads. `structural_state` is
+    therefore read at `0.20` and not at the `0.05` sitting beside it, and
+    `within_1_week`, `within_2_week`, `breakout` and `reclaim` are
+    `DIAGNOSTIC_ONLY` and not the `frozen_hard: true` sitting beside them.
+  - **P2-2 closed: the complete composition is hash-bound.** Seven hard
+    requirements, recovered from the freeze rather than from the reference
+    function's signature: the hard structural gate, the raw-provider transfer
+    guard, structural comparability sufficiency, required gate-pair
+    completeness, `unrecorded_not_comparable_event_count`,
+    `unreviewed_derived_level_disagreement_count` and the inherited approval
+    hard gates. The last two are exactly what the review found missing --
+    `approval_verdict` has no parameter for the NOT_COMPARABLE census and
+    `evaluate_hard_structural_gate` never checks its pair list against the
+    declared `required_gate_pair_count` of 3 -- and both are pinned by
+    regression against `inspect.signature`. Precedence is
+    `MATERIAL_FAILURE_OUTRANKS_INSUFFICIENT_EVIDENCE_V1`, lifted from the
+    frozen aggregation's own "a definite material failure outranks missing
+    evidence" and confirmed by parity with `approval_verdict` on all 72 states
+    that function can express. Four requirements can fail; the other three are
+    evidence-completeness requirements that can only refuse, and the
+    composition raises rather than letting one report a material failure. The
+    reason vocabulary is a bijection -- one reason per (requirement,
+    non-passing outcome) plus one for the approving state, twelve in all --
+    and the primary classification is the first applicable reason in a
+    precedence that is itself part of the validator hash.
+  - **P3-5 closed: the Wilson variant is written out and pinned.**
+    `WILSON_SCORE_UPPER_BOUND_UNCORRECTED_V1` states the formula
+    algebraically, applies no continuity correction, consults no platform
+    statistics library, and takes the quantile from the frozen artifact rather
+    than looking one up. A regression solves the score equation
+    `(p - U)^2 = z^2 U(1 - U)/n` at 60 digits as an algebraically independent
+    check, and the eight boundary vectors 0/15, 0/16, 1/24, 1/25, 2/32, 2/33,
+    3/39 and 3/40 are pinned in the contract and in test. Newcombe's
+    continuity-corrected limit is computed beside them and refuses all four
+    certifying boundaries, so it cannot silently substitute.
+  - **Evidence that is not there cannot certify.** The review fix is
+    preserved and extended. A pair must carry all thirteen required fields --
+    an explicit `PAIR_ADMISSIBLE` state, a present comparability rate, its
+    numerator, denominator, canonical identity, both provider identities and
+    its complete not-comparable counters -- and only `not_comparable_rate` and
+    `structural_comparability_rate` may be null, meaning no detected events at
+    all and therefore insufficient. A missing field, an unknown field, a
+    duplicated pair, an unexpected pair, a wrong role, a candidate inside a
+    guard pair, a provider identity that is not its own canonical id, a bundle
+    measured under another comparison contract or detector, and a binary float
+    anywhere all refuse. A short pair list can never pass; ordering never
+    matters and identity always does.
+  - **One fail-open closed beyond the frozen review.** The derived-level
+    census was self-declared, so a bundle reporting zero observed breakout and
+    reclaim disagreements satisfied the hard census requirement by omission --
+    the same shape as the comparability fail-open the V3 review fixed. The
+    census is now verified against the frozen breakout and reclaim
+    diagnostics, whose `count` field `diagnostic_semantics.required_fields`
+    already makes mandatory, on every required gate pair. This consults a
+    diagnostic *count* through a frozen evidence-completeness rule and never a
+    diagnostic *rate*, so no diagnostic value enters the hard composition and
+    the path can only refuse, never approve.
+  - **The accepted risks are preserved, not engineered away.** The transfer
+    guard still returns `GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE` on a 2/28
+    provider pair whose bound is 0.2265; no threshold moved and no
+    data-dependent exception exists. The within-pair dependence limitation
+    travels on the contract and on every record, stated correctly -- nominal
+    coverage is not attained and the residual risk includes a false
+    certification -- and the frozen artifact's opposite claim is not repeated.
+    It is metadata about a rule implemented unchanged, not a new gate.
+  - **Sealed execution is impossible at this revision.** The only mode that
+    runs is `DRY_RUN_SYNTHETIC`; `SEALED_EXECUTION` raises unconditionally,
+    and in the mode that does run the inherited
+    `guard_untouched_validation_sample` refuses any bundle whose window
+    reaches into 2015-07-20..2019-11-30. A regression watches every
+    filesystem read a complete validation performs and proves it opens
+    nothing under `data/` and touches no 2015-2019 path, and another proves
+    the OHLCV collector is never called.
+  - Added 299 focused tests in
+    `test_reference_composite_v3_validator.py` covering the binding and its
+    refusals, operative-versus-historical precedence, the Wilson formula
+    against an independent evaluation and against the continuity-corrected
+    variant, the point-rate boundary in exact rational arithmetic, zero and
+    thin denominators, the comparability floor at 0.49/0.50/0.51, the exact
+    pair universe and every structural violation, order-invariance with
+    identity-sensitivity, the transfer guard's four outcomes and its blindness
+    to candidate data, the NOT_COMPARABLE and derived-level requirements, a
+    manual review whose prose cannot move a verdict in either direction, the
+    census verification, diagnostics at extreme values that change nothing,
+    all 33 inherited gates including each of the 13 named Tier-4 ones failing
+    the run, the 648-state legal composition space with exactly one `PASS`,
+    reference parity on 72 states, 30 independent contract tampers all refused
+    and all moving the hash, and determinism across working directory,
+    `PYTHONHASHSEED`, ambient `Decimal` context, pair, series and reason-code
+    order and process restart.
+  - **Classification: `VALIDATOR_READY_FOR_INDEPENDENT_REVIEW`.** The next
+    task is `FORMAL_XHIGH_REVIEW_HASH_BOUND_V3_VALIDATOR`. 2015-2019
+    collection and opening remain refused until that review passes, and no
+    further evidence round is authorised.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

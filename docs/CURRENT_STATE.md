@@ -14,8 +14,8 @@
 - **Last updated:** 2026-09-05
 - **Current phase:** Phase 1, EPIC W testing is implemented; every Phase-1
   implementation ticket except BTC-019 is now DONE. BTC-019's successor
-  reference protocol is frozen, its independent review has passed, and
-  validator construction is authorised
+  reference protocol is frozen, its independent review has passed, and the
+  hash-bound validator is built and awaiting its own independent review
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** None; no Phase-1 implementation ticket
   remains open
@@ -29,14 +29,17 @@
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
 - **Next dependency-satisfied ticket:**
-  `BUILD_HASH_BOUND_BTC_REFERENCE_COMPOSITE_V3_VALIDATOR`, bound to
-  `4232e886...bf71a` and not to the parent hash. BTC-019 is the only remaining
+  `FORMAL_XHIGH_REVIEW_HASH_BOUND_V3_VALIDATOR`. The hash-bound validator is
+  built and bound to `4232e886...bf71a`, not to the parent hash; its own
+  contract hashes to `b9a1d878...15194`. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 3834 passed with Python 3.12.14 on 2026-09-05
-- **Last relevant implementation/review commit:** the required independent
-  xHigh review of the frozen `BTC_REFERENCE_COMPOSITE_V3` definition. Result:
-  `PASS WITH NON-BLOCKING FINDINGS`, with one P2 review fix. The freeze is
+- **Last relevant implementation/review commit:** the build of
+  `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1`, preceded by the required
+  independent xHigh review of the frozen `BTC_REFERENCE_COMPOSITE_V3`
+  definition. Review result: `PASS WITH NON-BLOCKING FINDINGS`, with one P2
+  review fix. The freeze is
   valid: `4232e886...bf71a` recomputes and is invariant to working directory,
   `PYTHONHASHSEED`, ambient `Decimal` context, pair and dictionary order and
   process; the parent `bc312f3e...6106a` reverifies; no historical frozen
@@ -46,7 +49,8 @@
   the hash and were refused. The fix closed a fail-open where a pair carrying
   no comparability or admissibility evidence certified; it moved no artifact
   byte, so the definition hash and the record digest `01328399...5b313` are
-  unchanged. Validator construction is authorised; 2015-2019 stays shut
+  unchanged. The validator that closes the review's three unbound items is now
+  built and is `VALIDATOR_READY_FOR_INDEPENDENT_REVIEW`; 2015-2019 stays shut
 
 ## Price-Reference State
 
@@ -64,7 +68,11 @@ V3 structural threshold calibration = CALIBRATION_INSUFFICIENT
 V3 gate architecture convergence = V3_FROZEN_READY_FOR_VALIDATOR
 BTC_REFERENCE_COMPOSITE_V3 = FROZEN_RESEARCH_PROTOCOL
 V3 frozen-definition independent review = PASS_WITH_NON_BLOCKING_FINDINGS
-hash-bound V3 validator = AUTHORIZED_NOT_YET_BUILT
+hash-bound V3 validator = VALIDATOR_READY_FOR_INDEPENDENT_REVIEW
+V3 validator definition hash
+  = b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194
+candidate final V3 result = NOT EVALUATED
+sealed sample = NOT COLLECTED, NOT OPENED
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -213,10 +221,49 @@ and `evaluate_soft_gate` treated an absent admissibility state or comparability
 rate as satisfying the requirement the frozen policy states as *carrying*
 complete evidence. Because every measurement the repository produces carries
 both fields, the definition hash and the record digest `01328399...5b313` are
-unchanged and no artifact byte moved. The next task is
-`BUILD_HASH_BOUND_BTC_REFERENCE_COMPOSITE_V3_VALIDATOR`; 2015-2019 collection
-and opening remain refused until that validator exists and has passed its own
-independent review, and no further evidence round is authorised.
+unchanged and no artifact byte moved. That validator now exists.
+
+`BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1` under
+`btc_predictor/research/reference_composite_v3_validator.py`, with its contract
+persisted at `research_artifacts/btc019_v3_validator/`, is an executable
+interpretation contract bound to `4232e886...bf71a` and hashed itself as
+`b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194`, so a future
+sealed execution record binds both. It is not a new price-reference protocol:
+it authors no threshold and moves no frozen byte. It closes the review's three
+unbound items. Operative precedence: `gate_architecture`, `materiality` and the
+other nine operative blocks govern, and `frozen_threshold`, `frozen_hard`,
+`frozen_direction` and `frozen_validation_stage` are parent provenance no
+verdict path reads, so `structural_state` is read at `0.20` beside its
+historical `0.05` and the four demoted metrics stay diagnostics beside their
+historical `frozen_hard: true`. Composition: seven hard requirements recovered
+from the freeze rather than from `approval_verdict`'s signature, including the
+two the review found missing --- the NOT_COMPARABLE census, which that function
+has no parameter for, and the required pair count of 3, which
+`evaluate_hard_structural_gate` never checked. Precedence is material failure
+first, lifted from the frozen aggregation's own words and confirmed by parity
+with `approval_verdict` on all 72 states it can express; four requirements can
+fail, the other three can only refuse, and the composition raises rather than
+let one of them condemn. The Wilson variant is written out, uncorrected, on the
+hash-bound quantile, checked against an independent 60-digit solution of the
+score equation, and the continuity-corrected reading is computed beside it and
+refuses all four certifying boundaries, so it cannot substitute. One fail-open
+beyond the frozen review is closed: the derived-level census was self-declared,
+so a bundle reporting no observed breakout or reclaim disagreements satisfied a
+hard requirement by omission; it is now verified against the frozen diagnostics'
+own mandatory `count`, which consults a diagnostic count through a frozen
+completeness rule and never a diagnostic rate. The accepted risks are
+preserved: the transfer guard still returns
+`GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE` on a 2/28 provider pair, no threshold
+moved, and the within-pair dependence limitation travels on every record stated
+correctly rather than repeating the frozen artifact's wrong-direction claim.
+`SEALED_EXECUTION` raises unconditionally at this revision, `DRY_RUN_SYNTHETIC`
+is the only mode that runs, and the inherited guard refuses any bundle reaching
+into the sealed window; a regression watches every filesystem read a complete
+validation performs and proves it opens nothing under `data/`. 299 focused
+tests. Outcome: `VALIDATOR_READY_FOR_INDEPENDENT_REVIEW`. The next task is
+`FORMAL_XHIGH_REVIEW_HASH_BOUND_V3_VALIDATOR`; 2015-2019 collection and opening
+remain refused until that review passes, and no further evidence round is
+authorised.
 
 ## Important Unresolved Decisions
 
@@ -227,8 +274,9 @@ independent review, and no further evidence round is authorised.
   threshold calibration and the final gate-architecture convergence are all
   done, and `BTC_REFERENCE_COMPOSITE_V3` is frozen at
   `4232e886...bf71a` and has passed its independent xHigh review. What is
-  outstanding is no longer evidence, semantics or review: it is the hash-bound
-  validator. Nothing about the candidate has been decided --- `MEDIAN_OHLC_V2`
+  outstanding is no longer evidence, semantics, review or the validator: it is
+  that validator's own independent review. Nothing about the candidate has
+  been decided --- `MEDIAN_OHLC_V2`
   has still never been constructed or measured against any gate, so its V3
   outcome is unknown, and the 2015-07-20..2019-11-30 sample is still sealed.
   The absolute materiality limit of `0.20` is argued from consequence --- one
