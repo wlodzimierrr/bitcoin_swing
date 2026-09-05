@@ -135,6 +135,13 @@ EXPECTED_ROLES = {
 
 _REQUIRED = ("candidate_vs_bitfinex", "candidate_vs_bitstamp", "candidate_vs_coinbase")
 
+# The frozen BTC_REFERENCE_COMPOSITE_V3 definition hash, reviewed and pinned
+# here so no later edit can move the definition a validator is bound to
+# without this regression saying so.
+FROZEN_V3_DEFINITION_SHA256 = (
+    "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a"
+)
+
 # Everything the frozen protocol reads. No collected history appears, so the
 # definition cannot depend on a sample.
 _PROTOCOL_INPUTS = (
@@ -512,6 +519,58 @@ def test_an_inadmissible_pair_cannot_certify() -> None:
         certification = certify_pair(_pair(0, 40, state=state), comparison_id="x")
         assert certification.outcome == PAIR_INSUFFICIENT_EVIDENCE
         assert CERTIFICATION_REASON_PAIR_INADMISSIBLE in certification.reason_codes
+
+
+def test_a_pair_that_carries_no_comparability_evidence_cannot_certify() -> None:
+    # The frozen policy requires the pair to *carry* complete comparability
+    # evidence. A measurement that simply omits it must not read as though the
+    # floor were met: absent evidence can only refuse.
+    absent = _pair(0, 40)
+    del absent["structural_comparability_rate"]
+    for row in (absent, _pair(0, 40, structural_comparability_rate=None)):
+        certification = certify_pair(row, comparison_id="x")
+        assert certification.outcome == PAIR_INSUFFICIENT_EVIDENCE
+        assert CERTIFICATION_REASON_PAIR_INADMISSIBLE in certification.reason_codes
+
+
+def test_a_pair_with_no_established_admissible_state_cannot_certify() -> None:
+    absent = _pair(0, 40)
+    del absent["state"]
+    for row in (absent, _pair(0, 40, state=None)):
+        certification = certify_pair(row, comparison_id="x")
+        assert certification.outcome == PAIR_INSUFFICIENT_EVIDENCE
+        assert CERTIFICATION_REASON_PAIR_INADMISSIBLE in certification.reason_codes
+
+
+def test_incomplete_pair_evidence_fails_the_gate_the_guard_and_the_soft_gate() -> None:
+    # The same omission must fail closed everywhere it is read, and it must
+    # never become a PASS or a GUARD_SATISFIED.
+    incomplete = _pair(0, 40)
+    del incomplete["structural_comparability_rate"]
+    measurements = _clean_pairs()
+    measurements[_REQUIRED[1]] = incomplete
+    gate = evaluate_hard_structural_gate(measurements, required_pairs=_REQUIRED)
+    assert gate["verdict"] == GATE_INSUFFICIENT
+
+    guard_pairs = {
+        "bitfinex_vs_bitstamp": _pair(0, 40),
+        "bitfinex_vs_coinbase": _pair(0, 40),
+        "bitstamp_vs_coinbase": incomplete,
+    }
+    assert evaluate_transfer_guard(guard_pairs)["outcome"] == GUARD_UNDEFINED
+
+    soft = evaluate_soft_gate(measurements, required_pairs=_REQUIRED)
+    assert soft["outcome"] == SOFT_OUTCOME_REVIEW_REQUIRED
+
+
+def test_hardening_incomplete_pair_evidence_did_not_move_the_frozen_hash(
+    protocol: dict, record: dict
+) -> None:
+    # Every measurement the repository actually produces carries both fields,
+    # so refusing the ones that do not cannot change the frozen definition or
+    # the convergence record it is bound to.
+    assert protocol["definition_sha256"] == FROZEN_V3_DEFINITION_SHA256
+    assert record["v3_definition_sha256"] == FROZEN_V3_DEFINITION_SHA256
 
 
 def test_unequal_denominators_are_judged_pair_by_pair() -> None:

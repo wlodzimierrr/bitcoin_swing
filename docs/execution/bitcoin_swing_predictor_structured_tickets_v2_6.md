@@ -1656,6 +1656,145 @@ Do not overwrite raw history when the preferred provider changes.
     until that validator exists and is bound to `4232e886...bf71a`, not to the
     parent hash. `PRICE_SOURCE_POLICY_V2` and a BTC-019 closure come only
     after the sample is opened once and evaluated.
+  - **The freeze is valid: `PASS WITH NON-BLOCKING FINDINGS`.** The required
+    independent xHigh review of the frozen definition is done. The V3 hash
+    `4232e886...bf71a` recomputes from the persisted artifact and from the
+    module, and is invariant to working directory, `PYTHONHASHSEED`, ambient
+    `Decimal` context, dictionary and pair order and process restart; the
+    parent `bc312f3e...6106a` reverifies independently; `b60ecc7f` adds files
+    only and no historical frozen artifact has moved since its own freeze
+    commit; no 2015-2019 history exists on disk and the inherited guard still
+    refuses that window; `MEDIAN_OHLC_V2` is never constructed and the
+    evidence loader refuses any comparison containing it. Twenty-seven
+    verdict-affecting fields were tampered independently -- the limit, the
+    floor, every role, the candidate, the provider set, the pair set and
+    count, the aggregation, the confidence level and quantile, the equality
+    rule, the guard, the review requirement, a Tier-4 threshold, the
+    `NOT_COMPARABLE` treatment, the matching rule, both sealed boundaries and
+    the parent hash -- and all twenty-seven both moved the hash and were
+    refused on restore. All four convergence premises were reproduced from the
+    repository's own event records rather than from the module: the six
+    exact-timestamp measurements recompute to 3/28, 1/26, 1/28, 0/23, 0/22 and
+    2/29, `structural_state` shares those denominators with a numerator that
+    is a subset on all six and strictly smaller on two, no measurement merges
+    a pair at either tolerance and the record's only opposing-side swing pair
+    is three weeks apart, the relative alternative's expected counts converge
+    to `z^2/6` against three times it, and the published minimum of 17 gives
+    family power 0.8032 at `[17,17,17]` but 0.7182 at `[20,25,30]` and 0.7271
+    at `[30,30,30]`. The certification rule was recomputed from the textbook
+    formula at 60 digits: the derived minima are exactly 16, 25, 33 and 40,
+    certification is monotone in the denominator above each, and 0/15, 1/24,
+    2/32 and 3/39 are all `PAIR_INSUFFICIENT_EVIDENCE`. The approval state
+    space is total and deterministic -- 72 states, exactly one of them `PASS`
+    -- and a material failure outranks missing evidence everywhere.
+  - **Review fix (P2): incomplete pair evidence could certify.** `certify_pair`
+    and `evaluate_soft_gate` read a pair's admissibility state and structural
+    comparability rate with `.get(...)` and treated an absent or `None` value
+    as satisfying the requirement, so a measurement carrying only a numerator
+    and a denominator certified with no reason codes at all. The frozen
+    `STRUCTURAL_COMPARABILITY_SUFFICIENCY_V2` rule requires a pair to *carry*
+    complete comparability evidence and `gate_pair_universe.admissibility`
+    requires admissibility to be established, so absent evidence must refuse.
+    Both now demand an explicit `PAIR_ADMISSIBLE` state and a present
+    comparability rate and raise `PAIR_INADMISSIBLE` otherwise. Every
+    measurement the repository produces carries both fields, so the V3
+    definition hash `4232e886...bf71a` and the record digest
+    `01328399...5b313` are unchanged and no artifact byte moved. Four
+    regressions added, including one that pins the frozen V3 hash literally so
+    no later edit can move the definition a validator is bound to in silence.
+  - **Review finding (P2): the within-pair conservatism claim is wrong in
+    direction.** The frozen `within_pair_disclosure` says clustering "inflates
+    a numerator, and on a maximum-direction gate read through an upper bound
+    that pushes a pair towards insufficient or failure, never towards a pass".
+    Positive within-pair dependence inflates the *variance* of the count in
+    both tails, so it also raises the chance of observing a quiet count from a
+    materially unfit reference. Against a beta-binomial with the same mean, a
+    pair whose true structural disagreement rate is 0.30 -- half again the
+    limit -- certifies with probability 0.0003 at n=30 under exchangeability
+    but 0.115 at an intra-cluster correlation of 0.2, and 0.0006 against 0.180
+    at n=40. Nominal 95% coverage is therefore not attained and the residual
+    risk is a false certification, not only a false refusal. This is not
+    verdict-affecting: the rule stays deterministic and identical across
+    implementations, and the assumption-free point-rate test is a floor the
+    bound only tightens, so the gate is never weaker than having no bound at
+    all. The claim is not corrected in place because doing so would break a
+    valid freeze for prose that changes no computed verdict; it is recorded
+    here and belongs in a `BTC_REFERENCE_COMPOSITE_V4` disclosure if the
+    protocol is ever re-versioned. Classification:
+    `ACCEPTABLE_WITH_EXPLICIT_LIMITATION`.
+  - **Review finding (P2): no composed approval function is hash-bound.** The
+    frozen artifact declares each hard requirement and each per-gate
+    aggregation, but never the conjunction that turns them into one candidate
+    verdict, nor the precedence between `FAIL` and
+    `UNDEFINED_INSUFFICIENT_EVIDENCE` across gates. Because every requirement
+    is hard and "insufficient evidence can never approve" is stated three
+    times, the approve/do-not-approve boundary is determined; the outcome
+    *label* when several requirements are unmet in different ways is not, and
+    that label decides whether BTC-019 records a rejection or an unresolved
+    result on the one permitted opening. The reference `approval_verdict`
+    shows the gap is real: it composes the hard gate, the guard, comparability,
+    the unreviewed derived-level count and Tier-4, but has no input for
+    `unrecorded_not_comparable_event_count`, and
+    `evaluate_hard_structural_gate` does not check its pair list against the
+    declared `required_gate_pair_count` of 3. The validator must declare the
+    complete composition and precedence in its own hash-bound artifact.
+  - **Review finding (P2): superseded thresholds sit beside the operative
+    ones.** `metric_definitions` carries the parent's `frozen_hard` and
+    `frozen_threshold` for all six metrics, so `structural_state` shows 0.05
+    beside an operative limit of 0.20 and the four demoted metrics show
+    `frozen_hard: true` beside `DIAGNOSTIC_ONLY`. The artifact resolves this
+    only indirectly, through `superseded_gate_metrics`,
+    `threshold_portability: CARRIED_FORWARD_UNCALIBRATED`,
+    `gate_architecture.roles` and `diagnostic_semantics`, and never states a
+    precedence. A careful reader reaches the right answer; the validator must
+    take `gate_architecture` and `materiality` as operative and treat every
+    `frozen_*` field as the historical record it is.
+  - **Review finding (P2): the guard is undefined on one of the two
+    development samples.** Evaluated on provider-versus-provider evidence
+    only, `RAW_PROVIDER_STRUCTURAL_DISPERSION_CEILING_V1` is `GUARD_SATISFIED`
+    on 2019-2022 (0/23, 0/22, 0/29) but
+    `GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE` on 2023-2025, where
+    `bitfinex_vs_bitstamp` is 2/28 with a bound of 0.2265. A sealed sample
+    resembling 2023-2025 therefore returns `UNDEFINED_INSUFFICIENT_EVIDENCE`
+    for any candidate, however good. This is fail-closed and correct under the
+    protocol's own invariant, and the record already publishes
+    `all_pairs_certify_by_sample`, but the sample opens exactly once and a
+    material change requires a V4, so the outcome may be a terminal
+    unresolved. The longer sealed window may raise the denominators; its worse
+    early-exchange coverage may lower comparability. Both directions are real
+    and neither is a reason to reopen research.
+  - **Review findings (P3).** The coincidence between the declared `0.20` and
+    the number the discredited relative objective produced is recorded here
+    and in `CURRENT_STATE.md` but not in the frozen artifact or the
+    convergence record, where an auditor of outcome leakage would look for it.
+    `unreviewed_derived_level_disagreement_count` is declared hard in prose
+    only, without the structured `direction`/`threshold` pair its sibling
+    `unrecorded_not_comparable_event_count` carries.
+    `metric_definitions[within_1_week].numerator` still says matching is
+    "nearest-admissible-pair first", which
+    `MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1` replaced -- diagnostic
+    only, so no verdict depends on it. `diagnostic_semantics.enforcement`
+    names the Python function `approval_verdict` in a mutable research module
+    as its enforcement mechanism. The certification rule names the Wilson
+    score interval and its quantile but neither writes the formula nor pins
+    the variant, and the continuity-corrected reading refuses exactly the
+    frozen boundary pairs 0/16, 1/25, 2/33 and 3/40; the unqualified term has
+    a settled default and the alternative is strictly stricter, so the
+    invariant holds either way, but the validator must implement the
+    uncorrected form and pin those four. `write_convergence_artifacts` emits a
+    protocol whose `status` is `FROZEN_RESEARCH_PROTOCOL` regardless of the
+    freezability check, which held here and is independently reconfirmed. The
+    declared quantile differs from the true `z_0.975` in the nineteenth
+    significant digit; it is the hash-bound authority, so reproducibility is
+    unaffected.
+  - **Validator construction is authorised; the sample stays shut.** The
+    frozen V3 definition is deterministic, its hash binds every verdict-
+    affecting semantic it contains, and two competent validators cannot reach
+    different approve/do-not-approve answers from it. The next task is
+    `BUILD_HASH_BOUND_BTC_REFERENCE_COMPOSITE_V3_VALIDATOR`, bound to
+    `4232e886...bf71a` and not to the parent. 2015-2019 collection and opening
+    remain refused until that validator exists and has passed its own
+    independent review. No further evidence round is authorised.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

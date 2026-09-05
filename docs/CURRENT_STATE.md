@@ -14,7 +14,8 @@
 - **Last updated:** 2026-09-05
 - **Current phase:** Phase 1, EPIC W testing is implemented; every Phase-1
   implementation ticket except BTC-019 is now DONE. BTC-019's successor
-  reference protocol is frozen and awaiting its independent review
+  reference protocol is frozen, its independent review has passed, and
+  validator construction is authorised
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** None; no Phase-1 implementation ticket
   remains open
@@ -27,19 +28,25 @@
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
+- **Next dependency-satisfied ticket:**
+  `BUILD_HASH_BOUND_BTC_REFERENCE_COMPOSITE_V3_VALIDATOR`, bound to
+  `4232e886...bf71a` and not to the parent hash. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3830 passed with Python 3.12.14 on 2026-09-05
-- **Last relevant implementation/review commit:** the bounded
-  `BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_V1` task. Outcome:
-  `V3_FROZEN_READY_FOR_VALIDATOR`. `BTC_REFERENCE_COMPOSITE_V3` is now a frozen
-  research protocol with its own definition hash `4232e886...bf71a`; six
-  structural rate gates, five hard, become one hard gate, one soft gate and
-  four diagnostics, on an absolute economic materiality limit with no
-  independence assumption left in the approval rule. Its own required
-  independent xHigh review is outstanding, and until it passes no validator may
-  be built
+- **Latest verified test baseline:** 3834 passed with Python 3.12.14 on 2026-09-05
+- **Last relevant implementation/review commit:** the required independent
+  xHigh review of the frozen `BTC_REFERENCE_COMPOSITE_V3` definition. Result:
+  `PASS WITH NON-BLOCKING FINDINGS`, with one P2 review fix. The freeze is
+  valid: `4232e886...bf71a` recomputes and is invariant to working directory,
+  `PYTHONHASHSEED`, ambient `Decimal` context, pair and dictionary order and
+  process; the parent `bc312f3e...6106a` reverifies; no historical frozen
+  artifact moved; all four convergence premises reproduce from the repository's
+  own event records; the derived minima of 16/25/33/40 reproduce from the
+  textbook Wilson formula; and 27 tampered verdict-affecting fields all moved
+  the hash and were refused. The fix closed a fail-open where a pair carrying
+  no comparability or admissibility evidence certified; it moved no artifact
+  byte, so the definition hash and the record digest `01328399...5b313` are
+  unchanged. Validator construction is authorised; 2015-2019 stays shut
 
 ## Price-Reference State
 
@@ -56,6 +63,8 @@ STRUCTURAL_GATE_DENOMINATOR_RESOLUTION = NEW_PROTOCOL_VERSION_REQUIRED
 V3 structural threshold calibration = CALIBRATION_INSUFFICIENT
 V3 gate architecture convergence = V3_FROZEN_READY_FOR_VALIDATOR
 BTC_REFERENCE_COMPOSITE_V3 = FROZEN_RESEARCH_PROTOCOL
+V3 frozen-definition independent review = PASS_WITH_NON_BLOCKING_FINDINGS
+hash-bound V3 validator = AUTHORIZED_NOT_YET_BUILT
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -189,6 +198,26 @@ construction is authorised only after this frozen definition receives its own
 independent xHigh review, and the validator must bind the V3 hash, not the
 parent's.
 
+That review is now done. Result: `PASS WITH NON-BLOCKING FINDINGS`. The hash
+recomputes from the persisted artifact and from the module and is invariant to
+working directory, `PYTHONHASHSEED`, ambient `Decimal` context, pair and
+dictionary order and process restart; the parent reverifies independently; no
+historical frozen artifact has moved since its own freeze commit; the candidate
+is never constructed and 2015-2019 exists nowhere on disk. All four convergence
+premises were reproduced from the repository's own event records rather than
+from the module, the derived minima of 16/25/33/40 were recomputed from the
+textbook Wilson formula at 60 digits, and 27 independently tampered
+verdict-affecting fields all moved the hash and were refused on restore. One P2
+review fix closed a fail-open in the reference implementation: `certify_pair`
+and `evaluate_soft_gate` treated an absent admissibility state or comparability
+rate as satisfying the requirement the frozen policy states as *carrying*
+complete evidence. Because every measurement the repository produces carries
+both fields, the definition hash and the record digest `01328399...5b313` are
+unchanged and no artifact byte moved. The next task is
+`BUILD_HASH_BOUND_BTC_REFERENCE_COMPOSITE_V3_VALIDATOR`; 2015-2019 collection
+and opening remain refused until that validator exists and has passed its own
+independent review, and no further evidence round is authorised.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
@@ -197,24 +226,35 @@ parent's.
   2019-2022 and 2023-2025 samples, the denominator declaration, the pre-sealed
   threshold calibration and the final gate-architecture convergence are all
   done, and `BTC_REFERENCE_COMPOSITE_V3` is frozen at
-  `4232e886...bf71a`. What is outstanding is no longer evidence or semantics: it
-  is the independent xHigh review of that frozen definition. Nothing about the
-  candidate has been decided --- `MEDIAN_OHLC_V2` has still never been
-  constructed or measured against any gate, so its V3 outcome is unknown, and
-  the 2015-07-20..2019-11-30 sample is still sealed. Two judgements in the
-  frozen protocol are governance rather than measurement and are the right
-  place for a reviewer to push. The absolute materiality limit of `0.20` is
-  argued from consequence --- one in five economically consequential weekly
-  structural events --- and not fitted; it happens to coincide with the number
-  the discredited relative objective produced, and both the derivation and the
-  coincidence are recorded. And the Wilson bound still treats one pair's own
-  comparable events as exchangeable, which weekly structure is not; the
-  disclosure notes that clustering pushes a maximum gate towards insufficient
-  or failure rather than towards a pass, so the violation is conservative for
-  approval, but it is an assumption and not a proof. The demotions themselves
-  rest on an ordering that holds across the whole assumption neighbourhood:
-  `structural_state` can carry a hard gate from `0.15`, `breakout` only from
-  `0.30`, `reclaim` nowhere.
+  `4232e886...bf71a` and has passed its independent xHigh review. What is
+  outstanding is no longer evidence, semantics or review: it is the hash-bound
+  validator. Nothing about the candidate has been decided --- `MEDIAN_OHLC_V2`
+  has still never been constructed or measured against any gate, so its V3
+  outcome is unknown, and the 2015-07-20..2019-11-30 sample is still sealed.
+  The absolute materiality limit of `0.20` is argued from consequence --- one
+  in five economically consequential weekly structural events --- and not
+  fitted; the review classified it `DEFENSIBLE_PHASE1_GOVERNANCE` and found no
+  leakage path, since the limit is a module constant no observed rate can move
+  and the realism check runs after it and may only veto the architecture. It
+  happens to coincide with the number the discredited relative objective
+  produced; the derivation and the coincidence are recorded here and against
+  the ticket, though not in the frozen artifact itself. Two residual
+  governance risks are now recorded rather than open. The Wilson bound treats
+  one pair's own comparable events as exchangeable, which weekly structure is
+  not, and the frozen disclosure's claim that the violation is conservative is
+  wrong in direction: clustering widens the count's distribution in both
+  tails, so a pair whose true rate is `0.30` certifies with probability 0.115
+  at n=30 under an intra-cluster correlation of 0.2 against 0.0003 under
+  exchangeability. It is not verdict-affecting --- the rule stays deterministic
+  and the assumption-free point-rate test is a floor the bound only tightens
+  --- and it is classified `ACCEPTABLE_WITH_EXPLICIT_LIMITATION` for Phase 1.
+  And the transfer guard is `GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE` on the
+  2023-2025 development sample, where `bitfinex_vs_bitstamp` is 2/28 with a
+  bound of 0.2265, so a sealed sample resembling it returns an unresolved
+  result for any candidate however good. That is fail-closed and correct, but
+  the sample opens once. The demotions themselves rest on an ordering that
+  holds across the whole assumption neighbourhood: `structural_state` can carry
+  a hard gate from `0.15`, `breakout` only from `0.30`, `reclaim` nowhere.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche

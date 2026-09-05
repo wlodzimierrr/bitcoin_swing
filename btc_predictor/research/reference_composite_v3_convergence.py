@@ -781,10 +781,16 @@ def certify_pair(
             reason_codes=(CERTIFICATION_REASON_REQUIRED_PAIR_ABSENT,),
         )
     reasons: list[str] = []
-    if measurement.get("state") not in (None, PAIR_ADMISSIBLE):
+    # The frozen policy requires a pair to *carry* complete comparability
+    # evidence and an established admissible state, not merely to avoid
+    # contradicting them: absent evidence is evidence of absence, so a
+    # measurement that omits either one cannot certify.
+    if measurement.get("state") != PAIR_ADMISSIBLE:
         reasons.append(CERTIFICATION_REASON_PAIR_INADMISSIBLE)
     comparability = measurement.get("structural_comparability_rate")
-    if comparability is not None and Decimal(comparability) < comparability_floor:
+    if comparability is None:
+        reasons.append(CERTIFICATION_REASON_PAIR_INADMISSIBLE)
+    elif Decimal(comparability) < comparability_floor:
         reasons.append(CERTIFICATION_REASON_BELOW_COMPARABILITY_FLOOR)
     numerator = measurement["numerator"]
     denominator = measurement["denominator"]
@@ -1524,10 +1530,12 @@ def evaluate_soft_gate(
             )
             continue
         reasons: list[str] = []
-        if measurement.get("state") not in (None, PAIR_ADMISSIBLE):
+        if measurement.get("state") != PAIR_ADMISSIBLE:
             reasons.append(CERTIFICATION_REASON_PAIR_INADMISSIBLE)
         comparability = measurement.get("structural_comparability_rate")
-        if comparability is not None and Decimal(comparability) < comparability_floor:
+        if comparability is None:
+            reasons.append(CERTIFICATION_REASON_PAIR_INADMISSIBLE)
+        elif Decimal(comparability) < comparability_floor:
             reasons.append(CERTIFICATION_REASON_BELOW_COMPARABILITY_FLOOR)
         rate = exact_rate(measurement["numerator"], measurement["denominator"])
         if rate is None:
