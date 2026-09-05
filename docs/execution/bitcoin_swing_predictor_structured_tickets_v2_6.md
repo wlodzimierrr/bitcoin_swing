@@ -1284,6 +1284,133 @@ Do not overwrite raw history when the preferred provider changes.
     `denominator_id`, `not_comparable_treatment`, `aggregation`,
     `candidate_universe` or `frozen_threshold`; no threshold was calibrated; and
     the sealed sample was neither collected nor opened.
+  - **`BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1`.** The
+    pre-sealed calibration and governance task that had to precede any freeze is
+    now done, in two strictly ordered phases, under
+    `btc_predictor/research/structural_threshold_calibration.py`. Outcome:
+    **`CALIBRATION_INSUFFICIENT`**. `BTC_REFERENCE_COMPOSITE_V3` stays
+    `PROPOSED_PENDING_THRESHOLD_CALIBRATION`, the validator is still not
+    authorised, and 2015-2019 is still neither collected nor opened.
+  - **Phase A settled all four review findings before a single rate was
+    computed**, and is hashed as
+    `BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_CALIBRATION_GOVERNANCE_V1`
+    (`503ec795...67e6e6`), which Phase B verifies before it runs.
+    (1) *Pair universe.* The gate universe is the three unordered
+    {candidate, independent raw provider} pairs -- `MEDIAN_OHLC_V2` against
+    Bitstamp, Coinbase and Bitfinex -- because only a pair with the candidate on
+    one side is evidence about the candidate. Provider-versus-provider pairs
+    become `SOURCE_DISPERSION_CALIBRATION_PAIR`s that set the tolerance rather
+    than the verdict, and `MEDIAN_OHLC_V1` is excluded from both: it is a
+    research composite of the same three providers, so its agreement with any of
+    them measures the median formula, not the market. The three rejected
+    readings -- provider pairs as gates, all ten pairs among the parent's five
+    declared series, and the six-pair mixture -- are persisted with the reason
+    each fails. The split has a second effect that is the point of it: the series
+    the thresholds are calibrated on and the series they will be applied to are
+    disjoint, so the calibration cannot see a candidate outcome.
+    (2) *Admissibility and aggregation.* Three explicit states with reason codes,
+    and no pair is ever dropped. `WORST_ADMISSIBLE_PAIR_V1` reads "worst" from
+    each gate's own declared direction, breaks ties on the lexicographically
+    smallest `comparison_id`, and turns a missing, inadmissible or undefined
+    required pair into `UNDEFINED_INSUFFICIENT_EVIDENCE` for the whole gate.
+    (3) *Zero comparable events.* `UNDEFINED_NO_CANDIDATE_EVENTS` and
+    `UNDEFINED_NO_COMPARABLE_EVENTS` are distinct, both carry a null rate, and
+    neither can pass or fail a threshold. No evidence is not zero disagreement.
+    (4) *Within-N matching.* `MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1`
+    replaces "nearest-admissible-pair first": maximum-cardinality bipartite
+    matching inside the tolerance with the swing families separated, then minimum
+    total calendar distance, then the lexicographically smallest matched-pair
+    tuple. The review's adversarial case, left `{W0, W4}` against right
+    `{W2, W6}` at the two-week tolerance, is pinned at two matched pairs with the
+    optimum asserted independently of the implementation.
+    Phase A also fixes the comparability sufficiency policy -- a
+    `0.50` structural-comparability floor, derived as "the measured set must be
+    at least as large as the excluded set" and kept separate from every
+    disagreement threshold; all three gate pairs required; insufficient evidence
+    cannot approve -- and the uncertainty method, a two-sided 95% Wilson score
+    interval in an explicit `Decimal` context.
+  - **The calibration objective was predeclared**, not fitted:
+    `ACHIEVABLE_AND_DISCRIMINATING_TOLERANCE_V1`. Pool the admissible
+    provider-pair measurements, take the Wilson upper limit as the band level
+    `pi_bar`, set the detectable alternative at `3 x pi_bar`, and select the
+    *smallest* value on a coarse interpretable grid at which, on both samples'
+    own pair-denominator regimes, family-wise false rejection is at most `0.10`
+    and power against the alternative is at least `0.80`. Binomial tails are
+    exact rational arithmetic. `0.10` rather than `0.05` on false rejection is
+    the asymmetry BTC-019 actually faces: a false rejection costs more research,
+    a false approval installs an unreliable canonical reference under every
+    level, stop and setup. Pass-count optimisation, `max(observed) + epsilon`,
+    reproducing a V2 verdict, and any use of the candidate or the sealed sample
+    are all persisted as prohibited criteria.
+  - **Result: two of six calibrated, four unresolved, all four hard.**
+    `exact_timestamp_swing_disagreement_rate` (soft) calibrates to `0.25` and
+    `structural_state_disagreement_rate` (hard) to `0.20`, on pooled independent
+    bands of 7/156 and 4/156 and worst observed pair rates of 0.1071 and 0.0714;
+    neither adjacent grid value moves a historical pair verdict, and each carries
+    a *derived* minimum of 13 and 17 comparable events per gate pair, so the gate
+    is never zero-tolerance in disguise. `within_1_week` and `within_2_week` are
+    `INSUFFICIENT_EVIDENCE`: their defining mechanism never fires. All six
+    provider-pair measurements across both samples have a matched-pair count of
+    zero at both tolerances, so the two metrics are numerically identical to
+    `exact_timestamp` on every observation the repository holds and their
+    thresholds are not separately identified. `breakout_disagreement_rate` is
+    `INSUFFICIENT_EVIDENCE` on 0/39 comparable events with admissible pair
+    denominators of 5 to 12: no grid value is simultaneously achievable and
+    discriminating. `reclaim_disagreement_rate` is worse -- 3/21, `pi_bar` of
+    0.346, so `3 x pi_bar` saturates at 1 and the alternative degenerates; even a
+    `0.50` threshold would falsely reject an independent pair most of the time.
+  - **What that finding is.** Under worst-pair aggregation the sampling noise of
+    one legitimate pair measurement, on denominators this small, is wider than
+    the whole economically meaningful range of a derived-level gate. That is a
+    property of the evidence, not of the objective: the honest next step is more
+    comparable structural evidence -- longer inspected history or more
+    independent providers -- or an explicitly versioned change of aggregation,
+    not a looser number. Worst-pair conservatism is kept precisely because it is
+    the fail-closed reading for a hard gate on a canonical price reference.
+  - **Disclosed limitation.** The tolerance is estimated on provider-versus-
+    provider pairs and will be applied to candidate-versus-provider pairs. The
+    candidate is the element-wise median of the same three providers, so its
+    agreement with any one of them is expected to be at least as good as two
+    providers' agreement with each other: the band is conservative against
+    falsely rejecting a sound reference and lenient against falsely approving a
+    poor one. That is the price of calibrating without consulting the candidate,
+    and it is recorded in the governance artifact rather than corrected, because
+    correcting it would make the threshold candidate-dependent.
+  - **Nothing was frozen and nothing moved.** Hard/soft statuses are inherited
+    from the parent unchanged and recorded beside every threshold; the six frozen
+    V2 numbers stay `CARRIED_FORWARD_UNCALIBRATED`; the frozen V2 hash, bytes,
+    thresholds and directions are read and independently reverified; the
+    `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` artifacts and the proposed V3
+    definition (`1ac5438a...17baa`) are untouched and bound by hash. The
+    candidate reference was not built, not measured and not evaluated against any
+    gate in this task.
+  - Evidence is persisted under
+    `research_artifacts/btc019_structural_threshold_calibration/`
+    (`calibration_governance.json`, `threshold_calibration.json`,
+    `THRESHOLD_CALIBRATION_REPORT.md`). Added 97 focused tests in
+    `test_structural_threshold_calibration.py` covering the exact pair
+    universes and their disjointness, pair-order invariance, an unexpected pair,
+    a role mismatch, an unknown series, one and all pairs undefined, worst-pair
+    on maximum and minimum directions, the deterministic tie, the maximum- and
+    minimum-gate equality boundaries just below/at/just above, both undefined
+    states, every matching case including `{W0, W4}` against `{W2, W6}` with the
+    optimum asserted independently, equidistant and crossing choices, min-distance
+    selection among maximal matchings, side and input-order invariance, family
+    separation, the oversized-input refusal, the comparability floor just below/at/
+    above `0.50`, Wilson behaviour at 0/3 versus 0/300, exact binomial tails,
+    ambient-`Decimal` independence of intervals, governance and record, a
+    knife-edge surface that cannot be published as calibrated, evidence-free
+    calibration that cannot be, and every integrity boundary: a wrong parent
+    hash, a wrong comparison contract, a tampered governance payload, pair
+    universe, matching algorithm, comparability policy, threshold and record, a
+    re-digested record promoting an insufficient metric or claiming sealed
+    access, a corrupted sample digest, and the sealed-window guard.
+  - **Sealed sample still shut.** With four hard gates unresolved the successor
+    is not frozen, so validator construction, 2015-2019 collection and opening
+    all remain refused. The exact prerequisite is now narrower: comparable
+    breakout and reclaim evidence sufficient to resolve those two gates, and a
+    within-N matching observation that actually merges a pair, all from
+    already-inspected or newly collected non-sealed history.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

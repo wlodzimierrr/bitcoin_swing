@@ -29,13 +29,13 @@
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3632 passed with Python 3.12 on 2026-09-05
-- **Last relevant implementation/review commit:** the required xHigh review of
-  the `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` governance resolution of the
-  six BTC-019 structural approval gates. Result: PASS WITH NON-BLOCKING
-  FINDINGS. `NEW_PROTOCOL_VERSION_REQUIRED` is upheld and every preservation
-  claim was independently reverified; four proposed-V3 semantics must be settled
-  by the calibration task before any threshold is fitted
+- **Latest verified test baseline:** 3729 passed with Python 3.13 on 2026-09-05
+- **Last relevant implementation/review commit:** the pre-sealed
+  `BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1` governance
+  and calibration task. Outcome: `CALIBRATION_INSUFFICIENT`. All four
+  proposed-V3 semantics the predecessor's xHigh review left open are settled and
+  hashed, and two of the six structural thresholds are calibrated; four remain
+  unresolved and all four are hard, so V3 is not frozen
 
 ## Price-Reference State
 
@@ -50,6 +50,7 @@ BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
 STRUCTURAL_GATE_DENOMINATOR_RESOLUTION = NEW_PROTOCOL_VERSION_REQUIRED
 BTC_REFERENCE_COMPOSITE_V3 = PROPOSED_PENDING_THRESHOLD_CALIBRATION
+V3 structural threshold calibration = CALIBRATION_INSUFFICIENT
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -89,6 +90,39 @@ an undeclared denominator, and the verdict against the identical frozen number
 changes between the comparable-event and all-event denominators on every one of
 the six structural gates, all five hard ones included.
 
+`BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1` under
+`research_artifacts/btc019_structural_threshold_calibration/` is the pre-sealed
+governance and calibration task that had to precede any freeze. Outcome:
+`CALIBRATION_INSUFFICIENT`. Phase A settles every semantic the predecessor's
+review left open and hashes them as
+`BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_CALIBRATION_GOVERNANCE_V1`
+(`503ec795...67e6e6`), which Phase B verifies before computing anything. The
+gate pair universe is the three {candidate, independent raw provider} pairs;
+provider-versus-provider pairs become source-dispersion calibration evidence and
+`MEDIAN_OHLC_V1` is excluded from both, so the series the thresholds are
+calibrated on are disjoint from the series they will be applied to. Worst-pair
+aggregation reads its direction from each gate and turns any missing,
+inadmissible or undefined required pair into `UNDEFINED_INSUFFICIENT_EVIDENCE`;
+a zero comparable denominator is null, never `0.0`; and
+`MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1` replaces
+"nearest-admissible-pair first", pinning the review's `{W0, W4}` against
+`{W2, W6}` case at two matched pairs. The objective was predeclared: the
+smallest interpretable grid value whose family-wise false rejection against the
+pooled independent band is at most 0.10 and whose power against three times that
+band is at least 0.80, on both samples' own denominators, in exact rational
+arithmetic. Two metrics calibrate --- `exact_timestamp` (soft) at 0.25 and
+`structural_state` (hard) at 0.20, neither on a knife edge, each with a derived
+minimum of 13 and 17 comparable events per gate pair. Four do not, and all four
+are hard: `within_1_week` and `within_2_week` because no measurement in either
+sample ever merges a pair, so they are numerically identical to `exact_timestamp`
+and not separately identified; `breakout` on 0/39 comparable events and
+`reclaim` on 3/21, where no threshold is both achievable by an independent
+provider pair and able to detect a materially worse reference. The frozen V2
+numbers stay `CARRIED_FORWARD_UNCALIBRATED`, hard/soft statuses are inherited
+unchanged, the candidate was never built or measured, and the sealed sample was
+neither collected nor opened. `BTC_REFERENCE_COMPOSITE_V3` therefore stays
+`PROPOSED`, and validator construction is still not authorised.
+
 `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` under
 `research_artifacts/btc019_gate_denominator_resolution/` settles that
 denominator as governance. Outcome: `NEW_PROTOCOL_VERSION_REQUIRED`. The frozen
@@ -114,26 +148,30 @@ collected, and the sample is opened once.
 
 - Production canonical BTC reference selection remains unresolved under
   BTC-019. The calendar-contiguity contract, the re-measurement of the
-  already-inspected 2019-2022 and 2023-2025 samples, and the denominator
-  declaration are now all done, under
-  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2` and
-  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1`. The next step is a separate
-  pre-sealed threshold calibration and governance task that binds a threshold to
-  each of the six `BTC_REFERENCE_COMPOSITE_V3` structural denominators, using
-  the already-inspected samples only. The
-  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION` xHigh review found four governance
-  items that task must settle before it fits a single number, because each can
-  move a hard gate verdict on its own: the pair universe behind "each unordered
-  pair of declared comparison series" (the frozen V2 `comparison_series` lists
-  five, the measured evidence is the three raw providers, and neither reading is
-  written down); what makes a pair *admissible* and how an undefined pair joins
-  the worst-pair verdict; a zero-comparable-event rate, which is `None` in code
-  but has no normative reading in the V3 text; and the exact within-N-week
-  matching rule, which "nearest-admissible-pair first" does not pin at the
-  two-week tolerance. A minimum-comparability policy is already deferred there in
-  writing. Only then may the successor be frozen, the validator bound to its
-  complete executable definition hash be built, 2015-2019 be collected, and the
-  sealed sample be opened once.
+  already-inspected 2019-2022 and 2023-2025 samples, the denominator
+  declaration and now the pre-sealed threshold calibration are all done, under
+  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2`,
+  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` and
+  `BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1`. All four
+  governance items the `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION` xHigh review
+  raised are settled, explicit and hashed, and a minimum-comparability policy is
+  set. What is still missing is evidence, not semantics. Four of the six
+  structural gates cannot be calibrated from the already-inspected samples, and
+  all four are hard: `breakout` has 0 disagreements over 39 comparable events on
+  admissible pair denominators of 5 to 12, `reclaim` has 3 over 21 with a
+  denominator as small as 2, and `within_1_week`/`within_2_week` never merge a
+  single pair in either sample, so they are numerically identical to
+  `exact_timestamp` and their own thresholds are not separately identified.
+  Under worst-pair aggregation the sampling noise of one legitimate pair
+  measurement at those denominators is wider than the whole meaningful range of
+  the metric, so no number is both achievable by an independent provider pair
+  and able to detect a materially worse reference. The next step is therefore
+  more comparable structural evidence for the derived-level gates -- longer
+  inspected history, more independent providers, or an explicitly versioned
+  change of aggregation argued on its own merits -- and not a looser threshold.
+  Only once all six are calibrated may the successor be frozen, the validator
+  bound to its complete executable definition hash be built, 2015-2019 be
+  collected, and the sealed sample be opened once.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche

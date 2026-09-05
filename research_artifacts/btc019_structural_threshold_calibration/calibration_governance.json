@@ -1,0 +1,279 @@
+{
+  "calibrated_metrics": [
+    "exact_timestamp_swing_disagreement_rate",
+    "within_1_week_swing_disagreement_rate",
+    "within_2_week_swing_disagreement_rate",
+    "structural_state_disagreement_rate",
+    "breakout_disagreement_rate",
+    "reclaim_disagreement_rate"
+  ],
+  "calibration_objective": {
+    "candidate_generation": "the predeclared interpretable grid only; no continuous search and no value outside the grid may be selected",
+    "discrimination_multiple": 3,
+    "false_rejection_tolerance": "1/10",
+    "minimum_discrimination_power": "4/5",
+    "objective_id": "ACHIEVABLE_AND_DISCRIMINATING_TOLERANCE_V1",
+    "rule": "For each metric: estimate the independent reference band by pooling the admissible calibration measurements, take its two-sided 95% Wilson upper limit as the band's conservative level pi_bar, and set the detectable alternative at pi_alt = 3 x pi_bar. A threshold T on the predeclared grid is ADMISSIBLE when, for every calibration sample's own pair-denominator regime, the family-wise probability that a reference at pi_bar fails the worst-pair gate is at most 1/10 and the probability that a reference at pi_alt fails it is at least 4/5. The selected threshold is the SMALLEST admissible grid value, so the objective always pushes toward strictness and is bounded below by achievability rather than by any observed rate. Binomial probabilities are exact rational arithmetic over the pair denominators.",
+    "selection": "smallest admissible grid value",
+    "threshold_grid": [
+      "0.01",
+      "0.02",
+      "0.03",
+      "0.05",
+      "0.10",
+      "0.15",
+      "0.20",
+      "0.25",
+      "0.30",
+      "0.40",
+      "0.50"
+    ]
+  },
+  "calibration_population": {
+    "band_estimated_on": "INDEPENDENT_RAW_PROVIDER_PAIRS_V1",
+    "candidate_measurements_used": 0,
+    "disclosed_limitation": "The tolerance is estimated on independent provider pairs and applied to candidate-versus-provider pairs. The two populations are not the same one. The candidate is the element-wise median of the same three providers, so its structural agreement with any one of them is expected to be at least as good as two providers' agreement with each other. A tolerance calibrated on the provider band is therefore conservative against falsely rejecting a sound reference and lenient against falsely approving a poor one. That asymmetry is the price of calibrating without consulting the candidate, and it is disclosed rather than corrected, because correcting it would require measuring the candidate and would make the threshold candidate-dependent.",
+    "thresholds_applied_to": "CANDIDATE_VERSUS_INDEPENDENT_RAW_PROVIDER_PAIRS_V1"
+  },
+  "calibration_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1",
+  "candidate_construction_changed": false,
+  "changes_no_production_semantics": true,
+  "comparability_sufficiency": {
+    "insufficient_evidence_consequence": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+    "minimum_comparable_events_per_gate_pair": "DERIVED_IN_PHASE_B_PER_METRIC",
+    "minimum_structural_comparability_rate": "0.50",
+    "policy_id": "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V1",
+    "required_admissible_gate_pair_count": 3,
+    "rule": "A gate pair is sufficient evidence only when its structural comparability rate is at least 0.50, its comparable-event count reaches the metric's own minimum -- derived in Phase B from the selected threshold's operating characteristics, not chosen -- and every excluded event is individually recorded with its reason code, its side and its missing sessions. All 3 gate pairs must be sufficient. Insufficient evidence produces UNDEFINED_INSUFFICIENT_EVIDENCE and cannot approve; it never produces a pass. The comparability floor and the disagreement threshold are separate numbers with separate meanings."
+  },
+  "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+  "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+  "final_classification": {
+    "classifications": [
+      "V3_FROZEN_READY_FOR_VALIDATOR",
+      "GOVERNANCE_UNRESOLVED",
+      "CALIBRATION_INSUFFICIENT",
+      "CALIBRATION_UNSTABLE",
+      "NEW_RESEARCH_REQUIRED"
+    ],
+    "rule": "GOVERNANCE_UNRESOLVED when any Phase-A semantic is unresolved or the frozen governance hash does not bind Phase B; CALIBRATION_INSUFFICIENT when any of the six metrics is INSUFFICIENT_EVIDENCE; CALIBRATION_UNSTABLE when none is insufficient but at least one is CALIBRATION_UNSTABLE; NEW_RESEARCH_REQUIRED when a metric is REQUIRES_NEW_RESEARCH; V3_FROZEN_READY_FOR_VALIDATOR only when all six are CALIBRATED and every freeze condition holds. The successor is never frozen partially."
+  },
+  "governance_sha256": "503ec79517f34b030d1e8aa690e8a65a4b03050bdb0e2b020b28f9a85267e6e6",
+  "governance_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_CALIBRATION_GOVERNANCE_V1",
+  "hard_soft_status_policy": "Hard and soft statuses are inherited from the frozen parent unchanged. Changing one is new policy, not calibration, so this task records the inherited status beside every calibrated threshold and changes none.",
+  "inherited_gate_directions": {
+    "breakout_disagreement_rate": {
+      "direction": "maximum",
+      "frozen_threshold": "0.05",
+      "hard": true
+    },
+    "exact_timestamp_swing_disagreement_rate": {
+      "direction": "maximum",
+      "frozen_threshold": "0.15",
+      "hard": false
+    },
+    "reclaim_disagreement_rate": {
+      "direction": "maximum",
+      "frozen_threshold": "0.05",
+      "hard": true
+    },
+    "structural_state_disagreement_rate": {
+      "direction": "maximum",
+      "frozen_threshold": "0.05",
+      "hard": true
+    },
+    "within_1_week_swing_disagreement_rate": {
+      "direction": "maximum",
+      "frozen_threshold": "0.05",
+      "hard": true
+    },
+    "within_2_week_swing_disagreement_rate": {
+      "direction": "maximum",
+      "frozen_threshold": "0.02",
+      "hard": true
+    }
+  },
+  "metric_status": {
+    "mechanism_metrics": {
+      "within_1_week_swing_disagreement_rate": "matched_pair_count",
+      "within_2_week_swing_disagreement_rate": "matched_pair_count"
+    },
+    "reason_codes": [
+      "NO_ADMISSIBLE_CALIBRATION_EVIDENCE",
+      "DEGENERATE_ALTERNATIVE_HYPOTHESIS",
+      "METRIC_MECHANISM_NOT_EXERCISED_BY_THE_EVIDENCE",
+      "NO_ACHIEVABLE_AND_DISCRIMINATING_THRESHOLD_EXISTS",
+      "ADJACENT_GRID_VALUES_CHANGE_HISTORICAL_VERDICTS"
+    ],
+    "rule": "INSUFFICIENT_EVIDENCE when there is no admissible calibration evidence, when the detectable alternative degenerates to certainty because the independent band itself is too wide, when the metric's own distinguishing mechanism is never exercised by the evidence, or when no grid value is both achievable and discriminating; CALIBRATION_UNSTABLE when a threshold is selected but an adjacent grid value changes the historical pair verdicts, so the number sits on a knife edge; CALIBRATED otherwise. Only a CALIBRATED metric may enter a frozen V3 approval protocol.",
+    "statuses": [
+      "CALIBRATED",
+      "CALIBRATION_UNSTABLE",
+      "INSUFFICIENT_EVIDENCE",
+      "REQUIRES_NEW_RESEARCH"
+    ]
+  },
+  "pair_admissibility": {
+    "calibration_rule": "A calibration measurement is admissible on identity, provenance, a non-zero comparable denominator and the same comparability floor. It is deliberately not subject to the minimum-comparable-event count: a calibration measurement contributes to a pooled estimate of the independent reference band, while a gate measurement has to stand alone as one pair's verdict. Applying the gate's own minimum to the evidence that derives it would be circular.",
+    "reason_codes": [
+      "PAIR_NOT_IN_DECLARED_UNIVERSE",
+      "PAIR_ROLE_MISMATCH",
+      "PAIR_WRONG_COMPARISON_CONTRACT",
+      "PAIR_WRONG_DETECTOR_VERSION",
+      "PAIR_WRONG_PRICE_SOURCE_POLICY",
+      "PAIR_NO_SHARED_WEEKLY_CALENDAR",
+      "PAIR_NO_CANDIDATE_EVENT_UNIVERSE",
+      "PAIR_NO_COMPARABLE_EVENT_UNIVERSE",
+      "PAIR_BELOW_STRUCTURAL_COMPARABILITY_FLOOR",
+      "PAIR_BELOW_MINIMUM_COMPARABLE_EVENTS",
+      "PAIR_UNRECORDED_NOT_COMPARABLE_EVENT",
+      "PAIR_MALFORMED_MEASUREMENT"
+    ],
+    "rule": "A pair is PAIR_INADMISSIBLE when its identity is wrong -- it is not in the declared universe, its two series do not carry the declared roles, or it was produced by a different comparison contract, structural detector or price-source policy -- or when its evidence is malformed or an excluded event was not individually recorded. A pair is PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE when its identity is sound but its evidence cannot support a rate: no shared weekly calendar, an empty candidate-event universe, an empty comparable-event universe, structural comparability below the declared floor, or fewer comparable events than the metric's declared minimum. A pair is PAIR_ADMISSIBLE otherwise. No pair is ever silently dropped: every pair in the universe is measured, classified and persisted with its reason codes.",
+    "states": [
+      "PAIR_ADMISSIBLE",
+      "PAIR_INADMISSIBLE",
+      "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE"
+    ]
+  },
+  "pair_aggregation": {
+    "aggregation_id": "WORST_ADMISSIBLE_PAIR_V1",
+    "directions": [
+      "maximum",
+      "minimum",
+      "equal"
+    ],
+    "rule": "One measurement per pair in the gate universe. The gate verdict is the verdict of the worst admissible defined pair, where 'worst' is read from the gate's own declared direction: for a maximum gate the worst pair is the one with the highest defined rate, for a minimum gate the lowest, and for an equality gate the one furthest from the threshold. Ties are broken by the lexicographically smallest comparison_id, so the reported pair identity is deterministic. An undefined or inadmissible required pair is never converted to a number and never treated as a pass: it makes the whole gate UNDEFINED_INSUFFICIENT_EVIDENCE, which cannot satisfy approval. No evidence is not zero disagreement.",
+    "threshold_comparison_rule": "maximum: rate <= threshold PASSES, rate > threshold FAILS; minimum: rate >= threshold PASSES; equal: rate == threshold PASSES. Equality is a pass in every direction, matching the repository's existing structural gate convention. Comparison is exact Decimal, never binary floating point.",
+    "verdicts": [
+      "PASS",
+      "FAIL",
+      "UNDEFINED_INSUFFICIENT_EVIDENCE"
+    ]
+  },
+  "pair_universe": {
+    "calibration_pairs": [
+      "bitfinex_vs_bitstamp",
+      "bitfinex_vs_coinbase",
+      "bitstamp_vs_coinbase"
+    ],
+    "calibration_universe_id": "INDEPENDENT_RAW_PROVIDER_PAIRS_V1",
+    "calibration_universe_rule": "The calibration pair universe is every unordered pair of distinct independent raw validation providers, canonicalised the same way. With the inherited provider set that is exactly three pairs per sample, and the candidate is on neither side of any of them.",
+    "gate_pairs": [
+      "MEDIAN_OHLC_V2_vs_bitfinex",
+      "MEDIAN_OHLC_V2_vs_bitstamp",
+      "MEDIAN_OHLC_V2_vs_coinbase"
+    ],
+    "gate_universe_id": "CANDIDATE_VERSUS_INDEPENDENT_RAW_PROVIDER_PAIRS_V1",
+    "gate_universe_rule": "The gate pair universe is every unordered pair {candidate series, independent raw validation provider}, canonicalised by sorted series id on the pair's common canonical UTC Monday calendar. With the inherited provider set that is exactly three pairs, and the candidate is on one side of every one of them.",
+    "justification": "The V3 approval question is whether the candidate canonical reference agrees sufficiently with independent observable BTC market references. Only a pair with the candidate on one side is evidence about the candidate, so only those pairs are gates. Provider-versus-provider pairs answer a different and necessary question -- how much two legitimate independent references disagree with each other -- so they set the tolerance rather than the verdict. This split is also what keeps the calibration candidate-blind: the series used to choose the thresholds and the series the thresholds are applied to are disjoint.",
+    "rejected_universes": [
+      {
+        "rejected_because": "The candidate is on neither side, so the gate would approve or reject the candidate on evidence about two other series. Two independent venues disagreeing with each other is source dispersion, not a property of the reference under evaluation. This is the universe every measurement so far was taken over, which is exactly why it is retained as calibration evidence and refused as a gate.",
+        "universe": "the three independent raw-provider pairs, used as gates"
+      },
+      {
+        "rejected_because": "Seven of the ten do not contain the candidate, so seven of the worst-pair inputs could fail the candidate for a disagreement it is not party to. It also admits MEDIAN_OHLC_V1, a research composite built from the same three providers, whose agreement with any of them is a property of the median formula rather than an independent market observation.",
+        "universe": "all ten unordered pairs among the frozen parent's five declared comparison series"
+      },
+      {
+        "rejected_because": "Same defect as above in a smaller form: three of the six inputs to a worst-pair verdict would not contain the candidate. Source dispersion belongs in the calibration of the tolerance, not in the verdict.",
+        "universe": "candidate-versus-provider pairs plus provider-versus-provider pairs, all treated as gates"
+      }
+    ],
+    "roles": {
+      "candidate_construction": "Unchanged from the parent: MEDIAN_OHLC_V2, its quality-state semantics, its point-in-time contract and its higher-timeframe aggregation rules. This successor changes how the candidate is measured, never how it is built.",
+      "candidate_series_id": "MEDIAN_OHLC_V2",
+      "independent_raw_validation_providers": [
+        "bitstamp",
+        "coinbase",
+        "bitfinex"
+      ],
+      "pair_purposes": [
+        "APPROVAL_GATE_PAIR",
+        "SOURCE_DISPERSION_CALIBRATION_PAIR",
+        "EXCLUDED_FROM_BOTH_UNIVERSES"
+      ],
+      "research_only_historical_composites": [
+        "MEDIAN_OHLC_V1"
+      ],
+      "series_roles": [
+        "CANDIDATE_REFERENCE_UNDER_EVALUATION",
+        "INDEPENDENT_RAW_VALIDATION_PROVIDER",
+        "RESEARCH_ONLY_HISTORICAL_COMPOSITE"
+      ]
+    }
+  },
+  "parent_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+  "parent_protocol_version": "BTC_REFERENCE_COMPOSITE_V2",
+  "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+  "production_promotion_authorized": false,
+  "prohibited_optimization_criteria": [
+    "maximising the number of pairs, samples or gates that pass",
+    "placing a threshold immediately above the maximum observed rate",
+    "choosing a threshold because the candidate reference would survive it",
+    "choosing a threshold because it reproduces a frozen V2 verdict",
+    "using any measurement in which the candidate reference is one side",
+    "using the sealed 2015-2019 sample in any form",
+    "fitting a model of any kind, including any machine-learned model",
+    "widening a threshold after seeing that a metric would not be calibrated"
+  ],
+  "proposed_successor_definition_sha256": "1ac5438a2eaf742c72bde285ba8289629d17986e1ec00fbee61d724b38417baa",
+  "proposed_successor_status": "PROPOSED_PENDING_THRESHOLD_CALIBRATION",
+  "proposed_successor_version": "BTC_REFERENCE_COMPOSITE_V3",
+  "research_only": true,
+  "sample_governance": {
+    "evidence_labelling": "DEVELOPMENT_CALIBRATION_EVIDENCE",
+    "permitted_calibration_samples": [
+      "data/btc019/2023-01-01_2025-12-31",
+      "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+    ],
+    "rule": "Calibration may read only the two already-inspected research samples, 2019-12-01..2022-12-31 and 2023-01-01..2025-12-31, each verified against its own collection manifest digests before use. They are development and calibration evidence, not validation evidence: both have already influenced earlier research decisions in this line, so no result measured on them is out-of-sample performance. The 2015-07-20..2019-11-30 sample stays sealed -- not collected, not opened, not inspected, not queried, not summarised -- and the inherited guard refuses any window that reaches into it.",
+    "sealed_sample": {
+      "collected": false,
+      "end": "2019-11-30T23:00:00+00:00",
+      "guard": "guard_untouched_validation_sample, inherited unchanged",
+      "opened": false,
+      "permitted_for_calibration": false,
+      "start": "2015-07-20T21:00:00+00:00"
+    }
+  },
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_CALIBRATION_GOVERNANCE_RECORD_V1",
+  "settles_review_findings": [
+    "pair universe behind 'each unordered pair of declared comparison series'",
+    "pair admissibility and the place of an undefined pair in the worst-pair verdict",
+    "the normative reading of a zero-comparable-event rate",
+    "the exact within-N-week matching rule at the two-week tolerance"
+  ],
+  "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1",
+  "uncertainty": {
+    "method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+    "normal_quantile_0_975": "1.959963984540054235631",
+    "rule": "Every observed rate is published with a two-sided 95% Wilson score interval, computed in an explicit Decimal context from the predeclared normal quantile. Wilson is used rather than the normal approximation because the denominators here are small and several numerators are zero, where the normal interval degenerates to a point and would turn no evidence into certainty. A zero observed rate therefore never justifies a strict threshold on its own: the interval's upper limit carries the denominator into every decision the objective makes."
+  },
+  "within_week_matching": {
+    "algorithm_id": "MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1",
+    "families_matched_separately": [
+      "swing_high",
+      "swing_low"
+    ],
+    "objectives_in_order": [
+      "maximise the number of matched pairs",
+      "minimise total absolute calendar distance in weeks",
+      "lexicographically minimise the sorted matched-pair sessions"
+    ],
+    "rule": "Within a tolerance of N weekly sessions, opposing one-sided comparable swing disagreements are matched one-to-one, with the swing-high and swing-low families matched separately and never across each other. The matching is a maximum-cardinality bipartite matching on the tolerance graph, so no ordering of the inputs can produce fewer matched pairs than the graph admits. Among all maximum-cardinality matchings the one minimising total absolute calendar distance in weeks is taken; among those, the one whose sorted tuple of (left session, right session) pairs is lexicographically smallest. The result is therefore independent of provider order, dictionary order and input order. 'Nearest-admissible-pair first' is replaced because it is not maximum-cardinality at the two-week tolerance: left {W0, W4} against right {W2, W6} admits both a matched count of 2 and a matched count of 1 under orderings that all satisfy it, and the difference moves a hard gate.",
+    "tolerances_weeks": [
+      1,
+      2
+    ]
+  },
+  "zero_denominator_semantics": {
+    "rule": "candidate_event_count == 0 makes the pair measurement UNDEFINED_NO_CANDIDATE_EVENTS. A zero comparable denominator -- because no candidate was detected, or because every detected candidate is NOT_COMPARABLE -- makes it UNDEFINED_NO_COMPARABLE_EVENTS. In both cases the rate is null, never 0.0, and it can neither pass nor fail a threshold. One undefined pair in the gate universe makes the whole gate UNDEFINED_INSUFFICIENT_EVIDENCE; so does every pair being undefined. NO EVIDENCE != ZERO DISAGREEMENT, in the metric and in the aggregation.",
+    "states": [
+      "DEFINED",
+      "UNDEFINED_NO_CANDIDATE_EVENTS",
+      "UNDEFINED_NO_COMPARABLE_EVENTS"
+    ]
+  }
+}

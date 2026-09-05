@@ -1,0 +1,4367 @@
+{
+  "artifact_digest": "2c50322ccae9dcddb3f6fa9599fdb6d6a615f8e57cef6c2c10b3917227d232ad",
+  "btc019_status": "IN_PROGRESS",
+  "calibration_objective": "ACHIEVABLE_AND_DISCRIMINATING_TOLERANCE_V1",
+  "calibration_objective_rule": "For each metric: estimate the independent reference band by pooling the admissible calibration measurements, take its two-sided 95% Wilson upper limit as the band's conservative level pi_bar, and set the detectable alternative at pi_alt = 3 x pi_bar. A threshold T on the predeclared grid is ADMISSIBLE when, for every calibration sample's own pair-denominator regime, the family-wise probability that a reference at pi_bar fails the worst-pair gate is at most 1/10 and the probability that a reference at pi_alt fails it is at least 4/5. The selected threshold is the SMALLEST admissible grid value, so the objective always pushes toward strictness and is bounded below by achievability rather than by any observed rate. Binomial probabilities are exact rational arithmetic over the pair denominators.",
+  "calibration_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1",
+  "candidate_construction_changed": false,
+  "candidate_measured_in_this_task": false,
+  "classification": {
+    "calibrated_metrics": [
+      "exact_timestamp_swing_disagreement_rate",
+      "structural_state_disagreement_rate"
+    ],
+    "insufficient_metrics": [
+      "breakout_disagreement_rate",
+      "reclaim_disagreement_rate",
+      "within_1_week_swing_disagreement_rate",
+      "within_2_week_swing_disagreement_rate"
+    ],
+    "metric_statuses": {
+      "breakout_disagreement_rate": "INSUFFICIENT_EVIDENCE",
+      "exact_timestamp_swing_disagreement_rate": "CALIBRATED",
+      "reclaim_disagreement_rate": "INSUFFICIENT_EVIDENCE",
+      "structural_state_disagreement_rate": "CALIBRATED",
+      "within_1_week_swing_disagreement_rate": "INSUFFICIENT_EVIDENCE",
+      "within_2_week_swing_disagreement_rate": "INSUFFICIENT_EVIDENCE"
+    },
+    "outcome": "CALIBRATION_INSUFFICIENT",
+    "sealed_sample_collection_authorized": false,
+    "sealed_sample_opening_authorized": false,
+    "successor_status_after_this_task": "PROPOSED_PENDING_THRESHOLD_CALIBRATION",
+    "unresolved_hard_gates": [
+      "breakout_disagreement_rate",
+      "reclaim_disagreement_rate",
+      "within_1_week_swing_disagreement_rate",
+      "within_2_week_swing_disagreement_rate"
+    ],
+    "unstable_metrics": [],
+    "v3_freeze_conditions": {
+      "all_six_thresholds_calibrated": false,
+      "governance_semantics_explicit": true,
+      "no_sealed_data_used": true,
+      "no_unresolved_hard_gate": false
+    },
+    "v3_frozen": false,
+    "validator_construction_authorized": false
+  },
+  "classification_rule": "GOVERNANCE_UNRESOLVED when any Phase-A semantic is unresolved or the frozen governance hash does not bind Phase B; CALIBRATION_INSUFFICIENT when any of the six metrics is INSUFFICIENT_EVIDENCE; CALIBRATION_UNSTABLE when none is insufficient but at least one is CALIBRATION_UNSTABLE; NEW_RESEARCH_REQUIRED when a metric is REQUIRES_NEW_RESEARCH; V3_FROZEN_READY_FOR_VALIDATOR only when all six are CALIBRATED and every freeze condition holds. The successor is never frozen partially.",
+  "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+  "datasets": {
+    "data/btc019/2023-01-01_2025-12-31": {
+      "collection_manifest": "data/btc019/2023-01-01_2025-12-31/collection_manifest.json",
+      "historical_period_end": "2025-12-31T23:00:00+00:00",
+      "historical_period_start": "2023-01-01T00:00:00+00:00",
+      "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+      "providers": [
+        {
+          "exchange": "bitfinex",
+          "first_timestamp": "2023-01-01T00:00:00+00:00",
+          "instrument": "BTC/USD",
+          "last_timestamp": "2025-12-31T23:00:00+00:00",
+          "provider": "bitfinex",
+          "raw_artifact": "bitfinex_btc_usd_1h.jsonl.gz",
+          "raw_artifact_sha256": "b10e9ace4098245bb0dd1343d0ca4808ac341b72d863520e949c31be0ba07fa0"
+        },
+        {
+          "exchange": "bitstamp",
+          "first_timestamp": "2023-01-01T00:00:00+00:00",
+          "instrument": "BTC/USD",
+          "last_timestamp": "2025-12-31T23:00:00+00:00",
+          "provider": "bitstamp",
+          "raw_artifact": "bitstamp_btc_usd_1h.jsonl.gz",
+          "raw_artifact_sha256": "f8243a1ab5c5cdef4172127a6bc769804f4b8ce6d57e6be1e8141e59c5e07679"
+        },
+        {
+          "exchange": "coinbase",
+          "first_timestamp": "2023-01-01T00:00:00+00:00",
+          "instrument": "BTC-USD",
+          "last_timestamp": "2025-12-31T23:00:00+00:00",
+          "provider": "coinbase",
+          "raw_artifact": "coinbase_btc_usd_1h.jsonl.gz",
+          "raw_artifact_sha256": "300b283f9bdeca0b9305fe02af5157845a7167561ae88c7c5c9c6e3faff36929"
+        }
+      ]
+    },
+    "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+      "collection_manifest": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31/collection_manifest.json",
+      "historical_period_end": "2022-12-31T23:00:00+00:00",
+      "historical_period_start": "2019-12-01T00:00:00+00:00",
+      "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+      "providers": [
+        {
+          "exchange": "bitfinex",
+          "first_timestamp": "2019-12-01T00:00:00+00:00",
+          "instrument": "BTC/USD",
+          "last_timestamp": "2022-12-31T23:00:00+00:00",
+          "provider": "bitfinex",
+          "raw_artifact": "bitfinex_btc_usd_1h.jsonl.gz",
+          "raw_artifact_sha256": "7ed5c1cd67075211395ffcfb815c7ced978966e29a404f1bc11bb3781515cf92"
+        },
+        {
+          "exchange": "bitstamp",
+          "first_timestamp": "2019-12-01T00:00:00+00:00",
+          "instrument": "BTC/USD",
+          "last_timestamp": "2022-12-31T23:00:00+00:00",
+          "provider": "bitstamp",
+          "raw_artifact": "bitstamp_btc_usd_1h.jsonl.gz",
+          "raw_artifact_sha256": "0af33e8e13d874e6bba187f9174c579feeb928d8c3a9fd7723866fed6cc657a0"
+        },
+        {
+          "exchange": "coinbase",
+          "first_timestamp": "2019-12-01T00:00:00+00:00",
+          "instrument": "BTC-USD",
+          "last_timestamp": "2022-12-31T23:00:00+00:00",
+          "provider": "coinbase",
+          "raw_artifact": "coinbase_btc_usd_1h.jsonl.gz",
+          "raw_artifact_sha256": "5556cbb479ea2addbf879e4898e9986e6fb3fec7e8b9a0fdd82e4f3bc64bb27f"
+        }
+      ]
+    }
+  },
+  "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+  "evaluation_times": {
+    "data/btc019/2023-01-01_2025-12-31": "2026-08-29T13:55:40.343607+00:00",
+    "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": "2026-08-29T14:55:55.351927+00:00"
+  },
+  "evidence_is_not_out_of_sample": true,
+  "evidence_labelling": "DEVELOPMENT_CALIBRATION_EVIDENCE",
+  "frozen_v2_artifacts_changed": false,
+  "governance_sha256": "503ec79517f34b030d1e8aa690e8a65a4b03050bdb0e2b020b28f9a85267e6e6",
+  "governance_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_CALIBRATION_GOVERNANCE_V1",
+  "metric_calibrations": [
+    {
+      "aggregation": "WORST_ADMISSIBLE_PAIR_V1",
+      "calibration_pair_universe": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "direction": "maximum",
+      "frozen_v2_threshold": "0.15",
+      "frozen_v2_threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "gate_pair_universe": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "hard": false,
+      "hard_soft_status_source": "INHERITED_FROM_FROZEN_PARENT_UNCHANGED",
+      "matching_algorithm": null,
+      "metric": "exact_timestamp_swing_disagreement_rate",
+      "minimum_comparable_events_per_gate_pair": 13,
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "objective_surface": [
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.01"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.02"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.03"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999907683636231397884338",
+              "false_rejection_probability": "0.9773773666379732952746505840",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999156174628973599873930",
+              "false_rejection_probability": "0.9619445170904596663904108873",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.05"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999985398902432463582501097",
+              "false_rejection_probability": "0.8332833610898883385351357821",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999900976938911907264176613",
+              "false_rejection_probability": "0.7696487442324713637108556746",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.10"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9995425765985339142923841349",
+              "false_rejection_probability": "0.3536034104212134799495771129",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9991076625878497685223106428",
+              "false_rejection_probability": "0.3406060147919974987625259832",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.15"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9900637843094101772711694079",
+              "false_rejection_probability": "0.09213877406714273535162555421",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9907134619114698729492529549",
+              "false_rejection_probability": "0.1269894208066157275697915395",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.20"
+        },
+        {
+          "admissible": true,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.8903493829268605640684216211",
+              "false_rejection_probability": "0.01165814714733473462538132469",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9224896918378965225144437753",
+              "false_rejection_probability": "0.02779722389293984639990455201",
+              "meets_objective": true,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.25"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.7313015276843129355418339023",
+              "false_rejection_probability": "0.002555919760368223327521816468",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.7773726058294038301818684243",
+              "false_rejection_probability": "0.006218079290083518935438518373",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.30"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.1562982408250510526617810735",
+              "false_rejection_probability": "0.00001067893125966141030889479526",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.2216075873671691509948785245",
+              "false_rejection_probability": "0.00007922193585542053530290691300",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.40"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.008247496514573096550133855429",
+              "false_rejection_probability": "1.212591878623292637242216099E-8",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.01814192726876831570352769050",
+              "false_rejection_probability": "2.211694676594633952760323174E-7",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.50"
+        }
+      ],
+      "pooled_denominator": 156,
+      "pooled_numerator": 7,
+      "reason_codes": [],
+      "reference_band": {
+        "band_level_pi_bar": "0.08971638214820239796546538431",
+        "detectable_alternative_pi_alt": "0.2691491464446071938963961529",
+        "discrimination_multiple": 3,
+        "pooled": {
+          "denominator": 156,
+          "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+          "numerator": 7,
+          "observed_rate": "0.04487179487179487179487179487",
+          "wilson_95_half_width": "0.03390652232732764810041793966",
+          "wilson_95_lower": "0.02190333749354710176462950500",
+          "wilson_95_upper": "0.08971638214820239796546538431"
+        },
+        "population": "independent raw provider pairs only; the candidate reference is on neither side of any calibration measurement"
+      },
+      "samples": {
+        "data/btc019/2023-01-01_2025-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 35,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 28,
+              "measurement_state": "DEFINED",
+              "metric": "exact_timestamp_swing_disagreement_rate",
+              "not_comparable_event_count": 7,
+              "not_comparable_rate": "0.2",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 3,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.1071428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.8",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 3,
+                "observed_rate": "0.1071428571428571428571428571",
+                "wilson_95_half_width": "0.1174200743287107979523692845",
+                "wilson_95_lower": "0.03711836682929999684802746487",
+                "wilson_95_upper": "0.2719585154867215927527660339"
+              }
+            },
+            {
+              "all_detected_event_count": 34,
+              "candidate_event_count": 312,
+              "comparable_event_count": 26,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 26,
+              "measurement_state": "DEFINED",
+              "metric": "exact_timestamp_swing_disagreement_rate",
+              "not_comparable_event_count": 8,
+              "not_comparable_rate": "0.2352941176470588235294117647",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 12,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 32,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03846153846153846153846153846",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.7647058823529411764705882353",
+              "uncertainty": {
+                "denominator": 26,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03846153846153846153846153846",
+                "wilson_95_half_width": "0.09105290201840205345462687363",
+                "wilson_95_lower": "0.006821984993543479830187817757",
+                "wilson_95_upper": "0.1889277890303475867394415650"
+              }
+            },
+            {
+              "all_detected_event_count": 31,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 28,
+              "measurement_state": "DEFINED",
+              "metric": "exact_timestamp_swing_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09677419354838709677419354839",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03571428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.9032258064516129032258064516",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03571428571428571428571428571",
+                "wilson_95_half_width": "0.08539472879224773063541552099",
+                "wilson_95_lower": "0.006332519849037754128689728269",
+                "wilson_95_upper": "0.1771219774335332153995207702"
+              }
+            }
+          ],
+          "pair_denominators": [
+            28,
+            26,
+            28
+          ],
+          "sample_denominator": 82,
+          "sample_numerator": 5,
+          "sample_rate": "0.06097560975609756097560975610",
+          "sample_uncertainty": {
+            "denominator": 82,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 5,
+            "observed_rate": "0.06097560975609756097560975610",
+            "wilson_95_half_width": "0.05429826996686211434953194989",
+            "wilson_95_lower": "0.02632395506781607659757512332",
+            "wilson_95_upper": "0.1349204950015403052966390231"
+          },
+          "worst_admissible_pair_rate": "0.1071428571428571428571428571"
+        },
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 23,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 23,
+              "measurement_state": "DEFINED",
+              "metric": "exact_timestamp_swing_disagreement_rate",
+              "not_comparable_event_count": 9,
+              "not_comparable_rate": "0.28125",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 70,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.71875",
+              "uncertainty": {
+                "denominator": 23,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07155830922521343418508430939",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1431166184504268683701686188"
+              }
+            },
+            {
+              "all_detected_event_count": 33,
+              "candidate_event_count": 320,
+              "comparable_event_count": 22,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 22,
+              "measurement_state": "DEFINED",
+              "metric": "exact_timestamp_swing_disagreement_rate",
+              "not_comparable_event_count": 11,
+              "not_comparable_rate": "0.3333333333333333333333333333",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 18,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 76,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.6666666666666666666666666667",
+              "uncertainty": {
+                "denominator": 22,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07432743730431045284566628528",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1486548746086209056913325706"
+              }
+            },
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 29,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 29,
+              "measurement_state": "DEFINED",
+              "metric": "exact_timestamp_swing_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09375",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 42,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 2,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.06896551724137931034482758621",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.90625",
+              "uncertainty": {
+                "denominator": 29,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 2,
+                "observed_rate": "0.06896551724137931034482758621",
+                "wilson_95_half_width": "0.1002622676666617911560735805",
+                "wilson_95_lower": "0.01912126616943336710105576669",
+                "wilson_95_upper": "0.2196458015027569494132029278"
+              }
+            }
+          ],
+          "pair_denominators": [
+            23,
+            22,
+            29
+          ],
+          "sample_denominator": 74,
+          "sample_numerator": 2,
+          "sample_rate": "0.02702702702702702702702702703",
+          "sample_uncertainty": {
+            "denominator": 74,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 2,
+            "observed_rate": "0.02702702702702702702702702703",
+            "wilson_95_half_width": "0.04292478626542890258408312794",
+            "wilson_95_lower": "0.007443352638267213252416340147",
+            "wilson_95_upper": "0.09329292516912501842058259603"
+          },
+          "worst_admissible_pair_rate": "0.06896551724137931034482758621"
+        }
+      },
+      "selected_threshold": "0.25",
+      "selected_threshold_usable": true,
+      "sensitivity": {
+        "admissible_grid_values": [
+          "0.25"
+        ],
+        "historical_pair_verdicts_at_selected": {
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+        },
+        "neighbourhood": [
+          "0.20",
+          "0.25",
+          "0.30"
+        ],
+        "neighbours_that_move_historical_verdicts": []
+      },
+      "status": "CALIBRATED",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "aggregation": "WORST_ADMISSIBLE_PAIR_V1",
+      "calibration_pair_universe": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "direction": "maximum",
+      "frozen_v2_threshold": "0.05",
+      "frozen_v2_threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "gate_pair_universe": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "hard": true,
+      "hard_soft_status_source": "INHERITED_FROM_FROZEN_PARENT_UNCHANGED",
+      "matching_algorithm": "MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1",
+      "mechanism_exercised": false,
+      "mechanism_field": "matched_pair_count",
+      "metric": "within_1_week_swing_disagreement_rate",
+      "minimum_comparable_events_per_gate_pair": 13,
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "objective_surface": [
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.01"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.02"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.03"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999907683636231397884338",
+              "false_rejection_probability": "0.9773773666379732952746505840",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999156174628973599873930",
+              "false_rejection_probability": "0.9619445170904596663904108873",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.05"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999985398902432463582501097",
+              "false_rejection_probability": "0.8332833610898883385351357821",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999900976938911907264176613",
+              "false_rejection_probability": "0.7696487442324713637108556746",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.10"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9995425765985339142923841349",
+              "false_rejection_probability": "0.3536034104212134799495771129",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9991076625878497685223106428",
+              "false_rejection_probability": "0.3406060147919974987625259832",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.15"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9900637843094101772711694079",
+              "false_rejection_probability": "0.09213877406714273535162555421",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9907134619114698729492529549",
+              "false_rejection_probability": "0.1269894208066157275697915395",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.20"
+        },
+        {
+          "admissible": true,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.8903493829268605640684216211",
+              "false_rejection_probability": "0.01165814714733473462538132469",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9224896918378965225144437753",
+              "false_rejection_probability": "0.02779722389293984639990455201",
+              "meets_objective": true,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.25"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.7313015276843129355418339023",
+              "false_rejection_probability": "0.002555919760368223327521816468",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.7773726058294038301818684243",
+              "false_rejection_probability": "0.006218079290083518935438518373",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.30"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.1562982408250510526617810735",
+              "false_rejection_probability": "0.00001067893125966141030889479526",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.2216075873671691509948785245",
+              "false_rejection_probability": "0.00007922193585542053530290691300",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.40"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.008247496514573096550133855429",
+              "false_rejection_probability": "1.212591878623292637242216099E-8",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.01814192726876831570352769050",
+              "false_rejection_probability": "2.211694676594633952760323174E-7",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.50"
+        }
+      ],
+      "pooled_denominator": 156,
+      "pooled_numerator": 7,
+      "reason_codes": [
+        "METRIC_MECHANISM_NOT_EXERCISED_BY_THE_EVIDENCE"
+      ],
+      "reference_band": {
+        "band_level_pi_bar": "0.08971638214820239796546538431",
+        "detectable_alternative_pi_alt": "0.2691491464446071938963961529",
+        "discrimination_multiple": 3,
+        "pooled": {
+          "denominator": 156,
+          "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+          "numerator": 7,
+          "observed_rate": "0.04487179487179487179487179487",
+          "wilson_95_half_width": "0.03390652232732764810041793966",
+          "wilson_95_lower": "0.02190333749354710176462950500",
+          "wilson_95_upper": "0.08971638214820239796546538431"
+        },
+        "population": "independent raw provider pairs only; the candidate reference is on neither side of any calibration measurement"
+      },
+      "samples": {
+        "data/btc019/2023-01-01_2025-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 35,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 28,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_1_week_swing_disagreement_rate",
+              "not_comparable_event_count": 7,
+              "not_comparable_rate": "0.2",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 3,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.1071428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.8",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 3,
+                "observed_rate": "0.1071428571428571428571428571",
+                "wilson_95_half_width": "0.1174200743287107979523692845",
+                "wilson_95_lower": "0.03711836682929999684802746487",
+                "wilson_95_upper": "0.2719585154867215927527660339"
+              }
+            },
+            {
+              "all_detected_event_count": 34,
+              "candidate_event_count": 312,
+              "comparable_event_count": 26,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 26,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_1_week_swing_disagreement_rate",
+              "not_comparable_event_count": 8,
+              "not_comparable_rate": "0.2352941176470588235294117647",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 12,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 32,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03846153846153846153846153846",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.7647058823529411764705882353",
+              "uncertainty": {
+                "denominator": 26,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03846153846153846153846153846",
+                "wilson_95_half_width": "0.09105290201840205345462687363",
+                "wilson_95_lower": "0.006821984993543479830187817757",
+                "wilson_95_upper": "0.1889277890303475867394415650"
+              }
+            },
+            {
+              "all_detected_event_count": 31,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 28,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_1_week_swing_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09677419354838709677419354839",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03571428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.9032258064516129032258064516",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03571428571428571428571428571",
+                "wilson_95_half_width": "0.08539472879224773063541552099",
+                "wilson_95_lower": "0.006332519849037754128689728269",
+                "wilson_95_upper": "0.1771219774335332153995207702"
+              }
+            }
+          ],
+          "pair_denominators": [
+            28,
+            26,
+            28
+          ],
+          "sample_denominator": 82,
+          "sample_numerator": 5,
+          "sample_rate": "0.06097560975609756097560975610",
+          "sample_uncertainty": {
+            "denominator": 82,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 5,
+            "observed_rate": "0.06097560975609756097560975610",
+            "wilson_95_half_width": "0.05429826996686211434953194989",
+            "wilson_95_lower": "0.02632395506781607659757512332",
+            "wilson_95_upper": "0.1349204950015403052966390231"
+          },
+          "worst_admissible_pair_rate": "0.1071428571428571428571428571"
+        },
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 23,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 23,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_1_week_swing_disagreement_rate",
+              "not_comparable_event_count": 9,
+              "not_comparable_rate": "0.28125",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 70,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.71875",
+              "uncertainty": {
+                "denominator": 23,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07155830922521343418508430939",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1431166184504268683701686188"
+              }
+            },
+            {
+              "all_detected_event_count": 33,
+              "candidate_event_count": 320,
+              "comparable_event_count": 22,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 22,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_1_week_swing_disagreement_rate",
+              "not_comparable_event_count": 11,
+              "not_comparable_rate": "0.3333333333333333333333333333",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 18,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 76,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.6666666666666666666666666667",
+              "uncertainty": {
+                "denominator": 22,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07432743730431045284566628528",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1486548746086209056913325706"
+              }
+            },
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 29,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 29,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_1_week_swing_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09375",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 42,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 2,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.06896551724137931034482758621",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.90625",
+              "uncertainty": {
+                "denominator": 29,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 2,
+                "observed_rate": "0.06896551724137931034482758621",
+                "wilson_95_half_width": "0.1002622676666617911560735805",
+                "wilson_95_lower": "0.01912126616943336710105576669",
+                "wilson_95_upper": "0.2196458015027569494132029278"
+              }
+            }
+          ],
+          "pair_denominators": [
+            23,
+            22,
+            29
+          ],
+          "sample_denominator": 74,
+          "sample_numerator": 2,
+          "sample_rate": "0.02702702702702702702702702703",
+          "sample_uncertainty": {
+            "denominator": 74,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 2,
+            "observed_rate": "0.02702702702702702702702702703",
+            "wilson_95_half_width": "0.04292478626542890258408312794",
+            "wilson_95_lower": "0.007443352638267213252416340147",
+            "wilson_95_upper": "0.09329292516912501842058259603"
+          },
+          "worst_admissible_pair_rate": "0.06896551724137931034482758621"
+        }
+      },
+      "selected_threshold": "0.25",
+      "selected_threshold_usable": false,
+      "sensitivity": {
+        "admissible_grid_values": [
+          "0.25"
+        ],
+        "historical_pair_verdicts_at_selected": {
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+        },
+        "neighbourhood": [
+          "0.20",
+          "0.25",
+          "0.30"
+        ],
+        "neighbours_that_move_historical_verdicts": []
+      },
+      "status": "INSUFFICIENT_EVIDENCE",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "aggregation": "WORST_ADMISSIBLE_PAIR_V1",
+      "calibration_pair_universe": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "direction": "maximum",
+      "frozen_v2_threshold": "0.02",
+      "frozen_v2_threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "gate_pair_universe": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "hard": true,
+      "hard_soft_status_source": "INHERITED_FROM_FROZEN_PARENT_UNCHANGED",
+      "matching_algorithm": "MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1",
+      "mechanism_exercised": false,
+      "mechanism_field": "matched_pair_count",
+      "metric": "within_2_week_swing_disagreement_rate",
+      "minimum_comparable_events_per_gate_pair": 13,
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "objective_surface": [
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.01"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.02"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999999931772698012357576",
+              "false_rejection_probability": "0.9995507463577667966831864074",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999999161837686571298392",
+              "false_rejection_probability": "0.9990470331544597799401155251",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.03"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999907683636231397884338",
+              "false_rejection_probability": "0.9773773666379732952746505840",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999999156174628973599873930",
+              "false_rejection_probability": "0.9619445170904596663904108873",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.05"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999985398902432463582501097",
+              "false_rejection_probability": "0.8332833610898883385351357821",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999900976938911907264176613",
+              "false_rejection_probability": "0.7696487442324713637108556746",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.10"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9995425765985339142923841349",
+              "false_rejection_probability": "0.3536034104212134799495771129",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9991076625878497685223106428",
+              "false_rejection_probability": "0.3406060147919974987625259832",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.15"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9900637843094101772711694079",
+              "false_rejection_probability": "0.09213877406714273535162555421",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9907134619114698729492529549",
+              "false_rejection_probability": "0.1269894208066157275697915395",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.20"
+        },
+        {
+          "admissible": true,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.8903493829268605640684216211",
+              "false_rejection_probability": "0.01165814714733473462538132469",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9224896918378965225144437753",
+              "false_rejection_probability": "0.02779722389293984639990455201",
+              "meets_objective": true,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.25"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.7313015276843129355418339023",
+              "false_rejection_probability": "0.002555919760368223327521816468",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.7773726058294038301818684243",
+              "false_rejection_probability": "0.006218079290083518935438518373",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.30"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.1562982408250510526617810735",
+              "false_rejection_probability": "0.00001067893125966141030889479526",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.2216075873671691509948785245",
+              "false_rejection_probability": "0.00007922193585542053530290691300",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.40"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.008247496514573096550133855429",
+              "false_rejection_probability": "1.212591878623292637242216099E-8",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.01814192726876831570352769050",
+              "false_rejection_probability": "2.211694676594633952760323174E-7",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.50"
+        }
+      ],
+      "pooled_denominator": 156,
+      "pooled_numerator": 7,
+      "reason_codes": [
+        "METRIC_MECHANISM_NOT_EXERCISED_BY_THE_EVIDENCE"
+      ],
+      "reference_band": {
+        "band_level_pi_bar": "0.08971638214820239796546538431",
+        "detectable_alternative_pi_alt": "0.2691491464446071938963961529",
+        "discrimination_multiple": 3,
+        "pooled": {
+          "denominator": 156,
+          "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+          "numerator": 7,
+          "observed_rate": "0.04487179487179487179487179487",
+          "wilson_95_half_width": "0.03390652232732764810041793966",
+          "wilson_95_lower": "0.02190333749354710176462950500",
+          "wilson_95_upper": "0.08971638214820239796546538431"
+        },
+        "population": "independent raw provider pairs only; the candidate reference is on neither side of any calibration measurement"
+      },
+      "samples": {
+        "data/btc019/2023-01-01_2025-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 35,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 28,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_2_week_swing_disagreement_rate",
+              "not_comparable_event_count": 7,
+              "not_comparable_rate": "0.2",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 3,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.1071428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.8",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 3,
+                "observed_rate": "0.1071428571428571428571428571",
+                "wilson_95_half_width": "0.1174200743287107979523692845",
+                "wilson_95_lower": "0.03711836682929999684802746487",
+                "wilson_95_upper": "0.2719585154867215927527660339"
+              }
+            },
+            {
+              "all_detected_event_count": 34,
+              "candidate_event_count": 312,
+              "comparable_event_count": 26,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 26,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_2_week_swing_disagreement_rate",
+              "not_comparable_event_count": 8,
+              "not_comparable_rate": "0.2352941176470588235294117647",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 12,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 32,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03846153846153846153846153846",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.7647058823529411764705882353",
+              "uncertainty": {
+                "denominator": 26,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03846153846153846153846153846",
+                "wilson_95_half_width": "0.09105290201840205345462687363",
+                "wilson_95_lower": "0.006821984993543479830187817757",
+                "wilson_95_upper": "0.1889277890303475867394415650"
+              }
+            },
+            {
+              "all_detected_event_count": 31,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 28,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_2_week_swing_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09677419354838709677419354839",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03571428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.9032258064516129032258064516",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03571428571428571428571428571",
+                "wilson_95_half_width": "0.08539472879224773063541552099",
+                "wilson_95_lower": "0.006332519849037754128689728269",
+                "wilson_95_upper": "0.1771219774335332153995207702"
+              }
+            }
+          ],
+          "pair_denominators": [
+            28,
+            26,
+            28
+          ],
+          "sample_denominator": 82,
+          "sample_numerator": 5,
+          "sample_rate": "0.06097560975609756097560975610",
+          "sample_uncertainty": {
+            "denominator": 82,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 5,
+            "observed_rate": "0.06097560975609756097560975610",
+            "wilson_95_half_width": "0.05429826996686211434953194989",
+            "wilson_95_lower": "0.02632395506781607659757512332",
+            "wilson_95_upper": "0.1349204950015403052966390231"
+          },
+          "worst_admissible_pair_rate": "0.1071428571428571428571428571"
+        },
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 23,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 23,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_2_week_swing_disagreement_rate",
+              "not_comparable_event_count": 9,
+              "not_comparable_rate": "0.28125",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 70,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.71875",
+              "uncertainty": {
+                "denominator": 23,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07155830922521343418508430939",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1431166184504268683701686188"
+              }
+            },
+            {
+              "all_detected_event_count": 33,
+              "candidate_event_count": 320,
+              "comparable_event_count": 22,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 22,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_2_week_swing_disagreement_rate",
+              "not_comparable_event_count": 11,
+              "not_comparable_rate": "0.3333333333333333333333333333",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 18,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 76,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.6666666666666666666666666667",
+              "uncertainty": {
+                "denominator": 22,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07432743730431045284566628528",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1486548746086209056913325706"
+              }
+            },
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 29,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 29,
+              "matched_pair_count": 0,
+              "measurement_state": "DEFINED",
+              "metric": "within_2_week_swing_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09375",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 42,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 2,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.06896551724137931034482758621",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.90625",
+              "uncertainty": {
+                "denominator": 29,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 2,
+                "observed_rate": "0.06896551724137931034482758621",
+                "wilson_95_half_width": "0.1002622676666617911560735805",
+                "wilson_95_lower": "0.01912126616943336710105576669",
+                "wilson_95_upper": "0.2196458015027569494132029278"
+              }
+            }
+          ],
+          "pair_denominators": [
+            23,
+            22,
+            29
+          ],
+          "sample_denominator": 74,
+          "sample_numerator": 2,
+          "sample_rate": "0.02702702702702702702702702703",
+          "sample_uncertainty": {
+            "denominator": 74,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 2,
+            "observed_rate": "0.02702702702702702702702702703",
+            "wilson_95_half_width": "0.04292478626542890258408312794",
+            "wilson_95_lower": "0.007443352638267213252416340147",
+            "wilson_95_upper": "0.09329292516912501842058259603"
+          },
+          "worst_admissible_pair_rate": "0.06896551724137931034482758621"
+        }
+      },
+      "selected_threshold": "0.25",
+      "selected_threshold_usable": false,
+      "sensitivity": {
+        "admissible_grid_values": [
+          "0.25"
+        ],
+        "historical_pair_verdicts_at_selected": {
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+        },
+        "neighbourhood": [
+          "0.20",
+          "0.25",
+          "0.30"
+        ],
+        "neighbours_that_move_historical_verdicts": []
+      },
+      "status": "INSUFFICIENT_EVIDENCE",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "aggregation": "WORST_ADMISSIBLE_PAIR_V1",
+      "calibration_pair_universe": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "direction": "maximum",
+      "frozen_v2_threshold": "0.05",
+      "frozen_v2_threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "gate_pair_universe": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "hard": true,
+      "hard_soft_status_source": "INHERITED_FROM_FROZEN_PARENT_UNCHANGED",
+      "matching_algorithm": null,
+      "metric": "structural_state_disagreement_rate",
+      "minimum_comparable_events_per_gate_pair": 17,
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "objective_surface": [
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999749467676826789066854",
+              "false_rejection_probability": "0.9956140051791077959724099653",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999998618222768033766183986",
+              "false_rejection_probability": "0.9925507894497349159538729307",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.01"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999749467676826789066854",
+              "false_rejection_probability": "0.9956140051791077959724099653",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999998618222768033766183986",
+              "false_rejection_probability": "0.9925507894497349159538729307",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.02"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999999749467676826789066854",
+              "false_rejection_probability": "0.9956140051791077959724099653",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999998618222768033766183986",
+              "false_rejection_probability": "0.9925507894497349159538729307",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.03"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999894303624331016120068410",
+              "false_rejection_probability": "0.8962824546777436474052904100",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9999559509795642861934288348",
+              "false_rejection_probability": "0.8565421379498373467334188755",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.05"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9994586487075358173525643438",
+              "false_rejection_probability": "0.5852769975844747800344836447",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9982861940847326605850875489",
+              "false_rejection_probability": "0.5087809749418971394875188854",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.10"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9707443392774003884584918867",
+              "false_rejection_probability": "0.1372661038885708353869355303",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9613935601105768610782068330",
+              "false_rejection_probability": "0.1338418440491559389946716819",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.15"
+        },
+        {
+          "admissible": true,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.8183653881046019259135647242",
+              "false_rejection_probability": "0.02038527001564445911330650182",
+              "meets_objective": true,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.8418730381255762377469733040",
+              "false_rejection_probability": "0.03381155401667573069048941910",
+              "meets_objective": true,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.20"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.4423953679241306524506147175",
+              "false_rejection_probability": "0.001534340657598115007495835342",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.5437208282847008426576918550",
+              "false_rejection_probability": "0.005160079513429226133299243076",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.25"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.2355813646871876063922044722",
+              "false_rejection_probability": "0.0002372931246458843015086683885",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.3022040194823859110792497337",
+              "false_rejection_probability": "0.0008103257497187995289176200870",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.30"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.01279837153249119345576949584",
+              "false_rejection_probability": "3.433533195266831936871374704E-7",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.02712341175516758127699295202",
+              "false_rejection_probability": "0.000004893200295676043794214822994",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.40"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.0001895879719190733494120660756",
+              "false_rejection_probability": "1.327097526011698781857533238E-10",
+              "meets_objective": false,
+              "pair_denominators": [
+                28,
+                26,
+                28
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.0007319955079432653096741445362",
+              "false_rejection_probability": "5.034865951881126437465872669E-9",
+              "meets_objective": false,
+              "pair_denominators": [
+                23,
+                22,
+                29
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.50"
+        }
+      ],
+      "pooled_denominator": 156,
+      "pooled_numerator": 4,
+      "reason_codes": [],
+      "reference_band": {
+        "band_level_pi_bar": "0.06406705862402570755858601781",
+        "detectable_alternative_pi_alt": "0.1922011758720771226757580534",
+        "discrimination_multiple": 3,
+        "pooled": {
+          "denominator": 156,
+          "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+          "numerator": 4,
+          "observed_rate": "0.02564102564102564102564102564",
+          "wilson_95_half_width": "0.02702579627550836262881825859",
+          "wilson_95_lower": "0.01001546607300898230094950063",
+          "wilson_95_upper": "0.06406705862402570755858601781"
+        },
+        "population": "independent raw provider pairs only; the candidate reference is on neither side of any calibration measurement"
+      },
+      "samples": {
+        "data/btc019/2023-01-01_2025-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 35,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 28,
+              "measurement_state": "DEFINED",
+              "metric": "structural_state_disagreement_rate",
+              "not_comparable_event_count": 7,
+              "not_comparable_rate": "0.2",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 2,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.07142857142857142857142857143",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.8",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 2,
+                "observed_rate": "0.07142857142857142857142857143",
+                "wilson_95_half_width": "0.1033207807843424105633819302",
+                "wilson_95_lower": "0.01981206411530572921886906912",
+                "wilson_95_upper": "0.2264536256839905503456329295"
+              }
+            },
+            {
+              "all_detected_event_count": 34,
+              "candidate_event_count": 312,
+              "comparable_event_count": 26,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 26,
+              "measurement_state": "DEFINED",
+              "metric": "structural_state_disagreement_rate",
+              "not_comparable_event_count": 8,
+              "not_comparable_rate": "0.2352941176470588235294117647",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 12,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 32,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03846153846153846153846153846",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.7647058823529411764705882353",
+              "uncertainty": {
+                "denominator": 26,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03846153846153846153846153846",
+                "wilson_95_half_width": "0.09105290201840205345462687363",
+                "wilson_95_lower": "0.006821984993543479830187817757",
+                "wilson_95_upper": "0.1889277890303475867394415650"
+              }
+            },
+            {
+              "all_detected_event_count": 31,
+              "candidate_event_count": 312,
+              "comparable_event_count": 28,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 28,
+              "measurement_state": "DEFINED",
+              "metric": "structural_state_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09677419354838709677419354839",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 28,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.03571428571428571428571428571",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.9032258064516129032258064516",
+              "uncertainty": {
+                "denominator": 28,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.03571428571428571428571428571",
+                "wilson_95_half_width": "0.08539472879224773063541552099",
+                "wilson_95_lower": "0.006332519849037754128689728269",
+                "wilson_95_upper": "0.1771219774335332153995207702"
+              }
+            }
+          ],
+          "pair_denominators": [
+            28,
+            26,
+            28
+          ],
+          "sample_denominator": 82,
+          "sample_numerator": 4,
+          "sample_rate": "0.04878048780487804878048780488",
+          "sample_uncertainty": {
+            "denominator": 82,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 4,
+            "observed_rate": "0.04878048780487804878048780488",
+            "wilson_95_half_width": "0.04984177682900679395420247803",
+            "wilson_95_lower": "0.01913106556774579118587979167",
+            "wilson_95_upper": "0.1188146192257593790942847477"
+          },
+          "worst_admissible_pair_rate": "0.07142857142857142857142857143"
+        },
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 23,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 23,
+              "measurement_state": "DEFINED",
+              "metric": "structural_state_disagreement_rate",
+              "not_comparable_event_count": 9,
+              "not_comparable_rate": "0.28125",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 70,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.71875",
+              "uncertainty": {
+                "denominator": 23,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07155830922521343418508430939",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1431166184504268683701686188"
+              }
+            },
+            {
+              "all_detected_event_count": 33,
+              "candidate_event_count": 320,
+              "comparable_event_count": 22,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 22,
+              "measurement_state": "DEFINED",
+              "metric": "structural_state_disagreement_rate",
+              "not_comparable_event_count": 11,
+              "not_comparable_rate": "0.3333333333333333333333333333",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 18,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 76,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.6666666666666666666666666667",
+              "uncertainty": {
+                "denominator": 22,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.07432743730431045284566628528",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1486548746086209056913325706"
+              }
+            },
+            {
+              "all_detected_event_count": 32,
+              "candidate_event_count": 320,
+              "comparable_event_count": 29,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 29,
+              "measurement_state": "DEFINED",
+              "metric": "structural_state_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.09375",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 42,
+                "REQUIRED_SESSION_OUTSIDE_SERIES_COVERAGE": 12
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.90625",
+              "uncertainty": {
+                "denominator": 29,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.05848489924987038357827004278",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.1169697984997407671565400856"
+              }
+            }
+          ],
+          "pair_denominators": [
+            23,
+            22,
+            29
+          ],
+          "sample_denominator": 74,
+          "sample_numerator": 0,
+          "sample_rate": "0",
+          "sample_uncertainty": {
+            "denominator": 74,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 0,
+            "observed_rate": "0",
+            "wilson_95_half_width": "0.02467488969819303674144229484",
+            "wilson_95_lower": "0",
+            "wilson_95_upper": "0.04934977939638607348288458968"
+          },
+          "worst_admissible_pair_rate": "0"
+        }
+      },
+      "selected_threshold": "0.20",
+      "selected_threshold_usable": true,
+      "sensitivity": {
+        "admissible_grid_values": [
+          "0.20"
+        ],
+        "historical_pair_verdicts_at_selected": {
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_bitstamp": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitfinex_vs_coinbase": "PASS",
+          "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+        },
+        "neighbourhood": [
+          "0.15",
+          "0.20",
+          "0.25"
+        ],
+        "neighbours_that_move_historical_verdicts": []
+      },
+      "status": "CALIBRATED",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "aggregation": "WORST_ADMISSIBLE_PAIR_V1",
+      "calibration_pair_universe": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "direction": "maximum",
+      "frozen_v2_threshold": "0.05",
+      "frozen_v2_threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "gate_pair_universe": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "hard": true,
+      "hard_soft_status_source": "INHERITED_FROM_FROZEN_PARENT_UNCHANGED",
+      "matching_algorithm": null,
+      "metric": "breakout_disagreement_rate",
+      "minimum_comparable_events_per_gate_pair": null,
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "objective_surface": [
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999172988958927942463027099",
+              "false_rejection_probability": "0.9402950023419835978652441428",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9403990211615320354491806657",
+              "false_rejection_probability": "0.5706581674057918585263758415",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.01"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999172988958927942463027099",
+              "false_rejection_probability": "0.9402950023419835978652441428",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9403990211615320354491806657",
+              "false_rejection_probability": "0.5706581674057918585263758415",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.02"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999172988958927942463027099",
+              "false_rejection_probability": "0.9402950023419835978652441428",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9403990211615320354491806657",
+              "false_rejection_probability": "0.5706581674057918585263758415",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.03"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9999172988958927942463027099",
+              "false_rejection_probability": "0.9402950023419835978652441428",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9403990211615320354491806657",
+              "false_rejection_probability": "0.5706581674057918585263758415",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.05"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9995521006389232818978206406",
+              "false_rejection_probability": "0.8697244516057038315795634932",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.9403990211615320354491806657",
+              "false_rejection_probability": "0.5706581674057918585263758415",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.10"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9916723970492241281249472060",
+              "false_rejection_probability": "0.5363693341640419013544252657",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.7430058863860604926481138014",
+              "false_rejection_probability": "0.1900507128107145530249547628",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.15"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.9779298543397641960299604762",
+              "false_rejection_probability": "0.4003104155467813879882369590",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.7430058863860604926481138014",
+              "false_rejection_probability": "0.1900507128107145530249547628",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.20"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.8232933406109375310534337546",
+              "false_rejection_probability": "0.09495025007099510769226233829",
+              "meets_objective": true,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.4524510038929852886593378051",
+              "false_rejection_probability": "0.04009298320289929577989707644",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.25"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.8232933406109375310534337546",
+              "false_rejection_probability": "0.09495025007099510769226233829",
+              "meets_objective": true,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.4524510038929852886593378051",
+              "false_rejection_probability": "0.04009298320289929577989707644",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.30"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.4913330200695374787271036701",
+              "false_rejection_probability": "0.01387071037675447692920623511",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.2029679190936474076004044318",
+              "false_rejection_probability": "0.005628067801767276155930841382",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.40"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "0.1449825623727756190990476453",
+              "false_rejection_probability": "0.001096108828414845736267355231",
+              "meets_objective": false,
+              "pair_denominators": [
+                9,
+                9,
+                12
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "0.06525695879922984873400436171",
+              "false_rejection_probability": "0.0005359311374536058783951467953",
+              "meets_objective": false,
+              "pair_denominators": [
+                9
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.50"
+        }
+      ],
+      "pooled_denominator": 39,
+      "pooled_numerator": 0,
+      "reason_codes": [
+        "NO_ACHIEVABLE_AND_DISCRIMINATING_THRESHOLD_EXISTS"
+      ],
+      "reference_band": {
+        "band_level_pi_bar": "0.08966685370757143297432792917",
+        "detectable_alternative_pi_alt": "0.2690005611227142989229837875",
+        "discrimination_multiple": 3,
+        "pooled": {
+          "denominator": 39,
+          "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+          "numerator": 0,
+          "observed_rate": "0",
+          "wilson_95_half_width": "0.04483342685378571648716396459",
+          "wilson_95_lower": "0",
+          "wilson_95_upper": "0.08966685370757143297432792917"
+        },
+        "population": "independent raw provider pairs only; the candidate reference is on neither side of any calibration measurement"
+      },
+      "samples": {
+        "data/btc019/2023-01-01_2025-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 14,
+              "candidate_event_count": 16,
+              "comparable_event_count": 9,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 9,
+              "measurement_state": "DEFINED",
+              "metric": "breakout_disagreement_rate",
+              "not_comparable_event_count": 5,
+              "not_comparable_rate": "0.3571428571428571428571428571",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 1,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 3,
+                "SOURCE_LEVEL_NOT_SHARED": 1
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.6428571428571428571428571429",
+              "uncertainty": {
+                "denominator": 9,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.1495725242097720489061392891",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.2991450484195440978122785781"
+              }
+            },
+            {
+              "all_detected_event_count": 13,
+              "candidate_event_count": 15,
+              "comparable_event_count": 9,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 9,
+              "measurement_state": "DEFINED",
+              "metric": "breakout_disagreement_rate",
+              "not_comparable_event_count": 4,
+              "not_comparable_rate": "0.3076923076923076923076923077",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 2,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 3,
+                "SOURCE_LEVEL_NOT_SHARED": 1
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.6923076923076923076923076923",
+              "uncertainty": {
+                "denominator": 9,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.1495725242097720489061392891",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.2991450484195440978122785781"
+              }
+            },
+            {
+              "all_detected_event_count": 13,
+              "candidate_event_count": 15,
+              "comparable_event_count": 12,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 12,
+              "measurement_state": "DEFINED",
+              "metric": "breakout_disagreement_rate",
+              "not_comparable_event_count": 1,
+              "not_comparable_rate": "0.07692307692307692307692307692",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 1,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 2
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.9230769230769230769230769231",
+              "uncertainty": {
+                "denominator": 12,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.1212470033276204474554469722",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.2424940066552408949108939444"
+              }
+            }
+          ],
+          "pair_denominators": [
+            9,
+            9,
+            12
+          ],
+          "sample_denominator": 30,
+          "sample_numerator": 0,
+          "sample_rate": "0",
+          "sample_uncertainty": {
+            "denominator": 30,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 0,
+            "observed_rate": "0",
+            "wilson_95_half_width": "0.05675669658698438706826702683",
+            "wilson_95_lower": "0",
+            "wilson_95_upper": "0.1135133931739687741365340537"
+          },
+          "worst_admissible_pair_rate": "0"
+        },
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+          "admissible_pair_count": 1,
+          "measurements": [
+            {
+              "all_detected_event_count": 12,
+              "candidate_event_count": 18,
+              "comparable_event_count": 5,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 5,
+              "measurement_state": "DEFINED",
+              "metric": "breakout_disagreement_rate",
+              "not_comparable_event_count": 7,
+              "not_comparable_rate": "0.5833333333333333333333333333",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 8,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 5
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [
+                "PAIR_BELOW_STRUCTURAL_COMPARABILITY_FLOOR"
+              ],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+              "structural_comparability_rate": "0.4166666666666666666666666667",
+              "uncertainty": {
+                "denominator": 5,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.2172412323915874100818591073",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.4344824647831748201637182146"
+              }
+            },
+            {
+              "all_detected_event_count": 12,
+              "candidate_event_count": 18,
+              "comparable_event_count": 5,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 5,
+              "measurement_state": "DEFINED",
+              "metric": "breakout_disagreement_rate",
+              "not_comparable_event_count": 7,
+              "not_comparable_rate": "0.5833333333333333333333333333",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 8,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 5
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [
+                "PAIR_BELOW_STRUCTURAL_COMPARABILITY_FLOOR"
+              ],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+              "structural_comparability_rate": "0.4166666666666666666666666667",
+              "uncertainty": {
+                "denominator": 5,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.2172412323915874100818591073",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.4344824647831748201637182146"
+              }
+            },
+            {
+              "all_detected_event_count": 11,
+              "candidate_event_count": 17,
+              "comparable_event_count": 9,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 9,
+              "measurement_state": "DEFINED",
+              "metric": "breakout_disagreement_rate",
+              "not_comparable_event_count": 2,
+              "not_comparable_rate": "0.1818181818181818181818181818",
+              "not_comparable_reason_counts": {
+                "SOURCE_LEVEL_NOT_COMPARABLE": 2
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.8181818181818181818181818182",
+              "uncertainty": {
+                "denominator": 9,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.1495725242097720489061392891",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.2991450484195440978122785781"
+              }
+            }
+          ],
+          "pair_denominators": [
+            9
+          ],
+          "sample_denominator": 9,
+          "sample_numerator": 0,
+          "sample_rate": "0",
+          "sample_uncertainty": {
+            "denominator": 9,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 0,
+            "observed_rate": "0",
+            "wilson_95_half_width": "0.1495725242097720489061392891",
+            "wilson_95_lower": "0",
+            "wilson_95_upper": "0.2991450484195440978122785781"
+          },
+          "worst_admissible_pair_rate": "0"
+        }
+      },
+      "selected_threshold": null,
+      "selected_threshold_usable": false,
+      "sensitivity": {
+        "admissible_grid_values": [],
+        "historical_pair_verdicts_at_selected": {},
+        "neighbourhood": [],
+        "neighbours_that_move_historical_verdicts": []
+      },
+      "status": "INSUFFICIENT_EVIDENCE",
+      "validation_stage": "historical_oos"
+    },
+    {
+      "aggregation": "WORST_ADMISSIBLE_PAIR_V1",
+      "calibration_pair_universe": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "direction": "maximum",
+      "frozen_v2_threshold": "0.05",
+      "frozen_v2_threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+      "gate_pair_universe": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "hard": true,
+      "hard_soft_status_source": "INHERITED_FROM_FROZEN_PARENT_UNCHANGED",
+      "matching_algorithm": null,
+      "metric": "reclaim_disagreement_rate",
+      "minimum_comparable_events_per_gate_pair": null,
+      "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+      "objective_surface": [
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9988897736443722235526074412",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.8806860828749204148621322993",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.01"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9988897736443722235526074412",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.8806860828749204148621322993",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.02"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9988897736443722235526074412",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.8806860828749204148621322993",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.03"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9988897736443722235526074412",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.8806860828749204148621322993",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.05"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9988897736443722235526074412",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.8806860828749204148621322993",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.10"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "FAIL",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "FAIL",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "FAIL"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9988897736443722235526074412",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.8806860828749204148621322993",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.15"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9382006192910780070405113223",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.5645665188153470287232373514",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.20"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9382006192910780070405113223",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.5645665188153470287232373514",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.25"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.9382006192910780070405113223",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.5645665188153470287232373514",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.30"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.6115387762265735576108518804",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.2295458231945533616914545914",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.40"
+        },
+        {
+          "admissible": false,
+          "historical_pair_verdicts": {
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_bitstamp": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitfinex_vs_coinbase": "PASS",
+            "data/btc019/2023-01-01_2025-12-31::bitstamp_vs_coinbase": "PASS",
+            "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31::bitstamp_vs_coinbase": "PASS"
+          },
+          "per_sample": [
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.4737785820206023051213683552",
+              "meets_objective": false,
+              "pair_denominators": [
+                5,
+                5,
+                6
+              ],
+              "sample_dir": "data/btc019/2023-01-01_2025-12-31"
+            },
+            {
+              "discrimination_power": "1",
+              "false_rejection_probability": "0.2295458231945533616914545914",
+              "meets_objective": false,
+              "pair_denominators": [
+                5
+              ],
+              "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+            }
+          ],
+          "threshold": "0.50"
+        }
+      ],
+      "pooled_denominator": 21,
+      "pooled_numerator": 3,
+      "reason_codes": [
+        "DEGENERATE_ALTERNATIVE_HYPOTHESIS",
+        "NO_ACHIEVABLE_AND_DISCRIMINATING_THRESHOLD_EXISTS"
+      ],
+      "reference_band": {
+        "band_level_pi_bar": "0.3463606028062094443385432956",
+        "detectable_alternative_pi_alt": "1",
+        "discrimination_multiple": 3,
+        "pooled": {
+          "denominator": 21,
+          "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+          "numerator": 3,
+          "observed_rate": "0.1428571428571428571428571429",
+          "wilson_95_half_width": "0.1482752389044783790028656347",
+          "wilson_95_lower": "0.04981012499725268633281202616",
+          "wilson_95_upper": "0.3463606028062094443385432956"
+        },
+        "population": "independent raw provider pairs only; the candidate reference is on neither side of any calibration measurement"
+      },
+      "samples": {
+        "data/btc019/2023-01-01_2025-12-31": {
+          "admissible_pair_count": 3,
+          "measurements": [
+            {
+              "all_detected_event_count": 9,
+              "candidate_event_count": 19,
+              "comparable_event_count": 5,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 5,
+              "measurement_state": "DEFINED",
+              "metric": "reclaim_disagreement_rate",
+              "not_comparable_event_count": 4,
+              "not_comparable_rate": "0.4444444444444444444444444444",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 3,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 4,
+                "SOURCE_LEVEL_NOT_SHARED": 2
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.2",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.5555555555555555555555555556",
+              "uncertainty": {
+                "denominator": 5,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.2",
+                "wilson_95_half_width": "0.2941206308025222812264199311",
+                "wilson_95_lower": "0.03622410863243016482269553327",
+                "wilson_95_upper": "0.6244653702374747272755353955"
+              }
+            },
+            {
+              "all_detected_event_count": 10,
+              "candidate_event_count": 19,
+              "comparable_event_count": 5,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 5,
+              "measurement_state": "DEFINED",
+              "metric": "reclaim_disagreement_rate",
+              "not_comparable_event_count": 5,
+              "not_comparable_rate": "0.5",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 4,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 4,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 5
+              },
+              "numerator": 0,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0",
+              "reason_codes": [],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.5",
+              "uncertainty": {
+                "denominator": 5,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 0,
+                "observed_rate": "0",
+                "wilson_95_half_width": "0.2172412323915874100818591073",
+                "wilson_95_lower": "0",
+                "wilson_95_upper": "0.4344824647831748201637182146"
+              }
+            },
+            {
+              "all_detected_event_count": 7,
+              "candidate_event_count": 16,
+              "comparable_event_count": 6,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 6,
+              "measurement_state": "DEFINED",
+              "metric": "reclaim_disagreement_rate",
+              "not_comparable_event_count": 1,
+              "not_comparable_rate": "0.1428571428571428571428571429",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 7,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 1,
+                "SOURCE_LEVEL_NOT_SHARED": 1
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.1666666666666666666666666667",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "0.8571428571428571428571428571",
+              "uncertainty": {
+                "denominator": 6,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.1666666666666666666666666667",
+                "wilson_95_half_width": "0.2667247262190817958386513354",
+                "wilson_95_lower": "0.03005336974830666486736259771",
+                "wilson_95_upper": "0.5635028221864702565446652685"
+              }
+            }
+          ],
+          "pair_denominators": [
+            5,
+            5,
+            6
+          ],
+          "sample_denominator": 16,
+          "sample_numerator": 2,
+          "sample_rate": "0.125",
+          "sample_uncertainty": {
+            "denominator": 16,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 2,
+            "observed_rate": "0.125",
+            "wilson_95_half_width": "0.1626253924571732359613296581",
+            "wilson_95_lower": "0.03497748774324045976473581060",
+            "wilson_95_upper": "0.3602282726575869316873951267"
+          },
+          "worst_admissible_pair_rate": "0.2"
+        },
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": {
+          "admissible_pair_count": 1,
+          "measurements": [
+            {
+              "all_detected_event_count": 5,
+              "candidate_event_count": 14,
+              "comparable_event_count": 2,
+              "comparison_id": "bitfinex_vs_bitstamp",
+              "denominator": 2,
+              "measurement_state": "DEFINED",
+              "metric": "reclaim_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.6",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 7,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 4
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.5",
+              "reason_codes": [
+                "PAIR_BELOW_STRUCTURAL_COMPARABILITY_FLOOR"
+              ],
+              "series_pair": [
+                "bitfinex",
+                "bitstamp"
+              ],
+              "state": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+              "structural_comparability_rate": "0.4",
+              "uncertainty": {
+                "denominator": 2,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.5",
+                "wilson_95_half_width": "0.4054687942657692868964470647",
+                "wilson_95_lower": "0.09453120573423071310355293528",
+                "wilson_95_upper": "0.9054687942657692868964470647"
+              }
+            },
+            {
+              "all_detected_event_count": 5,
+              "candidate_event_count": 15,
+              "comparable_event_count": 2,
+              "comparison_id": "bitfinex_vs_coinbase",
+              "denominator": 2,
+              "measurement_state": "DEFINED",
+              "metric": "reclaim_disagreement_rate",
+              "not_comparable_event_count": 3,
+              "not_comparable_rate": "0.6",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_BOTH_SERIES": 2,
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 4,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 6
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.5",
+              "reason_codes": [
+                "PAIR_BELOW_STRUCTURAL_COMPARABILITY_FLOOR"
+              ],
+              "series_pair": [
+                "bitfinex",
+                "coinbase"
+              ],
+              "state": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+              "structural_comparability_rate": "0.4",
+              "uncertainty": {
+                "denominator": 2,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.5",
+                "wilson_95_half_width": "0.4054687942657692868964470647",
+                "wilson_95_lower": "0.09453120573423071310355293528",
+                "wilson_95_upper": "0.9054687942657692868964470647"
+              }
+            },
+            {
+              "all_detected_event_count": 5,
+              "candidate_event_count": 15,
+              "comparable_event_count": 5,
+              "comparison_id": "bitstamp_vs_coinbase",
+              "denominator": 5,
+              "measurement_state": "DEFINED",
+              "metric": "reclaim_disagreement_rate",
+              "not_comparable_event_count": 0,
+              "not_comparable_rate": "0",
+              "not_comparable_reason_counts": {
+                "REQUIRED_SESSION_ABSENT_IN_ONE_SERIES": 2,
+                "SOURCE_LEVEL_NOT_COMPARABLE": 1,
+                "SOURCE_LEVEL_NOT_SHARED": 2
+              },
+              "numerator": 1,
+              "pair_purpose": "SOURCE_DISPERSION_CALIBRATION_PAIR",
+              "rate": "0.2",
+              "reason_codes": [],
+              "series_pair": [
+                "bitstamp",
+                "coinbase"
+              ],
+              "state": "PAIR_ADMISSIBLE",
+              "structural_comparability_rate": "1",
+              "uncertainty": {
+                "denominator": 5,
+                "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+                "numerator": 1,
+                "observed_rate": "0.2",
+                "wilson_95_half_width": "0.2941206308025222812264199311",
+                "wilson_95_lower": "0.03622410863243016482269553327",
+                "wilson_95_upper": "0.6244653702374747272755353955"
+              }
+            }
+          ],
+          "pair_denominators": [
+            5
+          ],
+          "sample_denominator": 5,
+          "sample_numerator": 1,
+          "sample_rate": "0.2",
+          "sample_uncertainty": {
+            "denominator": 5,
+            "method": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+            "numerator": 1,
+            "observed_rate": "0.2",
+            "wilson_95_half_width": "0.2941206308025222812264199311",
+            "wilson_95_lower": "0.03622410863243016482269553327",
+            "wilson_95_upper": "0.6244653702374747272755353955"
+          },
+          "worst_admissible_pair_rate": "0.2"
+        }
+      },
+      "selected_threshold": null,
+      "selected_threshold_usable": false,
+      "sensitivity": {
+        "admissible_grid_values": [],
+        "historical_pair_verdicts_at_selected": {},
+        "neighbourhood": [],
+        "neighbours_that_move_historical_verdicts": []
+      },
+      "status": "INSUFFICIENT_EVIDENCE",
+      "validation_stage": "historical_oos"
+    }
+  ],
+  "parent_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+  "parent_protocol_version": "BTC_REFERENCE_COMPOSITE_V2",
+  "phase_a_frozen_before_calibration": true,
+  "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+  "production_canonical_reference": "UNRESOLVED",
+  "production_promotion_authorized": false,
+  "production_swing_semantics_changed": false,
+  "prohibited_optimization_criteria": [
+    "maximising the number of pairs, samples or gates that pass",
+    "placing a threshold immediately above the maximum observed rate",
+    "choosing a threshold because the candidate reference would survive it",
+    "choosing a threshold because it reproduces a frozen V2 verdict",
+    "using any measurement in which the candidate reference is one side",
+    "using the sealed 2015-2019 sample in any form",
+    "fitting a model of any kind, including any machine-learned model",
+    "widening a threshold after seeing that a metric would not be calibrated"
+  ],
+  "proposed_successor_definition_sha256": "1ac5438a2eaf742c72bde285ba8289629d17986e1ec00fbee61d724b38417baa",
+  "proposed_successor_version": "BTC_REFERENCE_COMPOSITE_V3",
+  "research_only": true,
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_RECORD_V1",
+  "sealed_sample_collected": false,
+  "sealed_sample_opened": false,
+  "sealed_sample_used_for_calibration": false,
+  "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1",
+  "successor_status": "PROPOSED_PENDING_THRESHOLD_CALIBRATION"
+}
