@@ -1,0 +1,1425 @@
+{
+  "architecture_comparison": {
+    "comparison_id": "V2_V3_PROPOSAL_VERSUS_FINAL_V3_ARCHITECTURE_V1",
+    "final_v3": {
+      "diagnostic_structural_metrics": [
+        "breakout_disagreement_rate",
+        "reclaim_disagreement_rate",
+        "within_1_week_swing_disagreement_rate",
+        "within_2_week_swing_disagreement_rate"
+      ],
+      "hard_structural_rate_gates": 1,
+      "new_hard_requirements": [
+        "structural_comparability_rate",
+        "required_gate_pair_count",
+        "unrecorded_not_comparable_event_count",
+        "unreviewed_derived_level_disagreement_count",
+        "raw_provider_structural_dispersion_guard"
+      ],
+      "soft_structural_metrics": [
+        "exact_timestamp_swing_disagreement_rate"
+      ],
+      "structural_rate_gates": 2
+    },
+    "metric_changes": [
+      {
+        "change": "DEMOTED_TO_DIAGNOSTIC",
+        "final_role": "DIAGNOSTIC_ONLY",
+        "metric": "breakout_disagreement_rate",
+        "parent_hard": true,
+        "parent_threshold": "0.05",
+        "protection_that_remains": "A breakout difference from a swing the two series disagree about is already counted once by structural_state -- which is defined as exactly the swing disagreements that changed breakout or reclaim state. What remains here is a differing confirmation of a shared level, whose trade-level consequence is bounded hard and directly by the inherited Tier-4 stop, MFE/MAE, eligibility, action and setup-classification gates on hourly synchronized bars.",
+        "why_demoted": "Zero disagreements over 39 pooled comparable events, on admissible pair denominators of 5 to 12. At a denominator of 12 and no disagreements the 95% upper bound is 0.2425, and at 9 it is 0.2991: the evidence cannot exclude a rate above any economically defensible limit for a derived level, so no certification is available at these denominators. Under the predecessor's relative alternative it was worse -- unidentifiable at every denominator, as Stage 1 reconfirms.",
+        "why_phase_1_safety_is_not_materially_weakened": "A rate gate that cannot certify on any realistic denominator delivers UNDEFINED, not protection. The events are economically meaningful, so V3 keeps them as a complete census with a hard requirement that every observed derived-level disagreement is individually reviewed and recorded -- which at these counts is a stronger control than a rate compared against a number nobody can defend."
+      },
+      {
+        "change": "RETAINED_AS_SOFT",
+        "final_role": "SOFT_WARNING_GATE",
+        "metric": "exact_timestamp_swing_disagreement_rate",
+        "parent_hard": false,
+        "parent_threshold": "0.15",
+        "protection_that_remains": "It shares structural_state's denominator and its numerator is a superset of structural_state's on every one of the twelve measurements; structural_state is exactly the part of it that propagated. Two hard vetoes over one nested event set would be the same evidence counted twice, which the project's factor-separation rule refuses. What it adds beyond the hard gate is timing information that has not yet propagated, which is a reason to look rather than a reason to reject.",
+        "why_demoted": "Same denominator as the hard gate, so it is measurable; but a label-level difference is not by itself economic harm, so its measurability does not make it an approval veto.",
+        "why_phase_1_safety_is_not_materially_weakened": "Every exact-timestamp disagreement that carries economic consequence is, by construction, also a structural_state event and is already vetoed. Those that carry none are labelling differences; rejecting a sound reference for them costs research and buys no protection."
+      },
+      {
+        "change": "DEMOTED_TO_DIAGNOSTIC",
+        "final_role": "DIAGNOSTIC_ONLY",
+        "metric": "reclaim_disagreement_rate",
+        "parent_hard": true,
+        "parent_threshold": "0.05",
+        "protection_that_remains": "Same position as breakout: propagated swing differences are already counted by structural_state, and the trade-level consequence of a differing confirmation is bounded by the inherited Tier-4 gates.",
+        "why_demoted": "Three disagreements over 21 pooled comparable events, with admissible pair denominators of 2 to 6. At 5 comparable events even a zero numerator has a 95% upper bound of 0.4345, and 1/5 gives 0.6245. Nothing in that range is an economically defensible materiality limit for a derived level, and the non-sealed history that would enlarge the denominator does not exist.",
+        "why_phase_1_safety_is_not_materially_weakened": "Identical to breakout, and more so: reclaim is the one metric whose sparsity is genuine rather than an artefact of the objective, and it is precisely where a frequentist rate would invent precision. The census plus mandatory individual review keeps every event visible and accounted for."
+      },
+      {
+        "change": "RETAINED_AS_HARD",
+        "final_role": "HARD_APPROVAL_GATE",
+        "metric": "structural_state_disagreement_rate",
+        "parent_hard": true,
+        "parent_threshold": "0.05",
+        "protection_that_remains": "Nothing else in the protocol measures upstream structural difference. The Tier-4 gates measure the harm once it reaches a trade; this measures the cause, and a systematically different structural description can exist in a period whose trades happen not to expose it.",
+        "why_demoted": "not demoted",
+        "why_phase_1_safety_is_not_materially_weakened": "Demoting it would leave no gate at all on upstream structural difference, and the derived-level and Tier-4 evidence would then be certifying the consequences of a structurally different series rather than confirming a structurally equivalent one."
+      },
+      {
+        "change": "DEMOTED_TO_DIAGNOSTIC",
+        "final_role": "DIAGNOSTIC_ONLY",
+        "metric": "within_1_week_swing_disagreement_rate",
+        "parent_hard": true,
+        "parent_threshold": "0.05",
+        "protection_that_remains": "It is exact_timestamp with matched opposing pairs merged. No measurement in either already-inspected sample merges a pair, so on all twelve observations it is numerically identical to exact_timestamp and carries no separate information.",
+        "why_demoted": "Its defining mechanism is never exercised by the evidence, so its own threshold is not separately identified. A number fixed here would be a number about exact_timestamp wearing another name.",
+        "why_phase_1_safety_is_not_materially_weakened": "A hard veto on a metric identical to a soft one is not extra protection; it is the same measurement given a second vote. The merge count and the calendar displacement of any pair that does merge stay published, so the mechanism becomes visible the moment it fires."
+      },
+      {
+        "change": "DEMOTED_TO_DIAGNOSTIC",
+        "final_role": "DIAGNOSTIC_ONLY",
+        "metric": "within_2_week_swing_disagreement_rate",
+        "parent_hard": true,
+        "parent_threshold": "0.02",
+        "protection_that_remains": "Identical position to within_1_week, at a wider tolerance: no measurement merges a pair, and the only opposing-side swing disagreement pair anywhere in the record is three weeks apart, outside both tolerances.",
+        "why_demoted": "Not separately identified for the same reason, and its inherited 0.02 was a round tail allowance never bound to any event universe.",
+        "why_phase_1_safety_is_not_materially_weakened": "Same as within_1_week. The tolerance ordering is preserved in the diagnostic, so a future sample that does merge pairs will show the two tolerances diverging from exact_timestamp before any threshold is written for them."
+      }
+    ],
+    "net_effect": "Five hard structural rate gates become one. Two of the five were numerically identical to a metric that is now soft, two could not certify at any defensible limit on their own denominators, and the survivor is the economically consequential subset of the fifth. In exchange the protocol gains four hard requirements that are actually computable -- a comparability floor, a required-pair count, a zero-count derived-level review census and a non-candidate-dependent raw-provider dispersion guard -- and keeps every inherited Tier-4 hard gate, which is where a structural difference's economic cost is measured directly.",
+    "v2_and_v3_proposal": {
+      "hard_structural_rate_gates": 5,
+      "structural_rate_gates": 6,
+      "thresholds_were": "CARRIED_FORWARD_UNCALIBRATED"
+    }
+  },
+  "artifact_digest": "01328399b124e964f8b9f82fa9dad067aad0605212ed6beeae62eb2d11d5b313",
+  "btc019_status": "IN_PROGRESS",
+  "candidate_constructed_in_this_task": false,
+  "candidate_final_gate_result_evaluated": false,
+  "candidate_measured_in_this_task": false,
+  "classification": {
+    "btc019_status_after_this_task": "IN_PROGRESS",
+    "further_evidence_round_authorized": false,
+    "outcome": "V3_FROZEN_READY_FOR_VALIDATOR",
+    "production_canonical_reference": "UNRESOLVED",
+    "sealed_sample_collection_authorized": false,
+    "sealed_sample_opening_authorized": false,
+    "v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+    "v3_status_after_this_task": "FROZEN_RESEARCH_PROTOCOL",
+    "validator_construction_authorized": true
+  },
+  "classification_rule": "V3_FROZEN_READY_FOR_VALIDATOR when every surviving hard gate carries an absolute materiality limit derived from consequence rather than from observation, a certification rule valid on the denominators a real gate will have, an explicit dependence treatment that assumes no cross-pair independence, a non-candidate-dependent transfer guard, a hard comparability policy whose insufficient-evidence branch cannot approve, and preserved derived-level protection -- and the realism check confirms the limit is achievable by a legitimate reference. V3_NOT_FREEZABLE_SOURCE_POLICY_REDESIGN_REQUIRED otherwise. There is no third outcome: this is the final convergence on the existing evidence, and a further research round is not available.",
+  "comparability_policy": {
+    "accepted_from_predecessor": true,
+    "floor": "0.50",
+    "hard": true,
+    "invariant": "insufficient evidence can never approve; it can only refuse",
+    "policy_id": "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V2",
+    "principle": "The measured set must be at least as large as the set the contract had to exclude. Below a half, the published rate describes a minority of the structure the pair actually detected, and that minority was selected by provider outage rather than by the market -- so a quieter comparison could be bought with more absent sessions.",
+    "required_evidence": [
+      "all_detected_event_count",
+      "candidate_event_count",
+      "comparable_event_count",
+      "not_comparable_event_count",
+      "not_comparable_rate",
+      "not_comparable_reason_counts",
+      "structural_comparability_rate"
+    ],
+    "required_gate_pair_count": 3,
+    "rule": "Every required gate pair must carry complete comparability evidence and a structural comparability rate at or above the floor. A pair below the floor is inadmissible and cannot certify any gate. A pair with no detected events at all has a null rate, never 0.0, and is insufficient.",
+    "why_not_higher": "The other side of every gate pair is a raw provider whose availability this protocol does not gate; the parent's availability gates bind the candidate series only. A higher floor would make the evidence requirement turn on third-party outages rather than on the candidate, and the per-pair confidence bound already refuses a thin denominator on its own.",
+    "why_not_lower": "A rate computed over a minority of its own detected events is not evidence of agreement; it is evidence of absence.",
+    "zero_comparable_behaviour": "UNDEFINED_INSUFFICIENT_EVIDENCE. A zero comparable denominator is never read as a zero disagreement rate."
+  },
+  "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+  "convergence_boundary": "FINAL_CONVERGENCE_WITH_EXISTING_EVIDENCE",
+  "convergence_version": "BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_V1",
+  "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+  "dependence_treatment": {
+    "assumptions_removed": [
+      {
+        "assumption_removed": "pooled provider-pair rows as independent Bernoulli trials",
+        "how": "No band is pooled across pairs to set a threshold. The materiality limit is absolute and economic, so the three provider pairs -- which share the same underlying weekly structural events, one market fact appearing in two or three rows -- are never combined into one estimate that a threshold is read off.",
+        "where_it_was": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1 pooled 156 pair measurements into one Wilson band and set the threshold from it."
+      },
+      {
+        "assumption_removed": "multiplied family-wise survival across gate pairs",
+        "how": "No family-wise probability is computed. The approval rule is a conjunction and is reported as one; each pair's 95% statement is about that pair alone and is labelled as such.",
+        "where_it_was": "The predecessor multiplied per-pair pass probabilities across three gate pairs that all share the candidate series, so the product was neither an upper nor a lower bound on the true family-wise rate."
+      }
+    ],
+    "family_wise_probability_multiplied": false,
+    "pair_independence_assumed": false,
+    "treatment_id": "NO_CROSS_PAIR_INDEPENDENCE_ASSUMED_V1",
+    "within_pair_disclosure": "One assumption remains and is declared rather than hidden. The Wilson interval treats the comparable structural events inside a single pair as exchangeable trials. They are distinct calendar events, not one fact repeated across rows, so this is far weaker than the cross-pair assumption that was removed -- but weekly structure is serially dependent and one episode can produce two adjacent-week disagreements, so it is not exact. Its violation is conservative for approval: clustering inflates a numerator, and on a maximum-direction gate read through an upper bound that pushes a pair towards insufficient or failure, never towards a pass. No claim of exact coverage is made or needed, because the approval rule is the deterministic conjunction and the bound only decides whether one pair has enough evidence."
+  },
+  "derived_level_protection": {
+    "components": [
+      {
+        "component": "structural_state hard gate",
+        "hard": true,
+        "protection": "The hard structural gate is itself defined as the swing disagreements that changed a breakout or reclaim state, so derived-level propagation is what it counts. Demoting the breakout and reclaim rate gates does not remove derived-level protection; the surviving hard gate is about derived-level propagation."
+      },
+      {
+        "component": "hard comparability and coverage requirement",
+        "hard": true,
+        "protection": "A derived-level comparison built on a gappy calendar is NOT_COMPARABLE by contract and is excluded from both numerator and denominator, and a pair whose measured set is a minority of its detected set cannot certify at all. A low rate bought with outages is refused before it is read."
+      },
+      {
+        "component": "derived-level census with mandatory individual review",
+        "hard": true,
+        "metric": "unreviewed_derived_level_disagreement_count",
+        "protection": "Every comparable breakout and reclaim disagreement observed on a required gate pair must carry a structured manual review with a recorded economic assessment, in the form BTC-019 already uses. The gate is a zero count, in the parent's own zero-count provenance idiom, not a calibrated rate: at 21 to 39 comparable events a complete census that is individually reviewed is a stronger control than a rate compared against a threshold no one can defend."
+      },
+      {
+        "component": "inherited Tier-4 stop and MFE/MAE sensitivity gates",
+        "hard": true,
+        "metrics": [
+          "stop_touch_disagreement_rate",
+          "cross_market_confirmed_stop_preservation_rate",
+          "isolated_venue_stop_suppression_rate",
+          "gap_through_stop_consensus_agreement_rate",
+          "mfe_median_absolute_difference",
+          "mfe_p95_absolute_difference",
+          "mae_median_absolute_difference",
+          "mae_p95_absolute_difference",
+          "trade_eligibility_disagreement_rate",
+          "trade_action_disagreement_rate",
+          "risk_size_p95_relative_difference",
+          "regime_classification_disagreement_rate",
+          "setup_classification_disagreement_rate"
+        ],
+        "protection": "These are the direct economic measurement of what a breakout or reclaim difference actually costs, on hourly synchronized bars with denominators three orders of magnitude larger than the weekly structural counts. They are inherited hard and unchanged, and they are what rejected Bitstamp."
+      },
+      {
+        "component": "breakout and reclaim diagnostics",
+        "hard": false,
+        "protection": "The full event census stays published per pair and per sample, with reasons, so a future sample that does produce a certifiable denominator can be read against this record without reopening the contract."
+      }
+    ],
+    "failure_mode_addressed": "Approval of a reference whose structural differences materially alter trading outcomes.",
+    "protection_id": "DERIVED_LEVEL_CENSUS_AND_TIER4_V1",
+    "sparse_rate_gate_refused_because": "At the observed denominators no threshold is simultaneously economically defensible and achievable, so a rate gate would publish either a number fitted to the sample or a permanent UNDEFINED. Neither is protection."
+  },
+  "development_dispersion": {
+    "breakout_disagreement_rate": {
+      "aggregate_count": "0/49",
+      "aggregate_is_descriptive_only": true,
+      "aggregate_rate": "0",
+      "measurements": [
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 9,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.6428571428571428571428571429",
+          "wilson_95_upper": "0.2991450484195440978122785781"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 9,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.6923076923076923076923076923",
+          "wilson_95_upper": "0.2991450484195440978122785781"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 12,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.9230769230769230769230769231",
+          "wilson_95_upper": "0.2424940066552408949108939444"
+        },
+        {
+          "admissibility": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 5,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.4166666666666666666666666667",
+          "wilson_95_upper": "0.4344824647831748201637182146"
+        },
+        {
+          "admissibility": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 5,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.4166666666666666666666666667",
+          "wilson_95_upper": "0.4344824647831748201637182146"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 9,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.8181818181818181818181818182",
+          "wilson_95_upper": "0.2991450484195440978122785781"
+        }
+      ],
+      "metric": "breakout_disagreement_rate",
+      "no_interval_is_computed_on_the_aggregate": "The rows share underlying structural events -- one market fact can appear in two or three of them -- so the aggregate is a count of observations, not an estimate with a sampling distribution. No band is read off it and no threshold depends on it.",
+      "worst_pair_rate": "0"
+    },
+    "exact_timestamp_swing_disagreement_rate": {
+      "aggregate_count": "7/156",
+      "aggregate_is_descriptive_only": true,
+      "aggregate_rate": "0.04487179487179487179487179487",
+      "measurements": [
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 28,
+          "numerator": 3,
+          "rate": "0.1071428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.8",
+          "wilson_95_upper": "0.2719585154867215927527660339"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 26,
+          "numerator": 1,
+          "rate": "0.03846153846153846153846153846",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.7647058823529411764705882353",
+          "wilson_95_upper": "0.1889277890303475867394415650"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 28,
+          "numerator": 1,
+          "rate": "0.03571428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.9032258064516129032258064516",
+          "wilson_95_upper": "0.1771219774335332153995207702"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 23,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.71875",
+          "wilson_95_upper": "0.1431166184504268683701686188"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 22,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.6666666666666666666666666667",
+          "wilson_95_upper": "0.1486548746086209056913325706"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 29,
+          "numerator": 2,
+          "rate": "0.06896551724137931034482758621",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.90625",
+          "wilson_95_upper": "0.2196458015027569494132029278"
+        }
+      ],
+      "metric": "exact_timestamp_swing_disagreement_rate",
+      "no_interval_is_computed_on_the_aggregate": "The rows share underlying structural events -- one market fact can appear in two or three of them -- so the aggregate is a count of observations, not an estimate with a sampling distribution. No band is read off it and no threshold depends on it.",
+      "worst_pair_rate": "0.1071428571428571428571428571"
+    },
+    "reclaim_disagreement_rate": {
+      "aggregate_count": "5/25",
+      "aggregate_is_descriptive_only": true,
+      "aggregate_rate": "0.2",
+      "measurements": [
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 5,
+          "numerator": 1,
+          "rate": "0.2",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.5555555555555555555555555556",
+          "wilson_95_upper": "0.6244653702374747272755353955"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 5,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.5",
+          "wilson_95_upper": "0.4344824647831748201637182146"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 6,
+          "numerator": 1,
+          "rate": "0.1666666666666666666666666667",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.8571428571428571428571428571",
+          "wilson_95_upper": "0.5635028221864702565446652685"
+        },
+        {
+          "admissibility": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 2,
+          "numerator": 1,
+          "rate": "0.5",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.4",
+          "wilson_95_upper": "0.9054687942657692868964470647"
+        },
+        {
+          "admissibility": "PAIR_UNDEFINED_INSUFFICIENT_EVIDENCE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 2,
+          "numerator": 1,
+          "rate": "0.5",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.4",
+          "wilson_95_upper": "0.9054687942657692868964470647"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 5,
+          "numerator": 1,
+          "rate": "0.2",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "1",
+          "wilson_95_upper": "0.6244653702374747272755353955"
+        }
+      ],
+      "metric": "reclaim_disagreement_rate",
+      "no_interval_is_computed_on_the_aggregate": "The rows share underlying structural events -- one market fact can appear in two or three of them -- so the aggregate is a count of observations, not an estimate with a sampling distribution. No band is read off it and no threshold depends on it.",
+      "worst_pair_rate": "0.5"
+    },
+    "structural_state_disagreement_rate": {
+      "aggregate_count": "4/156",
+      "aggregate_is_descriptive_only": true,
+      "aggregate_rate": "0.02564102564102564102564102564",
+      "measurements": [
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 28,
+          "numerator": 2,
+          "rate": "0.07142857142857142857142857143",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.8",
+          "wilson_95_upper": "0.2264536256839905503456329295"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 26,
+          "numerator": 1,
+          "rate": "0.03846153846153846153846153846",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.7647058823529411764705882353",
+          "wilson_95_upper": "0.1889277890303475867394415650"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 28,
+          "numerator": 1,
+          "rate": "0.03571428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.9032258064516129032258064516",
+          "wilson_95_upper": "0.1771219774335332153995207702"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 23,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.71875",
+          "wilson_95_upper": "0.1431166184504268683701686188"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 22,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.6666666666666666666666666667",
+          "wilson_95_upper": "0.1486548746086209056913325706"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 29,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.90625",
+          "wilson_95_upper": "0.1169697984997407671565400856"
+        }
+      ],
+      "metric": "structural_state_disagreement_rate",
+      "no_interval_is_computed_on_the_aggregate": "The rows share underlying structural events -- one market fact can appear in two or three of them -- so the aggregate is a count of observations, not an estimate with a sampling distribution. No band is read off it and no threshold depends on it.",
+      "worst_pair_rate": "0.07142857142857142857142857143"
+    },
+    "within_1_week_swing_disagreement_rate": {
+      "aggregate_count": "7/156",
+      "aggregate_is_descriptive_only": true,
+      "aggregate_rate": "0.04487179487179487179487179487",
+      "measurements": [
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 28,
+          "numerator": 3,
+          "rate": "0.1071428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.8",
+          "wilson_95_upper": "0.2719585154867215927527660339"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 26,
+          "numerator": 1,
+          "rate": "0.03846153846153846153846153846",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.7647058823529411764705882353",
+          "wilson_95_upper": "0.1889277890303475867394415650"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 28,
+          "numerator": 1,
+          "rate": "0.03571428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.9032258064516129032258064516",
+          "wilson_95_upper": "0.1771219774335332153995207702"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 23,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.71875",
+          "wilson_95_upper": "0.1431166184504268683701686188"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 22,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.6666666666666666666666666667",
+          "wilson_95_upper": "0.1486548746086209056913325706"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 29,
+          "numerator": 2,
+          "rate": "0.06896551724137931034482758621",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.90625",
+          "wilson_95_upper": "0.2196458015027569494132029278"
+        }
+      ],
+      "metric": "within_1_week_swing_disagreement_rate",
+      "no_interval_is_computed_on_the_aggregate": "The rows share underlying structural events -- one market fact can appear in two or three of them -- so the aggregate is a count of observations, not an estimate with a sampling distribution. No band is read off it and no threshold depends on it.",
+      "worst_pair_rate": "0.1071428571428571428571428571"
+    },
+    "within_2_week_swing_disagreement_rate": {
+      "aggregate_count": "7/156",
+      "aggregate_is_descriptive_only": true,
+      "aggregate_rate": "0.04487179487179487179487179487",
+      "measurements": [
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 28,
+          "numerator": 3,
+          "rate": "0.1071428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.8",
+          "wilson_95_upper": "0.2719585154867215927527660339"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 26,
+          "numerator": 1,
+          "rate": "0.03846153846153846153846153846",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.7647058823529411764705882353",
+          "wilson_95_upper": "0.1889277890303475867394415650"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 28,
+          "numerator": 1,
+          "rate": "0.03571428571428571428571428571",
+          "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+          "structural_comparability_rate": "0.9032258064516129032258064516",
+          "wilson_95_upper": "0.1771219774335332153995207702"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_bitstamp",
+          "denominator": 23,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.71875",
+          "wilson_95_upper": "0.1431166184504268683701686188"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitfinex_vs_coinbase",
+          "denominator": 22,
+          "numerator": 0,
+          "rate": "0",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.6666666666666666666666666667",
+          "wilson_95_upper": "0.1486548746086209056913325706"
+        },
+        {
+          "admissibility": "PAIR_ADMISSIBLE",
+          "comparison_id": "bitstamp_vs_coinbase",
+          "denominator": 29,
+          "numerator": 2,
+          "rate": "0.06896551724137931034482758621",
+          "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+          "structural_comparability_rate": "0.90625",
+          "wilson_95_upper": "0.2196458015027569494132029278"
+        }
+      ],
+      "metric": "within_2_week_swing_disagreement_rate",
+      "no_interval_is_computed_on_the_aggregate": "The rows share underlying structural events -- one market fact can appear in two or three of them -- so the aggregate is a count of observations, not an estimate with a sampling distribution. No band is read off it and no threshold depends on it.",
+      "worst_pair_rate": "0.1071428571428571428571428571"
+    }
+  },
+  "diagnostic_semantics": {
+    "can_veto_approval": false,
+    "computed_and_persisted": true,
+    "enforcement": "The approval verdict is computed by `approval_verdict`, which reads hard-gate results only. Diagnostics live in a separate namespace that no verdict path consults, so a diagnostic value cannot change a verdict even if it is wrong.",
+    "required_fields": [
+      "calendar_displacement_weeks",
+      "comparable_event_count",
+      "count",
+      "matched_pair_count",
+      "not_comparable_event_count",
+      "not_comparable_reason_counts",
+      "rate",
+      "reason_codes"
+    ],
+    "rule": "A diagnostic is measured, published per required pair and per sample, and reviewed. It never enters an approval verdict, never carries a threshold, and never has a pass or fail."
+  },
+  "evidence_labelling": "DEVELOPMENT_CALIBRATION_EVIDENCE",
+  "frozen_prior_artifacts_changed": false,
+  "gate_architecture": [
+    {
+      "coverage_reasoning": "A breakout difference from a swing the two series disagree about is already counted once by structural_state -- which is defined as exactly the swing disagreements that changed breakout or reclaim state. What remains here is a differing confirmation of a shared level, whose trade-level consequence is bounded hard and directly by the inherited Tier-4 stop, MFE/MAE, eligibility, action and setup-classification gates on hourly synchronized bars.",
+      "covered_by_another_gate": true,
+      "metric": "breakout_disagreement_rate",
+      "protects_against": "A reference that confirms a breakout of a shared swing high that independent references do not, or in a different week.",
+      "reason_codes": [
+        "DENOMINATOR_CANNOT_CERTIFY",
+        "PROTECTION_RETAINED_AS_CENSUS_AND_TIER4"
+      ],
+      "removing_the_hard_veto_would_weaken_protection": false,
+      "role": "DIAGNOSTIC_ONLY",
+      "statistically_supportable": false,
+      "support_reasoning": "Zero disagreements over 39 pooled comparable events, on admissible pair denominators of 5 to 12. At a denominator of 12 and no disagreements the 95% upper bound is 0.2425, and at 9 it is 0.2991: the evidence cannot exclude a rate above any economically defensible limit for a derived level, so no certification is available at these denominators. Under the predecessor's relative alternative it was worse -- unidentifiable at every denominator, as Stage 1 reconfirms.",
+      "weakening_reasoning": "A rate gate that cannot certify on any realistic denominator delivers UNDEFINED, not protection. The events are economically meaningful, so V3 keeps them as a complete census with a hard requirement that every observed derived-level disagreement is individually reviewed and recorded -- which at these counts is a stronger control than a rate compared against a number nobody can defend."
+    },
+    {
+      "coverage_reasoning": "It shares structural_state's denominator and its numerator is a superset of structural_state's on every one of the twelve measurements; structural_state is exactly the part of it that propagated. Two hard vetoes over one nested event set would be the same evidence counted twice, which the project's factor-separation rule refuses. What it adds beyond the hard gate is timing information that has not yet propagated, which is a reason to look rather than a reason to reject.",
+      "covered_by_another_gate": true,
+      "metric": "exact_timestamp_swing_disagreement_rate",
+      "protects_against": "A reference that labels weekly swings at different sessions from independent references even where no downstream state changed -- an early indication of a structurally different series.",
+      "reason_codes": [
+        "NESTED_IN_A_SURVIVING_HARD_GATE",
+        "LABEL_LEVEL_SIGNAL_ONLY"
+      ],
+      "removing_the_hard_veto_would_weaken_protection": false,
+      "role": "SOFT_WARNING_GATE",
+      "statistically_supportable": true,
+      "support_reasoning": "Same denominator as the hard gate, so it is measurable; but a label-level difference is not by itself economic harm, so its measurability does not make it an approval veto.",
+      "weakening_reasoning": "Every exact-timestamp disagreement that carries economic consequence is, by construction, also a structural_state event and is already vetoed. Those that carry none are labelling differences; rejecting a sound reference for them costs research and buys no protection."
+    },
+    {
+      "coverage_reasoning": "Same position as breakout: propagated swing differences are already counted by structural_state, and the trade-level consequence of a differing confirmation is bounded by the inherited Tier-4 gates.",
+      "covered_by_another_gate": true,
+      "metric": "reclaim_disagreement_rate",
+      "protects_against": "A reference that confirms a reclaim of a shared swing low that independent references do not, or in a different week.",
+      "reason_codes": [
+        "DENOMINATOR_CANNOT_CERTIFY",
+        "PROTECTION_RETAINED_AS_CENSUS_AND_TIER4"
+      ],
+      "removing_the_hard_veto_would_weaken_protection": false,
+      "role": "DIAGNOSTIC_ONLY",
+      "statistically_supportable": false,
+      "support_reasoning": "Three disagreements over 21 pooled comparable events, with admissible pair denominators of 2 to 6. At 5 comparable events even a zero numerator has a 95% upper bound of 0.4345, and 1/5 gives 0.6245. Nothing in that range is an economically defensible materiality limit for a derived level, and the non-sealed history that would enlarge the denominator does not exist.",
+      "weakening_reasoning": "Identical to breakout, and more so: reclaim is the one metric whose sparsity is genuine rather than an artefact of the objective, and it is precisely where a frequentist rate would invent precision. The census plus mandatory individual review keeps every event visible and accounted for."
+    },
+    {
+      "coverage_reasoning": "Nothing else in the protocol measures upstream structural difference. The Tier-4 gates measure the harm once it reaches a trade; this measures the cause, and a systematically different structural description can exist in a period whose trades happen not to expose it.",
+      "covered_by_another_gate": false,
+      "metric": "structural_state_disagreement_rate",
+      "protects_against": "A canonical reference whose weekly structural map differs from independent observable market references in ways that change downstream support and resistance state -- the failure mode that puts stops, invalidation levels and setup classification on a level the market did not make.",
+      "reason_codes": [
+        "ECONOMICALLY_CONSEQUENTIAL_SUBSET",
+        "SUPPORTABLE_DENOMINATOR"
+      ],
+      "removing_the_hard_veto_would_weaken_protection": true,
+      "role": "HARD_APPROVAL_GATE",
+      "statistically_supportable": true,
+      "support_reasoning": "It has the largest comparable denominator of the six -- 22 to 29 events per pair per already-inspected sample -- and its rule is a per-pair confidence bound against an absolute limit, so it needs no cross-pair pooling and no equal-denominator derivation. The protocol's own hard `validation_period_days` minimum of 1460 days makes any admissible validation sample large enough for the bound to be informative at the development event density.",
+      "weakening_reasoning": "Demoting it would leave no gate at all on upstream structural difference, and the derived-level and Tier-4 evidence would then be certifying the consequences of a structurally different series rather than confirming a structurally equivalent one."
+    },
+    {
+      "coverage_reasoning": "It is exact_timestamp with matched opposing pairs merged. No measurement in either already-inspected sample merges a pair, so on all twelve observations it is numerically identical to exact_timestamp and carries no separate information.",
+      "covered_by_another_gate": true,
+      "metric": "within_1_week_swing_disagreement_rate",
+      "protects_against": "Exact-timestamp disagreement that is only a one-week shift of the same structure, which the metric is meant to forgive.",
+      "reason_codes": [
+        "NOT_SEPARATELY_IDENTIFIED",
+        "MECHANISM_NEVER_EXERCISED"
+      ],
+      "removing_the_hard_veto_would_weaken_protection": false,
+      "role": "DIAGNOSTIC_ONLY",
+      "statistically_supportable": false,
+      "support_reasoning": "Its defining mechanism is never exercised by the evidence, so its own threshold is not separately identified. A number fixed here would be a number about exact_timestamp wearing another name.",
+      "weakening_reasoning": "A hard veto on a metric identical to a soft one is not extra protection; it is the same measurement given a second vote. The merge count and the calendar displacement of any pair that does merge stay published, so the mechanism becomes visible the moment it fires."
+    },
+    {
+      "coverage_reasoning": "Identical position to within_1_week, at a wider tolerance: no measurement merges a pair, and the only opposing-side swing disagreement pair anywhere in the record is three weeks apart, outside both tolerances.",
+      "covered_by_another_gate": true,
+      "metric": "within_2_week_swing_disagreement_rate",
+      "protects_against": "Exact-timestamp disagreement that is a two-week shift of the same structure.",
+      "reason_codes": [
+        "NOT_SEPARATELY_IDENTIFIED",
+        "MECHANISM_NEVER_EXERCISED"
+      ],
+      "removing_the_hard_veto_would_weaken_protection": false,
+      "role": "DIAGNOSTIC_ONLY",
+      "statistically_supportable": false,
+      "support_reasoning": "Not separately identified for the same reason, and its inherited 0.02 was a round tail allowance never bound to any event universe.",
+      "weakening_reasoning": "Same as within_1_week. The tolerance ordering is preserved in the diagnostic, so a future sample that does merge pairs will show the two tolerances diverging from exact_timestamp before any threshold is written for them."
+    }
+  ],
+  "materiality": {
+    "absolute_limit": "0.20",
+    "applies_to": "structural_state_disagreement_rate",
+    "derivation": [
+      {
+        "ground": "structural meaning",
+        "reasoning": "The weekly structural map is a set of active levels, not a stream of independent observations. A disagreement rate is the fraction of that set which exists in one series and not the other. Above one in five, more than a fifth of the active map is source specific and the two series are no longer describing the same market structure -- whatever their prices look like."
+      },
+      {
+        "ground": "strategy impact",
+        "reasoning": "Weekly levels anchor BTC-141 invalidation and BTC-142 stops, feed the Structure Score and gate setup classification, and each level stays active for weeks. A level that only one series ever printed puts a stop and a setup on a venue artefact for the whole time it remains in the map."
+      },
+      {
+        "ground": "stop / MFE / MAE consequences",
+        "reasoning": "The trade-level cost of a bad reference is measured directly, and hard, by the inherited Tier-4 gates: stop_touch_disagreement_rate at most 0.01, cross_market_confirmed_stop_preservation_rate at least 1.0, MFE and MAE medians at most 0.0025 and p95 at most 0.01. The structural gate is the upstream cause, not the harm, so it is set where structural difference stops being isolated and becomes systematic -- not at the decision-tier tolerances, which bound the harm itself two orders of magnitude tighter."
+      },
+      {
+        "ground": "known source sensitivity",
+        "reasoning": "BTC-019 rejected Bitstamp as the sole canonical reference on a handful of structural differences whose Tier-4 consequences were a missed consensus stop and 2.433 / 4.605 percentage points of MFE / MAE sensitivity. The project's own precedent is that a few consequential structural differences are disqualifying when they propagate, which is what the Tier-4 gates test; the structural limit's job is to refuse a reference whose whole structural description differs."
+      },
+      {
+        "ground": "Phase-1 tolerance philosophy",
+        "reasoning": "Phase 1 asks for a reference a competent independent observer would accept as a description of the same market, not for a perfect one. Four in five agreement on consequential structural events is the weakest claim that still supports that reading, and the limit is a simple interpretable fraction rather than a fitted decimal."
+      }
+    ],
+    "direction": "maximum",
+    "independent_of_observation": "The limit answers what disagreement rate would be unacceptable, which is a question about consequence and not about whether development evidence happened to observe zero disagreements. It is declared here as a module constant, ahead of any measurement, and no code path lets an observed rate move it.",
+    "policy_id": "ABSOLUTE_STRUCTURAL_MATERIALITY_V1",
+    "refused_derivations": [
+      {
+        "derivation": "maximum observed disagreement rate plus an epsilon",
+        "why_refused": "That defines the unacceptable level as whatever development evidence happened to produce, so a quiet sample would license a loose reference and a noisy one a strict reference."
+      },
+      {
+        "derivation": "a multiple of the observed independent-provider band",
+        "why_refused": "This is the predecessor's `3 x pi_bar`. The alternative shrinks with the band, so a metric observing no disagreement is unidentifiable at every sample size, and the limit stops meaning anything economic."
+      },
+      {
+        "derivation": "the value that reproduces a BTC_REFERENCE_COMPOSITE_V2 verdict",
+        "why_refused": "The frozen V2 numbers were carried forward explicitly uncalibrated; reproducing them would launder an unjustified number through a new protocol."
+      },
+      {
+        "derivation": "the value that maximises the number of historical pairs that pass",
+        "why_refused": "Pass counting selects the threshold from the outcome. The realism check below reports how the limit sits against observed dispersion; it does not choose it."
+      },
+      {
+        "derivation": "the value that makes the candidate pass",
+        "why_refused": "The candidate is never constructed or measured in this task, precisely so that it cannot inform the limit."
+      }
+    ],
+    "relative_alternative_retained": false,
+    "statement": "A canonical BTC reference is materially unfit when, against an independent observable market reference, more than one in five economically consequential weekly structural events resolves differently. Economically consequential means the two series disagree about a weekly swing and the detecting series also confirmed a breakout or reclaim from it, so the difference changed downstream support and resistance state rather than only a label."
+  },
+  "new_evidence_collected": false,
+  "parent_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+  "parent_protocol_version": "BTC_REFERENCE_COMPOSITE_V2",
+  "predecessor_calibration_governance_sha256": "503ec79517f34b030d1e8aa690e8a65a4b03050bdb0e2b020b28f9a85267e6e6",
+  "predecessor_calibration_review_commit": "03bb52d2881ca11c55fd09b8a54d922ec7dc0079",
+  "predecessor_calibration_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1",
+  "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+  "production_promotion_authorized": false,
+  "proposed_successor_definition_sha256": "1ac5438a2eaf742c72bde285ba8289629d17986e1ec00fbee61d724b38417baa",
+  "realism_check": {
+    "attainable": true,
+    "certifying_measurement_count": 5,
+    "check_id": "OBSERVED_DEVELOPMENT_DISPERSION_REALISM_CHECK_V1",
+    "conclusion": "REALISTIC",
+    "gate_viability": {
+      "all_pairs_certify_by_sample": {
+        "data/btc019/2023-01-01_2025-12-31": false,
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31": true
+      },
+      "limit": "0.20",
+      "measurements_exceeding_the_limit": [],
+      "metric": "structural_state_disagreement_rate",
+      "viable": true
+    },
+    "legitimate_measurement_count": 6,
+    "limit": "0.20",
+    "measurements_exceeding_the_limit": [],
+    "role": "The materiality limit is declared from economic consequence. This check runs afterwards and reports only whether that limit is realistic against legitimate independent-source variation. It cannot move the limit: had it failed -- had legitimate providers routinely exceeded the limit -- the conclusion would have been that the metric cannot be a hard gate, not that the limit should be raised.",
+    "statement": "No independent raw-provider pair's observed structural_state rate reaches the limit; the worst is 0.07142857142857142857142857143. 5 of 6 measurements also certify it outright at their own development denominators, and at least one already-inspected sample has all three of its pairs certifying, so the limit is attainable and not only unexceeded.",
+    "worst_pair_rate": "0.07142857142857142857142857143"
+  },
+  "research_only": true,
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_RECORD_V1",
+  "sealed_sample": {
+    "collected": false,
+    "end": "2019-11-30T23:00:00+00:00",
+    "guard": "guard_untouched_validation_sample, inherited unchanged",
+    "guard_refuses_the_sealed_window": true,
+    "inspected": false,
+    "opened": false,
+    "start": "2015-07-20T21:00:00+00:00",
+    "status": "SEALED_UNOPENED",
+    "used_in_this_task": false
+  },
+  "sealed_sample_collected": false,
+  "sealed_sample_opened": false,
+  "sensitivity": {
+    "comparability_floor_neighbourhood": [
+      {
+        "admissible_measurement_count": 6,
+        "floor": "0.40",
+        "measurement_count": 6,
+        "structural_state_viable": true
+      },
+      {
+        "admissible_measurement_count": 6,
+        "floor": "0.50",
+        "measurement_count": 6,
+        "structural_state_viable": true
+      },
+      {
+        "admissible_measurement_count": 6,
+        "floor": "0.60",
+        "measurement_count": 6,
+        "structural_state_viable": true
+      },
+      {
+        "admissible_measurement_count": 4,
+        "floor": "0.75",
+        "measurement_count": 6,
+        "structural_state_viable": true
+      }
+    ],
+    "declared_limit_conclusion_holds": true,
+    "denominator_imbalance": [
+      {
+        "denominators": [
+          16,
+          16,
+          16
+        ],
+        "each_pair_judged_on_its_own_denominator": true,
+        "outcomes": {
+          "pair_0": "PAIR_CERTIFIED",
+          "pair_1": "PAIR_CERTIFIED",
+          "pair_2": "PAIR_CERTIFIED"
+        }
+      },
+      {
+        "denominators": [
+          16,
+          30,
+          60
+        ],
+        "each_pair_judged_on_its_own_denominator": true,
+        "outcomes": {
+          "pair_0": "PAIR_CERTIFIED",
+          "pair_1": "PAIR_CERTIFIED",
+          "pair_2": "PAIR_CERTIFIED"
+        }
+      },
+      {
+        "denominators": [
+          20,
+          25,
+          30
+        ],
+        "each_pair_judged_on_its_own_denominator": true,
+        "outcomes": {
+          "pair_0": "PAIR_CERTIFIED",
+          "pair_1": "PAIR_CERTIFIED",
+          "pair_2": "PAIR_CERTIFIED"
+        }
+      },
+      {
+        "denominators": [
+          12,
+          40,
+          40
+        ],
+        "each_pair_judged_on_its_own_denominator": true,
+        "outcomes": {
+          "pair_0": "PAIR_INSUFFICIENT_EVIDENCE",
+          "pair_1": "PAIR_CERTIFIED",
+          "pair_2": "PAIR_CERTIFIED"
+        }
+      }
+    ],
+    "materiality_neighbourhood": [
+      {
+        "derived_level_metrics_viable": {
+          "breakout_disagreement_rate": false,
+          "reclaim_disagreement_rate": false
+        },
+        "limit": "0.10",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 35,
+          "1": 53,
+          "2": 69,
+          "3": 84
+        },
+        "structural_state_certifying_measurement_count": 0,
+        "structural_state_realism": "NOT_REALISTIC_LIMIT_UNATTAINABLE_AT_REALISTIC_DENOMINATORS",
+        "structural_state_viable": false
+      },
+      {
+        "derived_level_metrics_viable": {
+          "breakout_disagreement_rate": false,
+          "reclaim_disagreement_rate": false
+        },
+        "limit": "0.15",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 22,
+          "1": 34,
+          "2": 45,
+          "3": 55
+        },
+        "structural_state_certifying_measurement_count": 3,
+        "structural_state_realism": "REALISTIC",
+        "structural_state_viable": true
+      },
+      {
+        "derived_level_metrics_viable": {
+          "breakout_disagreement_rate": false,
+          "reclaim_disagreement_rate": false
+        },
+        "limit": "0.20",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 16,
+          "1": 25,
+          "2": 33,
+          "3": 40
+        },
+        "structural_state_certifying_measurement_count": 5,
+        "structural_state_realism": "REALISTIC",
+        "structural_state_viable": true
+      },
+      {
+        "derived_level_metrics_viable": {
+          "breakout_disagreement_rate": false,
+          "reclaim_disagreement_rate": false
+        },
+        "limit": "0.25",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 12,
+          "1": 19,
+          "2": 25,
+          "3": 31
+        },
+        "structural_state_certifying_measurement_count": 6,
+        "structural_state_realism": "REALISTIC",
+        "structural_state_viable": true
+      },
+      {
+        "derived_level_metrics_viable": {
+          "breakout_disagreement_rate": true,
+          "reclaim_disagreement_rate": false
+        },
+        "limit": "0.30",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 9,
+          "1": 15,
+          "2": 21,
+          "3": 25
+        },
+        "structural_state_certifying_measurement_count": 6,
+        "structural_state_realism": "REALISTIC",
+        "structural_state_viable": true
+      }
+    ],
+    "policy_conclusion_stable": true,
+    "sensitivity_id": "GOVERNANCE_ASSUMPTION_SENSITIVITY_V1",
+    "statement": "The architecture, not a historical verdict label, is what is tested. structural_state can carry a hard gate from 0.15 onwards; breakout only from 0.30 and reclaim nowhere on the neighbourhood at all. That ordering is what the demotions rest on, and it is not a property of the declared limit: no limit in the neighbourhood reverses it. The limit does change what evidence the hard gate demands -- at 0.10 a clean pair needs 35 comparable events and no development sample can certify all three pairs, which is the boundary at which structural_state would itself stop being a viable hard gate. Denominator imbalance changes nothing, because the rule is evaluated per pair on that pair's own counts.",
+    "uncertainty_treatment_neighbourhood": [
+      {
+        "confidence_level_percent": "90",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 11,
+          "1": 20,
+          "2": 28,
+          "3": 35
+        },
+        "quantile": "1.644853626951472714864"
+      },
+      {
+        "confidence_level_percent": "95",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 16,
+          "1": 25,
+          "2": 33,
+          "3": 40
+        },
+        "quantile": "1.959963984540054235631"
+      },
+      {
+        "confidence_level_percent": "99",
+        "minimum_certifying_denominator_by_disagreement_count": {
+          "0": 27,
+          "1": 36,
+          "2": 45,
+          "3": 53
+        },
+        "quantile": "2.575829303548900761546"
+      }
+    ],
+    "viability_boundaries": {
+      "breakout_disagreement_rate": "0.30",
+      "reclaim_disagreement_rate": null,
+      "structural_state_disagreement_rate": "0.15"
+    }
+  },
+  "soft_gate_semantics": {
+    "cannot_reject_a_candidate_alone": true,
+    "contributes_to_the_approval_verdict": false,
+    "evidence_annotation": "A warning is persisted on the approval record with the offending pairs, their rates and their reason codes, and travels with the record; an approval issued over a warning shows the warning.",
+    "manual_review_trigger": "A warning makes a structured manual structural review mandatory before approval, in the form BTC-019 already uses for its 82 persisted review records. The review's outcome is recorded; it does not become a numeric gate.",
+    "measure": "The observed point rate, not the confidence bound: a warning should fire readily, and a wide interval on thin evidence is itself a reason to look.",
+    "outcome_when_undefined": "WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED",
+    "outcomes": [
+      "OK",
+      "WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED"
+    ],
+    "rule": "OK when every required gate pair is defined, admissible and at or below the absolute materiality limit on its observed point rate; WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED otherwise, including when a required pair is missing or undefined. The limit is the same absolute structural materiality limit, deliberately applied to the weaker label-level signal, so the soft gate is a strictly earlier trigger than the hard gate on the same evidence.",
+    "warning_only": true
+  },
+  "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1",
+  "transfer_guard": {
+    "aggregation": "ALL_REQUIRED_PAIRS_MUST_CERTIFY_V1",
+    "computed_on": "INDEPENDENT_RAW_PROVIDER_PAIRS_V1",
+    "depends_on_the_candidate": false,
+    "failure_mode_blocked": "The candidate is the element-wise median of the same three providers it is compared against, so median(A,B,C) against A, B or C is mechanically closer than A against B. A composite could therefore certify every gate pair merely because it is an arithmetic function of those pairs' own inputs, while the underlying providers do not agree about market structure at all. In that state 'the market structure' is not identified in the period, and no median of the three can be certified as a canonical description of it, however close it sits to each input.",
+    "guard_id": "RAW_PROVIDER_STRUCTURAL_DISPERSION_CEILING_V1",
+    "hard": true,
+    "measure": "structural_state_disagreement_rate",
+    "outcomes": [
+      "GUARD_SATISFIED",
+      "GUARD_FAILED",
+      "GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE"
+    ],
+    "rule": "Every unordered pair of distinct independent raw validation providers must itself certify the structural_state metric, under the same absolute materiality limit and the same per-pair confidence bound as the gate pairs, on the same sample and the same comparison contract. GUARD_FAILED when any provider pair is a material failure; GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE when any is missing, inadmissible, undefined or insufficient; GUARD_SATISFIED only when all of them certify.",
+    "why_not_leave_one_provider_influence": "A leave-one-out dominance diagnostic would require constructing three alternative composites, which is new candidate-construction semantics this task may not introduce. It also blocks a narrower mode: with three providers the median tracking two that agree is the intended behaviour of a median, not a defect, and the case where that becomes arbitrary is exactly high raw dispersion, which this guard already refuses.",
+    "why_the_certification_rule_and_not_the_point_rate": "The architecture's invariant is that insufficient evidence cannot approve. Reading the guard off point estimates would let thin provider evidence satisfy it silently, which is exactly the leniency the review identified.",
+    "why_this_and_not_a_looser_measure": "Every input is a series the candidate is not built from on that pair's own side, so no arrangement of the median can satisfy the guard: it is arithmetically impossible for candidate construction to influence a provider-versus-provider measurement. That is the property the review's missing guard needed, and a cosmetic guard computed on candidate pairs would not have it."
+  },
+  "v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+  "v3_protocol_version": "BTC_REFERENCE_COMPOSITE_V3",
+  "verified_review_findings": {
+    "findings": {
+      "RELATIVE_ALTERNATIVE_DEGENERATES_ON_A_ZERO_NUMERATOR": {
+        "expected_count_limit_under_alternative": "1.920729410347062979389238803",
+        "expected_count_limit_under_band": "0.6402431367823543264630796009",
+        "finding": "RELATIVE_ALTERNATIVE_DEGENERATES_ON_A_ZERO_NUMERATOR",
+        "probes": [
+          {
+            "expected_count_under_alternative": "1.702700897609531612048010805",
+            "expected_count_under_band": "0.5675669658698438706826702683",
+            "per_pair_denominator": 5,
+            "pi_bar": "0.1135133931739687741365340537",
+            "pooled_denominator": 30
+          },
+          {
+            "expected_count_under_alternative": "1.805155564262696048250580696",
+            "expected_count_under_band": "0.6017185214208986827501935652",
+            "per_pair_denominator": 10,
+            "pi_bar": "0.06017185214208986827501935652",
+            "pooled_denominator": 60
+          },
+          {
+            "expected_count_under_alternative": "1.861149985122209213724240862",
+            "expected_count_under_band": "0.6203833283740697379080802872",
+            "per_pair_denominator": 20,
+            "pi_bar": "0.03101916641870348689540401436",
+            "pooled_denominator": 120
+          },
+          {
+            "expected_count_under_alternative": "1.896445683681905781992238502",
+            "expected_count_under_band": "0.6321485612273019273307461675",
+            "per_pair_denominator": 50,
+            "pi_bar": "0.01264297122454603854661492335",
+            "pooled_denominator": 300
+          },
+          {
+            "expected_count_under_alternative": "1.908510304110213299926301632",
+            "expected_count_under_band": "0.6361701013700710999754338773",
+            "per_pair_denominator": 100,
+            "pi_bar": "0.006361701013700710999754338773",
+            "pooled_denominator": 600
+          },
+          {
+            "expected_count_under_alternative": "1.914600361640954804955555846",
+            "expected_count_under_band": "0.6382001205469849349851852821",
+            "per_pair_denominator": 200,
+            "pi_bar": "0.003191000602734924674925926411",
+            "pooled_denominator": 1200
+          },
+          {
+            "expected_count_under_alternative": "1.919500463349353007064275688",
+            "expected_count_under_band": "0.6398334877831176690214252294",
+            "per_pair_denominator": 1000,
+            "pi_bar": "0.0006398334877831176690214252294",
+            "pooled_denominator": 6000
+          }
+        ],
+        "statement": "Under a relative alternative the detectable effect shrinks with the band that defines it, so a metric that observes no disagreement is unidentifiable at every sample size. The relative rule is not carried into the frozen protocol.",
+        "verdict": "CONFIRMED_BY_INDEPENDENT_RECOMPUTATION"
+      },
+      "SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS": {
+        "finding": "SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS",
+        "power_is_monotone_in_the_denominator": false,
+        "probes": [
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              20,
+              25,
+              30
+            ],
+            "family_power": "0.8931843172247476949806243916",
+            "meets_declared_power": true,
+            "metric": "exact_timestamp_swing_disagreement_rate",
+            "power_at_the_published_minimum": "0.8591931020160945891922121492",
+            "published_minimum": 13
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              18,
+              20,
+              22
+            ],
+            "family_power": "0.8960131499501597153637870001",
+            "meets_declared_power": true,
+            "metric": "exact_timestamp_swing_disagreement_rate",
+            "power_at_the_published_minimum": "0.8591931020160945891922121492",
+            "published_minimum": 13
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              30,
+              30,
+              30
+            ],
+            "family_power": "0.9265652934430329580760569922",
+            "meets_declared_power": true,
+            "metric": "exact_timestamp_swing_disagreement_rate",
+            "power_at_the_published_minimum": "0.8591931020160945891922121492",
+            "published_minimum": 13
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              25,
+              40,
+              55
+            ],
+            "family_power": "0.9208180266709948842322353059",
+            "meets_declared_power": true,
+            "metric": "exact_timestamp_swing_disagreement_rate",
+            "power_at_the_published_minimum": "0.8591931020160945891922121492",
+            "published_minimum": 13
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              20,
+              25,
+              30
+            ],
+            "family_power": "0.7182486710985803233218869276",
+            "meets_declared_power": false,
+            "metric": "structural_state_disagreement_rate",
+            "power_at_the_published_minimum": "0.8032110996745695452432134941",
+            "published_minimum": 17
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              18,
+              20,
+              22
+            ],
+            "family_power": "0.7941556916577551982224609675",
+            "meets_declared_power": false,
+            "metric": "structural_state_disagreement_rate",
+            "power_at_the_published_minimum": "0.8032110996745695452432134941",
+            "published_minimum": 17
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              30,
+              30,
+              30
+            ],
+            "family_power": "0.7270534987369532534152369482",
+            "meets_declared_power": false,
+            "metric": "structural_state_disagreement_rate",
+            "power_at_the_published_minimum": "0.8032110996745695452432134941",
+            "published_minimum": 17
+          },
+          {
+            "all_denominators_at_or_above_minimum": true,
+            "denominators": [
+              25,
+              40,
+              55
+            ],
+            "family_power": "0.7327176751264816283006592944",
+            "meets_declared_power": false,
+            "metric": "structural_state_disagreement_rate",
+            "power_at_the_published_minimum": "0.8032110996745695452432134941",
+            "published_minimum": 17
+          }
+        ],
+        "scalar_minimum_holds_at_every_probe": false,
+        "statement": "The published minima were searched only over equal denominators. They do not carry to the unequal vectors a real gate has, and the family power is not even monotone in the denominator: raising every pair above the minimum can lower it, because the smallest failing count grows with the denominator faster than the alternative's expected count does. V3 therefore replaces the scalar minimum with a per-pair confidence bound, which is evaluated on each pair's own denominator and is valid for any denominator vector by construction.",
+        "verdict": "CONFIRMED_BY_INDEPENDENT_RECOMPUTATION"
+      },
+      "STRUCTURAL_STATE_IS_A_SUBSET_OF_EXACT_TIMESTAMP": {
+        "finding": "STRUCTURAL_STATE_IS_A_SUBSET_OF_EXACT_TIMESTAMP",
+        "measurements": [
+          {
+            "comparison_id": "bitfinex_vs_bitstamp",
+            "exact_numerator": 3,
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "shared_denominator": 28,
+            "structural_state_numerator": 2,
+            "subset": true
+          },
+          {
+            "comparison_id": "bitfinex_vs_coinbase",
+            "exact_numerator": 1,
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "shared_denominator": 26,
+            "structural_state_numerator": 1,
+            "subset": true
+          },
+          {
+            "comparison_id": "bitstamp_vs_coinbase",
+            "exact_numerator": 1,
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "shared_denominator": 28,
+            "structural_state_numerator": 1,
+            "subset": true
+          },
+          {
+            "comparison_id": "bitfinex_vs_bitstamp",
+            "exact_numerator": 0,
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "shared_denominator": 23,
+            "structural_state_numerator": 0,
+            "subset": true
+          },
+          {
+            "comparison_id": "bitfinex_vs_coinbase",
+            "exact_numerator": 0,
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "shared_denominator": 22,
+            "structural_state_numerator": 0,
+            "subset": true
+          },
+          {
+            "comparison_id": "bitstamp_vs_coinbase",
+            "exact_numerator": 2,
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "shared_denominator": 29,
+            "structural_state_numerator": 0,
+            "subset": true
+          }
+        ],
+        "statement": "structural_state shares exact_timestamp's denominator and counts the subset of its numerator whose difference also changed a downstream breakout or reclaim state. It is therefore the economically consequential part of the same event universe, not an independent signal about a different failure mode.",
+        "strictly_smaller_measurement_count": 2,
+        "verdict": "CONFIRMED_BY_INDEPENDENT_RECOMPUTATION",
+        "violation_count": 0
+      },
+      "WITHIN_N_NUMERICALLY_IDENTICAL_TO_EXACT_TIMESTAMP": {
+        "distinguishing_measurement_count": 0,
+        "finding": "WITHIN_N_NUMERICALLY_IDENTICAL_TO_EXACT_TIMESTAMP",
+        "measurement_count": 12,
+        "measurements": [
+          {
+            "comparison_id": "bitfinex_vs_bitstamp",
+            "exact": "3/28",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_1_week_swing_disagreement_rate",
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "within_n": "3/28"
+          },
+          {
+            "comparison_id": "bitfinex_vs_coinbase",
+            "exact": "1/26",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_1_week_swing_disagreement_rate",
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "within_n": "1/26"
+          },
+          {
+            "comparison_id": "bitstamp_vs_coinbase",
+            "exact": "1/28",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_1_week_swing_disagreement_rate",
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "within_n": "1/28"
+          },
+          {
+            "comparison_id": "bitfinex_vs_bitstamp",
+            "exact": "0/23",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_1_week_swing_disagreement_rate",
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "within_n": "0/23"
+          },
+          {
+            "comparison_id": "bitfinex_vs_coinbase",
+            "exact": "0/22",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_1_week_swing_disagreement_rate",
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "within_n": "0/22"
+          },
+          {
+            "comparison_id": "bitstamp_vs_coinbase",
+            "exact": "2/29",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_1_week_swing_disagreement_rate",
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "within_n": "2/29"
+          },
+          {
+            "comparison_id": "bitfinex_vs_bitstamp",
+            "exact": "3/28",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_2_week_swing_disagreement_rate",
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "within_n": "3/28"
+          },
+          {
+            "comparison_id": "bitfinex_vs_coinbase",
+            "exact": "1/26",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_2_week_swing_disagreement_rate",
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "within_n": "1/26"
+          },
+          {
+            "comparison_id": "bitstamp_vs_coinbase",
+            "exact": "1/28",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_2_week_swing_disagreement_rate",
+            "sample_dir": "data/btc019/2023-01-01_2025-12-31",
+            "within_n": "1/28"
+          },
+          {
+            "comparison_id": "bitfinex_vs_bitstamp",
+            "exact": "0/23",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_2_week_swing_disagreement_rate",
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "within_n": "0/23"
+          },
+          {
+            "comparison_id": "bitfinex_vs_coinbase",
+            "exact": "0/22",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_2_week_swing_disagreement_rate",
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "within_n": "0/22"
+          },
+          {
+            "comparison_id": "bitstamp_vs_coinbase",
+            "exact": "2/29",
+            "identical_to_exact_timestamp": true,
+            "matched_pair_count": 0,
+            "metric": "within_2_week_swing_disagreement_rate",
+            "sample_dir": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31",
+            "within_n": "2/29"
+          }
+        ],
+        "merged_pair_total": 0,
+        "statement": "within_1_week and within_2_week differ from exact_timestamp only where the matching mechanism merges an opposing pair. No measurement in either already-inspected sample merges one, so on every observation the repository holds the three metrics are the same number and their thresholds are not separately identified.",
+        "verdict": "CONFIRMED_BY_INDEPENDENT_RECOMPUTATION"
+      }
+    },
+    "review_commit": "03bb52d2881ca11c55fd09b8a54d922ec7dc0079",
+    "taken_on_trust": false
+  }
+}

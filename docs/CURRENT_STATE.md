@@ -13,7 +13,8 @@
 
 - **Last updated:** 2026-09-05
 - **Current phase:** Phase 1, EPIC W testing is implemented; every Phase-1
-  implementation ticket except BTC-019 is now DONE
+  implementation ticket except BTC-019 is now DONE. BTC-019's successor
+  reference protocol is frozen and awaiting its independent review
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** None; no Phase-1 implementation ticket
   remains open
@@ -29,15 +30,16 @@
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3738 passed with Python 3.12.14 on 2026-09-05
-- **Last relevant implementation/review commit:** the pre-sealed
-  `BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1` governance
-  and calibration task. Outcome: `CALIBRATION_INSUFFICIENT`. All four
-  proposed-V3 semantics the predecessor's xHigh review left open are settled and
-  hashed, and two of the six structural thresholds are calibrated; four remain
-  unresolved and all four are hard, so V3 is not frozen. Its required
-  independent xHigh review has now passed with one P2 review fix and reaches
-  `FINAL_CONVERGENCE_WITH_EXISTING_EVIDENCE`
+- **Latest verified test baseline:** 3830 passed with Python 3.12.14 on 2026-09-05
+- **Last relevant implementation/review commit:** the bounded
+  `BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_V1` task. Outcome:
+  `V3_FROZEN_READY_FOR_VALIDATOR`. `BTC_REFERENCE_COMPOSITE_V3` is now a frozen
+  research protocol with its own definition hash `4232e886...bf71a`; six
+  structural rate gates, five hard, become one hard gate, one soft gate and
+  four diagnostics, on an absolute economic materiality limit with no
+  independence assumption left in the approval rule. Its own required
+  independent xHigh review is outstanding, and until it passes no validator may
+  be built
 
 ## Price-Reference State
 
@@ -51,8 +53,9 @@ production canonical reference = UNRESOLVED
 BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
 STRUCTURAL_GATE_DENOMINATOR_RESOLUTION = NEW_PROTOCOL_VERSION_REQUIRED
-BTC_REFERENCE_COMPOSITE_V3 = PROPOSED_PENDING_THRESHOLD_CALIBRATION
 V3 structural threshold calibration = CALIBRATION_INSUFFICIENT
+V3 gate architecture convergence = V3_FROZEN_READY_FOR_VALIDATOR
+BTC_REFERENCE_COMPOSITE_V3 = FROZEN_RESEARCH_PROTOCOL
 ```
 
 Normal Phase-1 implementation may continue through injectable, versioned
@@ -146,44 +149,72 @@ threshold calibration and governance task must bind a threshold to each of the
 six new denominators before the hash-bound validator is built, 2015-2019 is
 collected, and the sample is opened once.
 
+`BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_V1` under
+`research_artifacts/btc019_v3_gate_architecture_convergence/` is the bounded
+final convergence the calibration review's
+`FINAL_CONVERGENCE_WITH_EXISTING_EVIDENCE` classification called for. Outcome:
+`V3_FROZEN_READY_FOR_VALIDATOR`. No evidence was collected, no candidate was
+constructed or measured, no frozen artifact moved, and 2015-2019 is still
+neither collected nor opened. The four review findings are reverified from the
+repository's own measurements before anything rests on them, and the module
+refuses to proceed if one is refuted; all four hold, and the scalar-minimum
+defect is worse than reported -- family power is not monotone in the
+denominator, so `structural_state` at 0.20 scores 0.8032 at `[17,17,17]` but
+0.7270 at `[30,30,30]`. Six structural rate gates, five hard, become one hard
+gate, one soft gate and four diagnostics: `structural_state` stays hard,
+`exact_timestamp` becomes a soft warning and mandatory-review trigger that can
+never reject alone, and `within_1_week`, `within_2_week`, `breakout` and
+`reclaim` become diagnostics that no verdict path can consult. The relative
+`3 x pi_bar` alternative is gone, replaced by one absolute economic limit of
+`0.20` declared ahead of any measurement from strategy impact, structural
+meaning, the Tier-4 consequences and Phase-1 tolerance philosophy, with
+`max(observed) + epsilon`, any multiple of the observed band, and anything
+involving the candidate persisted as refused derivations. Threshold and
+minimum-n become one rule, `PER_PAIR_WILSON_UPPER_BOUND_V1`, valid on any
+denominator vector because it is evaluated on one pair's own counts, and it
+separates a reference that is measurably bad from one that is merely
+unmeasured. No band is pooled across pairs and no family-wise probability is
+multiplied: approval is a deterministic conjunction over three enumerated
+candidate-versus-provider pairs. The review's missing guard is
+`RAW_PROVIDER_STRUCTURAL_DISPERSION_CEILING_V1`, hard and computed only on
+provider-versus-provider pairs, so candidate construction cannot influence it.
+Derived-level protection survives the demotions through the surviving hard
+gate, the hard comparability floor, a new zero-count reviewed census of every
+breakout and reclaim disagreement, and the thirteen inherited Tier-4 hard
+gates. `BTC_REFERENCE_COMPOSITE_V3` is therefore `FROZEN_RESEARCH_PROTOCOL`
+with definition hash
+`4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a` and an
+unchanged `parent_definition_sha256` of `bc312f3e...6106a`. Validator
+construction is authorised only after this frozen definition receives its own
+independent xHigh review, and the validator must bind the V3 hash, not the
+parent's.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
-  BTC-019. The calendar-contiguity contract, the re-measurement of the
-  already-inspected 2019-2022 and 2023-2025 samples, the denominator
-  declaration and now the pre-sealed threshold calibration are all done, under
-  `CROSS_PROVIDER_STRUCTURE_COMPARISON_V2`,
-  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` and
-  `BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1`. All four
-  governance items the `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION` xHigh review
-  raised are settled, explicit and hashed, and a minimum-comparability policy is
-  set. What is still missing is evidence, not semantics. Four of the six
-  structural gates cannot be calibrated from the already-inspected samples, and
-  all four are hard: `breakout` has 0 disagreements over 39 comparable events on
-  admissible pair denominators of 5 to 12, `reclaim` has 3 over 21 with a
-  denominator as small as 2, and `within_1_week`/`within_2_week` never merge a
-  single pair in either sample, so they are numerically identical to
-  `exact_timestamp` and their own thresholds are not separately identified.
-  Under worst-pair aggregation the sampling noise of one legitimate pair
-  measurement at those denominators is wider than the whole meaningful range of
-  the metric, so no number is both achievable by an independent provider pair
-  and able to detect a materially worse reference. The calibration task read
-  that as a shortage of evidence; its independent xHigh review measured the
-  claim and found it holds only for `reclaim`. Because `pi_alt` is defined as
-  three times the band's own Wilson upper limit, a metric observing zero
-  disagreements has an alternative that shrinks with its band: `breakout` stays
-  unidentifiable at every sample size and on an arbitrarily fine grid, with the
-  expected counts pinned at 0.64 against 1.92 whatever the denominator. The
-  review also found `within_1_week` and `within_2_week` numerically identical to
-  `exact_timestamp` on all twelve measurements and `structural_state` a strict
-  subset of it on one shared denominator, so the six gates carry at most two
-  distinguishable signals. The next step is therefore one bounded convergence
-  task that decides the successor's gate architecture on the evidence in hand,
-  not another evidence round: the non-sealed history that could move
-  `reclaim` does not exist, and 2026 to date would add roughly one comparable
-  reclaim event per pair. Only once the surviving gates are calibrated may the
-  successor be frozen, the validator bound to its complete executable definition
-  hash be built, 2015-2019 be collected, and the sealed sample be opened once.
+  BTC-019, but the research branch that was blocking it has now converged. The
+  calendar-contiguity contract, the re-measurement of the already-inspected
+  2019-2022 and 2023-2025 samples, the denominator declaration, the pre-sealed
+  threshold calibration and the final gate-architecture convergence are all
+  done, and `BTC_REFERENCE_COMPOSITE_V3` is frozen at
+  `4232e886...bf71a`. What is outstanding is no longer evidence or semantics: it
+  is the independent xHigh review of that frozen definition. Nothing about the
+  candidate has been decided --- `MEDIAN_OHLC_V2` has still never been
+  constructed or measured against any gate, so its V3 outcome is unknown, and
+  the 2015-07-20..2019-11-30 sample is still sealed. Two judgements in the
+  frozen protocol are governance rather than measurement and are the right
+  place for a reviewer to push. The absolute materiality limit of `0.20` is
+  argued from consequence --- one in five economically consequential weekly
+  structural events --- and not fitted; it happens to coincide with the number
+  the discredited relative objective produced, and both the derivation and the
+  coincidence are recorded. And the Wilson bound still treats one pair's own
+  comparable events as exchangeable, which weekly structure is not; the
+  disclosure notes that clustering pushes a maximum gate towards insufficient
+  or failure rather than towards a pass, so the violation is conservative for
+  approval, but it is an assumption and not a proof. The demotions themselves
+  rest on an ordering that holds across the whole assumption neighbourhood:
+  `structural_state` can carry a hard gate from `0.15`, `breakout` only from
+  `0.30`, `reclaim` nowhere.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche

@@ -1490,6 +1490,172 @@ Do not overwrite raw history when the preferred provider changes.
     roughly seven comparable swing, three breakout and one reclaim event per
     pair. BTC-019 stays `IN_PROGRESS`, V3 stays `PROPOSED`, and validator
     construction, 2015-2019 collection and opening all stay refused.
+  - **`BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_V1`.** The
+    bounded final convergence the review's classification called for is now
+    done, under
+    `btc_predictor/research/reference_composite_v3_convergence.py`. Outcome:
+    **`V3_FROZEN_READY_FOR_VALIDATOR`**. `BTC_REFERENCE_COMPOSITE_V3` is
+    `FROZEN_RESEARCH_PROTOCOL` with its own definition hash
+    `4232e886...bf71a` and an unchanged `parent_definition_sha256` of
+    `bc312f3e...6106a`. No evidence was collected, no candidate was
+    constructed or measured, no frozen artifact moved, and 2015-2019 is still
+    neither collected nor opened.
+  - **The review's four findings were reverified, not assumed.** Stage 1
+    recomputes each from the repository's own measurements and refuses to
+    proceed if any is refuted. All four hold. `within_1_week` and
+    `within_2_week` are numerically identical to `exact_timestamp` on all 12
+    measurements, with zero merged pairs anywhere; `structural_state` shares
+    `exact_timestamp`'s denominator with a numerator that is a subset on every
+    pair and strictly smaller on two. Under the relative alternative the
+    per-pair expected counts converge to `z^2/6 = 0.6402` against `1.9207` at
+    every denominator, so `breakout` was unidentifiable at any sample size and
+    the "more evidence" diagnosis was indeed wrong. The published minima of 13
+    and 17 fail under unequal denominators, and worse than reported: family
+    power is not monotone in the denominator, so `structural_state` at 0.20
+    scores 0.8032 at `[17,17,17]` but 0.7182 at `[20,25,30]` and 0.7270 at
+    `[30,30,30]` -- raising every pair above the minimum lowers the power,
+    because the smallest failing count grows with the denominator faster than
+    the alternative's expected count does.
+  - **Final architecture: one hard structural rate gate, one soft, four
+    diagnostics.** `structural_state_disagreement_rate` `HARD_APPROVAL_GATE`;
+    `exact_timestamp_swing_disagreement_rate` `SOFT_WARNING_GATE`;
+    `within_1_week`, `within_2_week`, `breakout` and `reclaim`
+    `DIAGNOSTIC_ONLY`. Each classification answers the same four questions --
+    which independent failure mode it protects against, whether another gate
+    already covers it, whether it can be statistically supported, and whether
+    removing the hard veto weakens protection -- and the role follows from the
+    answers rather than from what the parent happened to contain. `exact_timestamp`
+    is demoted because `structural_state` is exactly the part of its numerator
+    that propagated, so two hard vetoes over one nested event set would be the
+    same evidence counted twice; the within-N pair are demoted because their
+    defining mechanism never fires and their thresholds are not separately
+    identified; `breakout` and `reclaim` because at their denominators no
+    limit is both economically defensible and achievable -- even a zero
+    numerator on 12 comparable breakout events has a 95% upper bound of
+    0.2425, and 1/5 reclaims gives 0.6245.
+  - **Absolute materiality replaces `3 x pi_bar`.**
+    `ABSOLUTE_STRUCTURAL_MATERIALITY_V1` declares one limit, `0.20`, as a
+    module constant ahead of any measurement: a canonical reference is
+    materially unfit when more than one in five economically consequential
+    weekly structural events resolves differently against an independent
+    market reference. It is derived from five grounds -- structural meaning,
+    strategy impact, the stop and MFE/MAE consequences the Tier-4 gates bound
+    directly and two orders of magnitude tighter, the project's own
+    Bitstamp-rejection precedent, and Phase-1 tolerance philosophy -- and five
+    derivations are persisted as refused, including `max(observed) + epsilon`,
+    any multiple of the observed band, reproducing a V2 verdict, pass counting
+    and anything involving the candidate. It lands on the same round number
+    the discredited relative objective produced; the derivation and the rule
+    applied at it are different, and both are recorded.
+  - **The threshold and the minimum-n become one rule.**
+    `PER_PAIR_WILSON_UPPER_BOUND_V1`: a pair certifies only when it is
+    admissible, its comparable denominator is non-zero, and its own two-sided
+    95% Wilson upper limit is at or below the limit. A point rate above the
+    limit is `PAIR_MATERIAL_FAILURE`; a point rate under it whose bound is not
+    is `PAIR_INSUFFICIENT_EVIDENCE`, never a pass. That distinction -- bad
+    against merely unmeasured -- is new, and the rule is valid for any
+    denominator vector by construction because it is evaluated on one pair's
+    own counts, so there is no equal-denominator derivation to carry. Equality
+    certifies in both comparisons. Derived minima fall out of it rather than
+    being asserted: 16 comparable events at zero disagreements, 25 at one, 33
+    at two, 40 at three.
+  - **No independence assumption survives.** No band is pooled across pairs to
+    set a threshold and no family-wise survival probability is multiplied
+    anywhere. Aggregation is `ALL_REQUIRED_PAIRS_MUST_CERTIFY_V1`, a
+    deterministic conjunction over the three enumerated candidate-versus-provider
+    pairs: FAIL if any is a material failure, `UNDEFINED_INSUFFICIENT_EVIDENCE`
+    if any is missing, inadmissible, undefined or insufficient, PASS only when
+    all three certify. The one remaining assumption is disclosed rather than
+    hidden -- Wilson treats one pair's own comparable events as exchangeable --
+    together with the reason its violation is conservative: clustering inflates
+    a numerator, which on a maximum gate read through an upper bound pushes
+    towards insufficient or failure, never towards a pass.
+  - **The missing transfer guard is `RAW_PROVIDER_STRUCTURAL_DISPERSION_CEILING_V1`,
+    hard.** Every unordered pair of distinct raw providers must itself certify
+    `structural_state` under the same limit and the same rule. It blocks the
+    false approval the review identified: because `MEDIAN_OHLC_V2` is the
+    element-wise median of the same three providers, `median(A,B,C)` against
+    `A` is mechanically closer than `A` against `B`, so a composite could
+    certify every gate pair merely by being an arithmetic function of those
+    pairs' own inputs while the providers do not agree about market structure
+    at all. The guard is computed only on provider-versus-provider pairs, so
+    candidate construction cannot influence it -- which is the property a
+    cosmetic guard on candidate pairs would not have. A leave-one-provider
+    dominance diagnostic was considered and refused: it would need three
+    alternative composites, which is new candidate-construction semantics, and
+    the case where a median becomes arbitrary is exactly the high raw
+    dispersion this guard already refuses.
+  - **Derived-level protection is preserved, not deleted.** Four hard
+    components carry it: the surviving hard gate, which is itself defined as
+    the swing disagreements that changed a breakout or reclaim state; the hard
+    comparability floor, which refuses a low rate bought with outages; a new
+    zero-count gate `unreviewed_derived_level_disagreement_count == 0`, in the
+    parent's own provenance idiom, requiring every observed breakout and
+    reclaim disagreement to carry a structured manual review; and the thirteen
+    inherited Tier-4 hard gates, which measure what a derived-level difference
+    actually costs on hourly bars with denominators three orders of magnitude
+    larger and are what rejected Bitstamp. At 21 to 39 comparable events a
+    complete reviewed census is a stronger control than a rate compared
+    against a number no one can defend.
+  - **Comparability stays hard at `0.50`, accepted on principle.** The
+    measured set must be at least as large as the set the contract had to
+    exclude; below a half the published rate describes a minority of the
+    pair's own detected structure, selected by outage rather than by market. It
+    is not raised because the other side of every gate pair is a raw provider
+    whose availability this protocol does not gate, and the per-pair bound
+    already refuses a thin denominator on its own. Zero comparable events is
+    null and insufficient, never `0.0`.
+  - **Stability is parameter robustness, not verdict invariance.** The
+    predecessor's check compared PASS/FAIL labels across thresholds all far
+    above every observed rate, so it could not fail. The replacement sweeps the
+    economic limit, the confidence level, the comparability floor and the
+    denominator vector, and asks whether the *ordering* survives:
+    `structural_state` can carry a hard gate from `0.15`, `breakout` only from
+    `0.30` and `reclaim` nowhere on the neighbourhood. That ordering is what
+    the demotions rest on and no limit reverses it. The check can fail, and
+    does at `0.10`, where the limit becomes unattainable at realistic
+    denominators and `structural_state` would itself stop being a viable hard
+    gate.
+  - **Tolerance is separated from observed dispersion.** The realism check runs
+    after the limit is declared and reports only whether it is achievable: no
+    independent provider pair reaches `0.20`, the worst is `0.0714`, five of
+    six certify outright at their own development denominators and the sixth is
+    insufficient rather than failing -- 2/28, whose bound is 0.2265. Had a
+    legitimate pair exceeded the limit, the conclusion would have been that the
+    metric cannot be a hard gate, not that the limit should move.
+  - **Candidate outcome not evaluated.** `MEDIAN_OHLC_V2` is never
+    constructed, and the module refuses any development comparison containing
+    it. The three gate pairs are declared and never measured, so the
+    candidate's final V3 result remains unknown.
+  - Evidence is persisted under
+    `research_artifacts/btc019_v3_gate_architecture_convergence/`
+    (`reference_composite_v3_protocol.json`,
+    `gate_architecture_convergence.json`,
+    `V3_GATE_ARCHITECTURE_CONVERGENCE_REPORT.md`). Added 92 focused tests in
+    `test_reference_composite_v3_convergence.py` covering the four reverified
+    findings and the refusal to proceed on a refuted one, the pinned
+    hard/soft/diagnostic roles, a hard gate that vetoes, a soft gate and a
+    diagnostic that cannot, the deterministic conjunction and its explicit pair
+    set, one failing and one undefined required pair, the comparability floor
+    just below/at/above and at zero candidates and zero comparable events,
+    unequal denominators, the threshold just below/at/above and the bound
+    boundary at 15 against 16 events, the bound's agreement with the
+    predecessor's Wilson implementation, the guard satisfied/failed/undefined
+    and its inability to read a candidate pair, the preserved Tier-4 and
+    census protection, the sensitivity ordering and that the check can fail,
+    the freeze hash and the 33 inherited gates, and every integrity boundary:
+    a wrong parent hash, a wrong predecessor governance hash, a tampered gate
+    architecture, threshold, diagnostic role, comparability rule, transfer
+    guard and candidate definition, a re-digested tamper, a record promoting a
+    diagnostic to hard or claiming sealed access, and determinism across
+    working directory, `PYTHONHASHSEED`, dictionary and provider order,
+    ambient `Decimal` context and process restart.
+  - **Sealed sample still shut, and now for one reason only.** Validator
+    construction is authorised *after* this frozen definition receives its own
+    independent xHigh review; 2015-2019 collection and opening remain refused
+    until that validator exists and is bound to `4232e886...bf71a`, not to the
+    parent hash. `PRICE_SOURCE_POLICY_V2` and a BTC-019 closure come only
+    after the sample is opened once and evaluated.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
