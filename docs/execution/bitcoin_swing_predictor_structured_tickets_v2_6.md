@@ -835,7 +835,7 @@ The `BTC019_COMPLETION_GATE_ASSESSMENT_V1` record under
 `BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT`. Cross-provider weekly structural
 comparison indexes its confirmation window by row, so a week a provider outage
 removed is read as if the weeks either side of it were neighbours. Six V2
-approval gates, four of them hard, are computed from that comparison, so the
+approval gates, five of them hard, are computed from that comparison, so the
 sealed sample must not be opened until the comparison carries an explicit
 calendar-contiguity contract and the already-inspected samples have been
 re-measured under it.
@@ -1056,8 +1056,11 @@ Do not overwrite raw history when the preferred provider changes.
     unambiguous: Bitstamp's swing lows at `2023-03-06` and `2024-04-29` fall on
     the exact weeks Bitfinex omits. The same mechanism explains BTC-019B's four
     exact-timestamp swing disagreements, which are two adjacent-week pairs around
-    the two weekly buckets the composite omitted. Six V2 approval gates, four of
-    them hard, are computed from this comparison.
+    the two weekly buckets the composite omitted. Six V2 approval gates, five of
+    them hard, are computed from this comparison. The frozen
+    `COMPLETION_GATE_REPORT.md` reads "four of them hard"; only
+    `exact_timestamp_swing_disagreement_rate` is soft in the frozen V2
+    definition, so the count is five. That report is left as it stands.
   - **What the defect does not overturn.** `BITSTAMP = REJECTED` stands. Only the
     first two pillars of its rationale are adjacency-exposed; the 10 October 2025
     consensus stop and the 2.433/4.605 percentage-point MFE/MAE sensitivities are
@@ -1239,6 +1242,48 @@ Do not overwrite raw history when the preferred provider changes.
     each of the six `BTC_REFERENCE_COMPOSITE_V3` structural denominators, using
     the already-inspected samples only; the validator must then bind the frozen
     successor's own complete executable definition hash, not the parent's.
+  - **Review finding: four V3 semantics the calibration task must settle first.**
+    The required `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION` xHigh review confirmed
+    `NEW_PROTOCOL_VERSION_REQUIRED` and every preservation claim, and found no
+    outcome-driven selection, but recorded four under-specified items in the
+    proposed successor, each able to move a hard gate verdict by itself. They are
+    governance choices, so the review did not make them.
+    (1) **Pair universe.** Every metric's `aggregation` reads "one measurement per
+    unordered pair of declared comparison series", but the successor never says
+    which set that is: the frozen parent's `comparison_series` lists five entries
+    -- three raw providers, `MEDIAN_OHLC_V1` and `BTC_REFERENCE_COMPOSITE_V2` --
+    while `inherits_from_parent_unchanged` carries over "the provider set", and
+    the measured evidence is six provider-vs-provider measurements with the
+    candidate on neither side. Three raw-provider pairs, ten pairs among five
+    series, and candidate-vs-provider only are all conformant readings, and only
+    the last two say anything about a candidate.
+    (2) **Admissibility and worst-pair aggregation.** "The gate verdict is the
+    worst admissible pair verdict" defines neither *admissible* nor *worst*.
+    Direction recovers "worst" for these six -- all are `maximum` -- but nothing
+    states it, there is no tie rule, and an undefined pair has no stated status.
+    (3) **Zero comparable events.** `_rate` returns `None` and the comparison
+    contract carries `UNDEFINED_NO_COMPARABLE_EVENTS`, but the successor states
+    the null convention only for `structural_comparability_rate`, not for the six
+    gate rates. All six measured pairs have `undefined_measurement_count == 0`, so
+    no evidence exercises it; a conformant implementation could read an undefined
+    rate as `0.0` and pass a hard maximum gate on no evidence at all.
+    (4) **Within-N-week matching.** "Nearest-admissible-pair first" fixes no
+    tie-break and requires no maximum-cardinality matching. Under the pinned
+    `BTC_PREDICTOR_WEEKLY_LEVELS_V1` detector -- strict inequality over +/-3 bars,
+    so same-family swings in one series are at least four weekly sessions apart --
+    the shipped greedy is maximum-cardinality on every realisable input, and
+    `within_1_week` is determinate (0 of 3,379,360 enumerated configurations
+    ambiguous). `within_2_week` is not: 97,414 of the same configurations admit
+    both a maximal and a sub-maximal count under orderings that all satisfy
+    "nearest first". The smallest is left `{W0, W4}` against right `{W2, W6}`,
+    where matched pairs are 1 or 2 -- enough to move the hard 0.02 gate.
+    The review's other conclusions stand: the frozen V2 hash, bytes, thresholds,
+    directions and hard flags are unchanged and independently recomputed; the
+    successor is deterministic across working directory, key order, ambient
+    `Decimal` context and process restart, and refuses a re-digested tamper of
+    `denominator_id`, `not_comparable_treatment`, `aggregation`,
+    `candidate_universe` or `frozen_threshold`; no threshold was calibrated; and
+    the sealed sample was neither collected nor opened.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

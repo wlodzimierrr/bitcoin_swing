@@ -11,7 +11,7 @@
 
 ## Snapshot
 
-- **Last updated:** 2026-09-04
+- **Last updated:** 2026-09-05
 - **Current phase:** Phase 1, EPIC W testing is implemented; every Phase-1
   implementation ticket except BTC-019 is now DONE
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
@@ -29,10 +29,13 @@
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3632 passed with Python 3.12 on 2026-09-04
-- **Last relevant implementation/review commit:** the
-  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` governance resolution of the six
-  BTC-019 structural approval gates
+- **Latest verified test baseline:** 3632 passed with Python 3.12 on 2026-09-05
+- **Last relevant implementation/review commit:** the required xHigh review of
+  the `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` governance resolution of the
+  six BTC-019 structural approval gates. Result: PASS WITH NON-BLOCKING
+  FINDINGS. `NEW_PROTOCOL_VERSION_REQUIRED` is upheld and every preservation
+  claim was independently reverified; four proposed-V3 semantics must be settled
+  by the calibration task before any threshold is fitted
 
 ## Price-Reference State
 
@@ -60,8 +63,11 @@ approved yet. Cross-provider weekly structural comparison indexes its
 confirmation window by row, so a session a provider outage removed is read as
 if the weeks either side of it were neighbours; 24 of the 40 recomputed
 structural differences across both collected samples sit inside that reach.
-Six `BTC_REFERENCE_COMPOSITE_V2` approval gates, four hard, are computed from
+Six `BTC_REFERENCE_COMPOSITE_V2` approval gates, five hard, are computed from
 that comparison, so the sealed 2015-2019 sample stays shut. The frozen
+`COMPLETION_GATE_REPORT.md` reads "four of them hard"; the frozen V2
+definition makes only `exact_timestamp_swing_disagreement_rate` soft, so the
+count is five. The historical report is left as it stands. The frozen
 `BITSTAMP = REJECTED` decision is unaffected: its 10 October 2025 consensus
 stop and its MFE/MAE sensitivities are Tier 4 comparisons on synchronized
 hourly bars.
@@ -114,9 +120,20 @@ collected, and the sample is opened once.
   `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1`. The next step is a separate
   pre-sealed threshold calibration and governance task that binds a threshold to
   each of the six `BTC_REFERENCE_COMPOSITE_V3` structural denominators, using
-  the already-inspected samples only. Only then may the successor be frozen, the
-  validator bound to its complete executable definition hash be built, 2015-2019
-  be collected, and the sealed sample be opened once.
+  the already-inspected samples only. The
+  `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION` xHigh review found four governance
+  items that task must settle before it fits a single number, because each can
+  move a hard gate verdict on its own: the pair universe behind "each unordered
+  pair of declared comparison series" (the frozen V2 `comparison_series` lists
+  five, the measured evidence is the three raw providers, and neither reading is
+  written down); what makes a pair *admissible* and how an undefined pair joins
+  the worst-pair verdict; a zero-comparable-event rate, which is `None` in code
+  but has no normative reading in the V3 text; and the exact within-N-week
+  matching rule, which "nearest-admissible-pair first" does not pin at the
+  two-week tolerance. A minimum-comparability policy is already deferred there in
+  writing. Only then may the successor be frozen, the validator bound to its
+  complete executable definition hash be built, 2015-2019 be collected, and the
+  sealed sample be opened once.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche

@@ -140,6 +140,9 @@ def test_frozen_structural_thresholds_and_directions_are_unchanged() -> None:
         assert gates[metric]["direction"] == direction
         assert gates[metric]["hard"] is hard
         assert gates[metric]["validation_stage"] == "historical_oos"
+    # Five of the six are hard; only exact_timestamp is soft. Living state has
+    # to quote this count, so pin it rather than leave it to prose.
+    assert sum(gates[metric]["hard"] for metric in AFFECTED_V2_GATE_METRICS) == 5
 
 
 def test_record_and_successor_carry_the_frozen_numbers_verbatim(record: dict) -> None:
