@@ -1411,6 +1411,85 @@ Do not overwrite raw history when the preferred provider changes.
     breakout and reclaim evidence sufficient to resolve those two gates, and a
     within-N matching observation that actually merges a pair, all from
     already-inspected or newly collected non-sealed history.
+  - **Review finding: the calibration is sound; the "more evidence" diagnosis is
+    not.** The required independent xHigh review reproduced the whole record
+    byte-for-byte from the repository -- across working directory,
+    `PYTHONHASHSEED`, ambient `Decimal` context and process -- reverified the
+    frozen V2 hash `bc312f3e...6106a` independently, and confirmed every
+    preservation and containment claim: the commit adds files only, no frozen
+    artifact or prior research module is touched, no candidate series is ever
+    constructed or measured, and no 2015-2019 history exists on disk. The two
+    thresholds and both `INSUFFICIENT_EVIDENCE` verdicts reproduce under an
+    independent implementation of Wilson, the exact binomial tails and the
+    objective. `CALIBRATION_INSUFFICIENT` is correct. Four non-blocking findings
+    stand against the interpretation rather than the computation. (1) The
+    artifact's own reading -- "a property of the evidence, not of the
+    objective" -- is false for `breakout`. `pi_alt` is three times the band's own
+    Wilson upper limit, so on a zero numerator the alternative shrinks with the
+    band: at 6n pooled events `n * pi_bar` converges to 0.64 and `n * pi_alt` to
+    1.92 for every n, and no threshold is admissible at 1,200 pooled comparable
+    events or on an arbitrarily fine grid. More evidence cannot resolve
+    `breakout` under this objective; only a non-zero disagreement count or a
+    different alternative can. `reclaim` is the opposite case and is a genuine
+    sparsity problem: at its observed 3/21 rate it needs roughly 10 comparable
+    events per pair per sample to become admissible, and even then at 0.50.
+    (2) Both dependence assumptions are unmodelled and material. The pooled band
+    treats 156 pair-measurements as independent trials when three distinct
+    underlying facts generate the five 2023-2025 swing disagreements; a design
+    effect of 2 moves `exact_timestamp` to 0.30 and `structural_state` to 0.25.
+    The family-wise probability multiplies survival across three gate pairs that
+    all share the candidate; under a comonotone worst case `exact_timestamp`
+    moves to 0.20 and `structural_state` becomes inadmissible. The two errors
+    push opposite ways and do not cancel. Neither is disclosed in the governance
+    artifact. (3) The published stability check cannot fail: every observed rate
+    is at or below 0.1071 while the neighbourhoods are 0.20/0.25/0.30 and
+    0.15/0.20/0.25, so all three verdict sets are identical by construction, and
+    "neither on a knife edge" carries no information. Under the governance
+    constants the numbers are not stable: a 2x rather than 3x alternative makes
+    both metrics `INSUFFICIENT_EVIDENCE`, a 0.01 grid gives 0.22 and 0.18, a
+    0.15 false-rejection tolerance gives 0.20 and 0.15, and per-sample rather
+    than pooled bands give 0.30/0.25 against 0.25/0.15. (4)
+    `minimum_comparable_events` searches only the equal-denominator
+    configuration, so the published minima of 13 and 17 do not carry to the
+    unequal denominators a real gate will have: `structural_state` at 0.20 with
+    pair denominators 20, 25 and 30 -- all above 17 -- has family power 0.7182,
+    under its own predeclared 0.80. The comparability floor of 0.50 passes the
+    reversal test: it never binds for the two calibrated metrics, it makes
+    breakout and reclaim harder rather than easier, and both stay unresolved at
+    every floor setting.
+  - **Review finding: the six gates carry at most two distinguishable signals.**
+    `within_1_week` and `within_2_week` are `exact_timestamp` minus merged
+    pairs, and the merge count is zero on all twelve measurements; the only
+    opposing-side swing-disagreement pair anywhere in 6.1 years of three-provider
+    history is `2022-09-19` against `2022-10-10`, three weeks apart and outside
+    both tolerances. `structural_state` shares `exact_timestamp`'s denominator
+    and counts the subset of its numerator that changed breakout or reclaim
+    state, so it is a strict subset on every pair. `breakout` is 0 on all six
+    pairs in both samples. The review's advisory classification for the
+    convergence task: `structural_state` `KEEP_AS_HARD_GATE`, `exact_timestamp`
+    `KEEP_AS_SOFT_GATE`, and `within_1_week`, `within_2_week`, `breakout` and
+    `reclaim` `KEEP_AS_DIAGNOSTIC`, with the derived-level protection recovered
+    through the comparability hard gate rather than through a rate gate on 21
+    events.
+  - **Review fix (report rendering, P2).** `calibration_markdown` truncated the
+    persisted decimal strings with a slice, and `str(Decimal)` goes scientific
+    below 1e-6, so nine operating characteristics lost their exponent and the
+    published report showed false-rejection probabilities of 1.2125, 2.2116,
+    3.4335 and 5.0348 -- impossible values, in a column that then read as rising
+    with the threshold. `threshold_calibration.json` was correct throughout and
+    the report was the only artifact with no test at all. `_rendered` now
+    formats in plain notation before truncating; the governance hash
+    `503ec795...67e6e6` and the record digest `2c50322c...d232ad` are unchanged
+    and the five affected report lines are the only bytes that moved. Added 9
+    regressions, for 106 focused tests.
+  - **Review result: PASS WITH NON-BLOCKING FINDINGS**, convergence
+    classification `FINAL_CONVERGENCE_WITH_EXISTING_EVIDENCE`. No further
+    evidence round is authorised: the history that could resolve `reclaim` does
+    not exist outside the sealed window, a fourth venue would re-observe the
+    same weekly events rather than add independent ones, and 2026 to date adds
+    roughly seven comparable swing, three breakout and one reclaim event per
+    pair. BTC-019 stays `IN_PROGRESS`, V3 stays `PROPOSED`, and validator
+    construction, 2015-2019 collection and opening all stay refused.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

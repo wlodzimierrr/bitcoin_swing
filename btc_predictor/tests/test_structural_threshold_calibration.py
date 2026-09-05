@@ -16,6 +16,7 @@ already-inspected samples with no path to the sealed 2015-2019 history.
 
 import decimal
 import json
+import re
 import shutil
 from datetime import UTC, datetime, timedelta
 from decimal import Context, Decimal
@@ -42,6 +43,7 @@ from btc_predictor.research.structural_threshold_calibration import (
     CALIBRATION_OBJECTIVE_ID,
     CALIBRATION_OUTPUT_NAMESPACE,
     CALIBRATION_RECORD_FILENAME,
+    CALIBRATION_REPORT_FILENAME,
     CALIBRATION_SCHEMA_VERSION,
     CANDIDATE_SERIES_ID,
     DEGENERATE_ALTERNATIVE_HYPOTHESIS,
@@ -77,10 +79,12 @@ from btc_predictor.research.structural_threshold_calibration import (
     UNDEFINED_NO_CANDIDATE_EVENTS,
     UNDEFINED_NO_COMPARABLE_EVENTS,
     ThresholdCalibrationError,
+    _rendered,
     aggregate_worst_pair,
     binomial_tail_at_least,
     build_calibration_record,
     calibration_governance_definition,
+    calibration_markdown,
     calibration_governance_sha256,
     calibration_pair_universe,
     classify_calibration_pair,
@@ -1270,3 +1274,53 @@ def test_a_zero_comparable_denominator_never_becomes_a_zero_rate() -> None:
     assert rows[0]["rate"] is None
     assert rows[0]["measurement_state"] == UNDEFINED_NO_COMPARABLE_EVENTS
     assert rows[0]["uncertainty"] is None
+
+
+# =============================================================================
+# the published report
+
+
+def test_the_report_never_renders_a_probability_greater_than_one(
+    governance: dict, record: dict
+) -> None:
+    """A sub-1e-6 operating characteristic must not lose its exponent.
+
+    ``str(Decimal)`` goes scientific below 1e-6, so truncating the persisted
+    string published ``1.2125`` for ``1.2125E-8``: a false-rejection column
+    that read as an impossible probability and as though it rose with the
+    threshold.
+    """
+
+    report = calibration_markdown(governance, record)
+    rendered = re.findall(r"([0-9]+\.[0-9]+) / ([0-9]+\.[0-9]+)", report)
+    assert rendered
+    for false_rejection, power in rendered:
+        assert Decimal(false_rejection) <= Decimal(1)
+        assert Decimal(power) <= Decimal(1)
+    assert "E-" not in report
+
+
+@pytest.mark.parametrize(
+    ("value", "digits", "expected"),
+    (
+        ("1.212591878623292637242216099E-8", 6, "0.0000"),
+        ("2.211694676594633952760323174E-7", 6, "0.0000"),
+        ("0.00001067893125966141030889479526", 6, "0.0000"),
+        ("0.9995507463577667966831864074", 6, "0.9995"),
+        ("0.107142857142857142857142857", 8, "0.107142"),
+        ("0", 6, "0"),
+        ("1", 6, "1"),
+    ),
+)
+def test_a_rendered_value_keeps_its_scale(value: str, digits: int, expected: str) -> None:
+    assert _rendered(value, digits) == expected
+
+
+def test_the_written_report_carries_no_impossible_probability(tmp_path: Path) -> None:
+    write_calibration_artifacts(REPOSITORY_ROOT, tmp_path)
+    report = (tmp_path / CALIBRATION_REPORT_FILENAME).read_text()
+    for false_rejection, power in re.findall(
+        r"([0-9]+\.[0-9]+) / ([0-9]+\.[0-9]+)", report
+    ):
+        assert Decimal(false_rejection) <= Decimal(1)
+        assert Decimal(power) <= Decimal(1)

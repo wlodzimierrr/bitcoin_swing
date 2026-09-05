@@ -29,13 +29,15 @@
 - **Next dependency-satisfied ticket:** None. BTC-019 is the only remaining
   Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 3729 passed with Python 3.13 on 2026-09-05
+- **Latest verified test baseline:** 3738 passed with Python 3.12.14 on 2026-09-05
 - **Last relevant implementation/review commit:** the pre-sealed
   `BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1` governance
   and calibration task. Outcome: `CALIBRATION_INSUFFICIENT`. All four
   proposed-V3 semantics the predecessor's xHigh review left open are settled and
   hashed, and two of the six structural thresholds are calibrated; four remain
-  unresolved and all four are hard, so V3 is not frozen
+  unresolved and all four are hard, so V3 is not frozen. Its required
+  independent xHigh review has now passed with one P2 review fix and reaches
+  `FINAL_CONVERGENCE_WITH_EXISTING_EVIDENCE`
 
 ## Price-Reference State
 
@@ -165,13 +167,23 @@ collected, and the sample is opened once.
   Under worst-pair aggregation the sampling noise of one legitimate pair
   measurement at those denominators is wider than the whole meaningful range of
   the metric, so no number is both achievable by an independent provider pair
-  and able to detect a materially worse reference. The next step is therefore
-  more comparable structural evidence for the derived-level gates -- longer
-  inspected history, more independent providers, or an explicitly versioned
-  change of aggregation argued on its own merits -- and not a looser threshold.
-  Only once all six are calibrated may the successor be frozen, the validator
-  bound to its complete executable definition hash be built, 2015-2019 be
-  collected, and the sealed sample be opened once.
+  and able to detect a materially worse reference. The calibration task read
+  that as a shortage of evidence; its independent xHigh review measured the
+  claim and found it holds only for `reclaim`. Because `pi_alt` is defined as
+  three times the band's own Wilson upper limit, a metric observing zero
+  disagreements has an alternative that shrinks with its band: `breakout` stays
+  unidentifiable at every sample size and on an arbitrarily fine grid, with the
+  expected counts pinned at 0.64 against 1.92 whatever the denominator. The
+  review also found `within_1_week` and `within_2_week` numerically identical to
+  `exact_timestamp` on all twelve measurements and `structural_state` a strict
+  subset of it on one shared denominator, so the six gates carry at most two
+  distinguishable signals. The next step is therefore one bounded convergence
+  task that decides the successor's gate architecture on the evidence in hand,
+  not another evidence round: the non-sealed history that could move
+  `reclaim` does not exist, and 2026 to date would add roughly one comparable
+  reclaim event per pair. Only once the surviving gates are calibrated may the
+  successor be frozen, the validator bound to its complete executable definition
+  hash be built, 2015-2019 be collected, and the sealed sample be opened once.
 - BTC-223 surfaced two paper-execution composition gaps. The BTC-165 half is
   now closed: the EPIC Q audit made the position walk exact rational
   arithmetic, so an add-then-trim trade on a non-terminating BTC-155 tranche

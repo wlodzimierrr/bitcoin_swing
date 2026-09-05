@@ -2147,19 +2147,32 @@ def verify_calibration_artifacts(
 # --- report --------------------------------------------------------------------
 
 
+def _rendered(value: str, digits: int) -> str:
+    """Truncate a persisted decimal string without dropping its exponent.
+
+    ``str(Decimal)`` switches to scientific notation below 1e-6, so slicing it
+    would publish ``1.2125`` for ``1.212591878623292637242216099E-8`` -- a
+    probability greater than one, and a false-rejection column that reads as
+    though it rose with the threshold. Rendering in plain notation first keeps
+    every published value on one scale.
+    """
+
+    return f"{Decimal(value):f}"[:digits]
+
+
 def _measurement_line(row: Mapping[str, Any]) -> str:
-    rate = "undefined" if row["rate"] is None else row["rate"][:8]
+    rate = "undefined" if row["rate"] is None else _rendered(row["rate"], 8)
     comparability = (
         "n/a"
         if row["structural_comparability_rate"] is None
-        else row["structural_comparability_rate"][:6]
+        else _rendered(row["structural_comparability_rate"], 6)
     )
     interval = (
         "n/a"
         if row["uncertainty"] is None
         else (
-            f"[{row['uncertainty']['wilson_95_lower'][:6]}, "
-            f"{row['uncertainty']['wilson_95_upper'][:6]}]"
+            f"[{_rendered(row['uncertainty']['wilson_95_lower'], 6)}, "
+            f"{_rendered(row['uncertainty']['wilson_95_upper'], 6)}]"
         )
     )
     return (
@@ -2314,14 +2327,15 @@ def calibration_markdown(
             add(
                 f"- Pooled independent band: "
                 f"{band['pooled']['numerator']}/{band['pooled']['denominator']} = "
-                f"{band['pooled']['observed_rate'][:8]}, Wilson 95% "
-                f"[{band['pooled']['wilson_95_lower'][:8]}, "
-                f"{band['pooled']['wilson_95_upper'][:8]}]"
+                f"{_rendered(band['pooled']['observed_rate'], 8)}, Wilson 95% "
+                f"[{_rendered(band['pooled']['wilson_95_lower'], 8)}, "
+                f"{_rendered(band['pooled']['wilson_95_upper'], 8)}]"
             )
             add(
-                f"- Band level pi_bar = {band['band_level_pi_bar'][:8]}, "
+                f"- Band level pi_bar = "
+                f"{_rendered(band['band_level_pi_bar'], 8)}, "
                 f"detectable alternative pi_alt = "
-                f"{band['detectable_alternative_pi_alt'][:8]}"
+                f"{_rendered(band['detectable_alternative_pi_alt'], 8)}"
             )
             add("")
             add("| threshold | admissible | per-sample false rejection / power |")
@@ -2334,8 +2348,8 @@ def calibration_markdown(
                             "no admissible pair"
                             if row["false_rejection_probability"] is None
                             else (
-                                f"{row['false_rejection_probability'][:6]} / "
-                                f"{row['discrimination_power'][:6]}"
+                                f"{_rendered(row['false_rejection_probability'], 6)} / "
+                                f"{_rendered(row['discrimination_power'], 6)}"
                             )
                         )
                     )
