@@ -13,7 +13,7 @@ and resolves only what the frozen definition left to a validator.
 - Freeze commit: `b60ecc7f36840b429f27a8742b7245d417cf52db`
 - Review commit: `e2df3ce036c0e7045361c871f8d303b51533f18d` (PASS_WITH_NON_BLOCKING_FINDINGS)
 - On mismatch: `REFUSE_TO_RUN`
-- Validator definition hash: `b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194`
+- Validator definition hash: `8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7`
 
 ## Verdict precedence
 

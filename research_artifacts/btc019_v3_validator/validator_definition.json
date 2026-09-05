@@ -13,6 +13,7 @@
   },
   "certification_rule": {
     "arithmetic": "Decimal in an explicit Context(prec=34, rounding=ROUND_HALF_EVEN), never the caller's ambient context and never a binary float. The point-rate comparison is additionally cross-checked in exact rational arithmetic, and a disagreement between the two refuses rather than resolves.",
+    "boundary_vector_enforcement": "The pinned boundary vectors are not an assertion about the bound, they are checked against it. Before any contract is built or any candidate is composed, each vector is re-evaluated through the certification rule on the hash-bound quantile and limit, and a disagreement is REFUSE_TO_RUN. Without this the vectors would record what the bound was expected to do while the bound itself sat outside both hashes, so an edited implementation could move a certifying boundary with neither hash changing. The continuity-corrected reading refuses 0/16, 1/25, 2/33 and 3/40, so substituting it is caught here rather than only by test.",
     "boundary_vectors": [
       {
         "denominator": 15,
@@ -55,6 +56,7 @@
         "outcome": "PAIR_CERTIFIED"
       }
     ],
+    "boundary_vectors_enforced_at_runtime": true,
     "confidence_level_percent": "95",
     "continuity_correction_applied": false,
     "equality_behaviour": "Equality certifies. A rate exactly at the limit passes and an upper bound exactly at the limit certifies, matching the repository's inclusive gate-boundary convention.",
@@ -126,6 +128,8 @@
     "rule": "Diagnostics are validated for completeness and published per required pair. They carry no threshold, no pass and no fail, and are not parameters of the composition. They may reach a verdict only through a separately frozen evidence-completeness rule, which in V3 is the derived-level review census: the breakout and reclaim `count` fields bound how large that census must be, and no diagnostic rate is read anywhere."
   },
   "evidence_completeness": {
+    "declared_value_verification": "A pair's denominator and its comparability rates are not believed, they are verified against the counts the same record carries. The bound STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1 defines structural_comparability_rate as comparable_event_count / all_detected_event_count, not_comparable_rate as its complement, and both as null exactly when nothing was detected; the frozen metric definition makes the structural denominator the comparable detected event union. A record whose declared values contradict its own counts is ambiguous about which reading governs, so it is refused rather than resolved -- the same treatment a duplicated or wrongly-identified pair receives. The rate is checked the way the point rate already is: the declared reading and the exact-rational reading must agree at the hard comparability floor, so no rounding can move a pair across it and no declared rate can certify a pair its own counts place below it.",
+    "declared_value_verification_id": "DECLARED_PAIR_VALUES_VERIFIED_AGAINST_OWN_COUNTS_V1",
     "missing_is_never_satisfied": true,
     "nullable_pair_fields": [
       "not_comparable_rate",
@@ -767,7 +771,7 @@
     "soft_gates_can_regain_a_hard_veto": false,
     "total_gate_count": 33
   },
-  "validator_definition_sha256": "b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194",
+  "validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7",
   "validator_schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_DEFINITION_V1",
   "validator_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1",
   "verdict_precedence": {

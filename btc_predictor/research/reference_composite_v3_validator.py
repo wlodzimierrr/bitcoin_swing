@@ -484,6 +484,60 @@ def _exact_rate_exceeds(numerator: int, denominator: int, limit: Decimal) -> boo
     return Fraction(numerator, denominator) > Fraction(limit)
 
 
+WILSON_BOUNDARY_ENFORCEMENT = (
+    "The pinned boundary vectors are not an assertion about the bound, they are "
+    "checked against it. Before any contract is built or any candidate is "
+    "composed, each vector is re-evaluated through the certification rule on "
+    "the hash-bound quantile and limit, and a disagreement is REFUSE_TO_RUN. "
+    "Without this the vectors would record what the bound was expected to do "
+    "while the bound itself sat outside both hashes, so an edited "
+    "implementation could move a certifying boundary with neither hash "
+    "changing. The continuity-corrected reading refuses 0/16, 1/25, 2/33 and "
+    "3/40, so substituting it is caught here rather than only by test."
+)
+
+
+def _pair_outcome_at(
+    numerator: int, denominator: int, *, limit: Decimal, quantile: Decimal
+) -> str:
+    """Classify one (k, n) through the very function the gate decides with.
+
+    Deliberately routed through `certify_pair` rather than through the bound
+    alone, so the check exercises the whole certification path a required pair
+    takes and not a parallel reimplementation of it.
+    """
+
+    probe = {
+        "comparison_id": "boundary_probe",
+        "numerator": numerator,
+        "denominator": denominator,
+        "state": PAIR_ADMISSIBLE,
+        "structural_comparability_rate": str(limit.max(Decimal(1))),
+    }
+    return certify_pair(
+        probe,
+        comparison_id="boundary_probe",
+        limit=limit,
+        quantile=quantile,
+        comparability_floor=Decimal(0),
+    ).outcome
+
+
+def verify_wilson_boundary_vectors(*, limit: Decimal, quantile: Decimal) -> None:
+    """Refuse if the bound no longer reproduces its own hash-bound boundaries."""
+
+    for row in WILSON_BOUNDARY_VECTORS:
+        actual = _pair_outcome_at(
+            row["numerator"], row["denominator"], limit=limit, quantile=quantile
+        )
+        if actual != row["outcome"]:
+            raise ValidatorBindingError(
+                f"{BINDING_REFUSAL}: the certification rule makes "
+                f"{row['numerator']}/{row['denominator']} {actual}, not the "
+                f"hash-bound {row['outcome']}"
+            )
+
+
 # =============================================================================
 # 4. the required pair universe
 # =============================================================================
@@ -745,7 +799,61 @@ def _decimal(value: Any, what: str) -> Decimal:
     raise ValidatorInputError(f"{what} is not an exact decimal")
 
 
-def _validate_pair_record(row: Any, metric: str) -> dict[str, Any]:
+DECLARED_VALUE_VERIFICATION_ID = "DECLARED_PAIR_VALUES_VERIFIED_AGAINST_OWN_COUNTS_V1"
+DECLARED_VALUE_VERIFICATION = (
+    "A pair's denominator and its comparability rates are not believed, they "
+    "are verified against the counts the same record carries. The bound "
+    f"{DENOMINATOR_SEMANTICS_VERSION} defines structural_comparability_rate as "
+    "comparable_event_count / all_detected_event_count, not_comparable_rate as "
+    "its complement, and both as null exactly when nothing was detected; the "
+    "frozen metric definition makes the structural denominator the comparable "
+    "detected event union. A record whose declared values contradict its own "
+    "counts is ambiguous about which reading governs, so it is refused rather "
+    "than resolved -- the same treatment a duplicated or wrongly-identified "
+    "pair receives. The rate is checked the way the point rate already is: the "
+    "declared reading and the exact-rational reading must agree at the hard "
+    "comparability floor, so no rounding can move a pair across it and no "
+    "declared rate can certify a pair its own counts place below it."
+)
+
+
+def _verify_declared_pair_values(
+    record: Mapping[str, Any], canonical: str, floor: Decimal
+) -> None:
+    """Refuse a pair whose declared values contradict its own counts."""
+
+    comparable = record["comparable_event_count"]
+    detected = record["all_detected_event_count"]
+    if record["denominator"] != comparable:
+        raise ValidatorInputError(
+            f"{canonical} declares a denominator of {record['denominator']} but "
+            f"carries {comparable} comparable events"
+        )
+    for field in PAIR_NULLABLE_KEYS:
+        declared = record[field]
+        if detected == 0 and declared is not None:
+            raise ValidatorInputError(
+                f"{canonical} detected no events, so {field} must be null"
+            )
+        if detected != 0 and declared is None:
+            raise ValidatorInputError(
+                f"{canonical} detected {detected} events, so {field} cannot be null"
+            )
+    if detected == 0:
+        return
+    declared_rate = _decimal(
+        record["structural_comparability_rate"],
+        f"{canonical} structural_comparability_rate",
+    )
+    if (declared_rate >= floor) != (Fraction(comparable, detected) >= Fraction(floor)):
+        raise ValidatorInputError(
+            f"{canonical} declares a structural comparability rate of "
+            f"{declared_rate} that disagrees with its own "
+            f"{comparable}/{detected} comparable events at the floor"
+        )
+
+
+def _validate_pair_record(row: Any, metric: str, floor: Decimal) -> dict[str, Any]:
     record = dict(_require_mapping(row, "a pair measurement"))
     _require_exact_keys(
         record, PAIR_REQUIRED_KEYS, PAIR_OPTIONAL_KEYS, "a pair measurement"
@@ -792,6 +900,7 @@ def _validate_pair_record(row: Any, metric: str) -> dict[str, Any]:
     for field in PAIR_NULLABLE_KEYS:
         if record[field] is not None:
             _decimal(record[field], f"{canonical} {field}")
+    _verify_declared_pair_values(record, canonical, floor)
     declared_purpose = record.get("pair_purpose")
     if declared_purpose is not None:
         try:
@@ -812,6 +921,7 @@ def _validate_pair_universe(
     required_ids: Sequence[str],
     expected_role: str,
     metric: str,
+    floor: Decimal,
     what: str,
 ) -> dict[str, dict[str, Any]]:
     """Return required-id -> measurement, refusing every structural violation.
@@ -826,7 +936,7 @@ def _validate_pair_universe(
         raise ValidatorInputError(f"{what} must be a list of pair measurements")
     seen: dict[str, dict[str, Any]] = {}
     for row in rows:
-        record = _validate_pair_record(row, metric)
+        record = _validate_pair_record(row, metric, floor)
         comparison_id = record["comparison_id"]
         role = _classify_pair(record["series_pair"])
         if role != expected_role:
@@ -1371,6 +1481,11 @@ def _not_comparable_requirement(payload: Any) -> dict[str, Any]:
             "requirement": REQUIREMENT_NOT_COMPARABLE,
             "threshold": 0,
         }
+    unknown = sorted(set(payload) - set(NOT_COMPARABLE_ACCOUNTING_REQUIRED_KEYS))
+    if unknown:
+        raise ValidatorInputError(
+            f"the not-comparable accounting block carries unknown fields {unknown}"
+        )
     value = payload.get("unrecorded_not_comparable_event_count")
     if value is None:
         return {
@@ -1501,6 +1616,11 @@ def _derived_level_review_requirement(
             "reviewed_event_count": None,
             "unreviewed_event_ids": [],
         }
+    unknown = sorted(set(payload) - set(DERIVED_LEVEL_REVIEW_REQUIRED_KEYS))
+    if unknown:
+        raise ValidatorInputError(
+            f"the derived-level review block carries unknown fields {unknown}"
+        )
     missing = sorted(set(DERIVED_LEVEL_REVIEW_REQUIRED_KEYS) - set(payload))
     if missing:
         return {
@@ -1910,6 +2030,7 @@ def validate_v3_candidate(
         required_ids=gate_ids,
         expected_role=ROLE_APPROVAL_GATE_PAIR,
         metric=STRUCTURAL_METRIC,
+        floor=floor,
         what="gate_pair_measurements",
     )
     guard_measurements = _validate_pair_universe(
@@ -1917,6 +2038,7 @@ def validate_v3_candidate(
         required_ids=guard_ids,
         expected_role=ROLE_SOURCE_DISPERSION_GUARD_PAIR,
         metric=STRUCTURAL_METRIC,
+        floor=floor,
         what="transfer_guard_pair_measurements",
     )
     soft_measurements = _validate_pair_universe(
@@ -1924,6 +2046,7 @@ def validate_v3_candidate(
         required_ids=gate_ids,
         expected_role=ROLE_APPROVAL_GATE_PAIR,
         metric=EXACT_TIMESTAMP_METRIC,
+        floor=floor,
         what="soft_gate_pair_measurements",
     )
 
@@ -2212,6 +2335,10 @@ def validator_definition(repository_root: Path) -> dict[str, Any]:
     protocol = bind_frozen_v3(repository_root)
     gates = inherited_gate_definitions(protocol)
     _verify_inherited_gate_census(gates)
+    verify_wilson_boundary_vectors(
+        limit=operative_structural_limit(protocol),
+        quantile=operative_normal_quantile(protocol),
+    )
     payload: dict[str, Any] = {
         "binding": {
             "binding_rule": BINDING_RULE,
@@ -2228,6 +2355,8 @@ def validator_definition(repository_root: Path) -> dict[str, Any]:
         "certification_rule": {
             "arithmetic": WILSON_ARITHMETIC,
             "boundary_vectors": [dict(row) for row in WILSON_BOUNDARY_VECTORS],
+            "boundary_vectors_enforced_at_runtime": True,
+            "boundary_vector_enforcement": WILSON_BOUNDARY_ENFORCEMENT,
             "confidence_level_percent": operative_confidence_level_percent(protocol),
             "continuity_correction_applied": WILSON_CONTINUITY_CORRECTION_APPLIED,
             "equality_behaviour": protocol["gate_architecture"]["certification_rule"][
@@ -2278,6 +2407,8 @@ def validator_definition(repository_root: Path) -> dict[str, Any]:
             "census_verification": CENSUS_VERIFICATION_RULE,
         },
         "evidence_completeness": {
+            "declared_value_verification": DECLARED_VALUE_VERIFICATION,
+            "declared_value_verification_id": DECLARED_VALUE_VERIFICATION_ID,
             "missing_is_never_satisfied": True,
             "nullable_pair_fields": list(PAIR_NULLABLE_KEYS),
             "nullable_semantics": (
@@ -2495,6 +2626,12 @@ def restore_validator_definition(output_dir: Path) -> dict[str, Any]:
         raise ValidatorError("persisted contract carries a different Wilson formula")
     if certification.get("continuity_correction_applied"):
         raise ValidatorError("persisted contract applies a continuity correction")
+    if certification.get("boundary_vectors") != [
+        dict(row) for row in WILSON_BOUNDARY_VECTORS
+    ]:
+        raise ValidatorError("persisted contract pins different boundary vectors")
+    if not certification.get("boundary_vectors_enforced_at_runtime"):
+        raise ValidatorError("persisted contract stops enforcing its own boundaries")
     if certification.get("rule_id") != CERTIFICATION_RULE_ID:
         raise ValidatorError("persisted contract names a different certification rule")
     composition = payload.get("composition", {})
@@ -2535,6 +2672,16 @@ def restore_validator_definition(output_dir: Path) -> dict[str, Any]:
         raise ValidatorError(
             "persisted contract carries a different derived-level census rule"
         )
+    completeness = payload.get("evidence_completeness", {})
+    if completeness.get("declared_value_verification_id") != (
+        DECLARED_VALUE_VERIFICATION_ID
+    ):
+        raise ValidatorError(
+            "persisted contract stops verifying declared pair values against "
+            "their own counts"
+        )
+    if not completeness.get("missing_is_never_satisfied"):
+        raise ValidatorError("persisted contract lets missing evidence satisfy")
     not_comparable = payload.get("not_comparable_handling", {})
     if (
         not_comparable.get("zero_count") != VERDICT_PASS

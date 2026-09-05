@@ -67,6 +67,7 @@ from btc_predictor.research.reference_composite_v3_convergence import (
     GUARD_SATISFIED,
     GUARD_UNDEFINED,
     INHERITED_TIER4_HARD_GATES,
+    NORMAL_QUANTILE_0_975,
     PAIR_CERTIFIED,
     PAIR_INSUFFICIENT_EVIDENCE,
     PAIR_MATERIAL_FAILURE,
@@ -778,7 +779,11 @@ def test_zero_over_zero_is_never_a_rate_of_zero() -> None:
 def test_a_zero_denominator_gate_pair_makes_the_run_insufficient(
     protocol: dict,
 ) -> None:
-    bundle = _bundle(protocol, gate_pair_measurements=_gate_rows(0, 0))
+    # A zero comparable denominator is the state where nothing was detected at
+    # all, so by the frozen rule both rates are null rather than 0.0.
+    bundle = _bundle(
+        protocol, gate_pair_measurements=_gate_rows(0, 0, comparability=None)
+    )
     record = _validate(bundle)
     assert record.verdict == VERDICT_INSUFFICIENT
     assert record.primary_reason == REASON_STRUCTURAL_GATE_INSUFFICIENT
@@ -819,8 +824,16 @@ def test_comparability_alone_does_not_certify(protocol: dict) -> None:
 
 
 def test_a_pair_below_the_floor_makes_the_run_insufficient(protocol: dict) -> None:
+    # 49 comparable of 100 detected: a rate its own counts actually produce.
     rows = _gate_rows()
-    rows[0]["structural_comparability_rate"] = "0.49"
+    rows[0] = _pair_row(
+        GATE_PAIRS[0],
+        STRUCTURAL_METRIC,
+        0,
+        49,
+        comparability="0.49",
+        not_comparable=51,
+    )
     bundle = _bundle(protocol, gate_pair_measurements=rows)
     record = _validate(bundle)
     assert record.verdict == VERDICT_INSUFFICIENT
@@ -830,7 +843,7 @@ def test_a_pair_below_the_floor_makes_the_run_insufficient(protocol: dict) -> No
 def test_a_null_comparability_rate_is_insufficient_not_satisfied(
     protocol: dict,
 ) -> None:
-    rows = _gate_rows(comparability=None)
+    rows = _gate_rows(0, 0, comparability=None)
     bundle = _bundle(protocol, gate_pair_measurements=rows)
     record = _validate(bundle)
     assert record.verdict == VERDICT_INSUFFICIENT
@@ -2583,7 +2596,7 @@ def test_the_validator_definition_hash_is_pinned() -> None:
     """Retyped so no later edit can move a verdict-affecting field in silence."""
 
     assert validator_definition_sha256(REPOSITORY_ROOT) == (
-        "b9a1d878c98fbda7f6ef93186262fb1d7e5825d93249fa1157c3f0856aa15194"
+        "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7"
     )
 
 
@@ -2770,3 +2783,175 @@ def test_the_bound_definition_says_the_sample_is_unopened(protocol: dict) -> Non
     assert sealed["opened"] is False
     assert sealed["inspected"] is False
     assert sealed["guard_refuses_the_sealed_window"] is True
+
+
+# =============================================================================
+# review fix: declared pair values are verified against their own counts, and
+# the hash-bound certification boundaries are enforced at run time
+# =============================================================================
+
+
+def test_a_comparability_rate_contradicting_its_own_counts_refuses(
+    protocol: dict,
+) -> None:
+    """The floor may not be satisfied by a rate the pair's counts disprove."""
+
+    rows = _gate_rows()
+    rows[0] = _pair_row(
+        GATE_PAIRS[0], STRUCTURAL_METRIC, 0, 40, comparability="0.90", not_comparable=400
+    )
+    with pytest.raises(ValidatorInputError, match="disagrees with its own"):
+        _validate(_bundle(protocol, gate_pair_measurements=rows))
+
+
+def test_a_denominator_decoupled_from_its_comparable_count_refuses(
+    protocol: dict,
+) -> None:
+    """A thin pair may not certify by declaring a denominator it never measured."""
+
+    rows = _gate_rows()
+    rows[0] = _pair_row(GATE_PAIRS[0], STRUCTURAL_METRIC, 0, 2, comparability="0.5",
+                        not_comparable=2)
+    rows[0]["denominator"] = 40
+    with pytest.raises(ValidatorInputError, match="declares a denominator of 40"):
+        _validate(_bundle(protocol, gate_pair_measurements=rows))
+
+
+def test_a_null_rate_beside_detected_events_refuses(protocol: dict) -> None:
+    """Null means nothing was detected; it may not sit beside a detected count."""
+
+    rows = _gate_rows()
+    rows[0]["not_comparable_rate"] = None
+    with pytest.raises(ValidatorInputError, match="cannot be null"):
+        _validate(_bundle(protocol, gate_pair_measurements=rows))
+
+
+def test_a_rate_present_with_nothing_detected_refuses(protocol: dict) -> None:
+    rows = _gate_rows(0, 0, comparability=None)
+    rows[0]["structural_comparability_rate"] = "1"
+    with pytest.raises(ValidatorInputError, match="must be null"):
+        _validate(_bundle(protocol, gate_pair_measurements=rows))
+
+
+def test_the_guard_pairs_are_verified_against_their_counts_too(
+    protocol: dict,
+) -> None:
+    rows = _guard_rows()
+    rows[0]["denominator"] = rows[0]["comparable_event_count"] + 1
+    with pytest.raises(ValidatorInputError, match="declares a denominator"):
+        _validate(_bundle(protocol, transfer_guard_pair_measurements=rows))
+
+
+def test_every_real_repository_measurement_satisfies_the_verification() -> None:
+    """The checks refuse nothing the repository's own measurement owner emits."""
+
+    rows: list[dict] = []
+
+    def _walk(node: object) -> None:
+        if isinstance(node, dict):
+            if {
+                "numerator",
+                "denominator",
+                "comparable_event_count",
+                "all_detected_event_count",
+                "structural_comparability_rate",
+            } <= set(node):
+                rows.append(node)
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                _walk(value)
+
+    for path in (REPOSITORY_ROOT / "research_artifacts").rglob("*.json"):
+        _walk(json.loads(path.read_text()))
+    assert rows, "no persisted pair measurements were found"
+    for row in rows:
+        assert row["denominator"] == row["comparable_event_count"]
+        detected = row["all_detected_event_count"]
+        declared = row["structural_comparability_rate"]
+        if detected == 0:
+            assert declared is None
+            continue
+        assert declared is not None
+        assert (Decimal(declared) >= Decimal("0.50")) is (
+            Fraction(row["comparable_event_count"], detected) >= Fraction(1, 2)
+        )
+
+
+def test_the_pinned_wilson_boundaries_are_enforced_at_run_time(
+    monkeypatch, protocol: dict
+) -> None:
+    """An implementation that moves a hash-bound boundary refuses to run."""
+
+    from btc_predictor.research import reference_composite_v3_convergence as owner
+
+    def _continuity_corrected(
+        numerator: int, denominator: int, *, quantile: Decimal = NORMAL_QUANTILE_0_975
+    ) -> Decimal | None:
+        if denominator == 0:
+            return None
+        n = Decimal(denominator)
+        p = Decimal(numerator) / n
+        z2 = quantile * quantile
+        inner = z2 + 2 - 1 / n + 4 * p * (n * (1 - p) - 1)
+        if inner < 0:
+            inner = Decimal(0)
+        return min((2 * n * p + z2 + 1 + quantile * inner.sqrt()) / (2 * (n + z2)),
+                   Decimal(1))
+
+    monkeypatch.setattr(owner, "wilson_upper_bound", _continuity_corrected)
+    with pytest.raises(ValidatorBindingError, match="the certification rule makes"):
+        _validate(_bundle(protocol))
+
+
+def test_a_bound_that_certifies_everything_also_refuses(monkeypatch) -> None:
+    """The enforcement catches a loosened bound, not only a stricter one."""
+
+    from btc_predictor.research import reference_composite_v3_convergence as owner
+
+    monkeypatch.setattr(
+        owner,
+        "wilson_upper_bound",
+        lambda k, n, *, quantile=None: Decimal(0) if n else None,
+    )
+    with pytest.raises(ValidatorBindingError, match="the certification rule makes"):
+        validator_definition(REPOSITORY_ROOT)
+
+
+def test_boundary_enforcement_is_declared_in_the_contract(contract: dict) -> None:
+    certification = contract["certification_rule"]
+    assert certification["boundary_vectors_enforced_at_runtime"] is True
+    assert certification["continuity_correction_applied"] is False
+
+
+def test_declared_value_verification_is_declared_in_the_contract(
+    contract: dict,
+) -> None:
+    completeness = contract["evidence_completeness"]
+    assert completeness["declared_value_verification_id"] == (
+        "DECLARED_PAIR_VALUES_VERIFIED_AGAINST_OWN_COUNTS_V1"
+    )
+    assert completeness["missing_is_never_satisfied"] is True
+
+
+def test_the_derived_level_review_block_refuses_unknown_fields(
+    protocol: dict,
+) -> None:
+    review = dict(_bundle(protocol)["derived_level_review"])
+    review["shadow"] = 1
+    with pytest.raises(ValidatorInputError, match="unknown fields"):
+        _validate(_bundle(protocol, derived_level_review=review))
+
+
+def test_the_not_comparable_block_refuses_unknown_fields(protocol: dict) -> None:
+    with pytest.raises(ValidatorInputError, match="unknown fields"):
+        _validate(
+            _bundle(
+                protocol,
+                not_comparable_accounting={
+                    "unrecorded_not_comparable_event_count": 0,
+                    "shadow": 1,
+                },
+            )
+        )

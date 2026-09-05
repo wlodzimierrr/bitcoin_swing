@@ -1917,6 +1917,105 @@ Do not overwrite raw history when the preferred provider changes.
     task is `FORMAL_XHIGH_REVIEW_HASH_BOUND_V3_VALIDATOR`. 2015-2019
     collection and opening remain refused until that review passes, and no
     further evidence round is authorised.
+  - **The validator's own independent xHigh review is done:
+    `PASS WITH NON-BLOCKING FINDINGS`**, classification
+    `VALIDATOR_CERTIFIED_FOR_SEALED_EXECUTION_PREPARATION`, with one review-fix
+    commit. Both hashes were recomputed from the persisted artifacts under an
+    independently written canonical serialization: the frozen V3 definition
+    reproduces `4232e886...bf71a` and its parent `bc312f3e...6106a`, and the
+    validator contract reproduced `b9a1d878...15194` before the fix. The seven
+    hard requirements were recovered independently by walking every `hard: true`
+    assertion in the freeze; all of them map onto exactly one of the seven, the
+    five `new_hard_requirements` are covered, and the five
+    `metric_definitions[*].frozen_hard` flags are the historical provenance the
+    validator correctly ignores. A tracking read of the bound definition during
+    a complete validation proves `metric_definitions` and
+    `superseded_gate_metrics` are never read at all, so `structural_state` is
+    read at `0.20` and the four demoted metrics stay diagnostics. The state
+    space was rebuilt from scratch rather than rerun: `3^4 * 2^3 = 648` legal
+    states, exactly one `PASS` and it is the all-pass state, no exception on any
+    legal state, and all 1539 illegal states -- an evidence-completeness
+    requirement reporting a material failure -- refused. The uncorrected Wilson
+    bound was reimplemented independently and cross-checked against the
+    quadratic root of the score equation to 40 digits; all eight pinned
+    boundaries reproduce, and Newcombe's continuity-corrected limit refuses all
+    four certifying ones, so it cannot substitute. Tier-4 parity is exact on all
+    33 gates with no threshold, direction or role drift, and the four soft gates
+    provably cannot veto. 49 independent contract tampers all moved the hash and
+    were all refused by `verify_validator_artifacts`. A complete validation opens
+    exactly two files, both frozen protocol artifacts: nothing under `data/`, no
+    2015-2019 path, no collector, no database and no network.
+  - **Review fix (P2): a pair's declared denominator and comparability rate were
+    not verified against the counts the same record carries.** The validator
+    required all four coverage counts and checked that they sum, but read
+    `denominator` and `structural_comparability_rate` as declared. A gate pair
+    with 40 comparable of 440 detected events could therefore declare a
+    comparability rate of `0.90` and clear the hard `0.50` floor its own counts
+    place it far below, and a pair with 2 comparable events could declare a
+    denominator of 40 and certify at `0/40` where `0/2` is insufficient. Both
+    certified a `PASS` in review. The bound
+    `STRUCTURAL_GATE_DENOMINATOR_RESOLUTION_V1` defines
+    `structural_comparability_rate` as `comparable_event_count /
+    all_detected_event_count`, `not_comparable_rate` as its complement and both
+    as null exactly when nothing was detected, and the frozen metric definition
+    makes the structural denominator the comparable detected event union -- so
+    every one of these is a defined identity over evidence the bundle already
+    carries. This is the same fail-open shape twice closed before: the V3 review
+    fix for absent comparability evidence, and this implementation's own
+    derived-level census cross-check. `DECLARED_PAIR_VALUES_VERIFIED_AGAINST_OWN_COUNTS_V1`
+    now refuses a record whose denominator is not its comparable count, whose
+    nullable rates are null beside detected events or present beside none, or
+    whose declared rate disagrees with the exact-rational reading at the floor
+    -- the same "refuse rather than resolve" idiom `_cross_check_point_rates`
+    already applies at the materiality limit. All 36 real persisted measurements
+    in the repository satisfy all three identities, so the checks refuse nothing
+    the measurement owner emits, and a regression pins that.
+  - **Review fix (P2): the hash-bound Wilson boundary vectors were asserted, not
+    enforced.** The contract pins `0/15, 0/16, 1/24, 1/25, 2/32, 2/33, 3/39,
+    3/40` precisely so "a later edit to the bound cannot move a boundary without
+    this contract's hash saying so", but nothing re-evaluated them. Substituting
+    the continuity-corrected limit into the owner module flipped `0/16` from
+    certifying to insufficient while both hashes stayed identical and binding
+    still succeeded. `verify_wilson_boundary_vectors` now re-evaluates all eight
+    through `certify_pair` itself -- the function the gate decides with, not a
+    parallel reimplementation -- before any contract is built or any candidate
+    composed, and refuses `REFUSE_TO_RUN` on any disagreement. It catches a
+    loosened bound as well as a stricter one.
+  - **Review fix (P3): two blocks accepted unknown fields the contract declares
+    `REFUSED`.** `derived_level_review` and `not_comparable_accounting` ignored
+    extra keys. Nothing read them, so no shadow field was exploitable, but the
+    contract's own `input_schema.unknown_fields` claim was untrue; both now
+    refuse.
+  - **The fix changes the validator contract, so its hash moved:
+    `b9a1d878...15194` -> `8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7`.**
+    No frozen V3 byte moved and `4232e886...bf71a` is unchanged; the fix adds
+    only refusals and cannot manufacture a `PASS`. The 648-state space, the one
+    `PASS` state, the precedence, every threshold, the pair universes and the
+    Wilson boundaries are all unchanged. 312 focused tests, 12 of them new.
+  - **Findings recorded, not fixed.** Enabling the one sealed execution requires
+    a new validator hash: `sealed_execution_authorized` sits inside the hashed
+    contract and `validate_v3_candidate` refuses `SEALED_EXECUTION`
+    unconditionally, so the certified contract cannot be the executing one. The
+    next task must therefore ship a minimal `_V2` whose only semantic delta is
+    the authorization flag, and that delta needs its own review; composition,
+    thresholds, evidence schema and verdict semantics need not change (P2).
+    `restore_validator_definition`'s docstring claims it refuses "every
+    meaningful tamper" when a re-digested tamper of the limit, quantile, pair
+    set or a Tier-4 threshold passes it -- `verify_validator_artifacts` is the
+    complete check and the runtime never trusts the persisted file, so no
+    verdict is reachable through it (P3).
+  - **The accepted risks are preserved.** The guard still returns
+    `GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE` on a 2/28 provider pair, so a sealed
+    sample resembling 2023-2025 still returns an unresolved result for any
+    candidate however good. No threshold moved, no data-dependent relaxation
+    exists, and the candidate was never constructed or evaluated. The sealed
+    2015-2019 sample was neither collected nor opened at any point in the review.
+  - **Classification: `VALIDATOR_CERTIFIED_FOR_SEALED_EXECUTION_PREPARATION`.**
+    The next task is
+    `PREPARE_AND_EXECUTE_ONE_SHOT_V3_SEALED_VALIDATION`. Certification
+    authorises preparing the one-shot execution mechanism; it does not itself
+    authorise collecting or opening the sample, and no further evidence round is
+    authorised.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
