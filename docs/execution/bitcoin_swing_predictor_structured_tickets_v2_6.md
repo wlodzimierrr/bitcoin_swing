@@ -2016,6 +2016,138 @@ Do not overwrite raw history when the preferred provider changes.
     authorises preparing the one-shot execution mechanism; it does not itself
     authorise collecting or opening the sample, and no further evidence round is
     authorised.
+  - **`BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2`, the one-shot sealed
+    executor.** Built under
+    `btc_predictor/research/reference_composite_v3_sealed_executor.py`, with its
+    contract, its semantic delta and its report persisted at
+    `research_artifacts/btc019_v3_sealed_executor/`. It closes the certified V1
+    review's recorded P2: `sealed_execution_authorized` sits inside the hashed
+    contract and `validate_v3_candidate` refuses `SEALED_EXECUTION`
+    unconditionally, so the certified contract can never be the executing one.
+    Both authorities were reverified before anything was created --- the frozen
+    V3 definition rebuilds and restores to `4232e886...bf71a` with its parent
+    `bc312f3e...6106a`, and the certified V1 contract rebuilds to
+    `8e6254e0...c7ffe7` --- and V2 refuses to exist if either moves.
+  - **V1 is not mutated in place.** The certified module is byte-identical, still
+    hashes to `8e6254e0...c7ffe7`, and still raises on `SEALED_EXECUTION`. V2 is
+    a separate module that *derives* its contract from the parent's at build
+    time: it copies the parent payload, applies one enumerated delta, computes
+    the actual field-level diff and refuses `REFUSE_TO_FREEZE_EXECUTING_VALIDATOR`
+    if the diff and the declaration disagree in either direction. A drifted
+    field therefore cannot reach the hash, and a declared delta the contracts do
+    not actually exhibit is refused too.
+  - **The semantic delta, exhaustively.** Changed: `validator_version`,
+    `validator_schema_version`, `output_schema.fields`,
+    `output_schema.record_schema_version`,
+    `sealed_sample.sealed_execution_authorized` (false -> true),
+    `sealed_sample.sealed_execution_rule`, `sealed_sample.collection_authorized`
+    and `sealed_sample.opening_authorized`. Added: `parent_validator`,
+    `sealed_execution_control`, `sealed_sample_contract`, `semantic_delta`,
+    `sealed_sample.one_shot_execution`,
+    `sealed_sample.reuse_after_finalized_run` and
+    `sealed_sample.execution_states`. Removed: none. The one verdict-affecting
+    change is the authorization flag. All 23 other top-level blocks --- binding,
+    certification rule, composition, hard requirements, input schema, operative
+    precedence, reason vocabulary, pair universes, soft requirements,
+    statistical limitation, Tier-4 inheritance, verdict precedence and verdict
+    vocabulary among them --- are byte-identical, and a per-field regression
+    pins each one.
+  - **Verdict parity is structural, not merely tested.** Every verdict-affecting
+    computation is the parent's own object, asserted by identity:
+    `compose_verdict`, `certify_pair`, `evaluate_hard_structural_gate`,
+    `evaluate_transfer_guard`, `evaluate_soft_gate`, the seven requirement
+    functions, the pair-universe validator, the diagnostics validator and the
+    inherited-gate census are called on `_v1`, never reimplemented. What V2
+    restates is the orchestration order, its own identity fields and the
+    sealed-execution block. A 27-bundle differential corpus spanning all three
+    verdicts shows the two records differ in exactly four changed fields
+    (`schema_version`, `validator_version`, `validator_definition_sha256`,
+    `validation_record_digest`) and three added ones
+    (`parent_validator_version`, `parent_validator_definition_sha256`,
+    `sealed_execution`) --- and in nothing else: verdict, primary reason, reason
+    codes, hard outcomes, hard requirement blocks, pair certifications, guard
+    outcome, Tier-4 outcomes, soft output, diagnostics, composition, evidence
+    digest and provenance are all identical. All 648 legal hard states compose
+    identically with exactly one `PASS`, and all eight Wilson boundaries still
+    resolve through `certify_pair` itself, uncorrected.
+  - **One-shot control.** Five states ---
+    `NOT_PREPARED -> PREPARED -> COLLECTED_FROZEN -> EXECUTION_STARTED ->
+    FINALIZED` --- four legal transitions, each strictly one step forward, and
+    `FINALIZED` terminal. The lock is not a process-local boolean: it is
+    `BTC019_V3_SEALED_EXECUTION_AUTHORIZATION_V1`, persisted, re-read from disk
+    before every transition, digest-verified, and with its `execution_id`
+    *derived* from its own authority (V3 hash, V2 hash, V1 parent hash, window,
+    candidate identity, providers) so a tampered authority field makes the
+    record disagree with itself. Ten single-field tampers, a re-digested tamper
+    and an unknown field all refuse. Restart scenarios are exercised by
+    re-reading the record between every step: a prepared authority stays
+    prepared and cannot be re-prepared, a started execution cannot be started
+    again, and a finalized one refuses execution, start, preparation and
+    re-collection alike.
+  - **Preparation is not execution.** `prepare_sealed_execution` verifies both
+    hashes, the authorization flag and the semantic delta, refuses if any
+    authority already exists, and writes the record with
+    `collection_manifest_digest`, `evidence_bundle_digest` and
+    `execution_result_digest` all null. `execute_sealed_validation` is the only
+    call that may ever consume sealed evidence, and it refuses without a durable
+    record in `EXECUTION_STARTED`, without a frozen manifest, and on any bundle
+    whose provenance does not bind that manifest, whose candidate identity or
+    provider set differs, or whose window is not exactly
+    `2015-07-20T21:00:00+00:00..2019-11-30T23:00:00+00:00`.
+  - **The collection contract, implemented but not performed.**
+    `BTC019_V3_SEALED_SAMPLE_MANIFEST_V1` requires per-file SHA-256, byte and
+    row counts, first/last observation inside the window, missing and duplicate
+    interval lists that match their own counts, a zero raw-mutation count,
+    source provenance (endpoint, exchange, instrument symbol, request count) and
+    a collection source identifier, per provider, for exactly the three
+    `PRICE_SOURCE_POLICY_V1` validation providers at their policy instrument
+    symbols on `1h` UTC bars. It refuses a wrong or duplicated provider, a wrong
+    window, interval or timezone, missing provenance, a wrong instrument, a
+    manifest whose own digest disagrees, and --- through a recursive key scan
+    --- any strategy outcome at any depth. `verify_collected_file_digests`
+    catches a file changed after it was hashed. The pre-freeze rule permits only
+    the six technical integrity checks and refuses candidate performance, gate
+    results, structural disagreements, returns, stop touches, MFE/MAE and
+    provider comparison results until the manifest is frozen.
+  - **The terminal result.** `BTC019_V3_SEALED_VALIDATION_RESULT_V1` binds the
+    execution id, the V3 hash, the V2 hash, the V1 parent hash, the sealed
+    manifest digest, the candidate identity and evidence digest, and publishes
+    the final verdict, the primary reason, all reasons, all seven hard
+    requirement outcomes, both pair certification sets, the soft output, the
+    diagnostics, the inherited gate outcomes, the review completeness state, the
+    NOT_COMPARABLE accounting, the provenance and its own result digest. No
+    field requires post-hoc interpretation. `PASS`, `FAIL` and
+    `UNDEFINED_INSUFFICIENT_EVIDENCE` are all recorded as valid terminal
+    outcomes with their consequences, no-post-sealed-tuning included; nothing
+    promises that BTC-019 passes.
+  - **Nothing was collected, opened or evaluated.** The candidate was never
+    constructed and no live authorization record exists in the repository --- the
+    one-shot clock starts in the next task, not this one. Beyond the per-run
+    watchers on `open`, `Path.read_text`, `Path.read_bytes` and `gzip.open`, a
+    suite-level regression re-runs this entire module in a subprocess under
+    `sys.addaudithook` and asserts that of the thousands of file opens the
+    interpreter performs, none is under `data/` and none names a 2015-2019 path.
+    That check carries a positive control so an empty violation list cannot mean
+    "saw nothing", and a negative control confirmed the hook does catch a real
+    collected-data read. In the only unauthorised mode the inherited
+    `guard_untouched_validation_sample` still refuses the sealed window exactly
+    as V1 does.
+  - **`BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` hashes to
+    `e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784`.** It is
+    deterministic across working directory, `PYTHONHASHSEED`, ambient `Decimal`
+    context, provider and dictionary order and process restart. 18 semantic
+    tampers of this module all moved the hash or were refused, 5 tampers of a
+    parent semantic all refuse the successor outright, and 11 persisted-contract
+    tampers plus a re-digested one are all caught. No frozen V3 byte moved and
+    `4232e886...bf71a` is unchanged.
+  - **196 focused tests**, 910 in the BTC-019 and price-reference regression
+    set, 4342 in the full suite under `-W error::RuntimeWarning`.
+  - **Classification: `SEALED_EXECUTOR_READY_FOR_INDEPENDENT_REVIEW`.** The next
+    task is `FORMAL_XHIGH_REVIEW_ONE_SHOT_V3_SEALED_EXECUTOR`. Collecting and
+    opening 2015-2019 remain refused until that review passes; once it does, the
+    contract is frozen --- no edit, no rebuild, no new hash --- and the one
+    permitted run must bind exactly the reviewed V2 hash. No further evidence,
+    research or governance round is authorised.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
