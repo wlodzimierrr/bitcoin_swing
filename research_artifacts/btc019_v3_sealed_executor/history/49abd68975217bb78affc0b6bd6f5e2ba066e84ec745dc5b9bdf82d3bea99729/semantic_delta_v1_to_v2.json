@@ -19,22 +19,8 @@
     "validator_version"
   ],
   "delta_id": "SEALED_EXECUTION_AUTHORIZATION_ONLY_V1",
-  "executor_lineage": [
-    {
-      "definition_sha256": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
-      "implementation_commit": "568ebb8ca8ead0025fb30d5b15e576797d17dffb",
-      "review_commit": "daa664753ed3a6e282fa53577be9f680bfa7c8fd",
-      "review_result": "FAIL_SEALED_EXECUTOR_INVALID"
-    },
-    {
-      "definition_sha256": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
-      "implementation_commit": "9ca2b5bfdb129441d0b6857b496b526f7d5685df",
-      "review_commit": "45c5e04044d054757b583cbb2aaed5915d196852",
-      "review_result": "FAIL_SEALED_EXECUTOR_INVALID"
-    }
-  ],
-  "failed_executor_implementation_commit": "9ca2b5bfdb129441d0b6857b496b526f7d5685df",
-  "failure_review_commit": "45c5e04044d054757b583cbb2aaed5915d196852",
+  "failed_executor_implementation_commit": "568ebb8ca8ead0025fb30d5b15e576797d17dffb",
+  "failure_review_commit": "daa664753ed3a6e282fa53577be9f680bfa7c8fd",
   "failure_review_result": "FAIL_SEALED_EXECUTOR_INVALID",
   "identical_fields": [
     "binding",
@@ -85,10 +71,10 @@
     "verdict_vocabulary"
   ],
   "removed_fields": [],
-  "semantic_delta_sha256": "1ae57ed399835615e1b5fc659bd9751cf812e1cdb96a2420a5c01237e03353e7",
+  "semantic_delta_sha256": "d4637097dc667ed8b89c134194d440745a910d243397893d009fb91052fdc229",
   "statement": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2 = the certified BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1 semantics, unchanged, plus sealed_execution_authorized false -> true, plus the execution-control artifacts that make that authorization one-shot. This contract is not written independently: it is derived from the parent contract at build time and the computed diff is compared against the declared delta before anything is hashed, so any other difference is REFUSE_TO_FREEZE_EXECUTING_VALIDATOR.",
-  "supersedes_failed_executor_hash": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
-  "validator_definition_sha256": "7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6",
+  "supersedes_failed_executor_hash": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
+  "validator_definition_sha256": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
   "validator_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2",
   "verdict_affecting_delta": {
     "field": "sealed_sample.sealed_execution_authorized",

@@ -56,7 +56,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Callable, Iterator
+from typing import Any, Iterator
 
 from btc_predictor.data.ohlcv import OhlcvBar, require_utc_datetime
 from btc_predictor.research.btc019_empirical import RAW_ARTIFACT_SCHEMA_VERSION
@@ -72,6 +72,7 @@ from btc_predictor.research.reference_composite_v2 import (
     guard_untouched_validation_sample,
 )
 from btc_predictor.research import reference_composite_v3_validator as _v1
+from btc_predictor.research import reference_composite_v3_sealed_evidence as _evidence_owner
 from btc_predictor.research.reference_composite_v3_validator import (
     BOUND_PROTOCOL_DEFINITION_SHA256,
     BOUND_PROTOCOL_VERSION,
@@ -144,6 +145,17 @@ FAILED_EXECUTOR_IMPLEMENTATION_COMMIT = (
 )
 FAILED_EXECUTOR_REVIEW_COMMIT = "daa664753ed3a6e282fa53577be9f680bfa7c8fd"
 FAILED_EXECUTOR_REVIEW_RESULT = "FAIL_SEALED_EXECUTOR_INVALID"
+
+PREVIOUS_EXECUTOR_DEFINITION_SHA256 = (
+    "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729"
+)
+PREVIOUS_EXECUTOR_IMPLEMENTATION_COMMIT = (
+    "9ca2b5bfdb129441d0b6857b496b526f7d5685df"
+)
+PREVIOUS_EXECUTOR_REVIEW_COMMIT = (
+    "45c5e04044d054757b583cbb2aaed5915d196852"
+)
+PREVIOUS_EXECUTOR_REVIEW_RESULT = "FAIL_SEALED_EXECUTOR_INVALID"
 
 REFUSE_TO_PREPARE = "REFUSE_TO_PREPARE_SEALED_EXECUTION"
 REFUSE_TO_FREEZE = "REFUSE_TO_FREEZE_EXECUTING_VALIDATOR"
@@ -256,7 +268,37 @@ CANDIDATE_SERIES_ID = V2_METHOD_VERSION
 CANDIDATE_METHOD_VERSION = V2_METHOD_VERSION
 COLLECTION_METHOD = "btc_predictor.research.btc019_empirical.collect_btc019_evidence"
 COLLECTION_METHOD_VERSION = "BTC019_COLLECTOR_V1"
-SEALED_EVIDENCE_BUILDER_VERSION = "BTC019_V3_SEALED_EVIDENCE_BUILDER_V1"
+SEALED_EVIDENCE_BUILDER_VERSION = _evidence_owner.BUILDER_VERSION
+SEALED_EVIDENCE_BUILDER_MODULE = _evidence_owner.BUILDER_MODULE
+SEALED_EVIDENCE_BUILDER_FUNCTION = _evidence_owner.BUILDER_FUNCTION
+SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256 = (
+    "d8ff41f734dbeefbc2df06bac97637c3e3a06d23ae3cea5049541d3ddeeabb85"
+)
+_FIXED_SEALED_EVIDENCE_BUILDER = _evidence_owner.build_sealed_evidence
+
+
+def fixed_evidence_builder_definition() -> dict[str, Any]:
+    """Verify and return the one repository-owned live builder definition."""
+
+    if _evidence_owner.build_sealed_evidence is not _FIXED_SEALED_EVIDENCE_BUILDER:
+        raise ValidatorBindingError(
+            f"{REFUSE_TO_RUN}: canonical evidence-builder function object moved"
+        )
+    definition = _evidence_owner.builder_definition()
+    expected = {
+        "builder_function": SEALED_EVIDENCE_BUILDER_FUNCTION,
+        "builder_input_type": "VerifiedRawCollection",
+        "builder_module": SEALED_EVIDENCE_BUILDER_MODULE,
+        "builder_version": SEALED_EVIDENCE_BUILDER_VERSION,
+        "builder_definition_sha256": SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256,
+    }
+    for field, value in expected.items():
+        if definition.get(field) != value:
+            raise ValidatorBindingError(
+                f"{REFUSE_TO_RUN}: fixed evidence-builder {field} moved; "
+                "a new V2 contract hash is required"
+            )
+    return definition
 
 
 def _raw_relative_path(provider_id: str) -> str:
@@ -1976,12 +2018,15 @@ SEALED_EXECUTION_RESULT_FIELDS = (
     "validator_definition_sha256",
 )
 
-SEALED_EVIDENCE_ARTIFACT_SCHEMA_VERSION = "BTC019_V3_SEALED_EVIDENCE_ARTIFACT_V1"
+SEALED_EVIDENCE_ARTIFACT_SCHEMA_VERSION = "BTC019_V3_SEALED_EVIDENCE_ARTIFACT_V2"
 SEALED_EVIDENCE_ARTIFACT_FIELDS = (
     "bound_protocol_definition_sha256",
     "candidate_method_version",
     "candidate_series_id",
     "evidence_artifact_sha256",
+    "evidence_builder_definition_sha256",
+    "evidence_builder_function",
+    "evidence_builder_module",
     "evidence_builder_version",
     "evidence_bundle",
     "evidence_bundle_digest",
@@ -2017,15 +2062,39 @@ RAW_REVALIDATION_RULE = (
     "Freezing and execution both securely reopen every fixed provider file, "
     "recompute SHA-256 and byte count, parse the gzip JSONL owner schema, and "
     "recompute row count, first/last timestamp, missing intervals and duplicate "
-    "intervals. Execute does this only after EXECUTION_STARTED is durable and "
-    "before invoking the evidence builder."
+    "intervals. After EXECUTION_STARTED is durable, execute first reloads and "
+    "fully validates the canonical persisted manifest and compares its canonical "
+    "digest to the authority; raw verification consumes that exact in-memory "
+    "snapshot before the fixed evidence builder is invoked."
+)
+POST_START_MANIFEST_VALIDATION_RULE_ID = (
+    "AUTHORITY_BOUND_MANIFEST_REVALIDATED_AFTER_EXECUTION_STARTED_V1"
+)
+POST_START_MANIFEST_VALIDATION_RULE = (
+    "Immediately after EXECUTION_STARTED is durably persisted and before any raw "
+    "file is opened, reload the canonical persisted manifest, validate its exact "
+    "schema, self-digest, V3/V2/V1 authority bindings, execution id, sealed window, "
+    "provider/file associations and raw digest declarations, and carry that exact "
+    "validated snapshot into raw verification. Any failure refuses before evidence "
+    "construction."
+)
+MANIFEST_DIGEST_EQUALITY_RULE_ID = "PERSISTED_MANIFEST_DIGEST_EQUALS_AUTHORITY_V1"
+MANIFEST_DIGEST_EQUALITY_RULE = (
+    "The canonical digest recomputed from the post-start persisted manifest must "
+    "equal authority.collection_manifest_digest exactly. A re-digested changed "
+    "manifest is still refused because its new digest is not the frozen authority; "
+    "a changed manifest retaining the old digest is refused by self-digest validation."
 )
 EVIDENCE_CONSTRUCTION_RULE = (
-    "The public in-memory validator is DRY_RUN_SYNTHETIC only. Live execute accepts "
-    "an evidence-builder callable, never a prebuilt evidence mapping; the executor "
-    "invokes it exactly once with the immutable verified raw collection after the "
-    "one-shot transition. Its output must name the hash-bound builder version and "
-    "is persisted before validation/result finalization."
+    "The public in-memory validator is DRY_RUN_SYNTHETIC only. The live API accepts "
+    "neither a caller-supplied builder nor a prebuilt evidence mapping. After the "
+    "one-shot transition and authority-bound manifest/raw verification, the executor "
+    "verifies and invokes exactly one repository-owned module/function with the "
+    "immutable VerifiedRawCollection. The contract and evidence artifact bind the "
+    "builder version, module, function and transitive implementation-definition hash; "
+    "any code or identity drift refuses until a new V2 contract hash is issued. The "
+    "evidence artifact and its authority digest are durable before certified V1 "
+    "validation begins."
 )
 RECOVERY_RULE = (
     "Normal execute accepts COLLECTED_FROZEN only. EXECUTION_STARTED is permanently "
@@ -2074,6 +2143,12 @@ def _sealed_sample_contract_block() -> dict[str, Any]:
         },
         "raw_record_required_keys": list(RAW_RECORD_REQUIRED_KEYS),
         "raw_revalidation_rule": RAW_REVALIDATION_RULE,
+        "post_start_manifest_validation_rule_id": (
+            POST_START_MANIFEST_VALIDATION_RULE_ID
+        ),
+        "post_start_manifest_validation_rule": POST_START_MANIFEST_VALIDATION_RULE,
+        "manifest_digest_equality_rule_id": MANIFEST_DIGEST_EQUALITY_RULE_ID,
+        "manifest_digest_equality_rule": MANIFEST_DIGEST_EQUALITY_RULE,
         "collection_plan": sealed_collection_plan(),
         "timezone": SEALED_TIMEZONE,
         "window_end": SEALED_WINDOW_END_ISO,
@@ -2083,6 +2158,7 @@ def _sealed_sample_contract_block() -> dict[str, Any]:
 
 
 def _sealed_execution_control_block() -> dict[str, Any]:
+    builder = fixed_evidence_builder_definition()
     return {
         "atomic_persistence_rule": ATOMIC_PERSISTENCE_RULE,
         "authorization_record_required_keys": list(AUTHORIZATION_REQUIRED_KEYS),
@@ -2096,7 +2172,13 @@ def _sealed_execution_control_block() -> dict[str, Any]:
         "evidence_artifact_fields": list(SEALED_EVIDENCE_ARTIFACT_FIELDS),
         "evidence_artifact_filename": EVIDENCE_FILENAME,
         "evidence_artifact_schema_version": SEALED_EVIDENCE_ARTIFACT_SCHEMA_VERSION,
+        "evidence_builder": builder,
         "evidence_builder_version": SEALED_EVIDENCE_BUILDER_VERSION,
+        "evidence_builder_module": SEALED_EVIDENCE_BUILDER_MODULE,
+        "evidence_builder_function": SEALED_EVIDENCE_BUILDER_FUNCTION,
+        "evidence_builder_definition_sha256": (
+            SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256
+        ),
         "evidence_construction_rule": EVIDENCE_CONSTRUCTION_RULE,
         "exclusive_locking_rule": EXCLUSIVE_LOCKING_RULE,
         "execution_root_policy": EXECUTION_ROOT_POLICY,
@@ -2140,10 +2222,26 @@ def _sealed_execution_control_block() -> dict[str, Any]:
         "normal_execute_allowed_from": STATE_COLLECTED_FROZEN,
         "normal_execute_forbidden_from": [STATE_EXECUTION_STARTED, STATE_FINALIZED],
         "started_consumes_authority_permanently": True,
-        "supersedes_failed_executor_hash": FAILED_EXECUTOR_DEFINITION_SHA256,
-        "failed_executor_implementation_commit": FAILED_EXECUTOR_IMPLEMENTATION_COMMIT,
-        "failure_review_commit": FAILED_EXECUTOR_REVIEW_COMMIT,
-        "failure_review_result": FAILED_EXECUTOR_REVIEW_RESULT,
+        "supersedes_failed_executor_hash": PREVIOUS_EXECUTOR_DEFINITION_SHA256,
+        "failed_executor_implementation_commit": (
+            PREVIOUS_EXECUTOR_IMPLEMENTATION_COMMIT
+        ),
+        "failure_review_commit": PREVIOUS_EXECUTOR_REVIEW_COMMIT,
+        "failure_review_result": PREVIOUS_EXECUTOR_REVIEW_RESULT,
+        "executor_lineage": [
+            {
+                "definition_sha256": FAILED_EXECUTOR_DEFINITION_SHA256,
+                "implementation_commit": FAILED_EXECUTOR_IMPLEMENTATION_COMMIT,
+                "review_commit": FAILED_EXECUTOR_REVIEW_COMMIT,
+                "review_result": FAILED_EXECUTOR_REVIEW_RESULT,
+            },
+            {
+                "definition_sha256": PREVIOUS_EXECUTOR_DEFINITION_SHA256,
+                "implementation_commit": PREVIOUS_EXECUTOR_IMPLEMENTATION_COMMIT,
+                "review_commit": PREVIOUS_EXECUTOR_REVIEW_COMMIT,
+                "review_result": PREVIOUS_EXECUTOR_REVIEW_RESULT,
+            },
+        ],
     }
 
 
@@ -2329,10 +2427,16 @@ def semantic_delta(repository_root: Path) -> dict[str, Any]:
         **delta,
         "parent_validator_definition_sha256": parent["validator_definition_sha256"],
         "parent_validator_version": PARENT_VALIDATOR_VERSION,
-        "supersedes_failed_executor_hash": FAILED_EXECUTOR_DEFINITION_SHA256,
-        "failed_executor_implementation_commit": FAILED_EXECUTOR_IMPLEMENTATION_COMMIT,
-        "failure_review_commit": FAILED_EXECUTOR_REVIEW_COMMIT,
-        "failure_review_result": FAILED_EXECUTOR_REVIEW_RESULT,
+        "supersedes_failed_executor_hash": PREVIOUS_EXECUTOR_DEFINITION_SHA256,
+        "failed_executor_implementation_commit": (
+            PREVIOUS_EXECUTOR_IMPLEMENTATION_COMMIT
+        ),
+        "failure_review_commit": PREVIOUS_EXECUTOR_REVIEW_COMMIT,
+        "failure_review_result": PREVIOUS_EXECUTOR_REVIEW_RESULT,
+        "executor_lineage": [
+            dict(row)
+            for row in successor["sealed_execution_control"]["executor_lineage"]
+        ],
         "preserved_parent_fields": list(PRESERVED_CONTRACT_FIELDS),
         "statement": SEMANTIC_DELTA_STATEMENT,
         "validator_definition_sha256": successor["validator_definition_sha256"],
@@ -2434,7 +2538,8 @@ def validate_v3_candidate(
     if execution_mode == EXECUTION_MODE_SEALED or sealed_execution_authorization is not None:
         raise SealedExecutionAuthorizationError(
             f"{REFUSE_TO_RUN}: in-memory evidence and authorization cannot enter "
-            f"{EXECUTION_MODE_SEALED}; use execute_sealed_validation(execution_root, ...)"
+            f"{EXECUTION_MODE_SEALED}; use execute_sealed_validation(execution_root, "
+            "repository_root=...)"
         )
     return _validate_v3_candidate_core(
         evidence_bundle,
@@ -2682,9 +2787,6 @@ def _validate_v3_candidate_core(
 # =============================================================================
 
 
-SealedEvidenceBuilder = Callable[[VerifiedRawCollection], Mapping[str, Any]]
-
-
 def _bind_input_provenance(
     bundle: Mapping[str, Any], record: Mapping[str, Any]
 ) -> None:
@@ -2721,6 +2823,27 @@ def _bind_input_provenance(
         )
 
 
+def _evidence_builder_invocation_point(
+    builder: Any, collection: VerifiedRawCollection
+) -> None:
+    """No-op audit hook monkeypatched only by synthetic ownership tests."""
+
+
+def _invoke_fixed_evidence_builder(
+    collection: VerifiedRawCollection,
+) -> Mapping[str, Any]:
+    """Verify and invoke the canonical owner; no caller dependency enters here."""
+
+    fixed_evidence_builder_definition()
+    builder = _evidence_owner.build_sealed_evidence
+    if builder is not _FIXED_SEALED_EVIDENCE_BUILDER:
+        raise ValidatorBindingError(
+            f"{REFUSE_TO_RUN}: live evidence builder is not the fixed owner"
+        )
+    _evidence_builder_invocation_point(builder, collection)
+    return builder(collection)
+
+
 def _evidence_artifact(
     bundle: Mapping[str, Any], *, record: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -2729,6 +2852,11 @@ def _evidence_artifact(
         "bound_protocol_definition_sha256": BOUND_PROTOCOL_DEFINITION_SHA256_EXPECTED,
         "candidate_method_version": record["candidate_method_version"],
         "candidate_series_id": record["candidate_series_id"],
+        "evidence_builder_definition_sha256": (
+            SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256
+        ),
+        "evidence_builder_function": SEALED_EVIDENCE_BUILDER_FUNCTION,
+        "evidence_builder_module": SEALED_EVIDENCE_BUILDER_MODULE,
         "evidence_builder_version": SEALED_EVIDENCE_BUILDER_VERSION,
         "evidence_bundle": _v1.canonical_evidence_bundle(bundle),
         "evidence_bundle_digest": digest,
@@ -2758,6 +2886,11 @@ def _read_evidence_artifact(
         "bound_protocol_definition_sha256": BOUND_PROTOCOL_DEFINITION_SHA256_EXPECTED,
         "candidate_method_version": record["candidate_method_version"],
         "candidate_series_id": record["candidate_series_id"],
+        "evidence_builder_definition_sha256": (
+            SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256
+        ),
+        "evidence_builder_function": SEALED_EVIDENCE_BUILDER_FUNCTION,
+        "evidence_builder_module": SEALED_EVIDENCE_BUILDER_MODULE,
         "evidence_builder_version": SEALED_EVIDENCE_BUILDER_VERSION,
         "execution_id": record["execution_id"],
         "parent_validator_definition_sha256": PARENT_VALIDATOR_DEFINITION_SHA256,
@@ -2936,21 +3069,42 @@ def begin_sealed_execution(
         return moved
 
 
+def _authority_bound_manifest_snapshot_after_start(
+    root: Path,
+    *,
+    record: Mapping[str, Any],
+    validator_definition_sha256: str,
+) -> Mapping[str, Any]:
+    """Reload and validate the exact manifest authority before any raw read."""
+
+    persisted = _read_ascii_json(root / MANIFEST_FILENAME, "the canonical manifest")
+    validated = validate_sealed_sample_manifest(
+        persisted,
+        execution_id=record["execution_id"],
+        validator_definition_sha256=validator_definition_sha256,
+    )
+    actual = validated["manifest_sha256"]
+    expected = record["collection_manifest_digest"]
+    if actual != expected:
+        raise SealedExecutionIntegrityError(
+            f"{REFUSE_TO_RUN}: post-start canonical manifest digests to {actual}, "
+            f"not the authority-bound {expected}"
+        )
+    # Detach the exact validated snapshot from the decoded persisted mapping.
+    # Raw verification reads this snapshot, never another filesystem reload.
+    return MappingProxyType(json.loads(_canonical_json(validated)))
+
+
 def execute_sealed_validation(
     execution_root: Path,
     *,
     repository_root: Path,
-    evidence_builder: SealedEvidenceBuilder,
 ) -> dict[str, Any]:
     """Consume COLLECTED_FROZEN and own the complete one-shot sealed path."""
 
     if isinstance(execution_root, Mapping):
         raise SealedExecutionAuthorizationError(
             f"{REFUSE_TO_RUN}: prebuilt evidence is forbidden on the live API"
-        )
-    if not callable(evidence_builder):
-        raise SealedExecutionAuthorizationError(
-            f"{REFUSE_TO_RUN}: live execution requires the frozen evidence builder"
         )
     contract = validator_definition(repository_root)
     digest = contract["validator_definition_sha256"]
@@ -2970,20 +3124,18 @@ def execute_sealed_validation(
         capability = _consumed_capability(started)
         _crash_injection_point("after_execution_started_before_raw_read")
 
-        manifest = _read_ascii_json(root / MANIFEST_FILENAME, "the canonical manifest")
+        manifest = _authority_bound_manifest_snapshot_after_start(
+            root,
+            record=started,
+            validator_definition_sha256=digest,
+        )
         collection = verify_collected_file_digests(
             manifest, root, execution_read=True
         )
-        bundle = evidence_builder(collection)
+        bundle = _invoke_fixed_evidence_builder(collection)
         if not isinstance(bundle, Mapping):
             raise ValidatorInputError("the sealed evidence builder returned no mapping")
         _bind_input_provenance(bundle, started)
-        validation = _validate_v3_candidate_core(
-            bundle,
-            repository_root=repository_root,
-            execution_mode=EXECUTION_MODE_SEALED,
-            capability=capability,
-        )
 
         evidence = _evidence_artifact(bundle, record=started)
         _atomic_write_json(root / EVIDENCE_FILENAME, evidence, replace=False)
@@ -2993,6 +3145,12 @@ def execute_sealed_validation(
         checkpoint["authorization_record_sha256"] = _authorization_digest(checkpoint)
         _write_execution_authorization(root, checkpoint)
 
+        validation = _validate_v3_candidate_core(
+            bundle,
+            repository_root=repository_root,
+            execution_mode=EXECUTION_MODE_SEALED,
+            capability=capability,
+        )
         result = _sealed_execution_result(validation, record=checkpoint)
         _atomic_write_json(
             root / RESULT_FILENAME,
@@ -3268,6 +3426,14 @@ def restore_sealed_executor_definition(output_dir: Path) -> dict[str, Any]:
         raise ValidatorError("persisted contract carries a different one-shot rule")
     if control.get("result_schema_version") != SEALED_EXECUTION_RESULT_SCHEMA_VERSION:
         raise ValidatorError("persisted contract carries a different result schema")
+    if control.get("evidence_builder_module") != SEALED_EVIDENCE_BUILDER_MODULE:
+        raise ValidatorError("persisted contract names another evidence-builder module")
+    if control.get("evidence_builder_function") != SEALED_EVIDENCE_BUILDER_FUNCTION:
+        raise ValidatorError("persisted contract names another evidence-builder function")
+    if control.get("evidence_builder_definition_sha256") != (
+        SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256
+    ):
+        raise ValidatorError("persisted contract binds another evidence builder")
     contract = payload.get("sealed_sample_contract", {})
     if contract.get("collection_manifest_schema_version") != MANIFEST_SCHEMA_VERSION:
         raise ValidatorError("persisted contract carries a different manifest schema")
@@ -3326,8 +3492,8 @@ def sealed_executor_markdown(
         f"- Parent validator hash: `{PARENT_VALIDATOR_DEFINITION_SHA256}`",
         f"- Executing validator hash: `{definition['validator_definition_sha256']}`",
         f"- Parent certification: `{PARENT_VALIDATOR_CLASSIFICATION}`",
-        f"- Supersedes failed executor hash: `{FAILED_EXECUTOR_DEFINITION_SHA256}`",
-        f"- Failure review commit: `{FAILED_EXECUTOR_REVIEW_COMMIT}`",
+        f"- Supersedes failed executor hash: `{PREVIOUS_EXECUTOR_DEFINITION_SHA256}`",
+        f"- Failure review commit: `{PREVIOUS_EXECUTOR_REVIEW_COMMIT}`",
         "",
         "## Semantic delta",
         "",
@@ -3365,9 +3531,13 @@ def sealed_executor_markdown(
         f"- Manifest: `{MANIFEST_FILENAME}` (canonical and durable)",
         f"- Evidence: `{EVIDENCE_FILENAME}` (immutable)",
         f"- Result: `{RESULT_FILENAME}` (immutable)",
+        f"- Fixed evidence builder: `{SEALED_EVIDENCE_BUILDER_MODULE}.{SEALED_EVIDENCE_BUILDER_FUNCTION}`",
+        f"- Builder version: `{SEALED_EVIDENCE_BUILDER_VERSION}`",
+        f"- Builder definition hash: `{SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256}`",
         "- Persistence: fsynced temporary file, atomic `os.replace`, directory fsync",
         "- Normal execute source state: `COLLECTED_FROZEN` only",
         "- `EXECUTION_STARTED`: permanently consumed; recovery never rereads raw data",
+        "- Post-start manifest: schema/self-digest/bindings revalidated, then compared to authority",
         "",
         control["execution_root_policy"],
         "",

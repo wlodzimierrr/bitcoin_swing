@@ -11,10 +11,10 @@ artifacts that make that authorization one-shot.
 - Bound protocol hash: `4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a`
 - Parent validator: `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1`
 - Parent validator hash: `8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7`
-- Executing validator hash: `7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6`
+- Executing validator hash: `49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729`
 - Parent certification: `VALIDATOR_CERTIFIED_FOR_SEALED_EXECUTION_PREPARATION`
-- Supersedes failed executor hash: `49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729`
-- Failure review commit: `45c5e04044d054757b583cbb2aaed5915d196852`
+- Supersedes failed executor hash: `e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784`
+- Failure review commit: `daa664753ed3a6e282fa53577be9f680bfa7c8fd`
 
 ## Semantic delta
 
@@ -65,13 +65,9 @@ The sealed sample is opened exactly once. A second sealed result for the same fr
 - Manifest: `sealed_sample_manifest.json` (canonical and durable)
 - Evidence: `sealed_evidence_bundle.json` (immutable)
 - Result: `sealed_validation_result.json` (immutable)
-- Fixed evidence builder: `btc_predictor.research.reference_composite_v3_sealed_evidence.build_sealed_evidence`
-- Builder version: `BTC019_V3_SEALED_EVIDENCE_BUILDER_V1`
-- Builder definition hash: `d8ff41f734dbeefbc2df06bac97637c3e3a06d23ae3cea5049541d3ddeeabb85`
 - Persistence: fsynced temporary file, atomic `os.replace`, directory fsync
 - Normal execute source state: `COLLECTED_FROZEN` only
 - `EXECUTION_STARTED`: permanently consumed; recovery never rereads raw data
-- Post-start manifest: schema/self-digest/bindings revalidated, then compared to authority
 
 The caller selects one directory, not an authorization file. Preparation canonicalizes its real path and binds that path's SHA-256 into the authority and execution id. Every artifact then has one fixed filename below that root; moving or copying the authority to another root refuses. Raw provider files have fixed relative paths below raw_collection and every symlink, traversal, non-regular file, duplicate inode and unexpected directory entry is refused.
 

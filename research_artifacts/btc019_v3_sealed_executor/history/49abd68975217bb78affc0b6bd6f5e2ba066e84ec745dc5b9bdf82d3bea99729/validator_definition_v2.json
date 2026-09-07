@@ -575,9 +575,6 @@
       "candidate_method_version",
       "candidate_series_id",
       "evidence_artifact_sha256",
-      "evidence_builder_definition_sha256",
-      "evidence_builder_function",
-      "evidence_builder_module",
       "evidence_builder_version",
       "evidence_bundle",
       "evidence_bundle_digest",
@@ -588,68 +585,9 @@
       "validator_definition_sha256"
     ],
     "evidence_artifact_filename": "sealed_evidence_bundle.json",
-    "evidence_artifact_schema_version": "BTC019_V3_SEALED_EVIDENCE_ARTIFACT_V2",
-    "evidence_builder": {
-      "builder_definition_sha256": "d8ff41f734dbeefbc2df06bac97637c3e3a06d23ae3cea5049541d3ddeeabb85",
-      "builder_function": "build_sealed_evidence",
-      "builder_input_type": "VerifiedRawCollection",
-      "builder_module": "btc_predictor.research.reference_composite_v3_sealed_evidence",
-      "builder_schema_version": "BTC019_V3_SEALED_EVIDENCE_BUILDER_DEFINITION_V1",
-      "builder_version": "BTC019_V3_SEALED_EVIDENCE_BUILDER_V1",
-      "evidence_bundle_schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_EVIDENCE_BUNDLE_V1",
-      "implementation_dependencies": {
-        "btc_predictor.data.ohlcv": "5b5e19a9f61509ff4ce7b99f4e8b8c970348e59096bc8423a79176b0141e56e3",
-        "btc_predictor.features.rolling": "2f4b8ea3330d72ad50414e558b26434ff04203082d658cd0ac93e460c948a85c",
-        "btc_predictor.research.cross_provider_structure_comparison": "89526c4012830848107db52bd7b515e8b795b229c20424b7ca062ecf126c2410",
-        "btc_predictor.research.reference_composite": "6e4ab5d0c2ce970636728cd11e964184468e684ae0da09ec84baf2e72413a7b7",
-        "btc_predictor.research.reference_composite_v2": "cf5d534a46a989c451785da7d4d598bad8eea9824c5b1dc7cedc5912d29a4b15",
-        "btc_predictor.research.reference_composite_v3_validator": "49e747b7dbcbb6272582660855a8a28e9b6c6255ec90cf13d3ea46edf59e0d89",
-        "btc_predictor.research.structural_threshold_calibration": "4c752de3bb59a681b813e9f3cf9a663be277c2dfd21e3289c3f6f763a665f195"
-      },
-      "module_implementation_sha256": "3565b1b0ab3a334dad9a9711862a701f617d47d75396c3fd8043d2b630f444cb",
-      "non_raw_inherited_measurements_fail_closed": [
-        "cross_market_confirmed_stop_preservation_rate",
-        "deterministic_rerun_hash_match",
-        "gap_through_stop_consensus_agreement_rate",
-        "isolated_venue_stop_suppression_rate",
-        "live_shadow_days",
-        "mae_max_absolute_difference",
-        "mae_median_absolute_difference",
-        "mae_p95_absolute_difference",
-        "mfe_max_absolute_difference",
-        "mfe_median_absolute_difference",
-        "mfe_p95_absolute_difference",
-        "regime_classification_disagreement_rate",
-        "risk_size_p95_relative_difference",
-        "setup_classification_disagreement_rate",
-        "stop_touch_disagreement_rate",
-        "swing_level_disagreement_rate_above_0_50_atr",
-        "trade_action_disagreement_rate",
-        "trade_eligibility_disagreement_rate"
-      ],
-      "raw_derived_inherited_measurements": [
-        "atr_median_absolute_fractional_difference",
-        "atr_p95_absolute_fractional_difference",
-        "daily_bucket_usable_rate",
-        "historical_fallback_splice_count",
-        "point_in_time_violation_count",
-        "provenance_complete_rate",
-        "raw_observation_mutation_count",
-        "reference_degraded_rate",
-        "reference_unavailable_rate",
-        "reference_usable_rate",
-        "silent_incomplete_bucket_omission_count",
-        "unrecorded_quality_state_count",
-        "validation_period_days",
-        "venue_disagreement_rate",
-        "weekly_bucket_usable_rate"
-      ]
-    },
-    "evidence_builder_definition_sha256": "d8ff41f734dbeefbc2df06bac97637c3e3a06d23ae3cea5049541d3ddeeabb85",
-    "evidence_builder_function": "build_sealed_evidence",
-    "evidence_builder_module": "btc_predictor.research.reference_composite_v3_sealed_evidence",
+    "evidence_artifact_schema_version": "BTC019_V3_SEALED_EVIDENCE_ARTIFACT_V1",
     "evidence_builder_version": "BTC019_V3_SEALED_EVIDENCE_BUILDER_V1",
-    "evidence_construction_rule": "The public in-memory validator is DRY_RUN_SYNTHETIC only. The live API accepts neither a caller-supplied builder nor a prebuilt evidence mapping. After the one-shot transition and authority-bound manifest/raw verification, the executor verifies and invokes exactly one repository-owned module/function with the immutable VerifiedRawCollection. The contract and evidence artifact bind the builder version, module, function and transitive implementation-definition hash; any code or identity drift refuses until a new V2 contract hash is issued. The evidence artifact and its authority digest are durable before certified V1 validation begins.",
+    "evidence_construction_rule": "The public in-memory validator is DRY_RUN_SYNTHETIC only. Live execute accepts an evidence-builder callable, never a prebuilt evidence mapping; the executor invokes it exactly once with the immutable verified raw collection after the one-shot transition. Its output must name the hash-bound builder version and is persisted before validation/result finalization.",
     "exact_state_artifact_matrix": {
       "COLLECTED_FROZEN": {
         "evidence": "ABSENT",
@@ -804,22 +742,8 @@
       "EXECUTION_STARTED",
       "FINALIZED"
     ],
-    "executor_lineage": [
-      {
-        "definition_sha256": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
-        "implementation_commit": "568ebb8ca8ead0025fb30d5b15e576797d17dffb",
-        "review_commit": "daa664753ed3a6e282fa53577be9f680bfa7c8fd",
-        "review_result": "FAIL_SEALED_EXECUTOR_INVALID"
-      },
-      {
-        "definition_sha256": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
-        "implementation_commit": "9ca2b5bfdb129441d0b6857b496b526f7d5685df",
-        "review_commit": "45c5e04044d054757b583cbb2aaed5915d196852",
-        "review_result": "FAIL_SEALED_EXECUTOR_INVALID"
-      }
-    ],
-    "failed_executor_implementation_commit": "9ca2b5bfdb129441d0b6857b496b526f7d5685df",
-    "failure_review_commit": "45c5e04044d054757b583cbb2aaed5915d196852",
+    "failed_executor_implementation_commit": "568ebb8ca8ead0025fb30d5b15e576797d17dffb",
+    "failure_review_commit": "daa664753ed3a6e282fa53577be9f680bfa7c8fd",
     "failure_review_result": "FAIL_SEALED_EXECUTOR_INVALID",
     "legal_transitions": [
       {
@@ -908,7 +832,7 @@
     ],
     "result_schema_version": "BTC019_V3_SEALED_VALIDATION_RESULT_V1",
     "started_consumes_authority_permanently": true,
-    "supersedes_failed_executor_hash": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
+    "supersedes_failed_executor_hash": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
     "terminal_execution_states": [
       "FINALIZED"
     ],
@@ -1065,16 +989,12 @@
     ],
     "input_provenance_rule": "The evidence bundle a sealed run consumes must bind the frozen sample manifest digest the authorization record already carries, the frozen V3 hash, this executing validator's hash, the candidate construction version, the comparison contract, the detector version, the price-source policy and the inherited Tier-4 measurement versions. Any mismatch is REFUSE_TO_RUN: a bundle measured under another contract is evidence about something else.",
     "manifest_carries_no_strategy_outcome": true,
-    "manifest_digest_equality_rule": "The canonical digest recomputed from the post-start persisted manifest must equal authority.collection_manifest_digest exactly. A re-digested changed manifest is still refused because its new digest is not the frozen authority; a changed manifest retaining the old digest is refused by self-digest validation.",
-    "manifest_digest_equality_rule_id": "PERSISTED_MANIFEST_DIGEST_EQUALS_AUTHORITY_V1",
     "manifest_source_provenance_required_keys": [
       "endpoint",
       "exchange",
       "instrument_symbol",
       "request_count"
     ],
-    "post_start_manifest_validation_rule": "Immediately after EXECUTION_STARTED is durably persisted and before any raw file is opened, reload the canonical persisted manifest, validate its exact schema, self-digest, V3/V2/V1 authority bindings, execution id, sealed window, provider/file associations and raw digest declarations, and carry that exact validated snapshot into raw verification. Any failure refuses before evidence construction.",
-    "post_start_manifest_validation_rule_id": "AUTHORITY_BOUND_MANIFEST_REVALIDATED_AFTER_EXECUTION_STARTED_V1",
     "pre_freeze_allowed_operations": [
       "file_readable",
       "schema_valid",
@@ -1123,7 +1043,7 @@
       "timestamp",
       "volume"
     ],
-    "raw_revalidation_rule": "Freezing and execution both securely reopen every fixed provider file, recompute SHA-256 and byte count, parse the gzip JSONL owner schema, and recompute row count, first/last timestamp, missing intervals and duplicate intervals. After EXECUTION_STARTED is durable, execute first reloads and fully validates the canonical persisted manifest and compares its canonical digest to the authority; raw verification consumes that exact in-memory snapshot before the fixed evidence builder is invoked.",
+    "raw_revalidation_rule": "Freezing and execution both securely reopen every fixed provider file, recompute SHA-256 and byte count, parse the gzip JSONL owner schema, and recompute row count, first/last timestamp, missing intervals and duplicate intervals. Execute does this only after EXECUTION_STARTED is durable and before invoking the evidence builder.",
     "timezone": "UTC",
     "window_end": "2019-11-30T23:00:00+00:00",
     "window_rule": "The sealed sample is exactly 2015-07-20T21:00:00+00:00..2019-11-30T23:00:00+00:00 on 1h bars in UTC, from exactly the PRICE_SOURCE_POLICY_V1 required validation providers ['bitfinex', 'bitstamp', 'coinbase']. It may be neither broadened nor shortened, and no other period may be substituted. A collection manifest, an authorization record or an evidence bundle naming any other window, interval, timezone or provider set is REFUSE_TO_RUN.",
@@ -1430,7 +1350,7 @@
     "soft_gates_can_regain_a_hard_veto": false,
     "total_gate_count": 33
   },
-  "validator_definition_sha256": "7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6",
+  "validator_definition_sha256": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
   "validator_schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_DEFINITION_V2",
   "validator_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2",
   "verdict_precedence": {

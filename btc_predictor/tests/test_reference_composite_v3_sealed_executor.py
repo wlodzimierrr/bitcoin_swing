@@ -26,6 +26,7 @@ fail the test if it is ever called.
 
 import gzip
 import hashlib
+import inspect
 import json
 import multiprocessing
 import os
@@ -156,9 +157,10 @@ FROZEN_V3_DEFINITION_SHA256 = (
 CERTIFIED_V1_VALIDATOR_SHA256 = (
     "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7"
 )
-CORRECTED_V2_VALIDATOR_SHA256 = (
+PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256 = (
     "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729"
 )
+CORRECTED_V2_VALIDATOR_SHA256 = "7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6"
 FAILED_V2_VALIDATOR_SHA256 = (
     "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784"
 )
@@ -205,9 +207,7 @@ def _race_begin_worker(repository_root, execution_root, barrier, queue) -> None:
         queue.put("REFUSED")
 
 
-def _race_execute_worker(
-    repository_root, execution_root, bundle, barrier, queue
-) -> None:
+def _race_execute_worker(repository_root, execution_root, barrier, queue) -> None:
     raw_reads = 0
     builder_calls = 0
     original = v2._read_regular_file_under_root
@@ -217,18 +217,17 @@ def _race_execute_worker(
         raw_reads += 1
         return original(*args, **kwargs)
 
-    def builder(collection):
+    def observe_builder(builder, collection):
         nonlocal builder_calls
         builder_calls += 1
-        return bundle
 
     v2._read_regular_file_under_root = watched_read
+    v2._evidence_builder_invocation_point = observe_builder
     barrier.wait()
     try:
         v2.execute_sealed_validation(
             Path(execution_root),
             repository_root=Path(repository_root),
-            evidence_builder=builder,
         )
         outcome = "SUCCESS"
     except Exception:  # pragma: no cover - asserted in parent
@@ -515,15 +514,6 @@ def _sealed_bundle(protocol: dict, manifest: dict, **overrides) -> dict:
     )
     bundle.update(overrides)
     return bundle
-
-
-def _builder(bundle: dict, calls: list | None = None):
-    def build(collection):
-        if calls is not None:
-            calls.append(collection)
-        return bundle
-
-    return build
 
 
 def _prepared(tmp_path: Path) -> tuple[Path, str, dict]:
@@ -1283,7 +1273,6 @@ def test_authorization_alone_does_not_execute(protocol: dict, tmp_path: Path) ->
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_bundle(protocol)),
         )
 
 
@@ -1470,11 +1459,15 @@ def test_the_hash_bound_contract_carries_exact_history_field_and_artifact_matric
     assert "fcntl.flock" in control["exclusive_locking_rule"]
     assert "os.replace" in control["atomic_persistence_rule"]
     assert control["supersedes_failed_executor_hash"] == (
-        "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784"
+        PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256
     )
     assert control["failure_review_commit"] == (
-        "daa664753ed3a6e282fa53577be9f680bfa7c8fd"
+        "45c5e04044d054757b583cbb2aaed5915d196852"
     )
+    assert [row["definition_sha256"] for row in control["executor_lineage"]] == [
+        FAILED_V2_VALIDATOR_SHA256,
+        PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256,
+    ]
 
 
 def test_a_prepared_authority_survives_a_restart(tmp_path: Path) -> None:
@@ -1499,11 +1492,9 @@ def test_a_finalized_execution_can_never_run_again(
     protocol: dict, tmp_path: Path
 ) -> None:
     directory, digest, manifest = _collected(tmp_path)
-    bundle = _sealed_bundle(protocol, manifest)
     result = execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(bundle),
     )
     assert result["final_verdict"] in VERDICT_VOCABULARY
     assert sealed_execution_status(
@@ -1513,7 +1504,6 @@ def test_a_finalized_execution_can_never_run_again(
         lambda: execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
         ),
         lambda: begin_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory),
         lambda: prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory),
@@ -1532,7 +1522,6 @@ def test_a_finalized_record_keeps_its_result_digest(
     result = execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     record = read_execution_authorization(
         directory, validator_definition_sha256=digest
@@ -1563,7 +1552,6 @@ def test_a_collected_run_is_consumed_by_the_single_execution_call(
     result = execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     assert result["final_verdict"] in VERDICT_VOCABULARY
     assert sealed_execution_status(
@@ -1593,7 +1581,18 @@ def test_a_prebuilt_bundle_is_not_a_live_execution_argument(protocol: dict) -> N
         execute_sealed_validation(
             bundle,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
+        )
+
+
+def test_the_live_api_has_no_caller_supplied_builder_argument(tmp_path: Path) -> None:
+    assert "evidence_builder" not in inspect.signature(
+        execute_sealed_validation
+    ).parameters
+    with pytest.raises(TypeError, match="unexpected keyword argument 'evidence_builder'"):
+        execute_sealed_validation(
+            tmp_path,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=lambda collection: {},
         )
 
 
@@ -1722,14 +1721,13 @@ def test_concurrent_execute_loser_reads_zero_raw_bytes(
 ) -> None:
     context = multiprocessing.get_context("fork")
     for iteration in range(3):
-        directory, digest, manifest = _collected(tmp_path / f"execute-{iteration}")
-        bundle = _sealed_bundle(protocol, manifest)
+        directory, digest, _ = _collected(tmp_path / f"execute-{iteration}")
         barrier = context.Barrier(2)
         queue = context.Queue()
         processes = [
             context.Process(
                 target=_race_execute_worker,
-                args=(REPOSITORY_ROOT, directory, bundle, barrier, queue),
+                args=(REPOSITORY_ROOT, directory, barrier, queue),
             )
             for _ in range(2)
         ]
@@ -1977,17 +1975,21 @@ def test_freeze_persists_the_exact_canonical_manifest(tmp_path: Path) -> None:
 
 
 def test_raw_mutation_after_freeze_refuses_before_evidence_building(
-    protocol: dict, tmp_path: Path
+    protocol: dict, tmp_path: Path, monkeypatch
 ) -> None:
     directory, digest, manifest = _collected(tmp_path)
     path = directory / manifest["files"][0]["path"]
     path.write_bytes(path.read_bytes() + b"mutation")
     calls = []
+    monkeypatch.setattr(
+        v2,
+        "_evidence_builder_invocation_point",
+        lambda builder, collection: calls.append(collection),
+    )
     with pytest.raises(SealedSampleManifestError, match="changed after it was hashed"):
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
         )
     assert calls == []
     assert sealed_execution_status(
@@ -1996,16 +1998,20 @@ def test_raw_mutation_after_freeze_refuses_before_evidence_building(
 
 
 def test_deleted_raw_file_after_freeze_refuses_before_evidence_building(
-    protocol: dict, tmp_path: Path
+    protocol: dict, tmp_path: Path, monkeypatch
 ) -> None:
     directory, digest, manifest = _collected(tmp_path)
     (directory / manifest["files"][0]["path"]).unlink()
     calls = []
+    monkeypatch.setattr(
+        v2,
+        "_evidence_builder_invocation_point",
+        lambda builder, collection: calls.append(collection),
+    )
     with pytest.raises(SealedSampleManifestError, match="raw collection files"):
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
         )
     assert calls == []
     assert sealed_execution_status(
@@ -2014,7 +2020,7 @@ def test_deleted_raw_file_after_freeze_refuses_before_evidence_building(
 
 
 def test_provider_file_swap_refuses_before_evidence_building(
-    protocol: dict, tmp_path: Path
+    protocol: dict, tmp_path: Path, monkeypatch
 ) -> None:
     directory, _, manifest = _collected(tmp_path)
     left = directory / manifest["files"][0]["path"]
@@ -2023,11 +2029,15 @@ def test_provider_file_swap_refuses_before_evidence_building(
     left.write_bytes(right_bytes)
     right.write_bytes(left_bytes)
     calls = []
+    monkeypatch.setattr(
+        v2,
+        "_evidence_builder_invocation_point",
+        lambda builder, collection: calls.append(collection),
+    )
     with pytest.raises(SealedSampleManifestError, match="changed after it was hashed"):
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
         )
     assert calls == []
 
@@ -2094,7 +2104,7 @@ def test_path_traversal_and_self_consistent_manifest_tamper_refuse() -> None:
 
 @pytest.mark.parametrize("operation", ["delete", "corrupt"])
 def test_missing_or_corrupt_persisted_manifest_refuses_execution(
-    protocol: dict, tmp_path: Path, operation: str
+    protocol: dict, tmp_path: Path, monkeypatch, operation: str
 ) -> None:
     directory, _, manifest = _collected(tmp_path)
     path = directory / MANIFEST_FILENAME
@@ -2103,13 +2113,76 @@ def test_missing_or_corrupt_persisted_manifest_refuses_execution(
     else:
         path.write_text("not-json")
     calls = []
+    monkeypatch.setattr(
+        v2,
+        "_evidence_builder_invocation_point",
+        lambda builder, collection: calls.append(collection),
+    )
     with pytest.raises((v2.SealedExecutionIntegrityError, SealedExecutionAuthorizationError)):
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
         )
     assert calls == []
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "changed_row",
+        "changed_digest",
+        "provider_file_association",
+        "raw_digest_declaration",
+    ],
+)
+def test_post_start_manifest_mutation_refuses_before_raw_or_builder(
+    tmp_path: Path, monkeypatch, mutation: str
+) -> None:
+    directory, digest, _ = _collected(tmp_path)
+    manifest_path = directory / MANIFEST_FILENAME
+    raw_reads = []
+    builder_calls = []
+    original_read = v2._read_regular_file_under_root
+
+    def watched_read(*args, **kwargs):
+        raw_reads.append(args)
+        return original_read(*args, **kwargs)
+
+    def mutate_after_start(point: str) -> None:
+        if point != "after_execution_started_before_raw_read":
+            return
+        persisted = json.loads(manifest_path.read_text())
+        if mutation == "changed_row":
+            persisted["files"][0]["source_provenance"]["request_count"] += 1
+        elif mutation == "changed_digest":
+            persisted["manifest_sha256"] = "f" * 64
+        elif mutation == "provider_file_association":
+            persisted["files"][0]["path"], persisted["files"][1]["path"] = (
+                persisted["files"][1]["path"],
+                persisted["files"][0]["path"],
+            )
+            persisted["manifest_sha256"] = manifest_digest(persisted)
+        else:
+            persisted["files"][0]["sha256"] = "f" * 64
+            persisted["manifest_sha256"] = manifest_digest(persisted)
+        manifest_path.write_text(json.dumps(persisted, indent=2, sort_keys=True) + "\n")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", mutate_after_start)
+    monkeypatch.setattr(v2, "_read_regular_file_under_root", watched_read)
+    monkeypatch.setattr(
+        v2,
+        "_evidence_builder_invocation_point",
+        lambda builder, collection: builder_calls.append(collection),
+    )
+
+    with pytest.raises((SealedSampleManifestError, v2.SealedExecutionIntegrityError)):
+        execute_sealed_validation(directory, repository_root=REPOSITORY_ROOT)
+
+    assert raw_reads == []
+    assert builder_calls == []
+    authority = json.loads((directory / AUTHORIZATION_FILENAME).read_text())
+    assert authority["status"] == STATE_EXECUTION_STARTED
+    assert authority["validator_definition_sha256"] == digest
 
 
 def test_raw_technical_metadata_is_verified_from_bytes(tmp_path: Path) -> None:
@@ -2136,64 +2209,58 @@ def test_wrong_exchange_refuses_manifest() -> None:
 # =============================================================================
 
 
-def test_a_bundle_not_binding_the_frozen_manifest_refuses(
-    protocol: dict, tmp_path: Path
+def test_the_fixed_builder_identity_and_implementation_are_hash_bound(
+    contract: dict,
 ) -> None:
-    directory, _, manifest = _collected(tmp_path)
-    bundle = _sealed_bundle(protocol, manifest)
-    bundle["provenance"] = dict(bundle["provenance"], sample_manifest_digest="9" * 64)
-    with pytest.raises(SealedExecutionAuthorizationError, match="evidence binds manifest"):
-        execute_sealed_validation(
-            directory,
-            repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
-        )
-
-
-def test_a_bundle_naming_another_candidate_refuses(
-    protocol: dict, tmp_path: Path
-) -> None:
-    directory, _, manifest = _collected(tmp_path)
-    bundle = _sealed_bundle(protocol, manifest)
-    bundle["identities"] = dict(
-        bundle["identities"], candidate_series_id="MEDIAN_OHLC_V9"
+    definition = v2.fixed_evidence_builder_definition()
+    control = contract["sealed_execution_control"]
+    assert control["evidence_builder"] == definition
+    assert definition["builder_module"] == v2.SEALED_EVIDENCE_BUILDER_MODULE
+    assert definition["builder_function"] == v2.SEALED_EVIDENCE_BUILDER_FUNCTION
+    assert definition["builder_version"] == v2.SEALED_EVIDENCE_BUILDER_VERSION
+    assert definition["builder_input_type"] == "VerifiedRawCollection"
+    assert definition["builder_definition_sha256"] == (
+        v2.SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256
     )
-    with pytest.raises(SealedExecutionAuthorizationError, match="does not bind"):
-        execute_sealed_validation(
-            directory,
-            repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
-        )
 
 
-def test_a_bundle_naming_other_providers_refuses(
-    protocol: dict, tmp_path: Path
+def test_fixed_builder_implementation_drift_refuses_without_contract_update(
+    monkeypatch,
 ) -> None:
-    directory, _, manifest = _collected(tmp_path)
-    bundle = _sealed_bundle(protocol, manifest)
-    bundle["identities"] = dict(
-        bundle["identities"], provider_ids=["bitstamp", "coinbase", "kraken"]
+    monkeypatch.setattr(
+        v2._evidence_owner,
+        "build_sealed_evidence",
+        lambda collection: {},
     )
-    with pytest.raises(SealedExecutionAuthorizationError, match="names providers"):
-        execute_sealed_validation(
-            directory,
-            repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
-        )
+    with pytest.raises(ValidatorBindingError, match="function object moved"):
+        validator_definition(REPOSITORY_ROOT)
 
 
-def test_a_sealed_bundle_with_the_wrong_window_refuses(
-    protocol: dict, tmp_path: Path
+def test_live_execution_invokes_the_fixed_builder_once_with_verified_raw(
+    tmp_path: Path, monkeypatch
 ) -> None:
     directory, _, manifest = _collected(tmp_path)
-    bundle = _sealed_bundle(protocol, manifest)
-    bundle["sample"] = dict(bundle["sample"], end="2019-12-31T23:00:00+00:00")
-    with pytest.raises(SealedExecutionAuthorizationError, match="not the sealed"):
-        execute_sealed_validation(
-            directory,
-            repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
-        )
+    calls = []
+
+    def observe(builder, collection) -> None:
+        calls.append((builder, collection))
+
+    monkeypatch.setattr(v2, "_evidence_builder_invocation_point", observe)
+    result = execute_sealed_validation(directory, repository_root=REPOSITORY_ROOT)
+    assert result["final_verdict"] in VERDICT_VOCABULARY
+    assert len(calls) == 1
+    builder, collection = calls[0]
+    assert builder is v2._evidence_owner.build_sealed_evidence
+    assert isinstance(collection, v2.VerifiedRawCollection)
+    assert collection.manifest["manifest_sha256"] == manifest["manifest_sha256"]
+
+    artifact = json.loads((directory / EVIDENCE_FILENAME).read_text())
+    assert artifact["evidence_builder_module"] == v2.SEALED_EVIDENCE_BUILDER_MODULE
+    assert artifact["evidence_builder_function"] == v2.SEALED_EVIDENCE_BUILDER_FUNCTION
+    assert artifact["evidence_builder_version"] == v2.SEALED_EVIDENCE_BUILDER_VERSION
+    assert artifact["evidence_builder_definition_sha256"] == (
+        v2.SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256
+    )
 
 
 def test_the_result_publishes_every_declared_field(
@@ -2203,7 +2270,6 @@ def test_the_result_publishes_every_declared_field(
     result = execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     assert set(result) == set(SEALED_EXECUTION_RESULT_FIELDS)
     assert result["schema_version"] == SEALED_EXECUTION_RESULT_SCHEMA_VERSION
@@ -2226,6 +2292,27 @@ def test_the_result_publishes_every_declared_field(
     ] == list(GUARD_PAIRS)
 
 
+def test_evidence_is_durable_before_certified_validation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    directory, _, _ = _collected(tmp_path)
+    original_validate = v2._validate_v3_candidate_core
+    observations = []
+
+    def validate_after_evidence(*args, **kwargs):
+        evidence = json.loads((directory / EVIDENCE_FILENAME).read_text())
+        authority = json.loads((directory / AUTHORIZATION_FILENAME).read_text())
+        assert authority["evidence_bundle_digest"] == evidence[
+            "evidence_bundle_digest"
+        ]
+        observations.append("evidence_durable")
+        return original_validate(*args, **kwargs)
+
+    monkeypatch.setattr(v2, "_validate_v3_candidate_core", validate_after_evidence)
+    execute_sealed_validation(directory, repository_root=REPOSITORY_ROOT)
+    assert observations == ["evidence_durable"]
+
+
 def test_the_sealed_record_says_it_opened_the_sample(
     protocol: dict, tmp_path: Path
 ) -> None:
@@ -2233,7 +2320,6 @@ def test_the_sealed_record_says_it_opened_the_sample(
     result = execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     sealed = result["validation_record"]["sealed_execution"]
     assert sealed["this_record_opened_the_sealed_sample"] is True
@@ -2276,11 +2362,15 @@ def test_crash_before_result_permanently_consumes_authority(
             raise RuntimeError(f"CRASH:{point}")
 
     monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    monkeypatch.setattr(
+        v2,
+        "_evidence_builder_invocation_point",
+        lambda builder, collection: calls.append(collection),
+    )
     with pytest.raises(RuntimeError, match=f"CRASH:{point}"):
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
         )
     assert sealed_execution_status(
         directory, validator_definition_sha256=digest
@@ -2292,7 +2382,6 @@ def test_crash_before_result_permanently_consumes_authority(
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
         )
     assert len(calls) == before_retry
     monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
@@ -2367,7 +2456,6 @@ def test_recovery_finalizes_a_durable_result_without_raw_reread(
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
         )
     assert (directory / EVIDENCE_FILENAME).exists()
     assert (directory / RESULT_FILENAME).exists()
@@ -2393,19 +2481,21 @@ def test_recovery_finalizes_a_durable_result_without_raw_reread(
     ) == STATE_FINALIZED
 
 
-def test_runtime_error_is_operational_not_scientific(
-    protocol: dict, tmp_path: Path
+def test_fixed_builder_interruption_is_operational_not_scientific(
+    protocol: dict, tmp_path: Path, monkeypatch
 ) -> None:
     directory, digest, manifest = _collected(tmp_path)
 
-    def broken_builder(collection):
-        raise RuntimeError("synthetic builder failure")
+    def interrupt_fixed_builder(builder, collection):
+        raise RuntimeError("synthetic fixed-builder interruption")
 
-    with pytest.raises(RuntimeError, match="synthetic builder failure"):
+    monkeypatch.setattr(
+        v2, "_evidence_builder_invocation_point", interrupt_fixed_builder
+    )
+    with pytest.raises(RuntimeError, match="synthetic fixed-builder interruption"):
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=broken_builder,
         )
     record = read_execution_authorization(
         directory, validator_definition_sha256=digest
@@ -2432,7 +2522,6 @@ def test_crash_after_finalized_is_read_only(
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
         )
     monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
     recovered = recover_sealed_execution(
@@ -2478,7 +2567,6 @@ def test_finalized_result_restores_across_restart(
     result = execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     assert read_finalized_result(
         REPOSITORY_ROOT, execution_root=directory
@@ -2492,7 +2580,6 @@ def test_redigested_result_semantic_tamper_refuses_restore(
     execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     result_path = directory / RESULT_FILENAME
     result = json.loads(result_path.read_text())
@@ -2568,6 +2655,14 @@ def _rebuild_or_refuse() -> str | None:
         ("EXECUTION_STATES", ("NOT_PREPARED", "FINALIZED")),
         ("MANIFEST_SCHEMA_VERSION", "BTC019_V3_SEALED_SAMPLE_MANIFEST_V9"),
         ("MANIFEST_REQUIRED_KEYS", ("manifest_version",)),
+        ("SEALED_EVIDENCE_BUILDER_VERSION", "OTHER_BUILDER_V1"),
+        ("SEALED_EVIDENCE_BUILDER_MODULE", "other.builder"),
+        ("SEALED_EVIDENCE_BUILDER_FUNCTION", "other_builder"),
+        ("SEALED_EVIDENCE_BUILDER_DEFINITION_SHA256", "d" * 64),
+        ("POST_START_MANIFEST_VALIDATION_RULE_ID", "OTHER_RULE_V1"),
+        ("POST_START_MANIFEST_VALIDATION_RULE", "skip manifest validation"),
+        ("MANIFEST_DIGEST_EQUALITY_RULE_ID", "OTHER_EQUALITY_V1"),
+        ("MANIFEST_DIGEST_EQUALITY_RULE", "trust any manifest digest"),
         (
             "SEALED_EXECUTION_RESULT_SCHEMA_VERSION",
             "BTC019_V3_SEALED_VALIDATION_RESULT_V9",
@@ -2628,6 +2723,12 @@ def test_the_persisted_contract_verifies(tmp_path: Path) -> None:
         (("binding", "bound_protocol_definition_sha256"), "e" * 64),
         (("sealed_execution_control", "one_shot_rule_id"), "OPEN_FOREVER_V1"),
         (("sealed_execution_control", "result_schema_version"), "OTHER_V1"),
+        (("sealed_execution_control", "evidence_builder_module"), "other.builder"),
+        (("sealed_execution_control", "evidence_builder_function"), "other_builder"),
+        (
+            ("sealed_execution_control", "evidence_builder_definition_sha256"),
+            "d" * 64,
+        ),
         (
             ("sealed_sample_contract", "collection_manifest_schema_version"),
             "OTHER_V1",
@@ -2722,29 +2823,15 @@ def test_provider_and_dictionary_order_cannot_change_a_sealed_result(
 ) -> None:
     """The same frozen inputs give a byte-identical semantic result."""
 
-    def _run(directory: str, reorder: bool) -> dict:
-        auth, _, manifest = _collected(tmp_path / directory)
-        bundle = _sealed_bundle(protocol, manifest)
-        if reorder:
-            bundle["gate_pair_measurements"] = list(
-                reversed(bundle["gate_pair_measurements"])
-            )
-            bundle["transfer_guard_pair_measurements"] = list(
-                reversed(bundle["transfer_guard_pair_measurements"])
-            )
-            bundle["identities"] = dict(
-                bundle["identities"],
-                provider_ids=["coinbase", "bitstamp", "bitfinex"],
-            )
-            bundle = dict(reversed(list(bundle.items())))
+    def _run(directory: str) -> dict:
+        auth, _, _ = _collected(tmp_path / directory)
         return execute_sealed_validation(
             auth,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(bundle),
         )
 
-    straight = _run("first", False)
-    shuffled = _run("second", True)
+    straight = _run("first")
+    repeated = _run("second")
     for field in (
         "final_verdict",
         "primary_reason",
@@ -2757,7 +2844,7 @@ def test_provider_and_dictionary_order_cannot_change_a_sealed_result(
         "diagnostics",
         "inherited_gate_outcomes",
     ):
-        assert straight[field] == shuffled[field]
+        assert straight[field] == repeated[field]
 
 
 def test_the_written_artifacts_are_deterministic_ascii(tmp_path: Path) -> None:
@@ -2857,7 +2944,6 @@ def test_the_whole_execution_surface_reads_no_market_data(
     execute_sealed_validation(
         directory,
         repository_root=REPOSITORY_ROOT,
-        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     monkeypatch.undo()
 
@@ -2887,7 +2973,6 @@ def test_the_collector_is_never_called(protocol: dict, tmp_path: Path) -> None:
         execute_sealed_validation(
             directory,
             repository_root=REPOSITORY_ROOT,
-            evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
         )
     finally:
         ohlcv.collect_btc_ohlcv = original
@@ -2952,6 +3037,25 @@ def test_the_persisted_report_names_the_delta_and_the_window() -> None:
     assert "sealed_sample.sealed_execution_authorized" in report
     assert "Collected: no" in report
     assert "Opened: no" in report
+
+
+def test_the_previous_v2_artifact_is_preserved_under_its_hash() -> None:
+    history = (
+        REPOSITORY_ROOT
+        / SEALED_EXECUTOR_OUTPUT_NAMESPACE
+        / "history"
+        / PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256
+    )
+    prior_contract = json.loads((history / VALIDATOR_DEFINITION_FILENAME).read_text())
+    prior_delta = json.loads((history / v2.SEMANTIC_DELTA_FILENAME).read_text())
+    prior_report = (history / v2.SEALED_EXECUTOR_REPORT_FILENAME).read_text()
+    assert prior_contract["validator_definition_sha256"] == (
+        PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256
+    )
+    assert prior_delta["validator_definition_sha256"] == (
+        PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256
+    )
+    assert PREVIOUS_CORRECTED_V2_VALIDATOR_SHA256 in prior_report
 
 
 # =============================================================================
