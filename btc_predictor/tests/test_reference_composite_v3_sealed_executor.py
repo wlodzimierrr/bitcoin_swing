@@ -24,10 +24,15 @@ entry point is exercised under watchers on `open`, `Path.read_text`,
 fail the test if it is ever called.
 """
 
+import gzip
+import hashlib
 import json
+import multiprocessing
 import os
+import shutil
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 from decimal import Context, Decimal, localcontext
 from itertools import product
 from pathlib import Path
@@ -92,9 +97,11 @@ from btc_predictor.research.reference_composite_v3_sealed_executor import (
     ALLOWED_CONTRACT_REMOVED_FIELDS,
     AUTHORIZATION_FILENAME,
     AUTHORIZATION_SCHEMA_VERSION,
+    EVIDENCE_FILENAME,
     EXECUTION_STATES,
     LEGAL_EXECUTION_TRANSITIONS,
     MANIFEST_SCHEMA_VERSION,
+    MANIFEST_FILENAME,
     PARENT_VALIDATOR_DEFINITION_SHA256,
     PRESERVED_CONTRACT_FIELDS,
     SEALED_EXECUTION_AUTHORIZED,
@@ -102,6 +109,7 @@ from btc_predictor.research.reference_composite_v3_sealed_executor import (
     SEALED_EXECUTION_RESULT_SCHEMA_VERSION,
     SEALED_EXECUTOR_OUTPUT_NAMESPACE,
     SEALED_PROVIDER_IDS,
+    SEALED_EVIDENCE_BUILDER_VERSION,
     SEALED_WINDOW_END_ISO,
     SEALED_WINDOW_START_ISO,
     STATE_COLLECTED_FROZEN,
@@ -109,6 +117,7 @@ from btc_predictor.research.reference_composite_v3_sealed_executor import (
     STATE_FINALIZED,
     STATE_NOT_PREPARED,
     STATE_PREPARED,
+    RESULT_FILENAME,
     VALIDATOR_DEFINITION_FILENAME,
     VALIDATOR_RECORD_SCHEMA_VERSION,
     VALIDATOR_SCHEMA_VERSION,
@@ -122,8 +131,10 @@ from btc_predictor.research.reference_composite_v3_sealed_executor import (
     execute_sealed_validation,
     manifest_digest,
     prepare_sealed_execution,
+    read_finalized_result,
     read_execution_authorization,
     record_frozen_collection_manifest,
+    recover_sealed_execution,
     sealed_collection_plan,
     sealed_execution_status,
     semantic_delta,
@@ -145,6 +156,12 @@ FROZEN_V3_DEFINITION_SHA256 = (
 CERTIFIED_V1_VALIDATOR_SHA256 = (
     "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7"
 )
+CORRECTED_V2_VALIDATOR_SHA256 = (
+    "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729"
+)
+FAILED_V2_VALIDATOR_SHA256 = (
+    "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784"
+)
 FROZEN_V2_PARENT_SHA256 = (
     "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a"
 )
@@ -164,6 +181,59 @@ SYNTHETIC_START = "2023-01-01T00:00:00+00:00"
 SYNTHETIC_END = "2025-12-31T23:00:00+00:00"
 
 SEALED_YEARS = ("2015", "2016", "2017", "2018", "2019")
+
+
+def _race_prepare_worker(repository_root, execution_root, barrier, queue) -> None:
+    barrier.wait()
+    try:
+        record = v2.prepare_sealed_execution(
+            Path(repository_root), authorization_dir=Path(execution_root)
+        )
+        queue.put(("SUCCESS", record["execution_id"]))
+    except Exception as error:  # pragma: no cover - asserted in parent
+        queue.put(("REFUSED", type(error).__name__))
+
+
+def _race_begin_worker(repository_root, execution_root, barrier, queue) -> None:
+    barrier.wait()
+    try:
+        v2.begin_sealed_execution(
+            Path(repository_root), authorization_dir=Path(execution_root)
+        )
+        queue.put("SUCCESS")
+    except Exception:  # pragma: no cover - asserted in parent
+        queue.put("REFUSED")
+
+
+def _race_execute_worker(
+    repository_root, execution_root, bundle, barrier, queue
+) -> None:
+    raw_reads = 0
+    builder_calls = 0
+    original = v2._read_regular_file_under_root
+
+    def watched_read(*args, **kwargs):
+        nonlocal raw_reads
+        raw_reads += 1
+        return original(*args, **kwargs)
+
+    def builder(collection):
+        nonlocal builder_calls
+        builder_calls += 1
+        return bundle
+
+    v2._read_regular_file_under_root = watched_read
+    barrier.wait()
+    try:
+        v2.execute_sealed_validation(
+            Path(execution_root),
+            repository_root=Path(repository_root),
+            evidence_builder=builder,
+        )
+        outcome = "SUCCESS"
+    except Exception:  # pragma: no cover - asserted in parent
+        outcome = "REFUSED"
+    queue.put((outcome, raw_reads, builder_calls))
 
 
 @pytest.fixture(scope="module")
@@ -325,45 +395,93 @@ def _v2_validate(bundle: dict, **kwargs):
 # --- the synthetic sealed-sample collection manifest --------------------------
 
 
-def _manifest(digest: str, **overrides) -> dict:
-    """A well-formed manifest describing a collection that has not happened.
+def _synthetic_raw_bytes(plan: dict) -> bytes:
+    records = []
+    for timestamp in (SEALED_WINDOW_START_ISO, SEALED_WINDOW_END_ISO):
+        records.append(
+            {
+                "close": "100",
+                "exchange": plan["exchange"],
+                "fallback_used": False,
+                "high": "101",
+                "ingested_at": "2020-01-01T00:00:00+00:00",
+                "low": "99",
+                "open": "100",
+                "price_source_policy_version": PRICE_SOURCE_POLICY_VERSION,
+                "price_source_roles": plan["price_source_roles"],
+                "provider": plan["provider_id"],
+                "schema_version": v2.RAW_ARTIFACT_SCHEMA_VERSION,
+                "symbol": plan["instrument_symbol"],
+                "timeframe": "1h",
+                "timestamp": timestamp,
+                "volume": "1",
+            }
+        )
+    text = "".join(
+        json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+        for row in records
+    )
+    return gzip.compress(text.encode(), mtime=0)
 
-    Every path names a file that does not exist and every digest is a constant.
-    Nothing here is read, and no 2015-2019 byte exists to read.
-    """
+
+def _missing_synthetic_intervals() -> list[str]:
+    start = datetime.fromisoformat(SEALED_WINDOW_START_ISO) + timedelta(hours=1)
+    end = datetime.fromisoformat(SEALED_WINDOW_END_ISO)
+    values = []
+    while start < end:
+        values.append(start.isoformat())
+        start += timedelta(hours=1)
+    return values
+
+
+SYNTHETIC_MISSING_INTERVALS = _missing_synthetic_intervals()
+
+
+def _manifest(
+    digest: str, *, execution_root: Path | None = None, **overrides
+) -> dict:
+    """A synthetic manifest; optional raw files contain no market observations."""
 
     files = []
     for plan in sealed_collection_plan():
         provider_id = plan["provider_id"]
+        raw = _synthetic_raw_bytes(plan)
+        if execution_root is not None:
+            path = execution_root / plan["raw_relative_path"]
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(raw)
         files.append(
             {
-                "byte_count": 1024,
-                "collection_source_identifier": f"{provider_id}:BTC:1h:2015-2019",
+                "byte_count": len(raw),
+                "collection_source_identifier": v2._collection_source_identifier(
+                    provider_id
+                ),
                 "duplicate_interval_count": 0,
                 "duplicate_intervals": [],
                 "first_observation": SEALED_WINDOW_START_ISO,
                 "last_observation": SEALED_WINDOW_END_ISO,
-                "missing_interval_count": 0,
-                "missing_intervals": [],
-                "path": f"data/btc019_sealed/{provider_id}_btc_usd_1h.jsonl.gz",
+                "missing_interval_count": len(SYNTHETIC_MISSING_INTERVALS),
+                "missing_intervals": SYNTHETIC_MISSING_INTERVALS,
+                "path": plan["raw_relative_path"],
                 "provider_id": provider_id,
                 "raw_mutation_count": 0,
-                "row_count": 38547,
-                "sha256": "c" * 64,
+                "row_count": 2,
+                "sha256": hashlib.sha256(raw).hexdigest(),
                 "source_provenance": {
-                    "endpoint": f"https://example.invalid/{provider_id}/candles",
+                    "endpoint": plan["endpoint"],
                     "exchange": plan["exchange"],
                     "instrument_symbol": plan["instrument_symbol"],
-                    "request_count": 120,
+                    "request_count": 1,
                 },
             }
         )
+    root = REPOSITORY_ROOT if execution_root is None else execution_root
     manifest = {
         "bar_interval": "1h",
         "bound_protocol_definition_sha256": FROZEN_V3_DEFINITION_SHA256,
-        "collection_method": "btc_predictor.data.ohlcv.collect_btc_ohlcv",
-        "collection_method_version": "BTC020_COLLECTOR_V1",
-        "execution_id": derive_execution_id(digest),
+        "collection_method": v2.COLLECTION_METHOD,
+        "collection_method_version": v2.COLLECTION_METHOD_VERSION,
+        "execution_id": derive_execution_id(digest, execution_root=root),
         "files": files,
         "manifest_sha256": "0" * 64,
         "manifest_version": MANIFEST_SCHEMA_VERSION,
@@ -391,24 +509,40 @@ def _sealed_bundle(protocol: dict, manifest: dict, **overrides) -> dict:
         },
     )
     bundle["provenance"] = dict(
-        bundle["provenance"], sample_manifest_digest=manifest["manifest_sha256"]
+        bundle["provenance"],
+        evidence_builder_version=SEALED_EVIDENCE_BUILDER_VERSION,
+        sample_manifest_digest=manifest["manifest_sha256"],
     )
     bundle.update(overrides)
     return bundle
+
+
+def _builder(bundle: dict, calls: list | None = None):
+    def build(collection):
+        if calls is not None:
+            calls.append(collection)
+        return bundle
+
+    return build
 
 
 def _prepared(tmp_path: Path) -> tuple[Path, str, dict]:
     directory = tmp_path / "authorization"
     digest = validator_definition_sha256(REPOSITORY_ROOT)
     prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory)
-    return directory, digest, _manifest(digest)
+    return directory, digest, _manifest(digest, execution_root=directory)
 
 
-def _started(tmp_path: Path) -> tuple[Path, str, dict]:
+def _collected(tmp_path: Path) -> tuple[Path, str, dict]:
     directory, digest, manifest = _prepared(tmp_path)
     record_frozen_collection_manifest(
         REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
     )
+    return directory, digest, manifest
+
+
+def _started(tmp_path: Path) -> tuple[Path, str, dict]:
+    directory, digest, manifest = _collected(tmp_path)
     begin_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory)
     return directory, digest, manifest
 
@@ -611,6 +745,8 @@ def test_the_contract_declares_its_lineage(contract: dict) -> None:
 
 def test_the_executing_hash_is_not_either_authority(contract: dict) -> None:
     digest = contract["validator_definition_sha256"]
+    assert digest == CORRECTED_V2_VALIDATOR_SHA256
+    assert digest != FAILED_V2_VALIDATOR_SHA256
     assert digest not in {
         CERTIFIED_V1_VALIDATOR_SHA256,
         FROZEN_V3_DEFINITION_SHA256,
@@ -1143,10 +1279,11 @@ def test_authorization_alone_does_not_execute(protocol: dict, tmp_path: Path) ->
     assert sealed_execution_status(
         directory, validator_definition_sha256=digest
     ) == STATE_PREPARED
-    with pytest.raises(SealedExecutionStateError, match="not EXECUTION_STARTED"):
+    with pytest.raises(SealedExecutionStateError, match="requires COLLECTED_FROZEN"):
         execute_sealed_validation(
-            _bundle(protocol), repository_root=REPOSITORY_ROOT,
-            authorization_dir=directory,
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_bundle(protocol)),
         )
 
 
@@ -1159,7 +1296,7 @@ def test_sealed_mode_without_an_authorization_record_refuses(protocol: dict) -> 
             "start": SEALED_WINDOW_START_ISO,
         },
     )
-    with pytest.raises(SealedExecutionAuthorizationError, match="requires a durable"):
+    with pytest.raises(SealedExecutionAuthorizationError, match="in-memory evidence"):
         _v2_validate(bundle, execution_mode=v2.EXECUTION_MODE_SEALED)
 
 
@@ -1167,7 +1304,7 @@ def test_an_unauthorized_contract_refuses_sealed_mode(
     protocol: dict, monkeypatch
 ) -> None:
     monkeypatch.setattr(v2, "SEALED_EXECUTION_AUTHORIZED", False)
-    with pytest.raises(v1.SealedExecutionNotAuthorizedError):
+    with pytest.raises(SealedExecutionAuthorizationError, match="in-memory evidence"):
         _v2_validate(_bundle(protocol), execution_mode=v2.EXECUTION_MODE_SEALED)
 
 
@@ -1186,10 +1323,12 @@ def test_an_unauthorized_contract_refuses_to_prepare(
         prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=tmp_path / "a")
 
 
-def test_a_missing_authorization_record_refuses() -> None:
+def test_a_missing_authorization_record_refuses(tmp_path: Path) -> None:
+    root = tmp_path / "empty"
+    root.mkdir()
     with pytest.raises(SealedExecutionAuthorizationError, match="no .* record exists"):
         read_execution_authorization(
-            Path("/nonexistent-authorization-dir"),
+            root,
             validator_definition_sha256="0" * 64,
         )
 
@@ -1200,7 +1339,9 @@ def test_a_valid_unused_authorization_is_preparable(tmp_path: Path) -> None:
         directory, validator_definition_sha256=digest
     )
     assert record["status"] == STATE_PREPARED
-    assert record["execution_id"] == derive_execution_id(digest)
+    assert record["execution_id"] == derive_execution_id(
+        digest, execution_root=directory
+    )
     assert record["collection_manifest_digest"] is None
     assert record["evidence_bundle_digest"] is None
     assert record["execution_result_digest"] is None
@@ -1276,11 +1417,19 @@ def test_a_second_authorization_for_the_same_authority_refuses(
         prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory)
 
 
-def test_the_execution_id_is_derived_from_its_own_authority() -> None:
+def test_the_execution_id_is_derived_from_its_own_authority(tmp_path: Path) -> None:
     digest = validator_definition_sha256(REPOSITORY_ROOT)
-    assert derive_execution_id(digest) == derive_execution_id(digest)
-    assert derive_execution_id(digest) != derive_execution_id("f" * 64)
-    assert derive_execution_id(digest).startswith("BTC019_V3_SEALED_EXECUTION_")
+    root = tmp_path / "root"
+    root.mkdir()
+    assert derive_execution_id(digest, execution_root=root) == derive_execution_id(
+        digest, execution_root=root
+    )
+    assert derive_execution_id(
+        digest, execution_root=root
+    ) != derive_execution_id("f" * 64, execution_root=root)
+    assert derive_execution_id(digest, execution_root=root).startswith(
+        "BTC019_V3_SEALED_EXECUTION_"
+    )
 
 
 # =============================================================================
@@ -1300,6 +1449,32 @@ def test_the_state_machine_is_strictly_forward() -> None:
     for row in LEGAL_EXECUTION_TRANSITIONS:
         assert order[row["to"]] == order[row["from"]] + 1
     assert v2.TERMINAL_EXECUTION_STATES == (STATE_FINALIZED,)
+
+
+def test_the_hash_bound_contract_carries_exact_history_field_and_artifact_matrices(
+    contract: dict,
+) -> None:
+    control = contract["sealed_execution_control"]
+    assert control["exact_state_histories"] == v2.STATE_HISTORY_CONTRACT
+    assert control["exact_state_earned_fields"] == v2.STATE_EARNED_FIELD_CONTRACT
+    assert control["exact_state_artifact_matrix"] == v2.STATE_ARTIFACT_CONTRACT
+    assert control["execution_started_allowed_checkpoints"] == list(
+        v2.EXECUTION_STARTED_ALLOWED_CHECKPOINTS
+    )
+    assert control["started_consumes_authority_permanently"] is True
+    assert control["normal_execute_allowed_from"] == STATE_COLLECTED_FROZEN
+    assert control["normal_execute_forbidden_from"] == [
+        STATE_EXECUTION_STARTED,
+        STATE_FINALIZED,
+    ]
+    assert "fcntl.flock" in control["exclusive_locking_rule"]
+    assert "os.replace" in control["atomic_persistence_rule"]
+    assert control["supersedes_failed_executor_hash"] == (
+        "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784"
+    )
+    assert control["failure_review_commit"] == (
+        "daa664753ed3a6e282fa53577be9f680bfa7c8fd"
+    )
 
 
 def test_a_prepared_authority_survives_a_restart(tmp_path: Path) -> None:
@@ -1323,10 +1498,12 @@ def test_a_started_execution_cannot_be_started_again(tmp_path: Path) -> None:
 def test_a_finalized_execution_can_never_run_again(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, digest, manifest = _started(tmp_path)
+    directory, digest, manifest = _collected(tmp_path)
     bundle = _sealed_bundle(protocol, manifest)
     result = execute_sealed_validation(
-        bundle, repository_root=REPOSITORY_ROOT, authorization_dir=directory
+        directory,
+        repository_root=REPOSITORY_ROOT,
+        evidence_builder=_builder(bundle),
     )
     assert result["final_verdict"] in VERDICT_VOCABULARY
     assert sealed_execution_status(
@@ -1334,7 +1511,9 @@ def test_a_finalized_execution_can_never_run_again(
     ) == STATE_FINALIZED
     for call in (
         lambda: execute_sealed_validation(
-            bundle, repository_root=REPOSITORY_ROOT, authorization_dir=directory
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
         ),
         lambda: begin_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory),
         lambda: prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory),
@@ -1349,11 +1528,11 @@ def test_a_finalized_execution_can_never_run_again(
 def test_a_finalized_record_keeps_its_result_digest(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, digest, manifest = _started(tmp_path)
+    directory, digest, manifest = _collected(tmp_path)
     result = execute_sealed_validation(
-        _sealed_bundle(protocol, manifest),
+        directory,
         repository_root=REPOSITORY_ROOT,
-        authorization_dir=directory,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     record = read_execution_authorization(
         directory, validator_definition_sha256=digest
@@ -1373,25 +1552,201 @@ def test_execution_cannot_start_before_the_manifest_is_frozen(
     tmp_path: Path,
 ) -> None:
     directory, _, _ = _prepared(tmp_path)
-    with pytest.raises(
-        SealedExecutionStateError, match="no frozen collection manifest"
-    ):
+    with pytest.raises(SealedExecutionStateError, match="requires state"):
         begin_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory)
 
 
-def test_a_collected_run_cannot_skip_straight_to_execution(
+def test_a_collected_run_is_consumed_by_the_single_execution_call(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _prepared(tmp_path)
-    record_frozen_collection_manifest(
-        REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+    directory, digest, manifest = _collected(tmp_path)
+    result = execute_sealed_validation(
+        directory,
+        repository_root=REPOSITORY_ROOT,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
-    with pytest.raises(SealedExecutionStateError, match="not EXECUTION_STARTED"):
-        execute_sealed_validation(
-            _sealed_bundle(protocol, manifest),
-            repository_root=REPOSITORY_ROOT,
-            authorization_dir=directory,
+    assert result["final_verdict"] in VERDICT_VOCABULARY
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_FINALIZED
+
+
+def test_a_forged_in_memory_authorization_cannot_produce_a_sealed_verdict(
+    protocol: dict,
+) -> None:
+    forged = {
+        "status": STATE_EXECUTION_STARTED,
+        "execution_id": "forged",
+        "collection_manifest_digest": "a" * 64,
+    }
+    with pytest.raises(SealedExecutionAuthorizationError, match="in-memory evidence"):
+        _v2_validate(
+            _sealed_bundle(protocol, _manifest(validator_definition_sha256(REPOSITORY_ROOT))),
+            execution_mode=v2.EXECUTION_MODE_SEALED,
+            sealed_execution_authorization=forged,
         )
+
+
+def test_a_prebuilt_bundle_is_not_a_live_execution_argument(protocol: dict) -> None:
+    bundle = _bundle(protocol)
+    with pytest.raises(SealedExecutionAuthorizationError, match="prebuilt evidence"):
+        execute_sealed_validation(
+            bundle,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
+        )
+
+
+def test_a_self_rehashed_skipped_state_is_refused(tmp_path: Path) -> None:
+    directory, digest, _ = _prepared(tmp_path)
+    path = directory / AUTHORIZATION_FILENAME
+    record = json.loads(path.read_text())
+    record["status"] = STATE_EXECUTION_STARTED
+    record["state_history"] = [
+        dict(row) for row in v2.STATE_HISTORY_CONTRACT[STATE_EXECUTION_STARTED]
+    ]
+    record["collection_manifest_digest"] = "a" * 64
+    record["authorization_record_sha256"] = v2._authorization_digest(record)
+    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    with pytest.raises(v2.SealedExecutionIntegrityError, match="requires canonical"):
+        read_execution_authorization(directory, validator_definition_sha256=digest)
+
+
+@pytest.mark.parametrize("history_mutation", ["missing", "extra", "duplicate", "wrong_order"])
+def test_every_noncanonical_state_history_is_refused(
+    tmp_path: Path, history_mutation: str
+) -> None:
+    directory, digest, _ = _collected(tmp_path)
+    path = directory / AUTHORIZATION_FILENAME
+    record = json.loads(path.read_text())
+    history = list(record["state_history"])
+    if history_mutation == "missing":
+        history = history[:-1]
+    elif history_mutation == "extra":
+        history.append(dict(v2.LEGAL_EXECUTION_TRANSITIONS[2]))
+    elif history_mutation == "duplicate":
+        history.append(dict(history[-1]))
+    else:
+        history = list(reversed(history))
+    record["state_history"] = history
+    record["authorization_record_sha256"] = v2._authorization_digest(record)
+    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    with pytest.raises(SealedExecutionStateError, match="exact legal prefix"):
+        read_execution_authorization(directory, validator_definition_sha256=digest)
+
+
+def test_a_prepared_state_carrying_a_future_field_is_refused(tmp_path: Path) -> None:
+    directory, digest, _ = _prepared(tmp_path)
+    path = directory / AUTHORIZATION_FILENAME
+    record = json.loads(path.read_text())
+    record["evidence_bundle_digest"] = "a" * 64
+    record["authorization_record_sha256"] = v2._authorization_digest(record)
+    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    with pytest.raises(SealedExecutionStateError, match="future field"):
+        read_execution_authorization(directory, validator_definition_sha256=digest)
+
+
+def test_a_started_state_cannot_claim_an_unpublished_evidence_digest(
+    tmp_path: Path,
+) -> None:
+    directory, digest, _ = _started(tmp_path)
+    path = directory / AUTHORIZATION_FILENAME
+    record = json.loads(path.read_text())
+    record["evidence_bundle_digest"] = "a" * 64
+    record["authorization_record_sha256"] = v2._authorization_digest(record)
+    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    with pytest.raises(v2.SealedExecutionIntegrityError, match="unreachable"):
+        read_execution_authorization(directory, validator_definition_sha256=digest)
+
+
+def test_copying_an_authority_to_another_root_refuses(tmp_path: Path) -> None:
+    directory, digest, _ = _prepared(tmp_path / "source")
+    copied = tmp_path / "copied"
+    shutil.copytree(directory, copied)
+    with pytest.raises(SealedExecutionAuthorizationError, match="execution_root_sha256"):
+        read_execution_authorization(copied, validator_definition_sha256=digest)
+
+
+def test_concurrent_preparation_issues_one_authority(tmp_path: Path) -> None:
+    context = multiprocessing.get_context("fork")
+    for iteration in range(4):
+        execution_root = tmp_path / f"prepare-{iteration}"
+        barrier = context.Barrier(2)
+        queue = context.Queue()
+        processes = [
+            context.Process(
+                target=_race_prepare_worker,
+                args=(REPOSITORY_ROOT, execution_root, barrier, queue),
+            )
+            for _ in range(2)
+        ]
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join(20)
+            assert process.exitcode == 0
+        outcomes = [queue.get(timeout=2)[0] for _ in processes]
+        assert sorted(outcomes) == ["REFUSED", "SUCCESS"]
+
+
+def test_concurrent_begin_has_exactly_one_consumer(tmp_path: Path) -> None:
+    context = multiprocessing.get_context("fork")
+    for iteration in range(4):
+        directory, digest, _ = _collected(tmp_path / f"begin-{iteration}")
+        barrier = context.Barrier(2)
+        queue = context.Queue()
+        processes = [
+            context.Process(
+                target=_race_begin_worker,
+                args=(REPOSITORY_ROOT, directory, barrier, queue),
+            )
+            for _ in range(2)
+        ]
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join(20)
+            assert process.exitcode == 0
+        assert sorted(queue.get(timeout=2) for _ in processes) == ["REFUSED", "SUCCESS"]
+        record = read_execution_authorization(
+            directory, validator_definition_sha256=digest
+        )
+        assert record["status"] == STATE_EXECUTION_STARTED
+        assert [row["to"] for row in record["state_history"]].count(
+            STATE_EXECUTION_STARTED
+        ) == 1
+
+
+def test_concurrent_execute_loser_reads_zero_raw_bytes(
+    protocol: dict, tmp_path: Path
+) -> None:
+    context = multiprocessing.get_context("fork")
+    for iteration in range(3):
+        directory, digest, manifest = _collected(tmp_path / f"execute-{iteration}")
+        bundle = _sealed_bundle(protocol, manifest)
+        barrier = context.Barrier(2)
+        queue = context.Queue()
+        processes = [
+            context.Process(
+                target=_race_execute_worker,
+                args=(REPOSITORY_ROOT, directory, bundle, barrier, queue),
+            )
+            for _ in range(2)
+        ]
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join(30)
+            assert process.exitcode == 0
+        outcomes = [queue.get(timeout=2) for _ in processes]
+        assert sorted(item[0] for item in outcomes) == ["REFUSED", "SUCCESS"]
+        loser = next(item for item in outcomes if item[0] == "REFUSED")
+        winner = next(item for item in outcomes if item[0] == "SUCCESS")
+        assert loser[1:] == (0, 0)
+        assert winner[1:] == (len(SEALED_PROVIDER_IDS), 1)
+        assert sealed_execution_status(
+            directory, validator_definition_sha256=digest
+        ) == STATE_FINALIZED
 
 
 # =============================================================================
@@ -1454,7 +1809,7 @@ def test_a_well_formed_manifest_validates() -> None:
     manifest = _manifest(digest)
     validated = validate_sealed_sample_manifest(
         manifest,
-        execution_id=derive_execution_id(digest),
+        execution_id=derive_execution_id(digest, execution_root=REPOSITORY_ROOT),
         validator_definition_sha256=digest,
     )
     assert validated["manifest_sha256"] == manifest["manifest_sha256"]
@@ -1466,7 +1821,7 @@ def test_a_well_formed_manifest_validates() -> None:
 def _validate_manifest(manifest: dict, digest: str):
     return validate_sealed_sample_manifest(
         manifest,
-        execution_id=derive_execution_id(digest),
+        execution_id=derive_execution_id(digest, execution_root=REPOSITORY_ROOT),
         validator_definition_sha256=digest,
     )
 
@@ -1476,7 +1831,7 @@ def test_a_manifest_naming_a_wrong_provider_refuses() -> None:
     manifest = _manifest(digest)
     manifest["files"][0]["provider_id"] = "kraken"
     manifest["manifest_sha256"] = manifest_digest(manifest)
-    with pytest.raises(SealedSampleManifestError, match="unexpected provider"):
+    with pytest.raises(SealedSampleManifestError, match="canonical provider order"):
         _validate_manifest(manifest, digest)
 
 
@@ -1485,7 +1840,7 @@ def test_a_manifest_with_a_duplicate_provider_refuses() -> None:
     manifest = _manifest(digest)
     manifest["files"][1] = dict(manifest["files"][0])
     manifest["manifest_sha256"] = manifest_digest(manifest)
-    with pytest.raises(SealedSampleManifestError, match="twice"):
+    with pytest.raises(SealedSampleManifestError, match="canonical provider order"):
         _validate_manifest(manifest, digest)
 
 
@@ -1539,20 +1894,13 @@ def test_a_manifest_whose_own_digest_disagrees_refuses() -> None:
 def test_a_file_changed_after_it_was_hashed_refuses(tmp_path: Path) -> None:
     """The recomputation catches a raw file edited after its digest was taken."""
 
-    import hashlib
-
     digest = validator_definition_sha256(REPOSITORY_ROOT)
     root = tmp_path / "repo"
-    (root / "raw").mkdir(parents=True)
-    manifest = _manifest(digest)
-    for row in manifest["files"]:
-        row["path"] = f"raw/{row['provider_id']}.jsonl"
-        path = root / row["path"]
-        path.write_text("synthetic-not-sealed\n")
-        row["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-    manifest["manifest_sha256"] = manifest_digest(manifest)
+    root.mkdir()
+    manifest = _manifest(digest, execution_root=root)
     v2.verify_collected_file_digests(manifest, root)
-    (root / manifest["files"][0]["path"]).write_text("edited-after-hashing\n")
+    path = root / manifest["files"][0]["path"]
+    path.write_bytes(path.read_bytes() + b"edited")
     with pytest.raises(SealedSampleManifestError, match="changed after it was hashed"):
         v2.verify_collected_file_digests(manifest, root)
 
@@ -1608,6 +1956,181 @@ def test_observations_outside_the_sealed_window_refuse() -> None:
         _validate_manifest(manifest, digest)
 
 
+def test_freeze_refuses_a_nonexistent_raw_file(tmp_path: Path) -> None:
+    directory, _, manifest = _prepared(tmp_path)
+    (directory / manifest["files"][0]["path"]).unlink()
+    with pytest.raises(SealedSampleManifestError, match="raw collection files"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+    assert not (directory / MANIFEST_FILENAME).exists()
+
+
+def test_freeze_persists_the_exact_canonical_manifest(tmp_path: Path) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+    persisted = json.loads((directory / MANIFEST_FILENAME).read_text())
+    assert persisted == manifest
+    record = read_execution_authorization(
+        directory, validator_definition_sha256=digest
+    )
+    assert record["collection_manifest_digest"] == manifest["manifest_sha256"]
+
+
+def test_raw_mutation_after_freeze_refuses_before_evidence_building(
+    protocol: dict, tmp_path: Path
+) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+    path = directory / manifest["files"][0]["path"]
+    path.write_bytes(path.read_bytes() + b"mutation")
+    calls = []
+    with pytest.raises(SealedSampleManifestError, match="changed after it was hashed"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
+        )
+    assert calls == []
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_EXECUTION_STARTED
+
+
+def test_deleted_raw_file_after_freeze_refuses_before_evidence_building(
+    protocol: dict, tmp_path: Path
+) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+    (directory / manifest["files"][0]["path"]).unlink()
+    calls = []
+    with pytest.raises(SealedSampleManifestError, match="raw collection files"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
+        )
+    assert calls == []
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_EXECUTION_STARTED
+
+
+def test_provider_file_swap_refuses_before_evidence_building(
+    protocol: dict, tmp_path: Path
+) -> None:
+    directory, _, manifest = _collected(tmp_path)
+    left = directory / manifest["files"][0]["path"]
+    right = directory / manifest["files"][1]["path"]
+    left_bytes, right_bytes = left.read_bytes(), right.read_bytes()
+    left.write_bytes(right_bytes)
+    right.write_bytes(left_bytes)
+    calls = []
+    with pytest.raises(SealedSampleManifestError, match="changed after it was hashed"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
+        )
+    assert calls == []
+
+
+def test_same_inode_for_two_providers_refuses(tmp_path: Path) -> None:
+    directory, _, manifest = _prepared(tmp_path)
+    first = directory / manifest["files"][0]["path"]
+    second = directory / manifest["files"][1]["path"]
+    second.unlink()
+    os.link(first, second)
+    manifest["files"][1].update(
+        {
+            key: manifest["files"][0][key]
+            for key in (
+                "byte_count",
+                "duplicate_interval_count",
+                "duplicate_intervals",
+                "first_observation",
+                "last_observation",
+                "missing_interval_count",
+                "missing_intervals",
+                "row_count",
+                "sha256",
+            )
+        }
+    )
+    manifest["manifest_sha256"] = manifest_digest(manifest)
+    with pytest.raises(SealedSampleManifestError, match="same raw file inode"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+
+
+def test_extra_raw_file_refuses_freeze(tmp_path: Path) -> None:
+    directory, _, manifest = _prepared(tmp_path)
+    (directory / v2.RAW_COLLECTION_DIRNAME / "extra.jsonl.gz").write_bytes(b"x")
+    with pytest.raises(SealedSampleManifestError, match="raw collection files"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+
+
+def test_unsafe_symlink_refuses_freeze(tmp_path: Path) -> None:
+    directory, _, manifest = _prepared(tmp_path)
+    target = directory / manifest["files"][0]["path"]
+    payload = directory / "outside.gz"
+    target.rename(payload)
+    target.symlink_to(payload)
+    with pytest.raises(SealedSampleManifestError, match="safe regular file"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+
+
+def test_path_traversal_and_self_consistent_manifest_tamper_refuse() -> None:
+    digest = validator_definition_sha256(REPOSITORY_ROOT)
+    manifest = _manifest(digest)
+    manifest["files"][0]["path"] = "../bitfinex.jsonl.gz"
+    manifest["files"][0]["sha256"] = "f" * 64
+    manifest["manifest_sha256"] = manifest_digest(manifest)
+    with pytest.raises(SealedSampleManifestError, match="raw path must be"):
+        _validate_manifest(manifest, digest)
+
+
+@pytest.mark.parametrize("operation", ["delete", "corrupt"])
+def test_missing_or_corrupt_persisted_manifest_refuses_execution(
+    protocol: dict, tmp_path: Path, operation: str
+) -> None:
+    directory, _, manifest = _collected(tmp_path)
+    path = directory / MANIFEST_FILENAME
+    if operation == "delete":
+        path.unlink()
+    else:
+        path.write_text("not-json")
+    calls = []
+    with pytest.raises((v2.SealedExecutionIntegrityError, SealedExecutionAuthorizationError)):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
+        )
+    assert calls == []
+
+
+def test_raw_technical_metadata_is_verified_from_bytes(tmp_path: Path) -> None:
+    directory, _, manifest = _prepared(tmp_path)
+    manifest["files"][0]["row_count"] += 1
+    manifest["manifest_sha256"] = manifest_digest(manifest)
+    with pytest.raises(SealedSampleManifestError, match="row_count"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+
+
+def test_wrong_exchange_refuses_manifest() -> None:
+    digest = validator_definition_sha256(REPOSITORY_ROOT)
+    manifest = _manifest(digest)
+    manifest["files"][0]["source_provenance"]["exchange"] = "wrong"
+    manifest["manifest_sha256"] = manifest_digest(manifest)
+    with pytest.raises(SealedSampleManifestError, match="another exchange"):
+        _validate_manifest(manifest, digest)
+
+
 # =============================================================================
 # 10. input provenance and the terminal result
 # =============================================================================
@@ -1616,63 +2139,71 @@ def test_observations_outside_the_sealed_window_refuse() -> None:
 def test_a_bundle_not_binding_the_frozen_manifest_refuses(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _started(tmp_path)
+    directory, _, manifest = _collected(tmp_path)
     bundle = _sealed_bundle(protocol, manifest)
     bundle["provenance"] = dict(bundle["provenance"], sample_manifest_digest="9" * 64)
-    with pytest.raises(SealedExecutionAuthorizationError, match="binds sample manifest"):
+    with pytest.raises(SealedExecutionAuthorizationError, match="evidence binds manifest"):
         execute_sealed_validation(
-            bundle, repository_root=REPOSITORY_ROOT, authorization_dir=directory
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
         )
 
 
 def test_a_bundle_naming_another_candidate_refuses(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _started(tmp_path)
+    directory, _, manifest = _collected(tmp_path)
     bundle = _sealed_bundle(protocol, manifest)
     bundle["identities"] = dict(
         bundle["identities"], candidate_series_id="MEDIAN_OHLC_V9"
     )
-    with pytest.raises(SealedExecutionAuthorizationError, match="another candidate"):
+    with pytest.raises(SealedExecutionAuthorizationError, match="does not bind"):
         execute_sealed_validation(
-            bundle, repository_root=REPOSITORY_ROOT, authorization_dir=directory
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
         )
 
 
 def test_a_bundle_naming_other_providers_refuses(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _started(tmp_path)
+    directory, _, manifest = _collected(tmp_path)
     bundle = _sealed_bundle(protocol, manifest)
     bundle["identities"] = dict(
         bundle["identities"], provider_ids=["bitstamp", "coinbase", "kraken"]
     )
     with pytest.raises(SealedExecutionAuthorizationError, match="names providers"):
         execute_sealed_validation(
-            bundle, repository_root=REPOSITORY_ROOT, authorization_dir=directory
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
         )
 
 
 def test_a_sealed_bundle_with_the_wrong_window_refuses(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _started(tmp_path)
+    directory, _, manifest = _collected(tmp_path)
     bundle = _sealed_bundle(protocol, manifest)
     bundle["sample"] = dict(bundle["sample"], end="2019-12-31T23:00:00+00:00")
     with pytest.raises(SealedExecutionAuthorizationError, match="not the sealed"):
         execute_sealed_validation(
-            bundle, repository_root=REPOSITORY_ROOT, authorization_dir=directory
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
         )
 
 
 def test_the_result_publishes_every_declared_field(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _started(tmp_path)
+    directory, _, manifest = _collected(tmp_path)
     result = execute_sealed_validation(
-        _sealed_bundle(protocol, manifest),
+        directory,
         repository_root=REPOSITORY_ROOT,
-        authorization_dir=directory,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     assert set(result) == set(SEALED_EXECUTION_RESULT_FIELDS)
     assert result["schema_version"] == SEALED_EXECUTION_RESULT_SCHEMA_VERSION
@@ -1698,11 +2229,11 @@ def test_the_result_publishes_every_declared_field(
 def test_the_sealed_record_says_it_opened_the_sample(
     protocol: dict, tmp_path: Path
 ) -> None:
-    directory, _, manifest = _started(tmp_path)
+    directory, _, manifest = _collected(tmp_path)
     result = execute_sealed_validation(
-        _sealed_bundle(protocol, manifest),
+        directory,
         repository_root=REPOSITORY_ROOT,
-        authorization_dir=directory,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     sealed = result["validation_record"]["sealed_execution"]
     assert sealed["this_record_opened_the_sealed_sample"] is True
@@ -1719,6 +2250,270 @@ def test_a_dry_run_record_says_it_opened_nothing(protocol: dict) -> None:
     assert sealed["execution_id"] is None
     assert sealed["sealed_sample_manifest_sha256"] is None
     assert record["execution_mode"] == v2.EXECUTION_MODE_DRY_RUN
+
+
+@pytest.mark.parametrize(
+    "point,evidence_present",
+    [
+        ("after_execution_started_before_raw_read", False),
+        ("after_first_raw_file_read", False),
+        ("after_evidence_persisted", True),
+        ("after_result_temp_write", True),
+    ],
+)
+def test_crash_before_result_permanently_consumes_authority(
+    protocol: dict,
+    tmp_path: Path,
+    monkeypatch,
+    point: str,
+    evidence_present: bool,
+) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+    calls = []
+
+    def crash(actual: str) -> None:
+        if actual == point:
+            raise RuntimeError(f"CRASH:{point}")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    with pytest.raises(RuntimeError, match=f"CRASH:{point}"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
+        )
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_EXECUTION_STARTED
+    assert (directory / EVIDENCE_FILENAME).exists() is evidence_present
+    assert not (directory / RESULT_FILENAME).exists()
+    before_retry = len(calls)
+    with pytest.raises(SealedExecutionStateError, match="consumed execution cannot retry"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest), calls),
+        )
+    assert len(calls) == before_retry
+    monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
+    recovery = recover_sealed_execution(
+        REPOSITORY_ROOT, execution_root=directory
+    )
+    assert recovery["operational_state"] == v2.RECOVERY_INTERRUPTED_NO_RESULT
+    assert recovery["scientific_verdict"] is None
+    assert recovery["normal_retry_permitted"] is False
+    assert recovery["raw_reopen_permitted"] is False
+
+
+def test_crash_after_prepared_write_leaves_one_prepared_authority(
+    tmp_path: Path, monkeypatch
+) -> None:
+    directory = tmp_path / "prepared-crash"
+
+    def crash(actual: str) -> None:
+        if actual == "after_prepared_write":
+            raise RuntimeError("prepared crash")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    with pytest.raises(RuntimeError, match="prepared crash"):
+        prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory)
+    monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
+    digest = validator_definition_sha256(REPOSITORY_ROOT)
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_PREPARED
+    with pytest.raises(SealedExecutionStateError, match="already exists"):
+        prepare_sealed_execution(REPOSITORY_ROOT, authorization_dir=directory)
+
+
+def test_crash_after_collected_frozen_leaves_runnable_frozen_authority(
+    tmp_path: Path, monkeypatch
+) -> None:
+    directory, digest, manifest = _prepared(tmp_path)
+
+    def crash(actual: str) -> None:
+        if actual == "after_collected_frozen":
+            raise RuntimeError("collected crash")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    with pytest.raises(RuntimeError, match="collected crash"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+    monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_COLLECTED_FROZEN
+
+
+@pytest.mark.parametrize(
+    "point",
+    [
+        "after_result_atomic_publish",
+        "after_result_digest_persisted_before_finalized",
+    ],
+)
+def test_recovery_finalizes_a_durable_result_without_raw_reread(
+    protocol: dict, tmp_path: Path, monkeypatch, point: str
+) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+
+    def crash(actual: str) -> None:
+        if actual == point:
+            raise RuntimeError(f"CRASH:{point}")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    with pytest.raises(RuntimeError, match=f"CRASH:{point}"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
+        )
+    assert (directory / EVIDENCE_FILENAME).exists()
+    assert (directory / RESULT_FILENAME).exists()
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_EXECUTION_STARTED
+    monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
+    monkeypatch.setattr(
+        v2,
+        "verify_collected_file_digests",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("recovery reopened raw bytes")
+        ),
+    )
+    recovered = recover_sealed_execution(
+        REPOSITORY_ROOT, execution_root=directory
+    )
+    assert recovered["operational_state"] == v2.RECOVERY_FINALIZED_EXISTING_RESULT
+    assert recovered["raw_reopen_permitted"] is False
+    assert recovered["result"]["final_verdict"] in VERDICT_VOCABULARY
+    assert sealed_execution_status(
+        directory, validator_definition_sha256=digest
+    ) == STATE_FINALIZED
+
+
+def test_runtime_error_is_operational_not_scientific(
+    protocol: dict, tmp_path: Path
+) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+
+    def broken_builder(collection):
+        raise RuntimeError("synthetic builder failure")
+
+    with pytest.raises(RuntimeError, match="synthetic builder failure"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=broken_builder,
+        )
+    record = read_execution_authorization(
+        directory, validator_definition_sha256=digest
+    )
+    assert record["status"] == STATE_EXECUTION_STARTED
+    assert record["execution_result_digest"] is None
+    recovered = recover_sealed_execution(
+        REPOSITORY_ROOT, execution_root=directory
+    )
+    assert recovered["scientific_verdict"] is None
+
+
+def test_crash_after_finalized_is_read_only(
+    protocol: dict, tmp_path: Path, monkeypatch
+) -> None:
+    directory, _, manifest = _collected(tmp_path)
+
+    def crash(actual: str) -> None:
+        if actual == "after_finalized":
+            raise RuntimeError("CRASH:after_finalized")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    with pytest.raises(RuntimeError, match="after_finalized"):
+        execute_sealed_validation(
+            directory,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
+        )
+    monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
+    recovered = recover_sealed_execution(
+        REPOSITORY_ROOT, execution_root=directory
+    )
+    assert recovered["operational_state"] == v2.RECOVERY_ALREADY_FINALIZED
+
+
+def test_manifest_publication_crash_can_only_resume_the_same_freeze(
+    tmp_path: Path, monkeypatch
+) -> None:
+    directory, digest, manifest = _prepared(tmp_path)
+
+    def crash(actual: str) -> None:
+        if actual == "after_manifest_persisted_before_collected_frozen":
+            raise RuntimeError("manifest publication crash")
+
+    monkeypatch.setattr(v2, "_crash_injection_point", crash)
+    with pytest.raises(RuntimeError, match="publication crash"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+        )
+    with pytest.raises(v2.SealedExecutionIntegrityError, match="PREPARED"):
+        read_execution_authorization(directory, validator_definition_sha256=digest)
+    changed = json.loads(json.dumps(manifest))
+    changed["files"][0]["source_provenance"]["request_count"] += 1
+    changed["manifest_sha256"] = manifest_digest(changed)
+    monkeypatch.setattr(v2, "_crash_injection_point", lambda _: None)
+    with pytest.raises(v2.SealedExecutionIntegrityError, match="orphan manifest differs"):
+        record_frozen_collection_manifest(
+            REPOSITORY_ROOT, authorization_dir=directory, manifest=changed
+        )
+    frozen = record_frozen_collection_manifest(
+        REPOSITORY_ROOT, authorization_dir=directory, manifest=manifest
+    )
+    assert frozen["status"] == STATE_COLLECTED_FROZEN
+
+
+def test_finalized_result_restores_across_restart(
+    protocol: dict, tmp_path: Path
+) -> None:
+    directory, _, manifest = _collected(tmp_path)
+    result = execute_sealed_validation(
+        directory,
+        repository_root=REPOSITORY_ROOT,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
+    )
+    assert read_finalized_result(
+        REPOSITORY_ROOT, execution_root=directory
+    ) == result
+
+
+def test_redigested_result_semantic_tamper_refuses_restore(
+    protocol: dict, tmp_path: Path
+) -> None:
+    directory, digest, manifest = _collected(tmp_path)
+    execute_sealed_validation(
+        directory,
+        repository_root=REPOSITORY_ROOT,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
+    )
+    result_path = directory / RESULT_FILENAME
+    result = json.loads(result_path.read_text())
+    result["final_verdict"] = (
+        VERDICT_FAIL if result["final_verdict"] != VERDICT_FAIL else VERDICT_PASS
+    )
+    result["result_sha256"] = v2._digest(
+        {key: value for key, value in result.items() if key != "result_sha256"}
+    )
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    authorization_path = directory / AUTHORIZATION_FILENAME
+    authorization = json.loads(authorization_path.read_text())
+    authorization["execution_result_digest"] = result["result_sha256"]
+    authorization["authorization_record_sha256"] = v2._authorization_digest(
+        authorization
+    )
+    authorization_path.write_text(
+        json.dumps(authorization, indent=2, sort_keys=True) + "\n"
+    )
+    with pytest.raises(v2.SealedExecutionIntegrityError, match="do not reproduce"):
+        read_finalized_result(REPOSITORY_ROOT, execution_root=directory)
 
 
 def test_the_terminal_outcomes_are_documented(contract: dict) -> None:
@@ -1928,7 +2723,7 @@ def test_provider_and_dictionary_order_cannot_change_a_sealed_result(
     """The same frozen inputs give a byte-identical semantic result."""
 
     def _run(directory: str, reorder: bool) -> dict:
-        auth, _, manifest = _started(tmp_path / directory)
+        auth, _, manifest = _collected(tmp_path / directory)
         bundle = _sealed_bundle(protocol, manifest)
         if reorder:
             bundle["gate_pair_measurements"] = list(
@@ -1943,13 +2738,26 @@ def test_provider_and_dictionary_order_cannot_change_a_sealed_result(
             )
             bundle = dict(reversed(list(bundle.items())))
         return execute_sealed_validation(
-            bundle, repository_root=REPOSITORY_ROOT, authorization_dir=auth
+            auth,
+            repository_root=REPOSITORY_ROOT,
+            evidence_builder=_builder(bundle),
         )
 
     straight = _run("first", False)
     shuffled = _run("second", True)
-    assert straight["result_sha256"] == shuffled["result_sha256"]
-    assert straight == shuffled
+    for field in (
+        "final_verdict",
+        "primary_reason",
+        "all_reasons",
+        "hard_requirement_outcomes",
+        "seven_hard_requirements",
+        "candidate_pair_certifications",
+        "transfer_guard_pair_certifications",
+        "soft_gate",
+        "diagnostics",
+        "inherited_gate_outcomes",
+    ):
+        assert straight[field] == shuffled[field]
 
 
 def test_the_written_artifacts_are_deterministic_ascii(tmp_path: Path) -> None:
@@ -1983,6 +2791,10 @@ def test_the_authorization_record_carries_no_wall_clock(tmp_path: Path) -> None:
     second = prepare_sealed_execution(
         REPOSITORY_ROOT, authorization_dir=tmp_path / "b"
     )
+    for record in (first, second):
+        record.pop("authorization_record_sha256")
+        record.pop("execution_id")
+        record.pop("execution_root_sha256")
     assert first == second
 
 
@@ -2041,11 +2853,11 @@ def test_the_whole_execution_surface_reads_no_market_data(
         REPOSITORY_ROOT, REPOSITORY_ROOT / SEALED_EXECUTOR_OUTPUT_NAMESPACE
     )
     _v2_validate(_bundle(protocol))
-    directory, digest, manifest = _started(tmp_path)
+    directory, digest, manifest = _collected(tmp_path)
     execute_sealed_validation(
-        _sealed_bundle(protocol, manifest),
+        directory,
         repository_root=REPOSITORY_ROOT,
-        authorization_dir=directory,
+        evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
     )
     monkeypatch.undo()
 
@@ -2071,11 +2883,11 @@ def test_the_collector_is_never_called(protocol: dict, tmp_path: Path) -> None:
     try:
         validator_definition(REPOSITORY_ROOT)
         _v2_validate(_bundle(protocol))
-        directory, _, manifest = _started(tmp_path)
+        directory, _, manifest = _collected(tmp_path)
         execute_sealed_validation(
-            _sealed_bundle(protocol, manifest),
+            directory,
             repository_root=REPOSITORY_ROOT,
-            authorization_dir=directory,
+            evidence_builder=_builder(_sealed_bundle(protocol, manifest)),
         )
     finally:
         ohlcv.collect_btc_ohlcv = original

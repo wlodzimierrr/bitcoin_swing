@@ -19,6 +19,9 @@
     "validator_version"
   ],
   "delta_id": "SEALED_EXECUTION_AUTHORIZATION_ONLY_V1",
+  "failed_executor_implementation_commit": "568ebb8ca8ead0025fb30d5b15e576797d17dffb",
+  "failure_review_commit": "daa664753ed3a6e282fa53577be9f680bfa7c8fd",
+  "failure_review_result": "FAIL_SEALED_EXECUTOR_INVALID",
   "identical_fields": [
     "binding",
     "certification_rule",
@@ -68,9 +71,10 @@
     "verdict_vocabulary"
   ],
   "removed_fields": [],
-  "semantic_delta_sha256": "06da15a43aae9887436418ffe235490ac148e76d58583bbd4ce6e2206002d05c",
+  "semantic_delta_sha256": "d4637097dc667ed8b89c134194d440745a910d243397893d009fb91052fdc229",
   "statement": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2 = the certified BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1 semantics, unchanged, plus sealed_execution_authorized false -> true, plus the execution-control artifacts that make that authorization one-shot. This contract is not written independently: it is derived from the parent contract at build time and the computed diff is compared against the declared delta before anything is hashed, so any other difference is REFUSE_TO_FREEZE_EXECUTING_VALIDATOR.",
-  "validator_definition_sha256": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
+  "supersedes_failed_executor_hash": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
+  "validator_definition_sha256": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
   "validator_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2",
   "verdict_affecting_delta": {
     "field": "sealed_sample.sealed_execution_authorized",

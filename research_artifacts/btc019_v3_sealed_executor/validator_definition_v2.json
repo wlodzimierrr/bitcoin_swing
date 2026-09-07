@@ -523,8 +523,10 @@
     "bitstamp_vs_coinbase"
   ],
   "sealed_execution_control": {
+    "atomic_persistence_rule": "Authority, manifest, evidence and result JSON are written to a temporary regular file in the destination directory, fsynced, atomically published with os.replace and followed by a directory fsync. Evidence and result targets are immutable and refuse replacement. Durability assumes POSIX local-filesystem fsync and atomic same-directory rename semantics.",
     "authority_rule": "Before any executing contract is built, the frozen BTC_REFERENCE_COMPOSITE_V3 definition must rebuild and restore to 4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a, and the certified BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1 contract must rebuild to 8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7. Either failing is REFUSE_TO_PREPARE_SEALED_EXECUTION: there is no fallback by version name, no rebuild of the parent under changed semantics, and no 'latest validator'.",
     "authority_rule_id": "REFUSE_UNLESS_V3_AND_V1_VALIDATOR_HASHES_BOTH_REPRODUCE_V1",
+    "authorization_filename": "sealed_execution_authorization.json",
     "authorization_record_required_keys": [
       "allowed_provider_ids",
       "authorization_record_sha256",
@@ -536,6 +538,7 @@
       "collection_plan",
       "evidence_bundle_digest",
       "execution_id",
+      "execution_root_sha256",
       "execution_result_digest",
       "one_shot_execution",
       "parent_protocol_definition_sha256",
@@ -553,11 +556,185 @@
       "validator_version"
     ],
     "authorization_record_schema_version": "BTC019_V3_SEALED_EXECUTION_AUTHORIZATION_V1",
-    "authorization_rule": "sealed_execution_authorized is true in this contract and false in the certified parent: that flag is the whole verdict-affecting delta. Authorization is necessary and never sufficient. A sealed run additionally requires an explicit execute_sealed_validation call, the frozen V3 hash, this contract's own hash, the certified parent hash, the exact sealed window, a durable authorization record whose derived execution id matches its own authority, that record in EXECUTION_STARTED, a frozen collection manifest whose digest the record already carries, and an evidence bundle whose provenance binds that manifest. Import, contract construction, definition hashing, artifact verification, preparation and the whole test suite collect nothing and open nothing.",
+    "authorization_rule": "sealed_execution_authorized is true in this contract and false in the certified parent: that flag is the whole verdict-affecting delta. Authorization is necessary and never sufficient. The live call loads only the canonical persisted authority below its path-bound execution root, verifies its exact history, earned fields and immutable artifacts while holding an exclusive POSIX file lock, atomically persists COLLECTED_FROZEN -> EXECUTION_STARTED, then and only then rereads the manifest-bound raw bytes and invokes the frozen evidence-builder boundary. No caller-supplied mapping or prebuilt evidence can authorize sealed mode.",
+    "crash_injection_points": [
+      "after_prepared_write",
+      "after_manifest_persisted_before_collected_frozen",
+      "after_collected_frozen",
+      "after_execution_started_before_raw_read",
+      "after_first_raw_file_read",
+      "after_evidence_persisted",
+      "after_result_temp_write",
+      "after_result_atomic_publish",
+      "after_result_digest_persisted_before_finalized",
+      "after_finalized"
+    ],
     "durable_lock": true,
+    "evidence_artifact_fields": [
+      "bound_protocol_definition_sha256",
+      "candidate_method_version",
+      "candidate_series_id",
+      "evidence_artifact_sha256",
+      "evidence_builder_version",
+      "evidence_bundle",
+      "evidence_bundle_digest",
+      "execution_id",
+      "parent_validator_definition_sha256",
+      "schema_version",
+      "sealed_sample_manifest_sha256",
+      "validator_definition_sha256"
+    ],
+    "evidence_artifact_filename": "sealed_evidence_bundle.json",
+    "evidence_artifact_schema_version": "BTC019_V3_SEALED_EVIDENCE_ARTIFACT_V1",
+    "evidence_builder_version": "BTC019_V3_SEALED_EVIDENCE_BUILDER_V1",
+    "evidence_construction_rule": "The public in-memory validator is DRY_RUN_SYNTHETIC only. Live execute accepts an evidence-builder callable, never a prebuilt evidence mapping; the executor invokes it exactly once with the immutable verified raw collection after the one-shot transition. Its output must name the hash-bound builder version and is persisted before validation/result finalization.",
+    "exact_state_artifact_matrix": {
+      "COLLECTED_FROZEN": {
+        "evidence": "ABSENT",
+        "manifest": "REQUIRED",
+        "result": "ABSENT"
+      },
+      "EXECUTION_STARTED": {
+        "evidence": "OPTIONAL_AFTER_PUBLICATION",
+        "manifest": "REQUIRED",
+        "result": "OPTIONAL_AFTER_PUBLICATION_REQUIRES_EVIDENCE"
+      },
+      "FINALIZED": {
+        "evidence": "REQUIRED",
+        "manifest": "REQUIRED",
+        "result": "REQUIRED"
+      },
+      "PREPARED": {
+        "evidence": "ABSENT",
+        "manifest": "ABSENT",
+        "result": "ABSENT"
+      }
+    },
+    "exact_state_earned_fields": {
+      "COLLECTED_FROZEN": {
+        "collection_manifest_digest": "REQUIRED",
+        "evidence_bundle_digest": "ABSENT",
+        "execution_result_digest": "ABSENT"
+      },
+      "EXECUTION_STARTED": {
+        "collection_manifest_digest": "REQUIRED",
+        "evidence_bundle_digest": "OPTIONAL_AFTER_DURABLE_PUBLICATION",
+        "execution_result_digest": "OPTIONAL_AFTER_DURABLE_PUBLICATION"
+      },
+      "FINALIZED": {
+        "collection_manifest_digest": "REQUIRED",
+        "evidence_bundle_digest": "REQUIRED",
+        "execution_result_digest": "REQUIRED"
+      },
+      "PREPARED": {
+        "collection_manifest_digest": "ABSENT",
+        "evidence_bundle_digest": "ABSENT",
+        "execution_result_digest": "ABSENT"
+      }
+    },
+    "exact_state_histories": {
+      "COLLECTED_FROZEN": [
+        {
+          "from": "NOT_PREPARED",
+          "step": "prepare_sealed_execution",
+          "to": "PREPARED"
+        },
+        {
+          "from": "PREPARED",
+          "step": "record_frozen_collection_manifest",
+          "to": "COLLECTED_FROZEN"
+        }
+      ],
+      "EXECUTION_STARTED": [
+        {
+          "from": "NOT_PREPARED",
+          "step": "prepare_sealed_execution",
+          "to": "PREPARED"
+        },
+        {
+          "from": "PREPARED",
+          "step": "record_frozen_collection_manifest",
+          "to": "COLLECTED_FROZEN"
+        },
+        {
+          "from": "COLLECTED_FROZEN",
+          "step": "begin_sealed_execution",
+          "to": "EXECUTION_STARTED"
+        }
+      ],
+      "FINALIZED": [
+        {
+          "from": "NOT_PREPARED",
+          "step": "prepare_sealed_execution",
+          "to": "PREPARED"
+        },
+        {
+          "from": "PREPARED",
+          "step": "record_frozen_collection_manifest",
+          "to": "COLLECTED_FROZEN"
+        },
+        {
+          "from": "COLLECTED_FROZEN",
+          "step": "begin_sealed_execution",
+          "to": "EXECUTION_STARTED"
+        },
+        {
+          "from": "EXECUTION_STARTED",
+          "step": "finalize_sealed_execution",
+          "to": "FINALIZED"
+        }
+      ],
+      "NOT_PREPARED": [],
+      "PREPARED": [
+        {
+          "from": "NOT_PREPARED",
+          "step": "prepare_sealed_execution",
+          "to": "PREPARED"
+        }
+      ]
+    },
+    "exclusive_locking_rule": "Every prepare, freeze, begin, execute, recover and finalized-result read takes fcntl.flock(LOCK_EX) on the fixed sealed_executor.lock regular file. The lock covers the canonical authority read, validation and state write; execute retains it through evidence/result publication and FINALIZED.",
     "execution_id_prefix": "BTC019_V3_SEALED_EXECUTION_",
-    "execution_id_rule": "The execution id is derived, never chosen: it is the first 32 hexadecimal characters of the SHA-256 of the canonical authority -- the frozen V3 hash, this executing validator's hash, the certified parent hash, the sealed window, the candidate identity and the allowed providers. The same authority always derives the same id, so a second authorization for the same authority is detected rather than issued a fresh identity, and any tamper of an authority field makes the record's own id disagree.",
-    "execution_state_rule": "Exactly five states, exactly four legal transitions, strictly forward. A transition whose source is not the record's current durable state, a repeat of a state already reached, and any move backwards are all refused. Only record_frozen_collection_manifest may write a market-derived field, and only after the raw bytes are already frozen and hashed.",
+    "execution_id_rule": "The execution id is derived, never chosen: it is the first 32 hexadecimal characters of the SHA-256 of the canonical authority -- the frozen V3 hash, this executing validator's hash, the certified parent hash, the sealed window, the candidate identity, the allowed providers and the SHA-256 of the canonical resolved execution-root path. The same authority at the same root always derives the same id; copying a record to another root or tampering an authority field makes the id disagree.",
+    "execution_root_policy": "The caller selects one directory, not an authorization file. Preparation canonicalizes its real path and binds that path's SHA-256 into the authority and execution id. Every artifact then has one fixed filename below that root; moving or copying the authority to another root refuses. Raw provider files have fixed relative paths below raw_collection and every symlink, traversal, non-regular file, duplicate inode and unexpected directory entry is refused.",
+    "execution_started_allowed_checkpoints": [
+      {
+        "checkpoint": "AUTHORITY_CONSUMED",
+        "evidence_artifact": false,
+        "evidence_digest": false,
+        "result_artifact": false,
+        "result_digest": false
+      },
+      {
+        "checkpoint": "EVIDENCE_PUBLISHED",
+        "evidence_artifact": true,
+        "evidence_digest": false,
+        "result_artifact": false,
+        "result_digest": false
+      },
+      {
+        "checkpoint": "EVIDENCE_CHECKPOINTED",
+        "evidence_artifact": true,
+        "evidence_digest": true,
+        "result_artifact": false,
+        "result_digest": false
+      },
+      {
+        "checkpoint": "RESULT_PUBLISHED",
+        "evidence_artifact": true,
+        "evidence_digest": true,
+        "result_artifact": true,
+        "result_digest": false
+      },
+      {
+        "checkpoint": "RESULT_CHECKPOINTED",
+        "evidence_artifact": true,
+        "evidence_digest": true,
+        "result_artifact": true,
+        "result_digest": true
+      }
+    ],
+    "execution_state_rule": "Exactly five states and the exact history prefix for the current state are required. Missing, extra, duplicate, reordered, backward and skipped transitions are refused even when the record is self-rehashed. COLLECTED_FROZEN -> EXECUTION_STARTED permanently consumes the authority; normal execution can neither start nor resume from EXECUTION_STARTED.",
     "execution_states": [
       "NOT_PREPARED",
       "PREPARED",
@@ -565,6 +742,9 @@
       "EXECUTION_STARTED",
       "FINALIZED"
     ],
+    "failed_executor_implementation_commit": "568ebb8ca8ead0025fb30d5b15e576797d17dffb",
+    "failure_review_commit": "daa664753ed3a6e282fa53577be9f680bfa7c8fd",
+    "failure_review_result": "FAIL_SEALED_EXECUTOR_INVALID",
     "legal_transitions": [
       {
         "from": "NOT_PREPARED",
@@ -583,20 +763,27 @@
       },
       {
         "from": "EXECUTION_STARTED",
-        "step": "execute_sealed_validation",
+        "step": "finalize_sealed_execution",
         "to": "FINALIZED"
       }
     ],
+    "lock_filename": "sealed_executor.lock",
     "market_derived_fields_null_until_earned": [
       "collection_manifest_digest",
       "evidence_bundle_digest",
       "execution_result_digest"
     ],
     "no_result_dependent_behaviour": "Nothing in preparation, collection or execution branches on a sealed value. There is no rule that widens the window when coverage is low, adds data when the guard is undefined, or extends the sample when the candidate nearly passes. The window, the provider set, the pair universes, every threshold and the composition are all fixed before the first byte is collected, and the execution lock makes a second attempt impossible.",
-    "one_shot_rule": "The sealed sample is opened exactly once. A second sealed result for the same frozen V3 definition hash, the same executing validator hash and the same sealed sample identity is REFUSE, whether it is requested in the same process or after a restart. The execution state is durable, never process-local: it is read from the authorization record before every transition, no transition may move backwards or repeat, and FINALIZED is terminal. A finalized run can be re-read but never re-run, and its result digest is immutable.",
+    "normal_execute_allowed_from": "COLLECTED_FROZEN",
+    "normal_execute_forbidden_from": [
+      "EXECUTION_STARTED",
+      "FINALIZED"
+    ],
+    "one_shot_rule": "The sealed sample is opened exactly once. A second sealed result for the same frozen V3 definition hash, the same executing validator hash and the same sealed sample identity is REFUSE, whether it is requested in the same process or after a restart. EXECUTION_STARTED consumes the authority permanently, including when execution crashes before the first raw read or before FINALIZED. Normal execution never accepts EXECUTION_STARTED. Recovery may verify already-published evidence and result artifacts and finalize them, but it never opens raw files or recomputes evidence.",
     "one_shot_rule_id": "BTC019_V3_SEALED_SAMPLE_OPENED_EXACTLY_ONCE_V1",
     "post_review_immutability": "Once this contract passes its own independent xHigh review it is frozen: no edit, no rebuild under changed semantics and no new hash before the sealed execution. The one permitted run must bind exactly the reviewed validator_definition_sha256.",
     "preparation_reads_no_sealed_bytes": true,
+    "recovery_rule": "Normal execute accepts COLLECTED_FROZEN only. EXECUTION_STARTED is permanently consumed: recovery never reopens raw files and never invokes the builder. If no result exists it reports EXECUTION_INTERRUPTED_NO_RESULT; if immutable evidence and result exist it verifies their full cross-bindings and may complete FINALIZED without recomputing evidence.",
     "refusal_conditions": [
       "a finalized execution already exists for this authority",
       "an execution with this authority is already started",
@@ -608,9 +795,15 @@
       "the sealed window differs from the frozen window",
       "no authorization record exists",
       "the authorization record's own digest does not reproduce",
+      "the execution root differs from the root bound at preparation",
+      "the state history is not the exact legal prefix for the durable state",
+      "a state carries an impossible future field or omits an earned field",
+      "a required canonical manifest, evidence or result artifact is absent",
       "sealed_execution_authorized is false",
-      "the evidence bundle's provenance does not bind the frozen collection manifest"
+      "the persisted evidence bundle's provenance does not bind the frozen manifest"
     ],
+    "result_filename": "sealed_validation_result.json",
+    "result_restore_rule": "A finalized restore verifies exact schemas and self-digests, execution id, V3/V2/V1 hashes, manifest and evidence digests, candidate identity, verdict vocabulary, all hard structures and the authorization result digest. It replays certified validation over persisted evidence only to cross-check the result; it never opens raw data.",
     "result_schema_fields": [
       "all_reasons",
       "bound_protocol_definition_sha256",
@@ -638,6 +831,8 @@
       "validator_definition_sha256"
     ],
     "result_schema_version": "BTC019_V3_SEALED_VALIDATION_RESULT_V1",
+    "started_consumes_authority_permanently": true,
+    "supersedes_failed_executor_hash": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
     "terminal_execution_states": [
       "FINALIZED"
     ],
@@ -667,11 +862,12 @@
     "opening_authorized": true,
     "reuse_after_finalized_run": "REFUSE",
     "sealed_execution_authorized": true,
-    "sealed_execution_rule": "sealed_execution_authorized is true in this contract and false in the certified parent: that flag is the whole verdict-affecting delta. Authorization is necessary and never sufficient. A sealed run additionally requires an explicit execute_sealed_validation call, the frozen V3 hash, this contract's own hash, the certified parent hash, the exact sealed window, a durable authorization record whose derived execution id matches its own authority, that record in EXECUTION_STARTED, a frozen collection manifest whose digest the record already carries, and an evidence bundle whose provenance binds that manifest. Import, contract construction, definition hashing, artifact verification, preparation and the whole test suite collect nothing and open nothing.",
+    "sealed_execution_rule": "sealed_execution_authorized is true in this contract and false in the certified parent: that flag is the whole verdict-affecting delta. Authorization is necessary and never sufficient. The live call loads only the canonical persisted authority below its path-bound execution root, verifies its exact history, earned fields and immutable artifacts while holding an exclusive POSIX file lock, atomically persists COLLECTED_FROZEN -> EXECUTION_STARTED, then and only then rereads the manifest-bound raw bytes and invokes the frozen evidence-builder boundary. No caller-supplied mapping or prebuilt evidence can authorize sealed mode.",
     "start": "2015-07-20T21:00:00+00:00"
   },
   "sealed_sample_contract": {
     "bar_interval": "1h",
+    "canonical_manifest_filename": "sealed_sample_manifest.json",
     "collection_manifest_file_required_keys": [
       "byte_count",
       "collection_source_identifier",
@@ -708,30 +904,47 @@
     "collection_plan": [
       {
         "bar_interval": "1h",
+        "endpoint": "https://api-pub.bitfinex.com/v2/candles/trade:1h:tBTCUSD/hist",
         "exchange": "bitfinex",
         "instrument_symbol": "BTC/USD",
         "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+        "price_source_roles": [
+          "validation_provider"
+        ],
         "provider_id": "bitfinex",
+        "raw_relative_path": "raw_collection/bitfinex_btc_usd_1h.jsonl.gz",
         "timezone": "UTC",
         "window_end": "2019-11-30T23:00:00+00:00",
         "window_start": "2015-07-20T21:00:00+00:00"
       },
       {
         "bar_interval": "1h",
+        "endpoint": "https://www.bitstamp.net/api/v2/ohlc/btcusd/",
         "exchange": "bitstamp",
         "instrument_symbol": "BTC/USD",
         "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+        "price_source_roles": [
+          "reference_price",
+          "primary_raw_ohlcv",
+          "validation_provider"
+        ],
         "provider_id": "bitstamp",
+        "raw_relative_path": "raw_collection/bitstamp_btc_usd_1h.jsonl.gz",
         "timezone": "UTC",
         "window_end": "2019-11-30T23:00:00+00:00",
         "window_start": "2015-07-20T21:00:00+00:00"
       },
       {
         "bar_interval": "1h",
+        "endpoint": "https://api.exchange.coinbase.com/products/BTC-USD/candles",
         "exchange": "coinbase",
         "instrument_symbol": "BTC-USD",
         "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+        "price_source_roles": [
+          "validation_provider"
+        ],
         "provider_id": "coinbase",
+        "raw_relative_path": "raw_collection/coinbase_btc_usd_1h.jsonl.gz",
         "timezone": "UTC",
         "window_end": "2019-11-30T23:00:00+00:00",
         "window_start": "2015-07-20T21:00:00+00:00"
@@ -806,6 +1019,31 @@
       "bitstamp",
       "coinbase"
     ],
+    "raw_artifact_schema_version": "BTC019_RAW_OHLCV_V1",
+    "raw_collection_directory": "raw_collection",
+    "raw_file_paths": {
+      "bitfinex": "raw_collection/bitfinex_btc_usd_1h.jsonl.gz",
+      "bitstamp": "raw_collection/bitstamp_btc_usd_1h.jsonl.gz",
+      "coinbase": "raw_collection/coinbase_btc_usd_1h.jsonl.gz"
+    },
+    "raw_record_required_keys": [
+      "close",
+      "exchange",
+      "fallback_used",
+      "high",
+      "ingested_at",
+      "low",
+      "open",
+      "price_source_policy_version",
+      "price_source_roles",
+      "provider",
+      "schema_version",
+      "symbol",
+      "timeframe",
+      "timestamp",
+      "volume"
+    ],
+    "raw_revalidation_rule": "Freezing and execution both securely reopen every fixed provider file, recompute SHA-256 and byte count, parse the gzip JSONL owner schema, and recompute row count, first/last timestamp, missing intervals and duplicate intervals. Execute does this only after EXECUTION_STARTED is durable and before invoking the evidence builder.",
     "timezone": "UTC",
     "window_end": "2019-11-30T23:00:00+00:00",
     "window_rule": "The sealed sample is exactly 2015-07-20T21:00:00+00:00..2019-11-30T23:00:00+00:00 on 1h bars in UTC, from exactly the PRICE_SOURCE_POLICY_V1 required validation providers ['bitfinex', 'bitstamp', 'coinbase']. It may be neither broadened nor shortened, and no other period may be substituted. A collection manifest, an authorization record or an evidence bundle naming any other window, interval, timezone or provider set is REFUSE_TO_RUN.",
@@ -1112,7 +1350,7 @@
     "soft_gates_can_regain_a_hard_veto": false,
     "total_gate_count": 33
   },
-  "validator_definition_sha256": "e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784",
+  "validator_definition_sha256": "49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729",
   "validator_schema_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_DEFINITION_V2",
   "validator_version": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2",
   "verdict_precedence": {
