@@ -2259,6 +2259,57 @@ Do not overwrite raw history when the preferred provider changes.
     `49abd689...99729`. The actual sealed sample remains uncollected and unopened,
     the candidate remains unevaluated, and neither sealed execution nor another
     evidence round is authorised.
+  - **Repeat formal independent xHigh review: `FAIL — SEALED EXECUTOR INVALID`.**
+    Execution classification: `SEALED_EXECUTOR_REQUIRES_FIX`. All three authority
+    hashes independently recompute: V3 `4232e886...bf71a`, certified V1
+    `8e6254e0...c7ffe7` and corrected V2 `49abd689...99729`. V3 and V1 remain
+    unchanged. The complete 648-state composition, 27 real-shaped bundles, 20
+    malformed bundles, eight Wilson boundaries, 33 inherited gates and seven
+    hard requirements retain exact V1/V2 scientific parity. Certified V1
+    semantics are not reopened. The exact state histories and five reachable
+    started-state checkpoints, cross-process races, atomic/fsynced publication,
+    permanent authority consumption, no-raw/no-builder recovery and finalized
+    V1 replay all pass. The failure is confined to two remaining live provenance
+    defects.
+  - **Repeat-review finding (P1): the live evidence builder is an unrestricted
+    runtime dependency.** `execute_sealed_validation` accepts any callable and
+    passes it `VerifiedRawCollection`; `_bind_input_provenance` checks only that
+    the returned mapping *claims* builder version
+    `BTC019_V3_SEALED_EVIDENCE_BUILDER_V1`, the frozen manifest digest, candidate
+    identity and provider list. No module/function owner or implementation hash
+    exists elsewhere in the repository or in the V2 contract. The callable can
+    ignore every verified byte and return unrelated prebuilt evidence. A
+    synthetic run over three two-row raw files returned `PASS` from such a bundle
+    while declaring a 40-event gate denominator. This directly violates the
+    required raw-to-evidence provenance boundary and can change the one permitted
+    scientific verdict.
+  - **Repeat-review finding (P1): the manifest/raw binding has a post-start TOCTOU
+    gap.** The executor validates the canonical manifest during the initial
+    authoritative state read, persists `EXECUTION_STARTED`, then reads the
+    canonical manifest again and passes that second mapping directly to
+    `verify_collected_file_digests` without revalidating its schema, self-digest
+    or equality to the authority-bound manifest digest. At the deterministic
+    `after_execution_started_before_raw_read` boundary, a synthetic test replaced
+    one raw file and its manifest row while retaining the old top-level manifest
+    digest. The changed bytes passed the row-level digest/metadata checks, reached
+    the builder and produced `PASS` under the old manifest identity. The bytes
+    used for evidence are therefore not guaranteed to be the bytes bound at
+    collection freeze.
+  - **Repeat-review disposition.** No review fix was made because the repository
+    has no trusted live raw-to-evidence builder owner to bind; defining that
+    complete construction and its manual-review boundary is not a uniquely
+    correct local review edit. The smallest executor-only correction is to
+    remove the caller-supplied live callable, implement a fixed builder that
+    deterministically consumes `VerifiedRawCollection`, and bind its exact
+    owner/function identity plus definition or implementation hash into the V2
+    contract, evidence artifact and runtime verification. Live execution must
+    also validate the exact manifest snapshot used for raw reads against the
+    authority digest after `EXECUTION_STARTED`, or carry the already validated
+    immutable snapshot through that transition, before opening any raw file.
+    The correction must produce another V2 hash and pass another formal xHigh
+    review. No research, threshold, V3 or V1 semantic change is authorised.
+    The actual sealed sample remains uncollected and unopened, the candidate
+    remains unevaluated, and sealed collection/execution remain refused.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

@@ -16,12 +16,14 @@
   implementation ticket except BTC-019 is now DONE. BTC-019's successor
   reference protocol is frozen, its independent review has passed, the
   hash-bound validator is built and has passed its own independent review. The
-  failed one-shot sealed executor has been corrected at a new V2 hash and is
-  awaiting repeat formal xHigh review before any sealed collection or execution
+  corrected one-shot sealed executor failed its repeat formal xHigh review on
+  two remaining provenance defects; no sealed collection or execution is
+  authorized
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** Repeat the formal xHigh review of the
-  corrected one-shot V3 sealed executor; certified V1 verdict semantics and the
-  frozen V3 protocol remain unchanged
+- **Current implementation frontier:** Correct the live evidence-builder
+  boundary and post-start manifest revalidation in the one-shot V3 sealed
+  executor, issue a new V2 hash, then repeat formal xHigh review; certified V1
+  verdict semantics and the frozen V3 protocol remain unchanged
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
@@ -31,20 +33,22 @@
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** Repeat
-  `FORMAL_XHIGH_REVIEW_ONE_SHOT_V3_SEALED_EXECUTOR` against corrected hash
-  `49abd689...99729`. The failed `e21e6ad8...9d784` contract remains historical
-  and uncertified. BTC-019 is the only remaining Phase-1 work
+- **Next dependency-satisfied ticket:** Correct
+  `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` so live evidence construction is a
+  fixed hash-bound implementation and the post-start canonical manifest is
+  revalidated against the frozen authority before raw reads. Hash
+  `49abd689...99729`, like historical `e21e6ad8...9d784`, is not certified.
+  BTC-019 is the only remaining Phase-1 work
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 4382 passed with Python 3.12.14 on 2026-09-07
 - **Last relevant implementation/review commit:** correction implementation
-  commit `9ca2b5bfdb129441d0b6857b496b526f7d5685df` supersedes the failed executor
-  hash with `49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729`.
-  The prior review commit `daa664753ed3a6e282fa53577be9f680bfa7c8fd`
-  remains the failure record for historical hash `e21e6ad8...9d784`; repeat
-  review has not yet occurred. The frozen V3 and certified V1 hashes remain
-  valid and certified V1 semantics are not reopened. The 2015-2019 sample stays
-  uncollected and unopened
+  commit `9ca2b5bfdb129441d0b6857b496b526f7d5685df` produced
+  `49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729`,
+  which the repeat formal xHigh review now rejects. The prior review commit
+  `daa664753ed3a6e282fa53577be9f680bfa7c8fd` remains the failure record for
+  historical hash `e21e6ad8...9d784`. The frozen V3 and certified V1 hashes
+  remain valid and certified V1 semantics are not reopened. The 2015-2019
+  sample stays uncollected and unopened
 
 ## Price-Reference State
 
@@ -68,9 +72,9 @@ V3 validator independent review = PASS_WITH_NON_BLOCKING_FINDINGS
 V3 validator definition hash
   = 8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7
 one-shot V3 sealed executor
-  = CORRECTED_SEALED_EXECUTOR_READY_FOR_REPEAT_XHIGH_REVIEW
+  = SEALED_EXECUTOR_REQUIRES_FIX
 V3 sealed-executor independent review
-  = REPEAT_REVIEW_REQUIRED_AFTER_CORRECTION
+  = FAIL_SEALED_EXECUTOR_INVALID
 V3 executing validator definition hash
   = 49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729
 V3 sealed execution state = NOT_PREPARED
@@ -421,6 +425,45 @@ lineage. 236 focused tests, 950 focused-plus-relevant regressions and the full
 `CORRECTED_SEALED_EXECUTOR_READY_FOR_REPEAT_XHIGH_REVIEW`, not certification:
 sealed collection and opening remain refused until the repeat review passes.
 
+That repeat independent xHigh review is now complete and the corrected hash
+also fails, with classification `SEALED_EXECUTOR_REQUIRES_FIX`. V3, certified
+V1 and corrected V2 independently recompute to `4232e886...bf71a`,
+`8e6254e0...c7ffe7` and `49abd689...99729`; V3 and V1 are unchanged, and the
+648-state, 27-bundle, 20-malformed-bundle, eight-Wilson-boundary, 33-gate and
+seven-hard-requirement demonstrations retain exact V1/V2 scientific parity.
+The state machine, exact artifact checkpoints, cross-process lock, atomic
+persistence, no-retry rule, crash recovery and result replay also pass. The
+failure is confined to two live provenance boundaries.
+
+First, `execute_sealed_validation` accepts an arbitrary caller-supplied Python
+callable as `evidence_builder`. The callable may ignore the verified raw
+collection and return a prebuilt internally valid bundle; the executor trusts
+the bundle's claim that its builder version is
+`BTC019_V3_SEALED_EVIDENCE_BUILDER_V1`. In a synthetic run, three raw files with
+two rows each produced `PASS` from an unrelated prebuilt bundle declaring a
+40-event denominator. No module/function identity or implementation hash is
+bound by the V2 contract. Second, live execution validates the canonical
+manifest while reading `COLLECTED_FROZEN`, persists `EXECUTION_STARTED`, then
+reloads the manifest without validating its self-digest or comparing the
+reloaded content to the authority-bound digest. A deterministic synthetic
+mutation at that boundary replaced a raw file and its manifest row, retained
+the old manifest digest, delivered the changed bytes to the builder and still
+produced `PASS` under the old frozen-manifest identity.
+
+No review fix was made: the repository has no trusted live evidence-builder
+owner to bind, so inventing its complete raw-to-evidence and manual-review
+boundary is not a uniquely correct local review edit. The smallest correction
+is executor-only: remove the caller-supplied live callable; implement one fixed
+owner that deterministically consumes `VerifiedRawCollection`; bind its exact
+module/function identity and definition or implementation hash into the V2
+contract, evidence artifact and runtime check; and validate the exact manifest
+snapshot used for raw reads against the authority digest after
+`EXECUTION_STARTED` (or carry forward the already validated immutable snapshot)
+before opening any raw file. The correction must issue a new V2 hash and receive
+another formal xHigh review. No V1 or V3 semantic may move. The actual sealed
+sample remains uncollected and unopened, the candidate remains unevaluated, and
+`EXECUTE_ONE_SHOT_V3_SEALED_VALIDATION` is not authorized.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
@@ -433,8 +476,10 @@ sealed collection and opening remain refused until the repeat review passes.
   hash-bound validator, now at `8e6254e0...c7ffe7`. What is outstanding is no
   longer evidence, semantics, or the certified validator. The one-shot sealed
   executor `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` was corrected at
-  `49abd689...99729` after `e21e6ad8...9d784` failed, and now requires repeat
-  formal xHigh review before the sample may be collected, frozen, or opened.
+  `49abd689...99729` after `e21e6ad8...9d784` failed, but its repeat formal
+  xHigh review found an unrestricted live evidence-builder boundary and a
+  post-start manifest/raw TOCTOU gap. It requires another corrected hash and
+  repeat review before the sample may be collected, frozen, or opened.
   Nothing about the candidate has
   been decided --- `MEDIAN_OHLC_V2`
   has still never been constructed or measured against any gate, so its V3
