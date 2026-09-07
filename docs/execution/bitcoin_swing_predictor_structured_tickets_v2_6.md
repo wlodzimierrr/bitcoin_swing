@@ -2148,6 +2148,49 @@ Do not overwrite raw history when the preferred provider changes.
     contract is frozen --- no edit, no rebuild, no new hash --- and the one
     permitted run must bind exactly the reviewed V2 hash. No further evidence,
     research or governance round is authorised.
+  - **Formal independent xHigh review: `FAIL — SEALED EXECUTOR INVALID`.**
+    Execution classification: `SEALED_EXECUTOR_REQUIRES_FIX`. All three claimed
+    authority hashes independently recompute, V1 and V3 remain byte-identical,
+    the 648 legal hard states retain exactly one `PASS`, the 27 real-shaped
+    synthetic bundles have complete V1/V2 verdict parity, and all eight Wilson
+    boundaries reproduce. Certified V1 semantics are not reopened. The failure
+    is confined to the executing control plane.
+  - **Review findings (P1): the durable authorization and manifest can be
+    bypassed.** `validate_v3_candidate` accepts `SEALED_EXECUTION` with an
+    arbitrary in-memory mapping carrying only `status`, `execution_id`, and a
+    manifest digest. Separately, `read_execution_authorization` verifies the
+    record's self-digest but not its state history or which market-derived
+    fields each state has earned, so a self-rehashed `PREPARED` record can jump
+    directly to `EXECUTION_STARTED`, invent a manifest digest, and produce a
+    sealed result without any persisted manifest.
+  - **Review findings (P1): manifest-before-analysis is not enforced.**
+    `record_frozen_collection_manifest` validates declared JSON only, never
+    calls `verify_collected_file_digests`, and persists only the caller-supplied
+    digest. A manifest naming three nonexistent raw files was accepted as
+    `COLLECTED_FROZEN`. `execute_sealed_validation` then consumes an already
+    built evidence mapping and reads neither the persisted manifest nor its raw
+    files, so raw mutation, deletion, replacement, provider swapping, and
+    evidence construction before the one-shot boundary are not refused by the
+    execution path.
+  - **Review findings (P1): the one-shot lock is neither concurrent nor
+    crash-safe.** Authorization transitions are unlocked `read_text` /
+    `write_text` read-modify-write sequences. Two synchronized callers both
+    completed `begin_sealed_execution` successfully. Once the record is
+    `EXECUTION_STARTED`, `execute_sealed_validation` accepts it repeatedly until
+    the final write; a synthetic crash at that write left the state reusable and
+    a second complete validation succeeded. The terminal result is returned but
+    not durably persisted, so there is no immutable-result recovery path for an
+    ambiguous crash.
+  - **Review disposition.** No review fix was made because closing these defects
+    requires a coherent executor-boundary decision, not a uniquely correct local
+    edit: sealed evidence construction must occur beneath a single authority-
+    consuming call, transitions need an exclusive cross-process mechanism and
+    atomic persistence, manifest/raw bytes must be durably reverified, and a
+    result must be persisted before deterministic finalization/recovery. Any
+    corrected contract must receive a new V2 validator hash and repeat this
+    formal xHigh review. No V1 or V3 verdict semantic may change. No further
+    research, calibration, gate-design, or evidence round is authorised, but
+    neither is sealed collection or execution.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
