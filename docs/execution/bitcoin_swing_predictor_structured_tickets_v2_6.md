@@ -2310,6 +2310,45 @@ Do not overwrite raw history when the preferred provider changes.
     review. No research, threshold, V3 or V1 semantic change is authorised.
     The actual sealed sample remains uncollected and unopened, the candidate
     remains unevaluated, and sealed collection/execution remain refused.
+  - **Execution-provenance correction.** Implementation
+    `c6ae1b30c10562e991cf292fd668d9bd1084bc39` removes the live caller-supplied
+    builder parameter and adds fixed owner
+    `btc_predictor.research.reference_composite_v3_sealed_evidence.build_sealed_evidence`
+    (`BTC019_V3_SEALED_EVIDENCE_BUILDER_V1`). The owner accepts the executor's
+    exact `VerifiedRawCollection`, derives evidence through repository formula
+    owners, and leaves evidence that cannot be truthfully reconstructed from
+    the verified raw histories absent so certified V1 fails closed. Its module,
+    function, version, input type and transitive source definition hash
+    `d8ff41f734dbeefbc2df06bac97637c3e3a06d23ae3cea5049541d3ddeeabb85`
+    are verified at runtime and hash-bound in both the V2 contract and durable
+    evidence artifact. Evidence and its authority checkpoint are durable before
+    certified V1 validation begins.
+  - **Post-start manifest correction.** Immediately after durable
+    `EXECUTION_STARTED` and before any raw open, live execution reloads the
+    canonical persisted manifest, validates its exact schema, self-digest,
+    execution id, provider/file associations, raw-digest declarations and
+    V3/V2/V1 authority bindings, compares the recomputed digest to
+    `authority.collection_manifest_digest`, and gives that exact validated
+    snapshot to raw verification. Synthetic regressions mutate a row, the
+    manifest digest, a provider/file association and a raw-file digest
+    declaration at the deterministic post-start boundary; every variant refuses
+    with zero raw reads and zero builder invocations.
+  - **New V2 artifact and validation.** The corrected V2 definition hashes to
+    `7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6`.
+    It records `49abd689...99729` as its direct failed predecessor, retains both
+    failed hashes in lineage and preserves the exact prior contract, delta and
+    report beneath the prior hash. V3 remains `4232e886...bf71a`; certified V1
+    remains `8e6254e0...c7ffe7`; scientific mismatch count remains zero across
+    all 648 composition states, 27 real-shaped bundles, 20 malformed bundles,
+    eight Wilson boundaries, 33 inherited gates and seven hard requirements.
+    The 253 focused executor tests, 967 relevant BTC-019/price-reference tests
+    and complete 4399-test Python 3.12.14 suite pass with `RuntimeWarning` as an
+    error; compileall and scoped diff checks pass. Classification:
+    `V2_EXECUTION_PROVENANCE_READY_FOR_REPEAT_XHIGH_REVIEW`. BTC-019 remains
+    **IN PROGRESS**. This is not certification: the actual sealed sample remains
+    uncollected and unopened, the candidate remains unevaluated, and collection
+    or execution remains refused until the new hash passes repeat formal xHigh
+    review.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
