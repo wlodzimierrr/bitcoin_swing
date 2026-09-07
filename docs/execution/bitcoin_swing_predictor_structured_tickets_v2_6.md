@@ -2191,6 +2191,74 @@ Do not overwrite raw history when the preferred provider changes.
     formal xHigh review. No V1 or V3 verdict semantic may change. No further
     research, calibration, gate-design, or evidence round is authorised, but
     neither is sealed collection or execution.
+  - **Executor-control correction implementation.** Commit
+    `9ca2b5bfdb129441d0b6857b496b526f7d5685df` replaces the failed executor
+    control plane without changing the frozen V3 protocol or certified V1
+    validator. The corrected `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` hashes
+    to `49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729`.
+    Its contract and semantic-delta artifacts retain failed hash
+    `e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784`,
+    failed implementation `568ebb8ca8ead0025fb30d5b15e576797d17dffb`, and
+    failure review `daa664753ed3a6e282fa53577be9f680bfa7c8fd` as historical
+    lineage rather than rewriting that evidence.
+  - **Forged authorization is closed.** Public `validate_v3_candidate` is now
+    synthetic-dry-run only and refuses sealed mode or any caller authorization
+    mapping. The live API takes a canonical execution root, loads the sole
+    persisted authority there, verifies exact keys, self-digest, all V3/V2/V1
+    bindings, root-derived execution id, exact legal history, state-earned
+    fields, artifact/digest checkpoint, candidate identity, provider set and
+    sealed window, then creates a non-serializable internal capability only
+    after `EXECUTION_STARTED` is durable. Self-rehashed skipped histories,
+    invented manifest digests, future fields and copied authorities all refuse.
+  - **Manifest/raw binding is enforced.** The freeze operation validates the
+    complete manifest, securely opens the three fixed regular-file paths below
+    `raw_collection` with no symlink or traversal component, refuses unexpected
+    entries and duplicate inodes, parses the owner gzip-JSONL schema, and
+    recomputes SHA-256, byte/row counts, first/last observation, missing and
+    duplicate intervals before atomically publishing the canonical manifest.
+    Only then does authority reach `COLLECTED_FROZEN`. Live execution durably
+    consumes that state, reloads the persisted manifest, repeats every raw-byte
+    and technical-metadata check, and only then invokes the hash-bound evidence
+    builder boundary with the immutable verified collection. A prebuilt evidence
+    mapping is not a live API argument.
+  - **Concurrency and durability are real.** Preparation, freeze, begin,
+    execution, recovery and finalized restore take `fcntl.flock(LOCK_EX)` on the
+    fixed regular `sealed_executor.lock`. The lock covers authoritative
+    read/check/transition, and execution retains it through immutable evidence
+    and result publication and `FINALIZED`. Authority, manifest, evidence and
+    result writes use a same-directory temporary file, file fsync, atomic
+    `os.replace`, and directory fsync under documented POSIX local-filesystem
+    assumptions. Repeated real-process races prove one prepare owner, one begin
+    consumer and one execute consumer; the losing executor reads zero raw files
+    and invokes no builder.
+  - **`EXECUTION_STARTED` is permanently consumed.** Normal execution accepts
+    only `COLLECTED_FROZEN`; it can neither resume nor retry a started record.
+    The hash-bound contract enumerates the five exact reachable started-state
+    artifact/digest checkpoints. Evidence and terminal result are immutable and
+    durable before final authority transition. Recovery never reopens raw bytes
+    or reruns evidence construction: without a result it reports operational
+    `EXECUTION_INTERRUPTED_NO_RESULT` with no scientific verdict; with durable
+    evidence and result it verifies and finalizes them. Finalized restore
+    recomputes the result from persisted evidence through certified V1 semantics
+    and refuses a self-consistently re-digested semantic tamper.
+  - **Correction validation.** 236 focused executor tests pass, including real
+    process races, all ten requested crash points, forged/self-rehashed state,
+    exact state/artifact combinations, nonexistent/deleted/mutated/swapped raw
+    files, duplicate inode, unexpected file, unsafe symlink, traversal,
+    persisted-manifest deletion/corruption, raw-schema identity, prebuilt
+    evidence refusal, no-retry recovery, immutable result restore and semantic
+    tamper. The 950-test focused-plus-price-reference/BTC-019 regression set and
+    the complete 4382-test Python 3.12.14 suite pass with `RuntimeWarning` as an
+    error; compileall and scoped diff checks pass. The complete 648-state,
+    27-bundle, 20-malformed-bundle, eight-Wilson-boundary, 33-Tier-4 and seven-
+    hard-requirement parity demonstrations remain intact.
+  - **Correction classification:
+    `CORRECTED_SEALED_EXECUTOR_READY_FOR_REPEAT_XHIGH_REVIEW`.** BTC-019 remains
+    `IN_PROGRESS`; this is not independent certification. The next task is to
+    repeat `FORMAL_XHIGH_REVIEW_ONE_SHOT_V3_SEALED_EXECUTOR` against exactly
+    `49abd689...99729`. The actual sealed sample remains uncollected and unopened,
+    the candidate remains unevaluated, and neither sealed execution nor another
+    evidence round is authorised.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**

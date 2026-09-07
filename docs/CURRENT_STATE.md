@@ -16,13 +16,12 @@
   implementation ticket except BTC-019 is now DONE. BTC-019's successor
   reference protocol is frozen, its independent review has passed, the
   hash-bound validator is built and has passed its own independent review. The
-  first one-shot sealed-executor implementation has now failed its formal
-  independent xHigh review and must be corrected before any sealed collection
-  or execution
+  failed one-shot sealed executor has been corrected at a new V2 hash and is
+  awaiting repeat formal xHigh review before any sealed collection or execution
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** Correct the one-shot V3 sealed executor's
-  authorization, locking, manifest-binding, and crash-recovery defects without
-  changing certified V1 verdict semantics
+- **Current implementation frontier:** Repeat the formal xHigh review of the
+  corrected one-shot V3 sealed executor; certified V1 verdict semantics and the
+  frozen V3 protocol remain unchanged
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
@@ -32,21 +31,20 @@
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** Correct
-  `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2`, then repeat
-  `FORMAL_XHIGH_REVIEW_ONE_SHOT_V3_SEALED_EXECUTOR`. The reviewed
-  `e21e6ad8...9d784` contract is not certified: synthetic attacks bypassed its
-  durable authority and manifest freeze, repeated execution after a crash, and
-  double-started it concurrently. BTC-019 is the only remaining Phase-1 work
+- **Next dependency-satisfied ticket:** Repeat
+  `FORMAL_XHIGH_REVIEW_ONE_SHOT_V3_SEALED_EXECUTOR` against corrected hash
+  `49abd689...99729`. The failed `e21e6ad8...9d784` contract remains historical
+  and uncertified. BTC-019 is the only remaining Phase-1 work
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 4342 passed with Python 3.12.14 on 2026-09-07
-- **Last relevant implementation/review commit:** implementation commit
-  `568ebb8ca8ead0025fb30d5b15e576797d17dffb` built the one-shot sealed
-  executor. Its formal independent xHigh review is
-  `FAIL — SEALED EXECUTOR INVALID`, classification
-  `SEALED_EXECUTOR_REQUIRES_FIX`; no review fix was made. The frozen V3 and
-  certified V1 hashes remain valid and certified V1 semantics are not reopened.
-  The 2015-2019 sample stays uncollected and unopened
+- **Latest verified test baseline:** 4382 passed with Python 3.12.14 on 2026-09-07
+- **Last relevant implementation/review commit:** correction implementation
+  commit `9ca2b5bfdb129441d0b6857b496b526f7d5685df` supersedes the failed executor
+  hash with `49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729`.
+  The prior review commit `daa664753ed3a6e282fa53577be9f680bfa7c8fd`
+  remains the failure record for historical hash `e21e6ad8...9d784`; repeat
+  review has not yet occurred. The frozen V3 and certified V1 hashes remain
+  valid and certified V1 semantics are not reopened. The 2015-2019 sample stays
+  uncollected and unopened
 
 ## Price-Reference State
 
@@ -70,11 +68,11 @@ V3 validator independent review = PASS_WITH_NON_BLOCKING_FINDINGS
 V3 validator definition hash
   = 8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7
 one-shot V3 sealed executor
-  = SEALED_EXECUTOR_REQUIRES_FIX
+  = CORRECTED_SEALED_EXECUTOR_READY_FOR_REPEAT_XHIGH_REVIEW
 V3 sealed-executor independent review
-  = FAIL_SEALED_EXECUTOR_INVALID
+  = REPEAT_REVIEW_REQUIRED_AFTER_CORRECTION
 V3 executing validator definition hash
-  = e21e6ad8e8a40e4ee0763d7f3176efc168dacc0701f8e1199ae8a25ee5f9d784
+  = 49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729
 V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
@@ -351,28 +349,29 @@ fields and in nothing else, all 648 legal hard states compose identically with
 exactly one `PASS`, and all eight Wilson boundaries still resolve uncorrected
 through `certify_pair` itself.
 
-Authorization is necessary and never sufficient. The lock is durable rather
-than process-local: `BTC019_V3_SEALED_EXECUTION_AUTHORIZATION_V1` is persisted,
-re-read and digest-verified before every transition, and its `execution_id` is
-derived from its own authority so a tampered field makes the record disagree
-with itself. The states are
-`NOT_PREPARED -> PREPARED -> COLLECTED_FROZEN -> EXECUTION_STARTED ->
-FINALIZED`, strictly forward, `FINALIZED` terminal; a finalized run refuses
-execution, start, preparation and re-collection alike, across restarts.
-`execute_sealed_validation` is the only call that may ever read sealed bytes,
-and it refuses without a frozen `BTC019_V3_SEALED_SAMPLE_MANIFEST_V1` whose
-digest the record already carries, on any bundle whose provenance, candidate
-identity or provider set does not bind it, and on any window that is not
-exactly `2015-07-20T21:00:00+00:00..2019-11-30T23:00:00+00:00`. Raw bytes must
-be frozen and hashed before anything is analysed, and the pre-freeze rule
-refuses every research operation until the manifest is frozen.
-`BTC019_V3_SEALED_VALIDATION_RESULT_V1` binds all three hashes, the manifest
-digest and the evidence digest, and publishes the verdict, all reasons, all
-seven hard outcomes, both certification sets, the soft output, the diagnostics,
-the inherited gates, the review completeness state and the NOT_COMPARABLE
-accounting, so no field needs post-hoc interpretation. `PASS`, `FAIL` and
-`UNDEFINED_INSUFFICIENT_EVIDENCE` are all recorded as valid terminal outcomes
-with no post-sealed tuning; nothing promises BTC-019 passes.
+Authorization is necessary and never sufficient. Every control-plane operation
+now holds `fcntl.flock(LOCK_EX)` on the fixed executor lock while it reads,
+validates and atomically persists the path-bound authority. Exact histories,
+state-earned fields, artifact/digest checkpoints and canonical artifacts are
+verified independently of the record's self-hash. The canonical manifest is
+persisted only after every fixed raw provider file has been securely reopened,
+schema-checked, byte-hashed and reconciled to its technical metadata. Normal
+`execute_sealed_validation` accepts only `COLLECTED_FROZEN`, durably persists
+`EXECUTION_STARTED` before its first raw read, revalidates the persisted
+manifest and raw bytes, and invokes evidence construction only beneath that
+consumed authority. Public in-memory validation is synthetic-only and cannot
+enter sealed mode.
+
+`EXECUTION_STARTED` permanently consumes the one-shot authority. It cannot be
+retried even after a crash. Evidence and result artifacts are immutable,
+atomically published and fsynced before the authority reaches `FINALIZED`.
+Recovery never reopens raw data or reruns evidence construction: it reports
+`EXECUTION_INTERRUPTED_NO_RESULT` when no durable result exists, or verifies an
+already-published evidence/result pair and finalizes it. Finalized restore
+replays certified V1 validation over the persisted evidence only and refuses a
+re-digested semantic result tamper. `PASS`, `FAIL` and
+`UNDEFINED_INSUFFICIENT_EVIDENCE` remain the only scientific verdicts;
+operational interruption and integrity refusal stay separate.
 
 Nothing was collected, opened or evaluated. No live authorization record exists
 --- the one-shot clock starts in the execution task, not this one --- the
@@ -408,6 +407,20 @@ uncollected and unopened, and `EXECUTE_ONE_SHOT_V3_SEALED_VALIDATION` is not
 authorized until a corrected executing contract receives a new hash and passes
 the repeated formal review.
 
+Correction implementation `9ca2b5bfdb129441d0b6857b496b526f7d5685df`
+closes those four executor-control families with a path-bound canonical root,
+real cross-process lock, atomic/fsynced state and artifact publication, exact
+state/artifact checkpoints, persisted-manifest and raw-byte revalidation,
+executor-owned sealed capability, permanent consumption at
+`EXECUTION_STARTED`, immutable evidence/result artifacts, and recovery that
+never reopens raw data. The corrected V2 definition hashes to
+`49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729` and
+records `e21e6ad8...9d784` plus review commit `daa6647...8fd` as failed
+lineage. 236 focused tests, 950 focused-plus-relevant regressions and the full
+4382-test Python 3.12 suite pass. This is
+`CORRECTED_SEALED_EXECUTOR_READY_FOR_REPEAT_XHIGH_REVIEW`, not certification:
+sealed collection and opening remain refused until the repeat review passes.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
@@ -419,10 +432,10 @@ the repeated formal review.
   `4232e886...bf71a` and has passed its independent xHigh review. So has the
   hash-bound validator, now at `8e6254e0...c7ffe7`. What is outstanding is no
   longer evidence, semantics, or the certified validator. The one-shot sealed
-  executor `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` built at
-  `e21e6ad8...9d784` failed its independent xHigh review and requires a new,
-  corrected executing contract plus repeated review before the sample may be
-  collected, frozen, or opened. Nothing about the candidate has
+  executor `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` was corrected at
+  `49abd689...99729` after `e21e6ad8...9d784` failed, and now requires repeat
+  formal xHigh review before the sample may be collected, frozen, or opened.
+  Nothing about the candidate has
   been decided --- `MEDIAN_OHLC_V2`
   has still never been constructed or measured against any gate, so its V3
   outcome is unknown, and the 2015-07-20..2019-11-30 sample is still sealed.
