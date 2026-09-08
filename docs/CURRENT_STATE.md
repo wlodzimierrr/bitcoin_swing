@@ -19,13 +19,16 @@
   one-shot sealed executor's two prior provenance defects were corrected at a
   new V2 hash, but that hash has failed repeat formal xHigh review because its
   live scientific evidence builder is incomplete and not fully provenance-
-  bound; no sealed collection or execution is authorized
+  bound. A V4 successor now corrects the circular stage ownership of
+  `live_shadow_days` without moving its threshold, but a complete 33-gate audit
+  finds ten Stage-A hard measurements without one conforming executable owner,
+  so no V4 builder/executor hash or sealed authorization has been issued
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** Correct the fixed live scientific
-  evidence builder, its transitive source binding and its deterministic numeric
-  and higher-timeframe evidence semantics, issue a new V2 hash, then repeat
-  formal xHigh review. Certified V1 verdict semantics and frozen V3 remain
-  unchanged
+- **Current implementation frontier:** Resolve the missing frozen measurement
+  contracts for ten historical hard gates before a V4 live builder or executor
+  can be certified. V4 deterministically moves only `live_shadow_days >= 90`
+  from historical validation to post-certification promotion; certified V1 and
+  frozen V3 remain unchanged
 - **Last completed ticket:** BTC-224, golden historical scenarios. Its
   required independent xHigh review has now passed with one review fix, as
   have BTC-221's and BTC-222's; no Phase-1 ticket review remains outstanding
@@ -35,24 +38,20 @@
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** BTC-019
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** Correct
-  `BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V2` so its one live run can truthfully
-  source every required hard gate, bind every material transitive owner, match
-  the frozen ATR statistic, remain Decimal-context invariant and persist the V2
-  incomplete-bucket evidence. Hash `7fda8ac3...ad8be6` joins historical hashes
-  `49abd689...99729` and `e21e6ad8...9d784` as failed and uncertified. BTC-019 is
-  the only remaining Phase-1 work
+- **Next dependency-satisfied ticket:** No executable/review task is ready.
+  BTC-019 authority must first freeze the missing event universe, comparison
+  inputs and denominators for the ten unresolved Stage-A hard measurements
+  without using the sealed result or changing existing thresholds. The failed
+  V2 hash `7fda8ac3...ad8be6` and its predecessors remain immutable lineage
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 4399 passed with Python 3.12.14 and
+- **Latest verified test baseline:** 4419 passed with Python 3.12.14 and
   `RuntimeWarning` treated as an error on 2026-09-08
-- **Last relevant implementation/review commit:** provenance correction
-  implementation commit `c6ae1b30c10562e991cf292fd668d9bd1084bc39`
-  produced `7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6`,
-  which the repeat formal xHigh review now rejects. Review commit
-  `45c5e04044d054757b583cbb2aaed5915d196852` remains the failure record for
-  predecessor `49abd689...99729`. The frozen V3 and certified V1 hashes remain
-  valid and certified V1 semantics are not reopened. The 2015-2019 sample stays
-  uncollected and unopened
+- **Last relevant implementation/review commit:** bounded V4 stage-correction
+  implementation `0143cbf2251b3f099dccf05453538e043700c9d9` records
+  `V4_EVIDENCE_PIPELINE_INCOMPLETE`. It follows repeat-review commit
+  `628e235ba9fff9c3fd610afe3925840d9f5ac6de`, which rejects V2 hash
+  `7fda8ac3...ad8be6`. Frozen V3 and certified V1 remain valid and immutable;
+  the 2015-2019 sample stays uncollected and unopened
 
 ## Price-Reference State
 
@@ -81,6 +80,13 @@ V3 sealed-executor independent review
   = FAIL_SEALED_EVIDENCE_BUILDER_INCOMPLETE
 V3 executing validator definition hash
   = 7fda8ac31f92de6a4adfc547260c0fb8f221564de34982ff8a72e85c07ad8be6
+BTC_REFERENCE_COMPOSITE_V4 stage correction
+  = V4_EVIDENCE_PIPELINE_INCOMPLETE
+V4 definition hash
+  = 670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501
+V4 validator definition hash
+  = 8cf091fb8c0374f876dc54237d0226cea3f11a3d7554f6abae5ba5c1df498c28
+V4 live builder / executor hash = NOT ISSUED
 V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
@@ -536,6 +542,37 @@ sealed sample remains uncollected and unopened, the candidate remains
 unevaluated, and neither another evidence round nor
 `EXECUTE_ONE_SHOT_V3_SEALED_VALIDATION` is authorized.
 
+Bounded V4 stage-correction implementation
+`0143cbf2251b3f099dccf05453538e043700c9d9` creates
+`BTC_REFERENCE_COMPOSITE_V4` at
+`670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501`
+and its successor two-stage validator at
+`8cf091fb8c0374f876dc54237d0226cea3f11a3d7554f6abae5ba5c1df498c28`.
+The persisted 33-gate census proves that `live_shadow_days` is the only
+prospective-only gate and the only stage relocation. Its hard minimum remains
+exactly 90 days, all other thresholds/directions/hard-soft roles remain byte-
+derived from frozen V3/V2 authority, Stage A contains 28 hard and four soft
+historical gates, and Stage B contains only the unchanged live-shadow gate.
+Synthetic validator fixtures reach PASS, FAIL and
+`UNDEFINED_INSUFFICIENT_EVIDENCE` without consulting live shadow.
+
+The same audit refuses a live V4 executor. Ten Stage-A hard gates do not have
+exactly one conforming executable measurement owner: cross-market-confirmed
+stop preservation, deterministic rerun, gap-through stop consensus, isolated-
+venue stop suppression, provenance completeness, and the five reserved
+Phase-1 regime/risk/setup/trade consequence rates. Related development or
+Phase-1 components exist, but authority does not freeze the required sealed
+event/decision universe, complete non-price inputs, comparison reference and
+denominator; the failed builder also hardcodes provenance and never performs a
+real rerun. Inventing those contracts would be a new methodology/evidence
+decision, not implementation completeness. Therefore no new builder or
+executor hash is issued and classification is
+`V4_EVIDENCE_PIPELINE_INCOMPLETE`. Twenty focused tests, 2,003 relevant
+regressions and the complete 4,419-test Python 3.12.14 suite pass with
+`RuntimeWarning` as an error; compileall and scoped diff checks pass. The
+actual sealed sample remains uncollected and unopened and the candidate remains
+unevaluated.
+
 ## Important Unresolved Decisions
 
 - Production canonical BTC reference selection remains unresolved under
@@ -552,9 +589,13 @@ unevaluated, and neither another evidence round nor
   Its unrestricted live-builder boundary and post-start manifest/raw TOCTOU gap
   are closed, but repeat formal xHigh review rejects the new hash because the
   live builder cannot source 16 hard gates and has four additional scientific
-  provenance/semantics defects. A newly corrected hash and repeat review are
-  required before the sample may be collected, frozen, or opened. Nothing about
-  the candidate has been decided --- `MEDIAN_OHLC_V2`
+  provenance/semantics defects. V4 resolves only the stage contradiction by
+  moving the still-mandatory `live_shadow_days >= 90` gate after historical
+  approval. Its complete ownership invariant then refuses certification because
+  ten remaining historical hard gates lack one conforming owner. Those missing
+  measurement contracts must be authoritatively resolved before a new builder,
+  executor hash or repeat review is possible. Nothing about the candidate has
+  been decided --- `MEDIAN_OHLC_V2`
   has still never been constructed or measured against any gate, so its V3
   outcome is unknown, and the 2015-07-20..2019-11-30 sample is still sealed.
   The absolute materiality limit of `0.20` is argued from consequence --- one

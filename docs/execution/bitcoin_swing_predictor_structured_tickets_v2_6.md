@@ -2419,6 +2419,52 @@ Do not overwrite raw history when the preferred provider changes.
     authorized. The actual sealed sample remains uncollected and unopened, the
     candidate remains unevaluated, and neither another evidence round nor sealed
     execution is authorized.
+  - **Bounded V4 stage-ownership correction.** Implementation
+    `0143cbf2251b3f099dccf05453538e043700c9d9` creates the immutable-parent
+    successor `BTC_REFERENCE_COMPOSITE_V4` with definition hash
+    `670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501`
+    and a two-stage successor validator with definition hash
+    `8cf091fb8c0374f876dc54237d0226cea3f11a3d7554f6abae5ba5c1df498c28`.
+    V3 `4232e886...bf71a` and certified V1 `8e6254e0...c7ffe7` are not edited.
+    A deterministic table covers all 33 inherited gates before V4 construction.
+    It classifies `live_shadow_days` as the sole prospective-only gate and the
+    sole `POST_CERTIFICATION_PROMOTION` gate. V4 moves that one hard minimum
+    from historical composition to Stage B without changing `>= 90`, while all
+    other 32 gates retain their exact threshold, direction, hard/soft role,
+    comparison meaning and Stage-A historical ownership. Stage A therefore has
+    28 hard and four soft gates; Stage B has one hard gate. A Stage-A pass means
+    only `HISTORICAL_CANDIDATE_APPROVED_FOR_LIVE_SHADOW`, never production
+    promotion or a claim that live shadow occurred.
+  - **V4 evidence-owner disposition: `V4_EVIDENCE_PIPELINE_INCOMPLETE`.** The
+    complete ownership invariant requires exactly one authoritative executable
+    measurement owner for every Stage-A hard gate and refuses a live executor
+    on zero, multiple or unknown ownership. Ten gates have zero conforming
+    owners: cross-market-confirmed stop preservation, deterministic rerun,
+    gap-through stop consensus, isolated-venue stop suppression, provenance
+    completeness, regime disagreement, risk-size p95 difference, setup
+    disagreement, trade-action disagreement and trade-eligibility disagreement.
+    The three event rates lack a frozen sealed event census/denominator; the
+    failed executor has no genuine rerun owner and hardcodes provenance; and the
+    five gates whose frozen rationale says only "Reserved Phase-1 ... consequence
+    gate" have no frozen decision universe, complete non-price inputs,
+    comparison reference or denominator. Phase-1 engines can compute individual
+    consequences but cannot choose those missing study semantics. None of these
+    gates is inherently prospective, so no additional stage contradiction
+    exists; all remain in Stage A. Missing implementation was not relabelled as
+    prospective evidence and no favourable default was supplied.
+  - **V4 validation and safety.** Synthetic supplied-bundle fixtures prove the
+    successor validator's Stage-A composition can return PASS, FAIL and
+    `UNDEFINED_INSUFFICIENT_EVIDENCE` without consulting live shadow; Stage B
+    remains insufficient when shadow evidence is absent, fails at 89 days and
+    passes its unchanged gate at 90 days only after a verified Stage-A pass.
+    This is a composition proof, not a claim that a complete live builder can
+    construct the passing bundle. No V4 builder or executor hash is issued, so
+    independent pipeline review may not begin. Twenty focused tests, 2,003
+    relevant regressions and the full 4,419-test Python 3.12.14 suite pass with
+    `RuntimeWarning` as an error; compileall and scoped diff checks pass. No
+    actual sealed data was collected, opened, inspected or evaluated, no new
+    market evidence was gathered, and no further historical evidence or
+    calibration round is authorized.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
