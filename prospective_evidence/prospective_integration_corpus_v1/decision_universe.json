@@ -1,0 +1,165 @@
+{
+  "clock_alignment": "Canonical UTC sessions: hourly bars on the exact hour, daily sessions opening 00:00 UTC, weekly sessions Monday 00:00 UTC.",
+  "decision_cadences": {
+    "STOP_HOURLY": {
+      "bar_close_rule": "a 1h canonical session closes one interval after its start",
+      "bar_timeframe": "1h",
+      "decision_delay_seconds": 300,
+      "decision_time_rule": "observation_time + bar interval + decision delay",
+      "session_owner": "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION"
+    },
+    "STRATEGY_DAILY": {
+      "bar_close_rule": "a 1d canonical session closes one interval after its start",
+      "bar_timeframe": "1d",
+      "decision_delay_seconds": 300,
+      "decision_time_rule": "observation_time + bar interval + decision delay",
+      "session_owner": "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION"
+    }
+  },
+  "decision_delay_owner": "btc_predictor.research.reference_composite.DEFAULT_DECISION_DELAY",
+  "decision_grid_owner": "btc_predictor.research.feature_matrix.decision_timestamp_range",
+  "definition_sha256": "1205ec050c2bd46aeb882752e1834cc94984d5ac6caae911d3e312faab348ec9",
+  "denominator_independence_rule": "No universe predicate reads a comparison outcome. A timestamp can never enter or leave a denominator because the candidate and control outputs happen to agree or disagree.",
+  "duplicate_policy": "REFUSE_A_SECOND_OBSERVATION_FOR_ONE_SOURCE_KEY_AT_ONE_SLOT",
+  "late_data_policy": "NEVER_WAIT_NEVER_BACKFILL_A_CLOSED_DECISION",
+  "missing_data_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_NO_SILENT_OMISSION",
+  "not_comparable_reasons": [
+    "CANDIDATE_TRACK_NOT_EVALUABLE",
+    "CONTROL_TRACK_NOT_EVALUABLE",
+    "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
+    "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+    "PROVIDER_QUORUM_ABSENT",
+    "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE"
+  ],
+  "not_evaluable_reasons": [
+    "REQUIRED_INPUT_MISSING",
+    "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
+    "WARMUP_HISTORY_INCOMPLETE"
+  ],
+  "observation_states": [
+    "DATA_QUALITY_FAIL",
+    "EVALUATED",
+    "NOT_COMPARABLE",
+    "NOT_EVALUABLE",
+    "REFERENCE_UNAVAILABLE"
+  ],
+  "observation_unit": "decision_time",
+  "pit_policy_owner": "btc_predictor.research.feature_matrix.POINT_IN_TIME_POLICY_VERSION",
+  "pit_policy_version": "AVAILABLE_AT_LTE_DECISION_TIME_V1",
+  "pit_rule": "available_at <= decision_time",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "reason_vocabulary": [
+    "CANDIDATE_REFERENCE_UNAVAILABLE",
+    "CANDIDATE_TRACK_NOT_EVALUABLE",
+    "CONTROL_REFERENCE_UNAVAILABLE",
+    "CONTROL_TRACK_NOT_EVALUABLE",
+    "HARD_DATA_QUALITY_GATE_FAILED",
+    "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
+    "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
+    "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+    "PROVIDER_QUORUM_ABSENT",
+    "REQUIRED_INPUT_MISSING",
+    "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
+    "WARMUP_HISTORY_INCOMPLETE"
+  ],
+  "revision_policy": "APPEND_A_NEW_REVISION_ROW_NEVER_OVERWRITE",
+  "scheduled_slot_census_required": true,
+  "schema_version": "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1",
+  "timezone": "UTC",
+  "universes": {
+    "ACTION_EVALUABLE_DECISION_TIMES": {
+      "cadence": [
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Data-valid daily slots where both tracks produce a complete deterministic action from the authoritative recommendation vocabulary, whether flat or in position.",
+      "parent_universe": "DATA_VALID_DECISION_TIMES"
+    },
+    "ALL_SCHEDULED_DECISION_TIMES": {
+      "cadence": [
+        "STOP_HOURLY",
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Every slot the frozen epoch schedules, enumerated from the epoch bounds and the cadence alone.",
+      "parent_universe": null
+    },
+    "CROSS_MARKET_CONFIRMED_STOP_EVENTS": {
+      "cadence": [
+        "STOP_HOURLY"
+      ],
+      "definition": "Stop-active hourly slots the frozen classifier labels CROSS_MARKET_CONFIRMED_STOP_EVENT.",
+      "parent_universe": "STOP_ACTIVE_EVALUATION_SLOTS"
+    },
+    "DATA_VALID_DECISION_TIMES": {
+      "cadence": [
+        "STOP_HOURLY",
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Scheduled slots where every required input for the consuming owner is present with available_at <= decision_time and the hard data-quality gate has not failed for either track.",
+      "parent_universe": "ALL_SCHEDULED_DECISION_TIMES"
+    },
+    "ELIGIBILITY_EVALUABLE_DECISION_TIMES": {
+      "cadence": [
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Setup-evaluable daily slots where both tracks are in a pre-position lifecycle state, so a new-entry permission is defined for both.",
+      "parent_universe": "SETUP_EVALUABLE_DECISION_TIMES"
+    },
+    "GAP_THROUGH_STOP_EVENTS": {
+      "cadence": [
+        "STOP_HOURLY"
+      ],
+      "definition": "Stop-active hourly slots the frozen classifier labels GAP_THROUGH_STOP_EVENT.",
+      "parent_universe": "STOP_ACTIVE_EVALUATION_SLOTS"
+    },
+    "ISOLATED_VENUE_STOP_EVENTS": {
+      "cadence": [
+        "STOP_HOURLY"
+      ],
+      "definition": "Stop-active hourly slots the frozen classifier labels ISOLATED_VENUE_STOP_EVENT.",
+      "parent_universe": "STOP_ACTIVE_EVALUATION_SLOTS"
+    },
+    "POSITION_ACTIVE_DECISION_TIMES": {
+      "cadence": [
+        "STOP_HOURLY",
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Slots where the track under evaluation holds an open position under the authoritative lifecycle owner.",
+      "parent_universe": "ALL_SCHEDULED_DECISION_TIMES"
+    },
+    "REGIME_EVALUABLE_DECISION_TIMES": {
+      "cadence": [
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Data-valid daily slots where both tracks hold the complete required regime score, smoothing and classification inputs.",
+      "parent_universe": "DATA_VALID_DECISION_TIMES"
+    },
+    "SETUP_EVALUABLE_DECISION_TIMES": {
+      "cadence": [
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Data-valid daily slots where both tracks hold the complete input set of all four authoritative setup detectors.",
+      "parent_universe": "DATA_VALID_DECISION_TIMES"
+    },
+    "SIZING_EVALUABLE_DECISION_TIMES": {
+      "cadence": [
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Slots that are trade-eligible in both tracks independently and where both authoritative INITIAL_POSITION_SIZE results are complete with a strictly positive position notional.",
+      "parent_universe": "TRADE_ELIGIBLE_DECISION_TIMES"
+    },
+    "STOP_ACTIVE_EVALUATION_SLOTS": {
+      "cadence": [
+        "STOP_HOURLY"
+      ],
+      "definition": "Hourly slots where the track under evaluation carries an active stop on an open position.",
+      "parent_universe": "ALL_SCHEDULED_DECISION_TIMES"
+    },
+    "TRADE_ELIGIBLE_DECISION_TIMES": {
+      "cadence": [
+        "STRATEGY_DAILY"
+      ],
+      "definition": "Eligibility-evaluable slots where the track under evaluation permits a new entry under its own owners.",
+      "parent_universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES"
+    }
+  }
+}

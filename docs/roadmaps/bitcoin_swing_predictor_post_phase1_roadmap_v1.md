@@ -180,6 +180,19 @@ This research must compare against the frozen Phase 1 champion. It must not
 silently replace the Phase 1 canonical source or splice provider histories, and
 it requires a new policy version before any promotion.
 
+## 4.3 Prospective integration evidence (EPIC X)
+
+`BTC_REFERENCE_COMPOSITE_V1` research ran to
+`BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: eight inherited
+hard gates have a threshold but no decision universe, input corpus, comparison
+reference or denominator, and that evidence cannot be manufactured backwards.
+
+[EPIC X](../execution/post_phase1_prospective_integration_evidence_v1.md) is the
+post-Phase-1 workstream that creates it forward in time under
+`PROSPECTIVE_INTEGRATION_CORPUS_V1`, a pre-data protocol frozen before any
+qualifying observation is accumulated. It changes no threshold, does not reopen
+BTC-019, and does not authorize opening the sealed 2015-2019 sample.
+
 ---
 
 # 5. Phase 2A — Live Shadow Operation

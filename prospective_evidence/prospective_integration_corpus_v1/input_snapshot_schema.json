@@ -1,0 +1,378 @@
+{
+  "champion_identity": {
+    "cost_slippage_model": {
+      "owner": "btc_predictor.backtest.costs",
+      "versions": {
+        "cost_profile_policy": "REALISTIC_COST_MODEL_V1"
+      }
+    },
+    "data_quality_gate": {
+      "owner": "btc_predictor.signals.data_quality",
+      "versions": {
+        "blocked_actions": "ENTER,ADD",
+        "recommendation_actions": "NO_TRADE,WATCH,ENTER,HOLD,ADD,TRIM,EXIT"
+      }
+    },
+    "execution_model": {
+      "owner": "btc_predictor.backtest.engine",
+      "versions": {
+        "backtest_end_policy": "MARK_OPEN_POSITION_NO_FORCED_EXIT_V1",
+        "backtest_engine_policy": "EVENT_DRIVEN_BACKTEST_V1",
+        "backtest_funding_policy": "BAR_CLOSE_PRE_EXECUTION_CARRY_V1",
+        "backtest_nav_policy": "CASH_PLUS_MARKED_UNREALIZED_V1"
+      }
+    },
+    "lifecycle_policy": {
+      "owner": "btc_predictor.portfolio.state_machine",
+      "versions": {
+        "no_average_down": "NO_AVERAGE_DOWN_V1",
+        "paper_lifecycle_persistence": "PAPER_LIFECYCLE_PERSISTENCE_V1",
+        "position_state_machine": "PAPER_POSITION_STATE_MACHINE_V1",
+        "position_transition_record": "PAPER_POSITION_TRANSITION_V1"
+      }
+    },
+    "paper_accounting": {
+      "owner": "btc_predictor.portfolio.accounting",
+      "versions": {
+        "paper_account": "PAPER_ACCOUNT_V1",
+        "paper_trade_accounting": "PAPER_TRADE_ACCOUNTING_V1"
+      }
+    },
+    "point_in_time_policy": {
+      "owner": "btc_predictor.research.feature_matrix.POINT_IN_TIME_POLICY_VERSION",
+      "versions": {
+        "point_in_time": "AVAILABLE_AT_LTE_DECISION_TIME_V1"
+      }
+    },
+    "price_source_policy": {
+      "owner": "docs/policies/price_source_policy_v1.md",
+      "versions": {
+        "canonical_production_reference": "UNRESOLVED",
+        "price_source_policy": "PRICE_SOURCE_POLICY_V1"
+      }
+    },
+    "risk_policy": {
+      "owner": "btc_predictor.risk",
+      "versions": {
+        "initial_position_size": "INITIAL_POSITION_SIZE_V1",
+        "initial_stop": "INITIAL_STOP_V1",
+        "reward_risk_filter": "REWARD_RISK_FILTER_V1",
+        "risk_at_stop": "RISK_AT_STOP_V1",
+        "risk_budget": "RISK_BUDGET_V1",
+        "volatility_buffer": "VOLATILITY_BUFFER_V1"
+      }
+    },
+    "rulebook": {
+      "owner": "docs/strategy/bitcoin_swing_predictor_rulebook_v1_2.md",
+      "versions": {
+        "rulebook": "RULEBOOK_V1_2"
+      }
+    },
+    "scoring_policy": {
+      "owner": "btc_predictor.features.scoring_contracts",
+      "versions": {
+        "entry_action_classification": "ENTRY_ACTION_CLASSIFICATION_V1",
+        "scoring_contracts": "SCORING_CONTRACTS_V1_2"
+      }
+    },
+    "strategy_configuration": {
+      "owner": "btc_predictor.config.strategy",
+      "versions": {
+        "config_version": "strategy_config_v2",
+        "parameter_set_id": "default_phase1",
+        "strategy_version": "swing_v1.2"
+      }
+    }
+  },
+  "champion_identity_binding_rule": "A collector binds every declared version identity plus the SHA-256 of the resolved strategy configuration document. A repository artifact that carries a hash is bound by hash; one that carries only a versioned semantic definition is bound by that definition. 'latest' is refused.",
+  "definition_sha256": "37e58f99df18522c444625e6919308bedfe47d4e7e8970c565281e8381ff7be7",
+  "derived_state_inputs": {
+    "atr_and_volatility_buffers": "btc_predictor.risk.buffer.VOLATILITY_BUFFER_V1",
+    "momentum_persistence": "btc_predictor.features.momentum",
+    "regime_state": "btc_predictor.features.regime",
+    "risk_budget_state": "btc_predictor.risk.budget.RISK_BUDGET_V1",
+    "setup_state": "btc_predictor.features.setup",
+    "structural_levels": "btc_predictor.levels",
+    "structure_inputs": "btc_predictor.features.structure",
+    "trend_inputs": "btc_predictor.features.trend",
+    "volatility_inputs": "btc_predictor.features.volatility"
+  },
+  "excluded_input_families": {
+    "liquidations": "raw.liquidations exists but the frozen BTC-048 feature contract names no feature that consumes it, so it is not part of the required decision reproduction set.",
+    "new_alpha_datasets": "No dataset outside the frozen Phase-1 feature contract may enter the corpus; adding one is a PROSPECTIVE_INTEGRATION_CORPUS_V2 change."
+  },
+  "feature_contract_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+  "non_price_input_sources": {
+    "derivatives_funding": {
+      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "consuming_features": [
+        "FUNDING_7D_AVG",
+        "FUNDING_ZSCORE_180D",
+        "FUNDING_HEALTH"
+      ],
+      "fields": [
+        "funding_rate",
+        "funding_interval_hours"
+      ],
+      "identity_fields": [
+        "exchange",
+        "symbol",
+        "instrument",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.features.positioning",
+      "pit_rule": "available_at <= decision_time",
+      "provenance_fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "source"
+      ],
+      "raw_table": "raw.funding_rates",
+      "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
+      "units": "decimal funding rate per funding interval"
+    },
+    "derivatives_futures_basis": {
+      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "consuming_features": [
+        "FUTURES_BASIS_AVG",
+        "FUTURES_BASIS_ZSCORE_180D",
+        "FUTURES_BASIS_HEALTH"
+      ],
+      "fields": [
+        "basis_rate",
+        "annualized_basis_rate",
+        "expiry"
+      ],
+      "identity_fields": [
+        "exchange",
+        "symbol",
+        "instrument",
+        "expiry",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.features.positioning",
+      "pit_rule": "available_at <= decision_time",
+      "provenance_fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "source"
+      ],
+      "raw_table": "raw.futures_basis",
+      "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
+      "units": "decimal basis versus spot; annualized decimal basis"
+    },
+    "derivatives_open_interest": {
+      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "consuming_features": [
+        "OI_GROWTH_7D",
+        "OI_GROWTH_ZSCORE_180D",
+        "OI_GROWTH_HEALTH",
+        "OI_INTENSITY",
+        "OI_INTENSITY_PERCENTILE_180D"
+      ],
+      "fields": [
+        "open_interest"
+      ],
+      "identity_fields": [
+        "exchange",
+        "symbol",
+        "instrument",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.features.positioning",
+      "pit_rule": "available_at <= decision_time",
+      "provenance_fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "source"
+      ],
+      "raw_table": "raw.open_interest",
+      "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
+      "units": "contracts or BTC as declared by the instrument"
+    },
+    "etf_flows": {
+      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "consuming_features": [
+        "ETF_NORM_5D",
+        "ETF_NORM_20D",
+        "FLOW_ACCEL"
+      ],
+      "fields": [
+        "flow_usd",
+        "aum_usd"
+      ],
+      "identity_fields": [
+        "fund",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.features.flow",
+      "pit_rule": "available_at <= decision_time",
+      "provenance_fields": [
+        "observation_date",
+        "available_at",
+        "ingested_at",
+        "revision",
+        "source"
+      ],
+      "raw_table": "raw.etf_flows",
+      "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT",
+      "units": "USD"
+    },
+    "generic_series": {
+      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "consuming_features": [
+        "REGIME_SCORE",
+        "REGIME_SMOOTHED_SCORE"
+      ],
+      "fields": [
+        "value",
+        "unit"
+      ],
+      "identity_fields": [
+        "series_id",
+        "series_type",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.data.generic_series",
+      "pit_rule": "available_at <= decision_time and observation_time <= decision_time",
+      "provenance_fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "revision",
+        "source"
+      ],
+      "raw_table": "raw.generic_series",
+      "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT",
+      "units": "declared per series in the unit column"
+    },
+    "spot_perp_cvd": {
+      "capture_state": "REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET",
+      "capture_state_reason": "btc_predictor.features.flow.CvdObservation is a feature-layer boundary with no raw PIT table and no collector in this repository, so CVD_SPREAD cannot be reproduced from any persisted source today. The corpus declares the capture contract; it does not fabricate the series and it does not drop the feature from the champion.",
+      "consuming_features": [
+        "CVD_SPREAD"
+      ],
+      "fields": [
+        "cvd_usd",
+        "market_type"
+      ],
+      "identity_fields": [
+        "market_type",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.features.flow",
+      "pit_rule": "available_at <= decision_time",
+      "provenance_fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "source"
+      ],
+      "raw_table": "research.prospective_source_input_snapshot (new capture)",
+      "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
+      "units": "USD cumulative volume delta"
+    },
+    "spot_perp_volume_participation": {
+      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "consuming_features": [
+        "SPOT_DOMINANCE"
+      ],
+      "fields": [
+        "volume",
+        "volume_unit",
+        "notional_usd"
+      ],
+      "identity_fields": [
+        "exchange",
+        "symbol",
+        "timeframe",
+        "provider"
+      ],
+      "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+      "normalization_owner": "btc_predictor.features.flow",
+      "pit_rule": "available_at <= decision_time",
+      "provenance_fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "source"
+      ],
+      "raw_table": "raw.perp_volume",
+      "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
+      "units": "provider-declared volume unit; USD notional when reported"
+    }
+  },
+  "pit_availability_fields": [
+    "observation_time",
+    "available_at",
+    "ingested_at"
+  ],
+  "pit_rule": "available_at <= decision_time",
+  "portfolio_state_inputs": [
+    "cash_balance",
+    "nav",
+    "open_positions",
+    "position_lifecycle_state",
+    "previous_adds",
+    "previous_stops",
+    "previous_trims",
+    "realized_pnl",
+    "risk_at_stop",
+    "tranches"
+  ],
+  "price_input_sources": {
+    "raw_provider_ohlcv": {
+      "candidate_neutral": true,
+      "consumers": [
+        "btc_predictor.data.ohlcv.build_canonical_market_bars",
+        "btc_predictor.research.reference_composite.build_composite_observation"
+      ],
+      "fields": [
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "missing_policy": "EXPLICIT_GAP_NEVER_SPLICED",
+      "normalization_owner": "btc_predictor.data.ohlcv.OhlcvBar",
+      "pit_rule": "bar close <= decision_time and ingested_at <= decision_time",
+      "provenance_fields": [
+        "provider",
+        "exchange",
+        "symbol",
+        "timeframe",
+        "ingested_at"
+      ],
+      "providers": [
+        "bitstamp",
+        "coinbase",
+        "bitfinex"
+      ],
+      "raw_table": "raw.btc_ohlcv",
+      "revision_policy": "IMMUTABLE_NO_PROVIDER_REVISIONS",
+      "timeframe": "1h",
+      "units": "USD per BTC; volume in BTC"
+    }
+  },
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "provenance_detection_requirements": [
+    "deletion",
+    "duplicate observation",
+    "late arrival",
+    "mutation",
+    "revision",
+    "source replacement"
+  ],
+  "schema_version": "PROSPECTIVE_INTEGRATION_INPUT_SNAPSHOT_V1"
+}

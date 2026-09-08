@@ -11,6 +11,7 @@ documents mapped below.
 | [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md) | Phase-1 ticket status, dependencies, execution order, acceptance criteria, and implementation/review notes | Authoritative Phase-1 execution roadmap | Read the exact ticket block; inspect dependency blocks and V2 order only as needed |
 | [Rulebook v1.2](strategy/bitcoin_swing_predictor_rulebook_v1_2.md) | Strategy semantics and mathematics for v1.2 | Authoritative except scopes explicitly superseded by newer narrow versioned policies | Read only sections relevant to the ticket's formulas and invariants |
 | [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md) | Versioned empirical price-source evidence and conclusion | Authoritative for its explicitly defined V1 price-source-policy scope; newer than provisional Rulebook source language | Read for canonical/reference-source, provenance, fallback, or price-data work |
+| [EPIC X — Prospective Integration Evidence](execution/post_phase1_prospective_integration_evidence_v1.md) | Post-Phase-1 prospective integration-evidence workstream status, dependencies, and acceptance criteria | Authoritative for EPIC X only; not Phase-1 execution authority and not BTC-019 authority | Read when implementing or reviewing a POSTP1-xxx ticket |
 
 ## Future Planning
 

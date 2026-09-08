@@ -29,6 +29,13 @@ statement only for that policy's explicitly defined scope.
    explicitly versioned source policies control their stated scopes.
 2. Rulebook provisional source language is historical/provisional context.
 
+### Post-Phase-1 Prospective Integration Evidence
+
+[EPIC X](docs/execution/post_phase1_prospective_integration_evidence_v1.md)
+controls POSTP1-xxx status, dependencies, and acceptance criteria. It is not
+Phase-1 execution authority and it is not BTC-019 authority: BTC-019 remains
+terminal and its sealed sample remains unopened.
+
 ### Future Development
 
 [Post-Phase-1 roadmap](docs/roadmaps/bitcoin_swing_predictor_post_phase1_roadmap_v1.md)

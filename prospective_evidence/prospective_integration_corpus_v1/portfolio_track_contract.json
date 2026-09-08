@@ -1,0 +1,71 @@
+{
+  "definition_sha256": "6b69af9ae9e9bb9c3b24cd622d0aa4f432207a032b4bcd94e1cdf25db21e3a2c",
+  "divergence_evidence_fields": [
+    "divergence_cause_metric",
+    "divergence_cause_reason_codes",
+    "first_divergence_decision_time",
+    "later_comparison_state",
+    "state_digest_candidate",
+    "state_digest_control"
+  ],
+  "divergence_policy": "ALLOW_NATURAL_STATE_DIVERGENCE",
+  "exogenous_divergence_reason": "EXOGENOUS_INPUT_DIVERGED",
+  "initial_state": {
+    "cash_balance": "1000000",
+    "currency": "USD",
+    "nav": "1000000",
+    "open_positions": [],
+    "pending_orders": [],
+    "previous_adds": [],
+    "previous_stops": [],
+    "previous_trims": [],
+    "realized_pnl": "0",
+    "state_version": "PROSPECTIVE_INTEGRATION_INITIAL_PORTFOLIO_STATE_V1"
+  },
+  "initial_state_rationale": "A clean prospective experiment: flat, no pending orders, and one fixed nominal research NAV. No repository authority requires a different opening state, and a non-flat opening would import an unowned position history into measurements about reference sensitivity.",
+  "initial_state_sha256": "87f7c7ba8d93ac21783557ec93ced6f1c9f05d258bf45ba4cd620d3d38d60659",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "reference_identity_requirements": [
+    "Both roles must be deterministic functions of the persisted raw provider observations available at the same decision_time.",
+    "Both identities must be frozen and hashed before the first derived evaluation record binds them.",
+    "Neither identity may be chosen, changed, or re-selected after any Stage-B aggregate has been observed.",
+    "The raw corpus never stores either identity, so a later authorized candidate is evaluated without rewriting one historical observation."
+  ],
+  "reference_identity_source": "PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_V1",
+  "reference_identity_state": "SUPPLIED_BY_SEPARATELY_FROZEN_EVALUATION_CONTRACT",
+  "reference_roles": [
+    "CANDIDATE_REFERENCE",
+    "CONTROL_REFERENCE"
+  ],
+  "resynchronization_policy": "FORBIDDEN",
+  "schema_version": "PROSPECTIVE_INTEGRATION_PORTFOLIO_TRACK_V1",
+  "shared_exogenous_input_families": [
+    "clock",
+    "cost_slippage_model",
+    "derivatives_funding",
+    "derivatives_futures_basis",
+    "derivatives_open_interest",
+    "etf_flows",
+    "execution_model",
+    "fees",
+    "generic_series",
+    "lifecycle_policy",
+    "risk_limits",
+    "scoring_policy",
+    "spot_perp_cvd",
+    "spot_perp_volume_participation",
+    "strategy_configuration",
+    "volatility_configuration"
+  ],
+  "shared_exogenous_input_rule": "Every point-in-time input except the reference-price construction under test is byte-identical between the two tracks at the same decision_time. A run that cannot demonstrate identity for a shared input must record that slot NOT_COMPARABLE with EXOGENOUS_INPUT_DIVERGED rather than compare it.",
+  "tracks": {
+    "CANDIDATE_REFERENCE_TRACK": {
+      "reference_role": "CANDIDATE_REFERENCE",
+      "starts_from_initial_state": true
+    },
+    "CONTROL_REFERENCE_TRACK": {
+      "reference_role": "CONTROL_REFERENCE",
+      "starts_from_initial_state": true
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "collection_horizon": {
+    "calendar_minimum_days": null,
+    "calendar_minimum_rationale": "None is imposed. Stage-C's live_shadow_days >= 90 is a post-certification promotion gate about publication latency in live operation; it is not a Stage-B evidence-sufficiency rule and frozen V4 moved it out of historical validation precisely to stop the two being read as one. Importing 90 days here would restate a different gate's number as this stage's minimum.",
+    "termination_rule": "Stage-B collection terminates on its own predeclared evidence sufficiency, never on elapsed time and never on an observed rate. Because the per-metric certification minimums are deferred to PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1, the epoch has no terminating condition yet and no Stage-B certification is reachable from this protocol alone.",
+    "termination_state": "STAGE_B_TERMINATION_UNDEFINED_UNTIL_SUFFICIENCY_GOVERNANCE"
+  },
+  "definition_sha256": "923eb68e3138edf00bc3feec31838dc29d8e5924a5c6b377897f021fee5423d3",
+  "insufficient_evidence_state": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+  "metrics": {
+    "cross_market_confirmed_stop_preservation_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "minimum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "1.0",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "gap_through_stop_consensus_agreement_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "minimum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.99",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "isolated_venue_stop_suppression_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "minimum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "isolated_venue_stop_suppression_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.95",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "regime_classification_disagreement_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "maximum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "regime_classification_disagreement_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.02",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "risk_size_p95_relative_difference": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "maximum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "risk_size_p95_relative_difference",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.10",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "setup_classification_disagreement_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "maximum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "setup_classification_disagreement_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.01",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "trade_action_disagreement_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "maximum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "trade_action_disagreement_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.01",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    },
+    "trade_eligibility_disagreement_rate": {
+      "certification_sufficiency_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+      "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
+      "direction": "maximum",
+      "evaluability_minimum": {
+        "both_tracks_valid_required": true,
+        "complete_slot_census_required": true,
+        "minimum_comparable_denominator": 1,
+        "no_silent_omission_required": true
+      },
+      "metric": "trade_eligibility_disagreement_rate",
+      "minimum_denominator_chosen_here": null,
+      "threshold": "0.01",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_passes": false
+    }
+  },
+  "minimums_selected_from_observed_outcomes": false,
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "schema_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_V1",
+  "scoped_out_authority": {
+    "per_pair_wilson_upper_bound_v1": "Frozen for the BTC_REFERENCE_COMPOSITE_V3 structural gate family only. A newer narrow versioned policy controls only its own declared scope, so it is not carried across to these eight gates by this protocol."
+  }
+}

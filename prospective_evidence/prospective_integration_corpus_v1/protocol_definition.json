@@ -1,0 +1,344 @@
+{
+  "btc019": {
+    "reopened": false,
+    "sealed_sample_collected": false,
+    "sealed_sample_opened": false,
+    "successor_of_btc019": false,
+    "terminal_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE"
+  },
+  "child_definition_sha256": {
+    "data_schema_contract": "4664d1d59bf48f4f6409200f72b2b7ee8c33141518974efe8badb9f9d0209315",
+    "decision_universe": "1205ec050c2bd46aeb882752e1834cc94984d5ac6caae911d3e312faab348ec9",
+    "evidence_sufficiency": "923eb68e3138edf00bc3feec31838dc29d8e5924a5c6b377897f021fee5423d3",
+    "input_snapshot_schema": "37e58f99df18522c444625e6919308bedfe47d4e7e8970c565281e8381ff7be7",
+    "metric_evidence_contracts": "a5d6ee1097772a322855ba919beae30ff5acbd8784a7a43bfe99538d7707b295",
+    "portfolio_track_contract": "6b69af9ae9e9bb9c3b24cd622d0aa4f432207a032b4bcd94e1cdf25db21e3a2c",
+    "semantic_diff_from_v5_blockers": "3b6f2576a9e930b40443dc615b080bda016084caed1aa6edba0e3902cd50d47e",
+    "stage_b_evaluation_contract": "66b1b7d62900af235fc33b3f7e4dfbb529d23c67451bc66e3ef511359fbc2e5b",
+    "stop_event_taxonomy": "a239328b56a9312844e20319b6e88f4c4faecfc1c295519bf53b4f05b924ab72"
+  },
+  "collection_authorized": false,
+  "collection_entry_requirement": "INDEPENDENT_XHIGH_REVIEW_OF_THIS_EXACT_PROTOCOL_HASH_MUST_PASS_FIRST",
+  "collector_boundary": {
+    "interface": {
+      "CAPTURE": {
+        "entry_point": "collect_decision_snapshot(decision_time)",
+        "may_read": [
+          "external sources",
+          "prospective_run"
+        ],
+        "may_write": [
+          "prospective_run",
+          "prospective_decision_observation",
+          "prospective_source_input_snapshot",
+          "prospective_data_quality_event"
+        ],
+        "postcondition": "Every qualifying raw observation for that decision_time is durably persisted with observation_time and available_at before any derived record exists, so no future outcome can alter what was captured.",
+        "reads_reference_identity": false
+      },
+      "DERIVE": {
+        "entry_point": "derive_decision_evidence(run_id, decision_time)",
+        "may_read": [
+          "prospective_run",
+          "prospective_decision_observation",
+          "prospective_source_input_snapshot",
+          "prospective_data_quality_event"
+        ],
+        "may_write": [
+          "prospective_reference_evaluation",
+          "prospective_strategy_evaluation",
+          "prospective_risk_evaluation",
+          "prospective_portfolio_state",
+          "prospective_trade_action",
+          "prospective_stop_event"
+        ],
+        "postcondition": "Derived records reference raw record identities and digests; they never rewrite a raw row.",
+        "reads_reference_identity": true
+      },
+      "EVALUATE": {
+        "entry_point": "evaluate_stage_b(run_id, window)",
+        "may_read": [
+          "prospective_run",
+          "prospective_decision_observation",
+          "prospective_source_input_snapshot",
+          "prospective_data_quality_event",
+          "prospective_reference_evaluation",
+          "prospective_strategy_evaluation",
+          "prospective_risk_evaluation",
+          "prospective_portfolio_state",
+          "prospective_trade_action",
+          "prospective_stop_event",
+          "prospective_metric_comparison"
+        ],
+        "may_write": [
+          "prospective_metric_comparison"
+        ],
+        "postcondition": "Measurement semantics are read from the frozen protocol hash; the evaluator authors none.",
+        "reads_reference_identity": true
+      }
+    },
+    "stages": [
+      "CAPTURE",
+      "DERIVE",
+      "EVALUATE"
+    ]
+  },
+  "definition_sha256": "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326",
+  "evidence_identity_fields": [
+    "configuration_identity",
+    "corpus_protocol_sha256",
+    "decision_time",
+    "execution_version",
+    "input_snapshot_sha256",
+    "lifecycle_version",
+    "output_sha256",
+    "prior_portfolio_state_sha256",
+    "raw_source_identities",
+    "reference_identity",
+    "risk_version",
+    "strategy_version"
+  ],
+  "final_classification": "PROSPECTIVE_INTEGRATION_CORPUS_V1_READY_FOR_XHIGH_REVIEW",
+  "historical_gate_authority": {
+    "cross_market_confirmed_stop_preservation_rate": {
+      "definition": "A robust estimator must preserve genuine shared tail moves.",
+      "direction": "minimum",
+      "hard": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Known-event requirement and BTC-019B stop analysis.",
+      "threshold": "1.0",
+      "validation_stage": "historical_oos"
+    },
+    "gap_through_stop_consensus_agreement_rate": {
+      "definition": "Gap-through behavior must agree with deterministic venue consensus.",
+      "direction": "minimum",
+      "hard": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Stop-risk economic requirement.",
+      "threshold": "0.99",
+      "validation_stage": "historical_oos"
+    },
+    "isolated_venue_stop_suppression_rate": {
+      "definition": "Most isolated exchange wicks should not create canonical stop events.",
+      "direction": "minimum",
+      "hard": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Three known isolated V1 events were suppressed; 95% avoids event-specific perfection.",
+      "threshold": "0.95",
+      "validation_stage": "historical_oos"
+    },
+    "regime_classification_disagreement_rate": {
+      "definition": "Regime labels should be robust to reference construction.",
+      "direction": "maximum",
+      "hard": true,
+      "metric": "regime_classification_disagreement_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.02",
+      "validation_stage": "historical_oos"
+    },
+    "risk_size_p95_relative_difference": {
+      "definition": "Reference changes should not materially resize most positions.",
+      "direction": "maximum",
+      "hard": true,
+      "metric": "risk_size_p95_relative_difference",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Reserved Phase-1 risk consequence gate.",
+      "threshold": "0.10",
+      "validation_stage": "historical_oos"
+    },
+    "setup_classification_disagreement_rate": {
+      "definition": "Setup selection should rarely depend on venue noise.",
+      "direction": "maximum",
+      "hard": true,
+      "metric": "setup_classification_disagreement_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    "trade_action_disagreement_rate": {
+      "definition": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_action_disagreement_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    },
+    "trade_eligibility_disagreement_rate": {
+      "definition": "Reference policy should rarely change whether a trade is permitted.",
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
+      "threshold": "0.01",
+      "validation_stage": "historical_oos"
+    }
+  },
+  "human_review_policy": {
+    "blinding": "Where a review is unavoidable, the reviewer is blinded to the candidate outcome wherever practical and the blinding state is persisted.",
+    "manual_event_selection_required": false,
+    "predeclared_questions_required": true,
+    "prose_may_override_gate_arithmetic": false,
+    "required_for_any_target_metric": false,
+    "reviewer_record_fields": [
+      "blinded",
+      "decision",
+      "predeclared_question_id",
+      "reason",
+      "reviewed_at",
+      "reviewer_identity"
+    ],
+    "statement": "Every one of the eight measurements is produced by a deterministic owner from persisted point-in-time evidence. No manual timestamp selection and no reviewer judgement enters any numerator or denominator."
+  },
+  "lifecycle": {
+    "current_state": "FROZEN",
+    "states": [
+      "DRAFT",
+      "FROZEN",
+      "COLLECTING",
+      "SUFFICIENT_FOR_EVALUATION",
+      "EVALUATED",
+      "CLOSED"
+    ],
+    "transitions": {
+      "CLOSED": [],
+      "COLLECTING": [
+        "SUFFICIENT_FOR_EVALUATION",
+        "CLOSED"
+      ],
+      "DRAFT": [
+        "FROZEN"
+      ],
+      "EVALUATED": [
+        "CLOSED"
+      ],
+      "FROZEN": [
+        "COLLECTING",
+        "CLOSED"
+      ],
+      "SUFFICIENT_FOR_EVALUATION": [
+        "EVALUATED",
+        "CLOSED"
+      ]
+    }
+  },
+  "lineage": {
+    "certified_v1_validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7",
+    "frozen_v2_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
+    "frozen_v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+    "frozen_v4_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+    "frozen_v5_definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89"
+  },
+  "no_threshold_authored": true,
+  "numerical_standards": {
+    "decimal_precision": 60,
+    "invariant_to": [
+      "ambient Decimal context",
+      "PYTHONHASHSEED",
+      "dictionary iteration order",
+      "provider order",
+      "process restart",
+      "working directory"
+    ]
+  },
+  "observation_unit": "decision_time",
+  "post_hoc_contamination": {
+    "change_procedure": "Any change to a semantic field requires PROSPECTIVE_INTEGRATION_CORPUS_V2, which starts a new prospective collection epoch for every affected metric. Observations already collected under this protocol keep their original labels; nothing is relabelled backwards and no epoch is merged.",
+    "prohibited_after_collection_starts": [
+      "add or remove a non-price input family",
+      "change a comparison reference identity",
+      "change a denominator or its universe predicate",
+      "change an evidence-sufficiency minimum",
+      "change the cost or slippage model",
+      "change the event classifier or any of its quorums, windows or fields",
+      "change the strategy, risk, lifecycle or execution identity",
+      "change a threshold, direction or hard role",
+      "exclude an observed event or slot that the frozen rules admit",
+      "resynchronize the two portfolio tracks",
+      "retroactively relabel any persisted observation"
+    ],
+    "successor_protocol": "PROSPECTIVE_INTEGRATION_CORPUS_V2"
+  },
+  "program_ticket": "POSTP1-001",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "provenance_detection_requirements": [
+    "deletion",
+    "duplicate observation",
+    "late arrival",
+    "mutation",
+    "revision",
+    "source replacement"
+  ],
+  "relationship_to_epic_t": {
+    "epic_t_authority_change_required": false,
+    "epic_t_modified": false,
+    "epic_t_state": "CLOSED / PASS WITH NON-BLOCKING FINDINGS"
+  },
+  "relationship_to_phase_1": {
+    "btc019_historical_reference_research": "TERMINALLY_BLOCKED",
+    "phase_1_deterministic_implementation": "COMPLETE",
+    "production_canonical_reference": "UNRESOLVED",
+    "prospective_integration_evidence_program": "NEW_POST_PHASE_1_WORKSTREAM"
+  },
+  "replay_contract": {
+    "guarantee": "Every derived record regenerates byte-identically from the immutable raw rows, the frozen protocol hash and the declared version identities.",
+    "mutable_application_state_permitted": false,
+    "numerical_invariance": [
+      "ambient Decimal context",
+      "PYTHONHASHSEED",
+      "dictionary iteration order",
+      "provider order",
+      "process restart",
+      "working directory"
+    ],
+    "replay_inputs": [
+      "prospective_run",
+      "prospective_decision_observation",
+      "prospective_source_input_snapshot",
+      "prospective_data_quality_event"
+    ]
+  },
+  "research_only": true,
+  "safety": {
+    "btc019_sealed_data_accessed": false,
+    "new_market_evidence_collected": false,
+    "qualifying_observations_collected": false,
+    "real_stage_b_outcomes_evaluated": false
+  },
+  "schema_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1_PROTOCOL_DEFINITION_V1",
+  "sealed_sample_dependency": {
+    "opens_btc019_on_stage_b_pass": false,
+    "statement": "The historical BTC-019 sealed sample remains NOT COLLECTED, NOT OPENED and NOT EVALUATED. This program does not authorize opening it and creates no automatic future dependency that would; any use of it requires a separate explicit governance decision."
+  },
+  "status": "FROZEN_PRE_DATA_PROTOCOL",
+  "target_metrics": [
+    "cross_market_confirmed_stop_preservation_rate",
+    "gap_through_stop_consensus_agreement_rate",
+    "isolated_venue_stop_suppression_rate",
+    "regime_classification_disagreement_rate",
+    "risk_size_p95_relative_difference",
+    "setup_classification_disagreement_rate",
+    "trade_action_disagreement_rate",
+    "trade_eligibility_disagreement_rate"
+  ],
+  "workflow": [
+    "PROTOCOL FREEZE",
+    "INDEPENDENT XHIGH REVIEW",
+    "PROSPECTIVE COLLECTION",
+    "EVIDENCE SUFFICIENCY CHECK",
+    "STAGE-B EVALUATION",
+    "IF PASS: candidate/reference research may proceed under a separately authorized protocol",
+    "FORMAL POST-CERTIFICATION LIVE-SHADOW GATE WHEN APPLICABLE"
+  ],
+  "workstream": {
+    "epic": "EPIC X",
+    "name": "PROSPECTIVE INTEGRATION EVIDENCE"
+  }
+}

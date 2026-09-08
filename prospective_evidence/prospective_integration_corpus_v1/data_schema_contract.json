@@ -1,0 +1,275 @@
+{
+  "append_only_raw_tables": [
+    "prospective_run",
+    "prospective_decision_observation",
+    "prospective_source_input_snapshot",
+    "prospective_data_quality_event"
+  ],
+  "database": "postgresql",
+  "definition_sha256": "4664d1d59bf48f4f6409200f72b2b7ee8c33141518974efe8badb9f9d0209315",
+  "implementation_state": "CONTRACT_ONLY_MIGRATION_DEFERRED_TO_FIRST_COLLECTOR_TICKET",
+  "redis_required": false,
+  "schema": "research",
+  "schema_version": "PROSPECTIVE_INTEGRATION_CORPUS_SCHEMA_V1",
+  "table_prefix": "prospective_",
+  "tables": {
+    "prospective_data_quality_event": {
+      "append_only": true,
+      "columns": {
+        "decision_time": "timestamptz not null",
+        "detail": "jsonb not null",
+        "detected_at": "timestamptz not null",
+        "event_type": "text not null",
+        "run_id": "uuid not null",
+        "sequence": "bigint not null",
+        "source_family": "text null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "sequence"
+      ],
+      "purpose": "Mutation, deletion, duplicate, revision, late-arrival and source-replacement detections, recorded rather than repaired."
+    },
+    "prospective_decision_observation": {
+      "append_only": true,
+      "columns": {
+        "cadence": "text not null",
+        "decision_time": "timestamptz not null",
+        "input_snapshot_sha256": "char(64) null",
+        "observation_state": "text not null",
+        "observation_time": "timestamptz not null",
+        "reason_codes": "jsonb not null",
+        "run_id": "uuid not null",
+        "slot_id": "char(64) not null",
+        "universes": "jsonb not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "cadence",
+        "observation_time"
+      ],
+      "purpose": "The complete scheduled slot census. Every slot the epoch schedules has exactly one row, so a silent omission is detectable by count."
+    },
+    "prospective_metric_comparison": {
+      "append_only": true,
+      "columns": {
+        "candidate_reference_identity": "text not null",
+        "comparability": "jsonb not null",
+        "control_reference_identity": "text not null",
+        "corpus_protocol_sha256": "char(64) not null",
+        "denominator": "bigint null",
+        "metric": "text not null",
+        "not_comparable_count": "bigint not null",
+        "numerator": "bigint null",
+        "run_id": "uuid not null",
+        "undefined_reason": "text null",
+        "universe": "text not null",
+        "value": "numeric(38,18) null",
+        "window_end": "timestamptz not null",
+        "window_start": "timestamptz not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "metric",
+        "window_start",
+        "window_end"
+      ],
+      "purpose": "One Stage-B measurement with the complete comparability evidence beside it. A null value carries an undefined_reason and never 0."
+    },
+    "prospective_portfolio_state": {
+      "append_only": true,
+      "columns": {
+        "active_stop": "numeric(38,18) null",
+        "as_of": "timestamptz not null",
+        "cash_balance": "numeric(38,18) not null",
+        "lifecycle_state": "text not null",
+        "nav": "numeric(38,18) not null",
+        "prior_state_sha256": "char(64) null",
+        "realized_pnl": "numeric(38,18) not null",
+        "run_id": "uuid not null",
+        "state_sha256": "char(64) not null",
+        "track": "text not null",
+        "tranches": "jsonb not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "track",
+        "as_of"
+      ],
+      "purpose": "The hash-chained state history of one deterministic track."
+    },
+    "prospective_reference_evaluation": {
+      "append_only": true,
+      "columns": {
+        "decision_time": "timestamptz not null",
+        "input_snapshot_sha256": "char(64) not null",
+        "observation_time": "timestamptz not null",
+        "output_sha256": "char(64) not null",
+        "quality_state": "text not null",
+        "reference_identity": "text not null",
+        "reference_ohlc": "jsonb not null",
+        "reference_role": "text not null",
+        "run_id": "uuid not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "reference_role",
+        "reference_identity",
+        "observation_time"
+      ],
+      "purpose": "One authorized reference variant's output for one slot."
+    },
+    "prospective_risk_evaluation": {
+      "append_only": true,
+      "columns": {
+        "decision_time": "timestamptz not null",
+        "entry_price": "numeric(38,18) null",
+        "input_snapshot_sha256": "char(64) not null",
+        "output_sha256": "char(64) not null",
+        "position_notional": "numeric(38,18) null",
+        "reason_codes": "jsonb not null",
+        "risk_at_stop": "numeric(38,18) null",
+        "risk_budget_amount": "numeric(38,18) null",
+        "risk_size_complete": "boolean not null",
+        "run_id": "uuid not null",
+        "stop_distance_fraction": "numeric(38,18) null",
+        "stop_price": "numeric(38,18) null",
+        "track": "text not null",
+        "trade_permitted": "boolean null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "track",
+        "decision_time"
+      ],
+      "purpose": "Eligibility and sizing outputs for one track at one decision."
+    },
+    "prospective_run": {
+      "append_only": true,
+      "columns": {
+        "collection_epoch": "text not null",
+        "corpus_protocol_sha256": "char(64) not null",
+        "created_at": "timestamptz not null",
+        "epoch_end": "timestamptz null",
+        "epoch_start": "timestamptz not null",
+        "initial_portfolio_state_sha256": "char(64) not null",
+        "lifecycle_state": "text not null",
+        "protocol_version": "text not null",
+        "run_id": "uuid not null",
+        "strategy_identity_sha256": "char(64) not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id"
+      ],
+      "purpose": "One frozen prospective collection epoch."
+    },
+    "prospective_source_input_snapshot": {
+      "append_only": true,
+      "columns": {
+        "available_at": "timestamptz not null",
+        "decision_time": "timestamptz not null",
+        "ingested_at": "timestamptz not null",
+        "observation_time": "timestamptz not null",
+        "payload": "jsonb not null",
+        "payload_sha256": "char(64) not null",
+        "provider": "text not null",
+        "revision": "text not null",
+        "run_id": "uuid not null",
+        "source_family": "text not null",
+        "source_key": "text not null",
+        "units": "text not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "source_family",
+        "source_key",
+        "observation_time",
+        "revision"
+      ],
+      "purpose": "Immutable point-in-time source observations, candidate-neutral. A restatement is a new revision row; an overwrite is refused."
+    },
+    "prospective_stop_event": {
+      "append_only": true,
+      "columns": {
+        "active_stop": "numeric(38,18) not null",
+        "available_provider_ids": "jsonb not null",
+        "candidate_stop_outcome": "text null",
+        "classification": "text not null",
+        "classifier_definition_sha256": "char(64) not null",
+        "classifier_version": "text not null",
+        "consensus_stop_outcome": "text not null",
+        "decision_time": "timestamptz not null",
+        "direction": "text not null",
+        "event_id": "char(64) not null",
+        "gap_through_state": "text not null",
+        "missing_provider_ids": "jsonb not null",
+        "observation_time": "timestamptz not null",
+        "provider_stop_outcomes": "jsonb not null",
+        "reason_codes": "jsonb not null",
+        "run_id": "uuid not null",
+        "touching_provider_ids": "jsonb not null",
+        "track": "text not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "track",
+        "observation_time"
+      ],
+      "purpose": "One mechanically classified stop-evaluation slot."
+    },
+    "prospective_strategy_evaluation": {
+      "append_only": true,
+      "columns": {
+        "decision_time": "timestamptz not null",
+        "input_snapshot_sha256": "char(64) not null",
+        "output_sha256": "char(64) not null",
+        "reason_codes": "jsonb not null",
+        "regime_classification": "text null",
+        "regime_score": "numeric(38,18) null",
+        "regime_smoothed_score": "numeric(38,18) null",
+        "run_id": "uuid not null",
+        "setup_detector_states": "jsonb not null",
+        "strategy_identity_sha256": "char(64) not null",
+        "track": "text not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "track",
+        "decision_time"
+      ],
+      "purpose": "Regime and setup outputs for one track at one decision."
+    },
+    "prospective_trade_action": {
+      "append_only": true,
+      "columns": {
+        "action": "text not null",
+        "decision_time": "timestamptz not null",
+        "lifecycle_event": "text null",
+        "lifecycle_state_after": "text not null",
+        "lifecycle_state_before": "text not null",
+        "output_sha256": "char(64) not null",
+        "prior_portfolio_state_sha256": "char(64) not null",
+        "reason_codes": "jsonb not null",
+        "run_id": "uuid not null",
+        "track": "text not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "track",
+        "decision_time"
+      ],
+      "purpose": "The authoritative action, with everything needed to replay it."
+    }
+  }
+}
