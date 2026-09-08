@@ -1,0 +1,721 @@
+{
+  "gate_count": 33,
+  "ownership_table_sha256": "f83253bec368c7ba827f8ad52d7a25d108ce26877d07852153b60435e3df5521",
+  "rows": [
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "atr_median_absolute_fractional_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate daily ATR versus the per-day raw-provider median; median absolute fractional difference",
+      "threshold": "0.02",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "atr_p95_absolute_fractional_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the same daily ATR differences at nearest-rank p95",
+      "threshold": "0.10",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The frozen gate defines the rate's meaning and threshold but not the sealed cross-market event census or denominator.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._known_event_analysis (development-event census only; no frozen sealed event universe)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a declared census of cross-market-confirmed stop events and candidate preservation outcomes",
+      "threshold": "1.0",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "daily_bucket_usable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the complete V2 daily-bucket census, including unusable incomplete buckets",
+      "threshold": "0.995",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The failed V2 executor builds evidence once and has no measurement owner that repeats processing over the same VerifiedRawCollection.",
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor (single evidence build; no rerun comparison owner)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "deterministic_rerun_hash_match",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "two processing digests over the same immutable VerifiedRawCollection and identical semantic identities",
+      "threshold": true,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No frozen owner classifies the sealed gap-through event universe or its deterministic venue-consensus denominator.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison (generic stop probes; no frozen gap-through event classifier)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a declared gap-through stop-event universe and deterministic venue-consensus comparison",
+      "threshold": "0.99",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.price_source_policy.compare_price_sources"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.price_source_policy.compare_price_sources"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "historical_fallback_splice_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "fallback_used provenance on every raw/candidate observation",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The frozen gate does not define the sealed isolated-wick event census or candidate suppression denominator.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._known_event_analysis (development-event census only; no frozen sealed event universe)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a declared isolated-venue stop-event universe and candidate suppression outcomes",
+      "threshold": "0.95",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "live_shadow_days",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": true,
+      "required_evidence": "prospective post-certification shadow observations counted in elapsed qualifying days",
+      "threshold": 90,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "POST_CERTIFICATION_PROMOTION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "mae_max_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.05",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mae_median_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.0025",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mae_p95_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "mfe_max_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.05",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mfe_median_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.0025",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mfe_p95_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "point_in_time_violation_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a census of observations whose availability exceeds the decision instant",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The failed builder hardcodes 1 instead of mechanically evaluating complete owner/version/input/config/definition provenance for every measurement.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_evidence._inherited_measurements (hardcoded favourable value; non-conforming)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "provenance_complete_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "mechanical completeness over every scientific measurement's owner, version, input, config, and definition identity",
+      "threshold": "1.0",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "raw_observation_mutation_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "manifest-bound raw mutation counts verified against immutable bytes",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "reference_degraded_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly quality-state census",
+      "threshold": "0.020",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "reference_unavailable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly quality-state census",
+      "threshold": "0.005",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "reference_usable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly availability census",
+      "threshold": "0.995",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the decision instants, non-price inputs, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 regime owners exist; no frozen candidate/reference comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "regime_classification_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT decision universe plus complete Phase-1 regime inputs replayed for candidate and comparison references",
+      "threshold": "0.02",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the eligible-trade universe, non-price risk inputs, comparison reference, or denominator for this reserved gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 risk owners exist; no frozen eligible-trade comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "risk_size_p95_relative_difference",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT eligible-trade universe plus owner-produced Phase-1 risk sizes for candidate and comparison references",
+      "threshold": "0.10",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the decision instants, complete setup inputs, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 setup owners exist; no frozen candidate/reference comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "setup_classification_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT decision universe plus complete Phase-1 setup inputs replayed for candidate and comparison references",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "silent_incomplete_bucket_omission_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "expected V2 daily/weekly buckets reconciled one-for-one to persisted bucket records",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "stop_touch_disagreement_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus stop outcomes over frozen PIT trade-path probes",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.btc019b_diagnostics._swing_metric_summary"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.btc019b_diagnostics._swing_metric_summary"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "swing_level_disagreement_rate_above_0_50_atr",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate/raw swing-level pairs and prior ATR under the frozen 0.50-ATR comparison",
+      "threshold": "0.05",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the replay schedule, portfolio state, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 lifecycle/execution owners exist; no frozen decision comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "trade_action_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT strategy-decision universe replayed through the Phase-1 strategy, lifecycle, and execution owners",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the replay schedule, full eligibility inputs, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 setup/veto/entry owners exist; no frozen decision comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "trade_eligibility_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT strategy-decision universe replayed through the Phase-1 setup, veto, R/R, and entry owners",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "unrecorded_quality_state_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "all V2 hourly quality states reconciled to the frozen vocabulary",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "validation_period_days",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the authority-bound sealed window duration",
+      "threshold": 1460,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "venue_disagreement_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly quality-state census",
+      "threshold": "0.005",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "weekly_bucket_usable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the complete V2 weekly-bucket census, including unusable incomplete buckets",
+      "threshold": "0.990",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    }
+  ],
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V4_GATE_OWNERSHIP_V1",
+  "unresolved_stage_a_hard_gate_owners": [
+    "cross_market_confirmed_stop_preservation_rate",
+    "deterministic_rerun_hash_match",
+    "gap_through_stop_consensus_agreement_rate",
+    "isolated_venue_stop_suppression_rate",
+    "provenance_complete_rate",
+    "regime_classification_disagreement_rate",
+    "risk_size_p95_relative_difference",
+    "setup_classification_disagreement_rate",
+    "trade_action_disagreement_rate",
+    "trade_eligibility_disagreement_rate"
+  ]
+}

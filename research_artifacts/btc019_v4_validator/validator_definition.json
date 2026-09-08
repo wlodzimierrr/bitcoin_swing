@@ -1,0 +1,107 @@
+{
+  "binding": {
+    "bound_protocol": "BTC_REFERENCE_COMPOSITE_V4",
+    "bound_protocol_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+    "certified_parent_validator": "BTC_REFERENCE_COMPOSITE_V3_VALIDATOR_V1",
+    "certified_parent_validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7"
+  },
+  "execution_readiness": {
+    "every_stage_a_hard_gate_has_exactly_one_owner": false,
+    "sealed_execution_authorized": false,
+    "unresolved_stage_a_hard_gate_owners": [
+      "cross_market_confirmed_stop_preservation_rate",
+      "deterministic_rerun_hash_match",
+      "gap_through_stop_consensus_agreement_rate",
+      "isolated_venue_stop_suppression_rate",
+      "provenance_complete_rate",
+      "regime_classification_disagreement_rate",
+      "risk_size_p95_relative_difference",
+      "setup_classification_disagreement_rate",
+      "trade_action_disagreement_rate",
+      "trade_eligibility_disagreement_rate"
+    ]
+  },
+  "parent_scientific_contract_reused": {
+    "diagnostics": true,
+    "hard_requirement_composition": true,
+    "pair_certification": true,
+    "pair_universes": true,
+    "soft_structural_gate": true,
+    "transfer_guard": true,
+    "wilson_rule": true
+  },
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V4_VALIDATOR_DEFINITION_V1",
+  "stage_a": {
+    "consequence_on_pass": "HISTORICAL_CANDIDATE_APPROVED_FOR_LIVE_SHADOW",
+    "hard_gate_count": 28,
+    "inherited_gate_metrics": [
+      "atr_median_absolute_fractional_difference",
+      "atr_p95_absolute_fractional_difference",
+      "cross_market_confirmed_stop_preservation_rate",
+      "daily_bucket_usable_rate",
+      "deterministic_rerun_hash_match",
+      "gap_through_stop_consensus_agreement_rate",
+      "historical_fallback_splice_count",
+      "isolated_venue_stop_suppression_rate",
+      "mae_max_absolute_difference",
+      "mae_median_absolute_difference",
+      "mae_p95_absolute_difference",
+      "mfe_max_absolute_difference",
+      "mfe_median_absolute_difference",
+      "mfe_p95_absolute_difference",
+      "point_in_time_violation_count",
+      "provenance_complete_rate",
+      "raw_observation_mutation_count",
+      "reference_degraded_rate",
+      "reference_unavailable_rate",
+      "reference_usable_rate",
+      "regime_classification_disagreement_rate",
+      "risk_size_p95_relative_difference",
+      "setup_classification_disagreement_rate",
+      "silent_incomplete_bucket_omission_count",
+      "stop_touch_disagreement_rate",
+      "swing_level_disagreement_rate_above_0_50_atr",
+      "trade_action_disagreement_rate",
+      "trade_eligibility_disagreement_rate",
+      "unrecorded_quality_state_count",
+      "validation_period_days",
+      "venue_disagreement_rate",
+      "weekly_bucket_usable_rate"
+    ],
+    "live_shadow_days_consulted": false,
+    "name": "SEALED_HISTORICAL_VALIDATION",
+    "soft_gate_count": 4,
+    "terminal_historical_result": true,
+    "verdict_vocabulary": [
+      "PASS",
+      "FAIL",
+      "UNDEFINED_INSUFFICIENT_EVIDENCE"
+    ]
+  },
+  "stage_b": {
+    "consequence_on_pass": "CANDIDATE_ELIGIBLE_FOR_MANUAL_PRODUCTION_PROMOTION",
+    "direction": "minimum",
+    "hard": true,
+    "metric": "live_shadow_days",
+    "name": "POST_CERTIFICATION_PROMOTION",
+    "requires_stage_a_pass": true,
+    "threshold": 90,
+    "verdict_vocabulary": [
+      "PASS",
+      "FAIL",
+      "UNDEFINED_INSUFFICIENT_EVIDENCE"
+    ]
+  },
+  "stage_relocation": [
+    {
+      "direction": "minimum",
+      "from": "SEALED_HISTORICAL_VALIDATION",
+      "hard": true,
+      "metric": "live_shadow_days",
+      "threshold": 90,
+      "to": "POST_CERTIFICATION_PROMOTION"
+    }
+  ],
+  "validator_definition_sha256": "8cf091fb8c0374f876dc54237d0226cea3f11a3d7554f6abae5ba5c1df498c28",
+  "validator_version": "BTC_REFERENCE_COMPOSITE_V4_VALIDATOR_V1"
+}

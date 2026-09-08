@@ -1,0 +1,1794 @@
+{
+  "decision_contract": {
+    "stage_a": {
+      "consequence": "HISTORICAL_CANDIDATE_APPROVED_FOR_LIVE_SHADOW",
+      "does_not_claim_live_shadow_occurred": true,
+      "hard_gate_count": 28,
+      "inherited_metrics": [
+        "atr_median_absolute_fractional_difference",
+        "atr_p95_absolute_fractional_difference",
+        "cross_market_confirmed_stop_preservation_rate",
+        "daily_bucket_usable_rate",
+        "deterministic_rerun_hash_match",
+        "gap_through_stop_consensus_agreement_rate",
+        "historical_fallback_splice_count",
+        "isolated_venue_stop_suppression_rate",
+        "mae_max_absolute_difference",
+        "mae_median_absolute_difference",
+        "mae_p95_absolute_difference",
+        "mfe_max_absolute_difference",
+        "mfe_median_absolute_difference",
+        "mfe_p95_absolute_difference",
+        "point_in_time_violation_count",
+        "provenance_complete_rate",
+        "raw_observation_mutation_count",
+        "reference_degraded_rate",
+        "reference_unavailable_rate",
+        "reference_usable_rate",
+        "regime_classification_disagreement_rate",
+        "risk_size_p95_relative_difference",
+        "setup_classification_disagreement_rate",
+        "silent_incomplete_bucket_omission_count",
+        "stop_touch_disagreement_rate",
+        "swing_level_disagreement_rate_above_0_50_atr",
+        "trade_action_disagreement_rate",
+        "trade_eligibility_disagreement_rate",
+        "unrecorded_quality_state_count",
+        "validation_period_days",
+        "venue_disagreement_rate",
+        "weekly_bucket_usable_rate"
+      ],
+      "name": "SEALED_HISTORICAL_VALIDATION",
+      "terminal_historical_result": true,
+      "verdicts": [
+        "PASS",
+        "FAIL",
+        "UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ]
+    },
+    "stage_b": {
+      "final_production_promotion_requires_pass": true,
+      "hard_gate_count": 1,
+      "inherited_metrics": [
+        "live_shadow_days"
+      ],
+      "live_shadow_days_already_occurred": false,
+      "name": "POST_CERTIFICATION_PROMOTION",
+      "verdicts": [
+        "PASS",
+        "FAIL",
+        "UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ]
+    }
+  },
+  "definition_parent_snapshot_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+  "definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+  "inherited_approval_gates": [
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "atr_median_absolute_fractional_difference",
+      "threshold": "0.02",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "atr_p95_absolute_fractional_difference",
+      "threshold": "0.10",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "threshold": "1.0",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "daily_bucket_usable_rate",
+      "threshold": "0.995",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "deterministic_rerun_hash_match",
+      "threshold": true,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "threshold": "0.99",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "historical_fallback_splice_count",
+      "threshold": 0,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "threshold": "0.95",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "live_shadow_days",
+      "threshold": 90,
+      "v4_stage": "POST_CERTIFICATION_PROMOTION"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "inherited_unchanged": true,
+      "metric": "mae_max_absolute_difference",
+      "threshold": "0.05",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "mae_median_absolute_difference",
+      "threshold": "0.0025",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "mae_p95_absolute_difference",
+      "threshold": "0.01",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "inherited_unchanged": true,
+      "metric": "mfe_max_absolute_difference",
+      "threshold": "0.05",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "mfe_median_absolute_difference",
+      "threshold": "0.0025",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "mfe_p95_absolute_difference",
+      "threshold": "0.01",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "point_in_time_violation_count",
+      "threshold": 0,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "provenance_complete_rate",
+      "threshold": "1.0",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "raw_observation_mutation_count",
+      "threshold": 0,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "inherited_unchanged": true,
+      "metric": "reference_degraded_rate",
+      "threshold": "0.020",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "reference_unavailable_rate",
+      "threshold": "0.005",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "reference_usable_rate",
+      "threshold": "0.995",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "regime_classification_disagreement_rate",
+      "threshold": "0.02",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "risk_size_p95_relative_difference",
+      "threshold": "0.10",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "setup_classification_disagreement_rate",
+      "threshold": "0.01",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "silent_incomplete_bucket_omission_count",
+      "threshold": 0,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "stop_touch_disagreement_rate",
+      "threshold": "0.01",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "swing_level_disagreement_rate_above_0_50_atr",
+      "threshold": "0.05",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "trade_action_disagreement_rate",
+      "threshold": "0.01",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "threshold": "0.01",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "equal",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "unrecorded_quality_state_count",
+      "threshold": 0,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "validation_period_days",
+      "threshold": 1460,
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "maximum",
+      "hard": false,
+      "inherited_unchanged": true,
+      "metric": "venue_disagreement_rate",
+      "threshold": "0.005",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "direction": "minimum",
+      "hard": true,
+      "inherited_unchanged": true,
+      "metric": "weekly_bucket_usable_rate",
+      "threshold": "0.990",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    }
+  ],
+  "inherited_gate_ownership": [
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "atr_median_absolute_fractional_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate daily ATR versus the per-day raw-provider median; median absolute fractional difference",
+      "threshold": "0.02",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "atr_p95_absolute_fractional_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the same daily ATR differences at nearest-rank p95",
+      "threshold": "0.10",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The frozen gate defines the rate's meaning and threshold but not the sealed cross-market event census or denominator.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._known_event_analysis (development-event census only; no frozen sealed event universe)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a declared census of cross-market-confirmed stop events and candidate preservation outcomes",
+      "threshold": "1.0",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "daily_bucket_usable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the complete V2 daily-bucket census, including unusable incomplete buckets",
+      "threshold": "0.995",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The failed V2 executor builds evidence once and has no measurement owner that repeats processing over the same VerifiedRawCollection.",
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor (single evidence build; no rerun comparison owner)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "deterministic_rerun_hash_match",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "two processing digests over the same immutable VerifiedRawCollection and identical semantic identities",
+      "threshold": true,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No frozen owner classifies the sealed gap-through event universe or its deterministic venue-consensus denominator.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison (generic stop probes; no frozen gap-through event classifier)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a declared gap-through stop-event universe and deterministic venue-consensus comparison",
+      "threshold": "0.99",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.price_source_policy.compare_price_sources"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.price_source_policy.compare_price_sources"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "historical_fallback_splice_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "fallback_used provenance on every raw/candidate observation",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The frozen gate does not define the sealed isolated-wick event census or candidate suppression denominator.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._known_event_analysis (development-event census only; no frozen sealed event universe)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a declared isolated-venue stop-event universe and candidate suppression outcomes",
+      "threshold": "0.95",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "live_shadow_days",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": true,
+      "required_evidence": "prospective post-certification shadow observations counted in elapsed qualifying days",
+      "threshold": 90,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "POST_CERTIFICATION_PROMOTION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "mae_max_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.05",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mae_median_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.0025",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mae_p95_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "mfe_max_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.05",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mfe_median_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.0025",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "mfe_p95_absolute_difference",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "point_in_time_violation_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a census of observations whose availability exceeds the decision instant",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "The failed builder hardcodes 1 instead of mechanically evaluating complete owner/version/input/config/definition provenance for every measurement.",
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_evidence._inherited_measurements (hardcoded favourable value; non-conforming)"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "provenance_complete_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "mechanical completeness over every scientific measurement's owner, version, input, config, and definition identity",
+      "threshold": "1.0",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "raw_observation_mutation_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "manifest-bound raw mutation counts verified against immutable bytes",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "reference_degraded_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly quality-state census",
+      "threshold": "0.020",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "reference_unavailable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly quality-state census",
+      "threshold": "0.005",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "reference_usable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly availability census",
+      "threshold": "0.995",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the decision instants, non-price inputs, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 regime owners exist; no frozen candidate/reference comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "regime_classification_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT decision universe plus complete Phase-1 regime inputs replayed for candidate and comparison references",
+      "threshold": "0.02",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the eligible-trade universe, non-price risk inputs, comparison reference, or denominator for this reserved gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 risk owners exist; no frozen eligible-trade comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "risk_size_p95_relative_difference",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT eligible-trade universe plus owner-produced Phase-1 risk sizes for candidate and comparison references",
+      "threshold": "0.10",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the decision instants, complete setup inputs, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 setup owners exist; no frozen candidate/reference comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "setup_classification_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT decision universe plus complete Phase-1 setup inputs replayed for candidate and comparison references",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "silent_incomplete_bucket_omission_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "expected V2 daily/weekly buckets reconciled one-for-one to persisted bucket records",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "stop_touch_disagreement_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate-versus-provider-consensus stop outcomes over frozen PIT trade-path probes",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.btc019b_diagnostics._swing_metric_summary"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.btc019b_diagnostics._swing_metric_summary"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "swing_level_disagreement_rate_above_0_50_atr",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "candidate/raw swing-level pairs and prior ATR under the frozen 0.50-ATR comparison",
+      "threshold": "0.05",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the replay schedule, portfolio state, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 lifecycle/execution owners exist; no frozen decision comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "trade_action_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT strategy-decision universe replayed through the Phase-1 strategy, lifecycle, and execution owners",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_status": "UNRESOLVED_NO_EXECUTABLE_MEASUREMENT_OWNER",
+      "blocking_reason": "No authority freezes the replay schedule, full eligibility inputs, comparison reference, or denominator for this reserved Phase-1 consequence gate.",
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "Phase-1 setup/veto/entry owners exist; no frozen decision comparison universe"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": false,
+      "metric": "trade_eligibility_disagreement_rate",
+      "owner_count": 0,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "a PIT strategy-decision universe replayed through the Phase-1 setup, veto, R/R, and entry owners",
+      "threshold": "0.01",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "equal",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "unrecorded_quality_state_count",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "all V2 hourly quality states reconciled to the frozen vocabulary",
+      "threshold": 0,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "validation_period_days",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the authority-bound sealed window duration",
+      "threshold": 1460,
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "maximum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "hard": false,
+      "historical_sealed_data_derivable": true,
+      "metric": "venue_disagreement_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "V2 hourly quality-state census",
+      "threshold": "0.005",
+      "v3_role": "INHERITED_SOFT_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_status": "RESOLVED_EXACTLY_ONE",
+      "blocking_reason": null,
+      "direction": "minimum",
+      "existing_repository_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "hard": true,
+      "historical_sealed_data_derivable": true,
+      "metric": "weekly_bucket_usable_rate",
+      "owner_count": 1,
+      "pre_existing_nonsealed_evidence": false,
+      "prospective_only": false,
+      "required_evidence": "the complete V2 weekly-bucket census, including unusable incomplete buckets",
+      "threshold": "0.990",
+      "v3_role": "INHERITED_HARD_APPROVAL_GATE",
+      "v4_stage": "SEALED_HISTORICAL_VALIDATION"
+    }
+  ],
+  "parent_protocol": "BTC_REFERENCE_COMPOSITE_V3",
+  "parent_protocol_hash": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+  "production_promotion_authorized": false,
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V4",
+  "research_only": true,
+  "sample_governance": {
+    "already_inspected_samples": [
+      "data/btc019/2023-01-01_2025-12-31",
+      "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+    ],
+    "development_evidence_is_not_out_of_sample": true,
+    "sealed_sample": {
+      "collected": false,
+      "end": "2019-11-30T23:00:00+00:00",
+      "guard": "guard_untouched_validation_sample, inherited unchanged",
+      "guard_refuses_the_sealed_window": true,
+      "inspected": false,
+      "opened": false,
+      "start": "2015-07-20T21:00:00+00:00",
+      "status": "SEALED_UNOPENED",
+      "used_in_this_task": false
+    },
+    "validation_sample": "the sealed 2015-07-20..2019-11-30 window, opened exactly once by a validator bound to this definition hash"
+  },
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V4_PROTOCOL_DEFINITION_V1",
+  "semantic_diff": {
+    "implementation_completeness_changes_are_not_decision_semantics": true,
+    "other_gate_definition_changes": [],
+    "parent_protocol": "BTC_REFERENCE_COMPOSITE_V3",
+    "parent_protocol_hash": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+    "schema_version": "BTC_REFERENCE_COMPOSITE_V3_TO_V4_SEMANTIC_DIFF_V1",
+    "semantic_diff_sha256": "5797baa2ebda23c426bc3c2ad512e9245fd2501a7e5e906e7f89aee87c78cc18",
+    "stage_relocations": [
+      {
+        "direction": "minimum",
+        "from": "SEALED_HISTORICAL_VALIDATION",
+        "hard": true,
+        "metric": "live_shadow_days",
+        "threshold": 90,
+        "to": "POST_CERTIFICATION_PROMOTION"
+      }
+    ],
+    "threshold_changes": [],
+    "v4_protocol": "BTC_REFERENCE_COMPOSITE_V4",
+    "verified_gate_count": 33
+  },
+  "stage_architecture": {
+    "live_shadow_days_threshold": 90,
+    "post_certification_promotion": [
+      "live_shadow_days"
+    ],
+    "sealed_historical_validation": [
+      "atr_median_absolute_fractional_difference",
+      "atr_p95_absolute_fractional_difference",
+      "cross_market_confirmed_stop_preservation_rate",
+      "daily_bucket_usable_rate",
+      "deterministic_rerun_hash_match",
+      "gap_through_stop_consensus_agreement_rate",
+      "historical_fallback_splice_count",
+      "isolated_venue_stop_suppression_rate",
+      "mae_max_absolute_difference",
+      "mae_median_absolute_difference",
+      "mae_p95_absolute_difference",
+      "mfe_max_absolute_difference",
+      "mfe_median_absolute_difference",
+      "mfe_p95_absolute_difference",
+      "point_in_time_violation_count",
+      "provenance_complete_rate",
+      "raw_observation_mutation_count",
+      "reference_degraded_rate",
+      "reference_unavailable_rate",
+      "reference_usable_rate",
+      "regime_classification_disagreement_rate",
+      "risk_size_p95_relative_difference",
+      "setup_classification_disagreement_rate",
+      "silent_incomplete_bucket_omission_count",
+      "stop_touch_disagreement_rate",
+      "swing_level_disagreement_rate_above_0_50_atr",
+      "trade_action_disagreement_rate",
+      "trade_eligibility_disagreement_rate",
+      "unrecorded_quality_state_count",
+      "validation_period_days",
+      "venue_disagreement_rate",
+      "weekly_bucket_usable_rate"
+    ],
+    "stages": [
+      "SEALED_HISTORICAL_VALIDATION",
+      "POST_CERTIFICATION_PROMOTION"
+    ]
+  },
+  "status": "FROZEN_STAGE_OWNERSHIP_CORRECTION",
+  "unchanged_parent_semantics": {
+    "candidate": {
+      "candidate_construction": "Unchanged from the parent: the element-wise median of every provider value available at the fixed composite decision time, its quality-state semantics, its point-in-time contract and its higher-timeframe aggregation rules. V3 changes how the candidate is measured, never how it is built.",
+      "candidate_construction_changed": false,
+      "candidate_series_id": "MEDIAN_OHLC_V2",
+      "method_version": "MEDIAN_OHLC_V2",
+      "minimum_provider_count": 2,
+      "provider_set": [
+        "bitstamp",
+        "coinbase",
+        "bitfinex"
+      ],
+      "single_venue_fallback_allowed": false
+    },
+    "comparability_policy": {
+      "accepted_from_predecessor": true,
+      "floor": "0.50",
+      "hard": true,
+      "invariant": "insufficient evidence can never approve; it can only refuse",
+      "policy_id": "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V2",
+      "principle": "The measured set must be at least as large as the set the contract had to exclude. Below a half, the published rate describes a minority of the structure the pair actually detected, and that minority was selected by provider outage rather than by the market -- so a quieter comparison could be bought with more absent sessions.",
+      "required_evidence": [
+        "all_detected_event_count",
+        "candidate_event_count",
+        "comparable_event_count",
+        "not_comparable_event_count",
+        "not_comparable_rate",
+        "not_comparable_reason_counts",
+        "structural_comparability_rate"
+      ],
+      "required_gate_pair_count": 3,
+      "rule": "Every required gate pair must carry complete comparability evidence and a structural comparability rate at or above the floor. A pair below the floor is inadmissible and cannot certify any gate. A pair with no detected events at all has a null rate, never 0.0, and is insufficient.",
+      "why_not_higher": "The other side of every gate pair is a raw provider whose availability this protocol does not gate; the parent's availability gates bind the candidate series only. A higher floor would make the evidence requirement turn on third-party outages rather than on the candidate, and the per-pair confidence bound already refuses a thin denominator on its own.",
+      "why_not_lower": "A rate computed over a minority of its own detected events is not evidence of agreement; it is evidence of absence.",
+      "zero_comparable_behaviour": "UNDEFINED_INSUFFICIENT_EVIDENCE. A zero comparable denominator is never read as a zero disagreement rate."
+    },
+    "comparison_contract_version": "CROSS_PROVIDER_STRUCTURE_COMPARISON_V2",
+    "convergence_version": "BTC_REFERENCE_COMPOSITE_V3_GATE_ARCHITECTURE_CONVERGENCE_V1",
+    "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+    "dependence_treatment": {
+      "assumptions_removed": [
+        {
+          "assumption_removed": "pooled provider-pair rows as independent Bernoulli trials",
+          "how": "No band is pooled across pairs to set a threshold. The materiality limit is absolute and economic, so the three provider pairs -- which share the same underlying weekly structural events, one market fact appearing in two or three rows -- are never combined into one estimate that a threshold is read off.",
+          "where_it_was": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1 pooled 156 pair measurements into one Wilson band and set the threshold from it."
+        },
+        {
+          "assumption_removed": "multiplied family-wise survival across gate pairs",
+          "how": "No family-wise probability is computed. The approval rule is a conjunction and is reported as one; each pair's 95% statement is about that pair alone and is labelled as such.",
+          "where_it_was": "The predecessor multiplied per-pair pass probabilities across three gate pairs that all share the candidate series, so the product was neither an upper nor a lower bound on the true family-wise rate."
+        }
+      ],
+      "family_wise_probability_multiplied": false,
+      "pair_independence_assumed": false,
+      "treatment_id": "NO_CROSS_PAIR_INDEPENDENCE_ASSUMED_V1",
+      "within_pair_disclosure": "One assumption remains and is declared rather than hidden. The Wilson interval treats the comparable structural events inside a single pair as exchangeable trials. They are distinct calendar events, not one fact repeated across rows, so this is far weaker than the cross-pair assumption that was removed -- but weekly structure is serially dependent and one episode can produce two adjacent-week disagreements, so it is not exact. Its violation is conservative for approval: clustering inflates a numerator, and on a maximum-direction gate read through an upper bound that pushes a pair towards insufficient or failure, never towards a pass. No claim of exact coverage is made or needed, because the approval rule is the deterministic conjunction and the bound only decides whether one pair has enough evidence."
+    },
+    "derived_level_protection": {
+      "components": [
+        {
+          "component": "structural_state hard gate",
+          "hard": true,
+          "protection": "The hard structural gate is itself defined as the swing disagreements that changed a breakout or reclaim state, so derived-level propagation is what it counts. Demoting the breakout and reclaim rate gates does not remove derived-level protection; the surviving hard gate is about derived-level propagation."
+        },
+        {
+          "component": "hard comparability and coverage requirement",
+          "hard": true,
+          "protection": "A derived-level comparison built on a gappy calendar is NOT_COMPARABLE by contract and is excluded from both numerator and denominator, and a pair whose measured set is a minority of its detected set cannot certify at all. A low rate bought with outages is refused before it is read."
+        },
+        {
+          "component": "derived-level census with mandatory individual review",
+          "hard": true,
+          "metric": "unreviewed_derived_level_disagreement_count",
+          "protection": "Every comparable breakout and reclaim disagreement observed on a required gate pair must carry a structured manual review with a recorded economic assessment, in the form BTC-019 already uses. The gate is a zero count, in the parent's own zero-count provenance idiom, not a calibrated rate: at 21 to 39 comparable events a complete census that is individually reviewed is a stronger control than a rate compared against a threshold no one can defend."
+        },
+        {
+          "component": "inherited Tier-4 stop and MFE/MAE sensitivity gates",
+          "hard": true,
+          "metrics": [
+            "stop_touch_disagreement_rate",
+            "cross_market_confirmed_stop_preservation_rate",
+            "isolated_venue_stop_suppression_rate",
+            "gap_through_stop_consensus_agreement_rate",
+            "mfe_median_absolute_difference",
+            "mfe_p95_absolute_difference",
+            "mae_median_absolute_difference",
+            "mae_p95_absolute_difference",
+            "trade_eligibility_disagreement_rate",
+            "trade_action_disagreement_rate",
+            "risk_size_p95_relative_difference",
+            "regime_classification_disagreement_rate",
+            "setup_classification_disagreement_rate"
+          ],
+          "protection": "These are the direct economic measurement of what a breakout or reclaim difference actually costs, on hourly synchronized bars with denominators three orders of magnitude larger than the weekly structural counts. They are inherited hard and unchanged, and they are what rejected Bitstamp."
+        },
+        {
+          "component": "breakout and reclaim diagnostics",
+          "hard": false,
+          "protection": "The full event census stays published per pair and per sample, with reasons, so a future sample that does produce a certifiable denominator can be read against this record without reopening the contract."
+        }
+      ],
+      "failure_mode_addressed": "Approval of a reference whose structural differences materially alter trading outcomes.",
+      "protection_id": "DERIVED_LEVEL_CENSUS_AND_TIER4_V1",
+      "sparse_rate_gate_refused_because": "At the observed denominators no threshold is simultaneously economically defensible and achievable, so a rate gate would publish either a number fitted to the sample or a permanent UNDEFINED. Neither is protection."
+    },
+    "diagnostic_semantics": {
+      "can_veto_approval": false,
+      "computed_and_persisted": true,
+      "enforcement": "The approval verdict is computed by `approval_verdict`, which reads hard-gate results only. Diagnostics live in a separate namespace that no verdict path consults, so a diagnostic value cannot change a verdict even if it is wrong.",
+      "required_fields": [
+        "calendar_displacement_weeks",
+        "comparable_event_count",
+        "count",
+        "matched_pair_count",
+        "not_comparable_event_count",
+        "not_comparable_reason_counts",
+        "rate",
+        "reason_codes"
+      ],
+      "rule": "A diagnostic is measured, published per required pair and per sample, and reviewed. It never enters an approval verdict, never carries a threshold, and never has a pass or fail."
+    },
+    "gate_architecture": {
+      "aggregation": {
+        "aggregation_id": "ALL_REQUIRED_PAIRS_MUST_CERTIFY_V1",
+        "rule": "Every required pair must certify. The gate FAILs when any required pair is a material failure; otherwise it is UNDEFINED_INSUFFICIENT_EVIDENCE when any required pair is missing, inadmissible, undefined or insufficient; and it PASSes only when all of them certify. A definite material failure outranks missing evidence, so one bad pair cannot be hidden behind another pair's silence. No probability is combined across pairs and no survival probability is multiplied: the rule is a deterministic conjunction over an explicitly enumerated pair set.",
+        "verdicts": [
+          "PASS",
+          "FAIL",
+          "UNDEFINED_INSUFFICIENT_EVIDENCE"
+        ]
+      },
+      "certification_rule": {
+        "confidence_level_percent": "95",
+        "equality_behaviour": "Equality certifies. A rate exactly at the limit passes and an upper bound exactly at the limit certifies, matching the repository's inclusive gate-boundary convention.",
+        "normal_quantile": "1.959963984540054235631",
+        "outcomes": [
+          "PAIR_CERTIFIED",
+          "PAIR_MATERIAL_FAILURE",
+          "PAIR_INSUFFICIENT_EVIDENCE"
+        ],
+        "properties": [
+          "One rule replaces the predecessor's separate threshold and scalar minimum-n, so there is no equal-denominator derivation to carry.",
+          "It is evaluated on one pair's own numerator and denominator, so an unequal denominator vector needs no separate treatment and cannot invalidate it.",
+          "A small denominator widens the interval, so thin evidence fails to certify rather than passing quietly: insufficient evidence can never approve.",
+          "A zero comparable denominator has no interval at all and is insufficient, never a rate of 0.0.",
+          "It is a deterministic function of two integers, a declared quantile and an explicit Decimal context, so it reproduces exactly.",
+          "It separates a reference that is measurably bad from one that is merely unmeasured, which the predecessor's single threshold could not."
+        ],
+        "reason_codes": [
+          "BELOW_STRUCTURAL_COMPARABILITY_FLOOR",
+          "EVIDENCE_DOES_NOT_EXCLUDE_A_MATERIAL_RATE",
+          "NO_COMPARABLE_EVENTS",
+          "PAIR_INADMISSIBLE",
+          "OBSERVED_RATE_EXCEEDS_THE_MATERIALITY_LIMIT",
+          "REQUIRED_PAIR_ABSENT"
+        ],
+        "rule": "A pair certifies a maximum-direction structural gate when, and only when, it is admissible, its comparable-event denominator is non-zero, and the upper limit of the two-sided 95% Wilson score interval on its own numerator and denominator is at or below the absolute materiality limit. If the observed point rate itself exceeds the limit the pair is a material failure. If the point rate is at or below the limit but the upper limit is not, the pair has not produced enough evidence to exclude a material rate and is insufficient, never a pass. Equality certifies, in both comparisons, matching the repository's existing convention that a gate boundary is inclusive.",
+        "rule_id": "PER_PAIR_WILSON_UPPER_BOUND_V1"
+      },
+      "diagnostic_metrics": [
+        "breakout_disagreement_rate",
+        "reclaim_disagreement_rate",
+        "within_1_week_swing_disagreement_rate",
+        "within_2_week_swing_disagreement_rate"
+      ],
+      "hard_metrics": [
+        "structural_state_disagreement_rate"
+      ],
+      "insufficient_evidence_behaviour": "UNDEFINED_INSUFFICIENT_EVIDENCE, which cannot approve. Insufficient evidence never becomes a pass and never becomes a rate of 0.0.",
+      "metrics": [
+        {
+          "coverage_reasoning": "A breakout difference from a swing the two series disagree about is already counted once by structural_state -- which is defined as exactly the swing disagreements that changed breakout or reclaim state. What remains here is a differing confirmation of a shared level, whose trade-level consequence is bounded hard and directly by the inherited Tier-4 stop, MFE/MAE, eligibility, action and setup-classification gates on hourly synchronized bars.",
+          "covered_by_another_gate": true,
+          "metric": "breakout_disagreement_rate",
+          "protects_against": "A reference that confirms a breakout of a shared swing high that independent references do not, or in a different week.",
+          "reason_codes": [
+            "DENOMINATOR_CANNOT_CERTIFY",
+            "PROTECTION_RETAINED_AS_CENSUS_AND_TIER4"
+          ],
+          "removing_the_hard_veto_would_weaken_protection": false,
+          "role": "DIAGNOSTIC_ONLY",
+          "statistically_supportable": false,
+          "support_reasoning": "Zero disagreements over 39 pooled comparable events, on admissible pair denominators of 5 to 12. At a denominator of 12 and no disagreements the 95% upper bound is 0.2425, and at 9 it is 0.2991: the evidence cannot exclude a rate above any economically defensible limit for a derived level, so no certification is available at these denominators. Under the predecessor's relative alternative it was worse -- unidentifiable at every denominator, as Stage 1 reconfirms.",
+          "weakening_reasoning": "A rate gate that cannot certify on any realistic denominator delivers UNDEFINED, not protection. The events are economically meaningful, so V3 keeps them as a complete census with a hard requirement that every observed derived-level disagreement is individually reviewed and recorded -- which at these counts is a stronger control than a rate compared against a number nobody can defend."
+        },
+        {
+          "coverage_reasoning": "It shares structural_state's denominator and its numerator is a superset of structural_state's on every one of the twelve measurements; structural_state is exactly the part of it that propagated. Two hard vetoes over one nested event set would be the same evidence counted twice, which the project's factor-separation rule refuses. What it adds beyond the hard gate is timing information that has not yet propagated, which is a reason to look rather than a reason to reject.",
+          "covered_by_another_gate": true,
+          "metric": "exact_timestamp_swing_disagreement_rate",
+          "protects_against": "A reference that labels weekly swings at different sessions from independent references even where no downstream state changed -- an early indication of a structurally different series.",
+          "reason_codes": [
+            "NESTED_IN_A_SURVIVING_HARD_GATE",
+            "LABEL_LEVEL_SIGNAL_ONLY"
+          ],
+          "removing_the_hard_veto_would_weaken_protection": false,
+          "role": "SOFT_WARNING_GATE",
+          "statistically_supportable": true,
+          "support_reasoning": "Same denominator as the hard gate, so it is measurable; but a label-level difference is not by itself economic harm, so its measurability does not make it an approval veto.",
+          "weakening_reasoning": "Every exact-timestamp disagreement that carries economic consequence is, by construction, also a structural_state event and is already vetoed. Those that carry none are labelling differences; rejecting a sound reference for them costs research and buys no protection."
+        },
+        {
+          "coverage_reasoning": "Same position as breakout: propagated swing differences are already counted by structural_state, and the trade-level consequence of a differing confirmation is bounded by the inherited Tier-4 gates.",
+          "covered_by_another_gate": true,
+          "metric": "reclaim_disagreement_rate",
+          "protects_against": "A reference that confirms a reclaim of a shared swing low that independent references do not, or in a different week.",
+          "reason_codes": [
+            "DENOMINATOR_CANNOT_CERTIFY",
+            "PROTECTION_RETAINED_AS_CENSUS_AND_TIER4"
+          ],
+          "removing_the_hard_veto_would_weaken_protection": false,
+          "role": "DIAGNOSTIC_ONLY",
+          "statistically_supportable": false,
+          "support_reasoning": "Three disagreements over 21 pooled comparable events, with admissible pair denominators of 2 to 6. At 5 comparable events even a zero numerator has a 95% upper bound of 0.4345, and 1/5 gives 0.6245. Nothing in that range is an economically defensible materiality limit for a derived level, and the non-sealed history that would enlarge the denominator does not exist.",
+          "weakening_reasoning": "Identical to breakout, and more so: reclaim is the one metric whose sparsity is genuine rather than an artefact of the objective, and it is precisely where a frequentist rate would invent precision. The census plus mandatory individual review keeps every event visible and accounted for."
+        },
+        {
+          "coverage_reasoning": "Nothing else in the protocol measures upstream structural difference. The Tier-4 gates measure the harm once it reaches a trade; this measures the cause, and a systematically different structural description can exist in a period whose trades happen not to expose it.",
+          "covered_by_another_gate": false,
+          "metric": "structural_state_disagreement_rate",
+          "protects_against": "A canonical reference whose weekly structural map differs from independent observable market references in ways that change downstream support and resistance state -- the failure mode that puts stops, invalidation levels and setup classification on a level the market did not make.",
+          "reason_codes": [
+            "ECONOMICALLY_CONSEQUENTIAL_SUBSET",
+            "SUPPORTABLE_DENOMINATOR"
+          ],
+          "removing_the_hard_veto_would_weaken_protection": true,
+          "role": "HARD_APPROVAL_GATE",
+          "statistically_supportable": true,
+          "support_reasoning": "It has the largest comparable denominator of the six -- 22 to 29 events per pair per already-inspected sample -- and its rule is a per-pair confidence bound against an absolute limit, so it needs no cross-pair pooling and no equal-denominator derivation. The protocol's own hard `validation_period_days` minimum of 1460 days makes any admissible validation sample large enough for the bound to be informative at the development event density.",
+          "weakening_reasoning": "Demoting it would leave no gate at all on upstream structural difference, and the derived-level and Tier-4 evidence would then be certifying the consequences of a structurally different series rather than confirming a structurally equivalent one."
+        },
+        {
+          "coverage_reasoning": "It is exact_timestamp with matched opposing pairs merged. No measurement in either already-inspected sample merges a pair, so on all twelve observations it is numerically identical to exact_timestamp and carries no separate information.",
+          "covered_by_another_gate": true,
+          "metric": "within_1_week_swing_disagreement_rate",
+          "protects_against": "Exact-timestamp disagreement that is only a one-week shift of the same structure, which the metric is meant to forgive.",
+          "reason_codes": [
+            "NOT_SEPARATELY_IDENTIFIED",
+            "MECHANISM_NEVER_EXERCISED"
+          ],
+          "removing_the_hard_veto_would_weaken_protection": false,
+          "role": "DIAGNOSTIC_ONLY",
+          "statistically_supportable": false,
+          "support_reasoning": "Its defining mechanism is never exercised by the evidence, so its own threshold is not separately identified. A number fixed here would be a number about exact_timestamp wearing another name.",
+          "weakening_reasoning": "A hard veto on a metric identical to a soft one is not extra protection; it is the same measurement given a second vote. The merge count and the calendar displacement of any pair that does merge stay published, so the mechanism becomes visible the moment it fires."
+        },
+        {
+          "coverage_reasoning": "Identical position to within_1_week, at a wider tolerance: no measurement merges a pair, and the only opposing-side swing disagreement pair anywhere in the record is three weeks apart, outside both tolerances.",
+          "covered_by_another_gate": true,
+          "metric": "within_2_week_swing_disagreement_rate",
+          "protects_against": "Exact-timestamp disagreement that is a two-week shift of the same structure.",
+          "reason_codes": [
+            "NOT_SEPARATELY_IDENTIFIED",
+            "MECHANISM_NEVER_EXERCISED"
+          ],
+          "removing_the_hard_veto_would_weaken_protection": false,
+          "role": "DIAGNOSTIC_ONLY",
+          "statistically_supportable": false,
+          "support_reasoning": "Not separately identified for the same reason, and its inherited 0.02 was a round tail allowance never bound to any event universe.",
+          "weakening_reasoning": "Same as within_1_week. The tolerance ordering is preserved in the diagnostic, so a future sample that does merge pairs will show the two tolerances diverging from exact_timestamp before any threshold is written for them."
+        }
+      ],
+      "removed_metrics": [],
+      "roles": {
+        "breakout_disagreement_rate": "DIAGNOSTIC_ONLY",
+        "exact_timestamp_swing_disagreement_rate": "SOFT_WARNING_GATE",
+        "reclaim_disagreement_rate": "DIAGNOSTIC_ONLY",
+        "structural_state_disagreement_rate": "HARD_APPROVAL_GATE",
+        "within_1_week_swing_disagreement_rate": "DIAGNOSTIC_ONLY",
+        "within_2_week_swing_disagreement_rate": "DIAGNOSTIC_ONLY"
+      },
+      "soft_metrics": [
+        "exact_timestamp_swing_disagreement_rate"
+      ]
+    },
+    "gate_pair_universe": {
+      "admissibility": "A pair is admissible when both series carry their declared roles, the measurement was produced by this comparison contract and this detector version under PRICE_SOURCE_POLICY_V1, and its structural comparability rate is at or above the floor. An inadmissible pair is never dropped: it is recorded and makes its gate insufficient.",
+      "aggregation": "ALL_REQUIRED_PAIRS_MUST_CERTIFY_V1",
+      "calibration_pairs": [
+        "bitfinex_vs_bitstamp",
+        "bitfinex_vs_coinbase",
+        "bitstamp_vs_coinbase"
+      ],
+      "gate_pairs": [
+        "MEDIAN_OHLC_V2_vs_bitfinex",
+        "MEDIAN_OHLC_V2_vs_bitstamp",
+        "MEDIAN_OHLC_V2_vs_coinbase"
+      ],
+      "pair_roles": {
+        "APPROVAL_GATE_PAIR": "one candidate series against one independent raw validation provider; the only evidence that decides the candidate",
+        "SOURCE_DISPERSION_GUARD_PAIR": "two distinct independent raw validation providers; evidence about whether market structure is identified at all, and the transfer guard's whole input"
+      },
+      "required_gate_pair_count": 3,
+      "universe_id": "CANDIDATE_VERSUS_INDEPENDENT_RAW_PROVIDER_PAIRS_V1"
+    },
+    "hypothesis": "Keep robust median OHLC as the reference-price estimator while separating price availability from reference-quality state.",
+    "inherited_unchanged_from_parent": [
+      "MEDIAN_OHLC_V2 candidate construction",
+      "the quality-state semantics",
+      "the higher-timeframe aggregation contract",
+      "the point-in-time contract",
+      "the provider set, instruments and minimum provider count",
+      "the ATR materiality grid and its 0.50 primary threshold",
+      "the live-shadow requirement",
+      "every parent approval gate except the six structural rate gates",
+      "the sealed-sample guard and its window"
+    ],
+    "material_change_requires": "BTC_REFERENCE_COMPOSITE_V4 or later",
+    "materiality": {
+      "absolute_limit": "0.20",
+      "applies_to": "structural_state_disagreement_rate",
+      "derivation": [
+        {
+          "ground": "structural meaning",
+          "reasoning": "The weekly structural map is a set of active levels, not a stream of independent observations. A disagreement rate is the fraction of that set which exists in one series and not the other. Above one in five, more than a fifth of the active map is source specific and the two series are no longer describing the same market structure -- whatever their prices look like."
+        },
+        {
+          "ground": "strategy impact",
+          "reasoning": "Weekly levels anchor BTC-141 invalidation and BTC-142 stops, feed the Structure Score and gate setup classification, and each level stays active for weeks. A level that only one series ever printed puts a stop and a setup on a venue artefact for the whole time it remains in the map."
+        },
+        {
+          "ground": "stop / MFE / MAE consequences",
+          "reasoning": "The trade-level cost of a bad reference is measured directly, and hard, by the inherited Tier-4 gates: stop_touch_disagreement_rate at most 0.01, cross_market_confirmed_stop_preservation_rate at least 1.0, MFE and MAE medians at most 0.0025 and p95 at most 0.01. The structural gate is the upstream cause, not the harm, so it is set where structural difference stops being isolated and becomes systematic -- not at the decision-tier tolerances, which bound the harm itself two orders of magnitude tighter."
+        },
+        {
+          "ground": "known source sensitivity",
+          "reasoning": "BTC-019 rejected Bitstamp as the sole canonical reference on a handful of structural differences whose Tier-4 consequences were a missed consensus stop and 2.433 / 4.605 percentage points of MFE / MAE sensitivity. The project's own precedent is that a few consequential structural differences are disqualifying when they propagate, which is what the Tier-4 gates test; the structural limit's job is to refuse a reference whose whole structural description differs."
+        },
+        {
+          "ground": "Phase-1 tolerance philosophy",
+          "reasoning": "Phase 1 asks for a reference a competent independent observer would accept as a description of the same market, not for a perfect one. Four in five agreement on consequential structural events is the weakest claim that still supports that reading, and the limit is a simple interpretable fraction rather than a fitted decimal."
+        }
+      ],
+      "direction": "maximum",
+      "independent_of_observation": "The limit answers what disagreement rate would be unacceptable, which is a question about consequence and not about whether development evidence happened to observe zero disagreements. It is declared here as a module constant, ahead of any measurement, and no code path lets an observed rate move it.",
+      "policy_id": "ABSOLUTE_STRUCTURAL_MATERIALITY_V1",
+      "refused_derivations": [
+        {
+          "derivation": "maximum observed disagreement rate plus an epsilon",
+          "why_refused": "That defines the unacceptable level as whatever development evidence happened to produce, so a quiet sample would license a loose reference and a noisy one a strict reference."
+        },
+        {
+          "derivation": "a multiple of the observed independent-provider band",
+          "why_refused": "This is the predecessor's `3 x pi_bar`. The alternative shrinks with the band, so a metric observing no disagreement is unidentifiable at every sample size, and the limit stops meaning anything economic."
+        },
+        {
+          "derivation": "the value that reproduces a BTC_REFERENCE_COMPOSITE_V2 verdict",
+          "why_refused": "The frozen V2 numbers were carried forward explicitly uncalibrated; reproducing them would launder an unjustified number through a new protocol."
+        },
+        {
+          "derivation": "the value that maximises the number of historical pairs that pass",
+          "why_refused": "Pass counting selects the threshold from the outcome. The realism check below reports how the limit sits against observed dispersion; it does not choose it."
+        },
+        {
+          "derivation": "the value that makes the candidate pass",
+          "why_refused": "The candidate is never constructed or measured in this task, precisely so that it cannot inform the limit."
+        }
+      ],
+      "relative_alternative_retained": false,
+      "statement": "A canonical BTC reference is materially unfit when, against an independent observable market reference, more than one in five economically consequential weekly structural events resolves differently. Economically consequential means the two series disagree about a weekly swing and the detecting series also confirmed a breakout or reclaim from it, so the difference changed downstream support and resistance state rather than only a label."
+    },
+    "metric_definitions": [
+      {
+        "absent_source_level_treatment": "Not applicable; a swing candidate has no source level.",
+        "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+        "agreement_treatment": "Both series detect, or both series decline to detect, a comparable candidate. Only the detected ones enter the denominator; a candidate neither series detects is not an event.",
+        "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: a required session is absent inside a series' own coverage. Excluded, and separately gated by the parent protocol's hard availability metrics.",
+        "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+        "denominator": "Swing candidates at least one series detects and both series can evaluate, i.e. both hold every session of the detector's own T-3..T+3 confirmation reach.",
+        "denominator_id": "comparable_detected_event_union",
+        "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+        "disagreement_treatment": "Exactly one series detects a comparable candidate: one event in the numerator and one in the denominator.",
+        "frozen_direction": "maximum",
+        "frozen_hard": false,
+        "frozen_threshold": "0.15",
+        "frozen_validation_stage": "historical_oos",
+        "metric": "exact_timestamp_swing_disagreement_rate",
+        "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+        "numerator": "Comparable detected swing candidates that exactly one series detects.",
+        "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: a required session had not closed or not been ingested at the sample's evaluation instant. Excluded, so appending later history cannot rewrite a past verdict.",
+        "reason_codes": [
+          "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+          "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+          "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+          "THRESHOLD_ANCHOR_ENTIRELY_AVAILABILITY_DRIVEN",
+          "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+          "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+        ],
+        "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B observed 12.1212% caused by two adjacent-week shifts'. That figure is 4/33 in btc_predictor/research/btc019b_diagnostics.py::_swing_metric_summary, whose denominator is the all-detected-event union of the compared swing sets, so the frozen 0.15 was fixed to sit above it. All four of those numerator events are NOT_COMPARABLE availability gaps under the comparison contract, so under the resolved denominator the anchor observation is not rescaled, it is zero.",
+        "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+        "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+      },
+      {
+        "absent_source_level_treatment": "Not applicable; a swing candidate has no source level.",
+        "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+        "agreement_treatment": "As the exact-timestamp metric, plus: a matched pair within the tolerance is an agreement about one merged structure.",
+        "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded before matching, so an availability gap can neither create nor absorb a matched pair.",
+        "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+        "denominator": "The comparable detected swing event union with each matched pair counted once rather than twice, because a structure both series found one week apart is one structure.",
+        "denominator_id": "comparable_detected_event_union_matched_pairs_merged",
+        "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+        "disagreement_treatment": "An unmatched comparable one-sided detection, counted once in the numerator and once in the unmerged part of the denominator.",
+        "frozen_direction": "maximum",
+        "frozen_hard": true,
+        "frozen_threshold": "0.05",
+        "frozen_validation_stage": "historical_oos",
+        "metric": "within_1_week_swing_disagreement_rate",
+        "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+        "numerator": "Comparable one-sided swing disagreements that no opposing comparable one-sided disagreement of the same family sits within one weekly session of; matching is nearest-admissible-pair first, so it is independent of provider and dictionary order.",
+        "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded before matching.",
+        "reason_codes": [
+          "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+          "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+          "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+          "THRESHOLD_ALLOWANCE_NOT_BOUND_TO_A_UNIVERSE",
+          "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+          "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+        ],
+        "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B diagnostic rate was zero; 5% allows sparse unexplained events'. A zero numerator is denominator-invariant, so the observation carries no denominator information; the pair-merged denominator itself is recoverable from btc_predictor/research/btc019b_diagnostics.py::_swing_metric_summary (33 - matched pairs = 31). What is not recoverable is the allowance: 0.05 was a round economic tolerance never bound to a stated universe, and the measured verdict against that identical number moves between the two denominators.",
+        "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+        "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+      },
+      {
+        "absent_source_level_treatment": "Not applicable; a swing candidate has no source level.",
+        "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+        "agreement_treatment": "As within_1_week with a two weekly-session matching tolerance.",
+        "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded before matching.",
+        "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+        "denominator": "As within_1_week with a two weekly-session matching tolerance.",
+        "denominator_id": "comparable_detected_event_union_matched_pairs_merged",
+        "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+        "disagreement_treatment": "An unmatched comparable one-sided detection at two weeks of tolerance, which the frozen rationale reads as more than label timing noise.",
+        "frozen_direction": "maximum",
+        "frozen_hard": true,
+        "frozen_threshold": "0.02",
+        "frozen_validation_stage": "historical_oos",
+        "metric": "within_2_week_swing_disagreement_rate",
+        "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+        "numerator": "As within_1_week with a two weekly-session matching tolerance.",
+        "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded before matching.",
+        "reason_codes": [
+          "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+          "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+          "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+          "THRESHOLD_ALLOWANCE_NOT_BOUND_TO_A_UNIVERSE",
+          "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+          "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+        ],
+        "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B diagnostic rate was zero; stricter 2% tail allowance'. Same structure as within_1_week: the pair-merged denominator is recoverable, the zero observation is denominator-invariant, and the 0.02 tail allowance was never bound to a universe.",
+        "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+        "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+      },
+      {
+        "absent_source_level_treatment": "NOT_COMPARABLE_SOURCE_LEVEL on the derived candidate consulted for the state change: the swing itself stays in the denominator only if the swing is comparable, and contributes to the numerator only on a confirmed derived level.",
+        "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+        "agreement_treatment": "A comparable swing candidate whose downstream breakout/reclaim state is the same on both series, including every candidate both series agree about.",
+        "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded.",
+        "candidate_universe": "Weekly swing-high and swing-low candidate sessions on the two compared series' common canonical UTC Monday calendar, both families pooled.",
+        "denominator": "The comparable detected swing event union, unmerged: the same universe as the exact-timestamp metric, because this metric asks how often a swing difference propagates, not how often one occurs.",
+        "denominator_id": "comparable_detected_event_union",
+        "denominator_intent": "DENOMINATOR_INTENT_RECOVERABLE_BUT_DEFECTIVE",
+        "disagreement_treatment": "One event in the numerator per comparable one-sided swing whose structural state changed.",
+        "frozen_direction": "maximum",
+        "frozen_hard": true,
+        "frozen_threshold": "0.05",
+        "frozen_validation_stage": "historical_oos",
+        "metric": "structural_state_disagreement_rate",
+        "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+        "numerator": "Comparable one-sided swing disagreements whose level the detecting series also confirmed a breakout or reclaim from, so the difference changed downstream support/resistance state rather than only a label.",
+        "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded.",
+        "reason_codes": [
+          "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+          "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+          "ONLY_RECOVERABLE_READING_IS_THE_KNOWN_DEFECT",
+          "THRESHOLD_ANCHOR_ENTIRELY_AVAILABILITY_DRIVEN",
+          "THRESHOLD_ANCHOR_EXCEEDS_FROZEN_THRESHOLD",
+          "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+          "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+        ],
+        "threshold_intent_evidence": "The frozen source_of_rationale is 'BTC-019B separated structural effects from exact timestamp labels' -- an attribution of the concept, not of the number. BTC-019B measured 2/33 = 6.0606%, which exceeds the frozen 0.05, so the threshold was never an accommodation of its own calibration observation; and both numerator events belong to the two BTC-019B pairs that are NOT_COMPARABLE availability gaps under the comparison contract.",
+        "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+        "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+      },
+      {
+        "absent_source_level_treatment": "NOT_COMPARABLE_SOURCE_LEVEL: a breakout whose source swing is itself not comparable, or which the two series hold no shared source swing for, is excluded. The upstream swing disagreement is already counted once in the swing metrics; counting its shadow again would double-count one difference.",
+        "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+        "agreement_treatment": "Both series confirm in the same week, or neither ever confirms across the whole shared remaining calendar. Only confirmed candidates enter the denominator.",
+        "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded, with the missing confirmation weeks named.",
+        "candidate_universe": "Breakout candidates on the pair's common weekly calendar: one per shared source swing high, keyed by that source level, not by the confirmation week.",
+        "denominator": "Breakout candidates at least one series confirms and both series can evaluate, i.e. both hold every week from the source swing through the later confirmation, or through the end of the shared calendar when either series never confirms.",
+        "denominator_id": "comparable_detected_event_union",
+        "denominator_intent": "DENOMINATOR_INTENT_NOT_RECOVERABLE",
+        "disagreement_treatment": "One event in numerator and denominator per comparable candidate with a differing confirmation.",
+        "frozen_direction": "maximum",
+        "frozen_hard": true,
+        "frozen_threshold": "0.05",
+        "frozen_validation_stage": "historical_oos",
+        "metric": "breakout_disagreement_rate",
+        "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+        "numerator": "Comparable breakout candidates the two series resolve differently -- exactly one confirms, or both confirm in different weeks.",
+        "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded. 'Never confirms' is a claim about every remaining week, so it may only be made where every remaining week has arrived.",
+        "reason_codes": [
+          "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+          "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+          "CANDIDATE_UNIVERSE_AMBIGUOUS",
+          "PRE_EXISTING_FORMULAS_DISAGREE",
+          "NO_CALIBRATION_ARTIFACT_EXISTS",
+          "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+          "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+        ],
+        "threshold_intent_evidence": "The frozen source_of_rationale is 'Economic reasoning using existing deterministic breakout logic'. No calibration artifact exists: BTC-019B computed no breakout rate at all, and the frozen V2 protocol lists breakout under its 'swings' metric family while the only pre-existing implementation, btc_predictor/research/reference_composite_empirical.py::_structural_comparison, measures it over a per-category breakout event union against a two-of-three provider consensus. Those are different denominators and the frozen definition does not choose between them.",
+        "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+        "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+      },
+      {
+        "absent_source_level_treatment": "NOT_COMPARABLE_SOURCE_LEVEL: as breakouts.",
+        "aggregation": "One measurement per unordered pair of declared comparison series, canonicalised by sorted series id on the PAIRWISE_COMMON_WEEKLY_CALENDAR. Every pair's measurement is persisted; the gate verdict is the worst admissible pair verdict. No multi-provider quorum is formed, because a quorum series has no calendar of its own to require.",
+        "agreement_treatment": "Both series confirm in the same week, or neither ever confirms across the whole shared remaining calendar.",
+        "availability_gap_treatment": "NOT_COMPARABLE_AVAILABILITY_GAP: excluded, with the missing confirmation weeks named.",
+        "candidate_universe": "Reclaim candidates on the pair's common weekly calendar: one per shared source swing low, keyed by that source level, not by the confirmation week.",
+        "denominator": "Reclaim candidates at least one series confirms and both series can evaluate, on the same confirmation calendar rule as breakouts.",
+        "denominator_id": "comparable_detected_event_union",
+        "denominator_intent": "DENOMINATOR_INTENT_NOT_RECOVERABLE",
+        "disagreement_treatment": "One event in numerator and denominator per comparable candidate with a differing confirmation.",
+        "frozen_direction": "maximum",
+        "frozen_hard": true,
+        "frozen_threshold": "0.05",
+        "frozen_validation_stage": "historical_oos",
+        "metric": "reclaim_disagreement_rate",
+        "not_comparable_treatment": "EXCLUDED_FROM_NUMERATOR_AND_DENOMINATOR",
+        "numerator": "Comparable reclaim candidates the two series resolve differently -- exactly one confirms, or both confirm in different weeks.",
+        "pending_confirmation_treatment": "NOT_COMPARABLE_CONFIRMATION_PENDING: excluded, as breakouts.",
+        "reason_codes": [
+          "FROZEN_V2_DECLARES_NO_DENOMINATOR",
+          "NOT_COMPARABLE_CATEGORY_ABSENT_AT_FREEZE",
+          "CANDIDATE_UNIVERSE_AMBIGUOUS",
+          "PRE_EXISTING_FORMULAS_DISAGREE",
+          "NO_CALIBRATION_ARTIFACT_EXISTS",
+          "AGGREGATION_BASIS_UNDECLARED_AT_FREEZE",
+          "FROZEN_VERDICT_DEPENDS_ON_DENOMINATOR"
+        ],
+        "threshold_intent_evidence": "The frozen source_of_rationale is 'Economic reasoning using existing deterministic reclaim logic'. Identical position to breakout: no calibration artifact, and two incompatible pre-existing candidate universes.",
+        "threshold_portability": "CARRIED_FORWARD_UNCALIBRATED",
+        "threshold_semantics": "THRESHOLD_SEMANTICS_NOT_RECOVERABLE"
+      }
+    ],
+    "new_hard_requirements": [
+      "structural_comparability_rate",
+      "required_gate_pair_count",
+      "unrecorded_not_comparable_event_count",
+      "unreviewed_derived_level_disagreement_count",
+      "raw_provider_structural_dispersion_guard"
+    ],
+    "not_comparable_semantics": {
+      "excluded_from_numerator_and_denominator": true,
+      "reason": "An unevaluable event is neither an agreement nor a disagreement. Counting it as agreement would make every extra outage buy a free agreement.",
+      "states": [
+        "NOT_COMPARABLE_AVAILABILITY_GAP",
+        "NOT_COMPARABLE_CONFIRMATION_PENDING",
+        "NOT_COMPARABLE_SERIES_COVERAGE",
+        "NOT_COMPARABLE_SOURCE_LEVEL"
+      ],
+      "unrecorded_not_comparable_event_count": {
+        "direction": "equal",
+        "hard": true,
+        "threshold": 0
+      }
+    },
+    "predecessor_governance": {
+      "calibration_review_commit": "03bb52d2881ca11c55fd09b8a54d922ec7dc0079",
+      "calibration_version": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1",
+      "convergence_boundary": "FINAL_CONVERGENCE_WITH_EXISTING_EVIDENCE",
+      "denominator_semantics_version": "STRUCTURAL_DISAGREEMENT_DENOMINATOR_SEMANTICS_V1",
+      "proposed_definition_sha256": "1ac5438a2eaf742c72bde285ba8289629d17986e1ec00fbee61d724b38417baa"
+    },
+    "price_source_policy_version": "PRICE_SOURCE_POLICY_V1",
+    "production_promotion_authorized": false,
+    "research_only": true,
+    "sample_governance": {
+      "already_inspected_samples": [
+        "data/btc019/2023-01-01_2025-12-31",
+        "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31"
+      ],
+      "development_evidence_is_not_out_of_sample": true,
+      "sealed_sample": {
+        "collected": false,
+        "end": "2019-11-30T23:00:00+00:00",
+        "guard": "guard_untouched_validation_sample, inherited unchanged",
+        "guard_refuses_the_sealed_window": true,
+        "inspected": false,
+        "opened": false,
+        "start": "2015-07-20T21:00:00+00:00",
+        "status": "SEALED_UNOPENED",
+        "used_in_this_task": false
+      },
+      "validation_sample": "the sealed 2015-07-20..2019-11-30 window, opened exactly once by a validator bound to this definition hash"
+    },
+    "soft_gate_semantics": {
+      "cannot_reject_a_candidate_alone": true,
+      "contributes_to_the_approval_verdict": false,
+      "evidence_annotation": "A warning is persisted on the approval record with the offending pairs, their rates and their reason codes, and travels with the record; an approval issued over a warning shows the warning.",
+      "manual_review_trigger": "A warning makes a structured manual structural review mandatory before approval, in the form BTC-019 already uses for its 82 persisted review records. The review's outcome is recorded; it does not become a numeric gate.",
+      "measure": "The observed point rate, not the confidence bound: a warning should fire readily, and a wide interval on thin evidence is itself a reason to look.",
+      "outcome_when_undefined": "WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED",
+      "outcomes": [
+        "OK",
+        "WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED"
+      ],
+      "rule": "OK when every required gate pair is defined, admissible and at or below the absolute materiality limit on its observed point rate; WARN_MANUAL_STRUCTURAL_REVIEW_REQUIRED otherwise, including when a required pair is missing or undefined. The limit is the same absolute structural materiality limit, deliberately applied to the weaker label-level signal, so the soft gate is a strictly earlier trigger than the hard gate on the same evidence.",
+      "warning_only": true
+    },
+    "source_detector_version": "BTC_PREDICTOR_WEEKLY_LEVELS_V1",
+    "structural_matching_semantics": {
+      "algorithm_id": "MAX_CARDINALITY_MIN_DISTANCE_LEXICOGRAPHIC_V1",
+      "comparison_basis": "PAIRWISE_COMMON_WEEKLY_CALENDAR",
+      "families_matched_separately": [
+        "swing_high",
+        "swing_low"
+      ],
+      "inherited_from": "BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1",
+      "role_in_v3": "Diagnostic only. The within-N metrics it serves are diagnostics, so the matching no longer affects any verdict; it remains fully specified so the diagnostic is reproducible.",
+      "tolerances_weeks": [
+        1,
+        2
+      ]
+    },
+    "superseded_gate_metrics": [
+      "breakout_disagreement_rate",
+      "exact_timestamp_swing_disagreement_rate",
+      "reclaim_disagreement_rate",
+      "structural_state_disagreement_rate",
+      "within_1_week_swing_disagreement_rate",
+      "within_2_week_swing_disagreement_rate"
+    ],
+    "transfer_guard": {
+      "aggregation": "ALL_REQUIRED_PAIRS_MUST_CERTIFY_V1",
+      "computed_on": "INDEPENDENT_RAW_PROVIDER_PAIRS_V1",
+      "depends_on_the_candidate": false,
+      "failure_mode_blocked": "The candidate is the element-wise median of the same three providers it is compared against, so median(A,B,C) against A, B or C is mechanically closer than A against B. A composite could therefore certify every gate pair merely because it is an arithmetic function of those pairs' own inputs, while the underlying providers do not agree about market structure at all. In that state 'the market structure' is not identified in the period, and no median of the three can be certified as a canonical description of it, however close it sits to each input.",
+      "guard_id": "RAW_PROVIDER_STRUCTURAL_DISPERSION_CEILING_V1",
+      "hard": true,
+      "measure": "structural_state_disagreement_rate",
+      "outcomes": [
+        "GUARD_SATISFIED",
+        "GUARD_FAILED",
+        "GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "rule": "Every unordered pair of distinct independent raw validation providers must itself certify the structural_state metric, under the same absolute materiality limit and the same per-pair confidence bound as the gate pairs, on the same sample and the same comparison contract. GUARD_FAILED when any provider pair is a material failure; GUARD_UNDEFINED_INSUFFICIENT_EVIDENCE when any is missing, inadmissible, undefined or insufficient; GUARD_SATISFIED only when all of them certify.",
+      "why_not_leave_one_provider_influence": "A leave-one-out dominance diagnostic would require constructing three alternative composites, which is new candidate-construction semantics this task may not introduce. It also blocks a narrower mode: with three providers the median tracking two that agree is the intended behaviour of a median, not a defect, and the case where that becomes arbitrary is exactly high raw dispersion, which this guard already refuses.",
+      "why_the_certification_rule_and_not_the_point_rate": "The architecture's invariant is that insufficient evidence cannot approve. Reading the guard off point estimates would let thin provider evidence satisfy it silently, which is exactly the leniency the review identified.",
+      "why_this_and_not_a_looser_measure": "Every input is a series the candidate is not built from on that pair's own side, so no arrangement of the median can satisfy the guard: it is arithmetically impossible for candidate construction to influence a provider-versus-provider measurement. That is the property the review's missing guard needed, and a cosmetic guard computed on candidate pairs would not have it."
+    },
+    "validator_requirement": {
+      "authorized_after": "this frozen definition receives its own independent xHigh review",
+      "must_bind": "the BTC_REFERENCE_COMPOSITE_V3 definition_sha256 in this artifact",
+      "must_not_bind": "the parent BTC_REFERENCE_COMPOSITE_V2 hash",
+      "sealed_sample_may_be_collected": false,
+      "sealed_sample_may_be_opened": false,
+      "sequence": [
+        "independent xHigh review of this frozen definition",
+        "build the validator bound to this definition hash",
+        "collect 2015-07-20..2019-11-30",
+        "open the sealed sample exactly once",
+        "evaluate the candidate against this definition",
+        "only then may PRICE_SOURCE_POLICY_V2 and a BTC-019 closure be written"
+      ]
+    }
+  }
+}

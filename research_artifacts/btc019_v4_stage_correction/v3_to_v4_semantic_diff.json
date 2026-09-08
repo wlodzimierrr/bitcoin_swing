@@ -1,0 +1,21 @@
+{
+  "implementation_completeness_changes_are_not_decision_semantics": true,
+  "other_gate_definition_changes": [],
+  "parent_protocol": "BTC_REFERENCE_COMPOSITE_V3",
+  "parent_protocol_hash": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V3_TO_V4_SEMANTIC_DIFF_V1",
+  "semantic_diff_sha256": "5797baa2ebda23c426bc3c2ad512e9245fd2501a7e5e906e7f89aee87c78cc18",
+  "stage_relocations": [
+    {
+      "direction": "minimum",
+      "from": "SEALED_HISTORICAL_VALIDATION",
+      "hard": true,
+      "metric": "live_shadow_days",
+      "threshold": 90,
+      "to": "POST_CERTIFICATION_PROMOTION"
+    }
+  ],
+  "threshold_changes": [],
+  "v4_protocol": "BTC_REFERENCE_COMPOSITE_V4",
+  "verified_gate_count": 33
+}
