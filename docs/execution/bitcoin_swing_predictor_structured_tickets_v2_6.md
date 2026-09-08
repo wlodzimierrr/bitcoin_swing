@@ -2349,6 +2349,76 @@ Do not overwrite raw history when the preferred provider changes.
     uncollected and unopened, the candidate remains unevaluated, and collection
     or execution remains refused until the new hash passes repeat formal xHigh
     review.
+  - **Repeat formal independent GPT-5.6 Sol xHigh review of
+    `7fda8ac3...ad8be6`: `FAIL — SEALED EVIDENCE BUILDER INCOMPLETE`.** Execution
+    classification: `SEALED_EXECUTOR_REQUIRES_FIX`. V3, certified V1, corrected
+    V2 and builder-definition hashes independently recompute to
+    `4232e886...bf71a`, `8e6254e0...c7ffe7`, `7fda8ac3...ad8be6` and
+    `d8ff41f7...eabb85`. V3/V1 are unchanged. The fixed live entry point, exact
+    post-start manifest snapshot, single-consumer authorization, process lock,
+    atomic/fsynced checkpoints, crash recovery, no-retry/no-raw-reopen rule and
+    finalized V1 replay pass review. The four post-start manifest mutation
+    variants all refuse before any raw read or builder call. No actual sealed-
+    sample byte was collected, opened or inspected.
+  - **Repeat-review finding (P1): a passing live decision is impossible.** The
+    fixed builder emits 15 of certified V1's 33 inherited measurements. It
+    explicitly omits 18 and the validator classifies 16 omissions as blocking
+    hard gates: cross-market stop preservation, deterministic rerun, gap-through
+    stop agreement, isolated-venue stop suppression, live-shadow days, median
+    and p95 MAE, median and p95 MFE, regime, risk-size, setup, stop-touch, swing-
+    level, trade-action and trade-eligibility comparisons. No live merge or
+    other execution-time owner supplies them. A complete synthetic hourly
+    fixture over the declared window returns
+    `UNDEFINED_INSUFFICIENT_EVIDENCE` with exactly those 16 blockers even when
+    every emitted inherited gate passes. Sparse raw evidence can still produce
+    `FAIL`, but no raw evidence can make the live path return `PASS`.
+  - **Repeat-review finding (P1): ATR p95 does not use the frozen BTC-019
+    statistic.** The builder uses linearly interpolated `(n - 1) * p`; the
+    authoritative empirical owner uses nearest rank `ceil(p * n) - 1`. Synthetic
+    boundary vectors flip the hard `atr_p95_absolute_fractional_difference`
+    verdict in both directions (`0.0825` versus `0.15`, and `0.10525` versus
+    `0.095`). Existing tests do not compare the live builder against that owner.
+  - **Repeat-review finding (P1): the builder hash is not a complete transitive
+    implementation binding.** Its dependency list omits material executed
+    owners including `btc_predictor.quant.rolling`, `btc_predictor.quant.arrays`,
+    `btc_predictor.levels.swing`, `btc_predictor.levels.breakout`,
+    `btc_predictor.research.price_source_policy` and
+    `btc_predictor.research.structural_gate_denominator_resolution`. A synthetic
+    monkeypatch of the omitted ATR kernel changed evidence while the builder and
+    V2 hashes remained `d8ff41f7...eabb85` and `7fda8ac3...ad8be6` and fixed-
+    builder verification still passed. Conversely, whole-file binding makes
+    irrelevant edits to a listed module move identity.
+  - **Repeat-review finding (P1): live evidence is Decimal-context dependent.**
+    The builder fixes context only for integer rates. Candidate medians, ATR
+    medians, differences and interpolated percentiles use ambient Decimal
+    arithmetic. Synthetic runs under precisions 6, 8, 28 and 50 produced
+    different evidence strings. The existing ambient-context regression covers
+    only certified V1 validation of a prebuilt string bundle, not live evidence
+    construction.
+  - **Repeat-review finding (P1): incomplete higher-timeframe evidence is
+    silently discarded and replaced by an unsupported zero.** Frozen V2 requires
+    every incomplete daily/weekly bucket to persist expected, observed, missing,
+    degraded, venue-disagreement, unavailable, quality, complete and usable
+    metadata with null OHLC. The builder instead calls the generic complete-
+    bucket-only aggregator, emits no bucket records and hardcodes
+    `silent_incomplete_bucket_omission_count` to zero. This violates the frozen
+    no-silent-omission and no-invented-evidence contract even on a synthetic
+    complete-hour fixture whose window begins or ends inside a bucket.
+  - **Repeat-review validation and disposition.** 253 focused executor tests,
+    967 relevant BTC-019/price-source regressions and the complete 4399-test
+    Python 3.12.14 suite pass with `RuntimeWarning` treated as an error. The
+    review ran independent canonical-hash recomputation, complete and sparse
+    synthetic live runs, 33-gate source accounting, ATR boundary comparison,
+    omitted-dependency drift injection and Decimal-context probes. No review fix
+    was made: defining the absent prospective/strategy/trade evidence owners and
+    their pre-open sequencing is not a uniquely correct local review edit. The
+    correction must complete that evidence boundary, match the frozen statistic
+    owner, make arithmetic deterministic, preserve V2 incomplete-bucket records
+    and bind every material runtime owner, then issue new V2 and builder hashes
+    for another formal review. No research, V3, V1 or threshold change is
+    authorized. The actual sealed sample remains uncollected and unopened, the
+    candidate remains unevaluated, and neither another evidence round nor sealed
+    execution is authorized.
 
 #### BTC-020 Implement BTC OHLCV collector
 - **Description:**
