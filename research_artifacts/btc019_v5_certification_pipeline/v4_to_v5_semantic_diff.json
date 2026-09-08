@@ -1,0 +1,345 @@
+{
+  "direction_change_count": 0,
+  "evidence_stage_reassignment_count": 8,
+  "gate_count": 33,
+  "gate_semantic_diff": [
+    {
+      "definition": "Typical volatility estimates should remain close to cross-venue consensus.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "atr_median_absolute_fractional_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.02"
+    },
+    {
+      "definition": "Tail ATR distortion must remain bounded.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "atr_p95_absolute_fractional_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.10"
+    },
+    {
+      "definition": "A robust estimator must preserve genuine shared tail moves.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "1.0"
+    },
+    {
+      "definition": "Daily features require nearly continuous explicit period state.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "daily_bucket_usable_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.995"
+    },
+    {
+      "definition": "Identical inputs and protocol must produce identical artifacts.",
+      "direction": "equal",
+      "hard_soft_role": "HARD",
+      "metric": "deterministic_rerun_hash_match",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": true
+    },
+    {
+      "definition": "Gap-through behavior must agree with deterministic venue consensus.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.99"
+    },
+    {
+      "definition": "Unversioned fallback splicing would invalidate provenance.",
+      "direction": "equal",
+      "hard_soft_role": "HARD",
+      "metric": "historical_fallback_splice_count",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": 0
+    },
+    {
+      "definition": "Most isolated exchange wicks should not create canonical stop events.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "isolated_venue_stop_suppression_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.95"
+    },
+    {
+      "definition": "Historical APIs cannot reconstruct original publication latency.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "live_shadow_days",
+      "new_stage": "POST_CERTIFICATION_LIVE_SHADOW",
+      "old_stage": "POST_CERTIFICATION_PROMOTION",
+      "old_stage_v5_equivalent": "POST_CERTIFICATION_LIVE_SHADOW",
+      "threshold": 90
+    },
+    {
+      "definition": "Expose extreme adverse-path sensitivity without post-hoc tuning.",
+      "direction": "maximum",
+      "hard_soft_role": "SOFT",
+      "metric": "mae_max_absolute_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.05"
+    },
+    {
+      "definition": "Typical adverse excursion distortion should remain below 25 bps.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "mae_median_absolute_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.0025"
+    },
+    {
+      "definition": "95% of adverse paths should remain within one percentage point.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "mae_p95_absolute_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.01"
+    },
+    {
+      "definition": "Expose extreme path sensitivity without letting one event decide alone.",
+      "direction": "maximum",
+      "hard_soft_role": "SOFT",
+      "metric": "mfe_max_absolute_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.05"
+    },
+    {
+      "definition": "Typical favorable excursion distortion should remain below 25 bps.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "mfe_median_absolute_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.0025"
+    },
+    {
+      "definition": "95% of path probes should remain within one percentage point.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "mfe_p95_absolute_difference",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.01"
+    },
+    {
+      "definition": "Future or late observations invalidate the study.",
+      "direction": "equal",
+      "hard_soft_role": "HARD",
+      "metric": "point_in_time_violation_count",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": 0
+    },
+    {
+      "definition": "Every output must be reconstructable from immutable inputs.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "provenance_complete_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "1.0"
+    },
+    {
+      "definition": "Research may not rewrite source evidence.",
+      "direction": "equal",
+      "hard_soft_role": "HARD",
+      "metric": "raw_observation_mutation_count",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": 0
+    },
+    {
+      "definition": "Track warning frequency without rejecting economically harmless warnings alone.",
+      "direction": "maximum",
+      "hard_soft_role": "SOFT",
+      "metric": "reference_degraded_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.020"
+    },
+    {
+      "definition": "Unavailable reference hours must remain rare and explicit.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "reference_unavailable_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.005"
+    },
+    {
+      "definition": "Canonical structure needs near-continuous hourly prices.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "reference_usable_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.995"
+    },
+    {
+      "definition": "Regime labels should be robust to reference construction.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "regime_classification_disagreement_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.02"
+    },
+    {
+      "definition": "Reference changes should not materially resize most positions.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "risk_size_p95_relative_difference",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.10"
+    },
+    {
+      "definition": "Setup selection should rarely depend on venue noise.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "setup_classification_disagreement_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.01"
+    },
+    {
+      "definition": "Incomplete periods must remain visible as metadata records.",
+      "direction": "equal",
+      "hard_soft_role": "HARD",
+      "metric": "silent_incomplete_bucket_omission_count",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": 0
+    },
+    {
+      "definition": "Canonical source choice should almost never change stop outcomes.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "stop_touch_disagreement_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.01"
+    },
+    {
+      "definition": "Half an ATR is the primary economically meaningful structural level tolerance.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "swing_level_disagreement_rate_above_0_50_atr",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.05"
+    },
+    {
+      "definition": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "trade_action_disagreement_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.01"
+    },
+    {
+      "definition": "Reference policy should rarely change whether a trade is permitted.",
+      "direction": "maximum",
+      "hard_soft_role": "HARD",
+      "metric": "trade_eligibility_disagreement_rate",
+      "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.01"
+    },
+    {
+      "definition": "Every warning and unavailable observation must be reconstructable.",
+      "direction": "equal",
+      "hard_soft_role": "HARD",
+      "metric": "unrecorded_quality_state_count",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": 0
+    },
+    {
+      "definition": "Require at least four years spanning multiple market regimes.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "validation_period_days",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": 1460
+    },
+    {
+      "definition": "Frequent severe disagreement may indicate an unstable provider set.",
+      "direction": "maximum",
+      "hard_soft_role": "SOFT",
+      "metric": "venue_disagreement_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.005"
+    },
+    {
+      "definition": "Structural models must not lose meaningful weekly history.",
+      "direction": "minimum",
+      "hard_soft_role": "HARD",
+      "metric": "weekly_bucket_usable_rate",
+      "new_stage": "SEALED_REFERENCE_VALIDATION",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+      "threshold": "0.990"
+    }
+  ],
+  "hard_soft_change_count": 0,
+  "parent_protocol": "BTC_REFERENCE_COMPOSITE_V4",
+  "parent_protocol_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V4_TO_V5_SEMANTIC_DIFF_V1",
+  "semantic_diff_sha256": "e7ddad903f14104f08e7d2667c38b594874f3cc6735753d37062b3f752ca1bcf",
+  "stage_label_change_count": 33,
+  "threshold_change_count": 0,
+  "v5_protocol": "BTC_REFERENCE_COMPOSITE_V5"
+}

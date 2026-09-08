@@ -1,0 +1,1782 @@
+{
+  "decision_contract": {
+    "complete_promotion_chain": [
+      "SEALED_REFERENCE_VALIDATION",
+      "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "POST_CERTIFICATION_LIVE_SHADOW"
+    ],
+    "only_complete_chain_authorizes_production_promotion": true,
+    "stage_a_pass_meaning": "REFERENCE_CANDIDATE_PASSES_SEALED_SOURCE_VALIDATION",
+    "stage_b_pass_meaning": "REFERENCE_CANDIDATE_PASSES_DETERMINISTIC_INTEGRATION_VALIDATION",
+    "stage_c_pass_meaning": "REFERENCE_CANDIDATE_SATISFIES_90_DAY_LIVE_SHADOW"
+  },
+  "definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89",
+  "final_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE",
+  "inherited_approval_gates": [
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Typical volatility estimates should remain close to cross-venue consensus.",
+      "definition_source": "Frozen V1 ATR median gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "atr_median_absolute_fractional_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate daily ATR versus the per-day raw-provider median; median absolute fractional difference",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.02",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._atr_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Tail ATR distortion must remain bounded.",
+      "definition_source": "Frozen V1 ATR p95 gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "atr_p95_absolute_fractional_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "the same daily ATR differences at nearest-rank p95",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.10",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "A robust estimator must preserve genuine shared tail moves.",
+      "definition_source": "Known-event requirement and BTC-019B stop analysis.",
+      "direction": "minimum",
+      "evidence_dependency_reason": "No authority defines a unique sealed event universe; the only repository census is development-specific, so this requires a frozen deterministic integration corpus.",
+      "hard": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a declared census of cross-market-confirmed stop events and candidate preservation outcomes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "1.0",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Daily features require nearly continuous explicit period state.",
+      "definition_source": "Aligned with the hourly usable-rate floor.",
+      "direction": "minimum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "daily_bucket_usable_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "the complete V2 daily-bucket census, including unusable incomplete buckets",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.995",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v5.measure_deterministic_rerun_hash_match"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Identical inputs and protocol must produce identical artifacts.",
+      "definition_source": "Non-negotiable reproducibility requirement.",
+      "direction": "equal",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "deterministic_rerun_hash_match",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "two processing digests over the same immutable VerifiedRawCollection and identical semantic identities",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": true,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Gap-through behavior must agree with deterministic venue consensus.",
+      "definition_source": "Stop-risk economic requirement.",
+      "direction": "minimum",
+      "evidence_dependency_reason": "No authority defines a unique sealed event universe; the only repository census is development-specific, so this requires a frozen deterministic integration corpus.",
+      "hard": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a declared gap-through stop-event universe and deterministic venue-consensus comparison",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.99",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.price_source_policy.compare_price_sources"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Unversioned fallback splicing would invalidate provenance.",
+      "definition_source": "Existing PRICE_SOURCE_POLICY_V1 governance.",
+      "direction": "equal",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "historical_fallback_splice_count",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "fallback_used provenance on every raw/candidate observation",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 0,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Most isolated exchange wicks should not create canonical stop events.",
+      "definition_source": "Three known isolated V1 events were suppressed; 95% avoids event-specific perfection.",
+      "direction": "minimum",
+      "evidence_dependency_reason": "No authority defines a unique sealed event universe; the only repository census is development-specific, so this requires a frozen deterministic integration corpus.",
+      "hard": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a declared isolated-venue stop-event universe and candidate suppression outcomes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.95",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Historical APIs cannot reconstruct original publication latency.",
+      "definition_source": "Prospective promotion requirement.",
+      "direction": "minimum",
+      "evidence_dependency_reason": "This metric requires genuinely prospective post-certification evidence.",
+      "hard": true,
+      "metric": "live_shadow_days",
+      "old_stage": "POST_CERTIFICATION_PROMOTION",
+      "required_evidence": "prospective post-certification shadow observations counted in elapsed qualifying days",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 90,
+      "v5_stage": "POST_CERTIFICATION_LIVE_SHADOW"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Expose extreme adverse-path sensitivity without post-hoc tuning.",
+      "definition_source": "Robustness diagnostic chosen before sealed validation.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": false,
+      "metric": "mae_max_absolute_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "role": "SOFT",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.05",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Typical adverse excursion distortion should remain below 25 bps.",
+      "definition_source": "BTC-019B and V1 observed zero median difference.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "mae_median_absolute_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.0025",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "95% of adverse paths should remain within one percentage point.",
+      "definition_source": "Existing BTC-019 material-path threshold.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "mae_p95_absolute_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus adverse-excursion differences over frozen PIT trade-path probes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.01",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Expose extreme path sensitivity without letting one event decide alone.",
+      "definition_source": "Robustness diagnostic chosen before sealed validation.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": false,
+      "metric": "mfe_max_absolute_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "role": "SOFT",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.05",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Typical favorable excursion distortion should remain below 25 bps.",
+      "definition_source": "BTC-019B and V1 observed zero median difference.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "mfe_median_absolute_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.0025",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "95% of path probes should remain within one percentage point.",
+      "definition_source": "Existing BTC-019 material-path threshold.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "mfe_p95_absolute_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus favourable-excursion differences over frozen PIT trade-path probes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.01",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Future or late observations invalidate the study.",
+      "definition_source": "Non-negotiable point-in-time correctness requirement.",
+      "direction": "equal",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "point_in_time_violation_count",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a census of observations whose availability exceeds the decision instant",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 0,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v5.measure_provenance_complete_rate"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Every output must be reconstructable from immutable inputs.",
+      "definition_source": "Non-negotiable auditability requirement.",
+      "direction": "minimum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "provenance_complete_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "mechanical completeness over every scientific measurement's owner, version, input, config, and definition identity",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "1.0",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Research may not rewrite source evidence.",
+      "definition_source": "Existing BTC-019 and V1 governance.",
+      "direction": "equal",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "raw_observation_mutation_count",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "manifest-bound raw mutation counts verified against immutable bytes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 0,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Track warning frequency without rejecting economically harmless warnings alone.",
+      "definition_source": "BTC-019B observed 1.0873% degraded hours with zero material episodes.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": false,
+      "metric": "reference_degraded_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "V2 hourly quality-state census",
+      "role": "SOFT",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.020",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Unavailable reference hours must remain rare and explicit.",
+      "definition_source": "Complement of the frozen 99.5% V1 usable-rate gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "reference_unavailable_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "V2 hourly quality-state census",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.005",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Canonical structure needs near-continuous hourly prices.",
+      "definition_source": "Frozen V1 availability gate retained because availability remains economically meaningful.",
+      "direction": "minimum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "reference_usable_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "V2 hourly availability census",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.995",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Regime labels should be robust to reference construction.",
+      "definition_source": "Reserved Phase-1 strategy consequence gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": "The Phase-1 engines can produce individual consequences, but no authority freezes their decision universe, complete non-price inputs, comparison reference, state, or denominator.",
+      "hard": true,
+      "metric": "regime_classification_disagreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a PIT decision universe plus complete Phase-1 regime inputs replayed for candidate and comparison references",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.02",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Reference changes should not materially resize most positions.",
+      "definition_source": "Reserved Phase-1 risk consequence gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": "The Phase-1 engines can produce individual consequences, but no authority freezes their decision universe, complete non-price inputs, comparison reference, state, or denominator.",
+      "hard": true,
+      "metric": "risk_size_p95_relative_difference",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a PIT eligible-trade universe plus owner-produced Phase-1 risk sizes for candidate and comparison references",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.10",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Setup selection should rarely depend on venue noise.",
+      "definition_source": "Reserved Phase-1 strategy consequence gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": "The Phase-1 engines can produce individual consequences, but no authority freezes their decision universe, complete non-price inputs, comparison reference, state, or denominator.",
+      "hard": true,
+      "metric": "setup_classification_disagreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a PIT decision universe plus complete Phase-1 setup inputs replayed for candidate and comparison references",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.01",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Incomplete periods must remain visible as metadata records.",
+      "definition_source": "Direct BTC-019B failure mechanism.",
+      "direction": "equal",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "silent_incomplete_bucket_omission_count",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "expected V2 daily/weekly buckets reconciled one-for-one to persisted bucket records",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 0,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_empirical._trade_path_comparison"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Canonical source choice should almost never change stop outcomes.",
+      "definition_source": "Frozen V1 stop gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "stop_touch_disagreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate-versus-provider-consensus stop outcomes over frozen PIT trade-path probes",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.01",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.btc019b_diagnostics._swing_metric_summary"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Half an ATR is the primary economically meaningful structural level tolerance.",
+      "definition_source": "Predeclared from BTC-019B grid and existing ATR-normalized structural logic.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "swing_level_disagreement_rate_above_0_50_atr",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "candidate/raw swing-level pairs and prior ATR under the frozen 0.50-ATR comparison",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.05",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "definition_source": "Reserved Phase-1 strategy consequence gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": "The Phase-1 engines can produce individual consequences, but no authority freezes their decision universe, complete non-price inputs, comparison reference, state, or denominator.",
+      "hard": true,
+      "metric": "trade_action_disagreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a PIT strategy-decision universe replayed through the Phase-1 strategy, lifecycle, and execution owners",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.01",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [],
+      "authoritative_owner_count": 0,
+      "authoritative_owner_executable": false,
+      "definition": "Reference policy should rarely change whether a trade is permitted.",
+      "definition_source": "Reserved Phase-1 strategy consequence gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": "The Phase-1 engines can produce individual consequences, but no authority freezes their decision universe, complete non-price inputs, comparison reference, state, or denominator.",
+      "hard": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "a PIT strategy-decision universe replayed through the Phase-1 setup, veto, R/R, and entry owners",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": 0,
+      "threshold": "0.01",
+      "v5_stage": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Every warning and unavailable observation must be reconstructable.",
+      "definition_source": "Protocol provenance requirement.",
+      "direction": "equal",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "unrecorded_quality_state_count",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "all V2 hourly quality states reconciled to the frozen vocabulary",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 0,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Require at least four years spanning multiple market regimes.",
+      "definition_source": "Economic coverage requirement; candidate sealed period exceeds four years.",
+      "direction": "minimum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "validation_period_days",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "the authority-bound sealed window duration",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": 1460,
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.build_v2_reference_observation"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Frequent severe disagreement may indicate an unstable provider set.",
+      "definition_source": "BTC-019B observed 0.0114%; threshold is diagnostic, not a sole rejection gate.",
+      "direction": "maximum",
+      "evidence_dependency_reason": null,
+      "hard": false,
+      "metric": "venue_disagreement_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "V2 hourly quality-state census",
+      "role": "SOFT",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.005",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    },
+    {
+      "authoritative_evidence_owner": [
+        "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket"
+      ],
+      "authoritative_owner_count": 1,
+      "authoritative_owner_executable": true,
+      "definition": "Structural models must not lose meaningful weekly history.",
+      "definition_source": "Economic requirement following the two omitted V1 weeks found by BTC-019B.",
+      "direction": "minimum",
+      "evidence_dependency_reason": null,
+      "hard": true,
+      "metric": "weekly_bucket_usable_rate",
+      "old_stage": "SEALED_HISTORICAL_VALIDATION",
+      "required_evidence": "the complete V2 weekly-bucket census, including unusable incomplete buckets",
+      "role": "HARD",
+      "stage_b_frozen_corpus_count": null,
+      "threshold": "0.990",
+      "v5_stage": "SEALED_REFERENCE_VALIDATION"
+    }
+  ],
+  "integration_corpus_assessment": {
+    "assessment_sha256": "fad12b55aea14914e74d6f17866153e91c228063173866198f6cb4fd7093b8a2",
+    "candidate_reference_state": "MEDIAN_OHLC_V2_NOT_CONSTRUCTED_OR_EVALUATED",
+    "complete_corpus_candidates": [],
+    "corpus_definition_sha256": null,
+    "field_assessment": {
+      "candidate_reference": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "comparison_reference": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "cost_slippage_configuration": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "decision_timestamps": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "denominators": {
+        "exact_key_occurrences": [
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[0]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[1]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[2]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[3]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[0]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[1]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[2]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[3]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[4]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[5]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[6]",
+          "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[7]"
+        ],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "eligible_timestamps": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "evaluation_period": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "exclusion_rules": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "execution_version": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "lifecycle_version": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "non_price_inputs": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "portfolio_initial_state": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "risk_version": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      },
+      "strategy_version": {
+        "exact_key_occurrences": [],
+        "frozen_by_complete_integration_corpus": false,
+        "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+      }
+    },
+    "final_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE",
+    "json_artifact_inventory": [
+      {
+        "path": "data/btc019/2023-01-01_2025-12-31/collection_manifest.json",
+        "sha256": "143ebfc57837eb03fc71f27a46b29a6fe53e9bb1960e4b05dc5ba034584c1c8e"
+      },
+      {
+        "path": "data/btc_reference_composite_v1/development_dry_run.json",
+        "sha256": "d782a0d4c8e7ffa4948452805dc2f80ddcf7ee63caaf82f4ee85b49845603fa6"
+      },
+      {
+        "path": "data/btc_reference_composite_v1/development_final.json",
+        "sha256": "3acc0ba786273cc1833f7c98e0ea7caa87be75cb6976cefb9ecf3c32e83efa54"
+      },
+      {
+        "path": "data/btc_reference_composite_v1/development_metadata_corrected.json",
+        "sha256": "8d0555b345bbc430e2f21fba1caef36de5849f22927b3e6fb8f876762a40ea0f"
+      },
+      {
+        "path": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31/collection_manifest.json",
+        "sha256": "ede78386f126ebb7c6d89d78bf787c3d3acbc36a071a2213e0d6a26f0b9da49c"
+      },
+      {
+        "path": "data/btc_reference_composite_v1/external_metadata_corrected.json",
+        "sha256": "f10de48bd501957f1c59ad58b168e0c8c9a6e6532d71c1145b77be43cc562055"
+      },
+      {
+        "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/canonical_source_decision.json",
+        "sha256": "5ca7f5de0492cf2f2b31bd854a282f23a4054a75fd7d0a9c5ad044e24168fa0d"
+      },
+      {
+        "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/collection_manifest.json",
+        "sha256": "a2fd940ceb04c3fa8d864a4755f0d7789ff6f4f872907adf3c2e81701940504e"
+      },
+      {
+        "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/comparison_report.json",
+        "sha256": "82479ba02ab59e8e412f988a0208bbbaa02c8096eb756335e10211cfab730fac"
+      },
+      {
+        "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/manual_reviews.json",
+        "sha256": "b50aa107358d460a3b4cecdf0f4e61c365241972d73c4d72f2a43a97c3f73c95"
+      },
+      {
+        "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/review_assessments.json",
+        "sha256": "f6b8dbf775ffa81c1bb229b10a2034cdd91b1f2d364a419aa34c7766150c0980"
+      },
+      {
+        "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/supplemental_analysis.json",
+        "sha256": "94ed504ed111090fe7313445c785b817b48fdb7cce7067e274aaffb024bf29f8"
+      },
+      {
+        "path": "research_artifacts/btc019_completion_gate/completion_gate_assessment.json",
+        "sha256": "2ffaa4239f06597ece2f27e4dea62ba46ec1dd17ff2cb24631fa5ba931cdd592"
+      },
+      {
+        "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/canonical_source_decision.json",
+        "sha256": "e4e739f80e164bfa60ad1dca5ee0c4add6efd4df1fdd1a93e9a81b0f8cafd828"
+      },
+      {
+        "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/collection_manifest.json",
+        "sha256": "a2fd940ceb04c3fa8d864a4755f0d7789ff6f4f872907adf3c2e81701940504e"
+      },
+      {
+        "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/comparison_report.json",
+        "sha256": "b16d43c8223446afe21592118a30e2e6936483a9af26e0e6f3d1e9299d15370e"
+      },
+      {
+        "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/manual_reviews.json",
+        "sha256": "d50115dc32f5c26895a4341c3b2a5ae7006faff22c7a8bea628fb31765ad4def"
+      },
+      {
+        "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/supplemental_analysis.json",
+        "sha256": "fee61daa59afa98642753b0866e18da9e27914fd7ecfa85fe6f7ef8fc7745b0d"
+      },
+      {
+        "path": "research_artifacts/btc019_gate_denominator_resolution/denominator_resolution.json",
+        "sha256": "e90c5241886459dad147c86cde56f0602f92882505fd0c48f53bbdf921c27e4d"
+      },
+      {
+        "path": "research_artifacts/btc019_gate_denominator_resolution/successor_protocol_definition.json",
+        "sha256": "2ebca2671072e0806ecc1e35ec792d4e4e42bc2c962ff3e34afa415095f5ee8c"
+      },
+      {
+        "path": "research_artifacts/btc019_structural_threshold_calibration/calibration_governance.json",
+        "sha256": "c6c04c3dfd95597a2b1313a28957ab42f48a0f15cd5e15b6f71a25ffd4b3ab67"
+      },
+      {
+        "path": "research_artifacts/btc019_structural_threshold_calibration/threshold_calibration.json",
+        "sha256": "7b9a342c5f41cf15463153948563f1abe034d8e4e41db54e678f8d3099ceea82"
+      },
+      {
+        "path": "research_artifacts/btc019_structure_comparison_v2/comparison_report.json",
+        "sha256": "b66d03b9104e8d0e658a8b28a354dd4f7826736487f0b0619a6e0ab79f4ebc21"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json",
+        "sha256": "1814e7a6b038e36a55158c9f5c06330ad33912d508f70d2b3a37dfdf769eb0c2"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_gate_architecture_convergence/reference_composite_v3_protocol.json",
+        "sha256": "03511236b8e5a876a4be2b6601d6efc3d30ee516bf8785be20232d3d8dc57024"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_sealed_executor/history/49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729/semantic_delta_v1_to_v2.json",
+        "sha256": "8298b4a06c3dba235e51c234cf06978da615e696a8d23fe2e1fb533a98aee480"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_sealed_executor/history/49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729/validator_definition_v2.json",
+        "sha256": "ef38fcdca36f240cdbc0a47b5b5621ac8277bf5cdf3f3f32d495f116158e2a87"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_sealed_executor/semantic_delta_v1_to_v2.json",
+        "sha256": "89ec6759c70c704cd1ccfcfbf6080be65ac15988c0448c3cfb80f2c02062279f"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_sealed_executor/validator_definition_v2.json",
+        "sha256": "2d3151422d34801d99899d0c5c7a281ca92abe04c837abe00d65d00e76f25509"
+      },
+      {
+        "path": "research_artifacts/btc019_v3_validator/validator_definition.json",
+        "sha256": "1b5987ec6aae758bfbed5ee3a1b01114f4ed66a8895535bab164f909cf702e5f"
+      },
+      {
+        "path": "research_artifacts/btc019_v4_stage_correction/inherited_gate_ownership.json",
+        "sha256": "7bf33f1ab047ffcb33c19b15bcc3229c74ffae5facf662baf82989bead527010"
+      },
+      {
+        "path": "research_artifacts/btc019_v4_stage_correction/reference_composite_v4_protocol.json",
+        "sha256": "bb55a9a7e37d7218115465cfb345845cd4594b929bc6e56a369fc8f949eff3d8"
+      },
+      {
+        "path": "research_artifacts/btc019_v4_stage_correction/v3_to_v4_semantic_diff.json",
+        "sha256": "ea101f816103c81e4411e9b32516bac4e19980d130667065f7b024fd865685a6"
+      },
+      {
+        "path": "research_artifacts/btc019_v4_validator/validator_definition.json",
+        "sha256": "c6288448069921892c63b932d6c5bd5ad96be6e38a59091a232ec0dd7e4ac0dc"
+      },
+      {
+        "path": "research_artifacts/btc019b/degraded_bar_diagnostics.json",
+        "sha256": "7fef4315bb752bbd35bc18d7b00c3191a3e904a3cdb16129909f00bbbe638fdb"
+      },
+      {
+        "path": "research_artifacts/btc019b/degraded_episode_diagnostics.json",
+        "sha256": "c1ba2dd65c5ef2da0e23058c3afe7ec3c2825238304f67e0d3546b3d9bea328c"
+      },
+      {
+        "path": "research_artifacts/btc019b/diagnostic_protocol.json",
+        "sha256": "a3c566a5865591d617172dbc278fcdaa3092892d1c356da13004d8614a2d12bc"
+      },
+      {
+        "path": "research_artifacts/btc019b/final_diagnostic_decision.json",
+        "sha256": "d911b7dba49ae3f4d05307efb655b0b18b3cc8fcb2ee8c9791ae42033c97a73d"
+      },
+      {
+        "path": "research_artifacts/btc019b/swing_disagreement_diagnostics.json",
+        "sha256": "d916bf9906cd50c8c86dab0510478283d2714d523a76adad65ab4676984002a5"
+      },
+      {
+        "path": "research_artifacts/btc129_scoring_contracts/effective_weight_report.json",
+        "sha256": "48e7cbc7cce54330d478cd809e2f810681cb6509372ff4b2e4748415b6eca96b"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/candidate_definition.json",
+        "sha256": "c2ca6c24363e3964bb1332a35242c2b7dfc93421034f8e5bf8e702a406d8561e"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/database_persistence_evidence.json",
+        "sha256": "b750e9f1d66fdd8fea1fd5e25fc990ddbfb212b59626746cffd8a7fc1b69afa0"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/development_validation_report.json",
+        "sha256": "8d0555b345bbc430e2f21fba1caef36de5849f22927b3e6fb8f876762a40ea0f"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/external_manual_review_assessments.json",
+        "sha256": "90e88d7e5ed276df70193837b901c060a4d83f75ca8e99cc2ac7ae5cb7a95256"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/external_validation_report.json",
+        "sha256": "f10de48bd501957f1c59ad58b168e0c8c9a6e6532d71c1145b77be43cc562055"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/final_decision.json",
+        "sha256": "cb0a32e14b45cf496c75029a17a83df68450367eba4c6e49708f3388819fc1e3"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/point_in_time_metadata_correction.json",
+        "sha256": "2022e45d572a3e435c0973404329469d3b421c5cafcff5bef87b59559703baf4"
+      },
+      {
+        "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V2/protocol_definition.json",
+        "sha256": "adfbd36395220fb5f7ae9f5e97e24a5ca809a0e6a09fd8f3b20f75d928862d5e"
+      }
+    ],
+    "json_artifact_inventory_sha256": "98943da9e5bdcfa51ed5e2fb3c0c7a3938d0f1334f2e27ac4fcf507c63fdfa28",
+    "new_market_evidence_collected": false,
+    "reproducible_integration_corpus_exists": false,
+    "required_fields": [
+      "evaluation_period",
+      "decision_timestamps",
+      "eligible_timestamps",
+      "non_price_inputs",
+      "candidate_reference",
+      "comparison_reference",
+      "strategy_version",
+      "risk_version",
+      "lifecycle_version",
+      "execution_version",
+      "portfolio_initial_state",
+      "cost_slippage_configuration",
+      "exclusion_rules",
+      "denominators"
+    ],
+    "schema_version": "BTC_REFERENCE_COMPOSITE_V5_INTEGRATION_CORPUS_ASSESSMENT_V1",
+    "sealed_sample_opened": false,
+    "terminal_reason": "No persisted mapping under data/ or research_artifacts/ freezes all required Stage-B corpus fields. Existing Phase-1 implementations and synthetic tests cannot supply missing historical non-price inputs, a candidate/comparison replay pair, initial portfolio state, or frozen denominators without manufacturing evidence."
+  },
+  "issuance": {
+    "complete_certification_pipeline_definition_sha256": null,
+    "sealed_execution_authorized": false,
+    "stage_a_builder_definition_sha256": null,
+    "v5_executor_definition_sha256": null,
+    "v5_validator_definition_sha256": null
+  },
+  "lineage": {
+    "certified_v1_validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7",
+    "frozen_v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+    "parent_v4_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+    "parent_v4_validator_definition_sha256": "8cf091fb8c0374f876dc54237d0226cea3f11a3d7554f6abae5ba5c1df498c28"
+  },
+  "mechanical_stage_a_owners": {
+    "deterministic_rerun_hash_match": {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v5.measure_deterministic_rerun_hash_match",
+      "implementation_closure_sha256": "a1f331427b221882f732a746364a58e09983149ac577319879672c4084c9db4c",
+      "owner_version_identity": "BTC_REFERENCE_COMPOSITE_V5_MECHANICAL_STAGE_A_OWNERS_V1",
+      "semantic_contract": {
+        "input": "one already-verified immutable VerifiedRawCollection",
+        "invocations": 2,
+        "raw_reopen_allowed": false,
+        "same_configuration_required": true,
+        "same_semantic_dependency_identities_required": true,
+        "verdict": "digest_1 == digest_2"
+      },
+      "semantic_definition_hash": "754cb61979a2e05ab0217703e1e344c93f8d9af32d8f09e34c63643eb2291837"
+    },
+    "provenance_complete_rate": {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v5.measure_provenance_complete_rate",
+      "implementation_closure_sha256": "596bb22e5844b72fcb1e9145a044695813ad17adc06276d036a3a00dbbff5961",
+      "owner_version_identity": "BTC_REFERENCE_COMPOSITE_V5_MECHANICAL_STAGE_A_OWNERS_V1",
+      "semantic_contract": {
+        "complete_record_fields": [
+          "measurement_id",
+          "authoritative_owner",
+          "owner_version_identity",
+          "semantic_definition_hash",
+          "input_identity",
+          "configuration_identity",
+          "manifest_execution_identity",
+          "pit_evaluation_window",
+          "numerator",
+          "denominator",
+          "undefined_reason"
+        ],
+        "derivation": "complete_valid_records / complete_frozen_inventory",
+        "execution_identities": "validated against caller-supplied frozen identities",
+        "favourable_constant_allowed": false
+      },
+      "semantic_definition_hash": "dd33d48549be425433945e8d4f39c154fba7ad4f06bb9b42a8533aefb224ab69"
+    }
+  },
+  "no_threshold_optimization": true,
+  "parent_protocol": "BTC_REFERENCE_COMPOSITE_V4",
+  "parent_protocol_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+  "production_promotion_authorized": false,
+  "reference_policy_version": "BTC_REFERENCE_COMPOSITE_V5",
+  "research_only": true,
+  "safety": {
+    "actual_sealed_sample_collected": false,
+    "actual_sealed_sample_opened": false,
+    "candidate_evaluated": false,
+    "new_market_evidence_collected": false
+  },
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V5_PROTOCOL_DEFINITION_V1",
+  "stage_a_measurement_inventory": [
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._derived_level_census",
+      "measurement_id": "derived_level_review:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._derived_level_census",
+      "semantic_definition_hash": "1188f4d1f191d4f0f15b04e207a4fea1e7fdabc083f7572153fcb03ccf634832"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._derived_level_census",
+      "measurement_id": "derived_level_review:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._derived_level_census",
+      "semantic_definition_hash": "d5d0d063c9d36b75eea580c50a649aad6fdc2ecc8c70782621bbebddc2e8a130"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._derived_level_census",
+      "measurement_id": "derived_level_review:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._derived_level_census",
+      "semantic_definition_hash": "6ee7418b95199e965f8f27788654052f4f629f448edfa95610131d167d25bc1b"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:breakout_disagreement_rate:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "6354a07c497004623d29d9b780a09e1b32dbb858d0c727ef09c84b2224abe10a"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:breakout_disagreement_rate:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "062abfd5a1f124346222dfcb1d339dab8927228f7ab29bd9a831a6c3fc05d2b8"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:breakout_disagreement_rate:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "c9659f8ccc107910f2f6e71d72c7834ecaf7e616f8e6f35fd51070a93ea27c44"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:reclaim_disagreement_rate:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "9c69cd9ac6468b5c83706414a25a0ac77e37cd798f71bced0c540e6c3a3d4909"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:reclaim_disagreement_rate:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "ab4513c3533d98c9343e7acaa539b5fb20aef1057b2951abb5d926c2b8c8bb9d"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:reclaim_disagreement_rate:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "2de1a7a4f91871c4a79ea0970e0060ddfecd5bf4fd1d580f3d6784cbe72a5618"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:within_1_week_swing_disagreement_rate:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "f55b5418fe826c77abf5e9215a0fbe0f8c664693342f59add9211b1de142fca3"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:within_1_week_swing_disagreement_rate:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "ee0b6bbb2e857a8f53e66a3fcca5a9bf202d8c646b0fdd933591457709b11521"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:within_1_week_swing_disagreement_rate:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "ab6c2fa419204d3a65903484b3d0017429fbe7f66e0d88f2f20cc55b543ae847"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:within_2_week_swing_disagreement_rate:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "3f689a4caf1491a2a1060144a079f80ac2064bdb1c9e11779dbbe540dc06b240"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:within_2_week_swing_disagreement_rate:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "cfaaf82991e2ba1024792b5d5382c48735faaec587ee6e09fe942a3f3ceb1d89"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "measurement_id": "diagnostic:within_2_week_swing_disagreement_rate:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._diagnostic_row",
+      "semantic_definition_hash": "9d683d4ab34af9f252b29f3adbcfaf1efeb960f36f21e3533233e304e6002658"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "exact_timestamp_soft_gate:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "57a2d4abbdfe5527d6b7003d305944f094193722081b2840a7ee65fb9412577a"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "exact_timestamp_soft_gate:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "73b9f0b8e0923705c888df9dd1f48045db687dd1276fa721715d6d946e1b98d0"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "exact_timestamp_soft_gate:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "bcacedb97de24ac67af4eccda5d50b3507332c68a623f9dd8c35f36e5d5d2b93"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._atr_comparison",
+      "measurement_id": "inherited_gate:atr_median_absolute_fractional_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._atr_comparison",
+      "semantic_definition_hash": "21557cc1ba13a6961e0f8a3ad1052d65fd106c5235a52e46323349263dc5699b"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._atr_comparison",
+      "measurement_id": "inherited_gate:atr_p95_absolute_fractional_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._atr_comparison",
+      "semantic_definition_hash": "02033b1c7864af2361ab766dac85e73c2adb12103ccae348f60de35859f5f88a"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket",
+      "measurement_id": "inherited_gate:daily_bucket_usable_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket",
+      "semantic_definition_hash": "066cfc2b9c7ac5981bef885d59a23968204363d6fbbf0295e7be4e0001cf12a3"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v5.measure_deterministic_rerun_hash_match",
+      "measurement_id": "inherited_gate:deterministic_rerun_hash_match",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "BTC_REFERENCE_COMPOSITE_V5_MECHANICAL_STAGE_A_OWNERS_V1",
+      "semantic_definition_hash": "36dd98455de976444ca7b66989525e890e15cfe5ffef9479c6d4c07c5ae00420"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.price_source_policy.compare_price_sources",
+      "measurement_id": "inherited_gate:historical_fallback_splice_count",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.price_source_policy.compare_price_sources",
+      "semantic_definition_hash": "d703a9202cb70c736788cf93c6cf3a4694ecd1f917974c0373ea6e8809267fa4"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:mae_max_absolute_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "9cbc69ff0863c025fd2cbe12c669c59f501cb1f0d65bb967b5f165967db199ca"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:mae_median_absolute_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "cd0b8224088ac5ae516f61b8b8ccf2a700d7c76667474a6d0d298976191891e4"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:mae_p95_absolute_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "56312311baad4fc42d191f599664d1cb506ec49373ab1d22f05fa762bb162c40"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:mfe_max_absolute_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "9c3b622508eb7346f841d6aab5f3e139a4c46462bd9fa7c77bf9c27d1afc6a94"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:mfe_median_absolute_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "4df6cf84e195d01f9d92d58acdfd53e9775c47b65daa48a993197e3a26299e08"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:mfe_p95_absolute_difference",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "4ba3525842468afc952f0be819cb661e0c7fb9c5d6a2c905db7296b96839ac8e"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "measurement_id": "inherited_gate:point_in_time_violation_count",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "semantic_definition_hash": "b91630f50e70e54edc08d972ec7b6c23a8ccf76408c97125bf67b2cbf6ee037b"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v5.measure_provenance_complete_rate",
+      "measurement_id": "inherited_gate:provenance_complete_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "BTC_REFERENCE_COMPOSITE_V5_MECHANICAL_STAGE_A_OWNERS_V1",
+      "semantic_definition_hash": "b36cba1f5da0679f36dcddd1204d2907e728f92c25ac0a616ae01bc81d28de32"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests",
+      "measurement_id": "inherited_gate:raw_observation_mutation_count",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_executor.verify_collected_file_digests",
+      "semantic_definition_hash": "0927fae575255aa5dfef5de417226810a3cd90f0c00b8fc8964e58e9e398d815"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "measurement_id": "inherited_gate:reference_degraded_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "semantic_definition_hash": "7a6f76d0a3a39b6dc721bc4802a7d2efd0946ba40df613110e0a5d4caae754c2"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "measurement_id": "inherited_gate:reference_unavailable_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "semantic_definition_hash": "8f19d3a6b587456683b975bb29bdc923f41b1978cfbcc38a6ecd73a0264d7c6b"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "measurement_id": "inherited_gate:reference_usable_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "semantic_definition_hash": "d82eae2acffb684c31795e52d9aa746ce585eef5086e8950b1dd97ef1884d94e"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket",
+      "measurement_id": "inherited_gate:silent_incomplete_bucket_omission_count",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket",
+      "semantic_definition_hash": "603f28dcae577c30dc472e53731595cd2a38e0a5954636acff3330acde451cae"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "measurement_id": "inherited_gate:stop_touch_disagreement_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_empirical._trade_path_comparison",
+      "semantic_definition_hash": "9ad6b61668d9290b4b660de2087a89f6c79401ef0037bab2b846a54306db7ed2"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.btc019b_diagnostics._swing_metric_summary",
+      "measurement_id": "inherited_gate:swing_level_disagreement_rate_above_0_50_atr",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.btc019b_diagnostics._swing_metric_summary",
+      "semantic_definition_hash": "9593c9d26ee566fb568911c56bf2bf4b835a2ec28926e581b7bd3518d466fbd5"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "measurement_id": "inherited_gate:unrecorded_quality_state_count",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "semantic_definition_hash": "445b5a7f9c561903b4d05764d52ca9e30534f1080542a13149bbf2e514a25607"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest",
+      "measurement_id": "inherited_gate:validation_period_days",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_executor.validate_sealed_sample_manifest",
+      "semantic_definition_hash": "d04f0884540771046f46d1db064ef3aeaa0b19fd12778337f9f29f1b174cd375"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "measurement_id": "inherited_gate:venue_disagreement_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.build_v2_reference_observation",
+      "semantic_definition_hash": "17302a9f077cf0d6cb843a1d7d4821cd29c630cf89a886a0d4b4c503c7db9bca"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket",
+      "measurement_id": "inherited_gate:weekly_bucket_usable_rate",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v2.aggregate_v2_reference_bucket",
+      "semantic_definition_hash": "14da9f77f36d55998f3c0ff3692d32edaa0939e655d6dec58256982a84770b91"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._comparison_records",
+      "measurement_id": "not_comparable_accounting",
+      "numerator_denominator_required": false,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._comparison_records",
+      "semantic_definition_hash": "f6312495471fe35970fae4c74bd789fef342427c69caacd8aab6a9141ee052f1"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "source_dispersion_guard:bitfinex_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "4f444f1c46a758068a6a2f77a0085dca45a780dfd4c9e466499e6ec84724dc3f"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "source_dispersion_guard:bitfinex_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "7a65ca9514ced9d502f9da19c1cbd17174534a90f04c6d457db55219d777cb14"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "source_dispersion_guard:bitstamp_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "a71f3e4e907ac103850d19239f3aaf7a601addd7e6eb92ea5972346ac3a828e6"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "structural_hard_gate:MEDIAN_OHLC_V2_vs_bitfinex",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "e7749d229259011a9573d72c95455f38048d49302dd6f977db852a89eb8a4cb2"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "structural_hard_gate:MEDIAN_OHLC_V2_vs_bitstamp",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "b2ecae73bfd20f48d42dc44bcbfb649bb8e4c16dabecc175e095e6a1338aa6ba"
+    },
+    {
+      "authoritative_owner": "btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "measurement_id": "structural_hard_gate:MEDIAN_OHLC_V2_vs_coinbase",
+      "numerator_denominator_required": true,
+      "owner_version_identity": "V5_BOUND_EXISTING_OWNER::btc_predictor.research.reference_composite_v3_sealed_evidence._pair_measurement",
+      "semantic_definition_hash": "dfb8d06edd9b018c03e00fd44175e4f36695ba669467527d9c508bb617f2926a"
+    }
+  ],
+  "stage_a_readiness": {
+    "every_hard_gate_has_exactly_one_executable_owner": true,
+    "known_unfixed_live_builder_correctness_findings": [
+      "ATR_P95_OWNER_PARITY_NOT_FIXED_BECAUSE_STAGE_B_IS_TERMINALLY_BLOCKED",
+      "V2_INCOMPLETE_BUCKET_CENSUS_NOT_FIXED_BECAUSE_STAGE_B_IS_TERMINALLY_BLOCKED",
+      "DECIMAL_CONTEXT_INVARIANCE_NOT_FIXED_BECAUSE_STAGE_B_IS_TERMINALLY_BLOCKED",
+      "FULL_BUILDER_SEMANTIC_DEPENDENCY_CLOSURE_NOT_FIXED_BECAUSE_STAGE_B_IS_TERMINALLY_BLOCKED"
+    ],
+    "numerical_correctness_certified": false,
+    "provenance_census_executed_on_real_stage_a_evidence": false
+  },
+  "stage_architecture": {
+    "stage_a": {
+      "hard_gate_count": 20,
+      "metrics": [
+        "atr_median_absolute_fractional_difference",
+        "atr_p95_absolute_fractional_difference",
+        "daily_bucket_usable_rate",
+        "deterministic_rerun_hash_match",
+        "historical_fallback_splice_count",
+        "mae_max_absolute_difference",
+        "mae_median_absolute_difference",
+        "mae_p95_absolute_difference",
+        "mfe_max_absolute_difference",
+        "mfe_median_absolute_difference",
+        "mfe_p95_absolute_difference",
+        "point_in_time_violation_count",
+        "provenance_complete_rate",
+        "raw_observation_mutation_count",
+        "reference_degraded_rate",
+        "reference_unavailable_rate",
+        "reference_usable_rate",
+        "silent_incomplete_bucket_omission_count",
+        "stop_touch_disagreement_rate",
+        "swing_level_disagreement_rate_above_0_50_atr",
+        "unrecorded_quality_state_count",
+        "validation_period_days",
+        "venue_disagreement_rate",
+        "weekly_bucket_usable_rate"
+      ],
+      "name": "SEALED_REFERENCE_VALIDATION"
+    },
+    "stage_b": {
+      "frozen_corpus_definition_sha256": null,
+      "hard_gate_count": 8,
+      "metrics": [
+        "cross_market_confirmed_stop_preservation_rate",
+        "gap_through_stop_consensus_agreement_rate",
+        "isolated_venue_stop_suppression_rate",
+        "regime_classification_disagreement_rate",
+        "risk_size_p95_relative_difference",
+        "setup_classification_disagreement_rate",
+        "trade_action_disagreement_rate",
+        "trade_eligibility_disagreement_rate"
+      ],
+      "name": "DETERMINISTIC_INTEGRATION_VALIDATION"
+    },
+    "stage_c": {
+      "direction": "minimum",
+      "hard_gate_count": 1,
+      "metrics": [
+        "live_shadow_days"
+      ],
+      "name": "POST_CERTIFICATION_LIVE_SHADOW",
+      "requires_stage_a_and_stage_b_certification": true,
+      "threshold": 90
+    },
+    "stages": [
+      "SEALED_REFERENCE_VALIDATION",
+      "DETERMINISTIC_INTEGRATION_VALIDATION",
+      "POST_CERTIFICATION_LIVE_SHADOW"
+    ]
+  },
+  "status": "TERMINALLY_BLOCKED_MISSING_INTEGRATION_EVIDENCE",
+  "synthetic_reachability": {
+    "DETERMINISTIC_INTEGRATION_VALIDATION": {
+      "does_not_claim_real_evidence": true,
+      "outcomes": {
+        "fail": "FAIL",
+        "pass": "PASS",
+        "undefined_insufficient_evidence": "UNDEFINED_INSUFFICIENT_EVIDENCE"
+      }
+    },
+    "SEALED_REFERENCE_VALIDATION": {
+      "does_not_claim_real_evidence": true,
+      "outcomes": {
+        "fail": "FAIL",
+        "pass": "PASS",
+        "undefined_insufficient_evidence": "UNDEFINED_INSUFFICIENT_EVIDENCE"
+      }
+    }
+  },
+  "v4_to_v5_semantic_diff": {
+    "direction_change_count": 0,
+    "evidence_stage_reassignment_count": 8,
+    "gate_count": 33,
+    "gate_semantic_diff": [
+      {
+        "definition": "Typical volatility estimates should remain close to cross-venue consensus.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "atr_median_absolute_fractional_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.02"
+      },
+      {
+        "definition": "Tail ATR distortion must remain bounded.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "atr_p95_absolute_fractional_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.10"
+      },
+      {
+        "definition": "A robust estimator must preserve genuine shared tail moves.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "cross_market_confirmed_stop_preservation_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "1.0"
+      },
+      {
+        "definition": "Daily features require nearly continuous explicit period state.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "daily_bucket_usable_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.995"
+      },
+      {
+        "definition": "Identical inputs and protocol must produce identical artifacts.",
+        "direction": "equal",
+        "hard_soft_role": "HARD",
+        "metric": "deterministic_rerun_hash_match",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": true
+      },
+      {
+        "definition": "Gap-through behavior must agree with deterministic venue consensus.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "gap_through_stop_consensus_agreement_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.99"
+      },
+      {
+        "definition": "Unversioned fallback splicing would invalidate provenance.",
+        "direction": "equal",
+        "hard_soft_role": "HARD",
+        "metric": "historical_fallback_splice_count",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": 0
+      },
+      {
+        "definition": "Most isolated exchange wicks should not create canonical stop events.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "isolated_venue_stop_suppression_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.95"
+      },
+      {
+        "definition": "Historical APIs cannot reconstruct original publication latency.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "live_shadow_days",
+        "new_stage": "POST_CERTIFICATION_LIVE_SHADOW",
+        "old_stage": "POST_CERTIFICATION_PROMOTION",
+        "old_stage_v5_equivalent": "POST_CERTIFICATION_LIVE_SHADOW",
+        "threshold": 90
+      },
+      {
+        "definition": "Expose extreme adverse-path sensitivity without post-hoc tuning.",
+        "direction": "maximum",
+        "hard_soft_role": "SOFT",
+        "metric": "mae_max_absolute_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.05"
+      },
+      {
+        "definition": "Typical adverse excursion distortion should remain below 25 bps.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "mae_median_absolute_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.0025"
+      },
+      {
+        "definition": "95% of adverse paths should remain within one percentage point.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "mae_p95_absolute_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.01"
+      },
+      {
+        "definition": "Expose extreme path sensitivity without letting one event decide alone.",
+        "direction": "maximum",
+        "hard_soft_role": "SOFT",
+        "metric": "mfe_max_absolute_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.05"
+      },
+      {
+        "definition": "Typical favorable excursion distortion should remain below 25 bps.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "mfe_median_absolute_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.0025"
+      },
+      {
+        "definition": "95% of path probes should remain within one percentage point.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "mfe_p95_absolute_difference",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.01"
+      },
+      {
+        "definition": "Future or late observations invalidate the study.",
+        "direction": "equal",
+        "hard_soft_role": "HARD",
+        "metric": "point_in_time_violation_count",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": 0
+      },
+      {
+        "definition": "Every output must be reconstructable from immutable inputs.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "provenance_complete_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "1.0"
+      },
+      {
+        "definition": "Research may not rewrite source evidence.",
+        "direction": "equal",
+        "hard_soft_role": "HARD",
+        "metric": "raw_observation_mutation_count",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": 0
+      },
+      {
+        "definition": "Track warning frequency without rejecting economically harmless warnings alone.",
+        "direction": "maximum",
+        "hard_soft_role": "SOFT",
+        "metric": "reference_degraded_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.020"
+      },
+      {
+        "definition": "Unavailable reference hours must remain rare and explicit.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "reference_unavailable_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.005"
+      },
+      {
+        "definition": "Canonical structure needs near-continuous hourly prices.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "reference_usable_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.995"
+      },
+      {
+        "definition": "Regime labels should be robust to reference construction.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "regime_classification_disagreement_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.02"
+      },
+      {
+        "definition": "Reference changes should not materially resize most positions.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "risk_size_p95_relative_difference",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.10"
+      },
+      {
+        "definition": "Setup selection should rarely depend on venue noise.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "setup_classification_disagreement_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.01"
+      },
+      {
+        "definition": "Incomplete periods must remain visible as metadata records.",
+        "direction": "equal",
+        "hard_soft_role": "HARD",
+        "metric": "silent_incomplete_bucket_omission_count",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": 0
+      },
+      {
+        "definition": "Canonical source choice should almost never change stop outcomes.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "stop_touch_disagreement_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.01"
+      },
+      {
+        "definition": "Half an ATR is the primary economically meaningful structural level tolerance.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "swing_level_disagreement_rate_above_0_50_atr",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.05"
+      },
+      {
+        "definition": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "trade_action_disagreement_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.01"
+      },
+      {
+        "definition": "Reference policy should rarely change whether a trade is permitted.",
+        "direction": "maximum",
+        "hard_soft_role": "HARD",
+        "metric": "trade_eligibility_disagreement_rate",
+        "new_stage": "DETERMINISTIC_INTEGRATION_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.01"
+      },
+      {
+        "definition": "Every warning and unavailable observation must be reconstructable.",
+        "direction": "equal",
+        "hard_soft_role": "HARD",
+        "metric": "unrecorded_quality_state_count",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": 0
+      },
+      {
+        "definition": "Require at least four years spanning multiple market regimes.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "validation_period_days",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": 1460
+      },
+      {
+        "definition": "Frequent severe disagreement may indicate an unstable provider set.",
+        "direction": "maximum",
+        "hard_soft_role": "SOFT",
+        "metric": "venue_disagreement_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.005"
+      },
+      {
+        "definition": "Structural models must not lose meaningful weekly history.",
+        "direction": "minimum",
+        "hard_soft_role": "HARD",
+        "metric": "weekly_bucket_usable_rate",
+        "new_stage": "SEALED_REFERENCE_VALIDATION",
+        "old_stage": "SEALED_HISTORICAL_VALIDATION",
+        "old_stage_v5_equivalent": "SEALED_REFERENCE_VALIDATION",
+        "threshold": "0.990"
+      }
+    ],
+    "hard_soft_change_count": 0,
+    "parent_protocol": "BTC_REFERENCE_COMPOSITE_V4",
+    "parent_protocol_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
+    "schema_version": "BTC_REFERENCE_COMPOSITE_V4_TO_V5_SEMANTIC_DIFF_V1",
+    "semantic_diff_sha256": "e7ddad903f14104f08e7d2667c38b594874f3cc6735753d37062b3f752ca1bcf",
+    "stage_label_change_count": 33,
+    "threshold_change_count": 0,
+    "v5_protocol": "BTC_REFERENCE_COMPOSITE_V5"
+  }
+}

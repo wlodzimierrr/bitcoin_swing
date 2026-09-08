@@ -1,0 +1,308 @@
+{
+  "assessment_sha256": "fad12b55aea14914e74d6f17866153e91c228063173866198f6cb4fd7093b8a2",
+  "candidate_reference_state": "MEDIAN_OHLC_V2_NOT_CONSTRUCTED_OR_EVALUATED",
+  "complete_corpus_candidates": [],
+  "corpus_definition_sha256": null,
+  "field_assessment": {
+    "candidate_reference": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "comparison_reference": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "cost_slippage_configuration": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "decision_timestamps": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "denominators": {
+      "exact_key_occurrences": [
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[0]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[1]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[2]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.sensitivity.denominator_imbalance[3]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[0]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[1]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[2]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[3]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[4]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[5]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[6]",
+        "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json:$.verified_review_findings.findings.SCALAR_MINIMUM_N_DOES_NOT_CARRY_TO_UNEQUAL_DENOMINATORS.probes[7]"
+      ],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "eligible_timestamps": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "evaluation_period": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "exclusion_rules": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "execution_version": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "lifecycle_version": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "non_price_inputs": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "portfolio_initial_state": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "risk_version": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    },
+    "strategy_version": {
+      "exact_key_occurrences": [],
+      "frozen_by_complete_integration_corpus": false,
+      "status": "MISSING_FROM_COMPLETE_REPRODUCIBLE_INTEGRATION_CORPUS"
+    }
+  },
+  "final_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE",
+  "json_artifact_inventory": [
+    {
+      "path": "data/btc019/2023-01-01_2025-12-31/collection_manifest.json",
+      "sha256": "143ebfc57837eb03fc71f27a46b29a6fe53e9bb1960e4b05dc5ba034584c1c8e"
+    },
+    {
+      "path": "data/btc_reference_composite_v1/development_dry_run.json",
+      "sha256": "d782a0d4c8e7ffa4948452805dc2f80ddcf7ee63caaf82f4ee85b49845603fa6"
+    },
+    {
+      "path": "data/btc_reference_composite_v1/development_final.json",
+      "sha256": "3acc0ba786273cc1833f7c98e0ea7caa87be75cb6976cefb9ecf3c32e83efa54"
+    },
+    {
+      "path": "data/btc_reference_composite_v1/development_metadata_corrected.json",
+      "sha256": "8d0555b345bbc430e2f21fba1caef36de5849f22927b3e6fb8f876762a40ea0f"
+    },
+    {
+      "path": "data/btc_reference_composite_v1/external_2019-12-01_2022-12-31/collection_manifest.json",
+      "sha256": "ede78386f126ebb7c6d89d78bf787c3d3acbc36a071a2213e0d6a26f0b9da49c"
+    },
+    {
+      "path": "data/btc_reference_composite_v1/external_metadata_corrected.json",
+      "sha256": "f10de48bd501957f1c59ad58b168e0c8c9a6e6532d71c1145b77be43cc562055"
+    },
+    {
+      "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/canonical_source_decision.json",
+      "sha256": "5ca7f5de0492cf2f2b31bd854a282f23a4054a75fd7d0a9c5ad044e24168fa0d"
+    },
+    {
+      "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/collection_manifest.json",
+      "sha256": "a2fd940ceb04c3fa8d864a4755f0d7789ff6f4f872907adf3c2e81701940504e"
+    },
+    {
+      "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/comparison_report.json",
+      "sha256": "82479ba02ab59e8e412f988a0208bbbaa02c8096eb756335e10211cfab730fac"
+    },
+    {
+      "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/manual_reviews.json",
+      "sha256": "b50aa107358d460a3b4cecdf0f4e61c365241972d73c4d72f2a43a97c3f73c95"
+    },
+    {
+      "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/review_assessments.json",
+      "sha256": "f6b8dbf775ffa81c1bb229b10a2034cdd91b1f2d364a419aa34c7766150c0980"
+    },
+    {
+      "path": "research_artifacts/btc019/PRICE_SOURCE_POLICY_V1/supplemental_analysis.json",
+      "sha256": "94ed504ed111090fe7313445c785b817b48fdb7cce7067e274aaffb024bf29f8"
+    },
+    {
+      "path": "research_artifacts/btc019_completion_gate/completion_gate_assessment.json",
+      "sha256": "2ffaa4239f06597ece2f27e4dea62ba46ec1dd17ff2cb24631fa5ba931cdd592"
+    },
+    {
+      "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/canonical_source_decision.json",
+      "sha256": "e4e739f80e164bfa60ad1dca5ee0c4add6efd4df1fdd1a93e9a81b0f8cafd828"
+    },
+    {
+      "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/collection_manifest.json",
+      "sha256": "a2fd940ceb04c3fa8d864a4755f0d7789ff6f4f872907adf3c2e81701940504e"
+    },
+    {
+      "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/comparison_report.json",
+      "sha256": "b16d43c8223446afe21592118a30e2e6936483a9af26e0e6f3d1e9299d15370e"
+    },
+    {
+      "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/manual_reviews.json",
+      "sha256": "d50115dc32f5c26895a4341c3b2a5ae7006faff22c7a8bea628fb31765ad4def"
+    },
+    {
+      "path": "research_artifacts/btc019_correction_audit/PRICE_SOURCE_POLICY_V1/supplemental_analysis.json",
+      "sha256": "fee61daa59afa98642753b0866e18da9e27914fd7ecfa85fe6f7ef8fc7745b0d"
+    },
+    {
+      "path": "research_artifacts/btc019_gate_denominator_resolution/denominator_resolution.json",
+      "sha256": "e90c5241886459dad147c86cde56f0602f92882505fd0c48f53bbdf921c27e4d"
+    },
+    {
+      "path": "research_artifacts/btc019_gate_denominator_resolution/successor_protocol_definition.json",
+      "sha256": "2ebca2671072e0806ecc1e35ec792d4e4e42bc2c962ff3e34afa415095f5ee8c"
+    },
+    {
+      "path": "research_artifacts/btc019_structural_threshold_calibration/calibration_governance.json",
+      "sha256": "c6c04c3dfd95597a2b1313a28957ab42f48a0f15cd5e15b6f71a25ffd4b3ab67"
+    },
+    {
+      "path": "research_artifacts/btc019_structural_threshold_calibration/threshold_calibration.json",
+      "sha256": "7b9a342c5f41cf15463153948563f1abe034d8e4e41db54e678f8d3099ceea82"
+    },
+    {
+      "path": "research_artifacts/btc019_structure_comparison_v2/comparison_report.json",
+      "sha256": "b66d03b9104e8d0e658a8b28a354dd4f7826736487f0b0619a6e0ab79f4ebc21"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_gate_architecture_convergence/gate_architecture_convergence.json",
+      "sha256": "1814e7a6b038e36a55158c9f5c06330ad33912d508f70d2b3a37dfdf769eb0c2"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_gate_architecture_convergence/reference_composite_v3_protocol.json",
+      "sha256": "03511236b8e5a876a4be2b6601d6efc3d30ee516bf8785be20232d3d8dc57024"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_sealed_executor/history/49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729/semantic_delta_v1_to_v2.json",
+      "sha256": "8298b4a06c3dba235e51c234cf06978da615e696a8d23fe2e1fb533a98aee480"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_sealed_executor/history/49abd68975217bb78affc0b6bd6f5e2ba066e84ec745dc5b9bdf82d3bea99729/validator_definition_v2.json",
+      "sha256": "ef38fcdca36f240cdbc0a47b5b5621ac8277bf5cdf3f3f32d495f116158e2a87"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_sealed_executor/semantic_delta_v1_to_v2.json",
+      "sha256": "89ec6759c70c704cd1ccfcfbf6080be65ac15988c0448c3cfb80f2c02062279f"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_sealed_executor/validator_definition_v2.json",
+      "sha256": "2d3151422d34801d99899d0c5c7a281ca92abe04c837abe00d65d00e76f25509"
+    },
+    {
+      "path": "research_artifacts/btc019_v3_validator/validator_definition.json",
+      "sha256": "1b5987ec6aae758bfbed5ee3a1b01114f4ed66a8895535bab164f909cf702e5f"
+    },
+    {
+      "path": "research_artifacts/btc019_v4_stage_correction/inherited_gate_ownership.json",
+      "sha256": "7bf33f1ab047ffcb33c19b15bcc3229c74ffae5facf662baf82989bead527010"
+    },
+    {
+      "path": "research_artifacts/btc019_v4_stage_correction/reference_composite_v4_protocol.json",
+      "sha256": "bb55a9a7e37d7218115465cfb345845cd4594b929bc6e56a369fc8f949eff3d8"
+    },
+    {
+      "path": "research_artifacts/btc019_v4_stage_correction/v3_to_v4_semantic_diff.json",
+      "sha256": "ea101f816103c81e4411e9b32516bac4e19980d130667065f7b024fd865685a6"
+    },
+    {
+      "path": "research_artifacts/btc019_v4_validator/validator_definition.json",
+      "sha256": "c6288448069921892c63b932d6c5bd5ad96be6e38a59091a232ec0dd7e4ac0dc"
+    },
+    {
+      "path": "research_artifacts/btc019b/degraded_bar_diagnostics.json",
+      "sha256": "7fef4315bb752bbd35bc18d7b00c3191a3e904a3cdb16129909f00bbbe638fdb"
+    },
+    {
+      "path": "research_artifacts/btc019b/degraded_episode_diagnostics.json",
+      "sha256": "c1ba2dd65c5ef2da0e23058c3afe7ec3c2825238304f67e0d3546b3d9bea328c"
+    },
+    {
+      "path": "research_artifacts/btc019b/diagnostic_protocol.json",
+      "sha256": "a3c566a5865591d617172dbc278fcdaa3092892d1c356da13004d8614a2d12bc"
+    },
+    {
+      "path": "research_artifacts/btc019b/final_diagnostic_decision.json",
+      "sha256": "d911b7dba49ae3f4d05307efb655b0b18b3cc8fcb2ee8c9791ae42033c97a73d"
+    },
+    {
+      "path": "research_artifacts/btc019b/swing_disagreement_diagnostics.json",
+      "sha256": "d916bf9906cd50c8c86dab0510478283d2714d523a76adad65ab4676984002a5"
+    },
+    {
+      "path": "research_artifacts/btc129_scoring_contracts/effective_weight_report.json",
+      "sha256": "48e7cbc7cce54330d478cd809e2f810681cb6509372ff4b2e4748415b6eca96b"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/candidate_definition.json",
+      "sha256": "c2ca6c24363e3964bb1332a35242c2b7dfc93421034f8e5bf8e702a406d8561e"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/database_persistence_evidence.json",
+      "sha256": "b750e9f1d66fdd8fea1fd5e25fc990ddbfb212b59626746cffd8a7fc1b69afa0"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/development_validation_report.json",
+      "sha256": "8d0555b345bbc430e2f21fba1caef36de5849f22927b3e6fb8f876762a40ea0f"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/external_manual_review_assessments.json",
+      "sha256": "90e88d7e5ed276df70193837b901c060a4d83f75ca8e99cc2ac7ae5cb7a95256"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/external_validation_report.json",
+      "sha256": "f10de48bd501957f1c59ad58b168e0c8c9a6e6532d71c1145b77be43cc562055"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/final_decision.json",
+      "sha256": "cb0a32e14b45cf496c75029a17a83df68450367eba4c6e49708f3388819fc1e3"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V1/point_in_time_metadata_correction.json",
+      "sha256": "2022e45d572a3e435c0973404329469d3b421c5cafcff5bef87b59559703baf4"
+    },
+    {
+      "path": "research_artifacts/btc_reference_composite/BTC_REFERENCE_COMPOSITE_V2/protocol_definition.json",
+      "sha256": "adfbd36395220fb5f7ae9f5e97e24a5ca809a0e6a09fd8f3b20f75d928862d5e"
+    }
+  ],
+  "json_artifact_inventory_sha256": "98943da9e5bdcfa51ed5e2fb3c0c7a3938d0f1334f2e27ac4fcf507c63fdfa28",
+  "new_market_evidence_collected": false,
+  "reproducible_integration_corpus_exists": false,
+  "required_fields": [
+    "evaluation_period",
+    "decision_timestamps",
+    "eligible_timestamps",
+    "non_price_inputs",
+    "candidate_reference",
+    "comparison_reference",
+    "strategy_version",
+    "risk_version",
+    "lifecycle_version",
+    "execution_version",
+    "portfolio_initial_state",
+    "cost_slippage_configuration",
+    "exclusion_rules",
+    "denominators"
+  ],
+  "schema_version": "BTC_REFERENCE_COMPOSITE_V5_INTEGRATION_CORPUS_ASSESSMENT_V1",
+  "sealed_sample_opened": false,
+  "terminal_reason": "No persisted mapping under data/ or research_artifacts/ freezes all required Stage-B corpus fields. Existing Phase-1 implementations and synthetic tests cannot supply missing historical non-price inputs, a candidate/comparison replay pair, initial portfolio state, or frozen denominators without manufacturing evidence."
+}
