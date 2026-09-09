@@ -155,7 +155,7 @@ record lacked.
 
 ## POSTP1-001R — `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1`
 
-**Status:** `IMPLEMENTED / AWAITING REPEAT INDEPENDENT xHIGH REVIEW`
+**Status:** `FAILED REPEAT INDEPENDENT xHIGH REVIEW / SUPERSEDED PRE-DATA BY POSTP1-001R2`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** repeat independent xHigh review of the exact corrected hash
 **Owner module:** `btc_predictor/research/prospective_integration_corpus.py`
@@ -240,12 +240,203 @@ POSTP1-001R CORRECTED PROTOCOL
 Collection requires all three reviews above. It is **not** authorized by
 POSTP1-001R, and warmup capture is not an exception.
 
+### POSTP1-002R outcome
+
+The repeat independent xHigh review of `0d4f1437...f45a9e` returned
+`FAIL — AMBIGUOUS FROZEN INPUT` /
+`PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT` on four findings:
+
+- **P1-A** the CVD acquisition cadence was falsely claimed to be inherited from,
+  and uniquely implied by, the Phase-1 feature owner;
+- **P1-B** `OI_INTENSITY`'s `market_cap_usd` had no real prospective source
+  contract, only the unqualified `raw.generic_series` family;
+- **P1-C** liquidation missing-versus-empty semantics were unsupported by the
+  named aggregate owner; and
+- **P2** the 750-day warmup was not the exact owner-derived minimum.
+
+No collection began under `0d4f1437...f45a9e` and no qualifying observation
+exists. It is retained as failed lineage alongside `aaa05c72...d37326`.
+
+## POSTP1-001R2 — `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1`
+
+**Status:** `IMPLEMENTED / AWAITING THIRD INDEPENDENT xHIGH REVIEW`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** third independent xHigh review of the exact corrected hash
+**Owner module:** `btc_predictor/research/prospective_integration_corpus.py`
+**Artifacts:** `prospective_evidence/prospective_integration_corpus_v1/`
+
+The protocol remains `PROSPECTIVE_INTEGRATION_CORPUS_V1`: neither failed hash
+was certified, no collection epoch opened and no persisted observation carries
+the superseded semantics, and this document's own change procedure binds
+`PROSPECTIVE_INTEGRATION_CORPUS_V2` to a semantic change *after* collection
+starts. It is refrozen at status
+`CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW` with definition hash:
+
+```text
+40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
+```
+
+Corrected bound child contracts:
+
+| contract | hash |
+| --- | --- |
+| `data_schema_contract` | `90dea1ba5336f0fc5b74d83ccef88dc22d69f29e874e442ae0a151a7c092ee25` |
+| `decision_universe` | `b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce` |
+| `evidence_sufficiency` | `af424423723f377d22fdddd01e396de9a2323db0c9aa59defd57b78076cc5df9` |
+| `feature_input_coverage` | `7fca47cbc1872d8e17801b37b704b09284597dbc875f14b5f7e6571a2f65f517` |
+| `input_snapshot_schema` | `4ac2a60b2909228ac4a818aea98700caf2ca2b6488c6605f74a5ebd808f65534` |
+| `metric_evidence_contracts` | `98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98` |
+| `portfolio_track_contract` | `92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4` |
+| `prospective_btc_market_cap_acquisition` | `fe0fe85532233e767a33ff1a4649cd72a5049746559d0be799aca3d88d50e817` |
+| `prospective_cvd_acquisition` | `c485a4c36e2d4ddaf443955760ad9073e7b9e640a5307367399e5af25ffa8b76` |
+| `prospective_liquidation_capture` | `23212f669cb0f7308a19df2498781f0747a43974f8bbdac39a9ceb23943f16c8` |
+| `prospective_liquidation_percentile_adapter` | `849f7843066930418822dfc0f15e238897d65bc148a9882548b9decce8e75d79` |
+| `semantic_diff_from_v5_blockers` | `49b129afd07a08ddfbe6b4195e648b7ab28f712a3d2747739ec139ef7965673d` |
+| `stage_b_evaluation_contract` | `3df077ec947c7350393aaa1e7ff73dbabcf7e8829b0b56adfbcc207c12edf98c` |
+| `stop_event_taxonomy` | `ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e` |
+| `warmup_history` | `71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac` |
+
+### The governance distinction this correction rests on
+
+Phase-1 owns **feature semantics** — `spot_perp_cvd_spread`,
+`open_interest_intensity` and `calculate_orderliness_score` keep their formulas,
+windows and reason codes untouched. For three of their raw inputs Phase-1 never
+owned **acquisition semantics**: which source produces a raw observation, on
+what cadence, with what timestamp, availability and revision meaning. Because
+this corpus has not begun collection, POSTP1-001R2 freezes those missing
+acquisition semantics now. Every new rule is declared explicitly as
+`NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE`, carries
+`historically_inherited = false`, is hash-bound by the parent protocol, and was
+selected without inspecting any Stage-B outcome. Nothing newly authored is
+presented as historically implicit.
+
+### P1-A — CVD acquisition
+
+`PROSPECTIVE_CVD_ACQUISITION_V1` (`c485a4c3...f8b76`). The previous claim that an
+exact UTC hourly cadence was uniquely implied by `spot_perp_cvd_spread` was
+false: the owner intersects the available spot and perp `observation_time` sets,
+applies no grid, spacing or interval test, and is observation-count based. The
+corpus now persists `historical_feature_owner_specifies_cadence = false` and
+`historical_feature_owner_specifies_window = 20 prior common observations`, and
+records that unit tests exercising hourly fixtures are not cadence authority.
+
+`1h` is selected **prospectively** against eight predeclared criteria, with `4h`
+and `1d` assessed and rejected on record. It is the finest interval that closes
+natively in the sources the repository already integrates, it coincides with the
+`STOP_HOURLY` decision grid and with every `STRATEGY_DAILY` session opening, it
+needs no aggregation and therefore admits no partial-bucket lookahead, it needs
+no arbitrary phase origin to replay, and it keeps the frozen
+20-prior-observation window from becoming the corpus's binding warmup. The
+contract freezes the spot and perpetual market universes, provider identity,
+cadence, timestamp alignment, calculation interval, aggregation method, the
+`cvd_usd` interval-delta definition, the buy/sell classification owner,
+`observation_time` / `available_at` / `ingested_at`, revision, missing-interval
+and duplicate semantics, units and the PIT rule. `CVD_SPREAD` initialization is
+20 prior aligned hourly common observations plus 1 current. Any change to
+cadence, provider, market universe, classification or aggregation requires
+`PROSPECTIVE_CVD_ACQUISITION_V2` and a new epoch; no observation is resampled.
+
+### P1-B — BTC market cap
+
+`PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1` (`fe0fe855...50e817`).
+`existing_market_cap_producer = NONE`: `MarketCapObservation` is constructed only
+inside a feature test, and `raw.generic_series` declares no market-cap series in
+either its supported series types or its series definitions. The unqualified
+generic-series family is not a source contract and is no longer accepted as one.
+
+One exact identity is frozen on the repository's own point-in-time scalar-series
+table: `series_id = BTC_MARKET_CAP_USD`, `series_type = market_cap`,
+`unit = usd`, provider `coingecko`, daily observations on the exact UTC day start,
+with the existing `NEW_REVISION_ROW_PER_RESTATEMENT` convention. `market_cap =
+price x circulating supply` is considered and rejected: it is owned by no
+repository authority, it needs a second supply contract, and it would make an
+exogenous feature input depend on the reference identity under test, which
+`SHARED_EXOGENOUS_INPUT_RULE` forbids. The contract also records the owner's own
+exact-`observation_time` intersection rule, so the prospective open-interest
+capture consumed by `OI_INTENSITY` must present its aggregate on the same daily
+grid. POSTP1-004 must verify the named provider against the frozen semantics
+before collection and fail closed — reissuing as
+`PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2` — rather than adapting the contract
+to whatever the provider publishes.
+
+### P1-C — liquidation feed state and normalization
+
+`PROSPECTIVE_LIQUIDATION_CAPTURE_V1` (`23212f66...3f16c8`) and
+`PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1` (`849f7843...e75d79`).
+`aggregate_btc_derivatives_available_at` initialises both liquidation notionals
+to `Decimal("0")` and exposes no feed-state field, so a missing feed and an
+observed feed with zero events are byte-identical zeros;
+`existing_aggregate_distinguishes_missing_from_empty = false` is persisted and
+the existing owner is not modified. The prospective capture layer persists
+`feed_status`, `event_count` and the notional pair independently, in the new
+append-only `research.prospective_liquidation_feed_state` table, over the
+vocabulary `OBSERVED_WITH_EVENTS`, `OBSERVED_ZERO_EVENTS`, `SOURCE_UNAVAILABLE`,
+`LATE`, `INVALID`. The first two are observations — `OBSERVED_ZERO_EVENTS`
+legitimately carries 0 USD before normalization — and the last three make the
+required input missing and the decision not evaluable. A replay reproduces the
+distinction from storage and may never re-derive `feed_status` from a zero value.
+
+No executable owner produces `liquidation_percentile`, so one is frozen before
+data. It sums both observed sides, runs on one observation per fully observed
+canonical UTC day, and inherits the repository's single existing percentile
+convention — the midrank of a prior-only half-open window, implemented
+identically in the volatility and positioning owners — with the 730-day window
+and 365 minimum prior observations of `volatility_percentile`, the only
+percentile already co-consumed by `calculate_orderliness_score`. The adapter
+adds no new binding warmup and `calculate_orderliness_score` is unchanged.
+
+### P2 — warmup
+
+`750 calendar days` is withdrawn as the exact owner-derived warmup. It added a
+730-day *eligible trailing window* to a 20-day upstream window as if both were
+required populated histories, then used the sum as an elapsed-time evaluability
+test. Three quantities are now frozen separately for all 33 features:
+
+| quantity | meaning |
+| --- | --- |
+| `rolling_window_span` | the eligible trailing window an owner searches |
+| `minimum_observation_count` | qualifying observations required inside it |
+| `minimum_contiguous_history_to_first_evaluable` | a `PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY` value only |
+
+For `VOL_PERCENTILE_2Y` the owner-derived values are a 730-day half-open
+`[t - 730d, t)` window, 365 prior `RV_20` observations inside it, and an upstream
+requirement of 21 contiguous daily closes per `RV_20`. With contiguous daily
+observations it therefore first defines at **386 contiguous daily sessions**
+(385 elapsed calendar days), pinned by a synthetic fixture against the
+production owner. Evaluability is the owner's rule — enough qualifying
+observations inside the applicable trailing window and every upstream
+initialization satisfied — never `elapsed_days >= a hardcoded longest warmup`.
+Composites inherit their components' predicates and invent no window.
+
+### POSTP1-001R2 implementation notes
+
+- Both failed definition hashes, their implementation commits and their failed
+  review classifications remain inside the corrected definition's lineage as
+  explicitly non-authoritative pre-data history. Neither opened a collection
+  epoch.
+- The corrected input-coverage artifact proves all 33 frozen features close
+  mechanically, `OI_INTENSITY` and `OI_INTENSITY_PERCENTILE_180D` now naming the
+  frozen market-cap source contract rather than a generic family.
+- Everything the repeat review passed is preserved unchanged: the stop-event
+  taxonomy and its `NOT_CLASSIFIABLE` / gap-through / one-hour-contiguity rules,
+  the control-reference stop anchor, `TRADE_ACTION_COMPARISON_OWNER_V1`,
+  `TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1`, and the risk-size definition
+  (`position_notional`, `abs(candidate - control) / control`, nearest-rank p95).
+- The accepted consequence of a divergence-preserving design is that after
+  portfolio divergence, action and eligibility disagreement may persist across
+  many subsequent slots. That is expected sensitivity evidence and is never a
+  reason to outcome-filter a denominator; no universe predicate reads a
+  comparison outcome.
+- POSTP1-001R2 selects no sufficiency minimum and authorizes no collection.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
 | --- | --- | --- |
 | POSTP1-002 | `FORMAL_XHIGH_REVIEW_PROSPECTIVE_INTEGRATION_CORPUS_V1` | COMPLETE / FAIL |
-| POSTP1-001R | `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1` | IMPLEMENTED / AWAITING REPEAT REVIEW |
-| POSTP1-002R | repeat independent xHigh review of corrected protocol hash | READY |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R PASS |
-| POSTP1-004 | schema, collectors, CVD capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
+| POSTP1-001R | `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1` | COMPLETE / FAILED REPEAT REVIEW |
+| POSTP1-002R | repeat independent xHigh review of `0d4f1437...f45a9e` | COMPLETE / FAIL |
+| POSTP1-001R2 | `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1` | IMPLEMENTED / AWAITING THIRD REVIEW |
+| POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | READY |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R2 PASS |
+| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |

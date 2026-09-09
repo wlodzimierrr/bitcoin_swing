@@ -3,6 +3,7 @@
     "prospective_run",
     "prospective_decision_observation",
     "prospective_source_input_snapshot",
+    "prospective_liquidation_feed_state",
     "prospective_data_quality_event"
   ],
   "collection_entry_bindings": {
@@ -12,7 +13,7 @@
     "sufficiency_governance_review_sha256": "independent PASS review of exact sufficiency_governance_sha256"
   },
   "database": "postgresql",
-  "definition_sha256": "ada2223829adbe804e27e437f04fc46472587c02f2833126b7c558ae57246dd2",
+  "definition_sha256": "90dea1ba5336f0fc5b74d83ccef88dc22d69f29e874e442ae0a151a7c092ee25",
   "implementation_state": "CONTRACT_ONLY_MIGRATION_DEFERRED_TO_FIRST_COLLECTOR_TICKET",
   "redis_required": false,
   "schema": "research",
@@ -59,6 +60,34 @@
         "observation_time"
       ],
       "purpose": "The complete scheduled slot census. Every slot the epoch schedules has exactly one row, so a silent omission is detectable by count."
+    },
+    "prospective_liquidation_feed_state": {
+      "append_only": true,
+      "columns": {
+        "available_at": "timestamptz not null",
+        "event_count": "integer null",
+        "feed_status": "text not null",
+        "ingested_at": "timestamptz not null",
+        "instrument": "text not null",
+        "long_liquidation_notional_usd": "numeric null",
+        "observation_time": "timestamptz not null",
+        "provider": "text not null",
+        "revision": "text not null",
+        "run_id": "uuid not null",
+        "short_liquidation_notional_usd": "numeric null",
+        "source_record_ids_digest": "char(64) null",
+        "timeframe": "text not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "provider",
+        "instrument",
+        "timeframe",
+        "observation_time",
+        "revision"
+      ],
+      "purpose": "Liquidation feed state persisted independently of the aggregate numeric value, so an observed interval with zero liquidation events is never stored as, nor recovered as, a missing feed. feed_status is drawn from ['INVALID', 'LATE', 'OBSERVED_WITH_EVENTS', 'OBSERVED_ZERO_EVENTS', 'SOURCE_UNAVAILABLE'] and is owned by PROSPECTIVE_LIQUIDATION_CAPTURE_V1; the notional columns are null for every unusable status and are never defaulted to zero."
     },
     "prospective_metric_comparison": {
       "append_only": true,

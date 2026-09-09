@@ -1,0 +1,116 @@
+{
+  "acquisition_governance": {
+    "authored_by_ticket": "POSTP1-001R2",
+    "claimed_historically_implicit": false,
+    "frozen_before_collection": true,
+    "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
+    "hash_bound_by_parent_protocol": true,
+    "historically_inherited": false,
+    "outcome_independent": true,
+    "phase_1_feature_semantics_changed": false,
+    "qualifying_observations_inspected": false,
+    "selected_by_new_pre_data_governance": true,
+    "stage_b_outcomes_inspected": false
+  },
+  "capture_fields": [
+    "observation_time",
+    "available_at",
+    "ingested_at",
+    "provider",
+    "instrument",
+    "timeframe",
+    "feed_status",
+    "event_count",
+    "long_liquidation_notional_usd",
+    "short_liquidation_notional_usd",
+    "source_record_ids_digest",
+    "revision"
+  ],
+  "captured_interval": {
+    "cadence": "1h",
+    "cadence_rationale": "Liquidation evidence is captured on the same exact-UTC-hour grid the stop-evaluation cadence and raw.btc_ohlcv already use, so an interval's coverage is decidable at the decision instant that consumes it and no interval is aggregated from shorter ones. Selected as new pre-data governance, not inherited.",
+    "observation_time_semantics": "the exact UTC start instant of the closed interval"
+  },
+  "consuming_features": [
+    "ORDERLINESS_SCORE",
+    "REGIME_SCORE",
+    "REGIME_SMOOTHED_SCORE",
+    "VOLATILITY_SCORE"
+  ],
+  "definition_sha256": "23212f669cb0f7308a19df2498781f0747a43974f8bbdac39a9ceb23943f16c8",
+  "duplicate_semantics": "One row per (provider, instrument, timeframe, observation_time, revision). A conflicting duplicate is refused and recorded as a data-quality event.",
+  "epoch_rule": "Any change to the captured interval, provider, instrument universe or feed-status vocabulary requires PROSPECTIVE_LIQUIDATION_CAPTURE_V2 and a new prospective collection epoch.",
+  "existing_aggregate": {
+    "distinguishes_missing_from_empty": false,
+    "evidence": "The owner initialises long_liquidations_usd and short_liquidations_usd to Decimal('0') and accumulates only the Liquidation rows it was given. It records no feed status, no event count and no per-interval coverage, so an unavailable feed and an observed interval with zero liquidation events both yield exactly 0. BtcDerivativesAggregate exposes no field that could separate them afterwards.",
+    "modified_by_this_protocol": false,
+    "owner": "btc_predictor.data.derivatives.aggregate_btc_derivatives_available_at"
+  },
+  "feed_state_is_independent_of_the_numeric_value": true,
+  "feed_status_semantics": {
+    "INVALID": {
+      "definition": "The provider answered but the payload failed a capture-layer validity rule: an unknown side, a negative quantity, a missing notional on an event-bearing interval, or a digest mismatch.",
+      "event_count_rule": "event_count is null",
+      "feature_input_state": "REQUIRED_INPUT_MISSING",
+      "notional_before_normalization": "null; a numeric zero is refused for this status",
+      "usable_as_an_observation": false
+    },
+    "LATE": {
+      "definition": "The interval's liquidation evidence first became retrievable after the decision instant that needed it. The decision is closed and is never reopened or backfilled.",
+      "event_count_rule": "event_count is null at that decision",
+      "feature_input_state": "REQUIRED_INPUT_MISSING",
+      "notional_before_normalization": "null at that decision; a numeric zero is refused for this status",
+      "usable_as_an_observation": false
+    },
+    "OBSERVED_WITH_EVENTS": {
+      "definition": "The provider's liquidation feed answered for the whole interval and reported at least one liquidation event.",
+      "event_count_rule": "event_count > 0",
+      "feature_input_state": "PRESENT",
+      "notional_before_normalization": "the observed signed-side USD notional",
+      "usable_as_an_observation": true
+    },
+    "OBSERVED_ZERO_EVENTS": {
+      "definition": "The provider's liquidation feed answered for the whole interval and reported no liquidation event. The interval was observed; the market simply produced nothing.",
+      "event_count_rule": "event_count == 0",
+      "feature_input_state": "PRESENT",
+      "notional_before_normalization": "0 USD, which is a legitimate observed value and not a fill-in",
+      "usable_as_an_observation": true
+    },
+    "SOURCE_UNAVAILABLE": {
+      "definition": "The provider's liquidation feed did not answer for the interval, or answered without covering it.",
+      "event_count_rule": "event_count is null",
+      "feature_input_state": "REQUIRED_INPUT_MISSING",
+      "notional_before_normalization": "null; a numeric zero is refused for this status",
+      "usable_as_an_observation": false
+    }
+  },
+  "feed_status_vocabulary": [
+    "INVALID",
+    "LATE",
+    "OBSERVED_WITH_EVENTS",
+    "OBSERVED_ZERO_EVENTS",
+    "SOURCE_UNAVAILABLE"
+  ],
+  "missing_feed_can_become_numeric_zero": false,
+  "observed_feed_statuses": [
+    "OBSERVED_WITH_EVENTS",
+    "OBSERVED_ZERO_EVENTS"
+  ],
+  "pit_rule": "available_at <= decision_time",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "provenance": {
+    "raw_table": "raw.liquidations",
+    "source_record_identity": "Every contributing raw liquidation record id is retained and a digest over the sorted id set is persisted with the interval, so an interval's numeric value is always traceable to the exact record set that produced it.",
+    "typed_raw_row": "btc_predictor.data.derivatives.Liquidation"
+  },
+  "replay_rule": "feed_status, event_count and the notional pair are all persisted, so a replay reproduces the missing-versus-empty distinction from storage. A replay may never re-derive feed_status from whether the notional happens to be zero.",
+  "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row; the earlier revision is retained verbatim and a decision replays against the revision available at its own decision_time. A revision may change feed_status only forwards into a new row, never by rewriting an existing one.",
+  "schema_version": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+  "units": "USD notional per side; event_count is a count",
+  "unusable_feed_statuses": [
+    "INVALID",
+    "LATE",
+    "SOURCE_UNAVAILABLE"
+  ],
+  "version": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1"
+}

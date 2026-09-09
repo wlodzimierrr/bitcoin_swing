@@ -1,0 +1,100 @@
+{
+  "acquisition_governance": {
+    "authored_by_ticket": "POSTP1-001R2",
+    "claimed_historically_implicit": false,
+    "frozen_before_collection": true,
+    "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
+    "hash_bound_by_parent_protocol": true,
+    "historically_inherited": false,
+    "outcome_independent": true,
+    "phase_1_feature_semantics_changed": false,
+    "qualifying_observations_inspected": false,
+    "selected_by_new_pre_data_governance": true,
+    "stage_b_outcomes_inspected": false
+  },
+  "asset": "BTC",
+  "available_at_semantics": "The instant the provider first published the completed daily observation, recorded at capture and never back-dated to the observation_time. A market-cap observation whose available_at is later than a decision_time is invisible to that decision, and the decision is NOT_EVALUABLE for every OI-intensity feature rather than falling back to an earlier day.",
+  "consumer_binding": {
+    "consuming_features": [
+      "OI_INTENSITY",
+      "OI_INTENSITY_PERCENTILE_180D"
+    ],
+    "feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
+    "feature_semantics_unchanged": true,
+    "observation_grid_alignment": "The frozen owner forms intensity only on the exact intersection of the open-interest aggregate observation_time set and the market-cap observation_time set (_open_interest_intensity_by_time). The prospective open-interest capture consumed by OI_INTENSITY must therefore present its aggregate on this same exact EXACT_UTC_DAY_START_00_00_00Z grid. This is an acquisition alignment requirement on the prospective capture layer only; no positioning formula is altered.",
+    "open_interest_unit_rule": "The open_interest_unit selector the owner requires is pinned once per collection epoch and persisted with it. This contract does not choose it and no unit choice may be revisited after collection starts.",
+    "typed_boundary": "btc_predictor.features.positioning.MarketCapObservation"
+  },
+  "definition_sha256": "fe0fe85532233e767a33ff1a4649cd72a5049746559d0be799aca3d88d50e817",
+  "derived_construction": {
+    "construction": "market_cap = BTC price x circulating supply",
+    "rejected": true,
+    "rejected_because": "It is not owned by any repository authority and this task declines to establish it. It would require a second frozen acquisition contract for an independently reproducible circulating-supply series, and it would make an exogenous feature input depend on a BTC price series at a time when PRICE_SOURCE_POLICY_V1 leaves the canonical production reference UNRESOLVED and this corpus is comparing two reference identities. SHARED_EXOGENOUS_INPUT_RULE requires every exogenous input to be identical across the candidate and control tracks, so an input derived from the reference under test is inadmissible here. Consuming an authoritative market-cap feed is materially less methodology, and the ticket's own instruction is to prefer the direct feed."
+  },
+  "epoch_rule": "Any change to the series identity, provider identity, cadence, unit or timestamp semantics requires PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2 and a new prospective collection epoch for OI_INTENSITY and OI_INTENSITY_PERCENTILE_180D. No observation is resampled or relabelled backwards.",
+  "existing_producer": {
+    "evidence": "btc_predictor.features.positioning.MarketCapObservation is constructed nowhere outside btc_predictor/tests/test_positioning_features.py. btc_predictor.data.generic_series.SUPPORTED_SERIES_TYPES is ['macro', 'liquidity', 'onchain', 'market_proxy'] and neither MACRO_SERIES_DEFINITIONS nor ONCHAIN_SERIES_DEFINITIONS declares a market-capitalisation series. No collector, adapter or migration in this repository emits market_cap_usd.",
+    "existing_market_cap_producer": null,
+    "generic_series_family_is_sufficient": false,
+    "unqualified_generic_series_dependency_permitted": false
+  },
+  "ingested_at_semantics": "The wall-clock instant the capture layer persisted the row. It orders storage only and never admits or excludes an observation from a decision.",
+  "metric": "market_cap_usd",
+  "missing_value_handling": {
+    "late_observation": "REQUIRED_INPUT_MISSING",
+    "missing_observation": "REQUIRED_INPUT_MISSING",
+    "statement": "A missing, late or invalid market-cap observation makes every OI-intensity feature NOT_EVALUABLE at that decision. It is never zero-filled, never defaulted, never carried forward from an earlier day and never reconstructed from price.",
+    "zero_fill_permitted": false
+  },
+  "observation_cadence": "1d",
+  "observation_time_semantics": "The exact UTC start instant of the observed day, EXACT_UTC_DAY_START_00_00_00Z. An off-grid observation_time is refused at capture and never snapped.",
+  "pit_rule": "available_at <= decision_time",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "provider_identity": {
+    "one_provider_per_epoch": true,
+    "provider": "coingecko",
+    "provider_asset_identifier": "bitcoin",
+    "provider_boundary": "btc_predictor.data.generic_series.MacroDataProvider",
+    "provider_client_exists_in_repository": false,
+    "provider_field": "market_caps",
+    "recorded_per_observation": true,
+    "source": "coingecko_v3_coins_bitcoin_market_chart",
+    "verification_obligation": "This contract freezes the series identity, cadence, timestamp semantics and PIT rule that a prospective market-cap source must satisfy, and names the provider identity that POSTP1-004 must implement against the existing btc_predictor.data.generic_series provider boundary. POSTP1-004 must verify, before any qualifying observation is collected, that the named provider actually publishes this series with these semantics. This task collected nothing and therefore verified nothing empirically. If the provider cannot satisfy the frozen semantics, the collector must fail closed and the contract must be reissued as PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2 with a new collection epoch; it may never be silently adapted to whatever the provider happens to publish."
+  },
+  "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT, the existing raw.generic_series convention. A restated day is a new revision row keyed by (series_id, observation_time, revision); the earlier revision is retained verbatim and a decision replays against the revision that was available at its own decision_time.",
+  "schema_version": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+  "selection": {
+    "criteria": [
+      "machine_accessible_without_a_negotiated_credential",
+      "stable_asset_and_field_identity",
+      "clear_observation_timestamp_semantics",
+      "cadence_sufficient_for_the_frozen_strategy_decision_cadence",
+      "revision_semantics_available_or_capturable",
+      "reproducible_at_replay",
+      "operationally_maintainable_from_existing_repository_boundaries",
+      "candidate_neutral_with_respect_to_the_reference_under_test"
+    ],
+    "oi_intensity_values_inspected": false,
+    "rationale": "raw.generic_series is the repository's own point-in-time scalar-series table and already carries every field this contract needs -- observation_time, available_at, ingested_at, provider, source, unit and an explicit revision key -- with a collection path that already handles restatements and missing observations. Freezing a named series on that table is the simplest reliable prospective source and matches how every other exogenous scalar series in this repository is already governed. A direct market-cap feed is preferred over a price-derived construction under the reasoning recorded in derived_construction. No OI-intensity or Stage-B value was inspected.",
+    "stage_b_outcomes_inspected": false
+  },
+  "series_identity": {
+    "identity_fields": [
+      "series_id",
+      "series_type",
+      "provider"
+    ],
+    "identity_is_exact": true,
+    "raw_table": "raw.generic_series",
+    "series_id": "BTC_MARKET_CAP_USD",
+    "series_type": "market_cap",
+    "series_type_is_new_acquisition_vocabulary": true,
+    "series_type_vocabulary_extension_owner": "btc_predictor.data.generic_series.SUPPORTED_SERIES_TYPES",
+    "series_type_vocabulary_extension_required_of": "POSTP1-004",
+    "unit": "usd",
+    "unqualified_family_dependency_permitted": false
+  },
+  "source_replacement_policy": "A source replacement is never retroactive. The retired provider's observations are retained verbatim, the replacement is frozen as PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2, and a new collection epoch begins for the affected features. Two providers are never blended into one series and a gap is never patched from a second provider.",
+  "units": "USD",
+  "version": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1"
+}

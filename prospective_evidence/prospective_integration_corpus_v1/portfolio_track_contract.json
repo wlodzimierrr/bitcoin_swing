@@ -1,5 +1,5 @@
 {
-  "definition_sha256": "1560eee774049e7eb72180ccfc18477e919eaf127646e03e1405cdf161318623",
+  "definition_sha256": "92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4",
   "divergence_evidence_fields": [
     "divergence_cause_metric",
     "divergence_cause_reason_codes",
@@ -40,6 +40,7 @@
   "resynchronization_policy": "FORBIDDEN",
   "schema_version": "PROSPECTIVE_INTEGRATION_PORTFOLIO_TRACK_V1",
   "shared_exogenous_input_families": [
+    "btc_market_cap",
     "clock",
     "cost_slippage_model",
     "derivatives_funding",

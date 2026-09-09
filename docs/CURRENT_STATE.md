@@ -28,13 +28,20 @@ canonical production reference = UNRESOLVED
 no further BTC-019 calibration/evidence-design work authorized
 
 PROSPECTIVE_INTEGRATION_CORPUS_V1 =
-CORRECTED_PRE_DATA_PROTOCOL_AWAITING_REPEAT_XHIGH_REVIEW
+CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW
 
 protocol hash =
+40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
+
+failed protocol hashes retained =
+aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
 
-failed protocol hash retained =
-aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
+newly frozen prospective acquisition contracts =
+PROSPECTIVE_CVD_ACQUISITION_V1
+PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1
+PROSPECTIVE_LIQUIDATION_CAPTURE_V1
+PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1
 
 collection = NOT AUTHORIZED; corrected protocol review, POSTP1-003 exact-hash
 review, and POSTP1-004 implementation review must all pass first
@@ -58,8 +65,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current implementation frontier:** Phase-1 implementation is complete and
   BTC-019 is terminal, so the frontier has moved to the new post-Phase-1
   workstream [EPIC X](execution/post_phase1_prospective_integration_evidence_v1.md).
-  POSTP1-001 failed independent review. POSTP1-001R has corrected and refrozen
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `0d4f1437...f45a9e` and awaits repeat
+  POSTP1-001 and POSTP1-001R both failed independent review. POSTP1-001R2 has
+  frozen the three missing prospective acquisition contracts, rebuilt the
+  owner-derived warmup table and refrozen
+  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `40e37067...c9862`, and awaits a third
   independent xHigh review. Historically, BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
   `live_shadow_days >= 90` from historical validation to post-certification
@@ -71,22 +80,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** POSTP1-001R, implemented and awaiting repeat
-  independent xHigh review. BTC-019 is terminal and is not in progress
+- **Current IN_PROGRESS ticket:** POSTP1-001R2, implemented and awaiting a
+  third independent xHigh review. BTC-019 is terminal and is not in progress
 - **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** POSTP1-002R, repeat independent xHigh
-  review of corrected protocol hash `0d4f1437...f45a9e`. POSTP1-003 remains
+- **Next dependency-satisfied ticket:** POSTP1-002R2, third independent xHigh
+  review of corrected protocol hash `40e37067...c9862`. POSTP1-003 remains
   blocked until that review passes. Prospective collection may not begin until
   POSTP1-003 and POSTP1-004 also pass their required independent reviews, and
   BTC-019 does not reopen whatever the review concludes. The failed V2 hash
   `7fda8ac3...ad8be6` and its predecessors remain immutable lineage
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 4,544 passed with Python 3.12.14 and
-  `RuntimeWarning` treated as an error on 2026-09-09; POSTP1-001R focused tests
-  are 104 passed
-- **Last relevant implementation/review commit:** POSTP1-001R refreezes
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `0d4f1437...f45a9e`; implementation
-  commit is this change. Failed hash `aaa05c72...d37326` remains lineage. It follows
+  `RuntimeWarning` treated as an error on 2026-09-09; POSTP1-001R2 focused
+  tests are 145 passed
+- **Last relevant implementation/review commit:** POSTP1-001R2 refreezes
+  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `40e37067...c9862`; implementation
+  commit is this change. Failed hashes `aaa05c72...d37326` and
+  `0d4f1437...f45a9e` remain lineage. It follows
   `a50efcc7d9861cae6a2c9f69958fd39d73fcdc25`, which staged
   `BTC_REFERENCE_COMPOSITE_V5` and terminated BTC-019. Frozen V3, V4, V5 and
   certified V1 remain valid and immutable; the 2015-2019 sample stays
@@ -135,11 +145,12 @@ V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
 PROSPECTIVE_INTEGRATION_CORPUS_V1
-  = CORRECTED_PRE_DATA_PROTOCOL_AWAITING_REPEAT_XHIGH_REVIEW
+  = CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW
 prospective corpus protocol hash
-  = 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
-failed prospective protocol hash
+  = 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
+failed prospective protocol hashes
   = aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
+  = 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
 prospective collection = NOT AUTHORIZED
 ```
 
@@ -629,8 +640,9 @@ unevaluated.
 `btc_predictor/research/prospective_integration_corpus.py` is the first task of
 the new post-Phase-1 workstream
 [EPIC X](execution/post_phase1_prospective_integration_evidence_v1.md).
-POSTP1-001 failed independent review; POSTP1-001R corrects only its blocking
-findings and retains failed hash `aaa05c72...d37326` as explicit lineage. It
+POSTP1-001 and POSTP1-001R both failed independent review; POSTP1-001R2
+corrects only the second review's blocking findings and retains both failed
+hashes `aaa05c72...d37326` and `0d4f1437...f45a9e` as explicit lineage. It
 does not repair BTC-019 and is not `BTC_REFERENCE_COMPOSITE_V6`: no frozen V3, V4,
 V5 or certified V1 byte moves, and the eight thresholds, directions, hard roles
 and stated intents are imported verbatim from `V2_APPROVAL_GATES` and
@@ -642,8 +654,9 @@ reference-composite owner's own five-minute delay and availability under the
 frozen `AVAILABLE_AT_LTE_DECISION_TIME_V1`; a point-in-time input snapshot
 that now includes `raw.liquidations` and mechanically binds all 33
 `INITIAL_FEATURE_NAMES` to exactly one raw capture contract or deterministic
-owner; a machine-derived warmup table whose longest effective horizon is 750
-calendar days; two deterministic portfolio tracks from one frozen flat
+owner; a rebuilt machine-derived warmup table that keeps each owner's eligible
+trailing window, minimum qualifying observation count and evaluability
+predicate as three separate frozen fields; two deterministic portfolio tracks from one frozen flat
 `1,000,000` NAV state, sharing every exogenous input except the reference under
 test, diverging naturally and never resynchronized; and a mechanical stop-event
 taxonomy that replaces `KNOWN_DEVELOPMENT_EVENTS` so no timestamp is
@@ -658,10 +671,11 @@ action envelope; trade eligibility is bound to the full new-entry permission
 composite rather than the renderer or entry-score bucket. A zero denominator
 is `UNDEFINED_INSUFFICIENT_EVIDENCE`, never a PASS and never `0`. The corrected
 protocol hash is
-`0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e` and binds
-eleven child contract hashes; 104 focused tests cover gate parity, universe
+`40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862` and binds
+fifteen child contract hashes; 145 focused tests cover gate parity, universe
 determinism, PIT refusal, duplicate refusal, the three event classifications,
-divergence, hash tamper and ordering/seed/cwd/Decimal-context invariance, and a
+divergence, the three new acquisition contracts, the corrected warmup
+derivation, hash tamper and ordering/seed/cwd/Decimal-context invariance, and a
 suite-level `sys.addaudithook` run proves the module opens nothing under
 `data/` and nothing on a 2015-2019 path.
 
@@ -681,8 +695,7 @@ task cannot accidentally create a collection target. One repository gap is
 recorded rather than papered over: `CVD_SPREAD` consumes
 `features.flow.CvdObservation`, which has no raw PIT table and no collector, so
 its capture is declared and marked
-`REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET`; its observation cadence is
-uniquely frozen to exact UTC hours with the Phase-1 20-period z-score window. A
+`REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET`. A
 second is why the
 artifacts sit under `prospective_evidence/` rather than `research_artifacts/`:
 V5's terminal assessment hashes an inventory of every JSON under `data/` and
@@ -690,8 +703,38 @@ V5's terminal assessment hashes an inventory of every JSON under `data/` and
 `c67fd3a4...456c9d` instead of `95e43ee1...775a89`. V5 is immutable, so the new
 program stays outside that census and a regression pins V5's recomputation to
 its frozen hash; V5's terminal classification is unaffected either way.
+POSTP1-001R2 additionally separates Phase-1 **feature semantics** from
+**prospective acquisition semantics** and freezes the three contracts Phase-1
+never owned, each declared explicitly as new pre-data governance with
+`historically_inherited = false` and its own bound definition hash.
+`PROSPECTIVE_CVD_ACQUISITION_V1` records that `spot_perp_cvd_spread` specifies
+no cadence at all — it accepts arbitrary common timestamps and requires 20
+prior common observations — and selects `1h` prospectively against eight
+predeclared criteria with `4h` and `1d` assessed and rejected on record.
+`PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1` records
+`existing_market_cap_producer = NONE` and freezes one exact
+`BTC_MARKET_CAP_USD` / `market_cap` / `usd` series from provider `coingecko` on
+`raw.generic_series` at a daily UTC grid, so `OI_INTENSITY` no longer resolves
+its input by searching an unqualified generic-series family; a price-times-supply
+construction is rejected because it would make an exogenous input depend on the
+reference under test. `PROSPECTIVE_LIQUIDATION_CAPTURE_V1` records that
+`aggregate_btc_derivatives_available_at` collapses a missing feed and an
+observed zero-event feed to the same numeric zero, and persists `feed_status`,
+`event_count` and both notionals independently in a new append-only feed-state
+table; `SOURCE_UNAVAILABLE`, `LATE` and `INVALID` make the required input
+missing, while `OBSERVED_ZERO_EVENTS` legitimately carries zero notional.
+`PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1` supplies the
+`liquidation_percentile` normalization no executable owner produced, inheriting
+the repository's single midrank prior-window convention and the 730-day / 365
+minimum-observation window of the `volatility_percentile` owner already
+co-consumed by `calculate_orderliness_score`. The false 750-day warmup is
+withdrawn: `VOL_PERCENTILE_2Y` keeps a 730-day eligible trailing window, needs
+365 prior `RV_20` observations inside it plus 21 contiguous daily closes per
+`RV_20`, and therefore first defines at 386 contiguous daily sessions — 385
+elapsed calendar days — pinned against the production owner by a synthetic
+fixture. Evaluability is the owner's rule, never `elapsed_days >=` a constant.
 Classification:
-`CORRECTED_PROSPECTIVE_INTEGRATION_CORPUS_V1_READY_FOR_REPEAT_XHIGH_REVIEW`.
+`PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_THIRD_XHIGH_REVIEW`.
 Collection requires successful independent review of this exact hash, the
 future POSTP1-003 sufficiency-governance hash, and the POSTP1-004 collector
 implementation. It is not authorized now; no qualifying observation was collected, no real Stage-B outcome

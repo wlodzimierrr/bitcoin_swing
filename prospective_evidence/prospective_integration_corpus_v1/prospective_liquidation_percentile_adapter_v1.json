@@ -1,0 +1,78 @@
+{
+  "acquisition_governance": {
+    "authored_by_ticket": "POSTP1-001R2",
+    "claimed_historically_implicit": false,
+    "frozen_before_collection": true,
+    "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
+    "hash_bound_by_parent_protocol": true,
+    "historically_inherited": false,
+    "outcome_independent": true,
+    "phase_1_feature_semantics_changed": false,
+    "qualifying_observations_inspected": false,
+    "selected_by_new_pre_data_governance": true,
+    "stage_b_outcomes_inspected": false
+  },
+  "consumer": "btc_predictor.features.volatility.calculate_orderliness_score liquidation_cascade component; the same normalized value is the STRESS and CAPITULATION market-state flag input",
+  "definition_sha256": "849f7843066930418822dfc0f15e238897d65bc148a9882548b9decce8e75d79",
+  "downstream_formula_changed": false,
+  "epoch_rule": "Any change to the input quantity, window, minimum observation count, observation universe or percentile convention requires PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V2 and a new prospective collection epoch.",
+  "existing_owner": {
+    "evidence": "liquidation_percentile appears in this repository only as an input field on OrderlinessScoreInput, StressFlagInput and CapitulationFlagInput, as the configured thresholds liquidation_percentile_min / liquidation_percentile_max, and as a reporting passthrough in btc_predictor.reporting.alerts. No function computes it from raw liquidation notional.",
+    "executable_owner_found": null,
+    "new_adapter_required": true
+  },
+  "input": {
+    "feed_status_gate": [
+      "OBSERVED_WITH_EVENTS",
+      "OBSERVED_ZERO_EVENTS"
+    ],
+    "quantity": "total observed liquidation notional in USD for the daily observation: long_liquidation_notional_usd + short_liquidation_notional_usd summed over the day's captured intervals",
+    "side_treatment": "Both sides are summed. liquidation_cascade is an aggregate market-stress component and no repository consumer of liquidation_percentile expresses a directional preference, so no side is weighted, dropped or taken as a maximum.",
+    "source_contract": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+    "units": "USD"
+  },
+  "minimum_history": {
+    "first_evaluable_contiguous_daily_observations": 366,
+    "minimum_prior_observations": 365,
+    "rule": "Below the minimum the adapter returns no value and records LIQUIDATION_PERCENTILE_INSUFFICIENT_HISTORY. It never returns a provisional percentile from a short window."
+  },
+  "missing_feed_behavior": {
+    "excluded_from_history": [
+      "INVALID",
+      "LATE",
+      "SOURCE_UNAVAILABLE"
+    ],
+    "missing_feed_percentile": null,
+    "missing_feed_percentile_zero_permitted": false,
+    "observed_zero_events_enters_history": true,
+    "observed_zero_events_notional": "0 USD",
+    "statement": "A day containing any interval whose feed_status is ['INVALID', 'LATE', 'SOURCE_UNAVAILABLE'] yields no liquidation observation: the adapter returns None with reason LIQUIDATION_FEED_UNAVAILABLE, the day enters neither the current value nor the history, and the consuming decision is NOT_EVALUABLE with reason REQUIRED_INPUT_MISSING. A day whose intervals are all OBSERVED_ZERO_EVENTS yields a legitimate 0 USD notional that is normalized like any other observation. A missing feed can never become a zero percentile."
+  },
+  "observation_universe": "One observation per canonical UTC daily session in which every captured hourly liquidation interval is observed, restricted to the frozen provider and instrument universe of PROSPECTIVE_LIQUIDATION_CAPTURE_V1. The universe is a predicate over feed state alone and never reads a comparison outcome.",
+  "output": {
+    "field": "liquidation_percentile",
+    "range": "0 to 100 inclusive",
+    "units": "percentile points"
+  },
+  "percentile_convention": {
+    "co_consumed_reference_owner": "btc_predictor.features.volatility.volatility_percentile",
+    "convention": "MIDRANK_PERCENTILE_OF_PRIOR_WINDOW_V1",
+    "current_observation_excluded_from_history": true,
+    "existing_convention_owners": [
+      "btc_predictor.features.volatility._percentile_rank",
+      "btc_predictor.features.positioning._percentile_rank"
+    ],
+    "formula": "((count(history < value) + 0.5 * count(history == value)) / len(history)) * 100",
+    "invented_convention": false
+  },
+  "pit_rule": "available_at <= decision_time for the current observation and for every observation in the trailing window. A restatement that arrives after a decision never enters that decision's history.",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "schema_version": "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1",
+  "version": "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1",
+  "window": {
+    "boundary": "half-open [observation_time - window, observation_time)",
+    "inherited_from": "btc_predictor.features.volatility.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS",
+    "rationale": "calculate_orderliness_score weighs liquidation_percentile and volatility_percentile against thresholds inside one penalty vector, so the two must be commensurable. volatility_percentile is the only percentile whose window is already an input to that score, and its owner btc_predictor.features.volatility.volatility_percentile declares a 730-day half-open trailing window with 365 minimum prior observations. The adapter inherits exactly that window and minimum rather than importing the 180-day positioning window or authoring a third. The choice is also inert for the corpus schedule: the resulting first-evaluable requirement is strictly smaller than VOL_PERCENTILE_2Y's, which already binds the corpus warmup, so it adds no new constraint. No liquidation value, orderliness score or Stage-B outcome was inspected.",
+    "span_days": 730
+  }
+}

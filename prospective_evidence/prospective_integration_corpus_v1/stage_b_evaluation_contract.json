@@ -1,5 +1,5 @@
 {
-  "definition_sha256": "8be898a9f858a6d60fbd44bbce6effc4c4d2051f87aea39952805be5798240e2",
+  "definition_sha256": "3df077ec947c7350393aaa1e7ff73dbabcf7e8829b0b56adfbcc207c12edf98c",
   "evaluator_may_change_measurement_semantics": false,
   "executed_on_real_prospective_data_by_this_task": false,
   "metrics": {
@@ -232,7 +232,7 @@
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_CONTRACT_V1",
   "warmup_entry_requirement": "WARMUP_HISTORY_COMPLETE must be true before a slot may enter any metric's evaluable universe",
-  "warmup_history_definition_sha256": "0f718a197d19ccebe9068a51f11b3dd12c4d874e3c97de129172ab7ff3068055",
+  "warmup_history_definition_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac",
   "workflow": [
     "POSTP1-001R CORRECTED PROTOCOL",
     "REPEAT INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH",

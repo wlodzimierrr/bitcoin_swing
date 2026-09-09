@@ -1,44 +1,58 @@
 {
   "all_frozen_features_covered": true,
   "capture_contracts": {
+    "btc_market_cap": {
+      "capture_state": "REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET",
+      "prospective_acquisition_contract": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+      "raw_table": "raw.generic_series"
+    },
     "derivatives_funding": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.funding_rates"
     },
     "derivatives_futures_basis": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.futures_basis"
     },
     "derivatives_open_interest": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.open_interest"
     },
     "etf_flows": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.etf_flows"
     },
     "generic_series": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.generic_series"
     },
     "liquidations": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
       "raw_table": "raw.liquidations"
     },
     "raw_provider_ohlcv": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.btc_ohlcv"
     },
     "spot_perp_cvd": {
       "capture_state": "REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET",
+      "prospective_acquisition_contract": "PROSPECTIVE_CVD_ACQUISITION_V1",
       "raw_table": "research.prospective_source_input_snapshot (new capture)"
     },
     "spot_perp_volume_participation": {
       "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "prospective_acquisition_contract": null,
       "raw_table": "raw.perp_volume"
     }
   },
-  "definition_sha256": "7b049c0e49739d6e20370e2472c46134889d811f8f9b7a5b770cbc6f95c8ec31",
+  "definition_sha256": "7fca47cbc1872d8e17801b37b704b09284597dbc875f14b5f7e6571a2f65f517",
   "feature_count": 33,
   "feature_inventory": [
     "TREND_SCORE",
@@ -76,8 +90,15 @@
     "VOL_PERCENTILE_2Y"
   ],
   "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+  "newly_frozen_acquisition_contracts": [
+    "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+    "PROSPECTIVE_CVD_ACQUISITION_V1",
+    "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+    "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1"
+  ],
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "required_raw_input_families": [
+    "btc_market_cap",
     "derivatives_funding",
     "derivatives_futures_basis",
     "derivatives_open_interest",
@@ -96,9 +117,13 @@
       "deterministic_feature_owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "spot_perp_cvd": "PROSPECTIVE_CVD_ACQUISITION_V1"
+      },
       "raw_input_families": [
         "spot_perp_cvd"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "ETF_NORM_20D": {
@@ -108,9 +133,13 @@
       "deterministic_feature_owner": "btc_predictor.features.flow.twenty_day_etf_flow",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "etf_flows": null
+      },
       "raw_input_families": [
         "etf_flows"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "ETF_NORM_5D": {
@@ -120,9 +149,13 @@
       "deterministic_feature_owner": "btc_predictor.features.flow.five_day_etf_flow",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "etf_flows": null
+      },
       "raw_input_families": [
         "etf_flows"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FLOW_ACCEL": {
@@ -132,9 +165,13 @@
       "deterministic_feature_owner": "btc_predictor.features.flow.etf_flow_acceleration",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "etf_flows": null
+      },
       "raw_input_families": [
         "etf_flows"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FLOW_SCORE": {
@@ -147,12 +184,19 @@
       "deterministic_feature_owner": "btc_predictor.features.flow.calculate_flow_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "etf_flows": null,
+        "raw_provider_ohlcv": null,
+        "spot_perp_cvd": "PROSPECTIVE_CVD_ACQUISITION_V1",
+        "spot_perp_volume_participation": null
+      },
       "raw_input_families": [
         "etf_flows",
         "raw_provider_ohlcv",
         "spot_perp_cvd",
         "spot_perp_volume_participation"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FUNDING_7D_AVG": {
@@ -162,9 +206,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.funding_features",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_funding": null
+      },
       "raw_input_families": [
         "derivatives_funding"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FUNDING_HEALTH": {
@@ -174,9 +222,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.funding_health",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_funding": null
+      },
       "raw_input_families": [
         "derivatives_funding"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FUNDING_ZSCORE_180D": {
@@ -186,9 +238,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.funding_features",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_funding": null
+      },
       "raw_input_families": [
         "derivatives_funding"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FUTURES_BASIS_AVG": {
@@ -198,9 +254,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_futures_basis": null
+      },
       "raw_input_families": [
         "derivatives_futures_basis"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FUTURES_BASIS_HEALTH": {
@@ -210,9 +270,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_futures_basis": null
+      },
       "raw_input_families": [
         "derivatives_futures_basis"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "FUTURES_BASIS_ZSCORE_180D": {
@@ -222,9 +286,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_futures_basis": null
+      },
       "raw_input_families": [
         "derivatives_futures_basis"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "HIGH_DISTANCE_52W": {
@@ -234,9 +302,13 @@
       "deterministic_feature_owner": "btc_predictor.features.trend.fifty_two_week_high_distance",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "MA_DISTANCE_20W": {
@@ -246,9 +318,13 @@
       "deterministic_feature_owner": "btc_predictor.features.trend.twenty_week_ma_distance",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "MOMENTUM_12W": {
@@ -258,9 +334,13 @@
       "deterministic_feature_owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "MOMENTUM_4W": {
@@ -270,9 +350,13 @@
       "deterministic_feature_owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "OI_GROWTH_7D": {
@@ -282,9 +366,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.open_interest_growth_features",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_open_interest": null
+      },
       "raw_input_families": [
         "derivatives_open_interest"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "OI_GROWTH_HEALTH": {
@@ -294,9 +382,13 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.open_interest_growth_health",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_open_interest": null
+      },
       "raw_input_families": [
         "derivatives_open_interest"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "OI_GROWTH_ZSCORE_180D": {
@@ -306,37 +398,51 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.open_interest_growth_features",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_open_interest": null
+      },
       "raw_input_families": [
         "derivatives_open_interest"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "OI_INTENSITY": {
       "capture_contract_count_by_family": {
-        "derivatives_open_interest": 1,
-        "generic_series": 1
+        "btc_market_cap": 1,
+        "derivatives_open_interest": 1
       },
       "deterministic_feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "btc_market_cap": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+        "derivatives_open_interest": null
+      },
       "raw_input_families": [
-        "derivatives_open_interest",
-        "generic_series"
+        "btc_market_cap",
+        "derivatives_open_interest"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "OI_INTENSITY_PERCENTILE_180D": {
       "capture_contract_count_by_family": {
-        "derivatives_open_interest": 1,
-        "generic_series": 1
+        "btc_market_cap": 1,
+        "derivatives_open_interest": 1
       },
       "deterministic_feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "btc_market_cap": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+        "derivatives_open_interest": null
+      },
       "raw_input_families": [
-        "derivatives_open_interest",
-        "generic_series"
+        "btc_market_cap",
+        "derivatives_open_interest"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "ORDERLINESS_SCORE": {
@@ -347,10 +453,15 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.calculate_orderliness_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "liquidations": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "liquidations",
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "POSITIONING_SCORE": {
@@ -362,11 +473,17 @@
       "deterministic_feature_owner": "btc_predictor.features.positioning.calculate_positioning_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_funding": null,
+        "derivatives_futures_basis": null,
+        "derivatives_open_interest": null
+      },
       "raw_input_families": [
         "derivatives_funding",
         "derivatives_futures_basis",
         "derivatives_open_interest"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "REGIME_SCORE": {
@@ -384,6 +501,17 @@
       "deterministic_feature_owner": "btc_predictor.features.regime.calculate_regime_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_funding": null,
+        "derivatives_futures_basis": null,
+        "derivatives_open_interest": null,
+        "etf_flows": null,
+        "generic_series": null,
+        "liquidations": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+        "raw_provider_ohlcv": null,
+        "spot_perp_cvd": "PROSPECTIVE_CVD_ACQUISITION_V1",
+        "spot_perp_volume_participation": null
+      },
       "raw_input_families": [
         "derivatives_funding",
         "derivatives_futures_basis",
@@ -395,6 +523,7 @@
         "spot_perp_cvd",
         "spot_perp_volume_participation"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "REGIME_SMOOTHED_SCORE": {
@@ -412,6 +541,17 @@
       "deterministic_feature_owner": "btc_predictor.features.regime.calculate_regime_smoothing",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "derivatives_funding": null,
+        "derivatives_futures_basis": null,
+        "derivatives_open_interest": null,
+        "etf_flows": null,
+        "generic_series": null,
+        "liquidations": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+        "raw_provider_ohlcv": null,
+        "spot_perp_cvd": "PROSPECTIVE_CVD_ACQUISITION_V1",
+        "spot_perp_volume_participation": null
+      },
       "raw_input_families": [
         "derivatives_funding",
         "derivatives_futures_basis",
@@ -423,6 +563,7 @@
         "spot_perp_cvd",
         "spot_perp_volume_participation"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "RV_20": {
@@ -432,9 +573,13 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "RV_60": {
@@ -444,9 +589,13 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "RV_7": {
@@ -456,9 +605,13 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "SPOT_DOMINANCE": {
@@ -469,10 +622,15 @@
       "deterministic_feature_owner": "btc_predictor.features.flow.spot_perp_participation_from_rows",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null,
+        "spot_perp_volume_participation": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv",
         "spot_perp_volume_participation"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "STRUCTURE_SCORE": {
@@ -482,9 +640,13 @@
       "deterministic_feature_owner": "btc_predictor.features.structure.calculate_structure_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "TREND_SCORE": {
@@ -494,9 +656,13 @@
       "deterministic_feature_owner": "btc_predictor.features.trend.calculate_trend_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "VOLATILITY_SCORE": {
@@ -507,10 +673,15 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.calculate_volatility_score",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "liquidations": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "liquidations",
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "VOL_COMPRESSION_RATIO": {
@@ -520,9 +691,13 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.volatility_compression_ratio",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     },
     "VOL_PERCENTILE_2Y": {
@@ -532,11 +707,16 @@
       "deterministic_feature_owner": "btc_predictor.features.volatility.volatility_percentile",
       "future_information_reconstruction_permitted": false,
       "missing_value_default": null,
+      "prospective_acquisition_contract_by_family": {
+        "raw_provider_ohlcv": null
+      },
       "raw_input_families": [
         "raw_provider_ohlcv"
       ],
+      "unqualified_family_dependency": false,
       "zero_fill_permitted": false
     }
   },
-  "schema_version": "PROSPECTIVE_FEATURE_INPUT_COVERAGE_V1"
+  "schema_version": "PROSPECTIVE_FEATURE_INPUT_COVERAGE_V2",
+  "unqualified_generic_series_dependency_remains": false
 }

@@ -1,0 +1,149 @@
+{
+  "acquisition_governance": {
+    "authored_by_ticket": "POSTP1-001R2",
+    "claimed_historically_implicit": false,
+    "frozen_before_collection": true,
+    "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
+    "hash_bound_by_parent_protocol": true,
+    "historically_inherited": false,
+    "outcome_independent": true,
+    "phase_1_feature_semantics_changed": false,
+    "qualifying_observations_inspected": false,
+    "selected_by_new_pre_data_governance": true,
+    "stage_b_outcomes_inspected": false
+  },
+  "aggregation_method": "Signed taker flow is accumulated inside one closed interval and the interval's own signed sum is persisted. No interval is built by aggregating other intervals and no interval is resampled.",
+  "available_at_semantics": "The instant the completed interval first became retrievable from the provider, recorded at capture and never back-dated to the interval boundary. An observation whose available_at is later than a decision_time is invisible to that decision.",
+  "buy_sell_classification_owner": "The provider's own taker-side flag on each trade. The capture layer never infers a side from a price tick, never reclassifies a trade and refuses an interval in which any trade lacks a side.",
+  "cadence_selection": {
+    "candidates": {
+      "1d": {
+        "assessment": {
+          "btc_swing_holding_horizon": "ACCEPTABLE for the daily strategy cadence alone.",
+          "capture_without_aggregation_lookahead": "WORSE: a daily observation is an aggregation of 24 hourly buckets and its completeness depends on all of them.",
+          "existing_spot_perp_volume_infrastructure": "WORSE: the participation infrastructure is hourly, so a daily CVD grid would diverge from the sibling flow family.",
+          "operational_reproducibility": "ACCEPTABLE on canonical UTC days.",
+          "phase_1_decision_cadence_compatibility": "WORST: 23 of every 24 STOP_HOURLY slots would carry a CVD observation up to 23 hours stale.",
+          "point_in_time_availability": "ACCEPTABLE.",
+          "relationship_to_the_20_observation_normalization_window": "WORSE: 21 daily observations make CVD a 21-day warmup, adding a new binding constraint to the corpus for no contract gain.",
+          "source_availability": "ACCEPTABLE."
+        },
+        "rejected_because": "It cannot serve the hourly decision cadence without up to 23 hours of staleness, it must be aggregated from hourly buckets, and it would introduce a 21-day warmup that the hourly contract avoids.",
+        "selected": false
+      },
+      "1h": {
+        "assessment": {
+          "btc_swing_holding_horizon": "ACCEPTABLE: a swing position is held for days to weeks while stops are evaluated hourly, so an hourly flow observation is never the coarsest evidence in the corpus and never forces a scheduled slot to be skipped for want of a fresh observation.",
+          "capture_without_aggregation_lookahead": "BEST: an exact-hour interval is the finest natively closing interval the repository already persists, so the observation is the interval itself and no bucket is ever aggregated from shorter buckets. Nothing is resampled and no partial interval can leak into a closed one.",
+          "existing_spot_perp_volume_infrastructure": "BEST: raw.btc_ohlcv is 1h and the spot/perp participation owner already consumes 1h spot and perp rows, so spot and perp CVD land on the same boundary that infrastructure already produces.",
+          "operational_reproducibility": "BEST: exact UTC hour boundaries carry no session, holiday or timezone convention to reconstruct at replay.",
+          "phase_1_decision_cadence_compatibility": "BEST: STOP_HOURLY is the finer of the two frozen decision cadences and sits on exact UTC hours, and STRATEGY_DAILY sessions open on an exact UTC hour, so a 1h observation grid coincides with every scheduled decision instant of both cadences without interpolation.",
+          "point_in_time_availability": "BEST: the interval closes on the hour and the frozen decision delay is bar close + 5 minutes, so a closed interval is available at the very next decision instant of either cadence.",
+          "relationship_to_the_20_observation_normalization_window": "BEST: 20 prior plus 1 current common observation spans about 21 hours, so CVD reaches evaluability inside one day and never becomes the binding warmup constraint of the corpus.",
+          "source_availability": "BEST: hourly spot and perpetual trade aggregation is the cadence the existing venue integrations already work at."
+        },
+        "rejected_because": null,
+        "selected": true
+      },
+      "4h": {
+        "assessment": {
+          "btc_swing_holding_horizon": "ACCEPTABLE.",
+          "capture_without_aggregation_lookahead": "WORSE: a 4h observation must be composed from the hourly buckets the infrastructure produces, adding an aggregation step whose partial-bucket handling has to be governed.",
+          "existing_spot_perp_volume_infrastructure": "WORSE: no repository source publishes a 4h spot or perp interval; it would be derived.",
+          "operational_reproducibility": "WORSE: a 4h grid needs an arbitrary frozen phase origin.",
+          "phase_1_decision_cadence_compatibility": "WORSE: five of every six STOP_HOURLY slots would carry a stale CVD observation.",
+          "point_in_time_availability": "ACCEPTABLE.",
+          "relationship_to_the_20_observation_normalization_window": "WORSE: 21 observations span about 3.5 days of warmup for no contract benefit.",
+          "source_availability": "ACCEPTABLE."
+        },
+        "rejected_because": "It is a derived interval with an arbitrary phase origin, it must be aggregated from the hourly buckets the repository already has, and it is stale at five of every six hourly decision instants.",
+        "selected": false
+      }
+    },
+    "criteria": [
+      "phase_1_decision_cadence_compatibility",
+      "point_in_time_availability",
+      "btc_swing_holding_horizon",
+      "existing_spot_perp_volume_infrastructure",
+      "capture_without_aggregation_lookahead",
+      "operational_reproducibility",
+      "source_availability",
+      "relationship_to_the_20_observation_normalization_window"
+    ],
+    "empirically_optimized_against_target_gates": false,
+    "historically_inherited": false,
+    "rationale": "1h is selected as the cleanest prospective observation contract, not because it is inherited and not because it produces any particular measured value. It is the finest interval that closes natively in the sources the repository already integrates, it coincides exactly with the STOP_HOURLY decision grid and with the opening instant of every STRATEGY_DAILY session, it requires no aggregation and therefore admits no partial-bucket lookahead, it needs no arbitrary phase origin or session calendar to replay, and it keeps the frozen 20-prior-observation normalization window from becoming the corpus's binding warmup. Every coarser candidate is a derived interval that is stale at most hourly decision instants. No Stage-B outcome, disagreement rate or target gate was inspected to reach this choice.",
+    "selected_by_new_pre_data_governance": true,
+    "selected_cadence": "1h",
+    "stage_b_disagreement_outcomes_inspected": false
+  },
+  "calculation_interval": "one closed [t, t + 1h) interval per market_type per provider",
+  "consuming_features": [
+    "CVD_SPREAD"
+  ],
+  "cvd_usd_definition": "cvd_usd is the signed USD notional taker delta of the interval: the sum of buyer-initiated trade notional minus the sum of seller-initiated trade notional, in USD, over the closed interval and over the frozen market universe for that market_type. It is an interval delta, not a running cumulative total, so no observation depends on an unbounded history and a missing interval can never be reconstructed from its neighbours.",
+  "definition_sha256": "c485a4c36e2d4ddaf443955760ad9073e7b9e640a5307367399e5af25ffa8b76",
+  "duplicate_semantics": "One observation per (provider, market_type, observation_time, revision). A second row with the same key and different content is refused and recorded as a data-quality event; it is never merged, averaged or silently overwritten.",
+  "epoch_rule": "Any change to the cadence, provider set, spot or perpetual market universe, buy/sell classification or aggregation requires PROSPECTIVE_CVD_ACQUISITION_V2 and a new prospective collection epoch for every affected metric. Observations already captured under this contract are never resampled, re-bucketed or relabelled backwards.",
+  "feature_semantics_owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
+  "feature_semantics_unchanged": true,
+  "historical_feature_owner": {
+    "cadence_evidence": "The owner intersects the available spot and perp observation_time sets and z-scores the resulting common series. It accepts arbitrary common timestamps, applies no grid, spacing, alignment or interval test, and is observation-count based. Unit tests exercising hourly fixtures are evidence about a fixture, never scientific authority for a cadence.",
+    "formula": "CVD_SPREAD = z(SpotCVD) - z(PerpCVD)",
+    "owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
+    "specifies_cadence": false,
+    "specifies_window": "20 prior common observations",
+    "unit_tests_are_cadence_authority": false,
+    "window_observations": 20
+  },
+  "ingested_at_semantics": "The wall-clock instant the capture layer persisted the row. It orders storage only and never admits or excludes an observation from a decision.",
+  "initialization_requirement": {
+    "current_observations": 1,
+    "cvd_observation_meaning": "one closed 1h interval of signed USD taker delta for one market_type",
+    "prior_common_observations": 20,
+    "statement": "20 prior aligned 1h common spot/perp observations plus 1 current common observation",
+    "total_common_observations": 21
+  },
+  "market_universe": {
+    "frozen_before_collection": true,
+    "perpetual": {
+      "instrument_type": "perpetual_swap",
+      "quote_currency": "USD_or_USD_denominated_stablecoin",
+      "selection_rule": "The frozen perpetual market set is declared once per collection epoch and persisted with the epoch. A venue may not be added, removed or substituted inside an epoch.",
+      "underlying": "BTC"
+    },
+    "spot": {
+      "instrument_type": "spot",
+      "quote_currency": "USD",
+      "selection_rule": "The frozen spot market set is the required reference-composite venue set ['bitstamp', 'coinbase', 'bitfinex'], which the repository already integrates and already requires in full for a canonical bar. A venue may not be added, removed or substituted inside an epoch.",
+      "underlying": "BTC",
+      "venues": [
+        "bitstamp",
+        "coinbase",
+        "bitfinex"
+      ]
+    },
+    "universe_change_requires": "PROSPECTIVE_CVD_ACQUISITION_V2"
+  },
+  "missing_interval_semantics": "A missing interval stays missing. It is persisted as an explicit absence, never zero-filled, never carried forward, never interpolated and never silently compressed out of the series: the common spot/perp timestamp simply does not exist, so the interval contributes no observation to the frozen normalization window.",
+  "observation_cadence": "1h",
+  "observation_time_semantics": "The exact UTC start instant of the closed interval, aligned to the exact hour. An off-grid observation_time is refused at capture.",
+  "off_grid_observation_policy": "REFUSE_AT_CAPTURE_NEVER_SNAP_OR_ROUND",
+  "pit_rule": "available_at <= decision_time",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "provider_identity": {
+    "identity_fields": [
+      "provider",
+      "market_type"
+    ],
+    "one_provider_per_market_type_per_epoch": true,
+    "provider_replacement_requires": "PROSPECTIVE_CVD_ACQUISITION_V2",
+    "recorded_per_observation": true,
+    "statement": "Exactly one provider identity is frozen per market_type for a collection epoch and is persisted on every row. Mixing two providers into one market_type series inside an epoch is refused."
+  },
+  "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row for the same (provider, market_type, observation_time); the earlier revision is retained verbatim and a decision replays against the revision that was available at its own decision_time.",
+  "schema_version": "PROSPECTIVE_CVD_ACQUISITION_V1",
+  "timestamp_alignment": "EXACT_UTC_HOUR_INTERVAL_START",
+  "units": "USD",
+  "version": "PROSPECTIVE_CVD_ACQUISITION_V1"
+}

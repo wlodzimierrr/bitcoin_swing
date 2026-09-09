@@ -18,7 +18,7 @@
   },
   "decision_delay_owner": "btc_predictor.research.reference_composite.DEFAULT_DECISION_DELAY",
   "decision_grid_owner": "btc_predictor.research.feature_matrix.decision_timestamp_range",
-  "definition_sha256": "b8673d9a170585c62b8e3feec1d126c75c8aa9352238f260f235066649c16b39",
+  "definition_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
   "denominator_independence_rule": "No universe predicate reads a comparison outcome. A timestamp can never enter or leave a denominator because the candidate and control outputs happen to agree or disagree.",
   "duplicate_policy": "REFUSE_A_SECOND_OBSERVATION_FOR_ONE_SOURCE_KEY_AT_ONE_SLOT",
   "late_data_policy": "NEVER_WAIT_NEVER_BACKFILL_A_CLOSED_DECISION",
@@ -170,279 +170,487 @@
   },
   "warmup_history": {
     "all_feature_warmups_frozen": true,
-    "definition_sha256": "0f718a197d19ccebe9068a51f11b3dd12c4d874e3c97de129172ab7ff3068055",
-    "evaluable_slot_rule": "WARMUP_HISTORY_COMPLETE is true only when every frozen feature's owner-specific observation count, session/calendar rule and initialization requirement is satisfied from PIT inputs.",
+    "composite_inheritance_rule": "A composite score is complete only when every required component is complete under its own owner's predicate. A composite invents no window of its own and never substitutes an elapsed-time proxy for a component's predicate.",
+    "definition_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac",
+    "elapsed_time_is_an_evaluability_test": false,
+    "evaluability_rule": "A feature is evaluable at a decision when enough qualifying observations exist inside its owner's applicable trailing window AND every upstream initialization requirement is satisfied from point-in-time inputs. Elapsed time is never the test: elapsed_days >= a hardcoded longest warmup is neither necessary nor sufficient, and no such comparison may gate a slot.",
     "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
-    "longest_required_warmup": "750 calendar days",
-    "pre_warmup_behavior": "Raw PIT capture may later build history only after both the corpus protocol and sufficiency-governance hashes plus POSTP1-004 have passed their required reviews. Until WARMUP_HISTORY_COMPLETE, a slot is WARMUP_HISTORY_INCOMPLETE and enters no evaluable metric universe.",
+    "longest_contiguous_history_planning_estimate_by_unit": {
+      "contiguous ETF publication days": 20,
+      "contiguous canonical daily sessions": 386,
+      "contiguous canonical weekly sessions": 52,
+      "contiguous daily source observations": 38,
+      "contiguous exact-hour common spot/perp observations": 30
+    },
+    "planning_estimate_label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+    "planning_estimate_units_are_not_commensurable": true,
+    "pre_warmup_behavior": "Raw point-in-time capture may build history only after both the corpus protocol and sufficiency-governance hashes plus POSTP1-004 have passed their required reviews. Until WARMUP_HISTORY_COMPLETE a slot is WARMUP_HISTORY_INCOMPLETE and enters no evaluable metric universe.",
     "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
     "rows": {
       "CVD_SPREAD": {
-        "additional_initialization_requirement": "z-score excludes current observation from history",
-        "calendar_or_session_semantics": "exact UTC hourly common spot/perp timestamps",
-        "effective_warmup": "21 consecutive hourly common observations",
-        "lookback_or_window": "20 prior periods",
-        "minimum_observations": "20 prior plus 1 current common observation",
-        "owner": "btc_predictor.features.flow.spot_perp_cvd_spread"
+        "calendar_or_session_rule": "PROSPECTIVE_CVD_ACQUISITION_V1 supplies the 1h acquisition grid; the feature owner supplies the observation count",
+        "evaluability_predicate": "20 prior common observations plus the current one exist with available_at <= decision_time, and neither side's history is degenerate",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous exact-hour common spot/perp observations",
+          "value": 21
+        },
+        "minimum_observation_count": "20 prior plus 1 current common spot/perp observation",
+        "owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
+        "rolling_window_span": "20 prior common observations; the owner specifies a window in observations and specifies no cadence",
+        "upstream_initialization": "the z-score excludes the current observation from its own history, and both the spot and perp series must carry the same common timestamps"
       },
       "ETF_NORM_20D": {
-        "additional_initialization_requirement": "latest PIT AUM required",
-        "calendar_or_session_semantics": "configured ETF publication calendar",
-        "effective_warmup": "20 publication days",
-        "lookback_or_window": "20 publication days",
-        "minimum_observations": "20 complete fund-universe publication days",
-        "owner": "btc_predictor.features.flow.twenty_day_etf_flow"
+        "calendar_or_session_rule": "configured ETF publication calendar",
+        "evaluability_predicate": "20 complete publication days and a current AUM exist",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous ETF publication days",
+          "value": 20
+        },
+        "minimum_observation_count": "20 complete fund-universe publication days",
+        "owner": "btc_predictor.features.flow.twenty_day_etf_flow",
+        "rolling_window_span": "20 publication days",
+        "upstream_initialization": "the latest point-in-time AUM is required"
       },
       "ETF_NORM_5D": {
-        "additional_initialization_requirement": "latest PIT AUM required",
-        "calendar_or_session_semantics": "configured ETF publication calendar",
-        "effective_warmup": "5 publication days",
-        "lookback_or_window": "5 publication days",
-        "minimum_observations": "5 complete fund-universe publication days",
-        "owner": "btc_predictor.features.flow.five_day_etf_flow"
+        "calendar_or_session_rule": "configured ETF publication calendar",
+        "evaluability_predicate": "5 complete publication days and a current AUM exist",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous ETF publication days",
+          "value": 5
+        },
+        "minimum_observation_count": "5 complete fund-universe publication days",
+        "owner": "btc_predictor.features.flow.five_day_etf_flow",
+        "rolling_window_span": "5 publication days",
+        "upstream_initialization": "the latest point-in-time AUM is required"
       },
       "FLOW_ACCEL": {
-        "additional_initialization_requirement": "none beyond source windows",
-        "calendar_or_session_semantics": "configured ETF publication calendar",
-        "effective_warmup": "20 publication days",
-        "lookback_or_window": "5d and 20d ETF normalized windows",
-        "minimum_observations": "both source windows complete",
-        "owner": "btc_predictor.features.flow.etf_flow_acceleration"
+        "calendar_or_session_rule": "configured ETF publication calendar",
+        "evaluability_predicate": "ETF_NORM_5D and ETF_NORM_20D are both complete",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous ETF publication days",
+          "value": 20
+        },
+        "minimum_observation_count": "both source windows complete",
+        "owner": "btc_predictor.features.flow.etf_flow_acceleration",
+        "rolling_window_span": "the 5d and 20d normalized windows",
+        "upstream_initialization": "none beyond the two source windows"
       },
       "FLOW_SCORE": {
-        "additional_initialization_requirement": "5-period volume growth needs two windows before 20 prior growth values",
-        "calendar_or_session_semantics": "ETF publication days and exact UTC hours",
-        "effective_warmup": "20 ETF publication days and 30 exact-hour spot/perp observations",
-        "lookback_or_window": "max(20 ETF publication days, 21 hourly CVD observations, 30 hourly participation observations)",
-        "minimum_observations": "all selected full-flow components complete",
-        "owner": "btc_predictor.features.flow.calculate_flow_score"
+        "calendar_or_session_rule": "ETF publication days and exact UTC hours; the units are not commensurable and are not collapsed into one number",
+        "evaluability_predicate": "ETF_NORM_5D, ETF_NORM_20D, FLOW_ACCEL, CVD_SPREAD and SPOT_DOMINANCE are each independently complete under their own owners",
+        "minimum_contiguous_history_to_first_evaluable": null,
+        "minimum_observation_count": "every selected full-flow component complete at this decision",
+        "owner": "btc_predictor.features.flow.calculate_flow_score",
+        "rolling_window_span": "max(20 ETF publication days, 21 1h CVD observations, 30 hourly participation observations)",
+        "upstream_initialization": "the participation growth series needs two equal windows before its own z-score history exists"
       },
       "FUNDING_7D_AVG": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "trailing elapsed UTC days",
-        "effective_warmup": "7 calendar days",
-        "lookback_or_window": "7d",
-        "minimum_observations": "at least one available observation; owner records count",
-        "owner": "btc_predictor.features.positioning.funding_health"
+        "calendar_or_session_rule": "trailing elapsed UTC days",
+        "evaluability_predicate": "at least one funding observation falls in (t - 7d, t]",
+        "minimum_contiguous_history_to_first_evaluable": null,
+        "minimum_observation_count": "at least 1 available observation",
+        "owner": "btc_predictor.features.positioning.funding_health",
+        "rolling_window_span": "7d, half-open (t - 7d, t]",
+        "upstream_initialization": "none"
       },
       "FUNDING_HEALTH": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "inherits funding z-score",
-        "effective_warmup": "180 calendar days",
-        "lookback_or_window": "FUNDING_ZSCORE_180D",
-        "minimum_observations": "one complete funding z-score",
-        "owner": "btc_predictor.features.positioning.funding_health"
+        "calendar_or_session_rule": "inherits the funding z-score",
+        "evaluability_predicate": "FUNDING_ZSCORE_180D is complete",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 31
+        },
+        "minimum_observation_count": "one complete funding z-score",
+        "owner": "btc_predictor.features.positioning.funding_health",
+        "rolling_window_span": "inherits FUNDING_ZSCORE_180D",
+        "upstream_initialization": "none"
       },
       "FUNDING_ZSCORE_180D": {
-        "additional_initialization_requirement": "current observation excluded from history",
-        "calendar_or_session_semantics": "prior observations in trailing elapsed UTC window",
-        "effective_warmup": "180 calendar days",
-        "lookback_or_window": "180d",
-        "minimum_observations": "30 prior observations",
-        "owner": "btc_predictor.features.positioning.funding_health"
+        "calendar_or_session_rule": "trailing elapsed UTC days",
+        "evaluability_predicate": "30 prior funding observations fall in [t - 180d, t) and their variance is non-zero",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 31
+        },
+        "minimum_observation_count": "30 prior observations",
+        "owner": "btc_predictor.features.positioning.funding_health",
+        "rolling_window_span": "180d, half-open [t - 180d, t)",
+        "upstream_initialization": "the current observation is excluded from its own history"
       },
       "FUTURES_BASIS_AVG": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "same PIT decision",
-        "effective_warmup": "current decision inputs",
-        "lookback_or_window": "current PIT basis observations",
-        "minimum_observations": "at least one available observation",
-        "owner": "btc_predictor.features.positioning.futures_basis_health"
+        "calendar_or_session_rule": "the same point-in-time decision",
+        "evaluability_predicate": "at least one basis observation is available at the decision",
+        "minimum_contiguous_history_to_first_evaluable": null,
+        "minimum_observation_count": "at least 1 available basis observation",
+        "owner": "btc_predictor.features.positioning.futures_basis_health",
+        "rolling_window_span": "none at this owner",
+        "upstream_initialization": "none"
       },
       "FUTURES_BASIS_HEALTH": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "inherits basis z-score",
-        "effective_warmup": "180 calendar days",
-        "lookback_or_window": "FUTURES_BASIS_ZSCORE_180D",
-        "minimum_observations": "one complete basis z-score",
-        "owner": "btc_predictor.features.positioning.futures_basis_health"
+        "calendar_or_session_rule": "inherits the basis z-score",
+        "evaluability_predicate": "FUTURES_BASIS_ZSCORE_180D is complete",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 31
+        },
+        "minimum_observation_count": "one complete basis z-score",
+        "owner": "btc_predictor.features.positioning.futures_basis_health",
+        "rolling_window_span": "inherits FUTURES_BASIS_ZSCORE_180D",
+        "upstream_initialization": "none"
       },
       "FUTURES_BASIS_ZSCORE_180D": {
-        "additional_initialization_requirement": "current observation excluded from history",
-        "calendar_or_session_semantics": "prior observations in trailing elapsed UTC window",
-        "effective_warmup": "180 calendar days",
-        "lookback_or_window": "180d",
-        "minimum_observations": "30 prior observations",
-        "owner": "btc_predictor.features.positioning.futures_basis_health"
+        "calendar_or_session_rule": "trailing elapsed UTC days",
+        "evaluability_predicate": "30 prior basis observations fall in [t - 180d, t) and their variance is non-zero",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 31
+        },
+        "minimum_observation_count": "30 prior observations",
+        "owner": "btc_predictor.features.positioning.futures_basis_health",
+        "rolling_window_span": "180d, half-open [t - 180d, t)",
+        "upstream_initialization": "the current observation is excluded from its own history"
       },
       "HIGH_DISTANCE_52W": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "canonical weekly sessions",
-        "effective_warmup": "52 canonical weekly sessions",
-        "lookback_or_window": "52 weekly periods",
-        "minimum_observations": "52 highs/closes",
-        "owner": "btc_predictor.features.trend.fifty_two_week_high_distance"
+        "calendar_or_session_rule": "canonical weekly sessions",
+        "evaluability_predicate": "52 weekly observations exist in the trailing weekly window",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical weekly sessions",
+          "value": 52
+        },
+        "minimum_observation_count": "52 weekly highs and closes",
+        "owner": "btc_predictor.features.trend.fifty_two_week_high_distance",
+        "rolling_window_span": "52 weekly periods",
+        "upstream_initialization": "none"
       },
       "MA_DISTANCE_20W": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "canonical weekly sessions",
-        "effective_warmup": "20 canonical weekly sessions",
-        "lookback_or_window": "20 weekly periods",
-        "minimum_observations": "20 closes",
-        "owner": "btc_predictor.features.trend.twenty_week_ma_distance"
+        "calendar_or_session_rule": "canonical weekly sessions",
+        "evaluability_predicate": "20 weekly closes exist in the trailing weekly window",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical weekly sessions",
+          "value": 20
+        },
+        "minimum_observation_count": "20 weekly closes",
+        "owner": "btc_predictor.features.trend.twenty_week_ma_distance",
+        "rolling_window_span": "20 weekly periods",
+        "upstream_initialization": "none"
       },
       "MOMENTUM_12W": {
-        "additional_initialization_requirement": "current plus lookback close",
-        "calendar_or_session_semantics": "canonical daily sessions",
-        "effective_warmup": "84 calendar days",
-        "lookback_or_window": "84 daily periods",
-        "minimum_observations": "85 closes",
-        "owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars"
+        "calendar_or_session_rule": "canonical daily sessions",
+        "evaluability_predicate": "a close exists at this session and at the session 84 periods earlier",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 85
+        },
+        "minimum_observation_count": "85 closes",
+        "owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars",
+        "rolling_window_span": "84 daily periods",
+        "upstream_initialization": "the current close plus the lookback close"
       },
       "MOMENTUM_4W": {
-        "additional_initialization_requirement": "current plus lookback close",
-        "calendar_or_session_semantics": "canonical daily sessions",
-        "effective_warmup": "28 calendar days",
-        "lookback_or_window": "28 daily periods",
-        "minimum_observations": "29 closes",
-        "owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars"
+        "calendar_or_session_rule": "canonical daily sessions",
+        "evaluability_predicate": "a close exists at this session and at the session 28 periods earlier",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 29
+        },
+        "minimum_observation_count": "29 closes",
+        "owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars",
+        "rolling_window_span": "28 daily periods",
+        "upstream_initialization": "the current close plus the lookback close"
       },
       "OI_GROWTH_7D": {
-        "additional_initialization_requirement": "prior OI observation required",
-        "calendar_or_session_semantics": "elapsed UTC comparison",
-        "effective_warmup": "7 calendar days",
-        "lookback_or_window": "7d",
-        "minimum_observations": "current and prior comparable observations",
-        "owner": "btc_predictor.features.positioning.open_interest_growth_health"
+        "calendar_or_session_rule": "elapsed UTC day comparison",
+        "evaluability_predicate": "a current OI aggregate exists and an aggregate exists at or before t - 7d",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 8
+        },
+        "minimum_observation_count": "a current and a prior comparable observation",
+        "owner": "btc_predictor.features.positioning.open_interest_growth_health",
+        "rolling_window_span": "7d comparison",
+        "upstream_initialization": "a prior OI observation at or before t - 7d is required"
       },
       "OI_GROWTH_HEALTH": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "inherits OI-growth z-score",
-        "effective_warmup": "187 calendar days",
-        "lookback_or_window": "OI_GROWTH_ZSCORE_180D",
-        "minimum_observations": "one complete OI-growth z-score",
-        "owner": "btc_predictor.features.positioning.open_interest_growth_health"
+        "calendar_or_session_rule": "inherits the OI-growth z-score",
+        "evaluability_predicate": "OI_GROWTH_ZSCORE_180D is complete",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 38
+        },
+        "minimum_observation_count": "one complete OI-growth z-score",
+        "owner": "btc_predictor.features.positioning.open_interest_growth_health",
+        "rolling_window_span": "inherits OI_GROWTH_ZSCORE_180D",
+        "upstream_initialization": "none"
       },
       "OI_GROWTH_ZSCORE_180D": {
-        "additional_initialization_requirement": "earliest growth needs an earlier 7d OI observation",
-        "calendar_or_session_semantics": "prior growth observations in trailing elapsed UTC window",
-        "effective_warmup": "187 calendar days",
-        "lookback_or_window": "180d of growth results",
-        "minimum_observations": "30 prior growth observations",
-        "owner": "btc_predictor.features.positioning.open_interest_growth_health"
+        "calendar_or_session_rule": "trailing elapsed UTC days",
+        "evaluability_predicate": "30 prior growth observations fall in [t - 180d, t) and their variance is non-zero",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 38
+        },
+        "minimum_observation_count": "30 prior growth observations",
+        "owner": "btc_predictor.features.positioning.open_interest_growth_health",
+        "rolling_window_span": "180d of growth results",
+        "upstream_initialization": "the earliest retained growth observation itself needs an OI observation 7d earlier"
       },
       "OI_INTENSITY": {
-        "additional_initialization_requirement": "none",
-        "calendar_or_session_semantics": "same PIT decision",
-        "effective_warmup": "current decision inputs",
-        "lookback_or_window": "current OI and spot market-cap/price input",
-        "minimum_observations": "one complete input pair",
-        "owner": "btc_predictor.features.positioning.open_interest_intensity"
+        "calendar_or_session_rule": "the same point-in-time decision",
+        "evaluability_predicate": "the open-interest aggregate and the market-cap observation share an exact observation_time and both are available at the decision",
+        "minimum_contiguous_history_to_first_evaluable": null,
+        "minimum_observation_count": "one open-interest aggregate and one market-cap observation at the same exact observation_time",
+        "owner": "btc_predictor.features.positioning.open_interest_intensity",
+        "rolling_window_span": "none at this owner",
+        "upstream_initialization": "the market-cap input is supplied by PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1 on the EXACT_UTC_DAY_START_00_00_00Z grid; a missing or late market-cap observation leaves the feature not evaluable"
       },
       "OI_INTENSITY_PERCENTILE_180D": {
-        "additional_initialization_requirement": "current intensity required",
-        "calendar_or_session_semantics": "prior observations in trailing elapsed UTC window",
-        "effective_warmup": "180 calendar days",
-        "lookback_or_window": "180d",
-        "minimum_observations": "30 prior observations",
-        "owner": "btc_predictor.features.positioning.open_interest_intensity"
+        "calendar_or_session_rule": "trailing elapsed UTC days",
+        "evaluability_predicate": "a current intensity exists and 30 prior intensity observations fall in [t - 180d, t)",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 31
+        },
+        "minimum_observation_count": "30 prior intensity observations",
+        "owner": "btc_predictor.features.positioning.open_interest_intensity",
+        "rolling_window_span": "180d, half-open [t - 180d, t)",
+        "upstream_initialization": "every historical intensity observation needs its own aligned open-interest and market-cap pair"
       },
       "ORDERLINESS_SCORE": {
-        "additional_initialization_requirement": "upstream percentile owners and raw liquidation history must be complete; no window is invented here",
-        "calendar_or_session_semantics": "strategy-daily PIT inputs",
-        "effective_warmup": "no extra rolling window at this owner",
-        "lookback_or_window": "current range/downside/liquidation/volatility percentile inputs",
-        "minimum_observations": "one complete input vector",
-        "owner": "btc_predictor.features.volatility.calculate_orderliness_score"
+        "calendar_or_session_rule": "strategy-daily point-in-time inputs",
+        "evaluability_predicate": "range_percentile, downside_return, liquidation_percentile and volatility_percentile are all present at this decision",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 386
+        },
+        "minimum_observation_count": "one complete current input vector",
+        "owner": "btc_predictor.features.volatility.calculate_orderliness_score",
+        "rolling_window_span": "none at this owner; the range, liquidation and volatility percentile inputs carry their own windows",
+        "upstream_initialization": "the volatility-percentile owner and PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1 must each be complete; an unavailable, late or invalid liquidation feed leaves the liquidation input missing and never zero"
       },
       "POSITIONING_SCORE": {
-        "additional_initialization_requirement": "OI growth needs an earlier 7d comparison",
-        "calendar_or_session_semantics": "trailing elapsed UTC days",
-        "effective_warmup": "187 calendar days for OI; 180d funding; 180d basis",
-        "lookback_or_window": "max(180d funding, 180d basis, 180d OI growth)",
-        "minimum_observations": "30 historical observations per z-score/percentile owner",
-        "owner": "btc_predictor.features.positioning.calculate_positioning_score"
+        "calendar_or_session_rule": "trailing elapsed UTC day windows",
+        "evaluability_predicate": "FUNDING_HEALTH, OI_GROWTH_HEALTH and FUTURES_BASIS_HEALTH are each complete, and the configured leverage-health input is present",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous daily source observations",
+          "value": 38
+        },
+        "minimum_observation_count": "30 prior funding, 30 prior basis and 30 prior OI-growth observations in their own windows",
+        "owner": "btc_predictor.features.positioning.calculate_positioning_score",
+        "rolling_window_span": "max(180d funding, 180d basis, 180d OI growth)",
+        "upstream_initialization": "the earliest OI-growth observation needs an OI observation 7d earlier"
       },
       "REGIME_SCORE": {
-        "additional_initialization_requirement": "full model additionally requires PIT macro/onchain/liquidity inputs",
-        "calendar_or_session_semantics": "mixed canonical sessions",
-        "effective_warmup": "750 calendar days",
-        "lookback_or_window": "transitive maximum of trend, flow, positioning, volatility",
-        "minimum_observations": "all selected regime components complete",
-        "owner": "btc_predictor.features.regime.calculate_regime_score"
+        "calendar_or_session_rule": "mixed canonical sessions",
+        "evaluability_predicate": "every required component score is independently complete; the composite inherits their predicates and invents no window",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 386
+        },
+        "minimum_observation_count": "every required regime component complete at this decision",
+        "owner": "btc_predictor.features.regime.calculate_regime_score",
+        "rolling_window_span": "transitive maximum of the trend, flow, positioning and volatility component windows",
+        "upstream_initialization": "the full model additionally requires the point-in-time macro, on-chain and liquidity inputs"
       },
       "REGIME_SMOOTHED_SCORE": {
-        "additional_initialization_requirement": "the owner deterministically initializes a missing previous smoothed score from the current score and records REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING",
-        "calendar_or_session_semantics": "strategy-daily decisions",
-        "effective_warmup": "750 calendar days",
-        "lookback_or_window": "current regime score and optional prior smoothed score",
-        "minimum_observations": "1 complete current regime score",
-        "owner": "btc_predictor.features.regime.calculate_regime_smoothing"
+        "calendar_or_session_rule": "strategy-daily decisions",
+        "evaluability_predicate": "REGIME_SCORE is complete at this decision",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 386
+        },
+        "minimum_observation_count": "1 complete current regime score",
+        "owner": "btc_predictor.features.regime.calculate_regime_smoothing",
+        "rolling_window_span": "current regime score and optional prior smoothed score",
+        "upstream_initialization": "the owner deterministically initializes a missing previous smoothed score from the current score and records REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING"
       },
       "RV_20": {
-        "additional_initialization_requirement": "first return needs previous close",
-        "calendar_or_session_semantics": "gap-aware canonical daily sessions",
-        "effective_warmup": "20 calendar-day intervals",
-        "lookback_or_window": "20 daily returns",
-        "minimum_observations": "21 closes",
-        "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars"
+        "calendar_or_session_rule": "gap-aware canonical daily sessions",
+        "evaluability_predicate": "21 contiguous daily closes are available and all are strictly positive",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 21
+        },
+        "minimum_observation_count": "21 contiguous daily closes",
+        "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+        "rolling_window_span": "20 daily returns",
+        "upstream_initialization": "the first return needs the previous close"
       },
       "RV_60": {
-        "additional_initialization_requirement": "first return needs previous close",
-        "calendar_or_session_semantics": "gap-aware canonical daily sessions",
-        "effective_warmup": "60 calendar-day intervals",
-        "lookback_or_window": "60 daily returns",
-        "minimum_observations": "61 closes",
-        "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars"
+        "calendar_or_session_rule": "gap-aware canonical daily sessions",
+        "evaluability_predicate": "61 contiguous daily closes are available and all are strictly positive",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 61
+        },
+        "minimum_observation_count": "61 contiguous daily closes",
+        "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+        "rolling_window_span": "60 daily returns",
+        "upstream_initialization": "the first return needs the previous close"
       },
       "RV_7": {
-        "additional_initialization_requirement": "first return needs previous close",
-        "calendar_or_session_semantics": "gap-aware canonical daily sessions",
-        "effective_warmup": "7 calendar-day intervals",
-        "lookback_or_window": "7 daily returns",
-        "minimum_observations": "8 closes",
-        "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars"
+        "calendar_or_session_rule": "gap-aware canonical daily sessions",
+        "evaluability_predicate": "8 contiguous daily closes are available and all are strictly positive",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 8
+        },
+        "minimum_observation_count": "8 contiguous daily closes",
+        "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+        "rolling_window_span": "7 daily returns",
+        "upstream_initialization": "the first return needs the previous close"
       },
       "SPOT_DOMINANCE": {
-        "additional_initialization_requirement": "growth series initializes after two equal windows",
-        "calendar_or_session_semantics": "exact UTC hourly common spot/perp timestamps",
-        "effective_warmup": "30 consecutive hourly common observations",
-        "lookback_or_window": "5-period current/prior growth windows plus 20 prior growth values",
-        "minimum_observations": "30 common observations",
-        "owner": "btc_predictor.features.flow.spot_perp_participation_from_rows"
+        "calendar_or_session_rule": "exact UTC hourly common spot/perp timestamps",
+        "evaluability_predicate": "30 common observations exist and both growth z-scores are defined",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous exact-hour common spot/perp observations",
+          "value": 30
+        },
+        "minimum_observation_count": "30 common observations",
+        "owner": "btc_predictor.features.flow.spot_perp_participation_from_rows",
+        "rolling_window_span": "5-period current and prior growth windows plus 20 prior growth values",
+        "upstream_initialization": "the growth series initializes only after two equal windows"
       },
       "STRUCTURE_SCORE": {
-        "additional_initialization_requirement": "structural level owners must be complete",
-        "calendar_or_session_semantics": "owner-supplied PIT structures",
-        "effective_warmup": "no extra rolling window at this owner",
-        "lookback_or_window": "current authoritative structure/level/RR inputs",
-        "minimum_observations": "one complete input vector",
-        "owner": "btc_predictor.features.structure.calculate_structure_score"
+        "calendar_or_session_rule": "owner-supplied point-in-time structures",
+        "evaluability_predicate": "the current structure, level and risk/reward inputs are all present at this decision",
+        "minimum_contiguous_history_to_first_evaluable": null,
+        "minimum_observation_count": "one complete current input vector",
+        "owner": "btc_predictor.features.structure.calculate_structure_score",
+        "rolling_window_span": "none at this owner",
+        "upstream_initialization": "the structural level and risk/reward owners must be complete"
       },
       "TREND_SCORE": {
-        "additional_initialization_requirement": "weekly structure must also be complete",
-        "calendar_or_session_semantics": "canonical weekly/daily sessions",
-        "effective_warmup": "52 canonical weekly sessions",
-        "lookback_or_window": "max(52 weekly, 20 weekly, 84 daily)",
-        "minimum_observations": "52 weekly observations plus component inputs",
-        "owner": "btc_predictor.features.trend.calculate_trend_score"
+        "calendar_or_session_rule": "canonical weekly and daily sessions",
+        "evaluability_predicate": "MA_DISTANCE_20W, HIGH_DISTANCE_52W and the selected momentum components are each independently complete under their own owners",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical weekly sessions",
+          "value": 52
+        },
+        "minimum_observation_count": "every selected trend component complete at this decision",
+        "owner": "btc_predictor.features.trend.calculate_trend_score",
+        "rolling_window_span": "max(52 weekly, 20 weekly, 84 daily)",
+        "upstream_initialization": "the weekly structure and every component owner must be complete"
       },
       "VOLATILITY_SCORE": {
-        "additional_initialization_requirement": "each historical RV_20 needs 20 earlier daily returns",
-        "calendar_or_session_semantics": "canonical daily sessions",
-        "effective_warmup": "750 calendar days",
-        "lookback_or_window": "730d volatility-percentile history",
-        "minimum_observations": "365 prior RV_20 results",
-        "owner": "btc_predictor.features.volatility.calculate_volatility_score"
+        "calendar_or_session_rule": "canonical daily sessions",
+        "evaluability_predicate": "every selected volatility component, VOL_PERCENTILE_2Y included, is complete under its own owner",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 386
+        },
+        "minimum_observation_count": "730d window holding 365 prior RV_20 observations",
+        "owner": "btc_predictor.features.volatility.calculate_volatility_score",
+        "rolling_window_span": "730d eligible trailing RV window inherited from VOL_PERCENTILE_2Y",
+        "upstream_initialization": "each RV_20 result needs 21 contiguous daily closes (20 daily returns)"
       },
       "VOL_COMPRESSION_RATIO": {
-        "additional_initialization_requirement": "none beyond RV_20",
-        "calendar_or_session_semantics": "inherits canonical daily sessions",
-        "effective_warmup": "20 calendar-day intervals",
-        "lookback_or_window": "RV_7 and RV_20",
-        "minimum_observations": "both realized-volatility inputs complete",
-        "owner": "btc_predictor.features.volatility.volatility_compression_ratio"
+        "calendar_or_session_rule": "inherits the canonical daily sessions",
+        "evaluability_predicate": "RV_7 and RV_20 are both complete and RV_20 is non-zero",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 21
+        },
+        "minimum_observation_count": "both realized-volatility inputs complete",
+        "owner": "btc_predictor.features.volatility.volatility_compression_ratio",
+        "rolling_window_span": "the RV_7 and RV_20 windows",
+        "upstream_initialization": "none beyond RV_20"
       },
       "VOL_PERCENTILE_2Y": {
-        "additional_initialization_requirement": "earliest retained RV_20 needs 20 prior daily returns",
-        "calendar_or_session_semantics": "canonical daily sessions",
-        "effective_warmup": "750 calendar days",
-        "lookback_or_window": "730d trailing RV_20 window",
-        "minimum_observations": "current plus at least 365 prior RV_20 results",
-        "owner": "btc_predictor.features.volatility.volatility_percentile"
+        "calendar_or_session_rule": "canonical daily sessions",
+        "evaluability_predicate": "a current RV_20 result exists and at least 365 prior results fall inside half-open [observation_time - window, observation_time). The window span alone never implies completeness and 730 populated days are never required.",
+        "minimum_contiguous_history_to_first_evaluable": {
+          "label": "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY",
+          "planning_estimate_only": true,
+          "unit": "contiguous canonical daily sessions",
+          "value": 386
+        },
+        "minimum_observation_count": "365 prior RV_20 observations inside that window, plus 1 current observation",
+        "owner": "btc_predictor.features.volatility.volatility_percentile",
+        "rolling_window_span": "730d eligible trailing window, half-open [observation_time - window, observation_time)",
+        "upstream_initialization": "each RV_20 result needs 21 contiguous daily closes (20 daily returns)"
       }
     },
-    "schema_version": "PROSPECTIVE_WARMUP_HISTORY_V1",
-    "state_name": "WARMUP_HISTORY_COMPLETE"
+    "schema_version": "PROSPECTIVE_WARMUP_HISTORY_V2",
+    "state_name": "WARMUP_HISTORY_COMPLETE",
+    "superseded_claim": {
+      "claim": "750 calendar days is the exact owner-derived warmup",
+      "correction": "The owner keeps a 730-day eligible trailing window and requires 365 prior RV_20 observations inside it, never 730 populated days. Each of those RV_20 results needs 21 contiguous daily closes, so with contiguous daily observations the first evaluable decision is at session 386 (385 elapsed calendar days).",
+      "retained_as_scientific_minimum": false,
+      "why_it_was_wrong": "It added the 730-day eligible trailing window to a 20-day upstream window as if both were required populated histories, and then used the sum as an elapsed-time evaluability test. The owner requires 365 prior observations inside the window, not 730 populated days."
+    },
+    "three_distinct_quantities": {
+      "minimum_contiguous_history_to_first_evaluable": "A planning estimate under contiguous observations only. It is not the evaluability authority and no slot is admitted or refused by comparing elapsed time against it.",
+      "minimum_observation_count": "The qualifying observations an owner requires inside its applicable trailing window. This, with the upstream initialization, is the evaluability authority.",
+      "rolling_window_span": "The eligible trailing window an owner searches. It states which observations may count, never how many must exist."
+    },
+    "vol_percentile_2y_derivation": {
+      "current_observation_required": 1,
+      "first_evaluable_contiguous_daily_sessions": 386,
+      "first_evaluable_elapsed_calendar_days": 385,
+      "populated_days_equal_to_the_window_span_required": false,
+      "rolling_window_boundary": "half-open [observation_time - window, observation_time)",
+      "rolling_window_span_days": 730,
+      "source_feature_id": "RV_20",
+      "statement": "The owner keeps a 730-day eligible trailing window and requires 365 prior RV_20 observations inside it, never 730 populated days. Each of those RV_20 results needs 21 contiguous daily closes, so with contiguous daily observations the first evaluable decision is at session 386 (385 elapsed calendar days).",
+      "upstream_initialization": "each RV_20 result needs 21 contiguous daily closes (20 daily returns)",
+      "upstream_source_closes": 21,
+      "upstream_source_return_window_days": 20,
+      "window_span_alone_implies_completeness": false
+    }
   }
 }

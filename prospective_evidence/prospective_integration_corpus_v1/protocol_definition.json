@@ -7,17 +7,21 @@
     "terminal_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE"
   },
   "child_definition_sha256": {
-    "data_schema_contract": "ada2223829adbe804e27e437f04fc46472587c02f2833126b7c558ae57246dd2",
-    "decision_universe": "b8673d9a170585c62b8e3feec1d126c75c8aa9352238f260f235066649c16b39",
+    "data_schema_contract": "90dea1ba5336f0fc5b74d83ccef88dc22d69f29e874e442ae0a151a7c092ee25",
+    "decision_universe": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
     "evidence_sufficiency": "af424423723f377d22fdddd01e396de9a2323db0c9aa59defd57b78076cc5df9",
-    "feature_input_coverage": "7b049c0e49739d6e20370e2472c46134889d811f8f9b7a5b770cbc6f95c8ec31",
-    "input_snapshot_schema": "35c55f616e6ed567400d597a2c747dbb67335514417a07496288d0bf1f303116",
+    "feature_input_coverage": "7fca47cbc1872d8e17801b37b704b09284597dbc875f14b5f7e6571a2f65f517",
+    "input_snapshot_schema": "4ac2a60b2909228ac4a818aea98700caf2ca2b6488c6605f74a5ebd808f65534",
     "metric_evidence_contracts": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
-    "portfolio_track_contract": "1560eee774049e7eb72180ccfc18477e919eaf127646e03e1405cdf161318623",
+    "portfolio_track_contract": "92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4",
+    "prospective_btc_market_cap_acquisition": "fe0fe85532233e767a33ff1a4649cd72a5049746559d0be799aca3d88d50e817",
+    "prospective_cvd_acquisition": "c485a4c36e2d4ddaf443955760ad9073e7b9e640a5307367399e5af25ffa8b76",
+    "prospective_liquidation_capture": "23212f669cb0f7308a19df2498781f0747a43974f8bbdac39a9ceb23943f16c8",
+    "prospective_liquidation_percentile_adapter": "849f7843066930418822dfc0f15e238897d65bc148a9882548b9decce8e75d79",
     "semantic_diff_from_v5_blockers": "49b129afd07a08ddfbe6b4195e648b7ab28f712a3d2747739ec139ef7965673d",
-    "stage_b_evaluation_contract": "8be898a9f858a6d60fbd44bbce6effc4c4d2051f87aea39952805be5798240e2",
+    "stage_b_evaluation_contract": "3df077ec947c7350393aaa1e7ff73dbabcf7e8829b0b56adfbcc207c12edf98c",
     "stop_event_taxonomy": "ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e",
-    "warmup_history": "0f718a197d19ccebe9068a51f11b3dd12c4d874e3c97de129172ab7ff3068055"
+    "warmup_history": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac"
   },
   "collection_authorization_semantics": {
     "all_requirements_must_pass": true,
@@ -41,6 +45,7 @@
           "prospective_run",
           "prospective_decision_observation",
           "prospective_source_input_snapshot",
+          "prospective_liquidation_feed_state",
           "prospective_data_quality_event"
         ],
         "postcondition": "Every qualifying raw observation for that decision_time is durably persisted with observation_time and available_at before any derived record exists, so no future outcome can alter what was captured.",
@@ -52,6 +57,7 @@
           "prospective_run",
           "prospective_decision_observation",
           "prospective_source_input_snapshot",
+          "prospective_liquidation_feed_state",
           "prospective_data_quality_event"
         ],
         "may_write": [
@@ -71,6 +77,7 @@
           "prospective_run",
           "prospective_decision_observation",
           "prospective_source_input_snapshot",
+          "prospective_liquidation_feed_state",
           "prospective_data_quality_event",
           "prospective_reference_evaluation",
           "prospective_strategy_evaluation",
@@ -93,7 +100,7 @@
       "EVALUATE"
     ]
   },
-  "definition_sha256": "0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e",
+  "definition_sha256": "40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862",
   "evidence_identity_fields": [
     "configuration_identity",
     "corpus_protocol_sha256",
@@ -108,7 +115,7 @@
     "risk_version",
     "strategy_version"
   ],
-  "final_classification": "CORRECTED_PROSPECTIVE_INTEGRATION_CORPUS_V1_READY_FOR_REPEAT_XHIGH_REVIEW",
+  "final_classification": "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_THIRD_XHIGH_REVIEW",
   "historical_gate_authority": {
     "cross_market_confirmed_stop_preservation_rate": {
       "definition": "A robust estimator must preserve genuine shared tail moves.",
@@ -266,18 +273,38 @@
   },
   "lineage": {
     "certified_v1_validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7",
-    "failed_prospective_protocol": {
-      "definition_sha256": "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326",
-      "implementation_commit": "b38f387f822da713aa06489e6643c9d6909de32a",
-      "retained": true,
-      "review": "FAIL \u2014 PROSPECTIVE PROTOCOL INVALID",
-      "review_classification": "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
-      "superseded_before_collection": true
-    },
+    "failed_prospective_protocol_count": 2,
+    "failed_prospective_protocols": [
+      {
+        "attempt": 1,
+        "authoritative": false,
+        "definition_sha256": "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326",
+        "implementation_commit": "b38f387f822da713aa06489e6643c9d6909de32a",
+        "qualifying_observations_collected": false,
+        "retained": true,
+        "review": "FAIL \u2014 PROSPECTIVE PROTOCOL INVALID",
+        "review_classification": "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
+        "superseded_before_collection": true,
+        "ticket": "POSTP1-001"
+      },
+      {
+        "attempt": 2,
+        "authoritative": false,
+        "definition_sha256": "0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e",
+        "implementation_commit": "8af223d708ee03b09bca6e43c204620aba44ecab",
+        "qualifying_observations_collected": false,
+        "retained": true,
+        "review": "FAIL \u2014 AMBIGUOUS FROZEN INPUT",
+        "review_classification": "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT",
+        "superseded_before_collection": true,
+        "ticket": "POSTP1-001R"
+      }
+    ],
     "frozen_v2_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
     "frozen_v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
     "frozen_v4_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
-    "frozen_v5_definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89"
+    "frozen_v5_definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89",
+    "protocol_version_retained_rationale": "Both prior definition hashes failed independent review before any collection epoch opened, so no persisted observation carries the superseded semantics. CHANGE_PROCEDURE binds PROSPECTIVE_INTEGRATION_CORPUS_V2 to a semantic change after collection starts, not to a pre-data correction, so the version is retained and the two failed definition hashes carry the lineage."
   },
   "no_threshold_authored": true,
   "numerical_standards": {
@@ -297,6 +324,7 @@
     "prohibited_after_collection_starts": [
       "add or remove a non-price input family",
       "change a comparison reference identity",
+      "change a frozen acquisition cadence, provider, market universe, series identity, feed-status vocabulary or normalization adapter",
       "change a denominator or its universe predicate",
       "change an evidence-sufficiency minimum",
       "change the cost or slippage model",
@@ -309,7 +337,20 @@
     ],
     "successor_protocol": "PROSPECTIVE_INTEGRATION_CORPUS_V2"
   },
-  "program_ticket": "POSTP1-001R",
+  "program_ticket": "POSTP1-001R2",
+  "prospective_acquisition_governance": {
+    "contract_versions": [
+      "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+      "PROSPECTIVE_CVD_ACQUISITION_V1",
+      "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+      "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1"
+    ],
+    "distinguishes_feature_semantics_from_acquisition_semantics": true,
+    "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
+    "phase_1_authority_claimed_for_new_rules": false,
+    "phase_1_feature_semantics_owner": "the frozen Phase-1 feature owners, which this program does not modify: spot_perp_cvd_spread, open_interest_intensity and calculate_orderliness_score keep their formulas, windows and reason codes exactly",
+    "ticket": "POSTP1-001R2"
+  },
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "provenance_detection_requirements": [
     "deletion",
@@ -360,7 +401,7 @@
     "opens_btc019_on_stage_b_pass": false,
     "statement": "The historical BTC-019 sealed sample remains NOT COLLECTED, NOT OPENED and NOT EVALUATED. This program does not authorize opening it and creates no automatic future dependency that would; any use of it requires a separate explicit governance decision."
   },
-  "status": "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_REPEAT_XHIGH_REVIEW",
+  "status": "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW",
   "target_metrics": [
     "cross_market_confirmed_stop_preservation_rate",
     "gap_through_stop_consensus_agreement_rate",

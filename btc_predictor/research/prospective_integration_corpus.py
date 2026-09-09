@@ -38,6 +38,8 @@ from decimal import ROUND_CEILING, Context, Decimal, localcontext
 from pathlib import Path
 from typing import Any
 
+from btc_predictor.data import derivatives as _derivatives
+from btc_predictor.data import generic_series as _generic_series
 from btc_predictor.db import portfolio as _portfolio_db
 from btc_predictor.features import entry as _entry
 from btc_predictor.features import flow as _flow
@@ -58,12 +60,12 @@ from btc_predictor.signals import data_quality as _data_quality
 
 PROTOCOL_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V1"
 PROTOCOL_SCHEMA_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V1_PROTOCOL_DEFINITION_V1"
-PROTOCOL_STATUS = "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_REPEAT_XHIGH_REVIEW"
-PROGRAM_TICKET = "POSTP1-001R"
+PROTOCOL_STATUS = "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW"
+PROGRAM_TICKET = "POSTP1-001R2"
 WORKSTREAM = "EPIC X"
 WORKSTREAM_NAME = "PROSPECTIVE INTEGRATION EVIDENCE"
 FINAL_CLASSIFICATION = (
-    "CORRECTED_PROSPECTIVE_INTEGRATION_CORPUS_V1_READY_FOR_REPEAT_XHIGH_REVIEW"
+    "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_THIRD_XHIGH_REVIEW"
 )
 AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION = (
     "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_METRIC"
@@ -71,7 +73,34 @@ AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION = (
 AMBIGUOUS_FROZEN_INPUT_CLASSIFICATION = (
     "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT"
 )
+MISSING_MARKET_CAP_SOURCE_CLASSIFICATION = (
+    "PROSPECTIVE_PROTOCOL_BLOCKED_BY_MISSING_MARKET_CAP_SOURCE"
+)
+AMBIGUOUS_LIQUIDATION_NORMALIZATION_CLASSIFICATION = (
+    "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_LIQUIDATION_NORMALIZATION"
+)
+INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION = (
+    "PROSPECTIVE_INPUT_GOVERNANCE_STILL_INCOMPLETE"
+)
 SUCCESSOR_PROTOCOL_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V2"
+
+# ``PROSPECTIVE_INTEGRATION_CORPUS_V1`` is retained rather than incremented.
+# Neither failed hash was ever certified, no collection epoch opened and no
+# qualifying observation exists, so no persisted evidence carries the old
+# semantics and nothing would be relabelled backwards.  The repository's own
+# versioning authority for this protocol -- ``CHANGE_PROCEDURE`` below --
+# requires ``PROSPECTIVE_INTEGRATION_CORPUS_V2`` for a semantic change *after
+# collection starts*; it imposes no increment on a pre-data correction, and
+# POSTP1-001R already corrected this protocol once under the same reading.
+# Lineage is carried instead by both retained failed definition hashes.
+PROTOCOL_VERSION_RETAINED_RATIONALE = (
+    "Both prior definition hashes failed independent review before any "
+    "collection epoch opened, so no persisted observation carries the "
+    "superseded semantics. CHANGE_PROCEDURE binds "
+    f"{SUCCESSOR_PROTOCOL_VERSION} to a semantic change after collection "
+    "starts, not to a pre-data correction, so the version is retained and the "
+    "two failed definition hashes carry the lineage."
+)
 
 # The artifacts deliberately do not live under ``research_artifacts/``. The
 # frozen BTC_REFERENCE_COMPOSITE_V5 terminal assessment hashes an inventory of
@@ -90,6 +119,12 @@ EVIDENCE_SUFFICIENCY_FILENAME = "evidence_sufficiency.json"
 SEMANTIC_DIFF_FILENAME = "semantic_diff_from_v5_blockers.json"
 FEATURE_INPUT_COVERAGE_FILENAME = "feature_input_coverage.json"
 WARMUP_HISTORY_FILENAME = "warmup_history.json"
+CVD_ACQUISITION_FILENAME = "prospective_cvd_acquisition_v1.json"
+MARKET_CAP_ACQUISITION_FILENAME = "prospective_btc_market_cap_acquisition_v1.json"
+LIQUIDATION_CAPTURE_FILENAME = "prospective_liquidation_capture_v1.json"
+LIQUIDATION_PERCENTILE_ADAPTER_FILENAME = (
+    "prospective_liquidation_percentile_adapter_v1.json"
+)
 REPORT_FILENAME = "PROSPECTIVE_INTEGRATION_CORPUS_V1_REPORT.md"
 
 
@@ -120,6 +155,46 @@ FAILED_PROTOCOL_IMPLEMENTATION_COMMIT = (
 )
 FAILED_PROTOCOL_REVIEW = "FAIL — PROSPECTIVE PROTOCOL INVALID"
 FAILED_PROTOCOL_REVIEW_CLASSIFICATION = "PROSPECTIVE_PROTOCOL_REQUIRES_FIX"
+SECOND_FAILED_PROTOCOL_DEFINITION_SHA256 = (
+    "0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e"
+)
+SECOND_FAILED_PROTOCOL_IMPLEMENTATION_COMMIT = (
+    "8af223d708ee03b09bca6e43c204620aba44ecab"
+)
+SECOND_FAILED_PROTOCOL_REVIEW = "FAIL — AMBIGUOUS FROZEN INPUT"
+SECOND_FAILED_PROTOCOL_REVIEW_CLASSIFICATION = (
+    "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT"
+)
+
+# Both prior definition hashes are retained as failed, non-authoritative
+# pre-data lineage.  Neither was certified, neither opened a collection epoch
+# and no qualifying observation was collected under either.
+FAILED_PROSPECTIVE_PROTOCOL_LINEAGE: tuple[dict[str, Any], ...] = (
+    {
+        "attempt": 1,
+        "authoritative": False,
+        "definition_sha256": FAILED_PROTOCOL_DEFINITION_SHA256,
+        "implementation_commit": FAILED_PROTOCOL_IMPLEMENTATION_COMMIT,
+        "qualifying_observations_collected": False,
+        "retained": True,
+        "review": FAILED_PROTOCOL_REVIEW,
+        "review_classification": FAILED_PROTOCOL_REVIEW_CLASSIFICATION,
+        "superseded_before_collection": True,
+        "ticket": "POSTP1-001",
+    },
+    {
+        "attempt": 2,
+        "authoritative": False,
+        "definition_sha256": SECOND_FAILED_PROTOCOL_DEFINITION_SHA256,
+        "implementation_commit": SECOND_FAILED_PROTOCOL_IMPLEMENTATION_COMMIT,
+        "qualifying_observations_collected": False,
+        "retained": True,
+        "review": SECOND_FAILED_PROTOCOL_REVIEW,
+        "review_classification": SECOND_FAILED_PROTOCOL_REVIEW_CLASSIFICATION,
+        "superseded_before_collection": True,
+        "ticket": "POSTP1-001R",
+    },
+)
 
 
 # ---------------------------------------------------------------------------
@@ -691,6 +766,1153 @@ CHAMPION_IDENTITY_BINDING_RULE = (
 
 
 # ===========================================================================
+# 3b. NEW PROSPECTIVE PRE-DATA ACQUISITION GOVERNANCE
+# ===========================================================================
+#
+# Phase-1 owns *feature semantics*: ``spot_perp_cvd_spread``,
+# ``open_interest_intensity`` and ``calculate_orderliness_score`` are frozen and
+# are not touched by this program.  What Phase-1 never owned, for three of their
+# raw inputs, is *acquisition semantics*: which source produces a raw
+# observation, on what cadence, with what timestamp, availability and revision
+# meaning.  A feature transformation is not a source contract.
+#
+# The second repeat review proved the point for CVD: the historical owner
+# accepts any set of common spot/perp timestamps and is observation-count based,
+# so the previous claim that an exact UTC hourly cadence was "uniquely implied"
+# by the feature owner was false.  The same review found no real prospective
+# source behind ``MarketCapObservation`` and no capture layer able to tell a
+# missing liquidation feed from an observed feed with zero liquidation events.
+#
+# Because this corpus has not begun collection, POSTP1-001R2 is authorised to
+# freeze those missing acquisition semantics now.  Everything in this section is
+# therefore declared explicitly as NEW pre-data governance authored by this
+# ticket.  None of it is presented as historically implicit, none of it was
+# selected by inspecting a Stage-B outcome, and each contract carries its own
+# deterministic definition hash bound by the parent protocol.
+
+NEW_PRE_DATA_GOVERNANCE_CLASS = "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE"
+ACQUISITION_GOVERNANCE_TICKET = "POSTP1-001R2"
+
+PROSPECTIVE_CVD_ACQUISITION_VERSION = "PROSPECTIVE_CVD_ACQUISITION_V1"
+PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR = "PROSPECTIVE_CVD_ACQUISITION_V2"
+PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION = (
+    "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1"
+)
+PROSPECTIVE_MARKET_CAP_ACQUISITION_SUCCESSOR = (
+    "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2"
+)
+PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION = "PROSPECTIVE_LIQUIDATION_CAPTURE_V1"
+PROSPECTIVE_LIQUIDATION_CAPTURE_SUCCESSOR = "PROSPECTIVE_LIQUIDATION_CAPTURE_V2"
+PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION = (
+    "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1"
+)
+PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_SUCCESSOR = (
+    "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V2"
+)
+
+PROSPECTIVE_ACQUISITION_CONTRACT_VERSIONS = tuple(
+    sorted(
+        (
+            PROSPECTIVE_CVD_ACQUISITION_VERSION,
+            PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION,
+            PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION,
+            PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION,
+        )
+    )
+)
+
+# Every acquisition contract must carry this provenance block verbatim. It is
+# the honesty guarantee the repeat review asked for: a newly authored rule is
+# never allowed to describe itself as inherited Phase-1 authority.
+ACQUISITION_GOVERNANCE_PROVENANCE = {
+    "authored_by_ticket": ACQUISITION_GOVERNANCE_TICKET,
+    "claimed_historically_implicit": False,
+    "frozen_before_collection": True,
+    "governance_class": NEW_PRE_DATA_GOVERNANCE_CLASS,
+    "hash_bound_by_parent_protocol": True,
+    "historically_inherited": False,
+    "outcome_independent": True,
+    "phase_1_feature_semantics_changed": False,
+    "qualifying_observations_inspected": False,
+    "selected_by_new_pre_data_governance": True,
+    "stage_b_outcomes_inspected": False,
+}
+
+ACQUISITION_FEED_STATE_REQUIRED = "REQUIRED_INPUT_MISSING"
+
+
+def _acquisition_provenance() -> dict[str, Any]:
+    return dict(ACQUISITION_GOVERNANCE_PROVENANCE)
+
+
+# ---------------------------------------------------------------------------
+# 3b.1 PROSPECTIVE_CVD_ACQUISITION_V1
+# ---------------------------------------------------------------------------
+#
+# What the historical owner actually specifies, read from the owner itself:
+# ``spot_perp_cvd_spread`` intersects the spot and perp observation_time sets,
+# takes the last common timestamp as the observation, and z-scores each side
+# against the prior common observations.  It never inspects the spacing of those
+# timestamps.  So the owner specifies a *window in observations* and specifies
+# no cadence at all.
+
+CVD_HISTORICAL_OWNER = "btc_predictor.features.flow.spot_perp_cvd_spread"
+CVD_HISTORICAL_OWNER_SPECIFIES_CADENCE = False
+CVD_HISTORICAL_OWNER_CADENCE_EVIDENCE = (
+    "The owner intersects the available spot and perp observation_time sets and "
+    "z-scores the resulting common series. It accepts arbitrary common "
+    "timestamps, applies no grid, spacing, alignment or interval test, and is "
+    "observation-count based. Unit tests exercising hourly fixtures are "
+    "evidence about a fixture, never scientific authority for a cadence."
+)
+CVD_HISTORICAL_OWNER_WINDOW_OBSERVATIONS = _flow.spot_perp_cvd_spread.__kwdefaults__[
+    "zscore_window_periods"
+]
+CVD_HISTORICAL_OWNER_WINDOW = (
+    f"{CVD_HISTORICAL_OWNER_WINDOW_OBSERVATIONS} prior common observations"
+)
+CVD_UNIT_TESTS_ARE_NOT_CADENCE_AUTHORITY = True
+
+CVD_CADENCE_SELECTION_CRITERIA = (
+    "phase_1_decision_cadence_compatibility",
+    "point_in_time_availability",
+    "btc_swing_holding_horizon",
+    "existing_spot_perp_volume_infrastructure",
+    "capture_without_aggregation_lookahead",
+    "operational_reproducibility",
+    "source_availability",
+    "relationship_to_the_20_observation_normalization_window",
+)
+
+CVD_SELECTED_CADENCE = "1h"
+
+CVD_CADENCE_CANDIDATES: dict[str, dict[str, Any]] = {
+    "1h": {
+        "assessment": {
+            "btc_swing_holding_horizon": (
+                "ACCEPTABLE: a swing position is held for days to weeks while "
+                "stops are evaluated hourly, so an hourly flow observation is "
+                "never the coarsest evidence in the corpus and never forces a "
+                "scheduled slot to be skipped for want of a fresh observation."
+            ),
+            "capture_without_aggregation_lookahead": (
+                "BEST: an exact-hour interval is the finest natively closing "
+                "interval the repository already persists, so the observation "
+                "is the interval itself and no bucket is ever aggregated from "
+                "shorter buckets. Nothing is resampled and no partial interval "
+                "can leak into a closed one."
+            ),
+            "existing_spot_perp_volume_infrastructure": (
+                "BEST: raw.btc_ohlcv is 1h and the spot/perp participation "
+                "owner already consumes 1h spot and perp rows, so spot and perp "
+                "CVD land on the same boundary that infrastructure already "
+                "produces."
+            ),
+            "operational_reproducibility": (
+                "BEST: exact UTC hour boundaries carry no session, holiday or "
+                "timezone convention to reconstruct at replay."
+            ),
+            "phase_1_decision_cadence_compatibility": (
+                "BEST: STOP_HOURLY is the finer of the two frozen decision "
+                "cadences and sits on exact UTC hours, and STRATEGY_DAILY "
+                "sessions open on an exact UTC hour, so a 1h observation grid "
+                "coincides with every scheduled decision instant of both "
+                "cadences without interpolation."
+            ),
+            "point_in_time_availability": (
+                "BEST: the interval closes on the hour and the frozen decision "
+                "delay is bar close + 5 minutes, so a closed interval is "
+                "available at the very next decision instant of either cadence."
+            ),
+            "relationship_to_the_20_observation_normalization_window": (
+                "BEST: 20 prior plus 1 current common observation spans about "
+                "21 hours, so CVD reaches evaluability inside one day and never "
+                "becomes the binding warmup constraint of the corpus."
+            ),
+            "source_availability": (
+                "BEST: hourly spot and perpetual trade aggregation is the "
+                "cadence the existing venue integrations already work at."
+            ),
+        },
+        "rejected_because": None,
+        "selected": True,
+    },
+    "4h": {
+        "assessment": {
+            "btc_swing_holding_horizon": "ACCEPTABLE.",
+            "capture_without_aggregation_lookahead": (
+                "WORSE: a 4h observation must be composed from the hourly "
+                "buckets the infrastructure produces, adding an aggregation "
+                "step whose partial-bucket handling has to be governed."
+            ),
+            "existing_spot_perp_volume_infrastructure": (
+                "WORSE: no repository source publishes a 4h spot or perp "
+                "interval; it would be derived."
+            ),
+            "operational_reproducibility": (
+                "WORSE: a 4h grid needs an arbitrary frozen phase origin."
+            ),
+            "phase_1_decision_cadence_compatibility": (
+                "WORSE: five of every six STOP_HOURLY slots would carry a stale "
+                "CVD observation."
+            ),
+            "point_in_time_availability": "ACCEPTABLE.",
+            "relationship_to_the_20_observation_normalization_window": (
+                "WORSE: 21 observations span about 3.5 days of warmup for no "
+                "contract benefit."
+            ),
+            "source_availability": "ACCEPTABLE.",
+        },
+        "rejected_because": (
+            "It is a derived interval with an arbitrary phase origin, it must "
+            "be aggregated from the hourly buckets the repository already has, "
+            "and it is stale at five of every six hourly decision instants."
+        ),
+        "selected": False,
+    },
+    "1d": {
+        "assessment": {
+            "btc_swing_holding_horizon": (
+                "ACCEPTABLE for the daily strategy cadence alone."
+            ),
+            "capture_without_aggregation_lookahead": (
+                "WORSE: a daily observation is an aggregation of 24 hourly "
+                "buckets and its completeness depends on all of them."
+            ),
+            "existing_spot_perp_volume_infrastructure": (
+                "WORSE: the participation infrastructure is hourly, so a daily "
+                "CVD grid would diverge from the sibling flow family."
+            ),
+            "operational_reproducibility": "ACCEPTABLE on canonical UTC days.",
+            "phase_1_decision_cadence_compatibility": (
+                "WORST: 23 of every 24 STOP_HOURLY slots would carry a CVD "
+                "observation up to 23 hours stale."
+            ),
+            "point_in_time_availability": "ACCEPTABLE.",
+            "relationship_to_the_20_observation_normalization_window": (
+                "WORSE: 21 daily observations make CVD a 21-day warmup, adding "
+                "a new binding constraint to the corpus for no contract gain."
+            ),
+            "source_availability": "ACCEPTABLE.",
+        },
+        "rejected_because": (
+            "It cannot serve the hourly decision cadence without up to 23 hours "
+            "of staleness, it must be aggregated from hourly buckets, and it "
+            "would introduce a 21-day warmup that the hourly contract avoids."
+        ),
+        "selected": False,
+    },
+}
+
+CVD_CADENCE_SELECTION_RATIONALE = (
+    "1h is selected as the cleanest prospective observation contract, not "
+    "because it is inherited and not because it produces any particular "
+    "measured value. It is the finest interval that closes natively in the "
+    "sources the repository already integrates, it coincides exactly with the "
+    "STOP_HOURLY decision grid and with the opening instant of every "
+    "STRATEGY_DAILY session, it requires no aggregation and therefore admits no "
+    "partial-bucket lookahead, it needs no arbitrary phase origin or session "
+    "calendar to replay, and it keeps the frozen 20-prior-observation "
+    "normalization window from becoming the corpus's binding warmup. Every "
+    "coarser candidate is a derived interval that is stale at most hourly "
+    "decision instants. No Stage-B outcome, disagreement rate or target gate "
+    "was inspected to reach this choice."
+)
+
+
+def prospective_cvd_acquisition_contract() -> dict[str, Any]:
+    """Freeze what one prospective ``CvdObservation`` means, before any data."""
+
+    if CVD_SELECTED_CADENCE not in CVD_CADENCE_CANDIDATES:
+        raise ProspectiveCorpusError("the selected CVD cadence is not a candidate")
+    selected = tuple(
+        cadence
+        for cadence, row in CVD_CADENCE_CANDIDATES.items()
+        if row["selected"]
+    )
+    if selected != (CVD_SELECTED_CADENCE,):
+        raise ProspectiveCorpusError(
+            "exactly one CVD cadence candidate may be selected"
+        )
+    for cadence, row in CVD_CADENCE_CANDIDATES.items():
+        missing = tuple(
+            criterion
+            for criterion in CVD_CADENCE_SELECTION_CRITERIA
+            if criterion not in row["assessment"]
+        )
+        if missing:
+            raise ProspectiveCorpusError(
+                f"CVD cadence candidate {cadence} is unassessed against {missing}"
+            )
+        if row["selected"] is (row["rejected_because"] is not None):
+            raise ProspectiveCorpusError(
+                f"CVD cadence candidate {cadence} has an inconsistent verdict"
+            )
+    window = CVD_HISTORICAL_OWNER_WINDOW_OBSERVATIONS
+    payload = {
+        "acquisition_governance": _acquisition_provenance(),
+        "aggregation_method": (
+            "Signed taker flow is accumulated inside one closed interval and "
+            "the interval's own signed sum is persisted. No interval is built "
+            "by aggregating other intervals and no interval is resampled."
+        ),
+        "available_at_semantics": (
+            "The instant the completed interval first became retrievable from "
+            "the provider, recorded at capture and never back-dated to the "
+            "interval boundary. An observation whose available_at is later than "
+            "a decision_time is invisible to that decision."
+        ),
+        "buy_sell_classification_owner": (
+            "The provider's own taker-side flag on each trade. The capture "
+            "layer never infers a side from a price tick, never reclassifies a "
+            "trade and refuses an interval in which any trade lacks a side."
+        ),
+        "calculation_interval": (
+            f"one closed [t, t + {CVD_SELECTED_CADENCE}) interval per "
+            "market_type per provider"
+        ),
+        "cadence_selection": {
+            "candidates": CVD_CADENCE_CANDIDATES,
+            "criteria": list(CVD_CADENCE_SELECTION_CRITERIA),
+            "empirically_optimized_against_target_gates": False,
+            "historically_inherited": False,
+            "rationale": CVD_CADENCE_SELECTION_RATIONALE,
+            "selected_by_new_pre_data_governance": True,
+            "selected_cadence": CVD_SELECTED_CADENCE,
+            "stage_b_disagreement_outcomes_inspected": False,
+        },
+        "consuming_features": ["CVD_SPREAD"],
+        "cvd_usd_definition": (
+            "cvd_usd is the signed USD notional taker delta of the interval: "
+            "the sum of buyer-initiated trade notional minus the sum of "
+            "seller-initiated trade notional, in USD, over the closed interval "
+            "and over the frozen market universe for that market_type. It is an "
+            "interval delta, not a running cumulative total, so no observation "
+            "depends on an unbounded history and a missing interval can never "
+            "be reconstructed from its neighbours."
+        ),
+        "duplicate_semantics": (
+            "One observation per (provider, market_type, observation_time, "
+            "revision). A second row with the same key and different content is "
+            "refused and recorded as a data-quality event; it is never merged, "
+            "averaged or silently overwritten."
+        ),
+        "epoch_rule": (
+            "Any change to the cadence, provider set, spot or perpetual market "
+            f"universe, buy/sell classification or aggregation requires "
+            f"{PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR} and a new prospective "
+            "collection epoch for every affected metric. Observations already "
+            "captured under this contract are never resampled, re-bucketed or "
+            "relabelled backwards."
+        ),
+        "feature_semantics_owner": CVD_HISTORICAL_OWNER,
+        "feature_semantics_unchanged": True,
+        "historical_feature_owner": {
+            "cadence_evidence": CVD_HISTORICAL_OWNER_CADENCE_EVIDENCE,
+            "formula": "CVD_SPREAD = z(SpotCVD) - z(PerpCVD)",
+            "owner": CVD_HISTORICAL_OWNER,
+            "specifies_cadence": CVD_HISTORICAL_OWNER_SPECIFIES_CADENCE,
+            "specifies_window": CVD_HISTORICAL_OWNER_WINDOW,
+            "unit_tests_are_cadence_authority": (
+                not CVD_UNIT_TESTS_ARE_NOT_CADENCE_AUTHORITY
+            ),
+            "window_observations": window,
+        },
+        "ingested_at_semantics": (
+            "The wall-clock instant the capture layer persisted the row. It "
+            "orders storage only and never admits or excludes an observation "
+            "from a decision."
+        ),
+        "initialization_requirement": {
+            "current_observations": 1,
+            "cvd_observation_meaning": (
+                f"one closed {CVD_SELECTED_CADENCE} interval of signed USD "
+                "taker delta for one market_type"
+            ),
+            "prior_common_observations": window,
+            "statement": (
+                f"{window} prior aligned {CVD_SELECTED_CADENCE} common "
+                "spot/perp observations plus 1 current common observation"
+            ),
+            "total_common_observations": window + 1,
+        },
+        "market_universe": {
+            "frozen_before_collection": True,
+            "perpetual": {
+                "instrument_type": "perpetual_swap",
+                "quote_currency": "USD_or_USD_denominated_stablecoin",
+                "selection_rule": (
+                    "The frozen perpetual market set is declared once per "
+                    "collection epoch and persisted with the epoch. A venue may "
+                    "not be added, removed or substituted inside an epoch."
+                ),
+                "underlying": "BTC",
+            },
+            "spot": {
+                "instrument_type": "spot",
+                "quote_currency": "USD",
+                "selection_rule": (
+                    "The frozen spot market set is the required "
+                    "reference-composite venue set "
+                    f"{list(_rc.REQUIRED_COMPOSITE_PROVIDER_IDS)}, which the "
+                    "repository already integrates and already requires in "
+                    "full for a canonical bar. A venue may not be added, "
+                    "removed or substituted inside an epoch."
+                ),
+                "underlying": "BTC",
+                "venues": list(_rc.REQUIRED_COMPOSITE_PROVIDER_IDS),
+            },
+            "universe_change_requires": PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR,
+        },
+        "missing_interval_semantics": (
+            "A missing interval stays missing. It is persisted as an explicit "
+            "absence, never zero-filled, never carried forward, never "
+            "interpolated and never silently compressed out of the series: the "
+            "common spot/perp timestamp simply does not exist, so the interval "
+            "contributes no observation to the frozen normalization window."
+        ),
+        "observation_cadence": CVD_SELECTED_CADENCE,
+        "observation_time_semantics": (
+            "The exact UTC start instant of the closed interval, aligned to the "
+            "exact hour. An off-grid observation_time is refused at capture."
+        ),
+        "off_grid_observation_policy": "REFUSE_AT_CAPTURE_NEVER_SNAP_OR_ROUND",
+        "pit_rule": PIT_RULE,
+        "protocol_version": PROTOCOL_VERSION,
+        "provider_identity": {
+            "identity_fields": ["provider", "market_type"],
+            "one_provider_per_market_type_per_epoch": True,
+            "provider_replacement_requires": (
+                PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR
+            ),
+            "recorded_per_observation": True,
+            "statement": (
+                "Exactly one provider identity is frozen per market_type for a "
+                "collection epoch and is persisted on every row. Mixing two "
+                "providers into one market_type series inside an epoch is "
+                "refused."
+            ),
+        },
+        "revision_semantics": (
+            "Append-only. A provider restatement of a closed interval is a new "
+            "revision row for the same (provider, market_type, "
+            "observation_time); the earlier revision is retained verbatim and a "
+            "decision replays against the revision that was available at its "
+            "own decision_time."
+        ),
+        "schema_version": "PROSPECTIVE_CVD_ACQUISITION_V1",
+        "timestamp_alignment": "EXACT_UTC_HOUR_INTERVAL_START",
+        "units": "USD",
+        "version": PROSPECTIVE_CVD_ACQUISITION_VERSION,
+    }
+    payload["definition_sha256"] = _digest(payload)
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# 3b.2 PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1
+# ---------------------------------------------------------------------------
+#
+# ``open_interest_intensity`` requires a ``MarketCapObservation`` for OI_INTENSITY
+# and OI_INTENSITY_PERCENTILE_180D.  Nothing in this repository produces one:
+# ``MarketCapObservation`` is constructed only inside a feature test, and
+# ``raw.generic_series`` supports the series types
+# ("macro", "liquidity", "onchain", "market_proxy") with no market-cap series
+# definition and no market-cap producer.  The previous freeze pointed
+# OI_INTENSITY at the unqualified generic-series family, which is not a source
+# contract: a consumer would have had to search for an arbitrary row.
+
+EXISTING_MARKET_CAP_PRODUCER = None
+EXISTING_MARKET_CAP_PRODUCER_EVIDENCE = (
+    "btc_predictor.features.positioning.MarketCapObservation is constructed "
+    "nowhere outside btc_predictor/tests/test_positioning_features.py. "
+    "btc_predictor.data.generic_series.SUPPORTED_SERIES_TYPES is "
+    f"{list(_generic_series.SUPPORTED_SERIES_TYPES)} and neither "
+    "MACRO_SERIES_DEFINITIONS nor ONCHAIN_SERIES_DEFINITIONS declares a "
+    "market-capitalisation series. No collector, adapter or migration in this "
+    "repository emits market_cap_usd."
+)
+
+MARKET_CAP_SERIES_ID = "BTC_MARKET_CAP_USD"
+MARKET_CAP_SERIES_TYPE = "market_cap"
+MARKET_CAP_SERIES_UNIT = "usd"
+MARKET_CAP_RAW_TABLE = "raw.generic_series"
+MARKET_CAP_PROVIDER_ID = "coingecko"
+MARKET_CAP_PROVIDER_SOURCE = "coingecko_v3_coins_bitcoin_market_chart"
+MARKET_CAP_PROVIDER_ASSET_IDENTIFIER = "bitcoin"
+MARKET_CAP_PROVIDER_FIELD = "market_caps"
+MARKET_CAP_OBSERVATION_CADENCE = "1d"
+MARKET_CAP_OBSERVATION_GRID = "EXACT_UTC_DAY_START_00_00_00Z"
+
+MARKET_CAP_SELECTION_CRITERIA = (
+    "machine_accessible_without_a_negotiated_credential",
+    "stable_asset_and_field_identity",
+    "clear_observation_timestamp_semantics",
+    "cadence_sufficient_for_the_frozen_strategy_decision_cadence",
+    "revision_semantics_available_or_capturable",
+    "reproducible_at_replay",
+    "operationally_maintainable_from_existing_repository_boundaries",
+    "candidate_neutral_with_respect_to_the_reference_under_test",
+)
+
+MARKET_CAP_DERIVED_CONSTRUCTION_CONSIDERED = {
+    "construction": "market_cap = BTC price x circulating supply",
+    "rejected": True,
+    "rejected_because": (
+        "It is not owned by any repository authority and this task declines to "
+        "establish it. It would require a second frozen acquisition contract "
+        "for an independently reproducible circulating-supply series, and it "
+        "would make an exogenous feature input depend on a BTC price series at "
+        "a time when PRICE_SOURCE_POLICY_V1 leaves the canonical production "
+        "reference UNRESOLVED and this corpus is comparing two reference "
+        "identities. SHARED_EXOGENOUS_INPUT_RULE requires every exogenous input "
+        "to be identical across the candidate and control tracks, so an input "
+        "derived from the reference under test is inadmissible here. Consuming "
+        "an authoritative market-cap feed is materially less methodology, and "
+        "the ticket's own instruction is to prefer the direct feed."
+    ),
+}
+
+MARKET_CAP_SOURCE_VERIFICATION_OBLIGATION = (
+    "This contract freezes the series identity, cadence, timestamp semantics "
+    "and PIT rule that a prospective market-cap source must satisfy, and names "
+    "the provider identity that POSTP1-004 must implement against the existing "
+    "btc_predictor.data.generic_series provider boundary. POSTP1-004 must "
+    "verify, before any qualifying observation is collected, that the named "
+    "provider actually publishes this series with these semantics. This task "
+    "collected nothing and therefore verified nothing empirically. If the "
+    "provider cannot satisfy the frozen semantics, the collector must fail "
+    "closed and the contract must be reissued as "
+    f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_SUCCESSOR} with a new collection "
+    "epoch; it may never be silently adapted to whatever the provider happens "
+    "to publish."
+)
+
+
+def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
+    """Freeze one exact prospective BTC market-cap source, before any data."""
+
+    if EXISTING_MARKET_CAP_PRODUCER is not None:
+        raise ProspectiveCorpusError(
+            "an existing market-cap producer must be consumed rather than frozen"
+        )
+    if MARKET_CAP_SERIES_TYPE in _generic_series.SUPPORTED_SERIES_TYPES:
+        raise ProspectiveCorpusError(
+            "the market-cap series type is no longer a new acquisition "
+            "vocabulary member; rebind the contract to the existing owner"
+        )
+    payload = {
+        "acquisition_governance": _acquisition_provenance(),
+        "asset": "BTC",
+        "available_at_semantics": (
+            "The instant the provider first published the completed daily "
+            "observation, recorded at capture and never back-dated to the "
+            "observation_time. A market-cap observation whose available_at is "
+            "later than a decision_time is invisible to that decision, and the "
+            "decision is NOT_EVALUABLE for every OI-intensity feature rather "
+            "than falling back to an earlier day."
+        ),
+        "consumer_binding": {
+            "consuming_features": [
+                "OI_INTENSITY",
+                "OI_INTENSITY_PERCENTILE_180D",
+            ],
+            "feature_owner": (
+                "btc_predictor.features.positioning.open_interest_intensity"
+            ),
+            "feature_semantics_unchanged": True,
+            "observation_grid_alignment": (
+                "The frozen owner forms intensity only on the exact "
+                "intersection of the open-interest aggregate observation_time "
+                "set and the market-cap observation_time set "
+                "(_open_interest_intensity_by_time). The prospective "
+                "open-interest capture consumed by OI_INTENSITY must therefore "
+                "present its aggregate on this same exact "
+                f"{MARKET_CAP_OBSERVATION_GRID} grid. This is an acquisition "
+                "alignment requirement on the prospective capture layer only; "
+                "no positioning formula is altered."
+            ),
+            "open_interest_unit_rule": (
+                "The open_interest_unit selector the owner requires is pinned "
+                "once per collection epoch and persisted with it. This contract "
+                "does not choose it and no unit choice may be revisited after "
+                "collection starts."
+            ),
+            "typed_boundary": (
+                "btc_predictor.features.positioning.MarketCapObservation"
+            ),
+        },
+        "derived_construction": MARKET_CAP_DERIVED_CONSTRUCTION_CONSIDERED,
+        "epoch_rule": (
+            "Any change to the series identity, provider identity, cadence, "
+            "unit or timestamp semantics requires "
+            f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_SUCCESSOR} and a new "
+            "prospective collection epoch for OI_INTENSITY and "
+            "OI_INTENSITY_PERCENTILE_180D. No observation is resampled or "
+            "relabelled backwards."
+        ),
+        "existing_producer": {
+            "evidence": EXISTING_MARKET_CAP_PRODUCER_EVIDENCE,
+            "existing_market_cap_producer": EXISTING_MARKET_CAP_PRODUCER,
+            "generic_series_family_is_sufficient": False,
+            "unqualified_generic_series_dependency_permitted": False,
+        },
+        "ingested_at_semantics": (
+            "The wall-clock instant the capture layer persisted the row. It "
+            "orders storage only and never admits or excludes an observation "
+            "from a decision."
+        ),
+        "metric": "market_cap_usd",
+        "missing_value_handling": {
+            "late_observation": ACQUISITION_FEED_STATE_REQUIRED,
+            "missing_observation": ACQUISITION_FEED_STATE_REQUIRED,
+            "statement": (
+                "A missing, late or invalid market-cap observation makes every "
+                "OI-intensity feature NOT_EVALUABLE at that decision. It is "
+                "never zero-filled, never defaulted, never carried forward from "
+                "an earlier day and never reconstructed from price."
+            ),
+            "zero_fill_permitted": False,
+        },
+        "observation_cadence": MARKET_CAP_OBSERVATION_CADENCE,
+        "observation_time_semantics": (
+            "The exact UTC start instant of the observed day, "
+            f"{MARKET_CAP_OBSERVATION_GRID}. An off-grid observation_time is "
+            "refused at capture and never snapped."
+        ),
+        "pit_rule": PIT_RULE,
+        "protocol_version": PROTOCOL_VERSION,
+        "provider_identity": {
+            "one_provider_per_epoch": True,
+            "provider": MARKET_CAP_PROVIDER_ID,
+            "provider_asset_identifier": MARKET_CAP_PROVIDER_ASSET_IDENTIFIER,
+            "provider_boundary": (
+                "btc_predictor.data.generic_series.MacroDataProvider"
+            ),
+            "provider_field": MARKET_CAP_PROVIDER_FIELD,
+            "provider_client_exists_in_repository": False,
+            "recorded_per_observation": True,
+            "source": MARKET_CAP_PROVIDER_SOURCE,
+            "verification_obligation": (
+                MARKET_CAP_SOURCE_VERIFICATION_OBLIGATION
+            ),
+        },
+        "revision_policy": (
+            "NEW_REVISION_ROW_PER_RESTATEMENT, the existing raw.generic_series "
+            "convention. A restated day is a new revision row keyed by "
+            "(series_id, observation_time, revision); the earlier revision is "
+            "retained verbatim and a decision replays against the revision that "
+            "was available at its own decision_time."
+        ),
+        "schema_version": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
+        "selection": {
+            "criteria": list(MARKET_CAP_SELECTION_CRITERIA),
+            "oi_intensity_values_inspected": False,
+            "rationale": (
+                "raw.generic_series is the repository's own point-in-time "
+                "scalar-series table and already carries every field this "
+                "contract needs -- observation_time, available_at, ingested_at, "
+                "provider, source, unit and an explicit revision key -- with a "
+                "collection path that already handles restatements and missing "
+                "observations. Freezing a named series on that table is the "
+                "simplest reliable prospective source and matches how every "
+                "other exogenous scalar series in this repository is already "
+                "governed. A direct market-cap feed is preferred over a "
+                "price-derived construction under the reasoning recorded in "
+                "derived_construction. No OI-intensity or Stage-B value was "
+                "inspected."
+            ),
+            "stage_b_outcomes_inspected": False,
+        },
+        "series_identity": {
+            "identity_fields": ["series_id", "series_type", "provider"],
+            "identity_is_exact": True,
+            "raw_table": MARKET_CAP_RAW_TABLE,
+            "series_id": MARKET_CAP_SERIES_ID,
+            "series_type": MARKET_CAP_SERIES_TYPE,
+            "series_type_is_new_acquisition_vocabulary": True,
+            "series_type_vocabulary_extension_owner": (
+                "btc_predictor.data.generic_series.SUPPORTED_SERIES_TYPES"
+            ),
+            "series_type_vocabulary_extension_required_of": "POSTP1-004",
+            "unit": MARKET_CAP_SERIES_UNIT,
+            "unqualified_family_dependency_permitted": False,
+        },
+        "source_replacement_policy": (
+            "A source replacement is never retroactive. The retired provider's "
+            "observations are retained verbatim, the replacement is frozen as "
+            f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_SUCCESSOR}, and a new "
+            "collection epoch begins for the affected features. Two providers "
+            "are never blended into one series and a gap is never patched from "
+            "a second provider."
+        ),
+        "units": "USD",
+        "version": PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION,
+    }
+    payload["definition_sha256"] = _digest(payload)
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# 3b.3 PROSPECTIVE_LIQUIDATION_CAPTURE_V1
+# ---------------------------------------------------------------------------
+#
+# ``aggregate_btc_derivatives_available_at`` starts long_liquidations_usd and
+# short_liquidations_usd at Decimal("0") and adds whatever Liquidation rows are
+# available.  An hour with no rows because the feed was down and an hour with no
+# rows because nothing liquidated therefore produce byte-identical zeros.  The
+# aggregate carries no feed-state field of any kind, so the distinction is not
+# recoverable downstream.  This is stated as a fact about the existing owner,
+# not repaired in it: the fix belongs to the prospective capture layer.
+
+LIQUIDATION_AGGREGATE_OWNER = (
+    "btc_predictor.data.derivatives.aggregate_btc_derivatives_available_at"
+)
+EXISTING_AGGREGATE_DISTINGUISHES_MISSING_FROM_EMPTY = False
+EXISTING_AGGREGATE_EVIDENCE = (
+    "The owner initialises long_liquidations_usd and short_liquidations_usd to "
+    "Decimal('0') and accumulates only the Liquidation rows it was given. It "
+    "records no feed status, no event count and no per-interval coverage, so an "
+    "unavailable feed and an observed interval with zero liquidation events "
+    "both yield exactly 0. BtcDerivativesAggregate exposes no field that could "
+    "separate them afterwards."
+)
+
+FEED_STATUS_OBSERVED_WITH_EVENTS = "OBSERVED_WITH_EVENTS"
+FEED_STATUS_OBSERVED_ZERO_EVENTS = "OBSERVED_ZERO_EVENTS"
+FEED_STATUS_SOURCE_UNAVAILABLE = "SOURCE_UNAVAILABLE"
+FEED_STATUS_LATE = "LATE"
+FEED_STATUS_INVALID = "INVALID"
+LIQUIDATION_FEED_STATUSES = (
+    FEED_STATUS_INVALID,
+    FEED_STATUS_LATE,
+    FEED_STATUS_OBSERVED_WITH_EVENTS,
+    FEED_STATUS_OBSERVED_ZERO_EVENTS,
+    FEED_STATUS_SOURCE_UNAVAILABLE,
+)
+LIQUIDATION_OBSERVED_FEED_STATUSES = (
+    FEED_STATUS_OBSERVED_WITH_EVENTS,
+    FEED_STATUS_OBSERVED_ZERO_EVENTS,
+)
+LIQUIDATION_UNUSABLE_FEED_STATUSES = (
+    FEED_STATUS_INVALID,
+    FEED_STATUS_LATE,
+    FEED_STATUS_SOURCE_UNAVAILABLE,
+)
+
+LIQUIDATION_FEED_STATUS_SEMANTICS: dict[str, dict[str, Any]] = {
+    FEED_STATUS_OBSERVED_WITH_EVENTS: {
+        "definition": (
+            "The provider's liquidation feed answered for the whole interval "
+            "and reported at least one liquidation event."
+        ),
+        "event_count_rule": "event_count > 0",
+        "feature_input_state": "PRESENT",
+        "notional_before_normalization": "the observed signed-side USD notional",
+        "usable_as_an_observation": True,
+    },
+    FEED_STATUS_OBSERVED_ZERO_EVENTS: {
+        "definition": (
+            "The provider's liquidation feed answered for the whole interval "
+            "and reported no liquidation event. The interval was observed; the "
+            "market simply produced nothing."
+        ),
+        "event_count_rule": "event_count == 0",
+        "feature_input_state": "PRESENT",
+        "notional_before_normalization": (
+            "0 USD, which is a legitimate observed value and not a fill-in"
+        ),
+        "usable_as_an_observation": True,
+    },
+    FEED_STATUS_SOURCE_UNAVAILABLE: {
+        "definition": (
+            "The provider's liquidation feed did not answer for the interval, "
+            "or answered without covering it."
+        ),
+        "event_count_rule": "event_count is null",
+        "feature_input_state": ACQUISITION_FEED_STATE_REQUIRED,
+        "notional_before_normalization": (
+            "null; a numeric zero is refused for this status"
+        ),
+        "usable_as_an_observation": False,
+    },
+    FEED_STATUS_LATE: {
+        "definition": (
+            "The interval's liquidation evidence first became retrievable after "
+            "the decision instant that needed it. The decision is closed and is "
+            "never reopened or backfilled."
+        ),
+        "event_count_rule": "event_count is null at that decision",
+        "feature_input_state": ACQUISITION_FEED_STATE_REQUIRED,
+        "notional_before_normalization": (
+            "null at that decision; a numeric zero is refused for this status"
+        ),
+        "usable_as_an_observation": False,
+    },
+    FEED_STATUS_INVALID: {
+        "definition": (
+            "The provider answered but the payload failed a capture-layer "
+            "validity rule: an unknown side, a negative quantity, a missing "
+            "notional on an event-bearing interval, or a digest mismatch."
+        ),
+        "event_count_rule": "event_count is null",
+        "feature_input_state": ACQUISITION_FEED_STATE_REQUIRED,
+        "notional_before_normalization": (
+            "null; a numeric zero is refused for this status"
+        ),
+        "usable_as_an_observation": False,
+    },
+}
+
+LIQUIDATION_CAPTURE_FIELDS = (
+    "observation_time",
+    "available_at",
+    "ingested_at",
+    "provider",
+    "instrument",
+    "timeframe",
+    "feed_status",
+    "event_count",
+    "long_liquidation_notional_usd",
+    "short_liquidation_notional_usd",
+    "source_record_ids_digest",
+    "revision",
+)
+
+
+def prospective_liquidation_capture_contract() -> dict[str, Any]:
+    """Freeze liquidation feed state separately from the aggregate value."""
+
+    if EXISTING_AGGREGATE_DISTINGUISHES_MISSING_FROM_EMPTY:
+        raise ProspectiveCorpusError(
+            "the existing aggregate does not distinguish a missing feed from an "
+            "observed empty feed; the contract may not claim that it does"
+        )
+    covered = set(LIQUIDATION_FEED_STATUS_SEMANTICS)
+    if covered != set(LIQUIDATION_FEED_STATUSES):
+        raise ProspectiveCorpusError("every feed status needs frozen semantics")
+    for status in LIQUIDATION_UNUSABLE_FEED_STATUSES:
+        row = LIQUIDATION_FEED_STATUS_SEMANTICS[status]
+        if row["usable_as_an_observation"] or row["feature_input_state"] != (
+            ACQUISITION_FEED_STATE_REQUIRED
+        ):
+            raise ProspectiveCorpusError(
+                f"{status} must make the required liquidation input missing"
+            )
+    payload = {
+        "acquisition_governance": _acquisition_provenance(),
+        "capture_fields": list(LIQUIDATION_CAPTURE_FIELDS),
+        "captured_interval": {
+            "cadence": "1h",
+            "cadence_rationale": (
+                "Liquidation evidence is captured on the same exact-UTC-hour "
+                "grid the stop-evaluation cadence and raw.btc_ohlcv already "
+                "use, so an interval's coverage is decidable at the decision "
+                "instant that consumes it and no interval is aggregated from "
+                "shorter ones. Selected as new pre-data governance, not "
+                "inherited."
+            ),
+            "observation_time_semantics": (
+                "the exact UTC start instant of the closed interval"
+            ),
+        },
+        "consuming_features": [
+            "ORDERLINESS_SCORE",
+            "REGIME_SCORE",
+            "REGIME_SMOOTHED_SCORE",
+            "VOLATILITY_SCORE",
+        ],
+        "duplicate_semantics": (
+            "One row per (provider, instrument, timeframe, observation_time, "
+            "revision). A conflicting duplicate is refused and recorded as a "
+            "data-quality event."
+        ),
+        "epoch_rule": (
+            "Any change to the captured interval, provider, instrument "
+            "universe or feed-status vocabulary requires "
+            f"{PROSPECTIVE_LIQUIDATION_CAPTURE_SUCCESSOR} and a new prospective "
+            "collection epoch."
+        ),
+        "existing_aggregate": {
+            "distinguishes_missing_from_empty": (
+                EXISTING_AGGREGATE_DISTINGUISHES_MISSING_FROM_EMPTY
+            ),
+            "evidence": EXISTING_AGGREGATE_EVIDENCE,
+            "modified_by_this_protocol": False,
+            "owner": LIQUIDATION_AGGREGATE_OWNER,
+        },
+        "feed_state_is_independent_of_the_numeric_value": True,
+        "feed_status_semantics": LIQUIDATION_FEED_STATUS_SEMANTICS,
+        "feed_status_vocabulary": list(LIQUIDATION_FEED_STATUSES),
+        "missing_feed_can_become_numeric_zero": False,
+        "observed_feed_statuses": list(LIQUIDATION_OBSERVED_FEED_STATUSES),
+        "pit_rule": PIT_RULE,
+        "protocol_version": PROTOCOL_VERSION,
+        "provenance": {
+            "raw_table": "raw.liquidations",
+            "source_record_identity": (
+                "Every contributing raw liquidation record id is retained and a "
+                "digest over the sorted id set is persisted with the interval, "
+                "so an interval's numeric value is always traceable to the "
+                "exact record set that produced it."
+            ),
+            "typed_raw_row": "btc_predictor.data.derivatives.Liquidation",
+        },
+        "replay_rule": (
+            "feed_status, event_count and the notional pair are all persisted, "
+            "so a replay reproduces the missing-versus-empty distinction from "
+            "storage. A replay may never re-derive feed_status from whether the "
+            "notional happens to be zero."
+        ),
+        "revision_semantics": (
+            "Append-only. A provider restatement of a closed interval is a new "
+            "revision row; the earlier revision is retained verbatim and a "
+            "decision replays against the revision available at its own "
+            "decision_time. A revision may change feed_status only forwards "
+            "into a new row, never by rewriting an existing one."
+        ),
+        "schema_version": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+        "units": "USD notional per side; event_count is a count",
+        "unusable_feed_statuses": list(LIQUIDATION_UNUSABLE_FEED_STATUSES),
+        "version": PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION,
+    }
+    payload["definition_sha256"] = _digest(payload)
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# 3b.4 PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1
+# ---------------------------------------------------------------------------
+#
+# ``calculate_orderliness_score`` consumes ``liquidation_percentile`` as an
+# already-normalized input and no executable owner in this repository produces
+# it: a repository-wide search finds the name only as a score input, a config
+# threshold and a reporting field.  Option A of the ticket therefore fails --
+# there is no overlooked owner -- and option B applies.
+#
+# The choice is not opportunistic.  The repository owns exactly one percentile
+# convention, implemented identically in the two existing percentile owners, and
+# exactly one of those two owners is co-consumed by the same orderliness score.
+# The adapter inherits both rather than inventing a third.
+
+LIQUIDATION_PERCENTILE_ADAPTER_REQUIRED = True
+LIQUIDATION_PERCENTILE_EXISTING_OWNER = None
+LIQUIDATION_PERCENTILE_OWNER_SEARCH_EVIDENCE = (
+    "liquidation_percentile appears in this repository only as an input field "
+    "on OrderlinessScoreInput, StressFlagInput and CapitulationFlagInput, as "
+    "the configured thresholds liquidation_percentile_min / "
+    "liquidation_percentile_max, and as a reporting passthrough in "
+    "btc_predictor.reporting.alerts. No function computes it from raw "
+    "liquidation notional."
+)
+
+LIQUIDATION_PERCENTILE_CONVENTION = "MIDRANK_PERCENTILE_OF_PRIOR_WINDOW_V1"
+LIQUIDATION_PERCENTILE_CONVENTION_OWNERS = (
+    "btc_predictor.features.volatility._percentile_rank",
+    "btc_predictor.features.positioning._percentile_rank",
+)
+LIQUIDATION_PERCENTILE_CONVENTION_FORMULA = (
+    "((count(history < value) + 0.5 * count(history == value)) / "
+    "len(history)) * 100"
+)
+
+LIQUIDATION_PERCENTILE_WINDOW_DAYS = (
+    _volatility.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
+)
+LIQUIDATION_PERCENTILE_MIN_OBSERVATIONS = (
+    _volatility.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS
+)
+
+LIQUIDATION_PERCENTILE_WINDOW_RATIONALE = (
+    "calculate_orderliness_score weighs liquidation_percentile and "
+    "volatility_percentile against thresholds inside one penalty vector, so the "
+    "two must be commensurable. volatility_percentile is the only percentile "
+    "whose window is already an input to that score, and its owner "
+    "btc_predictor.features.volatility.volatility_percentile declares a "
+    f"{LIQUIDATION_PERCENTILE_WINDOW_DAYS}-day half-open trailing window with "
+    f"{LIQUIDATION_PERCENTILE_MIN_OBSERVATIONS} minimum prior observations. The "
+    "adapter inherits exactly that window and minimum rather than importing the "
+    "180-day positioning window or authoring a third. The choice is also inert "
+    "for the corpus schedule: the resulting first-evaluable requirement is "
+    "strictly smaller than VOL_PERCENTILE_2Y's, which already binds the corpus "
+    "warmup, so it adds no new constraint. No liquidation value, orderliness "
+    "score or Stage-B outcome was inspected."
+)
+
+
+def prospective_liquidation_percentile_adapter_contract() -> dict[str, Any]:
+    """Freeze how raw liquidation notional becomes liquidation_percentile."""
+
+    if LIQUIDATION_PERCENTILE_EXISTING_OWNER is not None:
+        raise ProspectiveCorpusError(
+            "an existing normalization owner must be consumed rather than "
+            "replaced by a new adapter"
+        )
+    if not LIQUIDATION_PERCENTILE_ADAPTER_REQUIRED:
+        raise ProspectiveCorpusError(
+            AMBIGUOUS_LIQUIDATION_NORMALIZATION_CLASSIFICATION
+        )
+    payload = {
+        "acquisition_governance": _acquisition_provenance(),
+        "consumer": (
+            "btc_predictor.features.volatility.calculate_orderliness_score "
+            "liquidation_cascade component; the same normalized value is the "
+            "STRESS and CAPITULATION market-state flag input"
+        ),
+        "downstream_formula_changed": False,
+        "epoch_rule": (
+            "Any change to the input quantity, window, minimum observation "
+            "count, observation universe or percentile convention requires "
+            f"{PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_SUCCESSOR} and a new "
+            "prospective collection epoch."
+        ),
+        "existing_owner": {
+            "evidence": LIQUIDATION_PERCENTILE_OWNER_SEARCH_EVIDENCE,
+            "executable_owner_found": LIQUIDATION_PERCENTILE_EXISTING_OWNER,
+            "new_adapter_required": LIQUIDATION_PERCENTILE_ADAPTER_REQUIRED,
+        },
+        "input": {
+            "feed_status_gate": list(LIQUIDATION_OBSERVED_FEED_STATUSES),
+            "quantity": (
+                "total observed liquidation notional in USD for the daily "
+                "observation: long_liquidation_notional_usd + "
+                "short_liquidation_notional_usd summed over the day's captured "
+                "intervals"
+            ),
+            "side_treatment": (
+                "Both sides are summed. liquidation_cascade is an aggregate "
+                "market-stress component and no repository consumer of "
+                "liquidation_percentile expresses a directional preference, so "
+                "no side is weighted, dropped or taken as a maximum."
+            ),
+            "source_contract": PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION,
+            "units": "USD",
+        },
+        "minimum_history": {
+            "first_evaluable_contiguous_daily_observations": (
+                LIQUIDATION_PERCENTILE_MIN_OBSERVATIONS + 1
+            ),
+            "minimum_prior_observations": LIQUIDATION_PERCENTILE_MIN_OBSERVATIONS,
+            "rule": (
+                "Below the minimum the adapter returns no value and records "
+                "LIQUIDATION_PERCENTILE_INSUFFICIENT_HISTORY. It never returns "
+                "a provisional percentile from a short window."
+            ),
+        },
+        "missing_feed_behavior": {
+            "excluded_from_history": list(LIQUIDATION_UNUSABLE_FEED_STATUSES),
+            "missing_feed_percentile": None,
+            "missing_feed_percentile_zero_permitted": False,
+            "observed_zero_events_enters_history": True,
+            "observed_zero_events_notional": "0 USD",
+            "statement": (
+                "A day containing any interval whose feed_status is "
+                f"{list(LIQUIDATION_UNUSABLE_FEED_STATUSES)} yields no "
+                "liquidation observation: the adapter returns None with reason "
+                "LIQUIDATION_FEED_UNAVAILABLE, the day enters neither the "
+                "current value nor the history, and the consuming decision is "
+                f"{STATE_NOT_EVALUABLE} with reason "
+                f"{ACQUISITION_FEED_STATE_REQUIRED}. A day whose intervals are "
+                f"all {FEED_STATUS_OBSERVED_ZERO_EVENTS} yields a legitimate 0 "
+                "USD notional that is normalized like any other observation. A "
+                "missing feed can never become a zero percentile."
+            ),
+        },
+        "observation_universe": (
+            "One observation per canonical UTC daily session in which every "
+            "captured hourly liquidation interval is observed, restricted to "
+            "the frozen provider and instrument universe of "
+            f"{PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION}. The universe is a "
+            "predicate over feed state alone and never reads a comparison "
+            "outcome."
+        ),
+        "output": {
+            "field": "liquidation_percentile",
+            "range": "0 to 100 inclusive",
+            "units": "percentile points",
+        },
+        "percentile_convention": {
+            "co_consumed_reference_owner": (
+                "btc_predictor.features.volatility.volatility_percentile"
+            ),
+            "convention": LIQUIDATION_PERCENTILE_CONVENTION,
+            "current_observation_excluded_from_history": True,
+            "existing_convention_owners": list(
+                LIQUIDATION_PERCENTILE_CONVENTION_OWNERS
+            ),
+            "formula": LIQUIDATION_PERCENTILE_CONVENTION_FORMULA,
+            "invented_convention": False,
+        },
+        "pit_rule": (
+            "available_at <= decision_time for the current observation and for "
+            "every observation in the trailing window. A restatement that "
+            "arrives after a decision never enters that decision's history."
+        ),
+        "protocol_version": PROTOCOL_VERSION,
+        "schema_version": "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1",
+        "version": PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION,
+        "window": {
+            "boundary": "half-open [observation_time - window, observation_time)",
+            "inherited_from": (
+                "btc_predictor.features.volatility."
+                "DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS"
+            ),
+            "rationale": LIQUIDATION_PERCENTILE_WINDOW_RATIONALE,
+            "span_days": LIQUIDATION_PERCENTILE_WINDOW_DAYS,
+        },
+    }
+    payload["definition_sha256"] = _digest(payload)
+    return payload
+
+
+def prospective_acquisition_governance() -> dict[str, Any]:
+    """Summarise the acquisition semantics this ticket newly froze."""
+
+    contracts = {
+        PROSPECTIVE_CVD_ACQUISITION_VERSION: prospective_cvd_acquisition_contract(),
+        PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION: (
+            prospective_liquidation_capture_contract()
+        ),
+        PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION: (
+            prospective_liquidation_percentile_adapter_contract()
+        ),
+        PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION: (
+            prospective_btc_market_cap_acquisition_contract()
+        ),
+    }
+    if tuple(sorted(contracts)) != PROSPECTIVE_ACQUISITION_CONTRACT_VERSIONS:
+        raise ProspectiveCorpusError(INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION)
+    for version, contract in contracts.items():
+        provenance = contract["acquisition_governance"]
+        if (
+            provenance["governance_class"] != NEW_PRE_DATA_GOVERNANCE_CLASS
+            or provenance["historically_inherited"] is not False
+            or provenance["claimed_historically_implicit"] is not False
+            or provenance["frozen_before_collection"] is not True
+            or provenance["stage_b_outcomes_inspected"] is not False
+            or provenance["authored_by_ticket"] != ACQUISITION_GOVERNANCE_TICKET
+        ):
+            raise ProspectiveCorpusError(
+                f"{version} does not declare itself new pre-data governance"
+            )
+        if contract["version"] != version:
+            raise ProspectiveCorpusError(f"{version} misdeclares its own version")
+    return {
+        "contract_versions": list(PROSPECTIVE_ACQUISITION_CONTRACT_VERSIONS),
+        "contracts": contracts,
+        "distinguishes_feature_semantics_from_acquisition_semantics": True,
+        "governance_class": NEW_PRE_DATA_GOVERNANCE_CLASS,
+        "phase_1_authority_claimed_for_new_rules": False,
+        "phase_1_feature_semantics_owner": (
+            "the frozen Phase-1 feature owners, which this program does not "
+            "modify: spot_perp_cvd_spread, open_interest_intensity and "
+            "calculate_orderliness_score keep their formulas, windows and "
+            "reason codes exactly"
+        ),
+        "ticket": ACQUISITION_GOVERNANCE_TICKET,
+    }
+
+# ===========================================================================
 # 4. point-in-time input snapshot
 # ===========================================================================
 #
@@ -786,31 +2008,81 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
             "liquidation_percentile; the same normalized input is consumed by "
             "STRESS and CAPITULATION market-state flags"
         ),
+        "existing_aggregate_distinguishes_missing_from_empty": (
+            EXISTING_AGGREGATE_DISTINGUISHES_MISSING_FROM_EMPTY
+        ),
+        "existing_aggregate_owner": LIQUIDATION_AGGREGATE_OWNER,
+        "feed_state_owner": PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION,
         "fields": ["timeframe", "side", "quantity", "quantity_unit", "notional_usd"],
         "identity_fields": ["exchange", "symbol", "timeframe", "side", "provider"],
         "ingested_at_field": "ingested_at",
         "missing_policy": (
-            "EXPLICIT_STATUS_NO_ZERO_FILL_EMPTY_FEED_IS_DISTINCT_FROM_MISSING_FEED"
+            "EXPLICIT_FEED_STATE_NO_ZERO_FILL_EMPTY_FEED_IS_DISTINCT_FROM_MISSING_FEED"
         ),
         "normalization_owner": (
-            "btc_predictor.data.derivatives.aggregate_btc_derivatives_available_at "
-            "+ btc_predictor.features.volatility.calculate_orderliness_score"
+            f"{PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION} -> "
+            "btc_predictor.features.volatility.calculate_orderliness_score"
         ),
         "observation_time_field": "observation_time",
         "pit_rule": PIT_RULE,
+        "prospective_acquisition_contract": (
+            PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION
+        ),
         "provenance_fields": [
             "observation_time",
             "available_at",
             "ingested_at",
             "provider",
             "source",
+            "feed_status",
+            "event_count",
         ],
         "raw_table": "raw.liquidations",
-        "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
+        "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
         "units": (
             "quantity in provider-declared quantity_unit; notional_usd in USD "
             "when reported"
         ),
+    },
+    "btc_market_cap": {
+        "available_at_field": "available_at",
+        "capture_state": "REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET",
+        "capture_state_reason": (
+            "No repository producer emits market_cap_usd today: "
+            "MarketCapObservation is constructed only in a feature test and "
+            "raw.generic_series declares no market-capitalisation series. "
+            f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION} freezes one exact "
+            "series and provider identity before collection; POSTP1-004 "
+            "implements the collector."
+        ),
+        "consuming_features": ["OI_INTENSITY", "OI_INTENSITY_PERCENTILE_180D"],
+        "fields": ["value", "unit"],
+        "identity_fields": ["series_id", "series_type", "provider"],
+        "ingested_at_field": "ingested_at",
+        "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_NO_CARRY_FORWARD",
+        "normalization_owner": (
+            "btc_predictor.features.positioning.open_interest_intensity"
+        ),
+        "observation_cadence": MARKET_CAP_OBSERVATION_CADENCE,
+        "observation_time_alignment": MARKET_CAP_OBSERVATION_GRID,
+        "observation_time_field": "observation_time",
+        "pit_rule": PIT_RULE,
+        "prospective_acquisition_contract": (
+            PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION
+        ),
+        "provenance_fields": [
+            "observation_time",
+            "available_at",
+            "ingested_at",
+            "revision",
+            "source",
+        ],
+        "provider": MARKET_CAP_PROVIDER_ID,
+        "raw_table": MARKET_CAP_RAW_TABLE,
+        "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT",
+        "series_id": MARKET_CAP_SERIES_ID,
+        "series_type": MARKET_CAP_SERIES_TYPE,
+        "units": "USD",
     },
     "etf_flows": {
         "capture_state": "EXISTING_RAW_PIT_TABLE",
@@ -834,13 +2106,16 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
     "generic_series": {
         "capture_state": "EXISTING_RAW_PIT_TABLE",
         "consuming_features": [
-            "OI_INTENSITY",
-            "OI_INTENSITY_PERCENTILE_180D",
             "REGIME_SCORE",
             "REGIME_SMOOTHED_SCORE",
         ],
+        "declared_series_ids": sorted(
+            (*_generic_series.MACRO_SERIES_IDS, *_generic_series.ONCHAIN_SERIES_IDS)
+        ),
+        "declared_series_types": list(_generic_series.SUPPORTED_SERIES_TYPES),
         "fields": ["value", "unit"],
         "identity_fields": ["series_id", "series_type", "provider"],
+        "market_cap_supplied_here": False,
         "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
         "normalization_owner": "btc_predictor.data.generic_series",
         "pit_rule": "available_at <= decision_time and observation_time <= decision_time",
@@ -862,40 +2137,41 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
             "btc_predictor.features.flow.CvdObservation is a feature-layer "
             "boundary with no raw PIT table and no collector in this repository, "
             "so CVD_SPREAD cannot be reproduced from any persisted source today. "
-            "The Phase-1 owner and its deterministic regression contract use "
-            "aligned exact-hour common timestamps, matching the existing 1h "
-            "spot/perp participation source path. The prospective contract freezes "
-            "that cadence; it does not collect or fabricate the series."
+            "The Phase-1 owner defines the transformation but never defined a "
+            "persisted source, cadence or feed-state contract, so acquisition "
+            f"semantics are frozen prospectively by "
+            f"{PROSPECTIVE_CVD_ACQUISITION_VERSION}. Nothing is collected or "
+            "fabricated here."
         ),
-        "cadence_derivation": {
-            "accepted": "EXACT_UTC_HOURLY_OBSERVATIONS",
-            "authority": [
-                "btc_predictor.features.flow.CvdObservation.observation_time",
-                "btc_predictor.features.flow.spot_perp_cvd_spread common_times",
-                "btc_predictor.tests.test_flow_features hourly Phase-1 contract",
-                "btc_predictor.features.flow.spot_perp_participation_from_rows 1h spot bars",
-            ],
-            "conflicting_repository_cadence": None,
-            "unique": True,
+        "cadence_governance": {
+            "historical_feature_owner": CVD_HISTORICAL_OWNER,
+            "historical_feature_owner_specifies_cadence": (
+                CVD_HISTORICAL_OWNER_SPECIFIES_CADENCE
+            ),
+            "historical_feature_owner_specifies_window": (
+                CVD_HISTORICAL_OWNER_WINDOW
+            ),
+            "historically_inherited": False,
+            "selected_by_new_pre_data_governance": True,
+            "selected_cadence": CVD_SELECTED_CADENCE,
+            "unit_tests_used_as_cadence_authority": False,
         },
-        "cadence_ambiguity": False,
         "consuming_features": ["CVD_SPREAD"],
         "fields": ["cvd_usd", "market_type"],
         "identity_fields": ["market_type", "provider"],
         "ingested_at_field": "ingested_at",
-        "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
+        "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_MISSING_INTERVAL_STAYS_MISSING",
         "normalization_owner": "btc_predictor.features.flow",
-        "observation_cadence": "1h",
+        "observation_cadence": CVD_SELECTED_CADENCE,
         "observation_time_alignment": "exact UTC hour",
         "observation_time_field": "observation_time",
         "pit_rule": PIT_RULE,
+        "prospective_acquisition_contract": PROSPECTIVE_CVD_ACQUISITION_VERSION,
         "provenance_fields": ["observation_time", "available_at", "ingested_at", "source"],
         "raw_table": "research.prospective_source_input_snapshot (new capture)",
         "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
-        "units": "USD cumulative volume delta",
-        "zscore_window_periods": _flow.spot_perp_cvd_spread.__kwdefaults__[
-            "zscore_window_periods"
-        ],
+        "units": "USD signed taker delta per closed interval",
+        "zscore_window_periods": CVD_HISTORICAL_OWNER_WINDOW_OBSERVATIONS,
     },
     "spot_perp_volume_participation": {
         "capture_state": "EXISTING_RAW_PIT_TABLE",
@@ -973,8 +2249,8 @@ _FEATURE_DEPENDENCIES: dict[str, dict[str, Any]] = {
     "OI_GROWTH_7D": {"owner": "btc_predictor.features.positioning.open_interest_growth_features", "raw": ("derivatives_open_interest",)},
     "OI_GROWTH_ZSCORE_180D": {"owner": "btc_predictor.features.positioning.open_interest_growth_features", "raw": ("derivatives_open_interest",)},
     "OI_GROWTH_HEALTH": {"owner": "btc_predictor.features.positioning.open_interest_growth_health", "raw": ("derivatives_open_interest",)},
-    "OI_INTENSITY": {"owner": "btc_predictor.features.positioning.open_interest_intensity", "raw": ("derivatives_open_interest", "generic_series")},
-    "OI_INTENSITY_PERCENTILE_180D": {"owner": "btc_predictor.features.positioning.open_interest_intensity", "raw": ("derivatives_open_interest", "generic_series")},
+    "OI_INTENSITY": {"owner": "btc_predictor.features.positioning.open_interest_intensity", "raw": ("btc_market_cap", "derivatives_open_interest")},
+    "OI_INTENSITY_PERCENTILE_180D": {"owner": "btc_predictor.features.positioning.open_interest_intensity", "raw": ("btc_market_cap", "derivatives_open_interest")},
     "FUTURES_BASIS_AVG": {"owner": "btc_predictor.features.positioning.futures_basis_health", "raw": ("derivatives_futures_basis",)},
     "FUTURES_BASIS_ZSCORE_180D": {"owner": "btc_predictor.features.positioning.futures_basis_health", "raw": ("derivatives_futures_basis",)},
     "FUTURES_BASIS_HEALTH": {"owner": "btc_predictor.features.positioning.futures_basis_health", "raw": ("derivatives_futures_basis",)},
@@ -1020,8 +2296,35 @@ def feature_input_coverage_contract() -> dict[str, Any]:
             "capture_contract_count_by_family": {family: 1 for family in raw_families},
             "future_information_reconstruction_permitted": False,
             "missing_value_default": None,
+            "prospective_acquisition_contract_by_family": {
+                family: capture_contracts[family].get(
+                    "prospective_acquisition_contract"
+                )
+                for family in raw_families
+            },
+            "unqualified_family_dependency": False,
             "zero_fill_permitted": False,
         }
+    # The repeat review's P1-B finding: OI intensity may not resolve its
+    # market-cap input by searching an unqualified generic-series family.
+    for feature in ("OI_INTENSITY", "OI_INTENSITY_PERCENTILE_180D"):
+        families = rows[feature]["raw_input_families"]
+        if "generic_series" in families:
+            raise ProspectiveCorpusError(
+                f"{feature} may not depend on the unqualified generic-series "
+                "family; it must name the frozen market-cap source contract"
+            )
+        if "btc_market_cap" not in families:
+            raise ProspectiveCorpusError(
+                f"{feature} must bind the frozen prospective market-cap source"
+            )
+        if rows[feature]["prospective_acquisition_contract_by_family"][
+            "btc_market_cap"
+        ] != PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION:
+            raise ProspectiveCorpusError(
+                f"{feature} does not bind "
+                f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION}"
+            )
     unused_contracts = set(capture_contracts) - used_families
     if unused_contracts:
         raise ProspectiveCorpusError(
@@ -1033,6 +2336,9 @@ def feature_input_coverage_contract() -> dict[str, Any]:
         "capture_contracts": {
             family: {
                 "capture_state": contract.get("capture_state", "EXISTING_RAW_PIT_TABLE"),
+                "prospective_acquisition_contract": contract.get(
+                    "prospective_acquisition_contract"
+                ),
                 "raw_table": contract["raw_table"],
             }
             for family, contract in sorted(capture_contracts.items())
@@ -1040,105 +2346,769 @@ def feature_input_coverage_contract() -> dict[str, Any]:
         "feature_count": len(rows),
         "feature_inventory": list(frozen),
         "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+        "newly_frozen_acquisition_contracts": list(
+            PROSPECTIVE_ACQUISITION_CONTRACT_VERSIONS
+        ),
         "protocol_version": PROTOCOL_VERSION,
         "required_raw_input_families": sorted(used_families),
         "rows": rows,
-        "schema_version": "PROSPECTIVE_FEATURE_INPUT_COVERAGE_V1",
+        "schema_version": "PROSPECTIVE_FEATURE_INPUT_COVERAGE_V2",
+        "unqualified_generic_series_dependency_remains": False,
     }
     payload["definition_sha256"] = _digest(payload)
     return payload
+
+
+# ---------------------------------------------------------------------------
+# owner-derived warmup, rebuilt
+# ---------------------------------------------------------------------------
+#
+# The repeat review's P2 finding: a single "750-day" number was reported as the
+# exact owner-derived warmup and used as an evaluability test.  It is neither.
+# VOL_PERCENTILE_2Y's owner declares a 730-day *eligible trailing window* and
+# separately requires 365 *prior qualifying observations* inside it, and its
+# upstream RV_20 needs 21 contiguous daily closes before the first of those
+# exists.  With contiguous daily observations the feature therefore first
+# defines at 386 contiguous daily sessions -- 385 elapsed calendar days -- and
+# 730 populated days are never required.  730 and 365 are different quantities
+# and are frozen as different fields here.
+#
+# Evaluability is a rule, not an elapsed-time constant: enough qualifying
+# observations inside the applicable trailing window, and every upstream
+# initialization satisfied.  A contiguous-history number is retained only as a
+# planning estimate and is labelled as one.
+
+WARMUP_UNIT_DAILY_SESSION = "contiguous canonical daily sessions"
+WARMUP_UNIT_WEEKLY_SESSION = "contiguous canonical weekly sessions"
+WARMUP_UNIT_ETF_PUBLICATION_DAY = "contiguous ETF publication days"
+WARMUP_UNIT_HOURLY_COMMON = "contiguous exact-hour common spot/perp observations"
+WARMUP_UNIT_DAILY_SOURCE = "contiguous daily source observations"
+WARMUP_UNIT_MIXED = "mixed component units"
+WARMUP_PLANNING_ESTIMATE_LABEL = "PLANNING_ESTIMATE_NOT_EVALUABILITY_AUTHORITY"
+
+WARMUP_EVALUABILITY_RULE = (
+    "A feature is evaluable at a decision when enough qualifying observations "
+    "exist inside its owner's applicable trailing window AND every upstream "
+    "initialization requirement is satisfied from point-in-time inputs. "
+    "Elapsed time is never the test: elapsed_days >= a hardcoded longest warmup "
+    "is neither necessary nor sufficient, and no such comparison may gate a "
+    "slot."
+)
+WARMUP_ELAPSED_TIME_IS_AN_EVALUABILITY_TEST = False
+
+# ``RV_n`` is annotated by its own owner's feature id, so the daily-return
+# window is read from the owner rather than restated here.
+_RV_WINDOW_DAYS = {
+    _volatility.RV_7_FEATURE_ID: 7,
+    _volatility.RV_20_FEATURE_ID: 20,
+    _volatility.RV_60_FEATURE_ID: 60,
+}
+_VOL_PERCENTILE_KWDEFAULTS = _volatility.volatility_percentile.__kwdefaults__
 
 
 def _warmup_row(
     owner: str,
-    lookback: str,
-    semantics: str,
-    minimum_observations: str,
-    initialization: str,
-    effective: str,
-) -> dict[str, str]:
-    return {
+    *,
+    rolling_window_span: str,
+    minimum_observation_count: str,
+    upstream_initialization: str,
+    calendar_or_session_rule: str,
+    evaluability_predicate: str,
+    contiguous_history: tuple[int, str] | None = None,
+) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "calendar_or_session_rule": calendar_or_session_rule,
+        "evaluability_predicate": evaluability_predicate,
+        "minimum_contiguous_history_to_first_evaluable": None,
+        "minimum_observation_count": minimum_observation_count,
         "owner": owner,
-        "lookback_or_window": lookback,
-        "calendar_or_session_semantics": semantics,
-        "minimum_observations": minimum_observations,
-        "additional_initialization_requirement": initialization,
-        "effective_warmup": effective,
+        "rolling_window_span": rolling_window_span,
+        "upstream_initialization": upstream_initialization,
+    }
+    if contiguous_history is not None:
+        value, unit = contiguous_history
+        row["minimum_contiguous_history_to_first_evaluable"] = {
+            "label": WARMUP_PLANNING_ESTIMATE_LABEL,
+            "planning_estimate_only": True,
+            "unit": unit,
+            "value": value,
+        }
+    return row
+
+
+def _vol_percentile_2y_derivation() -> dict[str, Any]:
+    """Derive VOL_PERCENTILE_2Y's three distinct warmup quantities exactly."""
+
+    source_feature_id = _VOL_PERCENTILE_KWDEFAULTS["source_feature_id"]
+    if source_feature_id not in _RV_WINDOW_DAYS:
+        raise ProspectiveCorpusError(
+            "the volatility-percentile source feature is not a known RV owner"
+        )
+    for feature_id, window in _RV_WINDOW_DAYS.items():
+        if feature_id != f"RV_{window}":
+            raise ProspectiveCorpusError(
+                f"the realized-volatility owner renamed {feature_id}"
+            )
+    rv_return_window = _RV_WINDOW_DAYS[source_feature_id]
+    rv_closes = rv_return_window + 1
+    window_span_days = _VOL_PERCENTILE_KWDEFAULTS["percentile_window_days"]
+    minimum_prior = _VOL_PERCENTILE_KWDEFAULTS["min_percentile_observations"]
+    first_evaluable_sessions = rv_closes + minimum_prior
+    if minimum_prior > window_span_days:
+        raise ProspectiveCorpusError(
+            "the trailing window cannot hold the required prior observations"
+        )
+    return {
+        "current_observation_required": 1,
+        "first_evaluable_contiguous_daily_sessions": first_evaluable_sessions,
+        "first_evaluable_elapsed_calendar_days": first_evaluable_sessions - 1,
+        "populated_days_equal_to_the_window_span_required": False,
+        "rolling_window_boundary": (
+            "half-open [observation_time - window, observation_time)"
+        ),
+        "rolling_window_span_days": window_span_days,
+        "source_feature_id": source_feature_id,
+        "statement": (
+            f"The owner keeps a {window_span_days}-day eligible trailing window "
+            f"and requires {minimum_prior} prior {source_feature_id} "
+            "observations inside it, never "
+            f"{window_span_days} populated days. Each of those "
+            f"{source_feature_id} results needs {rv_closes} contiguous daily "
+            f"closes, so with contiguous daily observations the first evaluable "
+            f"decision is at session {first_evaluable_sessions} "
+            f"({first_evaluable_sessions - 1} elapsed calendar days)."
+        ),
+        "upstream_initialization": (
+            f"each {source_feature_id} result needs {rv_closes} contiguous "
+            f"daily closes ({rv_return_window} daily returns)"
+        ),
+        "upstream_source_closes": rv_closes,
+        "upstream_source_return_window_days": rv_return_window,
+        "window_span_alone_implies_completeness": False,
     }
 
 
 def warmup_history_contract() -> dict[str, Any]:
-    """Derive every frozen feature's pre-evaluation warmup from its owner."""
+    """Derive every frozen feature's evaluability predicate from its owner."""
 
-    cvd_window = _flow.spot_perp_cvd_spread.__kwdefaults__["zscore_window_periods"]
+    cvd_window = CVD_HISTORICAL_OWNER_WINDOW_OBSERVATIONS
     volume_growth = _flow.spot_perp_participation.__kwdefaults__["growth_window_periods"]
     volume_zscore = _flow.spot_perp_participation.__kwdefaults__["zscore_window_periods"]
+    funding_avg = _positioning.DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS
     funding_window = _positioning.DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS
+    funding_min = _positioning.DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS
     basis_window = _positioning.DEFAULT_FUTURES_BASIS_ZSCORE_WINDOW_DAYS
-    oi_window = _positioning.DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS
+    basis_min = _positioning.DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS
     oi_growth = _positioning.DEFAULT_OI_GROWTH_WINDOW_DAYS
-    percentile_window = _volatility.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
-    percentile_source_window = 20
-    rows = {
-        "TREND_SCORE": _warmup_row("btc_predictor.features.trend.calculate_trend_score", f"max({_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} weekly, {_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} weekly, {_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS} daily)", "canonical weekly/daily sessions", "52 weekly observations plus component inputs", "weekly structure must also be complete", "52 canonical weekly sessions"),
-        "FLOW_SCORE": _warmup_row("btc_predictor.features.flow.calculate_flow_score", "max(20 ETF publication days, 21 hourly CVD observations, 30 hourly participation observations)", "ETF publication days and exact UTC hours", "all selected full-flow components complete", "5-period volume growth needs two windows before 20 prior growth values", "20 ETF publication days and 30 exact-hour spot/perp observations"),
-        "POSITIONING_SCORE": _warmup_row("btc_predictor.features.positioning.calculate_positioning_score", f"max({funding_window}d funding, {basis_window}d basis, {oi_window}d OI growth)", "trailing elapsed UTC days", "30 historical observations per z-score/percentile owner", f"OI growth needs an earlier {oi_growth}d comparison", f"{oi_window + oi_growth} calendar days for OI; {funding_window}d funding; {basis_window}d basis"),
-        "VOLATILITY_SCORE": _warmup_row("btc_predictor.features.volatility.calculate_volatility_score", f"{percentile_window}d volatility-percentile history", "canonical daily sessions", f"{_volatility.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS} prior RV_20 results", f"each historical RV_20 needs {percentile_source_window} earlier daily returns", f"{percentile_window + percentile_source_window} calendar days"),
-        "STRUCTURE_SCORE": _warmup_row("btc_predictor.features.structure.calculate_structure_score", "current authoritative structure/level/RR inputs", "owner-supplied PIT structures", "one complete input vector", "structural level owners must be complete", "no extra rolling window at this owner"),
-        "REGIME_SCORE": _warmup_row("btc_predictor.features.regime.calculate_regime_score", "transitive maximum of trend, flow, positioning, volatility", "mixed canonical sessions", "all selected regime components complete", "full model additionally requires PIT macro/onchain/liquidity inputs", f"{percentile_window + percentile_source_window} calendar days"),
-        "REGIME_SMOOTHED_SCORE": _warmup_row("btc_predictor.features.regime.calculate_regime_smoothing", "current regime score and optional prior smoothed score", "strategy-daily decisions", "1 complete current regime score", "the owner deterministically initializes a missing previous smoothed score from the current score and records REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING", f"{percentile_window + percentile_source_window} calendar days"),
-        "ORDERLINESS_SCORE": _warmup_row("btc_predictor.features.volatility.calculate_orderliness_score", "current range/downside/liquidation/volatility percentile inputs", "strategy-daily PIT inputs", "one complete input vector", "upstream percentile owners and raw liquidation history must be complete; no window is invented here", "no extra rolling window at this owner"),
-        "MOMENTUM_4W": _warmup_row("btc_predictor.features.momentum.four_week_momentum_from_daily_bars", f"{_momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS} daily periods", "canonical daily sessions", f"{_momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS + 1} closes", "current plus lookback close", f"{_momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS} calendar days"),
-        "MOMENTUM_12W": _warmup_row("btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars", f"{_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS} daily periods", "canonical daily sessions", f"{_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS + 1} closes", "current plus lookback close", f"{_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS} calendar days"),
-        "MA_DISTANCE_20W": _warmup_row("btc_predictor.features.trend.twenty_week_ma_distance", f"{_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} weekly periods", "canonical weekly sessions", f"{_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} closes", "none", f"{_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} canonical weekly sessions"),
-        "HIGH_DISTANCE_52W": _warmup_row("btc_predictor.features.trend.fifty_two_week_high_distance", f"{_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} weekly periods", "canonical weekly sessions", f"{_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} highs/closes", "none", f"{_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} canonical weekly sessions"),
-        "ETF_NORM_5D": _warmup_row("btc_predictor.features.flow.five_day_etf_flow", f"{_flow.FIVE_DAY_ETF_FLOW_WINDOW_DAYS} publication days", "configured ETF publication calendar", "5 complete fund-universe publication days", "latest PIT AUM required", "5 publication days"),
-        "ETF_NORM_20D": _warmup_row("btc_predictor.features.flow.twenty_day_etf_flow", f"{_flow.TWENTY_DAY_ETF_FLOW_WINDOW_DAYS} publication days", "configured ETF publication calendar", "20 complete fund-universe publication days", "latest PIT AUM required", "20 publication days"),
-        "FLOW_ACCEL": _warmup_row("btc_predictor.features.flow.etf_flow_acceleration", "5d and 20d ETF normalized windows", "configured ETF publication calendar", "both source windows complete", "none beyond source windows", "20 publication days"),
-        "CVD_SPREAD": _warmup_row("btc_predictor.features.flow.spot_perp_cvd_spread", f"{cvd_window} prior periods", "exact UTC hourly common spot/perp timestamps", f"{cvd_window} prior plus 1 current common observation", "z-score excludes current observation from history", f"{cvd_window + 1} consecutive hourly common observations"),
-        "SPOT_DOMINANCE": _warmup_row("btc_predictor.features.flow.spot_perp_participation_from_rows", f"{volume_growth}-period current/prior growth windows plus {volume_zscore} prior growth values", "exact UTC hourly common spot/perp timestamps", f"{volume_growth * 2 + volume_zscore} common observations", "growth series initializes after two equal windows", f"{volume_growth * 2 + volume_zscore} consecutive hourly common observations"),
-        "FUNDING_7D_AVG": _warmup_row("btc_predictor.features.positioning.funding_health", f"{_positioning.DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS}d", "trailing elapsed UTC days", "at least one available observation; owner records count", "none", f"{_positioning.DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS} calendar days"),
-        "FUNDING_ZSCORE_180D": _warmup_row("btc_predictor.features.positioning.funding_health", f"{funding_window}d", "prior observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS} prior observations", "current observation excluded from history", f"{funding_window} calendar days"),
-        "FUNDING_HEALTH": _warmup_row("btc_predictor.features.positioning.funding_health", "FUNDING_ZSCORE_180D", "inherits funding z-score", "one complete funding z-score", "none", f"{funding_window} calendar days"),
-        "OI_GROWTH_7D": _warmup_row("btc_predictor.features.positioning.open_interest_growth_health", f"{oi_growth}d", "elapsed UTC comparison", "current and prior comparable observations", "prior OI observation required", f"{oi_growth} calendar days"),
-        "OI_GROWTH_ZSCORE_180D": _warmup_row("btc_predictor.features.positioning.open_interest_growth_health", f"{oi_window}d of growth results", "prior growth observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS} prior growth observations", f"earliest growth needs an earlier {oi_growth}d OI observation", f"{oi_window + oi_growth} calendar days"),
-        "OI_GROWTH_HEALTH": _warmup_row("btc_predictor.features.positioning.open_interest_growth_health", "OI_GROWTH_ZSCORE_180D", "inherits OI-growth z-score", "one complete OI-growth z-score", "none", f"{oi_window + oi_growth} calendar days"),
-        "OI_INTENSITY": _warmup_row("btc_predictor.features.positioning.open_interest_intensity", "current OI and spot market-cap/price input", "same PIT decision", "one complete input pair", "none", "current decision inputs"),
-        "OI_INTENSITY_PERCENTILE_180D": _warmup_row("btc_predictor.features.positioning.open_interest_intensity", f"{_positioning.DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS}d", "prior observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS} prior observations", "current intensity required", f"{_positioning.DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS} calendar days"),
-        "FUTURES_BASIS_AVG": _warmup_row("btc_predictor.features.positioning.futures_basis_health", "current PIT basis observations", "same PIT decision", "at least one available observation", "none", "current decision inputs"),
-        "FUTURES_BASIS_ZSCORE_180D": _warmup_row("btc_predictor.features.positioning.futures_basis_health", f"{basis_window}d", "prior observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS} prior observations", "current observation excluded from history", f"{basis_window} calendar days"),
-        "FUTURES_BASIS_HEALTH": _warmup_row("btc_predictor.features.positioning.futures_basis_health", "FUTURES_BASIS_ZSCORE_180D", "inherits basis z-score", "one complete basis z-score", "none", f"{basis_window} calendar days"),
-        "RV_7": _warmup_row("btc_predictor.features.volatility.realized_volatility_from_daily_bars", "7 daily returns", "gap-aware canonical daily sessions", "8 closes", "first return needs previous close", "7 calendar-day intervals"),
-        "RV_20": _warmup_row("btc_predictor.features.volatility.realized_volatility_from_daily_bars", "20 daily returns", "gap-aware canonical daily sessions", "21 closes", "first return needs previous close", "20 calendar-day intervals"),
-        "RV_60": _warmup_row("btc_predictor.features.volatility.realized_volatility_from_daily_bars", "60 daily returns", "gap-aware canonical daily sessions", "61 closes", "first return needs previous close", "60 calendar-day intervals"),
-        "VOL_COMPRESSION_RATIO": _warmup_row("btc_predictor.features.volatility.volatility_compression_ratio", "RV_7 and RV_20", "inherits canonical daily sessions", "both realized-volatility inputs complete", "none beyond RV_20", "20 calendar-day intervals"),
-        "VOL_PERCENTILE_2Y": _warmup_row("btc_predictor.features.volatility.volatility_percentile", f"{percentile_window}d trailing RV_20 window", "canonical daily sessions", f"current plus at least {_volatility.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS} prior RV_20 results", f"earliest retained RV_20 needs {percentile_source_window} prior daily returns", f"{percentile_window + percentile_source_window} calendar days"),
+    oi_window = _positioning.DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS
+    oi_min = _positioning.DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS
+    oi_intensity_window = _positioning.DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS
+    oi_intensity_min = _positioning.DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS
+    etf_5 = _flow.FIVE_DAY_ETF_FLOW_WINDOW_DAYS
+    etf_20 = _flow.TWENTY_DAY_ETF_FLOW_WINDOW_DAYS
+    momentum_4 = _momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS
+    momentum_12 = _momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS
+    ma_weeks = _trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS
+    high_weeks = _trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS
+    rv_7 = _RV_WINDOW_DAYS[_volatility.RV_7_FEATURE_ID]
+    rv_20 = _RV_WINDOW_DAYS[_volatility.RV_20_FEATURE_ID]
+    rv_60 = _RV_WINDOW_DAYS[_volatility.RV_60_FEATURE_ID]
+
+    vol_percentile = _vol_percentile_2y_derivation()
+    vol_percentile_sessions = vol_percentile["first_evaluable_contiguous_daily_sessions"]
+    liquidation_sessions = LIQUIDATION_PERCENTILE_MIN_OBSERVATIONS + 1
+    orderliness_sessions = max(vol_percentile_sessions, liquidation_sessions)
+    funding_sessions = funding_min + 1
+    basis_sessions = basis_min + 1
+    oi_growth_sessions = oi_growth + oi_min + 1
+    oi_intensity_sessions = oi_intensity_min + 1
+    positioning_sessions = max(funding_sessions, basis_sessions, oi_growth_sessions)
+
+    rows: dict[str, Any] = {
+        "TREND_SCORE": _warmup_row(
+            "btc_predictor.features.trend.calculate_trend_score",
+            rolling_window_span=(
+                f"max({high_weeks} weekly, {ma_weeks} weekly, {momentum_12} daily)"
+            ),
+            minimum_observation_count=(
+                "every selected trend component complete at this decision"
+            ),
+            upstream_initialization=(
+                "the weekly structure and every component owner must be complete"
+            ),
+            calendar_or_session_rule="canonical weekly and daily sessions",
+            evaluability_predicate=(
+                f"MA_DISTANCE_20W, HIGH_DISTANCE_52W and the selected momentum "
+                "components are each independently complete under their own "
+                "owners"
+            ),
+            contiguous_history=(high_weeks, WARMUP_UNIT_WEEKLY_SESSION),
+        ),
+        "FLOW_SCORE": _warmup_row(
+            "btc_predictor.features.flow.calculate_flow_score",
+            rolling_window_span=(
+                f"max({etf_20} ETF publication days, {cvd_window + 1} "
+                f"{CVD_SELECTED_CADENCE} CVD observations, "
+                f"{volume_growth * 2 + volume_zscore} hourly participation "
+                "observations)"
+            ),
+            minimum_observation_count=(
+                "every selected full-flow component complete at this decision"
+            ),
+            upstream_initialization=(
+                "the participation growth series needs two equal windows before "
+                "its own z-score history exists"
+            ),
+            calendar_or_session_rule=(
+                "ETF publication days and exact UTC hours; the units are not "
+                "commensurable and are not collapsed into one number"
+            ),
+            evaluability_predicate=(
+                "ETF_NORM_5D, ETF_NORM_20D, FLOW_ACCEL, CVD_SPREAD and "
+                "SPOT_DOMINANCE are each independently complete under their own "
+                "owners"
+            ),
+            contiguous_history=None,
+        ),
+        "POSITIONING_SCORE": _warmup_row(
+            "btc_predictor.features.positioning.calculate_positioning_score",
+            rolling_window_span=(
+                f"max({funding_window}d funding, {basis_window}d basis, "
+                f"{oi_window}d OI growth)"
+            ),
+            minimum_observation_count=(
+                f"{funding_min} prior funding, {basis_min} prior basis and "
+                f"{oi_min} prior OI-growth observations in their own windows"
+            ),
+            upstream_initialization=(
+                f"the earliest OI-growth observation needs an OI observation "
+                f"{oi_growth}d earlier"
+            ),
+            calendar_or_session_rule="trailing elapsed UTC day windows",
+            evaluability_predicate=(
+                "FUNDING_HEALTH, OI_GROWTH_HEALTH and FUTURES_BASIS_HEALTH are "
+                "each complete, and the configured leverage-health input is "
+                "present"
+            ),
+            contiguous_history=(positioning_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "VOLATILITY_SCORE": _warmup_row(
+            "btc_predictor.features.volatility.calculate_volatility_score",
+            rolling_window_span=(
+                f"{vol_percentile['rolling_window_span_days']}d eligible "
+                "trailing RV window inherited from VOL_PERCENTILE_2Y"
+            ),
+            minimum_observation_count=(
+                f"{vol_percentile['rolling_window_span_days']}d window holding "
+                f"{_VOL_PERCENTILE_KWDEFAULTS['min_percentile_observations']} "
+                "prior RV_20 observations"
+            ),
+            upstream_initialization=vol_percentile["upstream_initialization"],
+            calendar_or_session_rule="canonical daily sessions",
+            evaluability_predicate=(
+                "every selected volatility component, VOL_PERCENTILE_2Y "
+                "included, is complete under its own owner"
+            ),
+            contiguous_history=(vol_percentile_sessions, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "STRUCTURE_SCORE": _warmup_row(
+            "btc_predictor.features.structure.calculate_structure_score",
+            rolling_window_span="none at this owner",
+            minimum_observation_count="one complete current input vector",
+            upstream_initialization=(
+                "the structural level and risk/reward owners must be complete"
+            ),
+            calendar_or_session_rule="owner-supplied point-in-time structures",
+            evaluability_predicate=(
+                "the current structure, level and risk/reward inputs are all "
+                "present at this decision"
+            ),
+            contiguous_history=None,
+        ),
+        "REGIME_SCORE": _warmup_row(
+            "btc_predictor.features.regime.calculate_regime_score",
+            rolling_window_span=(
+                "transitive maximum of the trend, flow, positioning and "
+                "volatility component windows"
+            ),
+            minimum_observation_count=(
+                "every required regime component complete at this decision"
+            ),
+            upstream_initialization=(
+                "the full model additionally requires the point-in-time macro, "
+                "on-chain and liquidity inputs"
+            ),
+            calendar_or_session_rule="mixed canonical sessions",
+            evaluability_predicate=(
+                "every required component score is independently complete; the "
+                "composite inherits their predicates and invents no window"
+            ),
+            contiguous_history=(vol_percentile_sessions, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "REGIME_SMOOTHED_SCORE": _warmup_row(
+            "btc_predictor.features.regime.calculate_regime_smoothing",
+            rolling_window_span="current regime score and optional prior smoothed score",
+            minimum_observation_count="1 complete current regime score",
+            upstream_initialization=(
+                "the owner deterministically initializes a missing previous "
+                "smoothed score from the current score and records "
+                "REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING"
+            ),
+            calendar_or_session_rule="strategy-daily decisions",
+            evaluability_predicate=(
+                "REGIME_SCORE is complete at this decision"
+            ),
+            contiguous_history=(vol_percentile_sessions, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "ORDERLINESS_SCORE": _warmup_row(
+            "btc_predictor.features.volatility.calculate_orderliness_score",
+            rolling_window_span=(
+                "none at this owner; the range, liquidation and volatility "
+                "percentile inputs carry their own windows"
+            ),
+            minimum_observation_count="one complete current input vector",
+            upstream_initialization=(
+                "the volatility-percentile owner and "
+                f"{PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION} must "
+                "each be complete; an unavailable, late or invalid liquidation "
+                "feed leaves the liquidation input missing and never zero"
+            ),
+            calendar_or_session_rule="strategy-daily point-in-time inputs",
+            evaluability_predicate=(
+                "range_percentile, downside_return, liquidation_percentile and "
+                "volatility_percentile are all present at this decision"
+            ),
+            contiguous_history=(orderliness_sessions, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "MOMENTUM_4W": _warmup_row(
+            "btc_predictor.features.momentum.four_week_momentum_from_daily_bars",
+            rolling_window_span=f"{momentum_4} daily periods",
+            minimum_observation_count=f"{momentum_4 + 1} closes",
+            upstream_initialization="the current close plus the lookback close",
+            calendar_or_session_rule="canonical daily sessions",
+            evaluability_predicate=(
+                f"a close exists at this session and at the session "
+                f"{momentum_4} periods earlier"
+            ),
+            contiguous_history=(momentum_4 + 1, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "MOMENTUM_12W": _warmup_row(
+            "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars",
+            rolling_window_span=f"{momentum_12} daily periods",
+            minimum_observation_count=f"{momentum_12 + 1} closes",
+            upstream_initialization="the current close plus the lookback close",
+            calendar_or_session_rule="canonical daily sessions",
+            evaluability_predicate=(
+                f"a close exists at this session and at the session "
+                f"{momentum_12} periods earlier"
+            ),
+            contiguous_history=(momentum_12 + 1, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "MA_DISTANCE_20W": _warmup_row(
+            "btc_predictor.features.trend.twenty_week_ma_distance",
+            rolling_window_span=f"{ma_weeks} weekly periods",
+            minimum_observation_count=f"{ma_weeks} weekly closes",
+            upstream_initialization="none",
+            calendar_or_session_rule="canonical weekly sessions",
+            evaluability_predicate=(
+                f"{ma_weeks} weekly closes exist in the trailing weekly window"
+            ),
+            contiguous_history=(ma_weeks, WARMUP_UNIT_WEEKLY_SESSION),
+        ),
+        "HIGH_DISTANCE_52W": _warmup_row(
+            "btc_predictor.features.trend.fifty_two_week_high_distance",
+            rolling_window_span=f"{high_weeks} weekly periods",
+            minimum_observation_count=f"{high_weeks} weekly highs and closes",
+            upstream_initialization="none",
+            calendar_or_session_rule="canonical weekly sessions",
+            evaluability_predicate=(
+                f"{high_weeks} weekly observations exist in the trailing weekly "
+                "window"
+            ),
+            contiguous_history=(high_weeks, WARMUP_UNIT_WEEKLY_SESSION),
+        ),
+        "ETF_NORM_5D": _warmup_row(
+            "btc_predictor.features.flow.five_day_etf_flow",
+            rolling_window_span=f"{etf_5} publication days",
+            minimum_observation_count=(
+                f"{etf_5} complete fund-universe publication days"
+            ),
+            upstream_initialization="the latest point-in-time AUM is required",
+            calendar_or_session_rule="configured ETF publication calendar",
+            evaluability_predicate=(
+                f"{etf_5} complete publication days and a current AUM exist"
+            ),
+            contiguous_history=(etf_5, WARMUP_UNIT_ETF_PUBLICATION_DAY),
+        ),
+        "ETF_NORM_20D": _warmup_row(
+            "btc_predictor.features.flow.twenty_day_etf_flow",
+            rolling_window_span=f"{etf_20} publication days",
+            minimum_observation_count=(
+                f"{etf_20} complete fund-universe publication days"
+            ),
+            upstream_initialization="the latest point-in-time AUM is required",
+            calendar_or_session_rule="configured ETF publication calendar",
+            evaluability_predicate=(
+                f"{etf_20} complete publication days and a current AUM exist"
+            ),
+            contiguous_history=(etf_20, WARMUP_UNIT_ETF_PUBLICATION_DAY),
+        ),
+        "FLOW_ACCEL": _warmup_row(
+            "btc_predictor.features.flow.etf_flow_acceleration",
+            rolling_window_span=f"the {etf_5}d and {etf_20}d normalized windows",
+            minimum_observation_count="both source windows complete",
+            upstream_initialization="none beyond the two source windows",
+            calendar_or_session_rule="configured ETF publication calendar",
+            evaluability_predicate="ETF_NORM_5D and ETF_NORM_20D are both complete",
+            contiguous_history=(etf_20, WARMUP_UNIT_ETF_PUBLICATION_DAY),
+        ),
+        "CVD_SPREAD": _warmup_row(
+            CVD_HISTORICAL_OWNER,
+            rolling_window_span=(
+                f"{cvd_window} prior common observations; the owner specifies a "
+                "window in observations and specifies no cadence"
+            ),
+            minimum_observation_count=(
+                f"{cvd_window} prior plus 1 current common spot/perp observation"
+            ),
+            upstream_initialization=(
+                "the z-score excludes the current observation from its own "
+                "history, and both the spot and perp series must carry the same "
+                "common timestamps"
+            ),
+            calendar_or_session_rule=(
+                f"{PROSPECTIVE_CVD_ACQUISITION_VERSION} supplies the "
+                f"{CVD_SELECTED_CADENCE} acquisition grid; the feature owner "
+                "supplies the observation count"
+            ),
+            evaluability_predicate=(
+                f"{cvd_window} prior common observations plus the current one "
+                "exist with available_at <= decision_time, and neither side's "
+                "history is degenerate"
+            ),
+            contiguous_history=(cvd_window + 1, WARMUP_UNIT_HOURLY_COMMON),
+        ),
+        "SPOT_DOMINANCE": _warmup_row(
+            "btc_predictor.features.flow.spot_perp_participation_from_rows",
+            rolling_window_span=(
+                f"{volume_growth}-period current and prior growth windows plus "
+                f"{volume_zscore} prior growth values"
+            ),
+            minimum_observation_count=(
+                f"{volume_growth * 2 + volume_zscore} common observations"
+            ),
+            upstream_initialization=(
+                "the growth series initializes only after two equal windows"
+            ),
+            calendar_or_session_rule="exact UTC hourly common spot/perp timestamps",
+            evaluability_predicate=(
+                f"{volume_growth * 2 + volume_zscore} common observations exist "
+                "and both growth z-scores are defined"
+            ),
+            contiguous_history=(
+                volume_growth * 2 + volume_zscore,
+                WARMUP_UNIT_HOURLY_COMMON,
+            ),
+        ),
+        "FUNDING_7D_AVG": _warmup_row(
+            "btc_predictor.features.positioning.funding_health",
+            rolling_window_span=f"{funding_avg}d, half-open (t - {funding_avg}d, t]",
+            minimum_observation_count="at least 1 available observation",
+            upstream_initialization="none",
+            calendar_or_session_rule="trailing elapsed UTC days",
+            evaluability_predicate=(
+                f"at least one funding observation falls in (t - {funding_avg}d, t]"
+            ),
+            contiguous_history=None,
+        ),
+        "FUNDING_ZSCORE_180D": _warmup_row(
+            "btc_predictor.features.positioning.funding_health",
+            rolling_window_span=(
+                f"{funding_window}d, half-open [t - {funding_window}d, t)"
+            ),
+            minimum_observation_count=f"{funding_min} prior observations",
+            upstream_initialization=(
+                "the current observation is excluded from its own history"
+            ),
+            calendar_or_session_rule="trailing elapsed UTC days",
+            evaluability_predicate=(
+                f"{funding_min} prior funding observations fall in "
+                f"[t - {funding_window}d, t) and their variance is non-zero"
+            ),
+            contiguous_history=(funding_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "FUNDING_HEALTH": _warmup_row(
+            "btc_predictor.features.positioning.funding_health",
+            rolling_window_span="inherits FUNDING_ZSCORE_180D",
+            minimum_observation_count="one complete funding z-score",
+            upstream_initialization="none",
+            calendar_or_session_rule="inherits the funding z-score",
+            evaluability_predicate="FUNDING_ZSCORE_180D is complete",
+            contiguous_history=(funding_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "OI_GROWTH_7D": _warmup_row(
+            "btc_predictor.features.positioning.open_interest_growth_health",
+            rolling_window_span=f"{oi_growth}d comparison",
+            minimum_observation_count="a current and a prior comparable observation",
+            upstream_initialization=(
+                f"a prior OI observation at or before t - {oi_growth}d is required"
+            ),
+            calendar_or_session_rule="elapsed UTC day comparison",
+            evaluability_predicate=(
+                f"a current OI aggregate exists and an aggregate exists at or "
+                f"before t - {oi_growth}d"
+            ),
+            contiguous_history=(oi_growth + 1, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "OI_GROWTH_ZSCORE_180D": _warmup_row(
+            "btc_predictor.features.positioning.open_interest_growth_health",
+            rolling_window_span=f"{oi_window}d of growth results",
+            minimum_observation_count=f"{oi_min} prior growth observations",
+            upstream_initialization=(
+                f"the earliest retained growth observation itself needs an OI "
+                f"observation {oi_growth}d earlier"
+            ),
+            calendar_or_session_rule="trailing elapsed UTC days",
+            evaluability_predicate=(
+                f"{oi_min} prior growth observations fall in "
+                f"[t - {oi_window}d, t) and their variance is non-zero"
+            ),
+            contiguous_history=(oi_growth_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "OI_GROWTH_HEALTH": _warmup_row(
+            "btc_predictor.features.positioning.open_interest_growth_health",
+            rolling_window_span="inherits OI_GROWTH_ZSCORE_180D",
+            minimum_observation_count="one complete OI-growth z-score",
+            upstream_initialization="none",
+            calendar_or_session_rule="inherits the OI-growth z-score",
+            evaluability_predicate="OI_GROWTH_ZSCORE_180D is complete",
+            contiguous_history=(oi_growth_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "OI_INTENSITY": _warmup_row(
+            "btc_predictor.features.positioning.open_interest_intensity",
+            rolling_window_span="none at this owner",
+            minimum_observation_count=(
+                "one open-interest aggregate and one market-cap observation at "
+                "the same exact observation_time"
+            ),
+            upstream_initialization=(
+                f"the market-cap input is supplied by "
+                f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION} on the "
+                f"{MARKET_CAP_OBSERVATION_GRID} grid; a missing or late "
+                "market-cap observation leaves the feature not evaluable"
+            ),
+            calendar_or_session_rule="the same point-in-time decision",
+            evaluability_predicate=(
+                "the open-interest aggregate and the market-cap observation "
+                "share an exact observation_time and both are available at the "
+                "decision"
+            ),
+            contiguous_history=None,
+        ),
+        "OI_INTENSITY_PERCENTILE_180D": _warmup_row(
+            "btc_predictor.features.positioning.open_interest_intensity",
+            rolling_window_span=(
+                f"{oi_intensity_window}d, half-open "
+                f"[t - {oi_intensity_window}d, t)"
+            ),
+            minimum_observation_count=(
+                f"{oi_intensity_min} prior intensity observations"
+            ),
+            upstream_initialization=(
+                "every historical intensity observation needs its own aligned "
+                "open-interest and market-cap pair"
+            ),
+            calendar_or_session_rule="trailing elapsed UTC days",
+            evaluability_predicate=(
+                f"a current intensity exists and {oi_intensity_min} prior "
+                f"intensity observations fall in [t - {oi_intensity_window}d, t)"
+            ),
+            contiguous_history=(oi_intensity_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "FUTURES_BASIS_AVG": _warmup_row(
+            "btc_predictor.features.positioning.futures_basis_health",
+            rolling_window_span="none at this owner",
+            minimum_observation_count="at least 1 available basis observation",
+            upstream_initialization="none",
+            calendar_or_session_rule="the same point-in-time decision",
+            evaluability_predicate=(
+                "at least one basis observation is available at the decision"
+            ),
+            contiguous_history=None,
+        ),
+        "FUTURES_BASIS_ZSCORE_180D": _warmup_row(
+            "btc_predictor.features.positioning.futures_basis_health",
+            rolling_window_span=f"{basis_window}d, half-open [t - {basis_window}d, t)",
+            minimum_observation_count=f"{basis_min} prior observations",
+            upstream_initialization=(
+                "the current observation is excluded from its own history"
+            ),
+            calendar_or_session_rule="trailing elapsed UTC days",
+            evaluability_predicate=(
+                f"{basis_min} prior basis observations fall in "
+                f"[t - {basis_window}d, t) and their variance is non-zero"
+            ),
+            contiguous_history=(basis_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "FUTURES_BASIS_HEALTH": _warmup_row(
+            "btc_predictor.features.positioning.futures_basis_health",
+            rolling_window_span="inherits FUTURES_BASIS_ZSCORE_180D",
+            minimum_observation_count="one complete basis z-score",
+            upstream_initialization="none",
+            calendar_or_session_rule="inherits the basis z-score",
+            evaluability_predicate="FUTURES_BASIS_ZSCORE_180D is complete",
+            contiguous_history=(basis_sessions, WARMUP_UNIT_DAILY_SOURCE),
+        ),
+        "RV_7": _warmup_row(
+            "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+            rolling_window_span=f"{rv_7} daily returns",
+            minimum_observation_count=f"{rv_7 + 1} contiguous daily closes",
+            upstream_initialization="the first return needs the previous close",
+            calendar_or_session_rule="gap-aware canonical daily sessions",
+            evaluability_predicate=(
+                f"{rv_7 + 1} contiguous daily closes are available and all are "
+                "strictly positive"
+            ),
+            contiguous_history=(rv_7 + 1, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "RV_20": _warmup_row(
+            "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+            rolling_window_span=f"{rv_20} daily returns",
+            minimum_observation_count=f"{rv_20 + 1} contiguous daily closes",
+            upstream_initialization="the first return needs the previous close",
+            calendar_or_session_rule="gap-aware canonical daily sessions",
+            evaluability_predicate=(
+                f"{rv_20 + 1} contiguous daily closes are available and all are "
+                "strictly positive"
+            ),
+            contiguous_history=(rv_20 + 1, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "RV_60": _warmup_row(
+            "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+            rolling_window_span=f"{rv_60} daily returns",
+            minimum_observation_count=f"{rv_60 + 1} contiguous daily closes",
+            upstream_initialization="the first return needs the previous close",
+            calendar_or_session_rule="gap-aware canonical daily sessions",
+            evaluability_predicate=(
+                f"{rv_60 + 1} contiguous daily closes are available and all are "
+                "strictly positive"
+            ),
+            contiguous_history=(rv_60 + 1, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "VOL_COMPRESSION_RATIO": _warmup_row(
+            "btc_predictor.features.volatility.volatility_compression_ratio",
+            rolling_window_span=f"the RV_{rv_7} and RV_{rv_20} windows",
+            minimum_observation_count="both realized-volatility inputs complete",
+            upstream_initialization=f"none beyond RV_{rv_20}",
+            calendar_or_session_rule="inherits the canonical daily sessions",
+            evaluability_predicate=(
+                f"RV_{rv_7} and RV_{rv_20} are both complete and RV_{rv_20} is "
+                "non-zero"
+            ),
+            contiguous_history=(rv_20 + 1, WARMUP_UNIT_DAILY_SESSION),
+        ),
+        "VOL_PERCENTILE_2Y": _warmup_row(
+            "btc_predictor.features.volatility.volatility_percentile",
+            rolling_window_span=(
+                f"{vol_percentile['rolling_window_span_days']}d eligible "
+                f"trailing window, {vol_percentile['rolling_window_boundary']}"
+            ),
+            minimum_observation_count=(
+                f"{_VOL_PERCENTILE_KWDEFAULTS['min_percentile_observations']} "
+                f"prior {vol_percentile['source_feature_id']} observations "
+                "inside that window, plus 1 current observation"
+            ),
+            upstream_initialization=vol_percentile["upstream_initialization"],
+            calendar_or_session_rule="canonical daily sessions",
+            evaluability_predicate=(
+                f"a current {vol_percentile['source_feature_id']} result exists "
+                "and at least "
+                f"{_VOL_PERCENTILE_KWDEFAULTS['min_percentile_observations']} "
+                "prior results fall inside "
+                f"{vol_percentile['rolling_window_boundary']}. The window span "
+                "alone never implies completeness and "
+                f"{vol_percentile['rolling_window_span_days']} populated days "
+                "are never required."
+            ),
+            contiguous_history=(vol_percentile_sessions, WARMUP_UNIT_DAILY_SESSION),
+        ),
     }
     if set(rows) != set(INITIAL_FEATURE_NAMES):
         raise ProspectiveCorpusError("warmup rows must exactly cover INITIAL_FEATURE_NAMES")
+
+    longest_by_unit: dict[str, int] = {}
+    for row in rows.values():
+        estimate = row["minimum_contiguous_history_to_first_evaluable"]
+        if estimate is None:
+            continue
+        unit = estimate["unit"]
+        longest_by_unit[unit] = max(longest_by_unit.get(unit, 0), estimate["value"])
+
     payload = {
         "all_feature_warmups_frozen": True,
-        "evaluable_slot_rule": (
-            "WARMUP_HISTORY_COMPLETE is true only when every frozen feature's "
-            "owner-specific observation count, session/calendar rule and "
-            "initialization requirement is satisfied from PIT inputs."
+        "composite_inheritance_rule": (
+            "A composite score is complete only when every required component "
+            "is complete under its own owner's predicate. A composite invents "
+            "no window of its own and never substitutes an elapsed-time proxy "
+            "for a component's predicate."
         ),
-        "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
-        "longest_required_warmup": f"{percentile_window + percentile_source_window} calendar days",
+        "elapsed_time_is_an_evaluability_test": (
+            WARMUP_ELAPSED_TIME_IS_AN_EVALUABILITY_TEST
+        ),
+        "evaluability_rule": WARMUP_EVALUABILITY_RULE,
+        "feature_inventory_owner": (
+            "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES"
+        ),
+        "longest_contiguous_history_planning_estimate_by_unit": dict(
+            sorted(longest_by_unit.items())
+        ),
+        "planning_estimate_label": WARMUP_PLANNING_ESTIMATE_LABEL,
+        "planning_estimate_units_are_not_commensurable": True,
         "pre_warmup_behavior": (
-            "Raw PIT capture may later build history only after both the corpus "
-            "protocol and sufficiency-governance hashes plus POSTP1-004 have "
-            "passed their required reviews. Until WARMUP_HISTORY_COMPLETE, a "
-            "slot is WARMUP_HISTORY_INCOMPLETE and enters no evaluable metric universe."
+            "Raw point-in-time capture may build history only after both the "
+            "corpus protocol and sufficiency-governance hashes plus POSTP1-004 "
+            "have passed their required reviews. Until WARMUP_HISTORY_COMPLETE "
+            "a slot is WARMUP_HISTORY_INCOMPLETE and enters no evaluable metric "
+            "universe."
         ),
         "protocol_version": PROTOCOL_VERSION,
         "rows": rows,
-        "schema_version": "PROSPECTIVE_WARMUP_HISTORY_V1",
+        "schema_version": "PROSPECTIVE_WARMUP_HISTORY_V2",
         "state_name": "WARMUP_HISTORY_COMPLETE",
+        "superseded_claim": {
+            "claim": "750 calendar days is the exact owner-derived warmup",
+            "correction": vol_percentile["statement"],
+            "retained_as_scientific_minimum": False,
+            "why_it_was_wrong": (
+                "It added the 730-day eligible trailing window to a 20-day "
+                "upstream window as if both were required populated histories, "
+                "and then used the sum as an elapsed-time evaluability test. "
+                "The owner requires "
+                f"{_VOL_PERCENTILE_KWDEFAULTS['min_percentile_observations']} "
+                "prior observations inside the window, not "
+                f"{vol_percentile['rolling_window_span_days']} populated days."
+            ),
+        },
+        "three_distinct_quantities": {
+            "minimum_contiguous_history_to_first_evaluable": (
+                "A planning estimate under contiguous observations only. It is "
+                "not the evaluability authority and no slot is admitted or "
+                "refused by comparing elapsed time against it."
+            ),
+            "minimum_observation_count": (
+                "The qualifying observations an owner requires inside its "
+                "applicable trailing window. This, with the upstream "
+                "initialization, is the evaluability authority."
+            ),
+            "rolling_window_span": (
+                "The eligible trailing window an owner searches. It states "
+                "which observations may count, never how many must exist."
+            ),
+        },
+        "vol_percentile_2y_derivation": vol_percentile,
     }
     payload["definition_sha256"] = _digest(payload)
     return payload
-
 
 # ===========================================================================
 # 5. reference variants
@@ -1412,14 +3382,33 @@ POST_DIVERGENCE_STOP_SEMANTICS = {
 def assert_required_semantics_unambiguous() -> None:
     """Fail closed if any bounded correction cannot be uniquely derived."""
 
-    cvd_derivation = NON_PRICE_INPUT_SOURCES["spot_perp_cvd"][
-        "cadence_derivation"
-    ]
+    # CVD cadence is no longer claimed to be uniquely implied by the Phase-1
+    # feature owner -- it demonstrably is not.  What must hold instead is that
+    # the acquisition semantics are frozen here, honestly labelled as new
+    # pre-data governance, and never attributed to inherited authority.
+    cvd = NON_PRICE_INPUT_SOURCES["spot_perp_cvd"]["cadence_governance"]
     if (
-        cvd_derivation["unique"] is not True
-        or cvd_derivation["accepted"] != "EXACT_UTC_HOURLY_OBSERVATIONS"
+        cvd["historical_feature_owner_specifies_cadence"] is not False
+        or cvd["historically_inherited"] is not False
+        or cvd["selected_by_new_pre_data_governance"] is not True
+        or cvd["unit_tests_used_as_cadence_authority"] is not False
+        or cvd["selected_cadence"] != CVD_SELECTED_CADENCE
     ):
-        raise ProspectiveCorpusError(AMBIGUOUS_FROZEN_INPUT_CLASSIFICATION)
+        raise ProspectiveCorpusError(INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION)
+    market_cap = NON_PRICE_INPUT_SOURCES["btc_market_cap"]
+    if (
+        market_cap["series_id"] != MARKET_CAP_SERIES_ID
+        or market_cap["series_type"] != MARKET_CAP_SERIES_TYPE
+        or not market_cap["provider"]
+    ):
+        raise ProspectiveCorpusError(MISSING_MARKET_CAP_SOURCE_CLASSIFICATION)
+    liquidations = NON_PRICE_INPUT_SOURCES["liquidations"]
+    if liquidations["existing_aggregate_distinguishes_missing_from_empty"] is not False:
+        raise ProspectiveCorpusError(INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION)
+    if not LIQUIDATION_PERCENTILE_ADAPTER_REQUIRED:
+        raise ProspectiveCorpusError(
+            AMBIGUOUS_LIQUIDATION_NORMALIZATION_CLASSIFICATION
+        )
     if GAP_THROUGH_DERIVATION["unique_interpretation"] is not True:
         raise ProspectiveCorpusError(AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION)
     if STOP_EVENT_UNIVERSE_DERIVATION["unique_interpretation"] is not True:
@@ -2495,6 +4484,8 @@ def evidence_sufficiency_contract() -> dict[str, Any]:
 PROHIBITED_AFTER_COLLECTION_STARTS = (
     "add or remove a non-price input family",
     "change a comparison reference identity",
+    "change a frozen acquisition cadence, provider, market universe, series "
+    "identity, feed-status vocabulary or normalization adapter",
     "change a denominator or its universe predicate",
     "change an evidence-sufficiency minimum",
     "change the cost or slippage model",
@@ -2555,6 +4546,7 @@ _APPEND_ONLY_RAW_TABLES = (
     "prospective_run",
     "prospective_decision_observation",
     "prospective_source_input_snapshot",
+    "prospective_liquidation_feed_state",
     "prospective_data_quality_event",
 )
 
@@ -2630,6 +4622,42 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
         "purpose": (
             "Immutable point-in-time source observations, candidate-neutral. A "
             "restatement is a new revision row; an overwrite is refused."
+        ),
+    },
+    "prospective_liquidation_feed_state": {
+        "append_only": True,
+        "columns": {
+            "available_at": "timestamptz not null",
+            "event_count": "integer null",
+            "feed_status": "text not null",
+            "ingested_at": "timestamptz not null",
+            "instrument": "text not null",
+            "long_liquidation_notional_usd": "numeric null",
+            "observation_time": "timestamptz not null",
+            "provider": "text not null",
+            "revision": "text not null",
+            "run_id": "uuid not null",
+            "short_liquidation_notional_usd": "numeric null",
+            "source_record_ids_digest": "char(64) null",
+            "timeframe": "text not null",
+        },
+        "layer": "RAW",
+        "primary_key": [
+            "run_id",
+            "provider",
+            "instrument",
+            "timeframe",
+            "observation_time",
+            "revision",
+        ],
+        "purpose": (
+            "Liquidation feed state persisted independently of the aggregate "
+            "numeric value, so an observed interval with zero liquidation "
+            "events is never stored as, nor recovered as, a missing feed. "
+            f"feed_status is drawn from {list(LIQUIDATION_FEED_STATUSES)} and "
+            f"is owned by {PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION}; the "
+            "notional columns are null for every unusable status and are never "
+            "defaulted to zero."
         ),
     },
     "prospective_data_quality_event": {
@@ -3101,6 +5129,8 @@ def stop_event_taxonomy() -> dict[str, Any]:
 
 def input_snapshot_schema() -> dict[str, Any]:
     payload = {
+        "acquisition_semantics_are_new_pre_data_governance": True,
+        "acquisition_semantics_distinct_from_feature_semantics": True,
         "champion_identity": CHAMPION_IDENTITY,
         "champion_identity_binding_rule": CHAMPION_IDENTITY_BINDING_RULE,
         "derived_state_inputs": DERIVED_STATE_INPUTS,
@@ -3114,9 +5144,12 @@ def input_snapshot_schema() -> dict[str, Any]:
         "pit_rule": PIT_RULE,
         "portfolio_state_inputs": list(PORTFOLIO_STATE_INPUTS),
         "price_input_sources": PRICE_INPUT_SOURCES,
+        "prospective_acquisition_contract_versions": list(
+            PROSPECTIVE_ACQUISITION_CONTRACT_VERSIONS
+        ),
         "protocol_version": PROTOCOL_VERSION,
         "provenance_detection_requirements": list(PROVENANCE_DETECTION_REQUIREMENTS),
-        "schema_version": "PROSPECTIVE_INTEGRATION_INPUT_SNAPSHOT_V1",
+        "schema_version": "PROSPECTIVE_INTEGRATION_INPUT_SNAPSHOT_V2",
     }
     payload["definition_sha256"] = _digest(payload)
     return payload
@@ -3377,6 +5410,7 @@ def protocol_definition() -> dict[str, Any]:
     assert_collection_not_authorized()
     assert_required_semantics_unambiguous()
     authority = historical_gate_authority()
+    acquisition = prospective_acquisition_governance()
     children = {
         "data_schema_contract": data_schema_contract(),
         "decision_universe": decision_universe_contract(),
@@ -3385,6 +5419,18 @@ def protocol_definition() -> dict[str, Any]:
         "input_snapshot_schema": input_snapshot_schema(),
         "metric_evidence_contracts": metric_evidence_contracts(),
         "portfolio_track_contract": portfolio_track_contract(),
+        "prospective_btc_market_cap_acquisition": acquisition["contracts"][
+            PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION
+        ],
+        "prospective_cvd_acquisition": acquisition["contracts"][
+            PROSPECTIVE_CVD_ACQUISITION_VERSION
+        ],
+        "prospective_liquidation_capture": acquisition["contracts"][
+            PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION
+        ],
+        "prospective_liquidation_percentile_adapter": acquisition["contracts"][
+            PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION
+        ],
         "semantic_diff_from_v5_blockers": semantic_diff_from_v5_blockers(),
         "stage_b_evaluation_contract": stage_b_evaluation_contract(),
         "stop_event_taxonomy": stop_event_taxonomy(),
@@ -3433,14 +5479,20 @@ def protocol_definition() -> dict[str, Any]:
             "frozen_v3_definition_sha256": FROZEN_V3_DEFINITION_SHA256,
             "frozen_v4_definition_sha256": FROZEN_V4_DEFINITION_SHA256,
             "frozen_v5_definition_sha256": FROZEN_V5_DEFINITION_SHA256,
-            "failed_prospective_protocol": {
-                "definition_sha256": FAILED_PROTOCOL_DEFINITION_SHA256,
-                "implementation_commit": FAILED_PROTOCOL_IMPLEMENTATION_COMMIT,
-                "review": FAILED_PROTOCOL_REVIEW,
-                "review_classification": FAILED_PROTOCOL_REVIEW_CLASSIFICATION,
-                "retained": True,
-                "superseded_before_collection": True,
-            },
+            "failed_prospective_protocols": [
+                dict(row) for row in FAILED_PROSPECTIVE_PROTOCOL_LINEAGE
+            ],
+            "failed_prospective_protocol_count": len(
+                FAILED_PROSPECTIVE_PROTOCOL_LINEAGE
+            ),
+            "protocol_version_retained_rationale": (
+                PROTOCOL_VERSION_RETAINED_RATIONALE
+            ),
+        },
+        "prospective_acquisition_governance": {
+            key: value
+            for key, value in acquisition.items()
+            if key != "contracts"
         },
         "historical_gate_authority": authority,
         "no_threshold_authored": True,
@@ -3541,6 +5593,16 @@ _CHILD_ARTIFACTS = (
     (SEMANTIC_DIFF_FILENAME, "semantic_diff_from_v5_blockers"),
     (FEATURE_INPUT_COVERAGE_FILENAME, "feature_input_coverage_contract"),
     (WARMUP_HISTORY_FILENAME, "warmup_history_contract"),
+    (CVD_ACQUISITION_FILENAME, "prospective_cvd_acquisition_contract"),
+    (
+        MARKET_CAP_ACQUISITION_FILENAME,
+        "prospective_btc_market_cap_acquisition_contract",
+    ),
+    (LIQUIDATION_CAPTURE_FILENAME, "prospective_liquidation_capture_contract"),
+    (
+        LIQUIDATION_PERCENTILE_ADAPTER_FILENAME,
+        "prospective_liquidation_percentile_adapter_contract",
+    ),
 )
 
 
@@ -3556,6 +5618,12 @@ _CHILD_KEY_BY_FILENAME = {
     SEMANTIC_DIFF_FILENAME: "semantic_diff_from_v5_blockers",
     FEATURE_INPUT_COVERAGE_FILENAME: "feature_input_coverage",
     WARMUP_HISTORY_FILENAME: "warmup_history",
+    CVD_ACQUISITION_FILENAME: "prospective_cvd_acquisition",
+    MARKET_CAP_ACQUISITION_FILENAME: "prospective_btc_market_cap_acquisition",
+    LIQUIDATION_CAPTURE_FILENAME: "prospective_liquidation_capture",
+    LIQUIDATION_PERCENTILE_ADAPTER_FILENAME: (
+        "prospective_liquidation_percentile_adapter"
+    ),
 }
 
 
@@ -3596,17 +5664,80 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "",
         "## Failed lineage retained",
         "",
-        f"- Failed protocol hash: `{FAILED_PROTOCOL_DEFINITION_SHA256}`",
-        f"- Failed implementation commit: `{FAILED_PROTOCOL_IMPLEMENTATION_COMMIT}`",
-        f"- Review: `{FAILED_PROTOCOL_REVIEW}` / `{FAILED_PROTOCOL_REVIEW_CLASSIFICATION}`",
-        "- Superseded before collection: `YES`",
+    ]
+    for row in FAILED_PROSPECTIVE_PROTOCOL_LINEAGE:
+        lines += [
+            f"- Attempt {row['attempt']} (`{row['ticket']}`) hash: "
+            f"`{row['definition_sha256']}`",
+            f"  - Implementation commit: `{row['implementation_commit']}`",
+            f"  - Review: `{row['review']}` / `{row['review_classification']}`",
+            "  - Retained as failed, non-authoritative, superseded before "
+            "collection: `YES`",
+        ]
+    warmup = warmup_history_contract()
+    derivation = warmup["vol_percentile_2y_derivation"]
+    lines += [
+        "",
+        f"Version retained rather than incremented: {PROTOCOL_VERSION_RETAINED_RATIONALE}",
+        "",
+        "## New prospective pre-data acquisition governance",
+        "",
+        "Phase-1 owns the feature transformations. It never owned a persisted "
+        "source, cadence or feed-state contract for three of their raw inputs, "
+        f"so `{ACQUISITION_GOVERNANCE_TICKET}` freezes those acquisition "
+        "semantics now, before collection, and declares them explicitly as new "
+        "governance rather than inherited authority.",
+        "",
+        f"- `{PROSPECTIVE_CVD_ACQUISITION_VERSION}`: the historical owner "
+        f"`{CVD_HISTORICAL_OWNER}` specifies **no cadence** -- it accepts "
+        "arbitrary common timestamps and is observation-count based, requiring "
+        f"`{CVD_HISTORICAL_OWNER_WINDOW}`. The "
+        f"`{CVD_SELECTED_CADENCE}` acquisition cadence is selected here by new "
+        "pre-data governance, not inherited, and no Stage-B outcome was "
+        "inspected to choose it.",
+        f"- `{PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION}`: no repository "
+        "producer emits `market_cap_usd` today, and the unqualified "
+        "`raw.generic_series` family is not a source contract. One exact series "
+        f"identity is frozen: `{MARKET_CAP_SERIES_ID}` / "
+        f"`{MARKET_CAP_SERIES_TYPE}` / `{MARKET_CAP_SERIES_UNIT}` from provider "
+        f"`{MARKET_CAP_PROVIDER_ID}` on `{MARKET_CAP_RAW_TABLE}` at "
+        f"`{MARKET_CAP_OBSERVATION_CADENCE}`.",
+        f"- `{PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION}`: the existing aggregate "
+        f"`{LIQUIDATION_AGGREGATE_OWNER}` collapses a missing feed and an "
+        "observed zero-event feed to the same numeric zero. The prospective "
+        "capture layer persists feed state independently of the value, over "
+        f"`{list(LIQUIDATION_FEED_STATUSES)}`.",
+        f"- `{PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION}`: no "
+        "executable owner produces `liquidation_percentile`, so one is frozen "
+        f"here over a `{LIQUIDATION_PERCENTILE_WINDOW_DAYS}`-day half-open "
+        f"trailing window with `{LIQUIDATION_PERCENTILE_MIN_OBSERVATIONS}` "
+        f"minimum prior observations and the repository's own "
+        f"`{LIQUIDATION_PERCENTILE_CONVENTION}` convention.",
+        "",
+        "## Warmup is a rule, not a constant",
+        "",
+        f"- `VOL_PERCENTILE_2Y` trailing window span: "
+        f"`{derivation['rolling_window_span_days']}` days, "
+        f"`{derivation['rolling_window_boundary']}`.",
+        "- Minimum prior observations: "
+        f"`{_VOL_PERCENTILE_KWDEFAULTS['min_percentile_observations']}`.",
+        f"- Upstream initialization: {derivation['upstream_initialization']}.",
+        "- First evaluable with contiguous daily observations: "
+        f"`{derivation['first_evaluable_contiguous_daily_sessions']}` sessions "
+        f"(`{derivation['first_evaluable_elapsed_calendar_days']}` elapsed "
+        "calendar days).",
+        "- `750 calendar days` is **not** retained as a scientific minimum; "
+        "contiguous-history numbers are retained only as "
+        f"`{WARMUP_PLANNING_ESTIMATE_LABEL}`.",
         "",
         "## Corrected ownership and input closure",
         "",
         "- `raw.liquidations` is a required append-only PIT capture family.",
         "- Every `INITIAL_FEATURE_NAMES` member is bound to its transitive raw "
         "input families and one prospective capture contract.",
-        "- CVD cadence is exact-hour UTC with the authoritative 20-period z-score window.",
+        "- `OI_INTENSITY` and `OI_INTENSITY_PERCENTILE_180D` name the frozen "
+        "market-cap source contract, never an unqualified generic-series "
+        "family.",
         f"- Trade-action comparison owner: `{TRADE_ACTION_COMPARISON_OWNER_VERSION}`.",
         f"- Trade-eligibility permission owner: `{TRADE_ELIGIBILITY_COMPOSITE_OWNER_VERSION}`.",
         f"- Stop-event anchor: `{STOP_EVENT_UNIVERSE_ANCHOR}`.",
