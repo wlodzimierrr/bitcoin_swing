@@ -88,14 +88,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002R2 is complete with a failed
-  review, and BTC-019 is terminal and is not in progress
+- **Current IN_PROGRESS ticket:** POSTP1-001R3, the bounded pre-data correction
+  of the market-cap, CVD and liquidation source contracts. BTC-019 is terminal
+  and is not in progress
 - **Current BLOCKED tickets:** POSTP1-003 remains blocked because POSTP1-002R2
   did not pass. POSTP1-004 remains transitively blocked
-- **Next dependency-satisfied ticket:** None currently issued. The next work
-  must be a bounded pre-data correction and refreeze of the market-cap, CVD and
-  liquidation acquisition contracts, followed by independent xHigh review of
-  the new exact hash. POSTP1-003 and collection remain unauthorized, and
+- **Next dependency-satisfied ticket:** POSTP1-001R3 is now issued and in
+  progress. Its corrected exact hash must pass POSTP1-002R3 independent xHigh
+  review before POSTP1-003. POSTP1-003 and collection remain unauthorized, and
   BTC-019 does not reopen. The failed V2 hash `7fda8ac3...ad8be6` and its
   predecessors remain immutable lineage
 - **Other ready tickets:** None

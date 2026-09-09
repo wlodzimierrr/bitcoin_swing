@@ -482,6 +482,67 @@ acquisition decision and a newly frozen hash. POSTP1-003 may not begin. No
 qualifying observation was collected, no real Stage-B aggregate was evaluated,
 no BTC-019 sealed path was accessed, and collection remains unauthorized.
 
+## POSTP1-001R3 — `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1`
+
+**Status:** `IN PROGRESS`
+**Dependencies:** POSTP1-001R2 implementation and POSTP1-002R2 failed review
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** fourth independent xHigh review of the exact corrected hash
+**Owner module:** `btc_predictor/research/prospective_integration_corpus.py`
+**Artifacts:** `prospective_evidence/prospective_integration_corpus_v1/`
+
+### Scope
+
+Correct only the three POSTP1-002R2 acquisition blockers before any collection:
+
+1. freeze a CoinGecko polling, availability, revision-selection and decision-
+   binding rule that consumes only a named observation known to have been
+   retrieved before the decision, without treating provider publication time as
+   observable and without falling back beyond the exact expected source date;
+2. freeze concrete spot/perpetual CVD providers and instruments and enforce the
+   exact contiguous 21-hour prospective grid before the historical observation-
+   count feature owner; and
+3. freeze one complete liquidation provider/instrument census whose affirmative
+   coverage predicate separates an observed zero-event interval from a partial
+   or absent feed.
+
+The correction may add deterministic reference selectors/classifiers needed to
+make these contracts executable, but it must not implement the POSTP1-004
+network collectors, migrations or decision-snapshot pipeline. It may not alter
+Phase-1 feature formulas, V2 Stage-B gates, stop/action/eligibility/risk
+semantics, sufficiency minima, BTC-019, V3, certified V1, V4, V5 or EPIC T.
+
+### Acceptance criteria
+
+- CoinGecko's official 00:35 UTC daily availability and documented day + 2
+  restatements are represented honestly. Collection uses a fixed post-cache
+  polling schedule; `available_at` is the locally observable successful-response
+  completion instant, never an inferred provider publication instant.
+- A deterministic decision rule names exactly one required market-cap
+  observation date. It is the newest date from the latest completed scheduled
+  poll cycle, and absence of that exact date is not replaced by an older value.
+- An executable PIT selector passes at most one latest-available market-cap
+  revision per observation time to `open_interest_intensity`; historical
+  revisions are never averaged together.
+- CVD uses exact, hash-bound exchange-native public sources, spot instrument and
+  perpetual instrument. Units, source identifiers, event timestamps, taker-side
+  meaning, event inclusion and interval completion evidence are explicit.
+- The CVD adapter accepts exactly the current hour and its 20 immediately prior
+  UTC hours for both market types. An interior gap remains non-evaluable until
+  it has aged out of that contiguous window; later observations cannot compress
+  it away.
+- Liquidation capture binds one expected provider/instrument universe and a
+  complete-interval predicate. Disconnects, sequence gaps, heartbeat gaps,
+  invalid events, late finalization and unexpected source identities cannot be
+  labelled `OBSERVED_ZERO_EVENTS`.
+- Synthetic tests pin market-cap decision boundaries and revision selection,
+  CVD provider/grid behavior, complete/partial/zero liquidation states, child-
+  and top-level hash movement, gate parity and historical authority immutability.
+- The third failed hash remains explicit non-authoritative lineage. No
+  qualifying observation is collected, no real Stage-B aggregate is evaluated,
+  and collection remains unauthorized pending the fourth review, POSTP1-003 and
+  POSTP1-004 reviews.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -491,5 +552,7 @@ no BTC-019 sealed path was accessed, and collection remains unauthorized.
 | POSTP1-002R | repeat independent xHigh review of `0d4f1437...f45a9e` | COMPLETE / FAIL |
 | POSTP1-001R2 | `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED THIRD REVIEW |
 | POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | COMPLETE / FAIL |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R2 PASS |
+| POSTP1-001R3 | `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1` | IN PROGRESS |
+| POSTP1-002R3 | fourth independent xHigh review of the POSTP1-001R3 exact hash | BLOCKED by POSTP1-001R3 implementation |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R3 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
