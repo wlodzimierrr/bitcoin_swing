@@ -6,7 +6,7 @@
       "provider_quorum_owner": "btc_predictor.research.reference_composite_v2.V2_MINIMUM_PROVIDER_COUNT",
       "required_provider_owner": "btc_predictor.research.reference_composite.REQUIRED_COMPOSITE_PROVIDER_IDS"
     },
-    "implementation_closure_sha256": "b3410b88d11786dd294def1220226ea93c7d6ff80bf1483b7722e26af0bafa9b",
+    "implementation_closure_sha256": "599091d991ddf5ab32362e9e211a6d5f5de402733e91dbb09c62be143b09d460",
     "implementation_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
     "semantic_definition": {
       "candidate_neutral": true,
@@ -14,29 +14,146 @@
         "CROSS_MARKET_CONFIRMED_STOP_EVENT",
         "ISOLATED_VENUE_STOP_EVENT",
         "NO_STOP_EVENT",
-        "NOT_CLASSIFIABLE_INSUFFICIENT_PROVIDER_QUORUM"
+        "NOT_CLASSIFIABLE"
       ],
       "confirmation_quorum": 2,
       "event_window": "one canonical 1h session, UTC",
       "gap_through_states": [
         "GAP_THROUGH_STOP_EVENT",
-        "NOT_EVALUABLE_NO_PRIOR_OBSERVABLE_PRICE",
+        "NOT_EVALUABLE_PRIOR_CONSENSUS_UNAVAILABLE",
         "NOT_GAP_THROUGH"
       ],
       "manual_timestamp_selection_required": false,
       "precedence": [
         "A slot with fewer than PROVIDER_QUORUM available required providers is NOT_CLASSIFIABLE_INSUFFICIENT_PROVIDER_QUORUM and enters no event denominator.",
         "Otherwise, CROSS_MARKET_CONFIRMED_STOP_EVENT when at least CONFIRMATION_QUORUM available required providers reach the stop-relevant extreme.",
-        "Otherwise, ISOLATED_VENUE_STOP_EVENT when exactly one available required provider reaches it, so the confirmation quorum is measurably absent.",
+        "Otherwise, any missing required provider makes the slot NOT_CLASSIFIABLE: the absent venue could change NO_STOP_EVENT into ISOLATED_VENUE_STOP_EVENT or could prevent isolation from being established.",
+        "Otherwise, ISOLATED_VENUE_STOP_EVENT only when exactly one available required provider reaches it and at least CONFIRMATION_QUORUM available required providers do not reach it. Isolation is observed, never inferred through a missing provider.",
+        "A one-touch/one-non-touch/one-missing slot is NOT_CLASSIFIABLE because the missing venue could have confirmed the touch.",
         "Otherwise NO_STOP_EVENT. CROSS_MARKET_CONFIRMED_STOP_EVENT and ISOLATED_VENUE_STOP_EVENT are mutually exclusive by construction.",
         "GAP_THROUGH_STOP_EVENT is orthogonal and declared separately: it describes how the stop was crossed, not how many venues reached it, so a slot may carry both labels and neither universe silently drops the other's event."
       ],
+      "prior_observable_derivation": {
+        "accepted_interpretation": "PREVIOUS_CONTIGUOUS_REQUIRED_PROVIDER_CONSENSUS_CLOSE_V1",
+        "maximum_staleness_seconds": 3600,
+        "missing_session_semantics": "NOT_EVALUABLE_PRIOR_CONSENSUS_UNAVAILABLE",
+        "prior_timestamp_identity": "current canonical hourly observation_time minus exactly one hour",
+        "rows": [
+          {
+            "accepted": true,
+            "candidate_interpretation": "immediately prior required-provider-consensus hourly close",
+            "candidate_neutral": true,
+            "conflicting_authority": null,
+            "pit_safe": true,
+            "supporting_authority": [
+              "PRICE_SOURCE_POLICY_V1: provider outages remain explicit gaps and fallback splicing is prohibited",
+              "btc_predictor.portfolio.stop_execution: a gap is decided by the next eligible bar open",
+              "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION: source bars are exact UTC hours",
+              "existing stop-event comparison basis: raw required-provider consensus"
+            ],
+            "track_dependent": false,
+            "unique": true
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous available provider-consensus close across an outage",
+            "candidate_neutral": true,
+            "conflicting_authority": "PRICE_SOURCE_POLICY_V1 forbids splicing across explicit provider gaps",
+            "pit_safe": true,
+            "supporting_authority": "failed protocol lineage only",
+            "track_dependent": false,
+            "unique": false
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous candidate reference close",
+            "candidate_neutral": false,
+            "conflicting_authority": "would let the measured candidate define event-universe membership",
+            "pit_safe": true,
+            "supporting_authority": null,
+            "track_dependent": true,
+            "unique": false
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous control reference close",
+            "candidate_neutral": true,
+            "conflicting_authority": "the historical stop metrics compare a candidate with raw venue consensus; the event taxonomy is candidate-neutral raw evidence",
+            "pit_safe": true,
+            "supporting_authority": "control is the comparison baseline",
+            "track_dependent": true,
+            "unique": false
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous session open",
+            "candidate_neutral": true,
+            "conflicting_authority": "the execution owner uses the current bar open and supplies no previous-open concept",
+            "pit_safe": true,
+            "supporting_authority": null,
+            "track_dependent": false,
+            "unique": false
+          }
+        ],
+        "source_identity": "median close over the available required raw providers at the exact prior hour, requiring PROVIDER_QUORUM",
+        "unique_interpretation": true
+      },
       "provider_quorum": 2,
       "required_providers": [
         "bitstamp",
         "coinbase",
         "bitfinex"
       ],
+      "stop_event_universe_anchor": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP",
+      "stop_event_universe_derivation": {
+        "accepted_interpretation": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP",
+        "invariance_principle": "Candidate performance cannot reduce the set of events on which the candidate is judged merely by altering its own entry, exit or stop state.",
+        "rows": [
+          {
+            "accepted": false,
+            "authority_support": "failed protocol lineage only",
+            "bias_or_provenance_consequence": "candidate state can shrink its own denominator",
+            "interpretation": "candidate-track-specific stop",
+            "reason": "violates outcome-exogenous universe invariance"
+          },
+          {
+            "accepted": true,
+            "authority_support": "historical candidate-versus-control comparison basis and the authoritative control lifecycle",
+            "bias_or_provenance_consequence": "baseline state fixes the event anchor independently of candidate outcomes",
+            "interpretation": "control-track-specific stop",
+            "reason": "the comparison baseline supplies the only pre-existing exogenous stop identity"
+          },
+          {
+            "accepted": false,
+            "authority_support": "both tracks start from one state",
+            "bias_or_provenance_consequence": "undefined after later entries or stop advances",
+            "interpretation": "shared pre-divergence stop",
+            "reason": "cannot cover the natural-divergence epoch without inventing a synthetic stop"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "drops events whenever one track is flat or lacks a stop",
+            "interpretation": "joint/both-track stop universe",
+            "reason": "candidate behavior can remove events"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "candidate can add endogenous events and incompatible stop levels",
+            "interpretation": "union of track-specific stop events",
+            "reason": "no repository owner defines how two stop levels form one event"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "none found in the full owner trace",
+            "interpretation": "other existing-authority interpretation",
+            "reason": "no additional authoritative anchor exists"
+          }
+        ],
+        "unique_interpretation": true
+      },
       "stop_relevant_field": {
         "long": "low",
         "short": "high"
@@ -44,17 +161,90 @@
       "stop_touch_convention": "long: low <= stop; short: high >= stop",
       "venue_consensus": "median over available required providers"
     },
-    "semantic_definition_sha256": "60f452829942a1bb4fce0c35dd86b4bbb5f128a54228b720681672e2948af6d5",
+    "semantic_definition_sha256": "1c5506ced411b9a66ceb016f4dd282b7fc0d231b9895254b6183a47b076c6834",
     "version": "PROSPECTIVE_STOP_EVENT_CLASSIFIER_V1"
   },
-  "definition_sha256": "a239328b56a9312844e20319b6e88f4c4faecfc1c295519bf53b4f05b924ab72",
+  "definition_sha256": "ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e",
   "event_universes": {
     "CROSS_MARKET_CONFIRMED_STOP_EVENTS": "CROSS_MARKET_CONFIRMED_STOP_EVENT",
     "GAP_THROUGH_STOP_EVENTS": "GAP_THROUGH_STOP_EVENT",
     "ISOLATED_VENUE_STOP_EVENTS": "ISOLATED_VENUE_STOP_EVENT"
   },
+  "gap_through_derivation": {
+    "accepted_interpretation": "PREVIOUS_CONTIGUOUS_REQUIRED_PROVIDER_CONSENSUS_CLOSE_V1",
+    "maximum_staleness_seconds": 3600,
+    "missing_session_semantics": "NOT_EVALUABLE_PRIOR_CONSENSUS_UNAVAILABLE",
+    "prior_timestamp_identity": "current canonical hourly observation_time minus exactly one hour",
+    "rows": [
+      {
+        "accepted": true,
+        "candidate_interpretation": "immediately prior required-provider-consensus hourly close",
+        "candidate_neutral": true,
+        "conflicting_authority": null,
+        "pit_safe": true,
+        "supporting_authority": [
+          "PRICE_SOURCE_POLICY_V1: provider outages remain explicit gaps and fallback splicing is prohibited",
+          "btc_predictor.portfolio.stop_execution: a gap is decided by the next eligible bar open",
+          "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION: source bars are exact UTC hours",
+          "existing stop-event comparison basis: raw required-provider consensus"
+        ],
+        "track_dependent": false,
+        "unique": true
+      },
+      {
+        "accepted": false,
+        "candidate_interpretation": "previous available provider-consensus close across an outage",
+        "candidate_neutral": true,
+        "conflicting_authority": "PRICE_SOURCE_POLICY_V1 forbids splicing across explicit provider gaps",
+        "pit_safe": true,
+        "supporting_authority": "failed protocol lineage only",
+        "track_dependent": false,
+        "unique": false
+      },
+      {
+        "accepted": false,
+        "candidate_interpretation": "previous candidate reference close",
+        "candidate_neutral": false,
+        "conflicting_authority": "would let the measured candidate define event-universe membership",
+        "pit_safe": true,
+        "supporting_authority": null,
+        "track_dependent": true,
+        "unique": false
+      },
+      {
+        "accepted": false,
+        "candidate_interpretation": "previous control reference close",
+        "candidate_neutral": true,
+        "conflicting_authority": "the historical stop metrics compare a candidate with raw venue consensus; the event taxonomy is candidate-neutral raw evidence",
+        "pit_safe": true,
+        "supporting_authority": "control is the comparison baseline",
+        "track_dependent": true,
+        "unique": false
+      },
+      {
+        "accepted": false,
+        "candidate_interpretation": "previous session open",
+        "candidate_neutral": true,
+        "conflicting_authority": "the execution owner uses the current bar open and supplies no previous-open concept",
+        "pit_safe": true,
+        "supporting_authority": null,
+        "track_dependent": false,
+        "unique": false
+      }
+    ],
+    "source_identity": "median close over the available required raw providers at the exact prior hour, requiring PROVIDER_QUORUM",
+    "unique_interpretation": true
+  },
   "hand_picked_development_events_used": false,
-  "missing_provider_handling": "A missing required provider is named in missing_provider_ids and never imputed. Below the provider quorum the slot is NOT_CLASSIFIABLE_INSUFFICIENT_PROVIDER_QUORUM and enters no denominator.",
+  "missing_provider_handling": "A missing required provider is named in missing_provider_ids and never imputed. Below the provider quorum the slot is NOT_CLASSIFIABLE and enters no denominator. A one-touch/one-non-touch/one-missing slot is also NOT_CLASSIFIABLE because the observed non-touching set does not satisfy the confirmation quorum needed to establish isolation.",
+  "post_divergence_semantics": {
+    "active_stop_identity": "control lifecycle active stop plus its transition/source identity",
+    "candidate_position_state": "persisted on every classified slot but does not control membership",
+    "comparison_disposition": "If the control track has an active stop, raw venue events are classified at that stop and candidate/control reference outcomes remain comparable even when candidate portfolio state differs. If the control track has no active stop or its identity is unavailable, the slot is NOT_COMPARABLE and enters no stop-event denominator.",
+    "control_position_state": "must be open with a valid active stop",
+    "first_divergence": "first_divergence_decision_time from portfolio_track_contract",
+    "hidden_denominator_shrinkage_permitted": false
+  },
   "predecessor_replaced": "btc_predictor.research.reference_composite_empirical.KNOWN_DEVELOPMENT_EVENTS",
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "schema_version": "PROSPECTIVE_INTEGRATION_STOP_EVENT_TAXONOMY_V1",
@@ -63,7 +253,56 @@
     "TRIGGERED",
     "UNDEFINED"
   ],
-  "stop_reference_rule": "The stop compared at a slot is the evaluating track's own active stop under the authoritative lifecycle owner, never a hand-chosen reviewed level.",
+  "stop_reference_rule": "The stop compared at a slot is the control-reference track's active stop under the authoritative lifecycle owner, never a hand-chosen reviewed level and never a candidate-owned denominator anchor.",
+  "stop_universe_derivation": {
+    "accepted_interpretation": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP",
+    "invariance_principle": "Candidate performance cannot reduce the set of events on which the candidate is judged merely by altering its own entry, exit or stop state.",
+    "rows": [
+      {
+        "accepted": false,
+        "authority_support": "failed protocol lineage only",
+        "bias_or_provenance_consequence": "candidate state can shrink its own denominator",
+        "interpretation": "candidate-track-specific stop",
+        "reason": "violates outcome-exogenous universe invariance"
+      },
+      {
+        "accepted": true,
+        "authority_support": "historical candidate-versus-control comparison basis and the authoritative control lifecycle",
+        "bias_or_provenance_consequence": "baseline state fixes the event anchor independently of candidate outcomes",
+        "interpretation": "control-track-specific stop",
+        "reason": "the comparison baseline supplies the only pre-existing exogenous stop identity"
+      },
+      {
+        "accepted": false,
+        "authority_support": "both tracks start from one state",
+        "bias_or_provenance_consequence": "undefined after later entries or stop advances",
+        "interpretation": "shared pre-divergence stop",
+        "reason": "cannot cover the natural-divergence epoch without inventing a synthetic stop"
+      },
+      {
+        "accepted": false,
+        "authority_support": null,
+        "bias_or_provenance_consequence": "drops events whenever one track is flat or lacks a stop",
+        "interpretation": "joint/both-track stop universe",
+        "reason": "candidate behavior can remove events"
+      },
+      {
+        "accepted": false,
+        "authority_support": null,
+        "bias_or_provenance_consequence": "candidate can add endogenous events and incompatible stop levels",
+        "interpretation": "union of track-specific stop events",
+        "reason": "no repository owner defines how two stop levels form one event"
+      },
+      {
+        "accepted": false,
+        "authority_support": null,
+        "bias_or_provenance_consequence": "none found in the full owner trace",
+        "interpretation": "other existing-authority interpretation",
+        "reason": "no additional authoritative anchor exists"
+      }
+    ],
+    "unique_interpretation": true
+  },
   "tie_rule": "Reaching the stop is a non-strict comparison on the stop-relevant extreme, so a venue that touches exactly the stop counts as reaching it, matching the repository's own stop-touch convention.",
   "venue_disagreement_handling": "Disagreement among available providers is the measurement, not an error: the touching set, the median consensus and every provider's own outcome are persisted."
 }

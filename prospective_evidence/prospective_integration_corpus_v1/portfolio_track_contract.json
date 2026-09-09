@@ -1,5 +1,5 @@
 {
-  "definition_sha256": "6b69af9ae9e9bb9c3b24cd622d0aa4f432207a032b4bcd94e1cdf25db21e3a2c",
+  "definition_sha256": "1560eee774049e7eb72180ccfc18477e919eaf127646e03e1405cdf161318623",
   "divergence_evidence_fields": [
     "divergence_cause_metric",
     "divergence_cause_reason_codes",
@@ -50,6 +50,7 @@
     "fees",
     "generic_series",
     "lifecycle_policy",
+    "liquidations",
     "risk_limits",
     "scoring_policy",
     "spot_perp_cvd",

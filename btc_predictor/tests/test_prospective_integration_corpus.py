@@ -104,18 +104,40 @@ def _slot(
     *,
     stop: str = "99",
     direction: str = "long",
-    track: str = CANDIDATE_TRACK,
+    track: str = CONTROL_TRACK,
     prior_price: str | None = "105",
     prior_time: datetime | None = PRIOR_TIME,
+    prior_providers: tuple[ProviderObservation, ...] | None = None,
+    candidate_position_state: str = "OPEN_INITIAL",
+    first_divergence_decision_time: datetime | None = None,
 ) -> StopEvaluationSlot:
+    if prior_providers is None:
+        prior_providers = (
+            ()
+            if prior_price is None or prior_time is None
+            else tuple(
+                _observation(
+                    provider_id,
+                    observation_time=prior_time,
+                    open_=prior_price,
+                    high=prior_price,
+                    low=prior_price,
+                    close=prior_price,
+                )
+                for provider_id in corpus.REQUIRED_PROVIDER_IDS
+            )
+        )
     return StopEvaluationSlot(
         observation_time=SLOT_TIME,
         track=track,
         direction=direction,
         active_stop=Decimal(stop),
+        active_stop_identity="synthetic-control-stop-v1",
+        control_position_state="OPEN_INITIAL",
+        candidate_position_state=candidate_position_state,
         providers=providers,
-        prior_observable_price=None if prior_price is None else Decimal(prior_price),
-        prior_observable_observation_time=None if prior_price is None else prior_time,
+        prior_providers=prior_providers,
+        first_divergence_decision_time=first_divergence_decision_time,
     )
 
 
@@ -296,6 +318,85 @@ def test_the_daily_cadence_refuses_a_non_session_observation_time() -> None:
         )
 
 
+def test_liquidations_are_a_complete_required_pit_capture_family() -> None:
+    contract = corpus.input_snapshot_schema()
+    liquidation = contract["non_price_input_sources"]["liquidations"]
+    assert liquidation["raw_table"] == "raw.liquidations"
+    assert liquidation["observation_time_field"] == "observation_time"
+    assert liquidation["available_at_field"] == "available_at"
+    assert liquidation["ingested_at_field"] == "ingested_at"
+    assert liquidation["revision_policy"] == "APPEND_ONLY_NO_DECLARED_REVISION_KEY"
+    assert "ORDERLINESS_SCORE" in liquidation["consuming_features"]
+    assert "liquidation_cascade" in liquidation["consumer_path"]
+    assert "liquidations" not in contract["excluded_input_families"]
+
+
+def test_every_frozen_phase_1_feature_has_complete_input_closure() -> None:
+    coverage = corpus.feature_input_coverage_contract()
+    assert coverage["all_frozen_features_covered"] is True
+    assert coverage["feature_inventory"] == list(corpus.INITIAL_FEATURE_NAMES)
+    assert set(coverage["rows"]) == set(corpus.INITIAL_FEATURE_NAMES)
+    assert "liquidations" in coverage["required_raw_input_families"]
+    for row in coverage["rows"].values():
+        assert row["raw_input_families"]
+        assert set(row["capture_contract_count_by_family"].values()) == {1}
+        assert row["zero_fill_permitted"] is False
+        assert row["missing_value_default"] is None
+        assert row["future_information_reconstruction_permitted"] is False
+
+
+def test_cvd_capture_cadence_is_uniquely_frozen_from_phase_1_semantics() -> None:
+    cvd = corpus.NON_PRICE_INPUT_SOURCES["spot_perp_cvd"]
+    assert cvd["observation_cadence"] == "1h"
+    assert cvd["observation_time_alignment"] == "exact UTC hour"
+    assert cvd["zscore_window_periods"] == 20
+    assert cvd["cadence_derivation"]["unique"] is True
+    assert cvd["cadence_derivation"]["conflicting_repository_cadence"] is None
+    assert cvd["cadence_ambiguity"] is False
+    assert cvd["capture_state"].startswith("REQUIRES_NEW_COLLECTOR")
+
+
+def test_an_ambiguous_cvd_cadence_blocks_the_protocol(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    derivation = corpus.NON_PRICE_INPUT_SOURCES["spot_perp_cvd"][
+        "cadence_derivation"
+    ]
+    monkeypatch.setitem(derivation, "unique", False)
+    with pytest.raises(
+        ProspectiveCorpusError,
+        match="PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT",
+    ):
+        protocol_definition()
+
+
+def test_all_feature_warmups_are_machine_bound_before_collection() -> None:
+    warmup = corpus.warmup_history_contract()
+    assert warmup["all_feature_warmups_frozen"] is True
+    assert set(warmup["rows"]) == set(corpus.INITIAL_FEATURE_NAMES)
+    assert warmup["longest_required_warmup"] == "750 calendar days"
+    assert warmup["rows"]["CVD_SPREAD"]["effective_warmup"] == (
+        "21 consecutive hourly common observations"
+    )
+    assert "187 calendar days" in warmup["rows"]["OI_GROWTH_ZSCORE_180D"][
+        "effective_warmup"
+    ]
+    assert "WARMUP_HISTORY_INCOMPLETE" in warmup["pre_warmup_behavior"]
+    universe = corpus.decision_universe_contract()
+    assert universe["warmup_history"]["definition_sha256"] == warmup[
+        "definition_sha256"
+    ]
+
+
+def test_a_warmup_incomplete_slot_enters_no_evaluable_metric_universe() -> None:
+    warmup = corpus.warmup_history_contract()
+    assert "enters no evaluable metric universe" in warmup["pre_warmup_behavior"]
+    assert "WARMUP_HISTORY_INCOMPLETE" in corpus.NOT_EVALUABLE_REASONS
+    assert corpus.stage_b_evaluation_contract()["warmup_entry_requirement"].startswith(
+        "WARMUP_HISTORY_COMPLETE"
+    )
+
+
 # =============================================================================
 # 3. stop-event classification
 # =============================================================================
@@ -328,7 +429,32 @@ def test_one_reaching_venue_makes_an_isolated_venue_stop_event() -> None:
     )
     assert record["classification"] == EVENT_ISOLATED_VENUE
     assert record["touching_provider_ids"] == ["bitstamp"]
-    assert "CONFIRMATION_QUORUM_ABSENT" in record["reason_codes"]
+    assert record["non_touching_provider_ids"] == ["coinbase", "bitfinex"]
+
+
+def test_one_touch_one_non_touch_and_one_missing_is_not_isolated() -> None:
+    record = classify_stop_event(
+        _slot(
+            (
+                _observation("bitstamp", low="98"),
+                _observation("coinbase", low="101"),
+            )
+        )
+    )
+    assert record["classification"] == EVENT_NOT_CLASSIFIABLE
+    assert "ISOLATION_NOT_ESTABLISHED_MISSING_PROVIDER" in record["reason_codes"]
+
+
+def test_no_touch_with_a_missing_provider_is_not_silently_called_no_event() -> None:
+    record = classify_stop_event(
+        _slot(
+            (
+                _observation("bitstamp", low="101"),
+                _observation("coinbase", low="102"),
+            )
+        )
+    )
+    assert record["classification"] == EVENT_NOT_CLASSIFIABLE
 
 
 def test_no_reaching_venue_is_no_stop_event() -> None:
@@ -399,10 +525,9 @@ def test_trading_down_through_a_stop_inside_the_bar_is_not_a_gap_through() -> No
     assert record["consensus_stop_outcome"] == corpus.STOP_OUTCOME_NOT_TRIGGERED
 
 
-def test_a_missing_session_only_widens_the_prior_observable_interval() -> None:
-    """A REFERENCE_UNAVAILABLE run is handled by the same rule, not a new one."""
-
-    record = classify_stop_event(
+def test_a_stale_prior_hour_is_refused_instead_of_widening_the_interval() -> None:
+    with pytest.raises(ProspectiveCorpusError, match="exact contiguous hourly session"):
+        classify_stop_event(
         _slot(
             (
                 _observation("bitstamp", low="90", open_="95"),
@@ -411,11 +536,7 @@ def test_a_missing_session_only_widens_the_prior_observable_interval() -> None:
             prior_price="105",
             prior_time=SLOT_TIME - timedelta(hours=9),
         )
-    )
-    assert record["gap_through_state"] == GAP_THROUGH_EVENT
-    assert record["prior_observable_observation_time"] == (
-        (SLOT_TIME - timedelta(hours=9)).isoformat()
-    )
+        )
 
 
 def test_without_a_prior_observable_price_a_gap_through_is_not_evaluable() -> None:
@@ -431,6 +552,42 @@ def test_without_a_prior_observable_price_a_gap_through_is_not_evaluable() -> No
     )
     assert record["gap_through_state"] == GAP_THROUGH_NOT_EVALUABLE
     assert "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE" in record["reason_codes"]
+    assert "PRIOR_REFERENCE_SESSION_MISSING" in record["reason_codes"]
+
+
+def test_gap_through_has_one_frozen_candidate_neutral_prior_derivation() -> None:
+    derivation = corpus.GAP_THROUGH_DERIVATION
+    assert derivation["unique_interpretation"] is True
+    assert derivation["accepted_interpretation"] == corpus.PRIOR_OBSERVABLE_OWNER
+    accepted = [row for row in derivation["rows"] if row["accepted"]]
+    assert len(accepted) == 1
+    assert accepted[0]["candidate_neutral"] is True
+    assert accepted[0]["track_dependent"] is False
+    assert derivation["maximum_staleness_seconds"] == 3600
+    assert derivation["prior_timestamp_identity"].endswith("exactly one hour")
+
+
+def test_an_ambiguous_gap_derivation_blocks_the_protocol(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(
+        corpus.GAP_THROUGH_DERIVATION,
+        "unique_interpretation",
+        False,
+    )
+    with pytest.raises(
+        ProspectiveCorpusError,
+        match="PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_METRIC",
+    ):
+        protocol_definition()
+
+
+def test_gap_through_numerator_states_consensus_is_triggered_by_construction() -> None:
+    contract = metric_evidence_contracts()["contracts"][
+        "gap_through_stop_consensus_agreement_rate"
+    ]
+    assert "consensus is TRIGGERED by construction" in contract["numerator"]
+    assert contract["gap_through_derivation"]["unique_interpretation"] is True
 
 
 def test_a_short_stop_reads_the_high_side() -> None:
@@ -482,6 +639,8 @@ def test_the_taxonomy_replaces_the_hand_picked_development_event_list() -> None:
     ] is False
     assert taxonomy["predecessor_replaced"].endswith("KNOWN_DEVELOPMENT_EVENTS")
     assert taxonomy["classifier"]["semantic_definition"]["candidate_neutral"] is True
+    assert taxonomy["stop_universe_derivation"]["unique_interpretation"] is True
+    assert taxonomy["gap_through_derivation"]["unique_interpretation"] is True
 
 
 # =============================================================================
@@ -534,11 +693,52 @@ def test_regime_disagreement_compares_the_categorical_label() -> None:
 
 def test_trade_action_uses_the_repository_action_vocabulary() -> None:
     contract = metric_evidence_contracts()["contracts"]["trade_action_disagreement_rate"]
+    from btc_predictor.db.portfolio import PAPER_ACTIONS
     from btc_predictor.signals.data_quality import RECOMMENDATION_ACTIONS
 
-    assert contract["vocabulary"] == list(RECOMMENDATION_ACTIONS)
-    assert contract["vocabulary_owner"].endswith("RECOMMENDATION_ACTIONS")
+    assert set(contract["vocabulary"]) == set(RECOMMENDATION_ACTIONS + PAPER_ACTIONS)
+    assert contract["evidence_owner"] == corpus.TRADE_ACTION_COMPARISON_OWNER
+    assert "render_recommendation" not in contract["evidence_owner"]
+    assert contract["owner_contract"]["renderer_role"] == (
+        "PRESENTATION_ONLY_NOT_SCIENTIFIC_AUTHORITY"
+    )
+    assert "lifecycle-event identity" in contract["numerator"]
     assert contract["universe"] == corpus.UNIVERSE_ACTION_EVALUABLE
+
+
+def test_trade_eligibility_uses_the_full_permission_composite() -> None:
+    contract = metric_evidence_contracts()["contracts"][
+        "trade_eligibility_disagreement_rate"
+    ]
+    owner = contract["owner_contract"]
+    assert contract["evidence_owner"] == corpus.TRADE_ELIGIBILITY_COMPOSITE_OWNER
+    assert "features.entry.classify_entry_action" not in contract["evidence_owner"]
+    assert set(owner["authoritative_inputs"]) == {
+        "setup_eligibility",
+        "entry_conviction",
+        "regime_context",
+        "reward_risk",
+        "hard_veto",
+        "data_quality",
+        "no_chase",
+        "lifecycle_state",
+        "risk_capacity",
+        "reference_availability",
+    }
+    assert owner["output_vocabulary"] == [
+        "PERMITTED",
+        "NOT_PERMITTED",
+        "NOT_COMPARABLE",
+    ]
+
+
+def test_action_and_eligibility_flat_vs_position_asymmetry_is_resolved() -> None:
+    contracts = metric_evidence_contracts()["contracts"]
+    action = contracts["trade_action_disagreement_rate"]
+    eligibility = contracts["trade_eligibility_disagreement_rate"]
+    assert "Flat-vs-position slots remain comparable" in action["denominator"]
+    assert "Flat-vs-position" in eligibility["denominator"]
+    assert "lifecycle state is a permission input" in eligibility["denominator"]
 
 
 def test_the_risk_size_statistic_is_nearest_rank_over_the_control_baseline() -> None:
@@ -712,7 +912,7 @@ def test_no_certification_minimum_is_guessed_and_stage_c_is_not_imported() -> No
         assert row["certification_sufficiency_state"] == REPORTABLE_NOT_CERTIFIABLE
         assert row["minimum_denominator_chosen_here"] is None
         assert row["zero_denominator_passes"] is False
-        assert row["evaluability_minimum"]["minimum_comparable_denominator"] == 1
+        assert row["evaluability_minimum"]["certification_minimum_selected_here"] is None
         assert row["evaluability_minimum"]["complete_slot_census_required"] is True
 
 
@@ -739,10 +939,52 @@ def test_this_revision_is_a_pre_data_protocol_and_authorizes_no_collection() -> 
         "qualifying_observations_collected": False,
         "real_stage_b_outcomes_evaluated": False,
     }
+    authorization = protocol["collection_authorization_semantics"]
+    assert authorization["all_requirements_must_pass"] is True
+    assert authorization["corpus_protocol_independently_certified"] is False
+    assert authorization["sufficiency_governance_independently_certified"] is False
+    assert authorization["postp1_004_implementation_independently_certified"] is False
+    assert authorization["warmup_or_nonqualifying_capture_exception"] is False
 
 
-def test_entering_collecting_requires_the_independent_review_first() -> None:
-    with pytest.raises(CollectionNotAuthorizedError, match="INDEPENDENT_XHIGH_REVIEW"):
+def test_sufficiency_governance_and_review_precede_postp1_004_and_collection() -> None:
+    workflow = list(corpus.FUTURE_WORKFLOW)
+    protocol_review = workflow.index(
+        "REPEAT INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH"
+    )
+    governance = workflow.index(
+        "POSTP1-003 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1"
+    )
+    governance_review = workflow.index(
+        "INDEPENDENT XHIGH REVIEW OF EXACT SUFFICIENCY-GOVERNANCE HASH"
+    )
+    collectors = workflow.index(
+        "POSTP1-004 SCHEMA + COLLECTORS + DECISION SNAPSHOT IMPLEMENTATION"
+    )
+    authorization = workflow.index("COLLECTION AUTHORIZATION")
+    assert protocol_review < governance < governance_review < collectors < authorization
+    sequence = evidence_sufficiency_contract()["pre_collection_sequence"]
+    assert sequence["postp1_003_independent_review_required"] is True
+    assert sequence["postp1_004_blocked_until_postp1_003_review_passes"] is True
+    assert sequence["sufficiency_minima_selected_here"] is False
+
+
+def test_failed_protocol_hash_is_retained_as_explicit_lineage() -> None:
+    failed = protocol_definition()["lineage"]["failed_prospective_protocol"]
+    assert failed == {
+        "definition_sha256": (
+            "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326"
+        ),
+        "implementation_commit": "b38f387f822da713aa06489e6643c9d6909de32a",
+        "review": "FAIL — PROSPECTIVE PROTOCOL INVALID",
+        "review_classification": "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
+        "retained": True,
+        "superseded_before_collection": True,
+    }
+
+
+def test_entering_collecting_requires_both_governance_reviews_and_implementation_review() -> None:
+    with pytest.raises(CollectionNotAuthorizedError, match="SUFFICIENCY_GOVERNANCE"):
         assert_lifecycle_transition(LIFECYCLE_FROZEN, LIFECYCLE_COLLECTING)
     with pytest.raises(ProspectiveCorpusError, match="may not transition"):
         assert_lifecycle_transition("DRAFT", "EVALUATED")
@@ -787,7 +1029,7 @@ def test_the_protocol_binds_every_material_child_hash() -> None:
     protocol = protocol_definition()
     hashes = protocol_hashes()
     assert set(hashes) == set(protocol["child_definition_sha256"]) | {"corpus_protocol"}
-    assert len(protocol["child_definition_sha256"]) == 9
+    assert len(protocol["child_definition_sha256"]) == 11
     for name, digest in protocol["child_definition_sha256"].items():
         assert corpus._is_sha256(digest), name
     verify_protocol_definition(protocol)
@@ -939,32 +1181,80 @@ def test_the_digest_is_invariant_to_dictionary_insertion_order() -> None:
     verify_protocol_definition(shuffled)
 
 
-def test_diverged_track_stops_classify_independently_without_resynchronization() -> None:
-    """Once an action disagreement moves one track's stop, the two tracks keep
-    their own event universes.  Nothing here equalises them."""
-
+def test_candidate_state_cannot_shrink_the_control_anchored_stop_denominator() -> None:
     providers = (
         _observation("bitstamp", low="98"),
         _observation("coinbase", low="98.5"),
         _observation("bitfinex", low="101"),
     )
-    candidate = classify_stop_event(
-        _slot(providers, stop="99", track=CANDIDATE_TRACK)
+    divergence = SLOT_TIME - timedelta(days=1)
+    candidate_open = classify_stop_event(
+        _slot(
+            providers,
+            stop="99",
+            candidate_position_state="OPEN_INITIAL",
+            first_divergence_decision_time=divergence,
+        )
     )
-    control = classify_stop_event(
-        _slot(providers, stop="97", track=CONTROL_TRACK)
+    candidate_closed = classify_stop_event(
+        _slot(
+            providers,
+            stop="99",
+            candidate_position_state="CLOSED",
+            first_divergence_decision_time=divergence,
+        )
     )
-    assert candidate["classification"] == EVENT_CROSS_MARKET
-    assert control["classification"] == EVENT_NONE
-    assert candidate["event_id"] != control["event_id"]
-    assert candidate["track"] == CANDIDATE_TRACK
-    assert control["track"] == CONTROL_TRACK
-    # The same slot with the same stop is one event per track, so a later
-    # comparison can name which track's universe an event came from.
-    assert (
-        classify_stop_event(_slot(providers, stop="99", track=CANDIDATE_TRACK))
-        == candidate
+    assert candidate_open["classification"] == EVENT_CROSS_MARKET
+    assert candidate_closed["classification"] == EVENT_CROSS_MARKET
+    assert candidate_open["event_id"] == candidate_closed["event_id"]
+    assert candidate_closed["candidate_position_state"] == "CLOSED"
+    assert candidate_closed["control_position_state"] == "OPEN_INITIAL"
+    assert candidate_closed["first_divergence_decision_time"] == divergence.isoformat()
+    assert candidate_closed["universe_anchor"] == corpus.STOP_EVENT_UNIVERSE_ANCHOR
+
+
+def test_a_candidate_track_stop_cannot_define_the_event_universe() -> None:
+    with pytest.raises(ProspectiveCorpusError, match="anchored to the control"):
+        classify_stop_event(
+            _slot(
+                (_observation("bitstamp"), _observation("coinbase")),
+                track=CANDIDATE_TRACK,
+            )
+        )
+
+
+def test_post_divergence_stop_semantics_are_frozen_and_exogenous() -> None:
+    derivation = corpus.STOP_EVENT_UNIVERSE_DERIVATION
+    assert derivation["accepted_interpretation"] == (
+        "CONTROL_REFERENCE_TRACK_ACTIVE_STOP"
     )
+    assert derivation["unique_interpretation"] is True
+    assert sum(row["accepted"] for row in derivation["rows"]) == 1
+    candidate = next(
+        row
+        for row in derivation["rows"]
+        if row["interpretation"] == "candidate-track-specific stop"
+    )
+    assert candidate["accepted"] is False
+    assert "shrink its own denominator" in candidate["bias_or_provenance_consequence"]
+    post = corpus.POST_DIVERGENCE_STOP_SEMANTICS
+    assert post["hidden_denominator_shrinkage_permitted"] is False
+    assert "candidate portfolio state differs" in post["comparison_disposition"]
+
+
+def test_an_ambiguous_stop_anchor_blocks_the_protocol(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(
+        corpus.STOP_EVENT_UNIVERSE_DERIVATION,
+        "unique_interpretation",
+        False,
+    )
+    with pytest.raises(
+        ProspectiveCorpusError,
+        match="PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_METRIC",
+    ):
+        protocol_definition()
 
 
 # =============================================================================

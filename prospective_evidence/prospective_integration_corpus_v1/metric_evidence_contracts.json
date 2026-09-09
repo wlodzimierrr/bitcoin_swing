@@ -20,7 +20,56 @@
     "cross_market_confirmed_stop_preservation_rate": {
       "cadence": "STOP_HOURLY",
       "comparison_basis": "candidate reference versus raw venue consensus",
-      "denominator": "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots on the candidate track's own active stop where the candidate reference is usable at that decision_time.",
+      "denominator": "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots at the control track's active stop where both reference outcomes are usable at that decision_time.",
+      "derived_universe_anchor": {
+        "accepted_interpretation": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP",
+        "invariance_principle": "Candidate performance cannot reduce the set of events on which the candidate is judged merely by altering its own entry, exit or stop state.",
+        "rows": [
+          {
+            "accepted": false,
+            "authority_support": "failed protocol lineage only",
+            "bias_or_provenance_consequence": "candidate state can shrink its own denominator",
+            "interpretation": "candidate-track-specific stop",
+            "reason": "violates outcome-exogenous universe invariance"
+          },
+          {
+            "accepted": true,
+            "authority_support": "historical candidate-versus-control comparison basis and the authoritative control lifecycle",
+            "bias_or_provenance_consequence": "baseline state fixes the event anchor independently of candidate outcomes",
+            "interpretation": "control-track-specific stop",
+            "reason": "the comparison baseline supplies the only pre-existing exogenous stop identity"
+          },
+          {
+            "accepted": false,
+            "authority_support": "both tracks start from one state",
+            "bias_or_provenance_consequence": "undefined after later entries or stop advances",
+            "interpretation": "shared pre-divergence stop",
+            "reason": "cannot cover the natural-divergence epoch without inventing a synthetic stop"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "drops events whenever one track is flat or lacks a stop",
+            "interpretation": "joint/both-track stop universe",
+            "reason": "candidate behavior can remove events"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "candidate can add endogenous events and incompatible stop levels",
+            "interpretation": "union of track-specific stop events",
+            "reason": "no repository owner defines how two stop levels form one event"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "none found in the full owner trace",
+            "interpretation": "other existing-authority interpretation",
+            "reason": "no additional authoritative anchor exists"
+          }
+        ],
+        "unique_interpretation": true
+      },
       "direction": "minimum",
       "evidence_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
       "hard": true,
@@ -38,11 +87,14 @@
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -56,10 +108,124 @@
     "gap_through_stop_consensus_agreement_rate": {
       "cadence": "STOP_HOURLY",
       "comparison_basis": "candidate reference versus raw venue consensus",
-      "denominator": "Classified GAP_THROUGH_STOP_EVENT slots on the candidate track's own active stop where a prior observable reference price exists, the provider quorum holds and the candidate reference is usable.",
+      "denominator": "Classified GAP_THROUGH_STOP_EVENT slots at the control track's active stop where the exact immediately preceding hourly raw-provider consensus close and both current reference opens are usable.",
+      "derived_universe_anchor": {
+        "accepted_interpretation": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP",
+        "invariance_principle": "Candidate performance cannot reduce the set of events on which the candidate is judged merely by altering its own entry, exit or stop state.",
+        "rows": [
+          {
+            "accepted": false,
+            "authority_support": "failed protocol lineage only",
+            "bias_or_provenance_consequence": "candidate state can shrink its own denominator",
+            "interpretation": "candidate-track-specific stop",
+            "reason": "violates outcome-exogenous universe invariance"
+          },
+          {
+            "accepted": true,
+            "authority_support": "historical candidate-versus-control comparison basis and the authoritative control lifecycle",
+            "bias_or_provenance_consequence": "baseline state fixes the event anchor independently of candidate outcomes",
+            "interpretation": "control-track-specific stop",
+            "reason": "the comparison baseline supplies the only pre-existing exogenous stop identity"
+          },
+          {
+            "accepted": false,
+            "authority_support": "both tracks start from one state",
+            "bias_or_provenance_consequence": "undefined after later entries or stop advances",
+            "interpretation": "shared pre-divergence stop",
+            "reason": "cannot cover the natural-divergence epoch without inventing a synthetic stop"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "drops events whenever one track is flat or lacks a stop",
+            "interpretation": "joint/both-track stop universe",
+            "reason": "candidate behavior can remove events"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "candidate can add endogenous events and incompatible stop levels",
+            "interpretation": "union of track-specific stop events",
+            "reason": "no repository owner defines how two stop levels form one event"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "none found in the full owner trace",
+            "interpretation": "other existing-authority interpretation",
+            "reason": "no additional authoritative anchor exists"
+          }
+        ],
+        "unique_interpretation": true
+      },
       "direction": "minimum",
       "evidence_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
-      "gap_through_semantics": "BTC trades continuously, so no overnight-session gap is imported. A gap-through is a crossing without an observable traded price at the stop between two consecutive observable reference points: the prior observable price is strictly on the safe side of the active stop and the next available slot opens at or beyond it. A REFERENCE_UNAVAILABLE run simply widens the interval between those two observable points, so a missing session is handled by the same rule rather than by a separate calendar convention.",
+      "gap_through_derivation": {
+        "accepted_interpretation": "PREVIOUS_CONTIGUOUS_REQUIRED_PROVIDER_CONSENSUS_CLOSE_V1",
+        "maximum_staleness_seconds": 3600,
+        "missing_session_semantics": "NOT_EVALUABLE_PRIOR_CONSENSUS_UNAVAILABLE",
+        "prior_timestamp_identity": "current canonical hourly observation_time minus exactly one hour",
+        "rows": [
+          {
+            "accepted": true,
+            "candidate_interpretation": "immediately prior required-provider-consensus hourly close",
+            "candidate_neutral": true,
+            "conflicting_authority": null,
+            "pit_safe": true,
+            "supporting_authority": [
+              "PRICE_SOURCE_POLICY_V1: provider outages remain explicit gaps and fallback splicing is prohibited",
+              "btc_predictor.portfolio.stop_execution: a gap is decided by the next eligible bar open",
+              "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION: source bars are exact UTC hours",
+              "existing stop-event comparison basis: raw required-provider consensus"
+            ],
+            "track_dependent": false,
+            "unique": true
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous available provider-consensus close across an outage",
+            "candidate_neutral": true,
+            "conflicting_authority": "PRICE_SOURCE_POLICY_V1 forbids splicing across explicit provider gaps",
+            "pit_safe": true,
+            "supporting_authority": "failed protocol lineage only",
+            "track_dependent": false,
+            "unique": false
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous candidate reference close",
+            "candidate_neutral": false,
+            "conflicting_authority": "would let the measured candidate define event-universe membership",
+            "pit_safe": true,
+            "supporting_authority": null,
+            "track_dependent": true,
+            "unique": false
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous control reference close",
+            "candidate_neutral": true,
+            "conflicting_authority": "the historical stop metrics compare a candidate with raw venue consensus; the event taxonomy is candidate-neutral raw evidence",
+            "pit_safe": true,
+            "supporting_authority": "control is the comparison baseline",
+            "track_dependent": true,
+            "unique": false
+          },
+          {
+            "accepted": false,
+            "candidate_interpretation": "previous session open",
+            "candidate_neutral": true,
+            "conflicting_authority": "the execution owner uses the current bar open and supplies no previous-open concept",
+            "pit_safe": true,
+            "supporting_authority": null,
+            "track_dependent": false,
+            "unique": false
+          }
+        ],
+        "source_identity": "median close over the available required raw providers at the exact prior hour, requiring PROVIDER_QUORUM",
+        "unique_interpretation": true
+      },
+      "gap_through_semantics": "BTC trades continuously, so no overnight-session gap is imported. A gap-through is a crossing without an observable traded price at the control stop between two contiguous canonical hourly observations: the immediately preceding required-provider-consensus close is strictly safe and the current consensus open is at or beyond the stop. A missing prior hour is NOT_EVALUABLE; an older observation may not be substituted.",
       "hard": true,
       "historical_definition": "Gap-through behavior must agree with deterministic venue consensus.",
       "historical_source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
@@ -69,18 +235,22 @@
       "not_comparable_reasons": [
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT"
       ],
-      "numerator": "Events where the candidate reference's TRIGGERED/NOT_TRIGGERED outcome at the gapping open equals the deterministic venue-consensus outcome computed from the median of the available required providers.",
+      "numerator": "Count of denominator events where the candidate reference is TRIGGERED at the control stop on the current hourly open. Venue consensus is TRIGGERED by construction for every denominator event; this statistic therefore measures candidate preservation of those consensus gap-throughs, not equality of two unconstrained outcomes.",
       "reason_vocabulary": [
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -94,7 +264,56 @@
     "isolated_venue_stop_suppression_rate": {
       "cadence": "STOP_HOURLY",
       "comparison_basis": "candidate reference versus raw venue consensus",
-      "denominator": "Classified ISOLATED_VENUE_STOP_EVENT slots on the candidate track's own active stop where the candidate reference is usable at that decision_time.",
+      "denominator": "Classified ISOLATED_VENUE_STOP_EVENT slots at the control track's active stop where exactly one provider touches, at least the confirmation quorum is observed not touching, and both reference outcomes are usable.",
+      "derived_universe_anchor": {
+        "accepted_interpretation": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP",
+        "invariance_principle": "Candidate performance cannot reduce the set of events on which the candidate is judged merely by altering its own entry, exit or stop state.",
+        "rows": [
+          {
+            "accepted": false,
+            "authority_support": "failed protocol lineage only",
+            "bias_or_provenance_consequence": "candidate state can shrink its own denominator",
+            "interpretation": "candidate-track-specific stop",
+            "reason": "violates outcome-exogenous universe invariance"
+          },
+          {
+            "accepted": true,
+            "authority_support": "historical candidate-versus-control comparison basis and the authoritative control lifecycle",
+            "bias_or_provenance_consequence": "baseline state fixes the event anchor independently of candidate outcomes",
+            "interpretation": "control-track-specific stop",
+            "reason": "the comparison baseline supplies the only pre-existing exogenous stop identity"
+          },
+          {
+            "accepted": false,
+            "authority_support": "both tracks start from one state",
+            "bias_or_provenance_consequence": "undefined after later entries or stop advances",
+            "interpretation": "shared pre-divergence stop",
+            "reason": "cannot cover the natural-divergence epoch without inventing a synthetic stop"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "drops events whenever one track is flat or lacks a stop",
+            "interpretation": "joint/both-track stop universe",
+            "reason": "candidate behavior can remove events"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "candidate can add endogenous events and incompatible stop levels",
+            "interpretation": "union of track-specific stop events",
+            "reason": "no repository owner defines how two stop levels form one event"
+          },
+          {
+            "accepted": false,
+            "authority_support": null,
+            "bias_or_provenance_consequence": "none found in the full owner trace",
+            "interpretation": "other existing-authority interpretation",
+            "reason": "no additional authoritative anchor exists"
+          }
+        ],
+        "unique_interpretation": true
+      },
       "direction": "minimum",
       "evidence_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
       "hard": true,
@@ -112,11 +331,14 @@
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -149,11 +371,14 @@
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -179,7 +404,7 @@
         "derivation": "The frozen gate states a threshold, a direction and the intent that a reference change must not materially resize most positions; it states no formula and no denominator. Three authoritative facts settle all three open choices. (1) Quantity: the frozen V2 protocol names 'initial position sizing' in its future_strategy_consequence_metrics, and INITIAL_POSITION_SIZE_V1 -- the sole authoritative sizing owner -- makes position_notional its only mandatory output; position_quantity is produced only when an entry price is supplied and risk_budget_amount is the budget, not the size. (2) Formula: the repository has exactly one implemented fractional-difference-against-a-comparison-baseline convention, abs(series - baseline) / baseline, used by reference_composite_empirical._atr_comparison for the sibling atr_median/p95_absolute_fractional_difference gates in this same frozen table, with the comparison baseline in the denominator. The control reference is this metric's baseline. (3) Statistic: the repository's p95 owner is nearest rank, in reference_composite_empirical._percentile and price_source_policy._nearest_rank_percentile, and frozen V4 names 'nearest-rank p95' for the p95 gate family explicitly.",
         "refused_derivations": {
           "interpolated_p95": "The failed V3 sealed-evidence builder interpolated; the repeat xHigh review recorded that this differs from the authoritative nearest-rank owner and flips a hard gate on boundary vectors. A failed lineage is not authority.",
-          "max_denominator": "abs(a - b) / max(a, b) has no repository precedent and would silently compress every difference.",
+          "max_denominator": "A max-scaled denominator exists in the repository for equality-tolerance logic, but not as the authoritative measurement-layer relative-difference statistic for this gate; adopting it here would silently compress every difference.",
           "nav_normalized_difference": "Dividing by NAV would measure exposure share, not resizing, and would import each track's own diverged NAV into the denominator.",
           "position_quantity_basis": "position_quantity is optional in the authoritative owner's own result, so a quantity basis is undefined whenever no entry price was supplied.",
           "symmetric_mean_denominator": "abs(a - b) / ((a + b) / 2) is a different convention from the only one this repository implements, and adopting it would author a new statistic under a threshold calibrated before it existed."
@@ -207,11 +432,14 @@
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -245,11 +473,14 @@
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -275,30 +506,151 @@
     "trade_action_disagreement_rate": {
       "cadence": "STRATEGY_DAILY",
       "comparison_basis": "candidate track versus control track",
-      "denominator": "Every daily decision observation where both tracks produce a complete deterministic action, whether flat or in position.",
+      "denominator": "Every daily decision observation where both tracks produce a complete deterministic ordered action envelope, whether flat or in position. Flat-vs-position slots remain comparable because both owners still produce actual action envelopes.",
       "direction": "maximum",
-      "evidence_owner": "btc_predictor.reporting.recommendation.render_recommendation",
+      "evidence_owner": "btc_predictor.research.prospective_integration_corpus.TRADE_ACTION_COMPARISON_OWNER_V1",
       "hard": true,
       "historical_definition": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
       "historical_source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "historical_source_of_rationale": "Reserved Phase-1 strategy consequence gate.",
       "insufficient_rule": "A zero or absent denominator is UNDEFINED_INSUFFICIENT_EVIDENCE; it is never a PASS and never the numeric value 0.",
-      "lifecycle_owner": "btc_predictor.portfolio.state_machine.apply_position_event",
       "metric": "trade_action_disagreement_rate",
       "not_comparable_reasons": [
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_TRACK_NOT_EVALUABLE"
       ],
-      "numerator": "Observations where the two tracks' authoritative actions differ.",
+      "numerator": "Observations where the two tracks' authoritative ordered action envelopes differ in action, acceptance or lifecycle-event identity.",
+      "owner_contract": {
+        "entry_conviction_input_vocabulary": [
+          "IGNORE",
+          "WATCH",
+          "VALID",
+          "STRONG",
+          "EXCEPTIONAL"
+        ],
+        "input_state": [
+          "complete PIT setup/regime/entry/risk/veto outputs",
+          "lifecycle state before the slot and its active stop/tranches",
+          "pending order and next eligible execution-bar state",
+          "data-quality and reference-availability states"
+        ],
+        "lifecycle_event_vocabulary": [
+          "OBSERVE",
+          "ARM_ENTRY",
+          "DISARM_ENTRY",
+          "ENTER",
+          "HOLD",
+          "ADD",
+          "STOP_MOVE",
+          "TRIM",
+          "DEFEND",
+          "RECOVER",
+          "EXIT",
+          "MISS"
+        ],
+        "output": "An ordered action envelope over actual repository actions. Two tracks disagree if their ordered envelopes differ in action, acceptance, or lifecycle-event identity; presentation text is never compared.",
+        "output_action_vocabulary": [
+          "NO_TRADE",
+          "WATCH",
+          "ENTER",
+          "HOLD",
+          "ADD",
+          "STOP_MOVE",
+          "TRIM",
+          "EXIT",
+          "MISSED"
+        ],
+        "owner_chain": [
+          "btc_predictor.features.setup (four detector state vector)",
+          "btc_predictor.features.entry.classify_entry_action (conviction bucket only)",
+          "btc_predictor.risk.stop + btc_predictor.risk.reward + btc_predictor.risk.sizing + btc_predictor.risk.exposure",
+          "btc_predictor.signals.no_chase.apply_no_chase_filter",
+          "btc_predictor.signals.hard_veto.evaluate_hard_veto",
+          "btc_predictor.signals.data_quality.apply_data_quality_gate",
+          "btc_predictor.signals.exit_rules.evaluate_exit_rules",
+          "btc_predictor.signals.trim.evaluate_trim_rules",
+          "btc_predictor.risk.trailing.trail_stop_for_position",
+          "btc_predictor.signals.add_requirements.add_requirements_from_results",
+          "btc_predictor.portfolio.state_machine.apply_position_event",
+          "btc_predictor.portfolio entry/add/trim/stop/exit execution owners",
+          "btc_predictor.db.portfolio persisted action vocabulary"
+        ],
+        "precedence": [
+          "Process an eligible resting-stop execution before a same-slot strategy decision, matching the adverse-first paper/backtest path.",
+          "For an open position, an authoritative EXIT suppresses TRIM; otherwise retain TRIM, STOP_MOVE and ADD outputs in lifecycle order without folding co-occurring materially distinct events into HOLD.",
+          "For a new entry, hard veto, no-chase, reference availability, risk and data-quality owners must all resolve before ENTER; WATCH and NO_TRADE remain distinct owner outputs.",
+          "Apply the lifecycle owner and persist the accepted or refused transition; a later execution MISS is MISSED, not NO_TRADE."
+        ],
+        "reason_semantics": "Retain the originating owner, accepted/refused state and complete reason-code sequence for every envelope element. Equal display labels do not erase different lifecycle events or acceptance states.",
+        "renderer_role": "PRESENTATION_ONLY_NOT_SCIENTIFIC_AUTHORITY",
+        "version": "TRADE_ACTION_COMPARISON_OWNER_V1",
+        "vocabulary_sources": {
+          "decision_actions": {
+            "owner": "btc_predictor.signals.data_quality.RECOMMENDATION_ACTIONS",
+            "values": [
+              "NO_TRADE",
+              "WATCH",
+              "ENTER",
+              "HOLD",
+              "ADD",
+              "TRIM",
+              "EXIT"
+            ]
+          },
+          "entry_buckets": {
+            "owner": "btc_predictor.features.entry.ENTRY_ACTION_LABELS",
+            "role": "INPUT_CONVICTION_NOT_OUTPUT_ACTION",
+            "values": [
+              "IGNORE",
+              "WATCH",
+              "VALID",
+              "STRONG",
+              "EXCEPTIONAL"
+            ]
+          },
+          "lifecycle_events": {
+            "owner": "btc_predictor.portfolio.state_machine.POSITION_EVENTS",
+            "values": [
+              "OBSERVE",
+              "ARM_ENTRY",
+              "DISARM_ENTRY",
+              "ENTER",
+              "HOLD",
+              "ADD",
+              "STOP_MOVE",
+              "TRIM",
+              "DEFEND",
+              "RECOVER",
+              "EXIT",
+              "MISS"
+            ]
+          },
+          "persisted_actions": {
+            "owner": "btc_predictor.db.portfolio.PAPER_ACTIONS",
+            "values": [
+              "ENTER",
+              "HOLD",
+              "ADD",
+              "STOP_MOVE",
+              "TRIM",
+              "EXIT",
+              "MISSED"
+            ]
+          }
+        }
+      },
       "reason_vocabulary": [
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -321,27 +673,82 @@
         "ENTER",
         "HOLD",
         "ADD",
+        "STOP_MOVE",
         "TRIM",
-        "EXIT"
+        "EXIT",
+        "MISSED"
       ],
-      "vocabulary_owner": "btc_predictor.signals.data_quality.RECOMMENDATION_ACTIONS",
+      "vocabulary_owner": {
+        "decision_actions": {
+          "owner": "btc_predictor.signals.data_quality.RECOMMENDATION_ACTIONS",
+          "values": [
+            "NO_TRADE",
+            "WATCH",
+            "ENTER",
+            "HOLD",
+            "ADD",
+            "TRIM",
+            "EXIT"
+          ]
+        },
+        "entry_buckets": {
+          "owner": "btc_predictor.features.entry.ENTRY_ACTION_LABELS",
+          "role": "INPUT_CONVICTION_NOT_OUTPUT_ACTION",
+          "values": [
+            "IGNORE",
+            "WATCH",
+            "VALID",
+            "STRONG",
+            "EXCEPTIONAL"
+          ]
+        },
+        "lifecycle_events": {
+          "owner": "btc_predictor.portfolio.state_machine.POSITION_EVENTS",
+          "values": [
+            "OBSERVE",
+            "ARM_ENTRY",
+            "DISARM_ENTRY",
+            "ENTER",
+            "HOLD",
+            "ADD",
+            "STOP_MOVE",
+            "TRIM",
+            "DEFEND",
+            "RECOVER",
+            "EXIT",
+            "MISS"
+          ]
+        },
+        "persisted_actions": {
+          "owner": "btc_predictor.db.portfolio.PAPER_ACTIONS",
+          "values": [
+            "ENTER",
+            "HOLD",
+            "ADD",
+            "STOP_MOVE",
+            "TRIM",
+            "EXIT",
+            "MISSED"
+          ]
+        }
+      },
       "zero_denominator": "UNDEFINED_INSUFFICIENT_EVIDENCE"
     },
     "trade_eligibility_disagreement_rate": {
       "cadence": "STRATEGY_DAILY",
       "comparison_basis": "candidate track versus control track",
-      "denominator": "Daily decision observations where both tracks are validly eligibility-evaluable: setup inputs complete for both and both in a pre-position lifecycle state.",
+      "denominator": "Daily decision observations where both tracks have complete inputs for TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1 and each produces PERMITTED or NOT_PERMITTED. Flat-vs-position and both-position states stay in this universe; lifecycle state is a permission input.",
       "direction": "maximum",
       "eligibility_composition": {
-        "already_in_position": "Not permitted and not comparable: a track holding an open position is on the add path, not the entry path. The slot is recorded NOT_COMPARABLE with ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT when the tracks differ and excluded from the universe when both are in position, so neither case can deflate the rate by trivial agreement.",
-        "data_failure": "A hard data-quality failure blocks ENTER under apply_data_quality_gate; the slot is DATA_QUALITY_FAIL and leaves the universe for both tracks together.",
+        "already_in_position": "NOT_PERMITTED for a new entry. The existing position remains on its management/add path, but that does not make new-entry permission undefined. This keeps lifecycle divergence visible.",
+        "data_failure": "A resolved hard data-quality failure blocks ENTER under apply_data_quality_gate and is a NOT_PERMITTED result. Missing quality evidence is NOT_COMPARABLE.",
         "permitted_definition": "trade_permitted is TRUE only when, under that track's own owners: the data-quality gate does not block ENTER, no hard veto fires, at least one authoritative setup detector is DETECTED, the reward/risk filter passes, the entry action classifies as an entry, and the risk owners produce a complete strictly positive initial position size within the configured risk-at-stop limit.",
         "reference_unavailable": "REFERENCE_UNAVAILABLE for either track makes the slot NOT_COMPARABLE with the affected side named; it is never read as 'not permitted'.",
         "regime_or_setup_veto": "A regime or setup veto is a NOT_PERMITTED outcome, not an exclusion: the slot stays in the denominator.",
         "reward_risk_veto": "A REWARD_RISK_FILTER_V1 refusal is a NOT_PERMITTED outcome, not an exclusion.",
         "risk_capacity_veto": "A RISK_AT_STOP_V1 capacity refusal is a NOT_PERMITTED outcome, not an exclusion."
       },
-      "evidence_owner": "btc_predictor.features.entry.classify_entry_action",
+      "evidence_owner": "btc_predictor.research.prospective_integration_corpus.TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1",
       "hard": true,
       "historical_definition": "Reference policy should rarely change whether a trade is permitted.",
       "historical_source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
@@ -351,18 +758,59 @@
       "not_comparable_reasons": [
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_TRACK_NOT_EVALUABLE",
-        "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT"
+        "REQUIRED_INPUT_MISSING",
+        "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME"
       ],
       "numerator": "Observations where the two tracks disagree on whether a new trade is permitted.",
+      "owner_contract": {
+        "authoritative_inputs": {
+          "data_quality": "btc_predictor.signals.data_quality.apply_data_quality_gate for requested ENTER",
+          "entry_conviction": "btc_predictor.features.entry.classify_entry_action; entry buckets VALID, STRONG or EXCEPTIONAL",
+          "hard_veto": "btc_predictor.signals.hard_veto.evaluate_hard_veto",
+          "lifecycle_state": {
+            "owner": "btc_predictor.portfolio.state_machine.POSITION_STATES",
+            "pre_position_values": [
+              "WATCH",
+              "PENDING_ENTRY"
+            ],
+            "values": [
+              "WATCH",
+              "PENDING_ENTRY",
+              "OPEN_INITIAL",
+              "OPEN_ADDED",
+              "DEFENSIVE",
+              "CLOSED",
+              "MISSED"
+            ]
+          },
+          "no_chase": "btc_predictor.signals.no_chase.apply_no_chase_filter result consumed by HARD_VETO_V1",
+          "reference_availability": "both authorized reference roles usable under AVAILABLE_AT_LTE_DECISION_TIME_V1",
+          "regime_context": "resolved regime classification plus stress/severe-crowding states consumed by HARD_VETO_V1",
+          "reward_risk": "btc_predictor.risk.reward.evaluate_reward_risk result consumed by HARD_VETO_V1",
+          "risk_capacity": "complete positive btc_predictor.risk.sizing result plus btc_predictor.risk.exposure within-maximum result",
+          "setup_eligibility": "complete btc_predictor.features.setup detector vector and supported setup identity"
+        },
+        "composition": "PERMITTED iff the reference and every required PIT input are available, the lifecycle is a pre-position state, a supported setup is detected, the entry bucket is VALID/STRONG/EXCEPTIONAL, HARD_VETO_V1 is complete and clear (including R/R, regime/context, data quality and no-chase), and the existing sizing/risk-capacity owners return a complete positive size within the configured maximum. Otherwise a fully resolved gate is NOT_PERMITTED; an unresolved input is NOT_COMPARABLE, never false.",
+        "output_vocabulary": [
+          "PERMITTED",
+          "NOT_PERMITTED",
+          "NOT_COMPARABLE"
+        ],
+        "reason_semantics": "Persist every source completion state, source reason code and the exact blocking owner. No entry-conviction bucket alone is a permission.",
+        "version": "TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1"
+      },
       "reason_vocabulary": [
         "CANDIDATE_REFERENCE_UNAVAILABLE",
         "CANDIDATE_TRACK_NOT_EVALUABLE",
         "CONTROL_REFERENCE_UNAVAILABLE",
+        "CONTROL_STOP_IDENTITY_UNAVAILABLE",
+        "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
         "CONTROL_TRACK_NOT_EVALUABLE",
         "HARD_DATA_QUALITY_GATE_FAILED",
         "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
         "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
         "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+        "PRIOR_REFERENCE_SESSION_MISSING",
         "PROVIDER_QUORUM_ABSENT",
         "REQUIRED_INPUT_MISSING",
         "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
@@ -370,18 +818,38 @@
       ],
       "statistic": "rate",
       "supporting_owners": [
-        "btc_predictor.signals.data_quality.apply_data_quality_gate",
+        "complete btc_predictor.features.setup detector vector and supported setup identity",
+        "btc_predictor.features.entry.classify_entry_action; entry buckets VALID, STRONG or EXCEPTIONAL",
+        "resolved regime classification plus stress/severe-crowding states consumed by HARD_VETO_V1",
+        "btc_predictor.risk.reward.evaluate_reward_risk result consumed by HARD_VETO_V1",
         "btc_predictor.signals.hard_veto.evaluate_hard_veto",
-        "btc_predictor.risk.reward.evaluate_reward_risk",
-        "btc_predictor.risk.sizing.calculate_initial_position_size",
-        "btc_predictor.risk.exposure.calculate_risk_at_stop"
+        "btc_predictor.signals.data_quality.apply_data_quality_gate for requested ENTER",
+        "btc_predictor.signals.no_chase.apply_no_chase_filter result consumed by HARD_VETO_V1",
+        {
+          "owner": "btc_predictor.portfolio.state_machine.POSITION_STATES",
+          "pre_position_values": [
+            "WATCH",
+            "PENDING_ENTRY"
+          ],
+          "values": [
+            "WATCH",
+            "PENDING_ENTRY",
+            "OPEN_INITIAL",
+            "OPEN_ADDED",
+            "DEFENSIVE",
+            "CLOSED",
+            "MISSED"
+          ]
+        },
+        "complete positive btc_predictor.risk.sizing result plus btc_predictor.risk.exposure within-maximum result",
+        "both authorized reference roles usable under AVAILABLE_AT_LTE_DECISION_TIME_V1"
       ],
       "threshold": "0.01",
       "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES",
       "zero_denominator": "UNDEFINED_INSUFFICIENT_EVIDENCE"
     }
   },
-  "definition_sha256": "a5d6ee1097772a322855ba919beae30ff5acbd8784a7a43bfe99538d7707b295",
+  "definition_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
   "metric_count": 8,
   "observation_states": [
     "DATA_QUALITY_FAIL",

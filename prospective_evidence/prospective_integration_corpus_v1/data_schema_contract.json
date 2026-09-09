@@ -5,8 +5,14 @@
     "prospective_source_input_snapshot",
     "prospective_data_quality_event"
   ],
+  "collection_entry_bindings": {
+    "corpus_protocol_review_sha256": "independent PASS review of exact corpus_protocol_sha256",
+    "postp1_004_implementation_review_sha256": "independent PASS review of exact collector implementation",
+    "required_relation": "ALL_THREE_BINDINGS_REQUIRED",
+    "sufficiency_governance_review_sha256": "independent PASS review of exact sufficiency_governance_sha256"
+  },
   "database": "postgresql",
-  "definition_sha256": "4664d1d59bf48f4f6409200f72b2b7ee8c33141518974efe8badb9f9d0209315",
+  "definition_sha256": "ada2223829adbe804e27e437f04fc46472587c02f2833126b7c558ae57246dd2",
   "implementation_state": "CONTRACT_ONLY_MIGRATION_DEFERRED_TO_FIRST_COLLECTOR_TICKET",
   "redis_required": false,
   "schema": "research",
@@ -42,7 +48,9 @@
         "reason_codes": "jsonb not null",
         "run_id": "uuid not null",
         "slot_id": "char(64) not null",
-        "universes": "jsonb not null"
+        "universes": "jsonb not null",
+        "warmup_history_complete": "boolean not null",
+        "warmup_history_definition_sha256": "char(64) not null"
       },
       "layer": "RAW",
       "primary_key": [
@@ -140,6 +148,8 @@
         "stop_distance_fraction": "numeric(38,18) null",
         "stop_price": "numeric(38,18) null",
         "track": "text not null",
+        "trade_eligibility_composite_version": "text not null",
+        "trade_eligibility_input_states": "jsonb not null",
         "trade_permitted": "boolean null"
       },
       "layer": "DERIVED",
@@ -154,15 +164,19 @@
       "append_only": true,
       "columns": {
         "collection_epoch": "text not null",
+        "corpus_protocol_review_sha256": "char(64) not null",
         "corpus_protocol_sha256": "char(64) not null",
         "created_at": "timestamptz not null",
         "epoch_end": "timestamptz null",
         "epoch_start": "timestamptz not null",
         "initial_portfolio_state_sha256": "char(64) not null",
         "lifecycle_state": "text not null",
+        "postp1_004_implementation_review_sha256": "char(64) not null",
         "protocol_version": "text not null",
         "run_id": "uuid not null",
-        "strategy_identity_sha256": "char(64) not null"
+        "strategy_identity_sha256": "char(64) not null",
+        "sufficiency_governance_review_sha256": "char(64) not null",
+        "sufficiency_governance_sha256": "char(64) not null"
       },
       "layer": "RAW",
       "primary_key": [
@@ -200,23 +214,34 @@
       "append_only": true,
       "columns": {
         "active_stop": "numeric(38,18) not null",
+        "active_stop_identity": "text not null",
         "available_provider_ids": "jsonb not null",
+        "candidate_position_state": "text not null",
         "candidate_stop_outcome": "text null",
         "classification": "text not null",
         "classifier_definition_sha256": "char(64) not null",
         "classifier_version": "text not null",
         "consensus_stop_outcome": "text not null",
+        "control_position_state": "text not null",
         "decision_time": "timestamptz not null",
         "direction": "text not null",
         "event_id": "char(64) not null",
+        "first_divergence_decision_time": "timestamptz null",
         "gap_through_state": "text not null",
         "missing_provider_ids": "jsonb not null",
+        "non_touching_provider_ids": "jsonb not null",
         "observation_time": "timestamptz not null",
+        "prior_observable_maximum_gap_seconds": "integer not null",
+        "prior_observable_observation_time": "timestamptz not null",
+        "prior_observable_owner": "text not null",
+        "prior_observable_price": "numeric(38,18) null",
+        "prior_observable_provider_ids": "jsonb not null",
         "provider_stop_outcomes": "jsonb not null",
         "reason_codes": "jsonb not null",
         "run_id": "uuid not null",
         "touching_provider_ids": "jsonb not null",
-        "track": "text not null"
+        "track": "text not null",
+        "universe_anchor": "text not null"
       },
       "layer": "DERIVED",
       "primary_key": [
@@ -253,6 +278,8 @@
       "append_only": true,
       "columns": {
         "action": "text not null",
+        "action_comparison_owner_version": "text not null",
+        "action_envelope": "jsonb not null",
         "decision_time": "timestamptz not null",
         "lifecycle_event": "text null",
         "lifecycle_state_after": "text not null",

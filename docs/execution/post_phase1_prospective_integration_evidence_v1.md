@@ -38,18 +38,23 @@ consume this corpus only under a separately governed promotion protocol.
 
 ## POSTP1-001 — `DESIGN_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1`
 
-**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW`
+**Status:** `FAILED INDEPENDENT xHIGH REVIEW / SUPERSEDED PRE-DATA BY POSTP1-001R`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** independent xHigh review of the exact protocol hash
 **Owner module:** `btc_predictor/research/prospective_integration_corpus.py`
 **Artifacts:** `prospective_evidence/prospective_integration_corpus_v1/`
 
-`PROSPECTIVE_INTEGRATION_CORPUS_V1` is frozen at status
-`FROZEN_PRE_DATA_PROTOCOL` with protocol hash:
+The first attempted `PROSPECTIVE_INTEGRATION_CORPUS_V1` freeze used protocol
+hash:
 
 ```text
 aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
 ```
+
+Independent review returned `FAIL — PROSPECTIVE PROTOCOL INVALID` /
+`PROSPECTIVE_PROTOCOL_REQUIRES_FIX`. No collection began and no qualifying
+observation exists. The hash and its children below remain failed lineage; they
+are not valid collection authority and are not overwritten by the correction.
 
 Bound child contracts:
 
@@ -148,12 +153,83 @@ record lacked.
    either way: none of these artifacts contains a mapping carrying all fourteen
    required corpus fields.
 
+## POSTP1-001R — `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1`
+
+**Status:** `IMPLEMENTED / AWAITING REPEAT INDEPENDENT xHIGH REVIEW`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** repeat independent xHigh review of the exact corrected hash
+**Owner module:** `btc_predictor/research/prospective_integration_corpus.py`
+**Artifacts:** `prospective_evidence/prospective_integration_corpus_v1/`
+
+Because no collection began and the failed hash never passed certification,
+the corrected protocol remains `PROSPECTIVE_INTEGRATION_CORPUS_V1`. It is
+refrozen at status `CORRECTED_PRE_DATA_PROTOCOL_AWAITING_REPEAT_XHIGH_REVIEW`
+with definition hash:
+
+```text
+0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
+```
+
+Corrected bound child contracts:
+
+| contract | hash |
+| --- | --- |
+| `data_schema_contract` | `ada2223829adbe804e27e437f04fc46472587c02f2833126b7c558ae57246dd2` |
+| `decision_universe` | `b8673d9a170585c62b8e3feec1d126c75c8aa9352238f260f235066649c16b39` |
+| `evidence_sufficiency` | `af424423723f377d22fdddd01e396de9a2323db0c9aa59defd57b78076cc5df9` |
+| `feature_input_coverage` | `7b049c0e49739d6e20370e2472c46134889d811f8f9b7a5b770cbc6f95c8ec31` |
+| `input_snapshot_schema` | `35c55f616e6ed567400d597a2c747dbb67335514417a07496288d0bf1f303116` |
+| `metric_evidence_contracts` | `98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98` |
+| `portfolio_track_contract` | `1560eee774049e7eb72180ccfc18477e919eaf127646e03e1405cdf161318623` |
+| `semantic_diff_from_v5_blockers` | `49b129afd07a08ddfbe6b4195e648b7ab28f712a3d2747739ec139ef7965673d` |
+| `stage_b_evaluation_contract` | `8be898a9f858a6d60fbd44bbce6effc4c4d2051f87aea39952805be5798240e2` |
+| `stop_event_taxonomy` | `ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e` |
+| `warmup_history` | `0f718a197d19ccebe9068a51f11b3dd12c4d874e3c97de129172ab7ff3068055` |
+
+The correction is bounded to the POSTP1-002 blocking findings. It adds
+`raw.liquidations`; mechanically closes every `INITIAL_FEATURE_NAMES` input;
+freezes CVD to the existing exact-hour cadence; binds action and eligibility to
+decision-producing composites; makes isolated-venue evidence fully observable;
+freezes gap-through to the immediately preceding contiguous hourly raw-provider
+consensus close with a one-hour maximum gap; anchors all stop-event universes to
+the control track's active stop; and binds every feature's owner-derived warmup.
+It also requires the separately reviewed POSTP1-003 sufficiency governance hash
+and the reviewed POSTP1-004 implementation before collection. POSTP1-001R
+selects no sufficiency minimum.
+
+### POSTP1-001R implementation notes
+
+- The failed definition hash `aaa05c72...d37326`, its implementation commit,
+  and its failed review classification remain inside the corrected definition's
+  lineage. No failed artifact is presented as certified authority.
+- The corrected input-coverage artifact proves all 33 frozen features close
+  mechanically over nine required raw/PIT families. Missing data is never
+  zero-filled, defaulted, or reconstructed from future information.
+- The action contract compares the ordered decision/lifecycle/execution action
+  envelope and retains source event identity. The eligibility contract composes
+  setup, conviction, regime/context, R/R, hard-veto, data-quality, no-chase,
+  lifecycle, risk-capacity, and reference-availability outputs into new-entry
+  permission; neither reporting presentation nor a conviction bucket owns the
+  scientific comparison.
+- Focused correction validation is 104 tests. Two relevant regression passes
+  cover 2,699 price/PIT/feature-lineage tests and 1,713 decision/risk/lifecycle/
+  paper/backtest/reporting tests; overlaps are intentional. The complete suite
+  passes 4,544 tests with Python 3.12.14 and `RuntimeWarning` as an error.
+- No qualifying observation was collected, no real Stage-B aggregate was
+  evaluated, and no BTC-019 sealed path was accessed. Collection remains
+  unauthorized under this corrected implementation.
+
 ### Frozen future workflow
 
 ```text
-PROTOCOL FREEZE
-  -> INDEPENDENT XHIGH REVIEW
-  -> PROSPECTIVE COLLECTION
+POSTP1-001R CORRECTED PROTOCOL
+  -> REPEAT INDEPENDENT XHIGH REVIEW OF THE EXACT CORRECTED HASH
+  -> POSTP1-003 SUFFICIENCY GOVERNANCE
+  -> INDEPENDENT XHIGH REVIEW OF THE EXACT SUFFICIENCY HASH
+  -> POSTP1-004 SCHEMA + COLLECTORS + DECISION SNAPSHOT IMPLEMENTATION
+  -> INDEPENDENT IMPLEMENTATION REVIEW
+  -> COLLECTION AUTHORIZATION
+  -> PROSPECTIVE COLLECTION AND WARMUP CAPTURE
   -> EVIDENCE-SUFFICIENCY CHECK
   -> STAGE-B EVALUATION
   -> IF PASS: candidate/reference research may proceed under a separately
@@ -161,13 +237,15 @@ PROTOCOL FREEZE
   -> formal post-certification live-shadow gate when applicable
 ```
 
-Only an independently reviewed `FROZEN` protocol may enter `COLLECTING`.
-Collection is **not** authorized by POSTP1-001.
+Collection requires all three reviews above. It is **not** authorized by
+POSTP1-001R, and warmup capture is not an exception.
 
 ## Next EPIC X tasks
 
 | ticket | task | status |
 | --- | --- | --- |
-| POSTP1-002 | `FORMAL_XHIGH_REVIEW_PROSPECTIVE_INTEGRATION_CORPUS_V1` | READY |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002 |
-| POSTP1-004 | first collection ticket: schema migration, `CVD_SPREAD` capture, `collect_decision_snapshot` | BLOCKED by POSTP1-002 |
+| POSTP1-002 | `FORMAL_XHIGH_REVIEW_PROSPECTIVE_INTEGRATION_CORPUS_V1` | COMPLETE / FAIL |
+| POSTP1-001R | `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1` | IMPLEMENTED / AWAITING REPEAT REVIEW |
+| POSTP1-002R | repeat independent xHigh review of corrected protocol hash | READY |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R PASS |
+| POSTP1-004 | schema, collectors, CVD capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |

@@ -13,6 +13,12 @@ documents mapped below.
 | [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md) | Versioned empirical price-source evidence and conclusion | Authoritative for its explicitly defined V1 price-source-policy scope; newer than provisional Rulebook source language | Read for canonical/reference-source, provenance, fallback, or price-data work |
 | [EPIC X — Prospective Integration Evidence](execution/post_phase1_prospective_integration_evidence_v1.md) | Post-Phase-1 prospective integration-evidence workstream status, dependencies, and acceptance criteria | Authoritative for EPIC X only; not Phase-1 execution authority and not BTC-019 authority | Read when implementing or reviewing a POSTP1-xxx ticket |
 
+## Prospective Evidence Artifacts
+
+| Namespace | Purpose | Provenance boundary |
+| --- | --- | --- |
+| [`prospective_evidence/prospective_integration_corpus_v1/`](../prospective_evidence/prospective_integration_corpus_v1/) | Hash-bound corrected `PROSPECTIVE_INTEGRATION_CORPUS_V1` protocol and child contracts | Post-Phase-1 prospective evidence only; deliberately outside the immutable V5 historical JSON census |
+
 ## Future Planning
 
 | Document | Purpose | Authority | When to read |

@@ -1,0 +1,277 @@
+{
+  "all_feature_warmups_frozen": true,
+  "definition_sha256": "0f718a197d19ccebe9068a51f11b3dd12c4d874e3c97de129172ab7ff3068055",
+  "evaluable_slot_rule": "WARMUP_HISTORY_COMPLETE is true only when every frozen feature's owner-specific observation count, session/calendar rule and initialization requirement is satisfied from PIT inputs.",
+  "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+  "longest_required_warmup": "750 calendar days",
+  "pre_warmup_behavior": "Raw PIT capture may later build history only after both the corpus protocol and sufficiency-governance hashes plus POSTP1-004 have passed their required reviews. Until WARMUP_HISTORY_COMPLETE, a slot is WARMUP_HISTORY_INCOMPLETE and enters no evaluable metric universe.",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "rows": {
+    "CVD_SPREAD": {
+      "additional_initialization_requirement": "z-score excludes current observation from history",
+      "calendar_or_session_semantics": "exact UTC hourly common spot/perp timestamps",
+      "effective_warmup": "21 consecutive hourly common observations",
+      "lookback_or_window": "20 prior periods",
+      "minimum_observations": "20 prior plus 1 current common observation",
+      "owner": "btc_predictor.features.flow.spot_perp_cvd_spread"
+    },
+    "ETF_NORM_20D": {
+      "additional_initialization_requirement": "latest PIT AUM required",
+      "calendar_or_session_semantics": "configured ETF publication calendar",
+      "effective_warmup": "20 publication days",
+      "lookback_or_window": "20 publication days",
+      "minimum_observations": "20 complete fund-universe publication days",
+      "owner": "btc_predictor.features.flow.twenty_day_etf_flow"
+    },
+    "ETF_NORM_5D": {
+      "additional_initialization_requirement": "latest PIT AUM required",
+      "calendar_or_session_semantics": "configured ETF publication calendar",
+      "effective_warmup": "5 publication days",
+      "lookback_or_window": "5 publication days",
+      "minimum_observations": "5 complete fund-universe publication days",
+      "owner": "btc_predictor.features.flow.five_day_etf_flow"
+    },
+    "FLOW_ACCEL": {
+      "additional_initialization_requirement": "none beyond source windows",
+      "calendar_or_session_semantics": "configured ETF publication calendar",
+      "effective_warmup": "20 publication days",
+      "lookback_or_window": "5d and 20d ETF normalized windows",
+      "minimum_observations": "both source windows complete",
+      "owner": "btc_predictor.features.flow.etf_flow_acceleration"
+    },
+    "FLOW_SCORE": {
+      "additional_initialization_requirement": "5-period volume growth needs two windows before 20 prior growth values",
+      "calendar_or_session_semantics": "ETF publication days and exact UTC hours",
+      "effective_warmup": "20 ETF publication days and 30 exact-hour spot/perp observations",
+      "lookback_or_window": "max(20 ETF publication days, 21 hourly CVD observations, 30 hourly participation observations)",
+      "minimum_observations": "all selected full-flow components complete",
+      "owner": "btc_predictor.features.flow.calculate_flow_score"
+    },
+    "FUNDING_7D_AVG": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "trailing elapsed UTC days",
+      "effective_warmup": "7 calendar days",
+      "lookback_or_window": "7d",
+      "minimum_observations": "at least one available observation; owner records count",
+      "owner": "btc_predictor.features.positioning.funding_health"
+    },
+    "FUNDING_HEALTH": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "inherits funding z-score",
+      "effective_warmup": "180 calendar days",
+      "lookback_or_window": "FUNDING_ZSCORE_180D",
+      "minimum_observations": "one complete funding z-score",
+      "owner": "btc_predictor.features.positioning.funding_health"
+    },
+    "FUNDING_ZSCORE_180D": {
+      "additional_initialization_requirement": "current observation excluded from history",
+      "calendar_or_session_semantics": "prior observations in trailing elapsed UTC window",
+      "effective_warmup": "180 calendar days",
+      "lookback_or_window": "180d",
+      "minimum_observations": "30 prior observations",
+      "owner": "btc_predictor.features.positioning.funding_health"
+    },
+    "FUTURES_BASIS_AVG": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "same PIT decision",
+      "effective_warmup": "current decision inputs",
+      "lookback_or_window": "current PIT basis observations",
+      "minimum_observations": "at least one available observation",
+      "owner": "btc_predictor.features.positioning.futures_basis_health"
+    },
+    "FUTURES_BASIS_HEALTH": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "inherits basis z-score",
+      "effective_warmup": "180 calendar days",
+      "lookback_or_window": "FUTURES_BASIS_ZSCORE_180D",
+      "minimum_observations": "one complete basis z-score",
+      "owner": "btc_predictor.features.positioning.futures_basis_health"
+    },
+    "FUTURES_BASIS_ZSCORE_180D": {
+      "additional_initialization_requirement": "current observation excluded from history",
+      "calendar_or_session_semantics": "prior observations in trailing elapsed UTC window",
+      "effective_warmup": "180 calendar days",
+      "lookback_or_window": "180d",
+      "minimum_observations": "30 prior observations",
+      "owner": "btc_predictor.features.positioning.futures_basis_health"
+    },
+    "HIGH_DISTANCE_52W": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "canonical weekly sessions",
+      "effective_warmup": "52 canonical weekly sessions",
+      "lookback_or_window": "52 weekly periods",
+      "minimum_observations": "52 highs/closes",
+      "owner": "btc_predictor.features.trend.fifty_two_week_high_distance"
+    },
+    "MA_DISTANCE_20W": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "canonical weekly sessions",
+      "effective_warmup": "20 canonical weekly sessions",
+      "lookback_or_window": "20 weekly periods",
+      "minimum_observations": "20 closes",
+      "owner": "btc_predictor.features.trend.twenty_week_ma_distance"
+    },
+    "MOMENTUM_12W": {
+      "additional_initialization_requirement": "current plus lookback close",
+      "calendar_or_session_semantics": "canonical daily sessions",
+      "effective_warmup": "84 calendar days",
+      "lookback_or_window": "84 daily periods",
+      "minimum_observations": "85 closes",
+      "owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars"
+    },
+    "MOMENTUM_4W": {
+      "additional_initialization_requirement": "current plus lookback close",
+      "calendar_or_session_semantics": "canonical daily sessions",
+      "effective_warmup": "28 calendar days",
+      "lookback_or_window": "28 daily periods",
+      "minimum_observations": "29 closes",
+      "owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars"
+    },
+    "OI_GROWTH_7D": {
+      "additional_initialization_requirement": "prior OI observation required",
+      "calendar_or_session_semantics": "elapsed UTC comparison",
+      "effective_warmup": "7 calendar days",
+      "lookback_or_window": "7d",
+      "minimum_observations": "current and prior comparable observations",
+      "owner": "btc_predictor.features.positioning.open_interest_growth_health"
+    },
+    "OI_GROWTH_HEALTH": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "inherits OI-growth z-score",
+      "effective_warmup": "187 calendar days",
+      "lookback_or_window": "OI_GROWTH_ZSCORE_180D",
+      "minimum_observations": "one complete OI-growth z-score",
+      "owner": "btc_predictor.features.positioning.open_interest_growth_health"
+    },
+    "OI_GROWTH_ZSCORE_180D": {
+      "additional_initialization_requirement": "earliest growth needs an earlier 7d OI observation",
+      "calendar_or_session_semantics": "prior growth observations in trailing elapsed UTC window",
+      "effective_warmup": "187 calendar days",
+      "lookback_or_window": "180d of growth results",
+      "minimum_observations": "30 prior growth observations",
+      "owner": "btc_predictor.features.positioning.open_interest_growth_health"
+    },
+    "OI_INTENSITY": {
+      "additional_initialization_requirement": "none",
+      "calendar_or_session_semantics": "same PIT decision",
+      "effective_warmup": "current decision inputs",
+      "lookback_or_window": "current OI and spot market-cap/price input",
+      "minimum_observations": "one complete input pair",
+      "owner": "btc_predictor.features.positioning.open_interest_intensity"
+    },
+    "OI_INTENSITY_PERCENTILE_180D": {
+      "additional_initialization_requirement": "current intensity required",
+      "calendar_or_session_semantics": "prior observations in trailing elapsed UTC window",
+      "effective_warmup": "180 calendar days",
+      "lookback_or_window": "180d",
+      "minimum_observations": "30 prior observations",
+      "owner": "btc_predictor.features.positioning.open_interest_intensity"
+    },
+    "ORDERLINESS_SCORE": {
+      "additional_initialization_requirement": "upstream percentile owners and raw liquidation history must be complete; no window is invented here",
+      "calendar_or_session_semantics": "strategy-daily PIT inputs",
+      "effective_warmup": "no extra rolling window at this owner",
+      "lookback_or_window": "current range/downside/liquidation/volatility percentile inputs",
+      "minimum_observations": "one complete input vector",
+      "owner": "btc_predictor.features.volatility.calculate_orderliness_score"
+    },
+    "POSITIONING_SCORE": {
+      "additional_initialization_requirement": "OI growth needs an earlier 7d comparison",
+      "calendar_or_session_semantics": "trailing elapsed UTC days",
+      "effective_warmup": "187 calendar days for OI; 180d funding; 180d basis",
+      "lookback_or_window": "max(180d funding, 180d basis, 180d OI growth)",
+      "minimum_observations": "30 historical observations per z-score/percentile owner",
+      "owner": "btc_predictor.features.positioning.calculate_positioning_score"
+    },
+    "REGIME_SCORE": {
+      "additional_initialization_requirement": "full model additionally requires PIT macro/onchain/liquidity inputs",
+      "calendar_or_session_semantics": "mixed canonical sessions",
+      "effective_warmup": "750 calendar days",
+      "lookback_or_window": "transitive maximum of trend, flow, positioning, volatility",
+      "minimum_observations": "all selected regime components complete",
+      "owner": "btc_predictor.features.regime.calculate_regime_score"
+    },
+    "REGIME_SMOOTHED_SCORE": {
+      "additional_initialization_requirement": "the owner deterministically initializes a missing previous smoothed score from the current score and records REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING",
+      "calendar_or_session_semantics": "strategy-daily decisions",
+      "effective_warmup": "750 calendar days",
+      "lookback_or_window": "current regime score and optional prior smoothed score",
+      "minimum_observations": "1 complete current regime score",
+      "owner": "btc_predictor.features.regime.calculate_regime_smoothing"
+    },
+    "RV_20": {
+      "additional_initialization_requirement": "first return needs previous close",
+      "calendar_or_session_semantics": "gap-aware canonical daily sessions",
+      "effective_warmup": "20 calendar-day intervals",
+      "lookback_or_window": "20 daily returns",
+      "minimum_observations": "21 closes",
+      "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars"
+    },
+    "RV_60": {
+      "additional_initialization_requirement": "first return needs previous close",
+      "calendar_or_session_semantics": "gap-aware canonical daily sessions",
+      "effective_warmup": "60 calendar-day intervals",
+      "lookback_or_window": "60 daily returns",
+      "minimum_observations": "61 closes",
+      "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars"
+    },
+    "RV_7": {
+      "additional_initialization_requirement": "first return needs previous close",
+      "calendar_or_session_semantics": "gap-aware canonical daily sessions",
+      "effective_warmup": "7 calendar-day intervals",
+      "lookback_or_window": "7 daily returns",
+      "minimum_observations": "8 closes",
+      "owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars"
+    },
+    "SPOT_DOMINANCE": {
+      "additional_initialization_requirement": "growth series initializes after two equal windows",
+      "calendar_or_session_semantics": "exact UTC hourly common spot/perp timestamps",
+      "effective_warmup": "30 consecutive hourly common observations",
+      "lookback_or_window": "5-period current/prior growth windows plus 20 prior growth values",
+      "minimum_observations": "30 common observations",
+      "owner": "btc_predictor.features.flow.spot_perp_participation_from_rows"
+    },
+    "STRUCTURE_SCORE": {
+      "additional_initialization_requirement": "structural level owners must be complete",
+      "calendar_or_session_semantics": "owner-supplied PIT structures",
+      "effective_warmup": "no extra rolling window at this owner",
+      "lookback_or_window": "current authoritative structure/level/RR inputs",
+      "minimum_observations": "one complete input vector",
+      "owner": "btc_predictor.features.structure.calculate_structure_score"
+    },
+    "TREND_SCORE": {
+      "additional_initialization_requirement": "weekly structure must also be complete",
+      "calendar_or_session_semantics": "canonical weekly/daily sessions",
+      "effective_warmup": "52 canonical weekly sessions",
+      "lookback_or_window": "max(52 weekly, 20 weekly, 84 daily)",
+      "minimum_observations": "52 weekly observations plus component inputs",
+      "owner": "btc_predictor.features.trend.calculate_trend_score"
+    },
+    "VOLATILITY_SCORE": {
+      "additional_initialization_requirement": "each historical RV_20 needs 20 earlier daily returns",
+      "calendar_or_session_semantics": "canonical daily sessions",
+      "effective_warmup": "750 calendar days",
+      "lookback_or_window": "730d volatility-percentile history",
+      "minimum_observations": "365 prior RV_20 results",
+      "owner": "btc_predictor.features.volatility.calculate_volatility_score"
+    },
+    "VOL_COMPRESSION_RATIO": {
+      "additional_initialization_requirement": "none beyond RV_20",
+      "calendar_or_session_semantics": "inherits canonical daily sessions",
+      "effective_warmup": "20 calendar-day intervals",
+      "lookback_or_window": "RV_7 and RV_20",
+      "minimum_observations": "both realized-volatility inputs complete",
+      "owner": "btc_predictor.features.volatility.volatility_compression_ratio"
+    },
+    "VOL_PERCENTILE_2Y": {
+      "additional_initialization_requirement": "earliest retained RV_20 needs 20 prior daily returns",
+      "calendar_or_session_semantics": "canonical daily sessions",
+      "effective_warmup": "750 calendar days",
+      "lookback_or_window": "730d trailing RV_20 window",
+      "minimum_observations": "current plus at least 365 prior RV_20 results",
+      "owner": "btc_predictor.features.volatility.volatility_percentile"
+    }
+  },
+  "schema_version": "PROSPECTIVE_WARMUP_HISTORY_V1",
+  "state_name": "WARMUP_HISTORY_COMPLETE"
+}

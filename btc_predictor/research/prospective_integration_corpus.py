@@ -21,7 +21,9 @@ the old hand-picked development-event list, the numerator and denominator of
 each measurement, and the append-only provenance that lets a future evaluator
 replay all of it.  Collection is *not* authorised by this module: only an
 independently reviewed ``FROZEN`` protocol may enter ``COLLECTING``, and this
-module refuses every real aggregation until then.
+module refuses every real aggregation until the protocol, separate sufficiency
+governance, and collector implementation have each passed their required
+independent review.
 """
 
 from __future__ import annotations
@@ -36,8 +38,18 @@ from decimal import ROUND_CEILING, Context, Decimal, localcontext
 from pathlib import Path
 from typing import Any
 
+from btc_predictor.db import portfolio as _portfolio_db
+from btc_predictor.features import entry as _entry
+from btc_predictor.features import flow as _flow
+from btc_predictor.features import momentum as _momentum
+from btc_predictor.features import positioning as _positioning
+from btc_predictor.features import trend as _trend
+from btc_predictor.features import volatility as _volatility
+from btc_predictor.portfolio import state_machine as _state_machine
 from btc_predictor.research import reference_composite as _rc
 from btc_predictor.research import reference_composite_v2 as _v2
+from btc_predictor.research.feature_matrix import INITIAL_FEATURE_NAMES
+from btc_predictor.signals import data_quality as _data_quality
 
 
 # ---------------------------------------------------------------------------
@@ -46,11 +58,19 @@ from btc_predictor.research import reference_composite_v2 as _v2
 
 PROTOCOL_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V1"
 PROTOCOL_SCHEMA_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V1_PROTOCOL_DEFINITION_V1"
-PROTOCOL_STATUS = "FROZEN_PRE_DATA_PROTOCOL"
-PROGRAM_TICKET = "POSTP1-001"
+PROTOCOL_STATUS = "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_REPEAT_XHIGH_REVIEW"
+PROGRAM_TICKET = "POSTP1-001R"
 WORKSTREAM = "EPIC X"
 WORKSTREAM_NAME = "PROSPECTIVE INTEGRATION EVIDENCE"
-FINAL_CLASSIFICATION = "PROSPECTIVE_INTEGRATION_CORPUS_V1_READY_FOR_XHIGH_REVIEW"
+FINAL_CLASSIFICATION = (
+    "CORRECTED_PROSPECTIVE_INTEGRATION_CORPUS_V1_READY_FOR_REPEAT_XHIGH_REVIEW"
+)
+AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION = (
+    "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_METRIC"
+)
+AMBIGUOUS_FROZEN_INPUT_CLASSIFICATION = (
+    "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT"
+)
 SUCCESSOR_PROTOCOL_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V2"
 
 # The artifacts deliberately do not live under ``research_artifacts/``. The
@@ -68,6 +88,8 @@ INPUT_SNAPSHOT_FILENAME = "input_snapshot_schema.json"
 PORTFOLIO_TRACK_FILENAME = "portfolio_track_contract.json"
 EVIDENCE_SUFFICIENCY_FILENAME = "evidence_sufficiency.json"
 SEMANTIC_DIFF_FILENAME = "semantic_diff_from_v5_blockers.json"
+FEATURE_INPUT_COVERAGE_FILENAME = "feature_input_coverage.json"
+WARMUP_HISTORY_FILENAME = "warmup_history.json"
 REPORT_FILENAME = "PROSPECTIVE_INTEGRATION_CORPUS_V1_REPORT.md"
 
 
@@ -90,6 +112,14 @@ FROZEN_V4_DEFINITION_SHA256 = (
 FROZEN_V5_DEFINITION_SHA256 = (
     "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89"
 )
+FAILED_PROTOCOL_DEFINITION_SHA256 = (
+    "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326"
+)
+FAILED_PROTOCOL_IMPLEMENTATION_COMMIT = (
+    "b38f387f822da713aa06489e6643c9d6909de32a"
+)
+FAILED_PROTOCOL_REVIEW = "FAIL — PROSPECTIVE PROTOCOL INVALID"
+FAILED_PROTOCOL_REVIEW_CLASSIFICATION = "PROSPECTIVE_PROTOCOL_REQUIRES_FIX"
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +128,11 @@ FROZEN_V5_DEFINITION_SHA256 = (
 
 LIFECYCLE_DRAFT = "DRAFT"
 LIFECYCLE_FROZEN = "FROZEN"
+LIFECYCLE_PROTOCOL_CERTIFIED = "PROTOCOL_CERTIFIED"
+LIFECYCLE_SUFFICIENCY_GOVERNANCE_FROZEN = "SUFFICIENCY_GOVERNANCE_FROZEN"
+LIFECYCLE_SUFFICIENCY_GOVERNANCE_CERTIFIED = "SUFFICIENCY_GOVERNANCE_CERTIFIED"
+LIFECYCLE_COLLECTION_IMPLEMENTATION_READY = "COLLECTION_IMPLEMENTATION_READY"
+LIFECYCLE_COLLECTION_IMPLEMENTATION_CERTIFIED = "COLLECTION_IMPLEMENTATION_CERTIFIED"
 LIFECYCLE_COLLECTING = "COLLECTING"
 LIFECYCLE_SUFFICIENT = "SUFFICIENT_FOR_EVALUATION"
 LIFECYCLE_EVALUATED = "EVALUATED"
@@ -105,6 +140,11 @@ LIFECYCLE_CLOSED = "CLOSED"
 LIFECYCLE_STATES = (
     LIFECYCLE_DRAFT,
     LIFECYCLE_FROZEN,
+    LIFECYCLE_PROTOCOL_CERTIFIED,
+    LIFECYCLE_SUFFICIENCY_GOVERNANCE_FROZEN,
+    LIFECYCLE_SUFFICIENCY_GOVERNANCE_CERTIFIED,
+    LIFECYCLE_COLLECTION_IMPLEMENTATION_READY,
+    LIFECYCLE_COLLECTION_IMPLEMENTATION_CERTIFIED,
     LIFECYCLE_COLLECTING,
     LIFECYCLE_SUFFICIENT,
     LIFECYCLE_EVALUATED,
@@ -112,7 +152,27 @@ LIFECYCLE_STATES = (
 )
 LIFECYCLE_TRANSITIONS = {
     LIFECYCLE_DRAFT: (LIFECYCLE_FROZEN,),
-    LIFECYCLE_FROZEN: (LIFECYCLE_COLLECTING, LIFECYCLE_CLOSED),
+    LIFECYCLE_FROZEN: (LIFECYCLE_PROTOCOL_CERTIFIED, LIFECYCLE_CLOSED),
+    LIFECYCLE_PROTOCOL_CERTIFIED: (
+        LIFECYCLE_SUFFICIENCY_GOVERNANCE_FROZEN,
+        LIFECYCLE_CLOSED,
+    ),
+    LIFECYCLE_SUFFICIENCY_GOVERNANCE_FROZEN: (
+        LIFECYCLE_SUFFICIENCY_GOVERNANCE_CERTIFIED,
+        LIFECYCLE_CLOSED,
+    ),
+    LIFECYCLE_SUFFICIENCY_GOVERNANCE_CERTIFIED: (
+        LIFECYCLE_COLLECTION_IMPLEMENTATION_READY,
+        LIFECYCLE_CLOSED,
+    ),
+    LIFECYCLE_COLLECTION_IMPLEMENTATION_READY: (
+        LIFECYCLE_COLLECTION_IMPLEMENTATION_CERTIFIED,
+        LIFECYCLE_CLOSED,
+    ),
+    LIFECYCLE_COLLECTION_IMPLEMENTATION_CERTIFIED: (
+        LIFECYCLE_COLLECTING,
+        LIFECYCLE_CLOSED,
+    ),
     LIFECYCLE_COLLECTING: (LIFECYCLE_SUFFICIENT, LIFECYCLE_CLOSED),
     LIFECYCLE_SUFFICIENT: (LIFECYCLE_EVALUATED, LIFECYCLE_CLOSED),
     LIFECYCLE_EVALUATED: (LIFECYCLE_CLOSED,),
@@ -121,7 +181,10 @@ LIFECYCLE_TRANSITIONS = {
 CURRENT_LIFECYCLE_STATE = LIFECYCLE_FROZEN
 COLLECTION_AUTHORIZED = False
 COLLECTION_ENTRY_REQUIREMENT = (
-    "INDEPENDENT_XHIGH_REVIEW_OF_THIS_EXACT_PROTOCOL_HASH_MUST_PASS_FIRST"
+    "INDEPENDENT_XHIGH_CERTIFICATION_OF_THIS_EXACT_PROTOCOL_HASH_AND_"
+    "INDEPENDENT_XHIGH_CERTIFICATION_OF_THE_EXACT_"
+    "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_HASH_AND_"
+    "INDEPENDENT_IMPLEMENTATION_REVIEW_OF_POSTP1_004_MUST_ALL_PASS"
 )
 
 
@@ -393,6 +456,9 @@ NOT_COMPARABLE_REASONS = (
     "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
     "PROVIDER_QUORUM_ABSENT",
     "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
+    "PRIOR_REFERENCE_SESSION_MISSING",
+    "CONTROL_TRACK_HAS_NO_ACTIVE_STOP",
+    "CONTROL_STOP_IDENTITY_UNAVAILABLE",
 )
 DATA_QUALITY_FAIL_REASONS = ("HARD_DATA_QUALITY_GATE_FAILED",)
 REFERENCE_UNAVAILABLE_REASONS = (
@@ -426,7 +492,8 @@ _UNIVERSE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "definition": (
             "Scheduled slots where every required input for the consuming owner "
             "is present with available_at <= decision_time and the hard "
-            "data-quality gate has not failed for either track."
+            "data-quality state is resolved for both tracks. A resolved hard "
+            "failure is an owner output, not missing evidence."
         ),
         "parent_universe": UNIVERSE_ALL_SCHEDULED,
     },
@@ -449,8 +516,11 @@ _UNIVERSE_DEFINITIONS: dict[str, dict[str, Any]] = {
     UNIVERSE_ELIGIBILITY_EVALUABLE: {
         "cadence": [STRATEGY_DAILY_CADENCE],
         "definition": (
-            "Setup-evaluable daily slots where both tracks are in a pre-position "
-            "lifecycle state, so a new-entry permission is defined for both."
+            "Setup-evaluable daily slots where both tracks have every input "
+            "required by TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1 and each produces "
+            "a complete PERMITTED or NOT_PERMITTED result. Lifecycle state is "
+            "an input to permission, not an exclusion: an open, closed or missed "
+            "track is deterministically NOT_PERMITTED for a new entry."
         ),
         "parent_universe": UNIVERSE_SETUP_EVALUABLE,
     },
@@ -483,16 +553,17 @@ _UNIVERSE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "cadence": [STRATEGY_DAILY_CADENCE],
         "definition": (
             "Data-valid daily slots where both tracks produce a complete "
-            "deterministic action from the authoritative recommendation "
-            "vocabulary, whether flat or in position."
+            "deterministic ordered action envelope from "
+            "TRADE_ACTION_COMPARISON_OWNER_V1, whether flat or in position."
         ),
         "parent_universe": UNIVERSE_DATA_VALID,
     },
     UNIVERSE_STOP_ACTIVE_SLOTS: {
         "cadence": [STOP_HOURLY_CADENCE],
         "definition": (
-            "Hourly slots where the track under evaluation carries an active "
-            "stop on an open position."
+            "Hourly slots where the control-reference track carries an active "
+            "stop on an open position. The immutable control stop identity is "
+            "the common event anchor for both candidate and control outcomes."
         ),
         "parent_universe": UNIVERSE_ALL_SCHEDULED,
     },
@@ -701,6 +772,46 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
         "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
         "units": "contracts or BTC as declared by the instrument",
     },
+    "liquidations": {
+        "available_at_field": "available_at",
+        "capture_state": "EXISTING_RAW_PIT_TABLE",
+        "consuming_features": [
+            "ORDERLINESS_SCORE",
+            "VOLATILITY_SCORE",
+            "REGIME_SCORE",
+            "REGIME_SMOOTHED_SCORE",
+        ],
+        "consumer_path": (
+            "ORDERLINESS_SCORE -> liquidation_cascade -> "
+            "liquidation_percentile; the same normalized input is consumed by "
+            "STRESS and CAPITULATION market-state flags"
+        ),
+        "fields": ["timeframe", "side", "quantity", "quantity_unit", "notional_usd"],
+        "identity_fields": ["exchange", "symbol", "timeframe", "side", "provider"],
+        "ingested_at_field": "ingested_at",
+        "missing_policy": (
+            "EXPLICIT_STATUS_NO_ZERO_FILL_EMPTY_FEED_IS_DISTINCT_FROM_MISSING_FEED"
+        ),
+        "normalization_owner": (
+            "btc_predictor.data.derivatives.aggregate_btc_derivatives_available_at "
+            "+ btc_predictor.features.volatility.calculate_orderliness_score"
+        ),
+        "observation_time_field": "observation_time",
+        "pit_rule": PIT_RULE,
+        "provenance_fields": [
+            "observation_time",
+            "available_at",
+            "ingested_at",
+            "provider",
+            "source",
+        ],
+        "raw_table": "raw.liquidations",
+        "revision_policy": "APPEND_ONLY_NO_DECLARED_REVISION_KEY",
+        "units": (
+            "quantity in provider-declared quantity_unit; notional_usd in USD "
+            "when reported"
+        ),
+    },
     "etf_flows": {
         "capture_state": "EXISTING_RAW_PIT_TABLE",
         "consuming_features": ["ETF_NORM_5D", "ETF_NORM_20D", "FLOW_ACCEL"],
@@ -722,7 +833,12 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
     },
     "generic_series": {
         "capture_state": "EXISTING_RAW_PIT_TABLE",
-        "consuming_features": ["REGIME_SCORE", "REGIME_SMOOTHED_SCORE"],
+        "consuming_features": [
+            "OI_INTENSITY",
+            "OI_INTENSITY_PERCENTILE_180D",
+            "REGIME_SCORE",
+            "REGIME_SMOOTHED_SCORE",
+        ],
         "fields": ["value", "unit"],
         "identity_fields": ["series_id", "series_type", "provider"],
         "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
@@ -740,24 +856,46 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
         "units": "declared per series in the unit column",
     },
     "spot_perp_cvd": {
+        "available_at_field": "available_at",
         "capture_state": "REQUIRES_NEW_COLLECTOR_IN_FIRST_COLLECTION_TICKET",
         "capture_state_reason": (
             "btc_predictor.features.flow.CvdObservation is a feature-layer "
             "boundary with no raw PIT table and no collector in this repository, "
             "so CVD_SPREAD cannot be reproduced from any persisted source today. "
-            "The corpus declares the capture contract; it does not fabricate the "
-            "series and it does not drop the feature from the champion."
+            "The Phase-1 owner and its deterministic regression contract use "
+            "aligned exact-hour common timestamps, matching the existing 1h "
+            "spot/perp participation source path. The prospective contract freezes "
+            "that cadence; it does not collect or fabricate the series."
         ),
+        "cadence_derivation": {
+            "accepted": "EXACT_UTC_HOURLY_OBSERVATIONS",
+            "authority": [
+                "btc_predictor.features.flow.CvdObservation.observation_time",
+                "btc_predictor.features.flow.spot_perp_cvd_spread common_times",
+                "btc_predictor.tests.test_flow_features hourly Phase-1 contract",
+                "btc_predictor.features.flow.spot_perp_participation_from_rows 1h spot bars",
+            ],
+            "conflicting_repository_cadence": None,
+            "unique": True,
+        },
+        "cadence_ambiguity": False,
         "consuming_features": ["CVD_SPREAD"],
         "fields": ["cvd_usd", "market_type"],
         "identity_fields": ["market_type", "provider"],
+        "ingested_at_field": "ingested_at",
         "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL",
         "normalization_owner": "btc_predictor.features.flow",
+        "observation_cadence": "1h",
+        "observation_time_alignment": "exact UTC hour",
+        "observation_time_field": "observation_time",
         "pit_rule": PIT_RULE,
         "provenance_fields": ["observation_time", "available_at", "ingested_at", "source"],
         "raw_table": "research.prospective_source_input_snapshot (new capture)",
         "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
         "units": "USD cumulative volume delta",
+        "zscore_window_periods": _flow.spot_perp_cvd_spread.__kwdefaults__[
+            "zscore_window_periods"
+        ],
     },
     "spot_perp_volume_participation": {
         "capture_state": "EXISTING_RAW_PIT_TABLE",
@@ -800,16 +938,206 @@ PORTFOLIO_STATE_INPUTS: tuple[str, ...] = (
 )
 
 EXCLUDED_INPUT_FAMILIES: dict[str, str] = {
-    "liquidations": (
-        "raw.liquidations exists but the frozen BTC-048 feature contract names no "
-        "feature that consumes it, so it is not part of the required decision "
-        "reproduction set."
-    ),
     "new_alpha_datasets": (
         "No dataset outside the frozen Phase-1 feature contract may enter the "
         "corpus; adding one is a PROSPECTIVE_INTEGRATION_CORPUS_V2 change."
     ),
 }
+
+
+# Mechanical closure from the frozen BTC-048 inventory to its raw/PIT inputs.
+# Composite rows carry the transitive raw families of their component owners;
+# a collector may not satisfy a row by persisting only the already-derived
+# feature value.
+_FEATURE_DEPENDENCIES: dict[str, dict[str, Any]] = {
+    "TREND_SCORE": {"owner": "btc_predictor.features.trend.calculate_trend_score", "raw": ("raw_provider_ohlcv",)},
+    "FLOW_SCORE": {"owner": "btc_predictor.features.flow.calculate_flow_score", "raw": ("etf_flows", "raw_provider_ohlcv", "spot_perp_cvd", "spot_perp_volume_participation")},
+    "POSITIONING_SCORE": {"owner": "btc_predictor.features.positioning.calculate_positioning_score", "raw": ("derivatives_funding", "derivatives_futures_basis", "derivatives_open_interest")},
+    "VOLATILITY_SCORE": {"owner": "btc_predictor.features.volatility.calculate_volatility_score", "raw": ("liquidations", "raw_provider_ohlcv")},
+    "STRUCTURE_SCORE": {"owner": "btc_predictor.features.structure.calculate_structure_score", "raw": ("raw_provider_ohlcv",)},
+    "REGIME_SCORE": {"owner": "btc_predictor.features.regime.calculate_regime_score", "raw": ("derivatives_funding", "derivatives_futures_basis", "derivatives_open_interest", "etf_flows", "generic_series", "liquidations", "raw_provider_ohlcv", "spot_perp_cvd", "spot_perp_volume_participation")},
+    "REGIME_SMOOTHED_SCORE": {"owner": "btc_predictor.features.regime.calculate_regime_smoothing", "raw": ("derivatives_funding", "derivatives_futures_basis", "derivatives_open_interest", "etf_flows", "generic_series", "liquidations", "raw_provider_ohlcv", "spot_perp_cvd", "spot_perp_volume_participation")},
+    "ORDERLINESS_SCORE": {"owner": "btc_predictor.features.volatility.calculate_orderliness_score", "raw": ("liquidations", "raw_provider_ohlcv")},
+    "MOMENTUM_4W": {"owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars", "raw": ("raw_provider_ohlcv",)},
+    "MOMENTUM_12W": {"owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars", "raw": ("raw_provider_ohlcv",)},
+    "MA_DISTANCE_20W": {"owner": "btc_predictor.features.trend.twenty_week_ma_distance", "raw": ("raw_provider_ohlcv",)},
+    "HIGH_DISTANCE_52W": {"owner": "btc_predictor.features.trend.fifty_two_week_high_distance", "raw": ("raw_provider_ohlcv",)},
+    "ETF_NORM_5D": {"owner": "btc_predictor.features.flow.five_day_etf_flow", "raw": ("etf_flows",)},
+    "ETF_NORM_20D": {"owner": "btc_predictor.features.flow.twenty_day_etf_flow", "raw": ("etf_flows",)},
+    "FLOW_ACCEL": {"owner": "btc_predictor.features.flow.etf_flow_acceleration", "raw": ("etf_flows",)},
+    "CVD_SPREAD": {"owner": "btc_predictor.features.flow.spot_perp_cvd_spread", "raw": ("spot_perp_cvd",)},
+    "SPOT_DOMINANCE": {"owner": "btc_predictor.features.flow.spot_perp_participation_from_rows", "raw": ("raw_provider_ohlcv", "spot_perp_volume_participation")},
+    "FUNDING_7D_AVG": {"owner": "btc_predictor.features.positioning.funding_features", "raw": ("derivatives_funding",)},
+    "FUNDING_ZSCORE_180D": {"owner": "btc_predictor.features.positioning.funding_features", "raw": ("derivatives_funding",)},
+    "FUNDING_HEALTH": {"owner": "btc_predictor.features.positioning.funding_health", "raw": ("derivatives_funding",)},
+    "OI_GROWTH_7D": {"owner": "btc_predictor.features.positioning.open_interest_growth_features", "raw": ("derivatives_open_interest",)},
+    "OI_GROWTH_ZSCORE_180D": {"owner": "btc_predictor.features.positioning.open_interest_growth_features", "raw": ("derivatives_open_interest",)},
+    "OI_GROWTH_HEALTH": {"owner": "btc_predictor.features.positioning.open_interest_growth_health", "raw": ("derivatives_open_interest",)},
+    "OI_INTENSITY": {"owner": "btc_predictor.features.positioning.open_interest_intensity", "raw": ("derivatives_open_interest", "generic_series")},
+    "OI_INTENSITY_PERCENTILE_180D": {"owner": "btc_predictor.features.positioning.open_interest_intensity", "raw": ("derivatives_open_interest", "generic_series")},
+    "FUTURES_BASIS_AVG": {"owner": "btc_predictor.features.positioning.futures_basis_health", "raw": ("derivatives_futures_basis",)},
+    "FUTURES_BASIS_ZSCORE_180D": {"owner": "btc_predictor.features.positioning.futures_basis_health", "raw": ("derivatives_futures_basis",)},
+    "FUTURES_BASIS_HEALTH": {"owner": "btc_predictor.features.positioning.futures_basis_health", "raw": ("derivatives_futures_basis",)},
+    "RV_7": {"owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars", "raw": ("raw_provider_ohlcv",)},
+    "RV_20": {"owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars", "raw": ("raw_provider_ohlcv",)},
+    "RV_60": {"owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars", "raw": ("raw_provider_ohlcv",)},
+    "VOL_COMPRESSION_RATIO": {"owner": "btc_predictor.features.volatility.volatility_compression_ratio", "raw": ("raw_provider_ohlcv",)},
+    "VOL_PERCENTILE_2Y": {"owner": "btc_predictor.features.volatility.volatility_percentile", "raw": ("raw_provider_ohlcv",)},
+}
+
+
+def feature_input_coverage_contract() -> dict[str, Any]:
+    """Prove one capture contract exists for every frozen feature dependency."""
+
+    frozen = tuple(INITIAL_FEATURE_NAMES)
+    if set(_FEATURE_DEPENDENCIES) != set(frozen) or len(_FEATURE_DEPENDENCIES) != len(frozen):
+        missing = sorted(set(frozen) - set(_FEATURE_DEPENDENCIES))
+        extra = sorted(set(_FEATURE_DEPENDENCIES) - set(frozen))
+        raise ProspectiveCorpusError(
+            f"frozen feature dependency closure moved; missing={missing}, extra={extra}"
+        )
+    capture_contracts = {**PRICE_INPUT_SOURCES, **NON_PRICE_INPUT_SOURCES}
+    rows: dict[str, Any] = {}
+    used_families: set[str] = set()
+    for feature in frozen:
+        dependency = _FEATURE_DEPENDENCIES[feature]
+        if not isinstance(dependency["owner"], str) or not dependency["owner"]:
+            raise ProspectiveCorpusError(
+                f"{feature} lacks an explicit deterministic feature owner"
+            )
+        raw_families = tuple(dependency["raw"])
+        absent = tuple(family for family in raw_families if family not in capture_contracts)
+        if absent:
+            raise ProspectiveCorpusError(
+                f"{feature} has required raw families without a capture contract: {absent}"
+            )
+        if len(raw_families) != len(set(raw_families)):
+            raise ProspectiveCorpusError(f"{feature} repeats a raw input family")
+        used_families.update(raw_families)
+        rows[feature] = {
+            "deterministic_feature_owner": dependency["owner"],
+            "raw_input_families": list(raw_families),
+            "capture_contract_count_by_family": {family: 1 for family in raw_families},
+            "future_information_reconstruction_permitted": False,
+            "missing_value_default": None,
+            "zero_fill_permitted": False,
+        }
+    unused_contracts = set(capture_contracts) - used_families
+    if unused_contracts:
+        raise ProspectiveCorpusError(
+            f"capture contracts are not traced from INITIAL_FEATURE_NAMES: "
+            f"{sorted(unused_contracts)}"
+        )
+    payload = {
+        "all_frozen_features_covered": True,
+        "capture_contracts": {
+            family: {
+                "capture_state": contract.get("capture_state", "EXISTING_RAW_PIT_TABLE"),
+                "raw_table": contract["raw_table"],
+            }
+            for family, contract in sorted(capture_contracts.items())
+        },
+        "feature_count": len(rows),
+        "feature_inventory": list(frozen),
+        "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+        "protocol_version": PROTOCOL_VERSION,
+        "required_raw_input_families": sorted(used_families),
+        "rows": rows,
+        "schema_version": "PROSPECTIVE_FEATURE_INPUT_COVERAGE_V1",
+    }
+    payload["definition_sha256"] = _digest(payload)
+    return payload
+
+
+def _warmup_row(
+    owner: str,
+    lookback: str,
+    semantics: str,
+    minimum_observations: str,
+    initialization: str,
+    effective: str,
+) -> dict[str, str]:
+    return {
+        "owner": owner,
+        "lookback_or_window": lookback,
+        "calendar_or_session_semantics": semantics,
+        "minimum_observations": minimum_observations,
+        "additional_initialization_requirement": initialization,
+        "effective_warmup": effective,
+    }
+
+
+def warmup_history_contract() -> dict[str, Any]:
+    """Derive every frozen feature's pre-evaluation warmup from its owner."""
+
+    cvd_window = _flow.spot_perp_cvd_spread.__kwdefaults__["zscore_window_periods"]
+    volume_growth = _flow.spot_perp_participation.__kwdefaults__["growth_window_periods"]
+    volume_zscore = _flow.spot_perp_participation.__kwdefaults__["zscore_window_periods"]
+    funding_window = _positioning.DEFAULT_FUNDING_ZSCORE_WINDOW_DAYS
+    basis_window = _positioning.DEFAULT_FUTURES_BASIS_ZSCORE_WINDOW_DAYS
+    oi_window = _positioning.DEFAULT_OI_GROWTH_ZSCORE_WINDOW_DAYS
+    oi_growth = _positioning.DEFAULT_OI_GROWTH_WINDOW_DAYS
+    percentile_window = _volatility.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
+    percentile_source_window = 20
+    rows = {
+        "TREND_SCORE": _warmup_row("btc_predictor.features.trend.calculate_trend_score", f"max({_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} weekly, {_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} weekly, {_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS} daily)", "canonical weekly/daily sessions", "52 weekly observations plus component inputs", "weekly structure must also be complete", "52 canonical weekly sessions"),
+        "FLOW_SCORE": _warmup_row("btc_predictor.features.flow.calculate_flow_score", "max(20 ETF publication days, 21 hourly CVD observations, 30 hourly participation observations)", "ETF publication days and exact UTC hours", "all selected full-flow components complete", "5-period volume growth needs two windows before 20 prior growth values", "20 ETF publication days and 30 exact-hour spot/perp observations"),
+        "POSITIONING_SCORE": _warmup_row("btc_predictor.features.positioning.calculate_positioning_score", f"max({funding_window}d funding, {basis_window}d basis, {oi_window}d OI growth)", "trailing elapsed UTC days", "30 historical observations per z-score/percentile owner", f"OI growth needs an earlier {oi_growth}d comparison", f"{oi_window + oi_growth} calendar days for OI; {funding_window}d funding; {basis_window}d basis"),
+        "VOLATILITY_SCORE": _warmup_row("btc_predictor.features.volatility.calculate_volatility_score", f"{percentile_window}d volatility-percentile history", "canonical daily sessions", f"{_volatility.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS} prior RV_20 results", f"each historical RV_20 needs {percentile_source_window} earlier daily returns", f"{percentile_window + percentile_source_window} calendar days"),
+        "STRUCTURE_SCORE": _warmup_row("btc_predictor.features.structure.calculate_structure_score", "current authoritative structure/level/RR inputs", "owner-supplied PIT structures", "one complete input vector", "structural level owners must be complete", "no extra rolling window at this owner"),
+        "REGIME_SCORE": _warmup_row("btc_predictor.features.regime.calculate_regime_score", "transitive maximum of trend, flow, positioning, volatility", "mixed canonical sessions", "all selected regime components complete", "full model additionally requires PIT macro/onchain/liquidity inputs", f"{percentile_window + percentile_source_window} calendar days"),
+        "REGIME_SMOOTHED_SCORE": _warmup_row("btc_predictor.features.regime.calculate_regime_smoothing", "current regime score and optional prior smoothed score", "strategy-daily decisions", "1 complete current regime score", "the owner deterministically initializes a missing previous smoothed score from the current score and records REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING", f"{percentile_window + percentile_source_window} calendar days"),
+        "ORDERLINESS_SCORE": _warmup_row("btc_predictor.features.volatility.calculate_orderliness_score", "current range/downside/liquidation/volatility percentile inputs", "strategy-daily PIT inputs", "one complete input vector", "upstream percentile owners and raw liquidation history must be complete; no window is invented here", "no extra rolling window at this owner"),
+        "MOMENTUM_4W": _warmup_row("btc_predictor.features.momentum.four_week_momentum_from_daily_bars", f"{_momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS} daily periods", "canonical daily sessions", f"{_momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS + 1} closes", "current plus lookback close", f"{_momentum.FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS} calendar days"),
+        "MOMENTUM_12W": _warmup_row("btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars", f"{_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS} daily periods", "canonical daily sessions", f"{_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS + 1} closes", "current plus lookback close", f"{_momentum.TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS} calendar days"),
+        "MA_DISTANCE_20W": _warmup_row("btc_predictor.features.trend.twenty_week_ma_distance", f"{_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} weekly periods", "canonical weekly sessions", f"{_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} closes", "none", f"{_trend.TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS} canonical weekly sessions"),
+        "HIGH_DISTANCE_52W": _warmup_row("btc_predictor.features.trend.fifty_two_week_high_distance", f"{_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} weekly periods", "canonical weekly sessions", f"{_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} highs/closes", "none", f"{_trend.FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS} canonical weekly sessions"),
+        "ETF_NORM_5D": _warmup_row("btc_predictor.features.flow.five_day_etf_flow", f"{_flow.FIVE_DAY_ETF_FLOW_WINDOW_DAYS} publication days", "configured ETF publication calendar", "5 complete fund-universe publication days", "latest PIT AUM required", "5 publication days"),
+        "ETF_NORM_20D": _warmup_row("btc_predictor.features.flow.twenty_day_etf_flow", f"{_flow.TWENTY_DAY_ETF_FLOW_WINDOW_DAYS} publication days", "configured ETF publication calendar", "20 complete fund-universe publication days", "latest PIT AUM required", "20 publication days"),
+        "FLOW_ACCEL": _warmup_row("btc_predictor.features.flow.etf_flow_acceleration", "5d and 20d ETF normalized windows", "configured ETF publication calendar", "both source windows complete", "none beyond source windows", "20 publication days"),
+        "CVD_SPREAD": _warmup_row("btc_predictor.features.flow.spot_perp_cvd_spread", f"{cvd_window} prior periods", "exact UTC hourly common spot/perp timestamps", f"{cvd_window} prior plus 1 current common observation", "z-score excludes current observation from history", f"{cvd_window + 1} consecutive hourly common observations"),
+        "SPOT_DOMINANCE": _warmup_row("btc_predictor.features.flow.spot_perp_participation_from_rows", f"{volume_growth}-period current/prior growth windows plus {volume_zscore} prior growth values", "exact UTC hourly common spot/perp timestamps", f"{volume_growth * 2 + volume_zscore} common observations", "growth series initializes after two equal windows", f"{volume_growth * 2 + volume_zscore} consecutive hourly common observations"),
+        "FUNDING_7D_AVG": _warmup_row("btc_predictor.features.positioning.funding_health", f"{_positioning.DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS}d", "trailing elapsed UTC days", "at least one available observation; owner records count", "none", f"{_positioning.DEFAULT_FUNDING_AVERAGE_WINDOW_DAYS} calendar days"),
+        "FUNDING_ZSCORE_180D": _warmup_row("btc_predictor.features.positioning.funding_health", f"{funding_window}d", "prior observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS} prior observations", "current observation excluded from history", f"{funding_window} calendar days"),
+        "FUNDING_HEALTH": _warmup_row("btc_predictor.features.positioning.funding_health", "FUNDING_ZSCORE_180D", "inherits funding z-score", "one complete funding z-score", "none", f"{funding_window} calendar days"),
+        "OI_GROWTH_7D": _warmup_row("btc_predictor.features.positioning.open_interest_growth_health", f"{oi_growth}d", "elapsed UTC comparison", "current and prior comparable observations", "prior OI observation required", f"{oi_growth} calendar days"),
+        "OI_GROWTH_ZSCORE_180D": _warmup_row("btc_predictor.features.positioning.open_interest_growth_health", f"{oi_window}d of growth results", "prior growth observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_OI_GROWTH_MIN_ZSCORE_OBSERVATIONS} prior growth observations", f"earliest growth needs an earlier {oi_growth}d OI observation", f"{oi_window + oi_growth} calendar days"),
+        "OI_GROWTH_HEALTH": _warmup_row("btc_predictor.features.positioning.open_interest_growth_health", "OI_GROWTH_ZSCORE_180D", "inherits OI-growth z-score", "one complete OI-growth z-score", "none", f"{oi_window + oi_growth} calendar days"),
+        "OI_INTENSITY": _warmup_row("btc_predictor.features.positioning.open_interest_intensity", "current OI and spot market-cap/price input", "same PIT decision", "one complete input pair", "none", "current decision inputs"),
+        "OI_INTENSITY_PERCENTILE_180D": _warmup_row("btc_predictor.features.positioning.open_interest_intensity", f"{_positioning.DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS}d", "prior observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_OI_INTENSITY_MIN_PERCENTILE_OBSERVATIONS} prior observations", "current intensity required", f"{_positioning.DEFAULT_OI_INTENSITY_PERCENTILE_WINDOW_DAYS} calendar days"),
+        "FUTURES_BASIS_AVG": _warmup_row("btc_predictor.features.positioning.futures_basis_health", "current PIT basis observations", "same PIT decision", "at least one available observation", "none", "current decision inputs"),
+        "FUTURES_BASIS_ZSCORE_180D": _warmup_row("btc_predictor.features.positioning.futures_basis_health", f"{basis_window}d", "prior observations in trailing elapsed UTC window", f"{_positioning.DEFAULT_FUTURES_BASIS_MIN_ZSCORE_OBSERVATIONS} prior observations", "current observation excluded from history", f"{basis_window} calendar days"),
+        "FUTURES_BASIS_HEALTH": _warmup_row("btc_predictor.features.positioning.futures_basis_health", "FUTURES_BASIS_ZSCORE_180D", "inherits basis z-score", "one complete basis z-score", "none", f"{basis_window} calendar days"),
+        "RV_7": _warmup_row("btc_predictor.features.volatility.realized_volatility_from_daily_bars", "7 daily returns", "gap-aware canonical daily sessions", "8 closes", "first return needs previous close", "7 calendar-day intervals"),
+        "RV_20": _warmup_row("btc_predictor.features.volatility.realized_volatility_from_daily_bars", "20 daily returns", "gap-aware canonical daily sessions", "21 closes", "first return needs previous close", "20 calendar-day intervals"),
+        "RV_60": _warmup_row("btc_predictor.features.volatility.realized_volatility_from_daily_bars", "60 daily returns", "gap-aware canonical daily sessions", "61 closes", "first return needs previous close", "60 calendar-day intervals"),
+        "VOL_COMPRESSION_RATIO": _warmup_row("btc_predictor.features.volatility.volatility_compression_ratio", "RV_7 and RV_20", "inherits canonical daily sessions", "both realized-volatility inputs complete", "none beyond RV_20", "20 calendar-day intervals"),
+        "VOL_PERCENTILE_2Y": _warmup_row("btc_predictor.features.volatility.volatility_percentile", f"{percentile_window}d trailing RV_20 window", "canonical daily sessions", f"current plus at least {_volatility.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS} prior RV_20 results", f"earliest retained RV_20 needs {percentile_source_window} prior daily returns", f"{percentile_window + percentile_source_window} calendar days"),
+    }
+    if set(rows) != set(INITIAL_FEATURE_NAMES):
+        raise ProspectiveCorpusError("warmup rows must exactly cover INITIAL_FEATURE_NAMES")
+    payload = {
+        "all_feature_warmups_frozen": True,
+        "evaluable_slot_rule": (
+            "WARMUP_HISTORY_COMPLETE is true only when every frozen feature's "
+            "owner-specific observation count, session/calendar rule and "
+            "initialization requirement is satisfied from PIT inputs."
+        ),
+        "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+        "longest_required_warmup": f"{percentile_window + percentile_source_window} calendar days",
+        "pre_warmup_behavior": (
+            "Raw PIT capture may later build history only after both the corpus "
+            "protocol and sufficiency-governance hashes plus POSTP1-004 have "
+            "passed their required reviews. Until WARMUP_HISTORY_COMPLETE, a "
+            "slot is WARMUP_HISTORY_INCOMPLETE and enters no evaluable metric universe."
+        ),
+        "protocol_version": PROTOCOL_VERSION,
+        "rows": rows,
+        "schema_version": "PROSPECTIVE_WARMUP_HISTORY_V1",
+        "state_name": "WARMUP_HISTORY_COMPLETE",
+    }
+    payload["definition_sha256"] = _digest(payload)
+    return payload
 
 
 # ===========================================================================
@@ -911,12 +1239,15 @@ DIVERGENCE_EVIDENCE_FIELDS = (
 # The historical repository carried five hand-picked development timestamps.
 # Nothing here selects a timestamp: an event is whatever the classifier labels
 # from the raw provider observations of one canonical hourly slot and the
-# evaluating track's own active stop.
+# control track's active stop.
 
 STOP_EVENT_CLASSIFIER_VERSION = "PROSPECTIVE_STOP_EVENT_CLASSIFIER_V1"
 STOP_EVENT_CLASSIFIER_OWNER = (
     "btc_predictor.research.prospective_integration_corpus.classify_stop_event"
 )
+STOP_EVENT_UNIVERSE_ANCHOR = "CONTROL_REFERENCE_TRACK_ACTIVE_STOP"
+PRIOR_OBSERVABLE_OWNER = "PREVIOUS_CONTIGUOUS_REQUIRED_PROVIDER_CONSENSUS_CLOSE_V1"
+PRIOR_OBSERVABLE_MAXIMUM_GAP = timedelta(hours=1)
 
 REQUIRED_PROVIDER_IDS = _rc.REQUIRED_COMPOSITE_PROVIDER_IDS
 PROVIDER_QUORUM = _v2.V2_MINIMUM_PROVIDER_COUNT
@@ -930,7 +1261,7 @@ STOP_RELEVANT_FIELD = {LONG_DIRECTION: "low", SHORT_DIRECTION: "high"}
 EVENT_CROSS_MARKET = "CROSS_MARKET_CONFIRMED_STOP_EVENT"
 EVENT_ISOLATED_VENUE = "ISOLATED_VENUE_STOP_EVENT"
 EVENT_NONE = "NO_STOP_EVENT"
-EVENT_NOT_CLASSIFIABLE = "NOT_CLASSIFIABLE_INSUFFICIENT_PROVIDER_QUORUM"
+EVENT_NOT_CLASSIFIABLE = "NOT_CLASSIFIABLE"
 STOP_EVENT_CLASSIFICATIONS = (
     EVENT_CROSS_MARKET,
     EVENT_ISOLATED_VENUE,
@@ -940,7 +1271,7 @@ STOP_EVENT_CLASSIFICATIONS = (
 
 GAP_THROUGH_EVENT = "GAP_THROUGH_STOP_EVENT"
 GAP_THROUGH_NOT_PRESENT = "NOT_GAP_THROUGH"
-GAP_THROUGH_NOT_EVALUABLE = "NOT_EVALUABLE_NO_PRIOR_OBSERVABLE_PRICE"
+GAP_THROUGH_NOT_EVALUABLE = "NOT_EVALUABLE_PRIOR_CONSENSUS_UNAVAILABLE"
 GAP_THROUGH_STATES = (
     GAP_THROUGH_EVENT,
     GAP_THROUGH_NOT_EVALUABLE,
@@ -963,14 +1294,136 @@ CLASSIFICATION_PRECEDENCE = (
     "Otherwise, CROSS_MARKET_CONFIRMED_STOP_EVENT when at least "
     "CONFIRMATION_QUORUM available required providers reach the stop-relevant "
     "extreme.",
-    "Otherwise, ISOLATED_VENUE_STOP_EVENT when exactly one available required "
-    "provider reaches it, so the confirmation quorum is measurably absent.",
+    "Otherwise, any missing required provider makes the slot NOT_CLASSIFIABLE: "
+    "the absent venue could change NO_STOP_EVENT into ISOLATED_VENUE_STOP_EVENT "
+    "or could prevent isolation from being established.",
+    "Otherwise, ISOLATED_VENUE_STOP_EVENT only when exactly one available "
+    "required provider reaches it and at least CONFIRMATION_QUORUM available "
+    "required providers do not reach it. Isolation is observed, never inferred "
+    "through a missing provider.",
+    "A one-touch/one-non-touch/one-missing slot is NOT_CLASSIFIABLE because the "
+    "missing venue could have confirmed the touch.",
     "Otherwise NO_STOP_EVENT. CROSS_MARKET_CONFIRMED_STOP_EVENT and "
     "ISOLATED_VENUE_STOP_EVENT are mutually exclusive by construction.",
     "GAP_THROUGH_STOP_EVENT is orthogonal and declared separately: it describes "
     "how the stop was crossed, not how many venues reached it, so a slot may "
     "carry both labels and neither universe silently drops the other's event.",
 )
+
+GAP_THROUGH_DERIVATION = {
+    "accepted_interpretation": PRIOR_OBSERVABLE_OWNER,
+    "rows": [
+        {
+            "candidate_interpretation": "immediately prior required-provider-consensus hourly close",
+            "supporting_authority": [
+                "PRICE_SOURCE_POLICY_V1: provider outages remain explicit gaps and fallback splicing is prohibited",
+                "btc_predictor.portfolio.stop_execution: a gap is decided by the next eligible bar open",
+                "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION: source bars are exact UTC hours",
+                "existing stop-event comparison basis: raw required-provider consensus",
+            ],
+            "conflicting_authority": None,
+            "candidate_neutral": True,
+            "track_dependent": False,
+            "pit_safe": True,
+            "unique": True,
+            "accepted": True,
+        },
+        {
+            "candidate_interpretation": "previous available provider-consensus close across an outage",
+            "supporting_authority": "failed protocol lineage only",
+            "conflicting_authority": "PRICE_SOURCE_POLICY_V1 forbids splicing across explicit provider gaps",
+            "candidate_neutral": True,
+            "track_dependent": False,
+            "pit_safe": True,
+            "unique": False,
+            "accepted": False,
+        },
+        {
+            "candidate_interpretation": "previous candidate reference close",
+            "supporting_authority": None,
+            "conflicting_authority": "would let the measured candidate define event-universe membership",
+            "candidate_neutral": False,
+            "track_dependent": True,
+            "pit_safe": True,
+            "unique": False,
+            "accepted": False,
+        },
+        {
+            "candidate_interpretation": "previous control reference close",
+            "supporting_authority": "control is the comparison baseline",
+            "conflicting_authority": "the historical stop metrics compare a candidate with raw venue consensus; the event taxonomy is candidate-neutral raw evidence",
+            "candidate_neutral": True,
+            "track_dependent": True,
+            "pit_safe": True,
+            "unique": False,
+            "accepted": False,
+        },
+        {
+            "candidate_interpretation": "previous session open",
+            "supporting_authority": None,
+            "conflicting_authority": "the execution owner uses the current bar open and supplies no previous-open concept",
+            "candidate_neutral": True,
+            "track_dependent": False,
+            "pit_safe": True,
+            "unique": False,
+            "accepted": False,
+        },
+    ],
+    "maximum_staleness_seconds": int(PRIOR_OBSERVABLE_MAXIMUM_GAP.total_seconds()),
+    "missing_session_semantics": "NOT_EVALUABLE_PRIOR_CONSENSUS_UNAVAILABLE",
+    "prior_timestamp_identity": "current canonical hourly observation_time minus exactly one hour",
+    "source_identity": "median close over the available required raw providers at the exact prior hour, requiring PROVIDER_QUORUM",
+    "unique_interpretation": True,
+}
+
+STOP_EVENT_UNIVERSE_DERIVATION = {
+    "accepted_interpretation": STOP_EVENT_UNIVERSE_ANCHOR,
+    "invariance_principle": (
+        "Candidate performance cannot reduce the set of events on which the "
+        "candidate is judged merely by altering its own entry, exit or stop state."
+    ),
+    "rows": [
+        {"interpretation": "candidate-track-specific stop", "authority_support": "failed protocol lineage only", "bias_or_provenance_consequence": "candidate state can shrink its own denominator", "accepted": False, "reason": "violates outcome-exogenous universe invariance"},
+        {"interpretation": "control-track-specific stop", "authority_support": "historical candidate-versus-control comparison basis and the authoritative control lifecycle", "bias_or_provenance_consequence": "baseline state fixes the event anchor independently of candidate outcomes", "accepted": True, "reason": "the comparison baseline supplies the only pre-existing exogenous stop identity"},
+        {"interpretation": "shared pre-divergence stop", "authority_support": "both tracks start from one state", "bias_or_provenance_consequence": "undefined after later entries or stop advances", "accepted": False, "reason": "cannot cover the natural-divergence epoch without inventing a synthetic stop"},
+        {"interpretation": "joint/both-track stop universe", "authority_support": None, "bias_or_provenance_consequence": "drops events whenever one track is flat or lacks a stop", "accepted": False, "reason": "candidate behavior can remove events"},
+        {"interpretation": "union of track-specific stop events", "authority_support": None, "bias_or_provenance_consequence": "candidate can add endogenous events and incompatible stop levels", "accepted": False, "reason": "no repository owner defines how two stop levels form one event"},
+        {"interpretation": "other existing-authority interpretation", "authority_support": None, "bias_or_provenance_consequence": "none found in the full owner trace", "accepted": False, "reason": "no additional authoritative anchor exists"},
+    ],
+    "unique_interpretation": True,
+}
+
+POST_DIVERGENCE_STOP_SEMANTICS = {
+    "active_stop_identity": "control lifecycle active stop plus its transition/source identity",
+    "candidate_position_state": "persisted on every classified slot but does not control membership",
+    "comparison_disposition": (
+        "If the control track has an active stop, raw venue events are classified "
+        "at that stop and candidate/control reference outcomes remain comparable "
+        "even when candidate portfolio state differs. If the control track has no "
+        "active stop or its identity is unavailable, the slot is NOT_COMPARABLE "
+        "and enters no stop-event denominator."
+    ),
+    "control_position_state": "must be open with a valid active stop",
+    "first_divergence": "first_divergence_decision_time from portfolio_track_contract",
+    "hidden_denominator_shrinkage_permitted": False,
+}
+
+
+def assert_required_semantics_unambiguous() -> None:
+    """Fail closed if any bounded correction cannot be uniquely derived."""
+
+    cvd_derivation = NON_PRICE_INPUT_SOURCES["spot_perp_cvd"][
+        "cadence_derivation"
+    ]
+    if (
+        cvd_derivation["unique"] is not True
+        or cvd_derivation["accepted"] != "EXACT_UTC_HOURLY_OBSERVATIONS"
+    ):
+        raise ProspectiveCorpusError(AMBIGUOUS_FROZEN_INPUT_CLASSIFICATION)
+    if GAP_THROUGH_DERIVATION["unique_interpretation"] is not True:
+        raise ProspectiveCorpusError(AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION)
+    if STOP_EVENT_UNIVERSE_DERIVATION["unique_interpretation"] is not True:
+        raise ProspectiveCorpusError(AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION)
 
 
 @dataclass(frozen=True)
@@ -988,15 +1441,18 @@ class ProviderObservation:
 
 @dataclass(frozen=True)
 class StopEvaluationSlot:
-    """One hourly stop-evaluation slot for one portfolio track."""
+    """One hourly stop-evaluation slot anchored to the control-track stop."""
 
     observation_time: datetime
     track: str
     direction: str
     active_stop: Decimal
+    active_stop_identity: str
+    control_position_state: str
+    candidate_position_state: str
     providers: tuple[ProviderObservation, ...]
-    prior_observable_price: Decimal | None = None
-    prior_observable_observation_time: datetime | None = None
+    prior_providers: tuple[ProviderObservation, ...] = ()
+    first_divergence_decision_time: datetime | None = None
 
 
 def _decimal(value: Any, field_name: str) -> Decimal:
@@ -1048,57 +1504,73 @@ def nearest_rank_percentile(values: Sequence[Decimal], probability: Decimal) -> 
 def _validate_slot(slot: StopEvaluationSlot) -> datetime:
     if not isinstance(slot, StopEvaluationSlot):
         raise ProspectiveCorpusError("a stop classification requires a StopEvaluationSlot")
-    if slot.track not in PORTFOLIO_TRACKS:
-        raise ProspectiveCorpusError(f"track must be one of {PORTFOLIO_TRACKS}")
+    if slot.track != CONTROL_TRACK:
+        raise ProspectiveCorpusError(
+            "the stop-event universe is anchored to the control-reference track"
+        )
     if slot.direction not in STOP_DIRECTIONS:
         raise ProspectiveCorpusError(f"direction must be one of {STOP_DIRECTIONS}")
     _decimal(slot.active_stop, "active_stop")
-    decision_time = decision_time_for(slot.observation_time, STOP_HOURLY_CADENCE)
-
-    seen: set[str] = set()
-    for observation in slot.providers:
-        if not isinstance(observation, ProviderObservation):
-            raise ProspectiveCorpusError("providers must be ProviderObservation rows")
-        if observation.provider_id not in REQUIRED_PROVIDER_IDS:
-            raise ProspectiveCorpusError(
-                f"provider {observation.provider_id!r} is not a required provider"
-            )
-        if observation.provider_id in seen:
-            raise ProspectiveCorpusError(
-                f"duplicate observation for {observation.provider_id!r} at one slot"
-            )
-        seen.add(observation.provider_id)
-        _require_utc(observation.observation_time, "provider observation_time")
-        _require_utc(observation.available_at, "provider available_at")
-        if observation.observation_time != slot.observation_time:
-            raise ProspectiveCorpusError(
-                "a provider observation must belong to its own slot"
-            )
-        if observation.available_at > decision_time:
-            raise ProspectiveCorpusError(
-                f"{observation.provider_id!r} was not available at the decision time"
-            )
-        for field_name in ("open", "high", "low", "close"):
-            _decimal(getattr(observation, field_name), field_name)
-
-    if slot.prior_observable_price is not None:
-        _decimal(slot.prior_observable_price, "prior_observable_price")
-        if slot.prior_observable_observation_time is None:
-            raise ProspectiveCorpusError(
-                "a prior observable price must carry its own observation_time"
-            )
-        _require_utc(
-            slot.prior_observable_observation_time,
-            "prior_observable_observation_time",
-        )
-        if slot.prior_observable_observation_time >= slot.observation_time:
-            raise ProspectiveCorpusError(
-                "the prior observable price must precede this slot"
-            )
-    elif slot.prior_observable_observation_time is not None:
+    if not isinstance(slot.active_stop_identity, str) or not slot.active_stop_identity:
+        raise ProspectiveCorpusError("active_stop_identity must be non-empty")
+    if slot.control_position_state not in _state_machine.OPEN_POSITION_STATES:
         raise ProspectiveCorpusError(
-            "prior_observable_observation_time requires a prior_observable_price"
+            "the control stop anchor requires an open control position state"
         )
+    for field_name, state in (
+        ("control_position_state", slot.control_position_state),
+        ("candidate_position_state", slot.candidate_position_state),
+    ):
+        if state not in _state_machine.POSITION_STATES:
+            raise ProspectiveCorpusError(
+                f"{field_name} must be one of {_state_machine.POSITION_STATES}"
+            )
+    decision_time = decision_time_for(slot.observation_time, STOP_HOURLY_CADENCE)
+    if slot.first_divergence_decision_time is not None:
+        _require_utc(
+            slot.first_divergence_decision_time,
+            "first_divergence_decision_time",
+        )
+        if slot.first_divergence_decision_time > decision_time:
+            raise ProspectiveCorpusError(
+                "first_divergence_decision_time cannot be in the future"
+            )
+
+    for family_name, observations, expected_time in (
+        ("providers", slot.providers, slot.observation_time),
+        (
+            "prior_providers",
+            slot.prior_providers,
+            slot.observation_time - PRIOR_OBSERVABLE_MAXIMUM_GAP,
+        ),
+    ):
+        seen: set[str] = set()
+        for observation in observations:
+            if not isinstance(observation, ProviderObservation):
+                raise ProspectiveCorpusError(
+                    f"{family_name} must be ProviderObservation rows"
+                )
+            if observation.provider_id not in REQUIRED_PROVIDER_IDS:
+                raise ProspectiveCorpusError(
+                    f"provider {observation.provider_id!r} is not a required provider"
+                )
+            if observation.provider_id in seen:
+                raise ProspectiveCorpusError(
+                    f"duplicate observation for {observation.provider_id!r} in {family_name}"
+                )
+            seen.add(observation.provider_id)
+            _require_utc(observation.observation_time, "provider observation_time")
+            _require_utc(observation.available_at, "provider available_at")
+            if observation.observation_time != expected_time:
+                raise ProspectiveCorpusError(
+                    f"{family_name} must use the exact contiguous hourly session"
+                )
+            if observation.available_at > decision_time:
+                raise ProspectiveCorpusError(
+                    f"{observation.provider_id!r} was not available at the decision time"
+                )
+            for field_name in ("open", "high", "low", "close"):
+                _decimal(getattr(observation, field_name), field_name)
     return decision_time
 
 
@@ -1121,9 +1593,9 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
     """Classify one hourly stop-evaluation slot deterministically.
 
     The result is candidate-neutral: it reads only the required providers' raw
-    observations and the evaluating track's own active stop, never a candidate
-    reference and never an outcome.  Provider order, dictionary order and the
-    ambient ``Decimal`` context cannot move any field.
+    observations and the control track's active stop, never a candidate
+    reference, candidate portfolio state, or measured outcome. Provider order,
+    dictionary order and the ambient ``Decimal`` context cannot move any field.
     """
 
     decision_time = _validate_slot(slot)
@@ -1146,6 +1618,9 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
             slot.direction,
         )
     )
+    non_touching = tuple(
+        provider_id for provider_id in available if provider_id not in touching
+    )
 
     reason_codes: list[str] = []
     if len(available) < PROVIDER_QUORUM:
@@ -1162,21 +1637,46 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
         )
         if len(touching) >= CONFIRMATION_QUORUM:
             classification = EVENT_CROSS_MARKET
-        elif len(touching) == 1:
+        elif missing:
+            classification = EVENT_NOT_CLASSIFIABLE
+            reason_codes.append(
+                "ISOLATION_NOT_ESTABLISHED_MISSING_PROVIDER"
+                if len(touching) == 1
+                else "EVENT_CLASSIFICATION_UNCERTAIN_MISSING_PROVIDER"
+            )
+        elif len(touching) == 1 and len(non_touching) >= CONFIRMATION_QUORUM:
             classification = EVENT_ISOLATED_VENUE
-            reason_codes.append("CONFIRMATION_QUORUM_ABSENT")
+        elif len(touching) == 1:
+            classification = EVENT_NOT_CLASSIFIABLE
+            reason_codes.append("ISOLATION_NON_TOUCHING_QUORUM_ABSENT")
         else:
             classification = EVENT_NONE
     if missing:
         reason_codes.append("REQUIRED_PROVIDER_MISSING")
 
+    prior_by_provider = {
+        row.provider_id: row for row in slot.prior_providers
+    }
+    prior_available = tuple(
+        provider_id
+        for provider_id in REQUIRED_PROVIDER_IDS
+        if provider_id in prior_by_provider
+    )
+    prior_observable_time = slot.observation_time - PRIOR_OBSERVABLE_MAXIMUM_GAP
+    prior_observable_price = (
+        _median([prior_by_provider[provider_id].close for provider_id in prior_available])
+        if len(prior_available) >= PROVIDER_QUORUM
+        else None
+    )
+
     if classification == EVENT_NOT_CLASSIFIABLE:
         gap_state = GAP_THROUGH_NOT_EVALUABLE
         consensus_stop_outcome = STOP_OUTCOME_UNDEFINED
         provider_stop_outcomes: dict[str, str] = {}
-    elif slot.prior_observable_price is None:
+    elif prior_observable_price is None:
         gap_state = GAP_THROUGH_NOT_EVALUABLE
         reason_codes.append("NO_PRIOR_OBSERVABLE_REFERENCE_PRICE")
+        reason_codes.append("PRIOR_REFERENCE_SESSION_MISSING")
         consensus_stop_outcome = STOP_OUTCOME_UNDEFINED
         provider_stop_outcomes = {}
     elif consensus_open is None:
@@ -1185,7 +1685,7 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
         )
     else:
         gapped = _safe_side_of_stop(
-            slot.prior_observable_price, slot.active_stop, slot.direction
+            prior_observable_price, slot.active_stop, slot.direction
         ) and _at_or_beyond_stop(consensus_open, slot.active_stop, slot.direction)
         gap_state = GAP_THROUGH_EVENT if gapped else GAP_THROUGH_NOT_PRESENT
         consensus_stop_outcome = (
@@ -1206,6 +1706,7 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
 
     identity = {
         "active_stop": str(slot.active_stop),
+        "active_stop_identity": slot.active_stop_identity,
         "cadence": STOP_HOURLY_CADENCE,
         "classifier_version": STOP_EVENT_CLASSIFIER_VERSION,
         "direction": slot.direction,
@@ -1215,9 +1716,12 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
     }
     return {
         "available_provider_ids": list(available),
+        "active_stop_identity": slot.active_stop_identity,
+        "candidate_position_state": slot.candidate_position_state,
         "classification": classification,
         "classifier_version": STOP_EVENT_CLASSIFIER_VERSION,
         "confirmation_quorum": CONFIRMATION_QUORUM,
+        "control_position_state": slot.control_position_state,
         "consensus_open": None if consensus_open is None else str(consensus_open),
         "consensus_stop_extreme": (
             None if consensus_extreme is None else str(consensus_extreme)
@@ -1227,15 +1731,22 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
         "direction": slot.direction,
         "event_id": _digest(identity),
         "gap_through_state": gap_state,
+        "first_divergence_decision_time": (
+            None
+            if slot.first_divergence_decision_time is None
+            else slot.first_divergence_decision_time.isoformat()
+        ),
         "missing_provider_ids": list(missing),
         "observation_time": slot.observation_time.isoformat(),
-        "prior_observable_observation_time": (
-            None
-            if slot.prior_observable_observation_time is None
-            else slot.prior_observable_observation_time.isoformat()
+        "non_touching_provider_ids": list(non_touching),
+        "prior_observable_maximum_gap_seconds": int(
+            PRIOR_OBSERVABLE_MAXIMUM_GAP.total_seconds()
         ),
+        "prior_observable_owner": PRIOR_OBSERVABLE_OWNER,
+        "prior_observable_provider_ids": list(prior_available),
+        "prior_observable_observation_time": prior_observable_time.isoformat(),
         "prior_observable_price": (
-            None if slot.prior_observable_price is None else str(slot.prior_observable_price)
+            None if prior_observable_price is None else str(prior_observable_price)
         ),
         "provider_quorum": PROVIDER_QUORUM,
         "provider_stop_outcomes": dict(sorted(provider_stop_outcomes.items())),
@@ -1243,6 +1754,7 @@ def classify_stop_event(slot: StopEvaluationSlot) -> dict[str, Any]:
         "stop_relevant_field": field,
         "touching_provider_ids": list(touching),
         "track": slot.track,
+        "universe_anchor": STOP_EVENT_UNIVERSE_ANCHOR,
     }
 
 
@@ -1271,8 +1783,11 @@ def stop_event_classifier_identity() -> dict[str, Any]:
         "gap_through_states": list(GAP_THROUGH_STATES),
         "manual_timestamp_selection_required": False,
         "precedence": list(CLASSIFICATION_PRECEDENCE),
+        "prior_observable_derivation": GAP_THROUGH_DERIVATION,
         "provider_quorum": PROVIDER_QUORUM,
         "required_providers": list(REQUIRED_PROVIDER_IDS),
+        "stop_event_universe_anchor": STOP_EVENT_UNIVERSE_ANCHOR,
+        "stop_event_universe_derivation": STOP_EVENT_UNIVERSE_DERIVATION,
         "stop_relevant_field": dict(STOP_RELEVANT_FIELD),
         "stop_touch_convention": "long: low <= stop; short: high >= stop",
         "venue_consensus": "median over available required providers",
@@ -1347,15 +1862,6 @@ def historical_gate_authority() -> dict[str, dict[str, Any]]:
 # vocabulary.  Threshold, direction, hard role and stated intent are copied from
 # authority and are asserted unchanged.
 
-_RECOMMENDATION_ACTIONS = (
-    "NO_TRADE",
-    "WATCH",
-    "ENTER",
-    "HOLD",
-    "ADD",
-    "TRIM",
-    "EXIT",
-)
 _SETUP_DETECTORS = (
     "SETUP_BULL_TREND_CONTINUATION",
     "SETUP_BULLISH_RESET",
@@ -1364,6 +1870,131 @@ _SETUP_DETECTORS = (
 )
 _SETUP_DETECTOR_STATES = ("DETECTED", "NOT_DETECTED")
 _REGIME_COMPARISON_BASIS = "categorical_regime_state"
+
+TRADE_ACTION_COMPARISON_OWNER_VERSION = "TRADE_ACTION_COMPARISON_OWNER_V1"
+TRADE_ACTION_COMPARISON_OWNER = (
+    "btc_predictor.research.prospective_integration_corpus."
+    "TRADE_ACTION_COMPARISON_OWNER_V1"
+)
+TRADE_ACTION_VOCABULARY = (
+    "NO_TRADE",
+    "WATCH",
+    "ENTER",
+    "HOLD",
+    "ADD",
+    "STOP_MOVE",
+    "TRIM",
+    "EXIT",
+    "MISSED",
+)
+if set(TRADE_ACTION_VOCABULARY) != set(
+    _data_quality.RECOMMENDATION_ACTIONS + _portfolio_db.PAPER_ACTIONS
+):
+    raise ProspectiveCorpusError(
+        "trade-action vocabulary must equal the union of decision and persisted actions"
+    )
+TRADE_ACTION_COMPOSITE_CONTRACT = {
+    "version": TRADE_ACTION_COMPARISON_OWNER_VERSION,
+    "owner_chain": [
+        "btc_predictor.features.setup (four detector state vector)",
+        "btc_predictor.features.entry.classify_entry_action (conviction bucket only)",
+        "btc_predictor.risk.stop + btc_predictor.risk.reward + btc_predictor.risk.sizing + btc_predictor.risk.exposure",
+        "btc_predictor.signals.no_chase.apply_no_chase_filter",
+        "btc_predictor.signals.hard_veto.evaluate_hard_veto",
+        "btc_predictor.signals.data_quality.apply_data_quality_gate",
+        "btc_predictor.signals.exit_rules.evaluate_exit_rules",
+        "btc_predictor.signals.trim.evaluate_trim_rules",
+        "btc_predictor.risk.trailing.trail_stop_for_position",
+        "btc_predictor.signals.add_requirements.add_requirements_from_results",
+        "btc_predictor.portfolio.state_machine.apply_position_event",
+        "btc_predictor.portfolio entry/add/trim/stop/exit execution owners",
+        "btc_predictor.db.portfolio persisted action vocabulary",
+    ],
+    "precedence": [
+        "Process an eligible resting-stop execution before a same-slot strategy decision, matching the adverse-first paper/backtest path.",
+        "For an open position, an authoritative EXIT suppresses TRIM; otherwise retain TRIM, STOP_MOVE and ADD outputs in lifecycle order without folding co-occurring materially distinct events into HOLD.",
+        "For a new entry, hard veto, no-chase, reference availability, risk and data-quality owners must all resolve before ENTER; WATCH and NO_TRADE remain distinct owner outputs.",
+        "Apply the lifecycle owner and persist the accepted or refused transition; a later execution MISS is MISSED, not NO_TRADE.",
+    ],
+    "input_state": [
+        "complete PIT setup/regime/entry/risk/veto outputs",
+        "lifecycle state before the slot and its active stop/tranches",
+        "pending order and next eligible execution-bar state",
+        "data-quality and reference-availability states",
+    ],
+    "output": (
+        "An ordered action envelope over actual repository actions. Two tracks "
+        "disagree if their ordered envelopes differ in action, acceptance, or "
+        "lifecycle-event identity; presentation text is never compared."
+    ),
+    "output_action_vocabulary": list(TRADE_ACTION_VOCABULARY),
+    "lifecycle_event_vocabulary": list(_state_machine.POSITION_EVENTS),
+    "entry_conviction_input_vocabulary": list(_entry.ENTRY_ACTION_LABELS),
+    "reason_semantics": (
+        "Retain the originating owner, accepted/refused state and complete "
+        "reason-code sequence for every envelope element. Equal display labels "
+        "do not erase different lifecycle events or acceptance states."
+    ),
+    "renderer_role": "PRESENTATION_ONLY_NOT_SCIENTIFIC_AUTHORITY",
+    "vocabulary_sources": {
+        "decision_actions": {
+            "owner": "btc_predictor.signals.data_quality.RECOMMENDATION_ACTIONS",
+            "values": list(_data_quality.RECOMMENDATION_ACTIONS),
+        },
+        "entry_buckets": {
+            "owner": "btc_predictor.features.entry.ENTRY_ACTION_LABELS",
+            "values": list(_entry.ENTRY_ACTION_LABELS),
+            "role": "INPUT_CONVICTION_NOT_OUTPUT_ACTION",
+        },
+        "lifecycle_events": {
+            "owner": "btc_predictor.portfolio.state_machine.POSITION_EVENTS",
+            "values": list(_state_machine.POSITION_EVENTS),
+        },
+        "persisted_actions": {
+            "owner": "btc_predictor.db.portfolio.PAPER_ACTIONS",
+            "values": list(_portfolio_db.PAPER_ACTIONS),
+        },
+    },
+}
+
+TRADE_ELIGIBILITY_COMPOSITE_OWNER_VERSION = "TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1"
+TRADE_ELIGIBILITY_COMPOSITE_OWNER = (
+    "btc_predictor.research.prospective_integration_corpus."
+    "TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1"
+)
+TRADE_ELIGIBILITY_COMPOSITE_CONTRACT = {
+    "version": TRADE_ELIGIBILITY_COMPOSITE_OWNER_VERSION,
+    "authoritative_inputs": {
+        "setup_eligibility": "complete btc_predictor.features.setup detector vector and supported setup identity",
+        "entry_conviction": "btc_predictor.features.entry.classify_entry_action; entry buckets VALID, STRONG or EXCEPTIONAL",
+        "regime_context": "resolved regime classification plus stress/severe-crowding states consumed by HARD_VETO_V1",
+        "reward_risk": "btc_predictor.risk.reward.evaluate_reward_risk result consumed by HARD_VETO_V1",
+        "hard_veto": "btc_predictor.signals.hard_veto.evaluate_hard_veto",
+        "data_quality": "btc_predictor.signals.data_quality.apply_data_quality_gate for requested ENTER",
+        "no_chase": "btc_predictor.signals.no_chase.apply_no_chase_filter result consumed by HARD_VETO_V1",
+        "lifecycle_state": {
+            "owner": "btc_predictor.portfolio.state_machine.POSITION_STATES",
+            "values": list(_state_machine.POSITION_STATES),
+            "pre_position_values": list(_state_machine.PRE_POSITION_STATES),
+        },
+        "risk_capacity": "complete positive btc_predictor.risk.sizing result plus btc_predictor.risk.exposure within-maximum result",
+        "reference_availability": "both authorized reference roles usable under AVAILABLE_AT_LTE_DECISION_TIME_V1",
+    },
+    "composition": (
+        "PERMITTED iff the reference and every required PIT input are available, "
+        "the lifecycle is a pre-position state, a supported setup is detected, "
+        "the entry bucket is VALID/STRONG/EXCEPTIONAL, HARD_VETO_V1 is complete "
+        "and clear (including R/R, regime/context, data quality and no-chase), "
+        "and the existing sizing/risk-capacity owners return a complete positive "
+        "size within the configured maximum. Otherwise a fully resolved gate is "
+        "NOT_PERMITTED; an unresolved input is NOT_COMPARABLE, never false."
+    ),
+    "output_vocabulary": ["PERMITTED", "NOT_PERMITTED", "NOT_COMPARABLE"],
+    "reason_semantics": (
+        "Persist every source completion state, source reason code and the exact "
+        "blocking owner. No entry-conviction bucket alone is a permission."
+    ),
+}
 
 RISK_SIZE_QUANTITY = "position_notional"
 RISK_SIZE_FORMULA = (
@@ -1408,8 +2039,10 @@ _RISK_SIZE_DERIVATION = {
             "failed lineage is not authority."
         ),
         "max_denominator": (
-            "abs(a - b) / max(a, b) has no repository precedent and would "
-            "silently compress every difference."
+            "A max-scaled denominator exists in the repository for equality-"
+            "tolerance logic, but not as the authoritative measurement-layer "
+            "relative-difference statistic for this gate; adopting it here "
+            "would silently compress every difference."
         ),
         "nav_normalized_difference": (
             "Dividing by NAV would measure exposure share, not resizing, and "
@@ -1434,10 +2067,11 @@ _METRIC_EVIDENCE: dict[str, dict[str, Any]] = {
         "cadence": STOP_HOURLY_CADENCE,
         "comparison_basis": "candidate reference versus raw venue consensus",
         "denominator": (
-            "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots on the candidate "
-            "track's own active stop where the candidate reference is usable at "
+            "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots at the control "
+            "track's active stop where both reference outcomes are usable at "
             "that decision_time."
         ),
+        "derived_universe_anchor": STOP_EVENT_UNIVERSE_DERIVATION,
         "evidence_owner": STOP_EVENT_CLASSIFIER_OWNER,
         "not_comparable_reasons": [
             "CANDIDATE_REFERENCE_UNAVAILABLE",
@@ -1455,30 +2089,34 @@ _METRIC_EVIDENCE: dict[str, dict[str, Any]] = {
         "cadence": STOP_HOURLY_CADENCE,
         "comparison_basis": "candidate reference versus raw venue consensus",
         "denominator": (
-            "Classified GAP_THROUGH_STOP_EVENT slots on the candidate track's own "
-            "active stop where a prior observable reference price exists, the "
-            "provider quorum holds and the candidate reference is usable."
+            "Classified GAP_THROUGH_STOP_EVENT slots at the control track's "
+            "active stop where the exact immediately preceding hourly raw-"
+            "provider consensus close and both current reference opens are usable."
         ),
+        "derived_universe_anchor": STOP_EVENT_UNIVERSE_DERIVATION,
+        "gap_through_derivation": GAP_THROUGH_DERIVATION,
         "evidence_owner": STOP_EVENT_CLASSIFIER_OWNER,
         "gap_through_semantics": (
             "BTC trades continuously, so no overnight-session gap is imported. A "
             "gap-through is a crossing without an observable traded price at the "
-            "stop between two consecutive observable reference points: the prior "
-            "observable price is strictly on the safe side of the active stop and "
-            "the next available slot opens at or beyond it. A REFERENCE_UNAVAILABLE "
-            "run simply widens the interval between those two observable points, "
-            "so a missing session is handled by the same rule rather than by a "
-            "separate calendar convention."
+            "control stop between two contiguous canonical hourly observations: "
+            "the immediately preceding required-provider-consensus close is "
+            "strictly safe and the current consensus open is at or beyond the "
+            "stop. A missing prior hour is NOT_EVALUABLE; an older observation "
+            "may not be substituted."
         ),
         "not_comparable_reasons": [
             "CANDIDATE_REFERENCE_UNAVAILABLE",
             "NO_PRIOR_OBSERVABLE_REFERENCE_PRICE",
+            "PRIOR_REFERENCE_SESSION_MISSING",
             "PROVIDER_QUORUM_ABSENT",
         ],
         "numerator": (
-            "Events where the candidate reference's TRIGGERED/NOT_TRIGGERED "
-            "outcome at the gapping open equals the deterministic venue-consensus "
-            "outcome computed from the median of the available required providers."
+            "Count of denominator events where the candidate reference is "
+            "TRIGGERED at the control stop on the current hourly open. Venue "
+            "consensus is TRIGGERED by construction for every denominator event; "
+            "this statistic therefore measures candidate preservation of those "
+            "consensus gap-throughs, not equality of two unconstrained outcomes."
         ),
         "statistic": "rate",
         "universe": UNIVERSE_GAP_THROUGH_EVENTS,
@@ -1488,10 +2126,12 @@ _METRIC_EVIDENCE: dict[str, dict[str, Any]] = {
         "cadence": STOP_HOURLY_CADENCE,
         "comparison_basis": "candidate reference versus raw venue consensus",
         "denominator": (
-            "Classified ISOLATED_VENUE_STOP_EVENT slots on the candidate track's "
-            "own active stop where the candidate reference is usable at that "
-            "decision_time."
+            "Classified ISOLATED_VENUE_STOP_EVENT slots at the control track's "
+            "active stop where exactly one provider touches, at least the "
+            "confirmation quorum is observed not touching, and both reference "
+            "outcomes are usable."
         ),
+        "derived_universe_anchor": STOP_EVENT_UNIVERSE_DERIVATION,
         "evidence_owner": STOP_EVENT_CLASSIFIER_OWNER,
         "not_comparable_reasons": [
             "CANDIDATE_REFERENCE_UNAVAILABLE",
@@ -1599,20 +2239,19 @@ _METRIC_EVIDENCE: dict[str, dict[str, Any]] = {
         "comparison_basis": "candidate track versus control track",
         "denominator": (
             "Every daily decision observation where both tracks produce a "
-            "complete deterministic action, whether flat or in position."
+            "complete deterministic ordered action envelope, whether flat or in "
+            "position. Flat-vs-position slots remain comparable because both "
+            "owners still produce actual action envelopes."
         ),
-        "evidence_owner": (
-            "btc_predictor.reporting.recommendation.render_recommendation"
-        ),
-        "lifecycle_owner": (
-            "btc_predictor.portfolio.state_machine.apply_position_event"
-        ),
+        "evidence_owner": TRADE_ACTION_COMPARISON_OWNER,
+        "owner_contract": TRADE_ACTION_COMPOSITE_CONTRACT,
         "not_comparable_reasons": [
             "CANDIDATE_TRACK_NOT_EVALUABLE",
             "CONTROL_TRACK_NOT_EVALUABLE",
         ],
         "numerator": (
-            "Observations where the two tracks' authoritative actions differ."
+            "Observations where the two tracks' authoritative ordered action "
+            "envelopes differ in action, acceptance or lifecycle-event identity."
         ),
         "reproduction_evidence": [
             "lifecycle_state_before",
@@ -1624,33 +2263,29 @@ _METRIC_EVIDENCE: dict[str, dict[str, Any]] = {
         ],
         "statistic": "rate",
         "universe": UNIVERSE_ACTION_EVALUABLE,
-        "vocabulary": list(_RECOMMENDATION_ACTIONS),
-        "vocabulary_owner": (
-            "btc_predictor.signals.data_quality.RECOMMENDATION_ACTIONS"
-        ),
+        "vocabulary": list(TRADE_ACTION_VOCABULARY),
+        "vocabulary_owner": TRADE_ACTION_COMPOSITE_CONTRACT["vocabulary_sources"],
         "zero_denominator": UNDEFINED_INSUFFICIENT_EVIDENCE,
     },
     TRADE_ELIGIBILITY_METRIC: {
         "cadence": STRATEGY_DAILY_CADENCE,
         "comparison_basis": "candidate track versus control track",
         "denominator": (
-            "Daily decision observations where both tracks are validly "
-            "eligibility-evaluable: setup inputs complete for both and both in a "
-            "pre-position lifecycle state."
+            "Daily decision observations where both tracks have complete inputs "
+            "for TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1 and each produces "
+            "PERMITTED or NOT_PERMITTED. Flat-vs-position and both-position "
+            "states stay in this universe; lifecycle state is a permission input."
         ),
         "eligibility_composition": {
             "already_in_position": (
-                "Not permitted and not comparable: a track holding an open "
-                "position is on the add path, not the entry path. The slot is "
-                "recorded NOT_COMPARABLE with "
-                "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT when the tracks differ "
-                "and excluded from the universe when both are in position, so "
-                "neither case can deflate the rate by trivial agreement."
+                "NOT_PERMITTED for a new entry. The existing position remains on "
+                "its management/add path, but that does not make new-entry "
+                "permission undefined. This keeps lifecycle divergence visible."
             ),
             "data_failure": (
-                "A hard data-quality failure blocks ENTER under "
-                "apply_data_quality_gate; the slot is DATA_QUALITY_FAIL and "
-                "leaves the universe for both tracks together."
+                "A resolved hard data-quality failure blocks ENTER under "
+                "apply_data_quality_gate and is a NOT_PERMITTED result. Missing "
+                "quality evidence is NOT_COMPARABLE."
             ),
             "permitted_definition": (
                 "trade_permitted is TRUE only when, under that track's own "
@@ -1678,24 +2313,22 @@ _METRIC_EVIDENCE: dict[str, dict[str, Any]] = {
                 "an exclusion."
             ),
         },
-        "evidence_owner": "btc_predictor.features.entry.classify_entry_action",
+        "evidence_owner": TRADE_ELIGIBILITY_COMPOSITE_OWNER,
+        "owner_contract": TRADE_ELIGIBILITY_COMPOSITE_CONTRACT,
         "not_comparable_reasons": [
             "CANDIDATE_TRACK_NOT_EVALUABLE",
             "CONTROL_TRACK_NOT_EVALUABLE",
-            "ONE_TRACK_POSITION_ACTIVE_ONE_TRACK_FLAT",
+            "REQUIRED_INPUT_MISSING",
+            "REQUIRED_INPUT_NOT_YET_AVAILABLE_AT_DECISION_TIME",
         ],
         "numerator": (
             "Observations where the two tracks disagree on whether a new trade is "
             "permitted."
         ),
         "statistic": "rate",
-        "supporting_owners": [
-            "btc_predictor.signals.data_quality.apply_data_quality_gate",
-            "btc_predictor.signals.hard_veto.evaluate_hard_veto",
-            "btc_predictor.risk.reward.evaluate_reward_risk",
-            "btc_predictor.risk.sizing.calculate_initial_position_size",
-            "btc_predictor.risk.exposure.calculate_risk_at_stop",
-        ],
+        "supporting_owners": list(
+            TRADE_ELIGIBILITY_COMPOSITE_CONTRACT["authoritative_inputs"].values()
+        ),
         "universe": UNIVERSE_ELIGIBILITY_EVALUABLE,
         "zero_denominator": UNDEFINED_INSUFFICIENT_EVIDENCE,
     },
@@ -1763,11 +2396,9 @@ COMPARABILITY_EVIDENCE_FIELDS = (
 # 10. evidence sufficiency
 # ===========================================================================
 #
-# Two different questions, answered separately and both before any data.
-#
-#   * What does it take to *evaluate* a metric at all?  That is mechanical and
-#     derivable, so it is frozen here.
-#   * What does it take to *certify* on one?  That is a minimum-denominator
+# Arithmetic definedness and certification sufficiency are different questions.
+# This contract freezes only that a zero denominator is undefined. What it
+# takes to certify is a minimum-denominator
 #     decision.  The repository has already established, through
 #     BTC_REFERENCE_COMPOSITE_V3_STRUCTURAL_THRESHOLD_CALIBRATION_V1 and the
 #     convergence review that followed it, that choosing a rate gate's minimum
@@ -1786,10 +2417,11 @@ SUFFICIENCY_GOVERNANCE_SUCCESSOR = (
 
 EVALUABILITY_MINIMUMS: dict[str, dict[str, Any]] = {
     metric: {
+        "arithmetic_nonempty_denominator_required": True,
         "complete_slot_census_required": True,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": True,
         "both_tracks_valid_required": True,
+        "certification_minimum_selected_here": None,
     }
     for metric in TARGET_METRICS
 }
@@ -1805,12 +2437,9 @@ COLLECTION_HORIZON = {
         "number as this stage's minimum."
     ),
     "termination_rule": (
-        "Stage-B collection terminates on its own predeclared evidence "
-        "sufficiency, never on elapsed time and never on an observed rate. "
-        "Because the per-metric certification minimums are deferred to "
-        f"{SUFFICIENCY_GOVERNANCE_SUCCESSOR}, the epoch has no terminating "
-        "condition yet and no Stage-B certification is reachable from this "
-        "protocol alone."
+        "A future collection epoch terminates on independently certified, "
+        "predeclared evidence sufficiency, never on elapsed time or an observed "
+        "rate. This protocol chooses no minimum or terminating condition."
     ),
     "termination_state": "STAGE_B_TERMINATION_UNDEFINED_UNTIL_SUFFICIENCY_GOVERNANCE",
 }
@@ -1836,6 +2465,14 @@ def evidence_sufficiency_contract() -> dict[str, Any]:
         "insufficient_evidence_state": UNDEFINED_INSUFFICIENT_EVIDENCE,
         "metrics": metrics,
         "minimums_selected_from_observed_outcomes": False,
+        "pre_collection_sequence": {
+            "collection_entry_requirement": COLLECTION_ENTRY_REQUIREMENT,
+            "postp1_003_owner": SUFFICIENCY_GOVERNANCE_SUCCESSOR,
+            "postp1_003_independent_review_required": True,
+            "postp1_004_blocked_until_postp1_003_review_passes": True,
+            "protocol_repeat_review_required": True,
+            "sufficiency_minima_selected_here": False,
+        },
         "protocol_version": PROTOCOL_VERSION,
         "schema_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_V1",
         "scoped_out_authority": {
@@ -1927,6 +2564,7 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
         "columns": {
             "collection_epoch": "text not null",
             "corpus_protocol_sha256": "char(64) not null",
+            "corpus_protocol_review_sha256": "char(64) not null",
             "created_at": "timestamptz not null",
             "epoch_end": "timestamptz null",
             "epoch_start": "timestamptz not null",
@@ -1935,6 +2573,9 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
             "protocol_version": "text not null",
             "run_id": "uuid not null",
             "strategy_identity_sha256": "char(64) not null",
+            "sufficiency_governance_sha256": "char(64) not null",
+            "sufficiency_governance_review_sha256": "char(64) not null",
+            "postp1_004_implementation_review_sha256": "char(64) not null",
         },
         "layer": "RAW",
         "primary_key": ["run_id"],
@@ -1952,6 +2593,8 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
             "run_id": "uuid not null",
             "slot_id": "char(64) not null",
             "universes": "jsonb not null",
+            "warmup_history_complete": "boolean not null",
+            "warmup_history_definition_sha256": "char(64) not null",
         },
         "layer": "RAW",
         "primary_key": ["run_id", "cadence", "observation_time"],
@@ -2065,6 +2708,8 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
             "stop_price": "numeric(38,18) null",
             "track": "text not null",
             "trade_permitted": "boolean null",
+            "trade_eligibility_composite_version": "text not null",
+            "trade_eligibility_input_states": "jsonb not null",
         },
         "layer": "DERIVED",
         "primary_key": ["run_id", "track", "decision_time"],
@@ -2093,6 +2738,8 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
         "append_only": True,
         "columns": {
             "action": "text not null",
+            "action_envelope": "jsonb not null",
+            "action_comparison_owner_version": "text not null",
             "decision_time": "timestamptz not null",
             "lifecycle_event": "text null",
             "lifecycle_state_after": "text not null",
@@ -2111,23 +2758,34 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
         "append_only": True,
         "columns": {
             "active_stop": "numeric(38,18) not null",
+            "active_stop_identity": "text not null",
             "available_provider_ids": "jsonb not null",
+            "candidate_position_state": "text not null",
             "candidate_stop_outcome": "text null",
             "classification": "text not null",
             "classifier_definition_sha256": "char(64) not null",
             "classifier_version": "text not null",
             "consensus_stop_outcome": "text not null",
+            "control_position_state": "text not null",
             "decision_time": "timestamptz not null",
             "direction": "text not null",
             "event_id": "char(64) not null",
             "gap_through_state": "text not null",
+            "first_divergence_decision_time": "timestamptz null",
             "missing_provider_ids": "jsonb not null",
+            "non_touching_provider_ids": "jsonb not null",
             "observation_time": "timestamptz not null",
             "provider_stop_outcomes": "jsonb not null",
+            "prior_observable_maximum_gap_seconds": "integer not null",
+            "prior_observable_observation_time": "timestamptz not null",
+            "prior_observable_owner": "text not null",
+            "prior_observable_price": "numeric(38,18) null",
+            "prior_observable_provider_ids": "jsonb not null",
             "reason_codes": "jsonb not null",
             "run_id": "uuid not null",
             "touching_provider_ids": "jsonb not null",
             "track": "text not null",
+            "universe_anchor": "text not null",
         },
         "layer": "DERIVED",
         "primary_key": ["run_id", "track", "observation_time"],
@@ -2164,6 +2822,12 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
 def data_schema_contract() -> dict[str, Any]:
     payload = {
         "append_only_raw_tables": list(_APPEND_ONLY_RAW_TABLES),
+        "collection_entry_bindings": {
+            "corpus_protocol_review_sha256": "independent PASS review of exact corpus_protocol_sha256",
+            "postp1_004_implementation_review_sha256": "independent PASS review of exact collector implementation",
+            "sufficiency_governance_review_sha256": "independent PASS review of exact sufficiency_governance_sha256",
+            "required_relation": "ALL_THREE_BINDINGS_REQUIRED",
+        },
         "database": "postgresql",
         "implementation_state": SCHEMA_IMPLEMENTATION_STATE,
         "redis_required": False,
@@ -2272,9 +2936,14 @@ REPLAY_CONTRACT = {
 STAGE_B_EVALUATION_CONTRACT_VERSION = "PROSPECTIVE_STAGE_B_EVALUATION_CONTRACT_V1"
 
 FUTURE_WORKFLOW = (
-    "PROTOCOL FREEZE",
-    "INDEPENDENT XHIGH REVIEW",
-    "PROSPECTIVE COLLECTION",
+    "POSTP1-001R CORRECTED PROTOCOL",
+    "REPEAT INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH",
+    "POSTP1-003 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+    "INDEPENDENT XHIGH REVIEW OF EXACT SUFFICIENCY-GOVERNANCE HASH",
+    "POSTP1-004 SCHEMA + COLLECTORS + DECISION SNAPSHOT IMPLEMENTATION",
+    "INDEPENDENT IMPLEMENTATION REVIEW",
+    "COLLECTION AUTHORIZATION",
+    "PROSPECTIVE COLLECTION AND WARMUP CAPTURE",
     "EVIDENCE SUFFICIENCY CHECK",
     "STAGE-B EVALUATION",
     "IF PASS: candidate/reference research may proceed under a separately "
@@ -2314,6 +2983,13 @@ def stage_b_evaluation_contract() -> dict[str, Any]:
         "output_table": "prospective_metric_comparison",
         "protocol_version": PROTOCOL_VERSION,
         "schema_version": STAGE_B_EVALUATION_CONTRACT_VERSION,
+        "warmup_entry_requirement": (
+            "WARMUP_HISTORY_COMPLETE must be true before a slot may enter any "
+            "metric's evaluable universe"
+        ),
+        "warmup_history_definition_sha256": warmup_history_contract()[
+            "definition_sha256"
+        ],
         "workflow": list(FUTURE_WORKFLOW),
     }
     payload["definition_sha256"] = _digest(payload)
@@ -2370,6 +3046,7 @@ def decision_universe_contract() -> dict[str, Any]:
         "scheduled_slot_census_required": True,
         "timezone": CORPUS_TIMEZONE,
         "universes": _UNIVERSE_DEFINITIONS,
+        "warmup_history": warmup_history_contract(),
     }
     payload["definition_sha256"] = _digest(payload)
     return payload
@@ -2387,7 +3064,10 @@ def stop_event_taxonomy() -> dict[str, Any]:
         "missing_provider_handling": (
             "A missing required provider is named in missing_provider_ids and "
             "never imputed. Below the provider quorum the slot is "
-            f"{EVENT_NOT_CLASSIFIABLE} and enters no denominator."
+            f"{EVENT_NOT_CLASSIFIABLE} and enters no denominator. A one-touch/"
+            "one-non-touch/one-missing slot is also NOT_CLASSIFIABLE because "
+            "the observed non-touching set does not satisfy the confirmation "
+            "quorum needed to establish isolation."
         ),
         "predecessor_replaced": (
             "btc_predictor.research.reference_composite_empirical."
@@ -2396,11 +3076,14 @@ def stop_event_taxonomy() -> dict[str, Any]:
         "protocol_version": PROTOCOL_VERSION,
         "schema_version": "PROSPECTIVE_INTEGRATION_STOP_EVENT_TAXONOMY_V1",
         "stop_outcomes": list(STOP_OUTCOMES),
+        "gap_through_derivation": GAP_THROUGH_DERIVATION,
+        "post_divergence_semantics": POST_DIVERGENCE_STOP_SEMANTICS,
         "stop_reference_rule": (
-            "The stop compared at a slot is the evaluating track's own active "
+            "The stop compared at a slot is the control-reference track's active "
             "stop under the authoritative lifecycle owner, never a hand-chosen "
-            "reviewed level."
+            "reviewed level and never a candidate-owned denominator anchor."
         ),
+        "stop_universe_derivation": STOP_EVENT_UNIVERSE_DERIVATION,
         "tie_rule": (
             "Reaching the stop is a non-strict comparison on the stop-relevant "
             "extreme, so a venue that touches exactly the stop counts as "
@@ -2425,6 +3108,7 @@ def input_snapshot_schema() -> dict[str, Any]:
         "feature_contract_owner": (
             "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES"
         ),
+        "feature_input_coverage": feature_input_coverage_contract(),
         "non_price_input_sources": NON_PRICE_INPUT_SOURCES,
         "pit_availability_fields": ["observation_time", "available_at", "ingested_at"],
         "pit_rule": PIT_RULE,
@@ -2570,13 +3254,13 @@ def assert_collection_not_authorized() -> None:
 def assert_lifecycle_transition(current: str, target: str) -> None:
     if current not in LIFECYCLE_STATES or target not in LIFECYCLE_STATES:
         raise ProspectiveCorpusError(f"lifecycle states are {LIFECYCLE_STATES}")
-    if target not in LIFECYCLE_TRANSITIONS[current]:
-        raise ProspectiveCorpusError(
-            f"{current} may not transition to {target}"
-        )
     if target == LIFECYCLE_COLLECTING:
         raise CollectionNotAuthorizedError(
             f"{LIFECYCLE_COLLECTING} requires {COLLECTION_ENTRY_REQUIREMENT}"
+        )
+    if target not in LIFECYCLE_TRANSITIONS[current]:
+        raise ProspectiveCorpusError(
+            f"{current} may not transition to {target}"
         )
 
 
@@ -2691,17 +3375,20 @@ def protocol_definition() -> dict[str, Any]:
     """Build the top-level protocol, binding every material child hash."""
 
     assert_collection_not_authorized()
+    assert_required_semantics_unambiguous()
     authority = historical_gate_authority()
     children = {
         "data_schema_contract": data_schema_contract(),
         "decision_universe": decision_universe_contract(),
         "evidence_sufficiency": evidence_sufficiency_contract(),
+        "feature_input_coverage": feature_input_coverage_contract(),
         "input_snapshot_schema": input_snapshot_schema(),
         "metric_evidence_contracts": metric_evidence_contracts(),
         "portfolio_track_contract": portfolio_track_contract(),
         "semantic_diff_from_v5_blockers": semantic_diff_from_v5_blockers(),
         "stage_b_evaluation_contract": stage_b_evaluation_contract(),
         "stop_event_taxonomy": stop_event_taxonomy(),
+        "warmup_history": warmup_history_contract(),
     }
     payload: dict[str, Any] = {
         "btc019": {
@@ -2715,6 +3402,14 @@ def protocol_definition() -> dict[str, Any]:
             name: child["definition_sha256"] for name, child in children.items()
         },
         "collection_authorized": COLLECTION_AUTHORIZED,
+        "collection_authorization_semantics": {
+            "all_requirements_must_pass": True,
+            "corpus_protocol_independently_certified": False,
+            "postp1_004_implementation_independently_certified": False,
+            "sufficiency_governance_definition_sha256": None,
+            "sufficiency_governance_independently_certified": False,
+            "warmup_or_nonqualifying_capture_exception": False,
+        },
         "collection_entry_requirement": COLLECTION_ENTRY_REQUIREMENT,
         "collector_boundary": {
             "interface": COLLECTOR_INTERFACE,
@@ -2738,6 +3433,14 @@ def protocol_definition() -> dict[str, Any]:
             "frozen_v3_definition_sha256": FROZEN_V3_DEFINITION_SHA256,
             "frozen_v4_definition_sha256": FROZEN_V4_DEFINITION_SHA256,
             "frozen_v5_definition_sha256": FROZEN_V5_DEFINITION_SHA256,
+            "failed_prospective_protocol": {
+                "definition_sha256": FAILED_PROTOCOL_DEFINITION_SHA256,
+                "implementation_commit": FAILED_PROTOCOL_IMPLEMENTATION_COMMIT,
+                "review": FAILED_PROTOCOL_REVIEW,
+                "review_classification": FAILED_PROTOCOL_REVIEW_CLASSIFICATION,
+                "retained": True,
+                "superseded_before_collection": True,
+            },
         },
         "historical_gate_authority": authority,
         "no_threshold_authored": True,
@@ -2836,6 +3539,8 @@ _CHILD_ARTIFACTS = (
     (PORTFOLIO_TRACK_FILENAME, "portfolio_track_contract"),
     (EVIDENCE_SUFFICIENCY_FILENAME, "evidence_sufficiency_contract"),
     (SEMANTIC_DIFF_FILENAME, "semantic_diff_from_v5_blockers"),
+    (FEATURE_INPUT_COVERAGE_FILENAME, "feature_input_coverage_contract"),
+    (WARMUP_HISTORY_FILENAME, "warmup_history_contract"),
 )
 
 
@@ -2849,6 +3554,8 @@ _CHILD_KEY_BY_FILENAME = {
     PORTFOLIO_TRACK_FILENAME: "portfolio_track_contract",
     EVIDENCE_SUFFICIENCY_FILENAME: "evidence_sufficiency",
     SEMANTIC_DIFF_FILENAME: "semantic_diff_from_v5_blockers",
+    FEATURE_INPUT_COVERAGE_FILENAME: "feature_input_coverage",
+    WARMUP_HISTORY_FILENAME: "warmup_history",
 }
 
 
@@ -2887,6 +3594,24 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "V3, V4, V5 or certified V1 byte moves, and no approval threshold, "
         "direction or hard role changes.",
         "",
+        "## Failed lineage retained",
+        "",
+        f"- Failed protocol hash: `{FAILED_PROTOCOL_DEFINITION_SHA256}`",
+        f"- Failed implementation commit: `{FAILED_PROTOCOL_IMPLEMENTATION_COMMIT}`",
+        f"- Review: `{FAILED_PROTOCOL_REVIEW}` / `{FAILED_PROTOCOL_REVIEW_CLASSIFICATION}`",
+        "- Superseded before collection: `YES`",
+        "",
+        "## Corrected ownership and input closure",
+        "",
+        "- `raw.liquidations` is a required append-only PIT capture family.",
+        "- Every `INITIAL_FEATURE_NAMES` member is bound to its transitive raw "
+        "input families and one prospective capture contract.",
+        "- CVD cadence is exact-hour UTC with the authoritative 20-period z-score window.",
+        f"- Trade-action comparison owner: `{TRADE_ACTION_COMPARISON_OWNER_VERSION}`.",
+        f"- Trade-eligibility permission owner: `{TRADE_ELIGIBILITY_COMPOSITE_OWNER_VERSION}`.",
+        f"- Stop-event anchor: `{STOP_EVENT_UNIVERSE_ANCHOR}`.",
+        f"- Gap-through prior owner: `{PRIOR_OBSERVABLE_OWNER}`; maximum gap: `3600s`.",
+        "",
         "## Frozen child contracts",
         "",
     ]
@@ -2910,10 +3635,11 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "",
         "## Evidence sufficiency",
         "",
-        "Every metric's evaluability minimum is frozen here: a complete "
-        "scheduled-slot census, both tracks valid, and a comparable denominator "
-        "of at least one. A zero denominator is "
-        f"`{UNDEFINED_INSUFFICIENT_EVIDENCE}` and never a PASS.",
+        "Arithmetic evaluability is frozen here: a complete scheduled-slot "
+        "census, complete PIT inputs, frozen warmup completion and both tracks' "
+        "owner outputs. A zero denominator is "
+        f"`{UNDEFINED_INSUFFICIENT_EVIDENCE}` and never a PASS; this protocol "
+        "chooses no certification minimum.",
         "",
         "Per-metric certification minimums are deliberately not chosen here. "
         "Selecting a rate gate's minimum n is its own pre-data governance task "
@@ -2944,7 +3670,7 @@ def write_artifacts(output_dir: Path) -> dict[str, Any]:
             json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="ascii"
         )
     (output_dir / REPORT_FILENAME).write_text(
-        _report_markdown(protocol), encoding="ascii"
+        _report_markdown(protocol), encoding="utf-8"
     )
     return protocol
 
@@ -2964,7 +3690,7 @@ def restore_artifacts(output_dir: Path) -> dict[str, Any]:
             raise ProspectiveCorpusError(
                 f"the protocol does not bind the persisted {filename} hash"
             )
-    if (output_dir / REPORT_FILENAME).read_text(encoding="ascii") != _report_markdown(
+    if (output_dir / REPORT_FILENAME).read_text(encoding="utf-8") != _report_markdown(
         protocol
     ):
         raise ProspectiveCorpusError("the persisted report does not reproduce")

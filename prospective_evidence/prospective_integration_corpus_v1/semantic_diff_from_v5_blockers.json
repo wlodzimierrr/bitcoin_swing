@@ -1,7 +1,7 @@
 {
   "btc019_reopened": false,
   "btc019_terminal_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE",
-  "definition_sha256": "3b6f2576a9e930b40443dc615b080bda016084caed1aa6edba0e3902cd50d47e",
+  "definition_sha256": "49b129afd07a08ddfbe6b4195e648b7ab28f712a3d2747739ec139ef7965673d",
   "direction_change_count": 0,
   "gate_count": 8,
   "hard_role_change_count": 0,
@@ -19,7 +19,7 @@
       },
       "prospective_executable_definition": {
         "decision_universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS",
-        "denominator": "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots on the candidate track's own active stop where the candidate reference is usable at that decision_time.",
+        "denominator": "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots at the control track's active stop where both reference outcomes are usable at that decision_time.",
         "evidence_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
         "input_corpus": "prospective_source_input_snapshot + prospective_portfolio_state",
         "numerator": "Events where the candidate reference series also reaches the stop-relevant extreme, so the genuine shared tail move is preserved.",
@@ -51,10 +51,10 @@
       },
       "prospective_executable_definition": {
         "decision_universe": "GAP_THROUGH_STOP_EVENTS",
-        "denominator": "Classified GAP_THROUGH_STOP_EVENT slots on the candidate track's own active stop where a prior observable reference price exists, the provider quorum holds and the candidate reference is usable.",
+        "denominator": "Classified GAP_THROUGH_STOP_EVENT slots at the control track's active stop where the exact immediately preceding hourly raw-provider consensus close and both current reference opens are usable.",
         "evidence_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
         "input_corpus": "prospective_source_input_snapshot + prospective_portfolio_state",
-        "numerator": "Events where the candidate reference's TRIGGERED/NOT_TRIGGERED outcome at the gapping open equals the deterministic venue-consensus outcome computed from the median of the available required providers.",
+        "numerator": "Count of denominator events where the candidate reference is TRIGGERED at the control stop on the current hourly open. Venue consensus is TRIGGERED by construction for every denominator event; this statistic therefore measures candidate preservation of those consensus gap-throughs, not equality of two unconstrained outcomes.",
         "pit_schema": "available_at <= decision_time",
         "statistic": "rate"
       },
@@ -83,7 +83,7 @@
       },
       "prospective_executable_definition": {
         "decision_universe": "ISOLATED_VENUE_STOP_EVENTS",
-        "denominator": "Classified ISOLATED_VENUE_STOP_EVENT slots on the candidate track's own active stop where the candidate reference is usable at that decision_time.",
+        "denominator": "Classified ISOLATED_VENUE_STOP_EVENT slots at the control track's active stop where exactly one provider touches, at least the confirmation quorum is observed not touching, and both reference outcomes are usable.",
         "evidence_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
         "input_corpus": "prospective_source_input_snapshot + prospective_portfolio_state",
         "numerator": "Events where the candidate reference series does not reach the stop-relevant extreme, so the single-venue wick is suppressed.",
@@ -211,10 +211,10 @@
       },
       "prospective_executable_definition": {
         "decision_universe": "ACTION_EVALUABLE_DECISION_TIMES",
-        "denominator": "Every daily decision observation where both tracks produce a complete deterministic action, whether flat or in position.",
-        "evidence_owner": "btc_predictor.reporting.recommendation.render_recommendation",
+        "denominator": "Every daily decision observation where both tracks produce a complete deterministic ordered action envelope, whether flat or in position. Flat-vs-position slots remain comparable because both owners still produce actual action envelopes.",
+        "evidence_owner": "btc_predictor.research.prospective_integration_corpus.TRADE_ACTION_COMPARISON_OWNER_V1",
         "input_corpus": "prospective_source_input_snapshot + prospective_portfolio_state",
-        "numerator": "Observations where the two tracks' authoritative actions differ.",
+        "numerator": "Observations where the two tracks' authoritative ordered action envelopes differ in action, acceptance or lifecycle-event identity.",
         "pit_schema": "available_at <= decision_time",
         "statistic": "rate"
       },
@@ -243,8 +243,8 @@
       },
       "prospective_executable_definition": {
         "decision_universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES",
-        "denominator": "Daily decision observations where both tracks are validly eligibility-evaluable: setup inputs complete for both and both in a pre-position lifecycle state.",
-        "evidence_owner": "btc_predictor.features.entry.classify_entry_action",
+        "denominator": "Daily decision observations where both tracks have complete inputs for TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1 and each produces PERMITTED or NOT_PERMITTED. Flat-vs-position and both-position states stay in this universe; lifecycle state is a permission input.",
+        "evidence_owner": "btc_predictor.research.prospective_integration_corpus.TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1",
         "input_corpus": "prospective_source_input_snapshot + prospective_portfolio_state",
         "numerator": "Observations where the two tracks disagree on whether a new trade is permitted.",
         "pit_schema": "available_at <= decision_time",

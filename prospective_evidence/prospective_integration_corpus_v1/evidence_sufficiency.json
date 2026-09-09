@@ -2,10 +2,10 @@
   "collection_horizon": {
     "calendar_minimum_days": null,
     "calendar_minimum_rationale": "None is imposed. Stage-C's live_shadow_days >= 90 is a post-certification promotion gate about publication latency in live operation; it is not a Stage-B evidence-sufficiency rule and frozen V4 moved it out of historical validation precisely to stop the two being read as one. Importing 90 days here would restate a different gate's number as this stage's minimum.",
-    "termination_rule": "Stage-B collection terminates on its own predeclared evidence sufficiency, never on elapsed time and never on an observed rate. Because the per-metric certification minimums are deferred to PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1, the epoch has no terminating condition yet and no Stage-B certification is reachable from this protocol alone.",
+    "termination_rule": "A future collection epoch terminates on independently certified, predeclared evidence sufficiency, never on elapsed time or an observed rate. This protocol chooses no minimum or terminating condition.",
     "termination_state": "STAGE_B_TERMINATION_UNDEFINED_UNTIL_SUFFICIENCY_GOVERNANCE"
   },
-  "definition_sha256": "923eb68e3138edf00bc3feec31838dc29d8e5924a5c6b377897f021fee5423d3",
+  "definition_sha256": "af424423723f377d22fdddd01e396de9a2323db0c9aa59defd57b78076cc5df9",
   "insufficient_evidence_state": "UNDEFINED_INSUFFICIENT_EVIDENCE",
   "metrics": {
     "cross_market_confirmed_stop_preservation_rate": {
@@ -13,9 +13,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "minimum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "cross_market_confirmed_stop_preservation_rate",
@@ -29,9 +30,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "minimum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "gap_through_stop_consensus_agreement_rate",
@@ -45,9 +47,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "minimum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "isolated_venue_stop_suppression_rate",
@@ -61,9 +64,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "maximum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "regime_classification_disagreement_rate",
@@ -77,9 +81,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "maximum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "risk_size_p95_relative_difference",
@@ -93,9 +98,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "maximum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "setup_classification_disagreement_rate",
@@ -109,9 +115,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "maximum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "trade_action_disagreement_rate",
@@ -125,9 +132,10 @@
       "certification_sufficiency_state": "REPORTABLE_BUT_NOT_CERTIFIABLE_WITHOUT_SEPARATE_PRE_DATA_GOVERNANCE",
       "direction": "maximum",
       "evaluability_minimum": {
+        "arithmetic_nonempty_denominator_required": true,
         "both_tracks_valid_required": true,
+        "certification_minimum_selected_here": null,
         "complete_slot_census_required": true,
-        "minimum_comparable_denominator": 1,
         "no_silent_omission_required": true
       },
       "metric": "trade_eligibility_disagreement_rate",
@@ -138,6 +146,14 @@
     }
   },
   "minimums_selected_from_observed_outcomes": false,
+  "pre_collection_sequence": {
+    "collection_entry_requirement": "INDEPENDENT_XHIGH_CERTIFICATION_OF_THIS_EXACT_PROTOCOL_HASH_AND_INDEPENDENT_XHIGH_CERTIFICATION_OF_THE_EXACT_PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_HASH_AND_INDEPENDENT_IMPLEMENTATION_REVIEW_OF_POSTP1_004_MUST_ALL_PASS",
+    "postp1_003_independent_review_required": true,
+    "postp1_003_owner": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+    "postp1_004_blocked_until_postp1_003_review_passes": true,
+    "protocol_repeat_review_required": true,
+    "sufficiency_minima_selected_here": false
+  },
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "schema_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_V1",
   "scoped_out_authority": {
