@@ -28,14 +28,20 @@ canonical production reference = UNRESOLVED
 no further BTC-019 calibration/evidence-design work authorized
 
 PROSPECTIVE_INTEGRATION_CORPUS_V1 =
-CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW
+FAILED_THIRD_INDEPENDENT_XHIGH_REVIEW
 
-protocol hash =
+failed current protocol hash =
 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
 
-failed protocol hashes retained =
+failed predecessor hashes retained in the artifact lineage =
 aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
+
+third review result =
+FAIL — MARKET CAP SOURCE CONTRACT INVALID
+
+execution classification =
+PROSPECTIVE_PROTOCOL_REQUIRES_FIX
 
 newly frozen prospective acquisition contracts =
 PROSPECTIVE_CVD_ACQUISITION_V1
@@ -43,8 +49,9 @@ PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1
 PROSPECTIVE_LIQUIDATION_CAPTURE_V1
 PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1
 
-collection = NOT AUTHORIZED; corrected protocol review, POSTP1-003 exact-hash
-review, and POSTP1-004 implementation review must all pass first
+collection = NOT AUTHORIZED; a corrected pre-data protocol and its independent
+review, POSTP1-003 exact-hash review, and POSTP1-004 implementation review must
+all pass first
 qualifying observations collected = NONE
 real Stage-B outcomes evaluated = NONE
 BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
@@ -65,11 +72,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current implementation frontier:** Phase-1 implementation is complete and
   BTC-019 is terminal, so the frontier has moved to the new post-Phase-1
   workstream [EPIC X](execution/post_phase1_prospective_integration_evidence_v1.md).
-  POSTP1-001 and POSTP1-001R both failed independent review. POSTP1-001R2 has
-  frozen the three missing prospective acquisition contracts, rebuilt the
-  owner-derived warmup table and refrozen
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `40e37067...c9862`, and awaits a third
-  independent xHigh review. Historically, BTC-019 stopped because ten Stage-A
+  POSTP1-001 and POSTP1-001R both failed independent review. POSTP1-001R2
+  refroze `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `40e37067...c9862`, but its
+  third independent xHigh review failed because the CoinGecko daily point is
+  unavailable at the frozen daily decision, the CVD source/grid contract is
+  incomplete, and liquidation coverage lacks a frozen provider/instrument
+  census. Historically, BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
   `live_shadow_days >= 90` from historical validation to post-certification
   promotion, and certified V1, frozen V3, V4 and V5 remain unchanged
@@ -80,23 +88,26 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** POSTP1-001R2, implemented and awaiting a
-  third independent xHigh review. BTC-019 is terminal and is not in progress
-- **Current BLOCKED tickets:** None recorded in Structured Tickets v2.6
-- **Next dependency-satisfied ticket:** POSTP1-002R2, third independent xHigh
-  review of corrected protocol hash `40e37067...c9862`. POSTP1-003 remains
-  blocked until that review passes. Prospective collection may not begin until
-  POSTP1-003 and POSTP1-004 also pass their required independent reviews, and
-  BTC-019 does not reopen whatever the review concludes. The failed V2 hash
-  `7fda8ac3...ad8be6` and its predecessors remain immutable lineage
+- **Current IN_PROGRESS ticket:** None. POSTP1-002R2 is complete with a failed
+  review, and BTC-019 is terminal and is not in progress
+- **Current BLOCKED tickets:** POSTP1-003 remains blocked because POSTP1-002R2
+  did not pass. POSTP1-004 remains transitively blocked
+- **Next dependency-satisfied ticket:** None currently issued. The next work
+  must be a bounded pre-data correction and refreeze of the market-cap, CVD and
+  liquidation acquisition contracts, followed by independent xHigh review of
+  the new exact hash. POSTP1-003 and collection remain unauthorized, and
+  BTC-019 does not reopen. The failed V2 hash `7fda8ac3...ad8be6` and its
+  predecessors remain immutable lineage
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 4,544 passed with Python 3.12.14 and
-  `RuntimeWarning` treated as an error on 2026-09-09; POSTP1-001R2 focused
-  tests are 145 passed
-- **Last relevant implementation/review commit:** POSTP1-001R2 refreezes
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `40e37067...c9862`; implementation
-  commit is this change. Failed hashes `aaa05c72...d37326` and
-  `0d4f1437...f45a9e` remain lineage. It follows
+- **Latest verified test baseline:** 4,585 passed with Python 3.12.14 and
+  `RuntimeWarning` treated as an error on 2026-09-09; POSTP1-002R2 focused
+  tests are 145 passed and the relevant regression selection is 1,329 passed
+- **Last relevant implementation/review commit:** POSTP1-002R2 rejects
+  `PROSPECTIVE_INTEGRATION_CORPUS_V1` hash `40e37067...c9862`; the governance
+  outcome is recorded by this change and the reviewed implementation commit is
+  `9b2f23acc793457b0e8683387d8382f06472fdd4`. Failed predecessors
+  `aaa05c72...d37326` and
+  `0d4f1437...f45a9e` remain lineage. That implementation follows
   `a50efcc7d9861cae6a2c9f69958fd39d73fcdc25`, which staged
   `BTC_REFERENCE_COMPOSITE_V5` and terminated BTC-019. Frozen V3, V4, V5 and
   certified V1 remain valid and immutable; the 2015-2019 sample stays
@@ -145,12 +156,16 @@ V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
 PROSPECTIVE_INTEGRATION_CORPUS_V1
-  = CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW
-prospective corpus protocol hash
+  = FAILED_THIRD_INDEPENDENT_XHIGH_REVIEW
+failed current prospective corpus protocol hash
   = 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
-failed prospective protocol hashes
+failed predecessor prospective protocol hashes
   = aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
   = 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
+POSTP1-002R2 review result
+  = FAIL — MARKET CAP SOURCE CONTRACT INVALID
+prospective execution classification
+  = PROSPECTIVE_PROTOCOL_REQUIRES_FIX
 prospective collection = NOT AUTHORIZED
 ```
 
@@ -733,16 +748,33 @@ withdrawn: `VOL_PERCENTILE_2Y` keeps a 730-day eligible trailing window, needs
 `RV_20`, and therefore first defines at 386 contiguous daily sessions — 385
 elapsed calendar days — pinned against the production owner by a synthetic
 fixture. Evaluability is the owner's rule, never `elapsed_days >=` a constant.
-Classification:
-`PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_THIRD_XHIGH_REVIEW`.
-Collection requires successful independent review of this exact hash, the
-future POSTP1-003 sufficiency-governance hash, and the POSTP1-004 collector
-implementation. It is not authorized now; no qualifying observation was collected, no real Stage-B outcome
-was evaluated, EPIC T was not touched, and the BTC-019 sealed sample stays
-uncollected and unopened with no automatic dependency that would ever open it.
+POSTP1-002R2 independently recomputed the top hash and all fifteen children,
+confirmed zero V2 gate changes, and retained the corrected warmup and
+missing-versus-zero semantics. It nevertheless rejected this hash as
+`FAIL — MARKET CAP SOURCE CONTRACT INVALID` /
+`PROSPECTIVE_PROTOCOL_REQUIRES_FIX`: CoinGecko's 00:00 UTC daily point is
+documented as unavailable until 00:35 on the following UTC day, after the
+frozen 00:05 decision; the contract also cannot recover exact publication and
+restatement instants from the provider payload. The CVD contract additionally
+defers its actual providers and perpetual universe and allows its count-based
+owner to bridge an interior missing hour, while the liquidation contract has
+no frozen provider/instrument coverage census. These are pre-data acquisition
+decisions, not mechanical review fixes. A newly corrected hash must pass
+independent review before POSTP1-003. Collection is not authorized; no
+qualifying observation was collected, no real Stage-B outcome was evaluated,
+EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
+unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- EPIC X needs a new bounded pre-data correction/refreeze task. It must select
+  market-cap observation/availability/revision semantics that an exact provider
+  can actually supply at the frozen decisions; bind concrete CVD providers and
+  perpetual instruments and enforce contiguous prospective-hour windows before
+  the observation-count feature owner; and bind a liquidation provider and
+  expected instrument census so complete, partial and absent coverage are
+  distinguishable. POSTP1-003 cannot start until the resulting exact hash passes
+  independent xHigh review.
 - Production canonical BTC reference selection remains unresolved under
   BTC-019, but the research branch that was blocking it has now converged. The
   calendar-contiguity contract, the re-measurement of the already-inspected

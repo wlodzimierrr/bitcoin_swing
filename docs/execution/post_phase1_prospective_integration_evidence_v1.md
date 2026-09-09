@@ -259,7 +259,7 @@ exists. It is retained as failed lineage alongside `aaa05c72...d37326`.
 
 ## POSTP1-001R2 — `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1`
 
-**Status:** `IMPLEMENTED / AWAITING THIRD INDEPENDENT xHIGH REVIEW`
+**Status:** `FAILED THIRD INDEPENDENT xHIGH REVIEW / REQUIRES PRE-DATA CORRECTION`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** third independent xHigh review of the exact corrected hash
 **Owner module:** `btc_predictor/research/prospective_integration_corpus.py`
@@ -269,8 +269,9 @@ The protocol remains `PROSPECTIVE_INTEGRATION_CORPUS_V1`: neither failed hash
 was certified, no collection epoch opened and no persisted observation carries
 the superseded semantics, and this document's own change procedure binds
 `PROSPECTIVE_INTEGRATION_CORPUS_V2` to a semantic change *after* collection
-starts. It is refrozen at status
-`CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW` with definition hash:
+starts. The immutable implementation artifact retains its pre-review status
+`CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW` and definition hash;
+the failed review record in this ticket does not rewrite either:
 
 ```text
 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
@@ -429,6 +430,58 @@ Composites inherit their components' predicates and invent no window.
   comparison outcome.
 - POSTP1-001R2 selects no sufficiency minimum and authorizes no collection.
 
+### POSTP1-002R2 outcome
+
+The third independent xHigh review of `40e37067...c9862` returned
+`FAIL — MARKET CAP SOURCE CONTRACT INVALID` /
+`PROSPECTIVE_PROTOCOL_REQUIRES_FIX`. The hash and all fifteen child hashes
+recompute exactly, both predecessor hashes remain explicit non-authoritative
+pre-data lineage, and direct comparison with `V2_APPROVAL_GATES` finds zero
+threshold, direction, hard-role or metric-intent changes. The stop, action,
+eligibility, risk-size, warmup and sufficiency-sequencing contracts also retain
+their reviewed behavior. Three acquisition blockers nevertheless prevent
+certification:
+
+- **P1-A — the frozen CoinGecko daily market-cap observation is unavailable at
+  the decision that requires it.** The corpus schedules a daily decision at bar
+  close plus five minutes and forbids OI-intensity from using an earlier
+  market-cap day. CoinGecko documents its 00:00 UTC daily point as available at
+  00:35 on the following UTC day, thirty minutes after that decision. See the
+  official [`/coins/{id}/market_chart/range` documentation](https://docs.coingecko.com/reference/coins-id-market-chart-range)
+  and [`/coins/{id}/history` documentation](https://docs.coingecko.com/reference/coins-id-history).
+  CoinGecko also documents same-day and next-day historical market caps as
+  provisional, with scheduled restatements through day + 2 and no API finality
+  field; see its [historical-market-cap revision policy](https://support.coingecko.com/hc/en-us/articles/61976309053337-Why-do-historical-market-cap-values-change-shortly-after-a-date-then-settle).
+  The frozen rule that `available_at` is the instant the provider first
+  published the point is not obtainable from the payload, and the protocol
+  freezes no polling/retrieval schedule capable of producing a deterministic
+  substitute. Satisfying the source would require a new observation/decision,
+  staleness or acquisition rule, not a uniquely mechanical review fix.
+- **P1-B — the CVD source and gap contract is not complete.** The spot venue
+  list is concrete, but the perpetual venue/instrument universe and the actual
+  spot/perpetual provider identities are deferred to a future collection epoch,
+  so changing them cannot move this protocol hash. More importantly, the
+  contract says a missing common timestamp contributes no observation to the
+  count-based window. The production owner has no grid or spacing check, and a
+  synthetic 22-hour sequence with the interior 20:00 spot observation missing
+  still produces a complete feature at 21:00 from 21 non-contiguous common
+  observations. The prospective grid therefore is not enforced before the
+  historical owner as this freeze requires.
+- **P1-C — liquidation coverage cannot distinguish a complete expected feed
+  from partial provider/instrument coverage.** The new status vocabulary
+  correctly keeps `OBSERVED_ZERO_EVENTS` separate from unavailable, late and
+  invalid states, but the capture contract freezes neither an actual provider
+  nor an expected instrument universe. Persisting a provider, instrument,
+  `event_count` and source-record digest on an observed row cannot prove that
+  every expected feed was present for the interval. A partial feed can
+  therefore be labelled affirmatively observed and converted to numeric
+  notional without a hash-bound coverage census.
+
+No review fix was made because each blocker requires a new, explicit pre-data
+acquisition decision and a newly frozen hash. POSTP1-003 may not begin. No
+qualifying observation was collected, no real Stage-B aggregate was evaluated,
+no BTC-019 sealed path was accessed, and collection remains unauthorized.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -436,7 +489,7 @@ Composites inherit their components' predicates and invent no window.
 | POSTP1-002 | `FORMAL_XHIGH_REVIEW_PROSPECTIVE_INTEGRATION_CORPUS_V1` | COMPLETE / FAIL |
 | POSTP1-001R | `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V1` | COMPLETE / FAILED REPEAT REVIEW |
 | POSTP1-002R | repeat independent xHigh review of `0d4f1437...f45a9e` | COMPLETE / FAIL |
-| POSTP1-001R2 | `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1` | IMPLEMENTED / AWAITING THIRD REVIEW |
-| POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | READY |
+| POSTP1-001R2 | `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED THIRD REVIEW |
+| POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | COMPLETE / FAIL |
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R2 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
