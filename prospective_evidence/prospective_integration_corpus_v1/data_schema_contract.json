@@ -13,7 +13,7 @@
     "sufficiency_governance_review_sha256": "independent PASS review of exact sufficiency_governance_sha256"
   },
   "database": "postgresql",
-  "definition_sha256": "90dea1ba5336f0fc5b74d83ccef88dc22d69f29e874e442ae0a151a7c092ee25",
+  "definition_sha256": "1b00e7adab62f4910e692507a402e8501314461932d63d3d14f352a930898ab0",
   "implementation_state": "CONTRACT_ONLY_MIGRATION_DEFERRED_TO_FIRST_COLLECTOR_TICKET",
   "redis_required": false,
   "schema": "research",
@@ -65,8 +65,13 @@
       "append_only": true,
       "columns": {
         "available_at": "timestamptz not null",
+        "contract_size_usd": "numeric not null",
+        "coverage_ended_at": "timestamptz null",
+        "coverage_started_at": "timestamptz null",
         "event_count": "integer null",
+        "event_type": "text not null",
         "feed_status": "text not null",
+        "heartbeat_continuous": "boolean not null",
         "ingested_at": "timestamptz not null",
         "instrument": "text not null",
         "long_liquidation_notional_usd": "numeric null",
@@ -74,9 +79,12 @@
         "provider": "text not null",
         "revision": "text not null",
         "run_id": "uuid not null",
+        "sequence_gap_detected": "boolean not null",
         "short_liquidation_notional_usd": "numeric null",
         "source_record_ids_digest": "char(64) null",
-        "timeframe": "text not null"
+        "subscription_acknowledged_at": "timestamptz null",
+        "timeframe": "text not null",
+        "websocket_continuous": "boolean not null"
       },
       "layer": "RAW",
       "primary_key": [

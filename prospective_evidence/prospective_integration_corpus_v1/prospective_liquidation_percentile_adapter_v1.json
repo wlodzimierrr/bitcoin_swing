@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R2",
+    "authored_by_ticket": "POSTP1-001R3",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -13,7 +13,7 @@
     "stage_b_outcomes_inspected": false
   },
   "consumer": "btc_predictor.features.volatility.calculate_orderliness_score liquidation_cascade component; the same normalized value is the STRESS and CAPITULATION market-state flag input",
-  "definition_sha256": "849f7843066930418822dfc0f15e238897d65bc148a9882548b9decce8e75d79",
+  "definition_sha256": "1ea06685becc20e7997c2d8761043c996f51eafce80b0e9a6f4a5d24662960a0",
   "downstream_formula_changed": false,
   "epoch_rule": "Any change to the input quantity, window, minimum observation count, observation universe or percentile convention requires PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V2 and a new prospective collection epoch.",
   "existing_owner": {

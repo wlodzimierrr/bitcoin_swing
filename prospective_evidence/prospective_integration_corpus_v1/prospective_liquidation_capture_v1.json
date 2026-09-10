@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R2",
+    "authored_by_ticket": "POSTP1-001R3",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -12,6 +12,7 @@
     "selected_by_new_pre_data_governance": true,
     "stage_b_outcomes_inspected": false
   },
+  "available_at_semantics": "The local wall-clock instant at which the closed interval and all of its completion evidence were validated. It is never back-dated to interval close and makes no claim about a provider finality timestamp.",
   "capture_fields": [
     "observation_time",
     "available_at",
@@ -19,6 +20,14 @@
     "provider",
     "instrument",
     "timeframe",
+    "event_type",
+    "contract_size_usd",
+    "subscription_acknowledged_at",
+    "coverage_started_at",
+    "coverage_ended_at",
+    "websocket_continuous",
+    "heartbeat_continuous",
+    "sequence_gap_detected",
     "feed_status",
     "event_count",
     "long_liquidation_notional_usd",
@@ -37,9 +46,21 @@
     "REGIME_SMOOTHED_SCORE",
     "VOLATILITY_SCORE"
   ],
-  "definition_sha256": "23212f669cb0f7308a19df2498781f0747a43974f8bbdac39a9ceb23943f16c8",
+  "definition_sha256": "d31707c9aab49d97df7e6d099386ece11a89f8cea95c0eccc8bbdcc55c553954",
   "duplicate_semantics": "One row per (provider, instrument, timeframe, observation_time, revision). A conflicting duplicate is refused and recorded as a data-quality event.",
   "epoch_rule": "Any change to the captured interval, provider, instrument universe or feed-status vocabulary requires PROSPECTIVE_LIQUIDATION_CAPTURE_V2 and a new prospective collection epoch.",
+  "event_census": {
+    "contract_size_usd": "1",
+    "included_event_type": "liquidation",
+    "notional_rule": "For PI_XBTUSD, liquidation USD notional equals provider qty times the instrument metadata contractSize of 1 USD.",
+    "other_trade_types_included": false,
+    "side_mapping": {
+      "buy": "short",
+      "sell": "long"
+    },
+    "side_rule": "Kraken side is taker side: sell liquidates a long position and buy liquidates a short position. Unknown sides invalidate the whole interval.",
+    "source_identity": "Every included provider uid is unique within the frozen provider/instrument feed and the sorted set is hash-bound to the interval."
+  },
   "existing_aggregate": {
     "distinguishes_missing_from_empty": false,
     "evidence": "The owner initialises long_liquidations_usd and short_liquidations_usd to Decimal('0') and accumulates only the Liquidation rows it was given. It records no feed status, no event count and no per-interval coverage, so an unavailable feed and an observed interval with zero liquidation events both yield exactly 0. BtcDerivativesAggregate exposes no field that could separate them afterwards.",
@@ -49,7 +70,7 @@
   "feed_state_is_independent_of_the_numeric_value": true,
   "feed_status_semantics": {
     "INVALID": {
-      "definition": "The provider answered but the payload failed a capture-layer validity rule: an unknown side, a negative quantity, a missing notional on an event-bearing interval, or a digest mismatch.",
+      "definition": "The provider answered but the payload failed a capture-layer validity rule: wrong provider/instrument, sequence gap, unknown side or event type, non-positive quantity, inconsistent count or notional, conflicting uid, or source-id digest mismatch.",
       "event_count_rule": "event_count is null",
       "feature_input_state": "REQUIRED_INPUT_MISSING",
       "notional_before_normalization": "null; a numeric zero is refused for this status",
@@ -63,21 +84,21 @@
       "usable_as_an_observation": false
     },
     "OBSERVED_WITH_EVENTS": {
-      "definition": "The provider's liquidation feed answered for the whole interval and reported at least one liquidation event.",
+      "definition": "The frozen Kraken PI_XBTUSD trade subscription satisfied every interval-completion predicate and reported at least one event whose provider trade type is liquidation.",
       "event_count_rule": "event_count > 0",
       "feature_input_state": "PRESENT",
       "notional_before_normalization": "the observed signed-side USD notional",
       "usable_as_an_observation": true
     },
     "OBSERVED_ZERO_EVENTS": {
-      "definition": "The provider's liquidation feed answered for the whole interval and reported no liquidation event. The interval was observed; the market simply produced nothing.",
+      "definition": "The frozen Kraken PI_XBTUSD trade subscription satisfied every interval-completion predicate and reported no event whose provider trade type is liquidation. The interval was observed; the market simply produced nothing.",
       "event_count_rule": "event_count == 0",
       "feature_input_state": "PRESENT",
       "notional_before_normalization": "0 USD, which is a legitimate observed value and not a fill-in",
       "usable_as_an_observation": true
     },
     "SOURCE_UNAVAILABLE": {
-      "definition": "The provider's liquidation feed did not answer for the interval, or answered without covering it.",
+      "definition": "The frozen subscription was not acknowledged before interval start, or its WebSocket/heartbeat coverage was not continuous through interval close.",
       "event_count_rule": "event_count is null",
       "feature_input_state": "REQUIRED_INPUT_MISSING",
       "notional_before_normalization": "null; a numeric zero is refused for this status",
@@ -91,6 +112,21 @@
     "OBSERVED_ZERO_EVENTS",
     "SOURCE_UNAVAILABLE"
   ],
+  "interval_completion_predicate": {
+    "all_required": true,
+    "classifier": "classify_liquidation_feed_interval",
+    "conditions": [
+      "subscription acknowledgement at or before interval start",
+      "WebSocket coverage continuous from at or before interval start through interval close",
+      "heartbeat coverage continuous through interval close",
+      "no provider sequence gap",
+      "no invalid event or conflicting uid",
+      "validated event_count equals the unique included uid count",
+      "available_at not later than the consuming decision"
+    ],
+    "failure_semantics": "Incomplete coverage is SOURCE_UNAVAILABLE; evidence arriving after decision is LATE; malformed or internally inconsistent evidence is INVALID. None may carry numeric notionals.",
+    "observed_zero_rule": "OBSERVED_ZERO_EVENTS is permitted only when every condition passes, event_count is zero, the source-id set is empty and both side notionals equal zero."
+  },
   "missing_feed_can_become_numeric_zero": false,
   "observed_feed_statuses": [
     "OBSERVED_WITH_EVENTS",
@@ -103,10 +139,23 @@
     "source_record_identity": "Every contributing raw liquidation record id is retained and a digest over the sorted id set is persisted with the interval, so an interval's numeric value is always traceable to the exact record set that produced it.",
     "typed_raw_row": "btc_predictor.data.derivatives.Liquidation"
   },
+  "provider_identity": {
+    "endpoint": "wss://futures.kraken.com/ws/v1",
+    "event_feed": "Kraken Futures WebSocket v1 trade",
+    "instrument": "PI_XBTUSD",
+    "instrument_metadata_endpoint": "https://futures.kraken.com/derivatives/api/v3/instruments",
+    "instrument_type": "perpetual_swap",
+    "one_provider_and_instrument_per_epoch": true,
+    "provider": "kraken_futures_websocket_v1_trade",
+    "quote_currency": "USD",
+    "source_documentation": "https://docs.kraken.com/api/docs/futures-api/websocket/trade/",
+    "source_metadata_verified_at": "2026-09-09",
+    "statement": "Only liquidation-typed trade events from Kraken Futures PI_XBTUSD form the interval census. A partial venue, alternate instrument, stablecoin quote or secondary source may not be called complete or patched into this epoch."
+  },
   "replay_rule": "feed_status, event_count and the notional pair are all persisted, so a replay reproduces the missing-versus-empty distinction from storage. A replay may never re-derive feed_status from whether the notional happens to be zero.",
-  "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row; the earlier revision is retained verbatim and a decision replays against the revision available at its own decision_time. A revision may change feed_status only forwards into a new row, never by rewriting an existing one.",
+  "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row; the earlier revision is retained verbatim and a decision replays against the revision available at its own decision_time. A revision may change feed_status only forwards into a new row, never by rewriting an existing one. The adapter selects exactly the latest revision available per interval before calling any historical aggregate owner.",
   "schema_version": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
-  "units": "USD notional per side; event_count is a count",
+  "units": "USD notional per side from 1 USD PI_XBTUSD contracts; event_count is a count",
   "unusable_feed_statuses": [
     "INVALID",
     "LATE",

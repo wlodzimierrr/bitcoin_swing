@@ -87,7 +87,7 @@
     }
   },
   "champion_identity_binding_rule": "A collector binds every declared version identity plus the SHA-256 of the resolved strategy configuration document. A repository artifact that carries a hash is bound by hash; one that carries only a versioned semantic definition is bound by that definition. 'latest' is refused.",
-  "definition_sha256": "4ac2a60b2909228ac4a818aea98700caf2ca2b6488c6605f74a5ebd808f65534",
+  "definition_sha256": "9decae10f17479c47cfa9fa890dbeb64ac2e0da6948215512f2dc8d0ec709849",
   "derived_state_inputs": {
     "atr_and_volatility_buffers": "btc_predictor.risk.buffer.VOLATILITY_BUFFER_V1",
     "momentum_persistence": "btc_predictor.features.momentum",
@@ -137,7 +137,7 @@
         "raw_table": "raw.generic_series"
       },
       "liquidations": {
-        "capture_state": "EXISTING_RAW_PIT_TABLE",
+        "capture_state": "REQUIRES_PROSPECTIVE_COMPLETENESS_ADAPTER",
         "prospective_acquisition_contract": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
         "raw_table": "raw.liquidations"
       },
@@ -157,7 +157,7 @@
         "raw_table": "raw.perp_volume"
       }
     },
-    "definition_sha256": "7fca47cbc1872d8e17801b37b704b09284597dbc875f14b5f7e6571a2f65f517",
+    "definition_sha256": "73d5909cb47d4cd63efc9e743a706448c8e609e65593f4474d183e759513f580",
     "feature_count": 33,
     "feature_inventory": [
       "TREND_SCORE",
@@ -850,6 +850,7 @@
       "observation_time_alignment": "EXACT_UTC_DAY_START_00_00_00Z",
       "observation_time_field": "observation_time",
       "pit_rule": "available_at <= decision_time",
+      "poll_cycle_selector": "market_cap_poll_cycle_for_decision",
       "prospective_acquisition_contract": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
       "provenance_fields": [
         "observation_time",
@@ -859,8 +860,11 @@
         "source"
       ],
       "provider": "coingecko",
+      "provider_endpoint": "https://api.coingecko.com/api/v3/coins/bitcoin/history",
       "raw_table": "raw.generic_series",
+      "required_date_selector": "required_market_cap_observation_time",
       "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT",
+      "revision_selector": "select_market_cap_revisions_for_decision",
       "series_id": "BTC_MARKET_CAP_USD",
       "series_type": "market_cap",
       "units": "USD"
@@ -1037,7 +1041,7 @@
     },
     "liquidations": {
       "available_at_field": "available_at",
-      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "capture_state": "REQUIRES_PROSPECTIVE_COMPLETENESS_ADAPTER",
       "consumer_path": "ORDERLINESS_SCORE -> liquidation_cascade -> liquidation_percentile; the same normalized input is consumed by STRESS and CAPITULATION market-state flags",
       "consuming_features": [
         "ORDERLINESS_SCORE",
@@ -1049,20 +1053,35 @@
       "existing_aggregate_owner": "btc_predictor.data.derivatives.aggregate_btc_derivatives_available_at",
       "feed_state_owner": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
       "fields": [
+        "observation_time",
+        "available_at",
+        "ingested_at",
+        "provider",
+        "instrument",
         "timeframe",
-        "side",
-        "quantity",
-        "quantity_unit",
-        "notional_usd"
+        "event_type",
+        "contract_size_usd",
+        "subscription_acknowledged_at",
+        "coverage_started_at",
+        "coverage_ended_at",
+        "websocket_continuous",
+        "heartbeat_continuous",
+        "sequence_gap_detected",
+        "feed_status",
+        "event_count",
+        "long_liquidation_notional_usd",
+        "short_liquidation_notional_usd",
+        "source_record_ids_digest",
+        "revision"
       ],
       "identity_fields": [
-        "exchange",
-        "symbol",
-        "timeframe",
-        "side",
-        "provider"
+        "provider",
+        "instrument",
+        "timeframe"
       ],
       "ingested_at_field": "ingested_at",
+      "instrument": "PI_XBTUSD",
+      "interval_classifier": "classify_liquidation_feed_interval",
       "missing_policy": "EXPLICIT_FEED_STATE_NO_ZERO_FILL_EMPTY_FEED_IS_DISTINCT_FROM_MISSING_FEED",
       "normalization_owner": "PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1 -> btc_predictor.features.volatility.calculate_orderliness_score",
       "observation_time_field": "observation_time",
@@ -1075,11 +1094,13 @@
         "provider",
         "source",
         "feed_status",
-        "event_count"
+        "event_count",
+        "source_record_ids_digest"
       ],
+      "provider": "kraken_futures_websocket_v1_trade",
       "raw_table": "raw.liquidations",
       "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
-      "units": "quantity in provider-declared quantity_unit; notional_usd in USD when reported"
+      "units": "1 USD inverse contracts; per-side notional in USD"
     },
     "spot_perp_cvd": {
       "available_at_field": "available_at",
@@ -1099,19 +1120,27 @@
       ],
       "fields": [
         "cvd_usd",
-        "market_type"
+        "market_type",
+        "instrument",
+        "revision"
       ],
       "identity_fields": [
         "market_type",
-        "provider"
+        "provider",
+        "instrument"
       ],
       "ingested_at_field": "ingested_at",
+      "instrument_by_market_type": {
+        "perp": "PI_XBTUSD",
+        "spot": "BTC/USD"
+      },
       "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_MISSING_INTERVAL_STAYS_MISSING",
       "normalization_owner": "btc_predictor.features.flow",
       "observation_cadence": "1h",
       "observation_time_alignment": "exact UTC hour",
       "observation_time_field": "observation_time",
       "pit_rule": "available_at <= decision_time",
+      "pre_owner_selector": "select_contiguous_cvd_window",
       "prospective_acquisition_contract": "PROSPECTIVE_CVD_ACQUISITION_V1",
       "provenance_fields": [
         "observation_time",
@@ -1119,6 +1148,10 @@
         "ingested_at",
         "source"
       ],
+      "provider_by_market_type": {
+        "perp": "kraken_futures_websocket_v1_trade",
+        "spot": "kraken_spot_websocket_v2_trade"
+      },
       "raw_table": "research.prospective_source_input_snapshot (new capture)",
       "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
       "units": "USD signed taker delta per closed interval",

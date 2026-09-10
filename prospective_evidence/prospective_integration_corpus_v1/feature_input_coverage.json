@@ -32,7 +32,7 @@
       "raw_table": "raw.generic_series"
     },
     "liquidations": {
-      "capture_state": "EXISTING_RAW_PIT_TABLE",
+      "capture_state": "REQUIRES_PROSPECTIVE_COMPLETENESS_ADAPTER",
       "prospective_acquisition_contract": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
       "raw_table": "raw.liquidations"
     },
@@ -52,7 +52,7 @@
       "raw_table": "raw.perp_volume"
     }
   },
-  "definition_sha256": "7fca47cbc1872d8e17801b37b704b09284597dbc875f14b5f7e6571a2f65f517",
+  "definition_sha256": "73d5909cb47d4cd63efc9e743a706448c8e609e65593f4474d183e759513f580",
   "feature_count": 33,
   "feature_inventory": [
     "TREND_SCORE",

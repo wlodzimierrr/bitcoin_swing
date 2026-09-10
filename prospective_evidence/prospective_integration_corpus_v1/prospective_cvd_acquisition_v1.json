@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R2",
+    "authored_by_ticket": "POSTP1-001R3",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -12,9 +12,9 @@
     "selected_by_new_pre_data_governance": true,
     "stage_b_outcomes_inspected": false
   },
-  "aggregation_method": "Signed taker flow is accumulated inside one closed interval and the interval's own signed sum is persisted. No interval is built by aggregating other intervals and no interval is resampled.",
-  "available_at_semantics": "The instant the completed interval first became retrievable from the provider, recorded at capture and never back-dated to the interval boundary. An observation whose available_at is later than a decision_time is invisible to that decision.",
-  "buy_sell_classification_owner": "The provider's own taker-side flag on each trade. The capture layer never infers a side from a price tick, never reclassifies a trade and refuses an interval in which any trade lacks a side.",
+  "aggregation_method": "For Kraken spot BTC/USD, signed USD notional is price * qty with a positive sign for provider side=buy and negative for side=sell. For Kraken Futures PI_XBTUSD, contractSize=1 USD and signed USD notional is qty * 1 USD with the same taker-side signs. Every provider trade type in ['block', 'fill', 'liquidation', 'termination'] is included when it carries a valid taker side. The signed sums are accumulated directly inside [t,t+1h); no interval is built from other intervals or resampled.",
+  "available_at_semantics": "The collector's locally observed wall-clock instant at which the closed interval and its completion evidence were validated. It is never back-dated to the interval boundary and makes no claim about a provider first-publication instant. An observation whose available_at is later than decision_time is invisible.",
+  "buy_sell_classification_owner": "Kraken's exchange-native side field, documented on both selected trade feeds as the side of the taker order. The capture layer never infers a side from price, never reclassifies a trade and marks the whole interval INVALID if any captured trade lacks buy/sell side.",
   "cadence_selection": {
     "candidates": {
       "1d": {
@@ -40,7 +40,7 @@
           "phase_1_decision_cadence_compatibility": "BEST: STOP_HOURLY is the finer of the two frozen decision cadences and sits on exact UTC hours, and STRATEGY_DAILY sessions open on an exact UTC hour, so a 1h observation grid coincides with every scheduled decision instant of both cadences without interpolation.",
           "point_in_time_availability": "BEST: the interval closes on the hour and the frozen decision delay is bar close + 5 minutes, so a closed interval is available at the very next decision instant of either cadence.",
           "relationship_to_the_20_observation_normalization_window": "BEST: 20 prior plus 1 current common observation spans about 21 hours, so CVD reaches evaluability inside one day and never becomes the binding warmup constraint of the corpus.",
-          "source_availability": "BEST: hourly spot and perpetual trade aggregation is the cadence the existing venue integrations already work at."
+          "source_availability": "BEST: Kraken's public spot and futures trade WebSockets emit individual trades in real time with provider-owned taker side, event timestamp and unique identity. The futures feed also emits a sequence number. Both exact instruments are USD quoted."
         },
         "rejected_because": null,
         "selected": true
@@ -72,7 +72,7 @@
     ],
     "empirically_optimized_against_target_gates": false,
     "historically_inherited": false,
-    "rationale": "1h is selected as the cleanest prospective observation contract, not because it is inherited and not because it produces any particular measured value. It is the finest interval that closes natively in the sources the repository already integrates, it coincides exactly with the STOP_HOURLY decision grid and with the opening instant of every STRATEGY_DAILY session, it requires no aggregation and therefore admits no partial-bucket lookahead, it needs no arbitrary phase origin or session calendar to replay, and it keeps the frozen 20-prior-observation normalization window from becoming the corpus's binding warmup. Every coarser candidate is a derived interval that is stale at most hourly decision instants. No Stage-B outcome, disagreement rate or target gate was inspected to reach this choice.",
+    "rationale": "1h is selected as the cleanest prospective observation contract, not because it is inherited and not because it produces any particular measured value. It is the finest interval aligned with the repository's existing hourly market infrastructure and the selected exchange-native real-time trade feeds, it coincides exactly with the STOP_HOURLY decision grid and with the opening instant of every STRATEGY_DAILY session, it requires no aggregation and therefore admits no partial-bucket lookahead, it needs no arbitrary phase origin or session calendar to replay, and it keeps the frozen 20-prior-observation normalization window from becoming the corpus's binding warmup. Every coarser candidate is a derived interval that is stale at most hourly decision instants. No Stage-B outcome, disagreement rate or target gate was inspected to reach this choice.",
     "selected_by_new_pre_data_governance": true,
     "selected_cadence": "1h",
     "stage_b_disagreement_outcomes_inspected": false
@@ -81,10 +81,23 @@
   "consuming_features": [
     "CVD_SPREAD"
   ],
-  "cvd_usd_definition": "cvd_usd is the signed USD notional taker delta of the interval: the sum of buyer-initiated trade notional minus the sum of seller-initiated trade notional, in USD, over the closed interval and over the frozen market universe for that market_type. It is an interval delta, not a running cumulative total, so no observation depends on an unbounded history and a missing interval can never be reconstructed from its neighbours.",
-  "definition_sha256": "c485a4c36e2d4ddaf443955760ad9073e7b9e640a5307367399e5af25ffa8b76",
-  "duplicate_semantics": "One observation per (provider, market_type, observation_time, revision). A second row with the same key and different content is refused and recorded as a data-quality event; it is never merged, averaged or silently overwritten.",
+  "cvd_usd_definition": "cvd_usd is the signed USD notional taker delta of the interval: the sum of buyer-initiated trade notional minus the sum of seller-initiated trade notional, in USD, over the closed interval and the one exact frozen instrument for that market_type. Spot notional is price * BTC quantity; PI_XBTUSD is a 1 USD inverse contract and its notional is contract quantity * 1 USD. It is an interval delta, not a running cumulative total, so no observation depends on an unbounded history and a missing interval can never be reconstructed from its neighbours.",
+  "definition_sha256": "b1067d18c6542f9f928e31d4abfb947a97c0eef9169292fe6d16cf37d45ce156",
+  "duplicate_semantics": "Raw spot trades are unique by (provider, instrument, trade_id) and raw perpetual trades by (provider, instrument, uid). A conflicting duplicate source id invalidates the hour. Aggregate revisions are append-only; the prospective selector passes exactly the latest revision available at the decision to the historical owner, never multiple revisions that the owner would sum.",
   "epoch_rule": "Any change to the cadence, provider set, spot or perpetual market universe, buy/sell classification or aggregation requires PROSPECTIVE_CVD_ACQUISITION_V2 and a new prospective collection epoch for every affected metric. Observations already captured under this contract are never resampled, re-bucketed or relabelled backwards.",
+  "event_inclusion": {
+    "interval_boundary": "half-open [t, t + 1h)",
+    "perpetual_included_trade_types": [
+      "block",
+      "fill",
+      "liquidation",
+      "termination"
+    ],
+    "perpetual_timestamp_field": "time (milliseconds since UTC epoch)",
+    "spot_included_events": "every trade array item",
+    "spot_timestamp_field": "timestamp (RFC3339)",
+    "timestamp_conversion": "Parse the provider timestamp as UTC without rounding; assign the event to the unique exact-hour half-open interval that contains it."
+  },
   "feature_semantics_owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
   "feature_semantics_unchanged": true,
   "historical_feature_owner": {
@@ -101,47 +114,75 @@
     "current_observations": 1,
     "cvd_observation_meaning": "one closed 1h interval of signed USD taker delta for one market_type",
     "prior_common_observations": 20,
-    "statement": "20 prior aligned 1h common spot/perp observations plus 1 current common observation",
+    "statement": "20 immediately prior contiguous 1h common spot/perp observations plus the exact current hour; a missing interior hour is not replaced by an older observation",
     "total_common_observations": 21
   },
   "market_universe": {
     "frozen_before_collection": true,
     "perpetual": {
+      "endpoint": "wss://futures.kraken.com/ws/v1",
+      "instrument": "PI_XBTUSD",
+      "instrument_metadata_endpoint": "https://futures.kraken.com/derivatives/api/v3/instruments",
       "instrument_type": "perpetual_swap",
-      "quote_currency": "USD_or_USD_denominated_stablecoin",
-      "selection_rule": "The frozen perpetual market set is declared once per collection epoch and persisted with the epoch. A venue may not be added, removed or substituted inside an epoch.",
-      "underlying": "BTC"
-    },
-    "spot": {
-      "instrument_type": "spot",
+      "provider": "kraken_futures_websocket_v1_trade",
       "quote_currency": "USD",
-      "selection_rule": "The frozen spot market set is the required reference-composite venue set ['bitstamp', 'coinbase', 'bitfinex'], which the repository already integrates and already requires in full for a canonical bar. A venue may not be added, removed or substituted inside an epoch.",
+      "selection_rule": "Exactly Kraken Futures PI_XBTUSD, verified before this freeze as a tradeable, non-expired BTC:USD inverse contract with contractSize=1. No second instrument or venue may be added, removed or substituted inside the epoch.",
+      "source_documentation": "https://docs.kraken.com/api/docs/futures-api/websocket/trade/",
       "underlying": "BTC",
-      "venues": [
-        "bitstamp",
-        "coinbase",
-        "bitfinex"
-      ]
+      "venue": "kraken_futures"
+    },
+    "source_metadata_verified_at": "2026-09-09",
+    "spot": {
+      "endpoint": "wss://ws.kraken.com/v2",
+      "instrument": "BTC/USD",
+      "instrument_type": "spot",
+      "provider": "kraken_spot_websocket_v2_trade",
+      "quote_currency": "USD",
+      "selection_rule": "Exactly Kraken spot BTC/USD. Selecting the same exchange's USD spot and perpetual markets avoids a cross-provider microstructure confound and supplies a provider-owned taker side on both legs. No second spot instrument or venue may be added, removed or substituted inside the epoch.",
+      "source_documentation": "https://docs.kraken.com/api/docs/websocket-v2/trade/",
+      "underlying": "BTC",
+      "venue": "kraken_spot"
     },
     "universe_change_requires": "PROSPECTIVE_CVD_ACQUISITION_V2"
   },
-  "missing_interval_semantics": "A missing interval stays missing. It is persisted as an explicit absence, never zero-filled, never carried forward, never interpolated and never silently compressed out of the series: the common spot/perp timestamp simply does not exist, so the interval contributes no observation to the frozen normalization window.",
+  "missing_interval_semantics": "The prospective selector requires the exact current UTC hour and its 20 immediately preceding UTC hours for both market types. A missing, late, invalid or incomplete interval makes CVD_SPREAD not evaluable until that gap ages out of the 21-hour contiguous window. It is never zero-filled, carried forward, interpolated or replaced by an older observation; calendar time is never silently compressed by row adjacency before the historical observation-count owner runs.",
   "observation_cadence": "1h",
   "observation_time_semantics": "The exact UTC start instant of the closed interval, aligned to the exact hour. An off-grid observation_time is refused at capture.",
   "off_grid_observation_policy": "REFUSE_AT_CAPTURE_NEVER_SNAP_OR_ROUND",
   "pit_rule": "available_at <= decision_time",
+  "pre_owner_adapter": {
+    "input_type": "ProspectiveCvdAggregateObservation",
+    "output_type": "btc_predictor.features.flow.CvdObservation",
+    "selector": "select_contiguous_cvd_window",
+    "statement": "The prospective row retains provider, instrument and revision; the selector verifies the exact identity and contiguous grid, chooses one latest available revision, then strips only the acquisition-only fields for the historical feature owner."
+  },
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "provider_identity": {
     "identity_fields": [
       "provider",
       "market_type"
     ],
+    "instrument_by_market_type": {
+      "perp": "PI_XBTUSD",
+      "spot": "BTC/USD"
+    },
     "one_provider_per_market_type_per_epoch": true,
+    "provider_by_market_type": {
+      "perp": "kraken_futures_websocket_v1_trade",
+      "spot": "kraken_spot_websocket_v2_trade"
+    },
     "provider_replacement_requires": "PROSPECTIVE_CVD_ACQUISITION_V2",
     "recorded_per_observation": true,
-    "statement": "Exactly one provider identity is frozen per market_type for a collection epoch and is persisted on every row. Mixing two providers into one market_type series inside an epoch is refused."
+    "statement": "The exact provider and instrument above are frozen for each market_type and persisted on every row. Any other identity, or mixing providers inside one series, is refused."
   },
-  "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row for the same (provider, market_type, observation_time); the earlier revision is retained verbatim and a decision replays against the revision that was available at its own decision_time.",
+  "raw_feed_completion": {
+    "decision_cutoff": "interval close + 5 minutes",
+    "evidence_persistence": "The acknowledgement, connection/heartbeat coverage, source-id and (for futures) sequence evidence is persisted and hash-bound as completion_evidence_sha256 on the aggregate row.",
+    "perpetual": "subscription acknowledged before interval start; WebSocket and heartbeat coverage continuous through interval close; no seq gap, disconnect, invalid event or conflicting uid",
+    "spot": "subscription acknowledged before interval start; WebSocket and heartbeat coverage continuous through interval close; no disconnect, invalid event or conflicting trade_id",
+    "unmet_predicate": "REQUIRED_INPUT_MISSING"
+  },
+  "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row for the same (provider, market_type, observation_time); the earlier revision is retained verbatim and a decision replays against exactly the latest revision available at its own decision_time. The pre-owner selector passes one revision per market_type/hour so the historical aggregation owner cannot sum revisions together.",
   "schema_version": "PROSPECTIVE_CVD_ACQUISITION_V1",
   "timestamp_alignment": "EXACT_UTC_HOUR_INTERVAL_START",
   "units": "USD",

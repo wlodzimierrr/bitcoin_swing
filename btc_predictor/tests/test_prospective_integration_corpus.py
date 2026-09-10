@@ -994,21 +994,24 @@ def test_sufficiency_governance_and_review_precede_postp1_004_and_collection() -
     assert sequence["sufficiency_minima_selected_here"] is False
 
 
-def test_both_failed_protocol_hashes_are_retained_as_explicit_lineage() -> None:
+def test_all_three_failed_protocol_hashes_are_retained_as_explicit_lineage() -> None:
     lineage = protocol_definition()["lineage"]
     failed = lineage["failed_prospective_protocols"]
-    assert lineage["failed_prospective_protocol_count"] == 2
+    assert lineage["failed_prospective_protocol_count"] == 3
     assert [row["definition_sha256"] for row in failed] == [
         "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326",
         "0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e",
+        "40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862",
     ]
     assert [row["implementation_commit"] for row in failed] == [
         "b38f387f822da713aa06489e6643c9d6909de32a",
         "8af223d708ee03b09bca6e43c204620aba44ecab",
+        "9b2f23acc793457b0e8683387d8382f06472fdd4",
     ]
     assert [row["review_classification"] for row in failed] == [
         "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT",
+        "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
     ]
     for row in failed:
         assert row["retained"] is True
@@ -1404,7 +1407,7 @@ def test_the_whole_suite_opens_no_sealed_or_collected_path(tmp_path: Path) -> No
 
 
 # =============================================================================
-# 12. POSTP1-001R2 -- newly frozen prospective acquisition semantics
+# 12. POSTP1-001R3 -- corrected prospective source and coverage semantics
 # =============================================================================
 #
 # Every fixture below is synthetic.  Nothing here collects a qualifying
@@ -1442,6 +1445,27 @@ def _hourly_cvd_series(
     return tuple(observations)
 
 
+def _prospective_cvd(
+    market_type: str,
+    observation_time: datetime,
+    value: str,
+    *,
+    available_at: datetime | None = None,
+    revision: int = 1,
+) -> corpus.ProspectiveCvdAggregateObservation:
+    return corpus.ProspectiveCvdAggregateObservation(
+        observation_time=observation_time,
+        market_type=market_type,
+        cvd_usd=Decimal(value),
+        provider=corpus.CVD_PROVIDER_BY_MARKET_TYPE[market_type],
+        instrument=corpus.CVD_INSTRUMENT_BY_MARKET_TYPE[market_type],
+        available_at=available_at or observation_time + timedelta(hours=1),
+        revision=revision,
+        interval_complete=True,
+        completion_evidence_sha256="2" * 64,
+    )
+
+
 def _market_cap(
     observation_time: datetime,
     value: str,
@@ -1453,6 +1477,28 @@ def _market_cap(
         market_cap_usd=Decimal(value),
         provider=corpus.MARKET_CAP_PROVIDER_ID,
         available_at=available_at or observation_time,
+    )
+
+
+def _prospective_market_cap(
+    observation_time: datetime,
+    value: str,
+    *,
+    available_at: datetime,
+    revision: str = "1",
+) -> corpus.ProspectiveMarketCapObservation:
+    return corpus.ProspectiveMarketCapObservation(
+        observation_time=observation_time,
+        market_cap_usd=Decimal(value),
+        series_id=corpus.MARKET_CAP_SERIES_ID,
+        series_type=corpus.MARKET_CAP_SERIES_TYPE,
+        unit=corpus.MARKET_CAP_SERIES_UNIT,
+        provider=corpus.MARKET_CAP_PROVIDER_ID,
+        source=corpus.MARKET_CAP_PROVIDER_SOURCE,
+        revision=revision,
+        raw_response_sha256="1" * 64,
+        available_at=available_at,
+        ingested_at=available_at + timedelta(seconds=1),
     )
 
 
@@ -1474,6 +1520,29 @@ def _open_interest(
         available_at=available_at or observation_time,
         ingested_at=available_at or observation_time,
     )
+
+
+def _complete_liquidation_interval_kwargs() -> dict[str, Any]:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    return {
+        "provider": corpus.LIQUIDATION_PROVIDER_ID,
+        "instrument": corpus.LIQUIDATION_INSTRUMENT,
+        "observation_time": start,
+        "available_at": start + timedelta(hours=1, seconds=30),
+        "decision_time": start + timedelta(hours=1, minutes=5),
+        "subscription_acknowledged_at": start - timedelta(minutes=1),
+        "coverage_started_at": start - timedelta(minutes=1),
+        "coverage_ended_at": start + timedelta(hours=1, seconds=1),
+        "websocket_continuous": True,
+        "heartbeat_continuous": True,
+        "sequence_gap_detected": False,
+        "invalid_event_detected": False,
+        "conflicting_source_id": False,
+        "event_count": 0,
+        "long_liquidation_notional_usd": Decimal("0"),
+        "short_liquidation_notional_usd": Decimal("0"),
+        "source_record_ids": (),
+    }
 
 
 def _daily_bar(index: int, *, start: datetime) -> OhlcvBar:
@@ -1516,7 +1585,7 @@ def _rv20_results(sessions: int, *, start: datetime) -> tuple[Any, ...]:
 
 def test_every_new_acquisition_contract_declares_itself_new_pre_data_governance() -> None:
     governance = corpus.prospective_acquisition_governance()
-    assert governance["ticket"] == "POSTP1-001R2"
+    assert governance["ticket"] == "POSTP1-001R3"
     assert governance["phase_1_authority_claimed_for_new_rules"] is False
     assert governance["distinguishes_feature_semantics_from_acquisition_semantics"]
     assert sorted(governance["contract_versions"]) == [
@@ -1607,6 +1676,127 @@ def test_the_historical_cvd_owner_specifies_no_cadence() -> None:
     )
     assert result.complete is True
     assert result.cvd_spread is not None
+
+
+def test_cvd_source_contract_binds_exact_provider_instrument_and_taker_units() -> None:
+    contract = corpus.prospective_cvd_acquisition_contract()
+    universe = contract["market_universe"]
+    assert universe["spot"]["provider"] == (
+        "kraken_spot_websocket_v2_trade"
+    )
+    assert universe["spot"]["instrument"] == "BTC/USD"
+    assert universe["perpetual"]["provider"] == (
+        "kraken_futures_websocket_v1_trade"
+    )
+    assert universe["perpetual"]["instrument"] == "PI_XBTUSD"
+    assert universe["perpetual"]["quote_currency"] == "USD"
+    assert "contractSize=1" in universe["perpetual"]["selection_rule"]
+    assert "taker" in contract["buy_sell_classification_owner"]
+    assert contract["pre_owner_adapter"]["selector"] == (
+        "select_contiguous_cvd_window"
+    )
+
+
+def test_cvd_selector_requires_the_exact_twenty_one_hour_grid() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    current = start + timedelta(hours=21)
+    decision = current + timedelta(hours=1, minutes=5)
+    observations = []
+    for index in range(22):
+        stamp = start + timedelta(hours=index)
+        if index != 10:
+            observations.append(_prospective_cvd("spot", stamp, str(index)))
+        observations.append(_prospective_cvd("perp", stamp, str(-index)))
+
+    with pytest.raises(
+        ProspectiveCorpusError,
+        match="CVD_CONTIGUOUS_GRID_INCOMPLETE",
+    ):
+        corpus.select_contiguous_cvd_window(
+            observations,
+            current_observation_time=current,
+            decision_time=decision,
+        )
+
+
+def test_cvd_selector_uses_one_latest_revision_before_the_historical_owner() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    current = start + timedelta(hours=20)
+    decision = current + timedelta(hours=1, minutes=5)
+    observations = []
+    for index in range(21):
+        stamp = start + timedelta(hours=index)
+        observations.append(_prospective_cvd("spot", stamp, str(index)))
+        observations.append(_prospective_cvd("perp", stamp, str(-index)))
+    observations.append(
+        _prospective_cvd(
+            "spot",
+            current,
+            "999",
+            available_at=current + timedelta(hours=1, minutes=1),
+            revision=2,
+        )
+    )
+
+    selected = corpus.select_contiguous_cvd_window(
+        observations,
+        current_observation_time=current,
+        decision_time=decision,
+    )
+    assert len(selected) == 42
+    current_spot = [
+        row
+        for row in selected
+        if row.market_type == "spot" and row.observation_time == current
+    ]
+    assert [row.cvd_usd for row in current_spot] == [Decimal("999")]
+    result = flow.spot_perp_cvd_spread(selected, as_of=decision)
+    assert result.complete is True
+    assert result.source_record_count == 42
+
+
+def test_cvd_selector_rejects_an_unfrozen_instrument_identity() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    observation = _prospective_cvd("spot", start, "1")
+    wrong = corpus.ProspectiveCvdAggregateObservation(
+        **{
+            **observation.__dict__,
+            "instrument": "BTC/USDT",
+        }
+    )
+    with pytest.raises(ProspectiveCorpusError, match="provider/instrument"):
+        corpus.select_contiguous_cvd_window(
+            (wrong,),
+            current_observation_time=start,
+            decision_time=start + timedelta(hours=2),
+        )
+
+
+def test_incomplete_cvd_feed_evidence_cannot_reach_the_historical_owner() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    current = start + timedelta(hours=20)
+    observations = []
+    for index in range(21):
+        stamp = start + timedelta(hours=index)
+        observations.append(_prospective_cvd("spot", stamp, str(index)))
+        observations.append(_prospective_cvd("perp", stamp, str(-index)))
+    affected = observations[20]
+    observations[20] = corpus.ProspectiveCvdAggregateObservation(
+        **{
+            **affected.__dict__,
+            "cvd_usd": None,
+            "interval_complete": False,
+        }
+    )
+    with pytest.raises(
+        ProspectiveCorpusError,
+        match="CVD_CONTIGUOUS_GRID_INCOMPLETE",
+    ):
+        corpus.select_contiguous_cvd_window(
+            observations,
+            current_observation_time=current,
+            decision_time=current + timedelta(hours=1, minutes=5),
+        )
 
 
 def test_cvd_initialization_needs_twenty_prior_plus_one_current_observation() -> None:
@@ -1769,6 +1959,116 @@ def test_no_repository_producer_emits_market_cap_today() -> None:
     assert corpus.EXISTING_MARKET_CAP_PRODUCER is None
 
 
+def test_market_cap_schedule_uses_only_locally_observable_response_completion() -> None:
+    contract = corpus.prospective_btc_market_cap_acquisition_contract()
+    schedule = contract["acquisition_schedule"]
+    assert schedule["first_poll_utc"] == "00:45:00"
+    assert schedule["attempt_offsets_minutes"] == [0, 5, 10]
+    assert schedule["hard_cutoff_utc"] == "00:56:00"
+    assert schedule["requested_date_offsets_from_poll_day"] == [1, 2, 3]
+    assert schedule["response_field"] == "market_data.market_cap.usd"
+    assert "locally observed" in contract["available_at_semantics"]
+    assert "not a claim" in contract["available_at_semantics"]
+    identity = contract["provider_identity"]
+    assert identity["source_documentation"].startswith(
+        "https://docs.coingecko.com/"
+    )
+    assert identity["source_revision_documentation"].startswith(
+        "https://support.coingecko.com/"
+    )
+
+
+def test_market_cap_required_date_changes_only_after_the_poll_cutoff() -> None:
+    day = datetime(2026, 1, 4, tzinfo=UTC)
+    assert corpus.required_market_cap_observation_time(
+        day + timedelta(minutes=5)
+    ) == datetime(2026, 1, 2, tzinfo=UTC)
+    assert corpus.required_market_cap_observation_time(
+        day + timedelta(hours=1, minutes=5)
+    ) == datetime(2026, 1, 3, tzinfo=UTC)
+    assert corpus.market_cap_poll_cycle_for_decision(
+        day + timedelta(minutes=55, seconds=59)
+    ) == datetime(2026, 1, 3, 0, 45, tzinfo=UTC)
+    assert corpus.market_cap_poll_cycle_for_decision(
+        day + timedelta(minutes=56)
+    ) == datetime(2026, 1, 4, 0, 45, tzinfo=UTC)
+
+
+def test_market_cap_selector_refuses_an_older_date_as_fallback() -> None:
+    day = datetime(2026, 1, 4, tzinfo=UTC)
+    decision = day + timedelta(hours=1, minutes=5)
+    with pytest.raises(
+        ProspectiveCorpusError,
+        match="MARKET_CAP_REQUIRED_OBSERVATION_MISSING",
+    ):
+        corpus.select_market_cap_revisions_for_decision(
+            (
+                _prospective_market_cap(
+                    day - timedelta(days=2),
+                    "100",
+                    available_at=day - timedelta(days=1, hours=23),
+                ),
+            ),
+            decision_time=decision,
+        )
+
+
+def test_market_cap_selector_uses_latest_revision_without_owner_averaging() -> None:
+    day = datetime(2026, 1, 4, tzinfo=UTC)
+    observation_time = day - timedelta(days=1)
+    decision = day + timedelta(hours=1, minutes=5)
+    rows = (
+        _prospective_market_cap(
+            observation_time,
+            "200",
+            available_at=day + timedelta(minutes=46),
+            revision="1",
+        ),
+        _prospective_market_cap(
+            observation_time,
+            "400",
+            available_at=day + timedelta(minutes=51),
+            revision="2",
+        ),
+    )
+    selected = corpus.select_market_cap_revisions_for_decision(
+        rows,
+        decision_time=decision,
+    )
+    assert len(selected) == 1
+    assert selected[0].market_cap_usd == Decimal("400")
+
+    result = positioning.open_interest_intensity(
+        (_open_interest(observation_time, "100"),),
+        selected,
+        as_of=decision,
+        open_interest_unit="usd",
+    )
+    assert result.market_cap_usd == Decimal("400")
+    assert result.oi_intensity == Decimal("0.25")
+    assert result.market_cap_record_count == 1
+
+
+def test_market_cap_selector_rejects_an_unfrozen_series_identity() -> None:
+    day = datetime(2026, 1, 4, tzinfo=UTC)
+    row = _prospective_market_cap(
+        day - timedelta(days=1),
+        "400",
+        available_at=day + timedelta(minutes=46),
+    )
+    wrong = corpus.ProspectiveMarketCapObservation(
+        **{
+            **row.__dict__,
+            "source": "another_provider_path",
+        }
+    )
+    with pytest.raises(ProspectiveCorpusError, match="series/provider/source"):
+        corpus.select_market_cap_revisions_for_decision(
+            (wrong,),
+            decision_time=day + timedelta(hours=1, minutes=5),
+        )
+
+
 def test_oi_intensity_cannot_consume_an_arbitrary_generic_series_row() -> None:
     coverage = corpus.feature_input_coverage_contract()
     assert coverage["unqualified_generic_series_dependency_remains"] is False
@@ -1886,6 +2186,66 @@ def test_changing_the_market_cap_source_identity_moves_the_protocol_hash(
     assert protocol_definition()["definition_sha256"] != baseline
 
 
+def test_each_corrected_source_identity_moves_its_child_and_the_top_hash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    baseline_top = protocol_definition()["definition_sha256"]
+    baseline_market_cap = corpus.prospective_btc_market_cap_acquisition_contract()[
+        "definition_sha256"
+    ]
+    baseline_cvd = corpus.prospective_cvd_acquisition_contract()[
+        "definition_sha256"
+    ]
+    baseline_liquidations = corpus.prospective_liquidation_capture_contract()[
+        "definition_sha256"
+    ]
+
+    endpoint = "https://api.coingecko.com/api/v3/coins/bitcoin/history-alt"
+    monkeypatch.setattr(corpus, "MARKET_CAP_PROVIDER_ENDPOINT", endpoint)
+    monkeypatch.setitem(
+        corpus.NON_PRICE_INPUT_SOURCES["btc_market_cap"],
+        "provider_endpoint",
+        endpoint,
+    )
+    assert corpus.prospective_btc_market_cap_acquisition_contract()[
+        "definition_sha256"
+    ] != baseline_market_cap
+
+    cvd_instrument = "XBT/USD"
+    monkeypatch.setattr(corpus, "CVD_SPOT_INSTRUMENT", cvd_instrument)
+    monkeypatch.setitem(
+        corpus.CVD_INSTRUMENT_BY_MARKET_TYPE,
+        "spot",
+        cvd_instrument,
+    )
+    monkeypatch.setitem(
+        corpus.NON_PRICE_INPUT_SOURCES["spot_perp_cvd"][
+            "instrument_by_market_type"
+        ],
+        "spot",
+        cvd_instrument,
+    )
+    assert corpus.prospective_cvd_acquisition_contract()[
+        "definition_sha256"
+    ] != baseline_cvd
+
+    liquidation_instrument = "PI_XBTUSD_ALT"
+    monkeypatch.setattr(
+        corpus,
+        "LIQUIDATION_INSTRUMENT",
+        liquidation_instrument,
+    )
+    monkeypatch.setitem(
+        corpus.NON_PRICE_INPUT_SOURCES["liquidations"],
+        "instrument",
+        liquidation_instrument,
+    )
+    assert corpus.prospective_liquidation_capture_contract()[
+        "definition_sha256"
+    ] != baseline_liquidations
+    assert protocol_definition()["definition_sha256"] != baseline_top
+
+
 def test_a_market_cap_source_without_an_identity_blocks_the_protocol(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1929,6 +2289,89 @@ def test_an_observed_zero_event_interval_is_not_a_missing_feed() -> None:
     assert unavailable["feature_input_state"] == "REQUIRED_INPUT_MISSING"
     assert contract["missing_feed_can_become_numeric_zero"] is False
     assert contract["feed_state_is_independent_of_the_numeric_value"] is True
+
+
+def test_liquidation_contract_binds_one_exact_event_census() -> None:
+    contract = corpus.prospective_liquidation_capture_contract()
+    identity = contract["provider_identity"]
+    assert identity["provider"] == "kraken_futures_websocket_v1_trade"
+    assert identity["instrument"] == "PI_XBTUSD"
+    assert identity["quote_currency"] == "USD"
+    assert identity["one_provider_and_instrument_per_epoch"] is True
+    census = contract["event_census"]
+    assert census["included_event_type"] == "liquidation"
+    assert census["contract_size_usd"] == "1"
+    assert census["side_mapping"] == {"buy": "short", "sell": "long"}
+    assert contract["interval_completion_predicate"]["all_required"] is True
+
+
+def test_liquidation_zero_is_observed_only_with_complete_feed_evidence() -> None:
+    kwargs = _complete_liquidation_interval_kwargs()
+    complete = corpus.classify_liquidation_feed_interval(**kwargs)
+    assert complete["feed_status"] == "OBSERVED_ZERO_EVENTS"
+    assert complete["event_count"] == 0
+    assert complete["long_liquidation_notional_usd"] == Decimal("0")
+    assert corpus._is_sha256(complete["source_record_ids_digest"])
+
+    partial = corpus.classify_liquidation_feed_interval(
+        **{
+            **kwargs,
+            "coverage_ended_at": kwargs["observation_time"]
+            + timedelta(minutes=59),
+        }
+    )
+    assert partial["feed_status"] == "SOURCE_UNAVAILABLE"
+    assert partial["event_count"] is None
+    assert partial["long_liquidation_notional_usd"] is None
+    assert partial["short_liquidation_notional_usd"] is None
+
+
+def test_liquidation_event_census_and_sequence_fail_closed() -> None:
+    kwargs = _complete_liquidation_interval_kwargs()
+    observed = corpus.classify_liquidation_feed_interval(
+        **{
+            **kwargs,
+            "event_count": 2,
+            "long_liquidation_notional_usd": Decimal("3"),
+            "short_liquidation_notional_usd": Decimal("7"),
+            "source_record_ids": ("uid-2", "uid-1"),
+        }
+    )
+    assert observed["feed_status"] == "OBSERVED_WITH_EVENTS"
+    assert observed["event_count"] == 2
+    assert observed["source_record_ids_digest"] == corpus._digest(
+        ["uid-1", "uid-2"]
+    )
+
+    gap = corpus.classify_liquidation_feed_interval(
+        **{
+            **kwargs,
+            "sequence_gap_detected": True,
+        }
+    )
+    assert gap["feed_status"] == "INVALID"
+    assert gap["reason"] == "SEQUENCE_GAP"
+
+
+def test_liquidation_wrong_identity_and_late_evidence_are_never_observed_zero() -> None:
+    kwargs = _complete_liquidation_interval_kwargs()
+    wrong = corpus.classify_liquidation_feed_interval(
+        **{
+            **kwargs,
+            "instrument": "BTC/USDT",
+        }
+    )
+    assert wrong["feed_status"] == "INVALID"
+    assert wrong["event_count"] is None
+
+    late = corpus.classify_liquidation_feed_interval(
+        **{
+            **kwargs,
+            "available_at": kwargs["decision_time"] + timedelta(seconds=1),
+        }
+    )
+    assert late["feed_status"] == "LATE"
+    assert late["event_count"] is None
 
 
 @pytest.mark.parametrize("status", ["SOURCE_UNAVAILABLE", "LATE", "INVALID"])
@@ -2200,7 +2643,7 @@ def test_the_new_acquisition_semantics_change_no_historical_gate_value() -> None
     assert protocol["btc019"]["sealed_sample_opened"] is False
     assert protocol["safety"]["qualifying_observations_collected"] is False
     assert protocol["final_classification"] == (
-        "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_THIRD_XHIGH_REVIEW"
+        "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FOURTH_XHIGH_REVIEW"
     )
     assert protocol["collection_authorized"] is False
 

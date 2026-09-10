@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R2",
+    "authored_by_ticket": "POSTP1-001R3",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -12,8 +12,33 @@
     "selected_by_new_pre_data_governance": true,
     "stage_b_outcomes_inspected": false
   },
+  "acquisition_schedule": {
+    "attempt_offsets_minutes": [
+      0,
+      5,
+      10
+    ],
+    "first_poll_utc": "00:45:00",
+    "hard_cutoff_utc": "00:56:00",
+    "http_method": "GET",
+    "provider_documented_completed_day_available_utc": "00:35:00",
+    "provider_endpoint": "https://api.coingecko.com/api/v3/coins/bitcoin/history",
+    "query_parameters": {
+      "date": "DD-MM-YYYY for each requested UTC observation date",
+      "localization": "false"
+    },
+    "requested_date_offsets_from_poll_day": [
+      1,
+      2,
+      3
+    ],
+    "response_field": "market_data.market_cap.usd",
+    "response_timeout_seconds": 45,
+    "retry_rule": "At the fixed offsets 0, 5 and 10 minutes from 00:45 UTC, request each still-unresolved date. Stop requesting that date after its first valid response in the cycle. No response completed after the 00:56 UTC hard cutoff belongs to that cycle. Persist one audit result for every attempt, including timeouts and invalid payloads.",
+    "revision_capture": "Each cycle requests poll-day minus 1, 2 and 3 UTC dates so CoinGecko's documented through-day+2 recalculations can be observed prospectively. Persist the raw response digest and append a revision row only when the valid payload or parsed USD value differs from the latest captured row."
+  },
   "asset": "BTC",
-  "available_at_semantics": "The instant the provider first published the completed daily observation, recorded at capture and never back-dated to the observation_time. A market-cap observation whose available_at is later than a decision_time is invisible to that decision, and the decision is NOT_EVALUABLE for every OI-intensity feature rather than falling back to an earlier day.",
+  "available_at_semantics": "The collector's locally observed wall-clock instant at which the complete, successful HTTP response for that requested date was received and validated. It is not a claim about when CoinGecko first published or finalized the value and is never back-dated to observation_time. A revision whose available_at is later than decision_time is invisible to that decision.",
   "consumer_binding": {
     "consuming_features": [
       "OI_INTENSITY",
@@ -23,9 +48,18 @@
     "feature_semantics_unchanged": true,
     "observation_grid_alignment": "The frozen owner forms intensity only on the exact intersection of the open-interest aggregate observation_time set and the market-cap observation_time set (_open_interest_intensity_by_time). The prospective open-interest capture consumed by OI_INTENSITY must therefore present its aggregate on this same exact EXACT_UTC_DAY_START_00_00_00Z grid. This is an acquisition alignment requirement on the prospective capture layer only; no positioning formula is altered.",
     "open_interest_unit_rule": "The open_interest_unit selector the owner requires is pinned once per collection epoch and persisted with it. This contract does not choose it and no unit choice may be revisited after collection starts.",
+    "pre_owner_selector": "select_market_cap_revisions_for_decision; supplies at most one, exactly latest-available revision per observation_time because the historical owner averages duplicate timestamps",
+    "pre_owner_selector_input": "ProspectiveMarketCapObservation",
     "typed_boundary": "btc_predictor.features.positioning.MarketCapObservation"
   },
-  "definition_sha256": "fe0fe85532233e767a33ff1a4649cd72a5049746559d0be799aca3d88d50e817",
+  "decision_binding": {
+    "cycle_selection": "Use the current UTC poll day only once its 00:56 hard cutoff has passed; before then use the prior UTC poll day.",
+    "daily_00_05_example": "A decision on UTC day D at 00:05 uses the completed prior poll cycle on D-1, whose required observation is D-2 00:00.",
+    "hourly_01_05_example": "A decision on UTC day D at 01:05 uses the completed poll cycle on D, whose required observation is D-1 00:00.",
+    "required_observation": "Exactly poll-day minus 1 at 00:00 UTC. The latest revision of that date available by decision_time is required.",
+    "selector": "required_market_cap_observation_time"
+  },
+  "definition_sha256": "52667257ab8b20c8f718b1b64ebbe7d8ff0b20717b0688878b7d681b9b9fc32d",
   "derived_construction": {
     "construction": "market_cap = BTC price x circulating supply",
     "rejected": true,
@@ -43,7 +77,7 @@
   "missing_value_handling": {
     "late_observation": "REQUIRED_INPUT_MISSING",
     "missing_observation": "REQUIRED_INPUT_MISSING",
-    "statement": "A missing, late or invalid market-cap observation makes every OI-intensity feature NOT_EVALUABLE at that decision. It is never zero-filled, never defaulted, never carried forward from an earlier day and never reconstructed from price.",
+    "statement": "If the exact observation date required by decision_binding has no valid revision available by decision_time, every OI-intensity feature is NOT_EVALUABLE. An older observation is never substituted. The value is never zero-filled, defaulted, carried forward or reconstructed from price.",
     "zero_fill_permitted": false
   },
   "observation_cadence": "1d",
@@ -56,12 +90,15 @@
     "provider_asset_identifier": "bitcoin",
     "provider_boundary": "btc_predictor.data.generic_series.MacroDataProvider",
     "provider_client_exists_in_repository": false,
-    "provider_field": "market_caps",
+    "provider_field": "market_data.market_cap.usd",
     "recorded_per_observation": true,
-    "source": "coingecko_v3_coins_bitcoin_market_chart",
-    "verification_obligation": "This contract freezes the series identity, cadence, timestamp semantics and PIT rule that a prospective market-cap source must satisfy, and names the provider identity that POSTP1-004 must implement against the existing btc_predictor.data.generic_series provider boundary. POSTP1-004 must verify, before any qualifying observation is collected, that the named provider actually publishes this series with these semantics. This task collected nothing and therefore verified nothing empirically. If the provider cannot satisfy the frozen semantics, the collector must fail closed and the contract must be reissued as PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2 with a new collection epoch; it may never be silently adapted to whatever the provider happens to publish."
+    "source": "coingecko_v3_coins_bitcoin_history_market_cap_usd",
+    "source_documentation": "https://docs.coingecko.com/reference/coins-id-history",
+    "source_metadata_verified_at": "2026-09-09",
+    "source_revision_documentation": "https://support.coingecko.com/hc/en-us/articles/61976309053337-Why-do-historical-market-cap-values-change-shortly-after-a-date-then-settle",
+    "verification_obligation": "Official CoinGecko documentation and one non-persisted schema probe on 2026-09-09 verified that /coins/bitcoin/history returns USD market cap for a requested date, labels the snapshot at 00:00 UTC, and exposes the last completed day at 00:35 on the next UTC day. CoinGecko also documents scheduled market-cap restatements through day + 2 and exposes no finality field. This contract therefore freezes observable scheduled retrieval, not an unknowable provider-first-publication instant. POSTP1-004 must implement this exact source against the generic-series boundary. If it cannot, the collector must fail closed and the contract must be reissued as PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2 with a new collection epoch; it may never be silently adapted to whatever the provider happens to publish."
   },
-  "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT, the existing raw.generic_series convention. A restated day is a new revision row keyed by (series_id, observation_time, revision); the earlier revision is retained verbatim and a decision replays against the revision that was available at its own decision_time.",
+  "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT, the existing raw.generic_series convention. A restated day is a new revision row keyed by (series_id, observation_time, revision); the earlier revision is retained verbatim. For every observation_time, the pre-owner selector chooses exactly the single revision having the greatest available_at not later than decision_time. Revisions are never averaged, and equal-available_at conflicts fail closed.",
   "schema_version": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
   "selection": {
     "criteria": [
@@ -75,7 +112,7 @@
       "candidate_neutral_with_respect_to_the_reference_under_test"
     ],
     "oi_intensity_values_inspected": false,
-    "rationale": "raw.generic_series is the repository's own point-in-time scalar-series table and already carries every field this contract needs -- observation_time, available_at, ingested_at, provider, source, unit and an explicit revision key -- with a collection path that already handles restatements and missing observations. Freezing a named series on that table is the simplest reliable prospective source and matches how every other exogenous scalar series in this repository is already governed. A direct market-cap feed is preferred over a price-derived construction under the reasoning recorded in derived_construction. No OI-intensity or Stage-B value was inspected.",
+    "rationale": "CoinGecko's requested-date history endpoint exposes one BTC USD market-cap field with documented daily timing and restatement behavior. raw.generic_series is the repository's point-in-time scalar-series boundary and already carries observation_time, available_at, ingested_at, provider, source, unit and revision. Fixed polling makes the provider's changing value locally observable without pretending it exposes a finality timestamp. A direct feed is preferred over the price-derived construction under derived_construction. No OI-intensity or Stage-B value was inspected.",
     "stage_b_outcomes_inspected": false
   },
   "series_identity": {

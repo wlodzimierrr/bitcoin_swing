@@ -60,12 +60,12 @@ from btc_predictor.signals import data_quality as _data_quality
 
 PROTOCOL_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V1"
 PROTOCOL_SCHEMA_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V1_PROTOCOL_DEFINITION_V1"
-PROTOCOL_STATUS = "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_THIRD_XHIGH_REVIEW"
-PROGRAM_TICKET = "POSTP1-001R2"
+PROTOCOL_STATUS = "CORRECTED_PRE_DATA_PROTOCOL_AWAITING_FOURTH_XHIGH_REVIEW"
+PROGRAM_TICKET = "POSTP1-001R3"
 WORKSTREAM = "EPIC X"
 WORKSTREAM_NAME = "PROSPECTIVE INTEGRATION EVIDENCE"
 FINAL_CLASSIFICATION = (
-    "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_THIRD_XHIGH_REVIEW"
+    "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FOURTH_XHIGH_REVIEW"
 )
 AMBIGUOUS_FROZEN_METRIC_CLASSIFICATION = (
     "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_METRIC"
@@ -85,21 +85,21 @@ INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION = (
 SUCCESSOR_PROTOCOL_VERSION = "PROSPECTIVE_INTEGRATION_CORPUS_V2"
 
 # ``PROSPECTIVE_INTEGRATION_CORPUS_V1`` is retained rather than incremented.
-# Neither failed hash was ever certified, no collection epoch opened and no
+# No failed hash was ever certified, no collection epoch opened and no
 # qualifying observation exists, so no persisted evidence carries the old
 # semantics and nothing would be relabelled backwards.  The repository's own
 # versioning authority for this protocol -- ``CHANGE_PROCEDURE`` below --
 # requires ``PROSPECTIVE_INTEGRATION_CORPUS_V2`` for a semantic change *after
 # collection starts*; it imposes no increment on a pre-data correction, and
-# POSTP1-001R already corrected this protocol once under the same reading.
-# Lineage is carried instead by both retained failed definition hashes.
+# POSTP1-001R and POSTP1-001R2 already corrected this protocol under the same
+# reading. Lineage is carried by all retained failed definition hashes.
 PROTOCOL_VERSION_RETAINED_RATIONALE = (
-    "Both prior definition hashes failed independent review before any "
+    "All three prior definition hashes failed independent review before any "
     "collection epoch opened, so no persisted observation carries the "
     "superseded semantics. CHANGE_PROCEDURE binds "
     f"{SUCCESSOR_PROTOCOL_VERSION} to a semantic change after collection "
     "starts, not to a pre-data correction, so the version is retained and the "
-    "two failed definition hashes carry the lineage."
+    "three failed definition hashes carry the lineage."
 )
 
 # The artifacts deliberately do not live under ``research_artifacts/``. The
@@ -165,10 +165,18 @@ SECOND_FAILED_PROTOCOL_REVIEW = "FAIL — AMBIGUOUS FROZEN INPUT"
 SECOND_FAILED_PROTOCOL_REVIEW_CLASSIFICATION = (
     "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT"
 )
+THIRD_FAILED_PROTOCOL_DEFINITION_SHA256 = (
+    "40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862"
+)
+THIRD_FAILED_PROTOCOL_IMPLEMENTATION_COMMIT = (
+    "9b2f23acc793457b0e8683387d8382f06472fdd4"
+)
+THIRD_FAILED_PROTOCOL_REVIEW = "FAIL — MARKET CAP SOURCE CONTRACT INVALID"
+THIRD_FAILED_PROTOCOL_REVIEW_CLASSIFICATION = "PROSPECTIVE_PROTOCOL_REQUIRES_FIX"
 
-# Both prior definition hashes are retained as failed, non-authoritative
-# pre-data lineage.  Neither was certified, neither opened a collection epoch
-# and no qualifying observation was collected under either.
+# All prior definition hashes are retained as failed, non-authoritative
+# pre-data lineage. None was certified, none opened a collection epoch and no
+# qualifying observation was collected under any of them.
 FAILED_PROSPECTIVE_PROTOCOL_LINEAGE: tuple[dict[str, Any], ...] = (
     {
         "attempt": 1,
@@ -193,6 +201,18 @@ FAILED_PROSPECTIVE_PROTOCOL_LINEAGE: tuple[dict[str, Any], ...] = (
         "review_classification": SECOND_FAILED_PROTOCOL_REVIEW_CLASSIFICATION,
         "superseded_before_collection": True,
         "ticket": "POSTP1-001R",
+    },
+    {
+        "attempt": 3,
+        "authoritative": False,
+        "definition_sha256": THIRD_FAILED_PROTOCOL_DEFINITION_SHA256,
+        "implementation_commit": THIRD_FAILED_PROTOCOL_IMPLEMENTATION_COMMIT,
+        "qualifying_observations_collected": False,
+        "retained": True,
+        "review": THIRD_FAILED_PROTOCOL_REVIEW,
+        "review_classification": THIRD_FAILED_PROTOCOL_REVIEW_CLASSIFICATION,
+        "superseded_before_collection": True,
+        "ticket": "POSTP1-001R2",
     },
 )
 
@@ -783,15 +803,15 @@ CHAMPION_IDENTITY_BINDING_RULE = (
 # source behind ``MarketCapObservation`` and no capture layer able to tell a
 # missing liquidation feed from an observed feed with zero liquidation events.
 #
-# Because this corpus has not begun collection, POSTP1-001R2 is authorised to
-# freeze those missing acquisition semantics now.  Everything in this section is
+# Because this corpus has not begun collection, POSTP1-001R3 is authorised to
+# correct those acquisition semantics now.  Everything in this section is
 # therefore declared explicitly as NEW pre-data governance authored by this
 # ticket.  None of it is presented as historically implicit, none of it was
 # selected by inspecting a Stage-B outcome, and each contract carries its own
 # deterministic definition hash bound by the parent protocol.
 
 NEW_PRE_DATA_GOVERNANCE_CLASS = "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE"
-ACQUISITION_GOVERNANCE_TICKET = "POSTP1-001R2"
+ACQUISITION_GOVERNANCE_TICKET = "POSTP1-001R3"
 
 PROSPECTIVE_CVD_ACQUISITION_VERSION = "PROSPECTIVE_CVD_ACQUISITION_V1"
 PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR = "PROSPECTIVE_CVD_ACQUISITION_V2"
@@ -885,6 +905,39 @@ CVD_CADENCE_SELECTION_CRITERIA = (
 )
 
 CVD_SELECTED_CADENCE = "1h"
+CVD_SPOT_PROVIDER_ID = "kraken_spot_websocket_v2_trade"
+CVD_SPOT_ENDPOINT = "wss://ws.kraken.com/v2"
+CVD_SPOT_INSTRUMENT = "BTC/USD"
+CVD_SPOT_SOURCE_DOCUMENTATION = (
+    "https://docs.kraken.com/api/docs/websocket-v2/trade/"
+)
+CVD_PERPETUAL_PROVIDER_ID = "kraken_futures_websocket_v1_trade"
+CVD_PERPETUAL_ENDPOINT = "wss://futures.kraken.com/ws/v1"
+CVD_PERPETUAL_INSTRUMENT = "PI_XBTUSD"
+CVD_PERPETUAL_SOURCE_DOCUMENTATION = (
+    "https://docs.kraken.com/api/docs/futures-api/websocket/trade/"
+)
+CVD_PERPETUAL_INSTRUMENT_METADATA_ENDPOINT = (
+    "https://futures.kraken.com/derivatives/api/v3/instruments"
+)
+CVD_PERPETUAL_INCLUDED_TRADE_TYPES = (
+    "block",
+    "fill",
+    "liquidation",
+    "termination",
+)
+CVD_SPOT_EVENT_TIMESTAMP_FIELD = "timestamp (RFC3339)"
+CVD_PERPETUAL_EVENT_TIMESTAMP_FIELD = "time (milliseconds since UTC epoch)"
+CVD_PROVIDER_BY_MARKET_TYPE = {
+    "perp": CVD_PERPETUAL_PROVIDER_ID,
+    "spot": CVD_SPOT_PROVIDER_ID,
+}
+CVD_INSTRUMENT_BY_MARKET_TYPE = {
+    "perp": CVD_PERPETUAL_INSTRUMENT,
+    "spot": CVD_SPOT_INSTRUMENT,
+}
+CVD_SOURCE_METADATA_VERIFIED_AT = "2026-09-09"
+CVD_REQUIRED_CONTIGUOUS_HOURS = CVD_HISTORICAL_OWNER_WINDOW_OBSERVATIONS + 1
 
 CVD_CADENCE_CANDIDATES: dict[str, dict[str, Any]] = {
     "1h": {
@@ -930,8 +983,10 @@ CVD_CADENCE_CANDIDATES: dict[str, dict[str, Any]] = {
                 "becomes the binding warmup constraint of the corpus."
             ),
             "source_availability": (
-                "BEST: hourly spot and perpetual trade aggregation is the "
-                "cadence the existing venue integrations already work at."
+                "BEST: Kraken's public spot and futures trade WebSockets emit "
+                "individual trades in real time with provider-owned taker side, "
+                "event timestamp and unique identity. The futures feed also "
+                "emits a sequence number. Both exact instruments are USD quoted."
             ),
         },
         "rejected_because": None,
@@ -1007,8 +1062,9 @@ CVD_CADENCE_CANDIDATES: dict[str, dict[str, Any]] = {
 CVD_CADENCE_SELECTION_RATIONALE = (
     "1h is selected as the cleanest prospective observation contract, not "
     "because it is inherited and not because it produces any particular "
-    "measured value. It is the finest interval that closes natively in the "
-    "sources the repository already integrates, it coincides exactly with the "
+    "measured value. It is the finest interval aligned with the repository's "
+    "existing hourly market infrastructure and the selected exchange-native "
+    "real-time trade feeds, it coincides exactly with the "
     "STOP_HOURLY decision grid and with the opening instant of every "
     "STRATEGY_DAILY session, it requires no aggregation and therefore admits no "
     "partial-bucket lookahead, it needs no arbitrary phase origin or session "
@@ -1052,20 +1108,27 @@ def prospective_cvd_acquisition_contract() -> dict[str, Any]:
     payload = {
         "acquisition_governance": _acquisition_provenance(),
         "aggregation_method": (
-            "Signed taker flow is accumulated inside one closed interval and "
-            "the interval's own signed sum is persisted. No interval is built "
-            "by aggregating other intervals and no interval is resampled."
+            "For Kraken spot BTC/USD, signed USD notional is price * qty with a "
+            "positive sign for provider side=buy and negative for side=sell. "
+            "For Kraken Futures PI_XBTUSD, contractSize=1 USD and signed USD "
+            "notional is qty * 1 USD with the same taker-side signs. Every "
+            f"provider trade type in {list(CVD_PERPETUAL_INCLUDED_TRADE_TYPES)} "
+            "is included when it carries a valid taker side. The signed sums "
+            "are accumulated directly inside [t,t+1h); no interval is built "
+            "from other intervals or resampled."
         ),
         "available_at_semantics": (
-            "The instant the completed interval first became retrievable from "
-            "the provider, recorded at capture and never back-dated to the "
-            "interval boundary. An observation whose available_at is later than "
-            "a decision_time is invisible to that decision."
+            "The collector's locally observed wall-clock instant at which the "
+            "closed interval and its completion evidence were validated. It is "
+            "never back-dated to the interval boundary and makes no claim about "
+            "a provider first-publication instant. An observation whose "
+            "available_at is later than decision_time is invisible."
         ),
         "buy_sell_classification_owner": (
-            "The provider's own taker-side flag on each trade. The capture "
-            "layer never infers a side from a price tick, never reclassifies a "
-            "trade and refuses an interval in which any trade lacks a side."
+            "Kraken's exchange-native side field, documented on both selected "
+            "trade feeds as the side of the taker order. The capture layer never "
+            "infers a side from price, never reclassifies a trade and marks the "
+            "whole interval INVALID if any captured trade lacks buy/sell side."
         ),
         "calculation_interval": (
             f"one closed [t, t + {CVD_SELECTED_CADENCE}) interval per "
@@ -1086,16 +1149,20 @@ def prospective_cvd_acquisition_contract() -> dict[str, Any]:
             "cvd_usd is the signed USD notional taker delta of the interval: "
             "the sum of buyer-initiated trade notional minus the sum of "
             "seller-initiated trade notional, in USD, over the closed interval "
-            "and over the frozen market universe for that market_type. It is an "
+            "and the one exact frozen instrument for that market_type. Spot "
+            "notional is price * BTC quantity; PI_XBTUSD is a 1 USD inverse "
+            "contract and its notional is contract quantity * 1 USD. It is an "
             "interval delta, not a running cumulative total, so no observation "
             "depends on an unbounded history and a missing interval can never "
             "be reconstructed from its neighbours."
         ),
         "duplicate_semantics": (
-            "One observation per (provider, market_type, observation_time, "
-            "revision). A second row with the same key and different content is "
-            "refused and recorded as a data-quality event; it is never merged, "
-            "averaged or silently overwritten."
+            "Raw spot trades are unique by (provider, instrument, trade_id) and "
+            "raw perpetual trades by (provider, instrument, uid). A conflicting "
+            "duplicate source id invalidates the hour. Aggregate revisions are "
+            "append-only; the prospective selector passes exactly the latest "
+            "revision available at the decision to the historical owner, never "
+            "multiple revisions that the owner would sum."
         ),
         "epoch_rule": (
             "Any change to the cadence, provider set, spot or perpetual market "
@@ -1105,6 +1172,20 @@ def prospective_cvd_acquisition_contract() -> dict[str, Any]:
             "captured under this contract are never resampled, re-bucketed or "
             "relabelled backwards."
         ),
+        "event_inclusion": {
+            "interval_boundary": "half-open [t, t + 1h)",
+            "perpetual_included_trade_types": list(
+                CVD_PERPETUAL_INCLUDED_TRADE_TYPES
+            ),
+            "perpetual_timestamp_field": CVD_PERPETUAL_EVENT_TIMESTAMP_FIELD,
+            "spot_included_events": "every trade array item",
+            "spot_timestamp_field": CVD_SPOT_EVENT_TIMESTAMP_FIELD,
+            "timestamp_conversion": (
+                "Parse the provider timestamp as UTC without rounding; assign "
+                "the event to the unique exact-hour half-open interval that "
+                "contains it."
+            ),
+        },
         "feature_semantics_owner": CVD_HISTORICAL_OWNER,
         "feature_semantics_unchanged": True,
         "historical_feature_owner": {
@@ -1131,45 +1212,62 @@ def prospective_cvd_acquisition_contract() -> dict[str, Any]:
             ),
             "prior_common_observations": window,
             "statement": (
-                f"{window} prior aligned {CVD_SELECTED_CADENCE} common "
-                "spot/perp observations plus 1 current common observation"
+                f"{window} immediately prior contiguous {CVD_SELECTED_CADENCE} "
+                "common spot/perp observations plus the exact current hour; "
+                "a missing interior hour is not replaced by an older observation"
             ),
             "total_common_observations": window + 1,
         },
         "market_universe": {
             "frozen_before_collection": True,
             "perpetual": {
+                "endpoint": CVD_PERPETUAL_ENDPOINT,
                 "instrument_type": "perpetual_swap",
-                "quote_currency": "USD_or_USD_denominated_stablecoin",
-                "selection_rule": (
-                    "The frozen perpetual market set is declared once per "
-                    "collection epoch and persisted with the epoch. A venue may "
-                    "not be added, removed or substituted inside an epoch."
+                "instrument": CVD_PERPETUAL_INSTRUMENT,
+                "instrument_metadata_endpoint": (
+                    CVD_PERPETUAL_INSTRUMENT_METADATA_ENDPOINT
                 ),
-                "underlying": "BTC",
-            },
-            "spot": {
-                "instrument_type": "spot",
+                "provider": CVD_PERPETUAL_PROVIDER_ID,
                 "quote_currency": "USD",
                 "selection_rule": (
-                    "The frozen spot market set is the required "
-                    "reference-composite venue set "
-                    f"{list(_rc.REQUIRED_COMPOSITE_PROVIDER_IDS)}, which the "
-                    "repository already integrates and already requires in "
-                    "full for a canonical bar. A venue may not be added, "
-                    "removed or substituted inside an epoch."
+                    "Exactly Kraken Futures PI_XBTUSD, verified before this "
+                    "freeze as a tradeable, non-expired BTC:USD inverse contract "
+                    "with contractSize=1. No second instrument or venue may be "
+                    "added, removed or substituted inside the epoch."
                 ),
+                "source_documentation": CVD_PERPETUAL_SOURCE_DOCUMENTATION,
                 "underlying": "BTC",
-                "venues": list(_rc.REQUIRED_COMPOSITE_PROVIDER_IDS),
+                "venue": "kraken_futures",
             },
+            "spot": {
+                "endpoint": CVD_SPOT_ENDPOINT,
+                "instrument_type": "spot",
+                "instrument": CVD_SPOT_INSTRUMENT,
+                "provider": CVD_SPOT_PROVIDER_ID,
+                "quote_currency": "USD",
+                "selection_rule": (
+                    "Exactly Kraken spot BTC/USD. Selecting the same exchange's "
+                    "USD spot and perpetual markets avoids a cross-provider "
+                    "microstructure confound and supplies a provider-owned taker "
+                    "side on both legs. No second spot instrument or venue may "
+                    "be added, removed or substituted inside the epoch."
+                ),
+                "source_documentation": CVD_SPOT_SOURCE_DOCUMENTATION,
+                "underlying": "BTC",
+                "venue": "kraken_spot",
+            },
+            "source_metadata_verified_at": CVD_SOURCE_METADATA_VERIFIED_AT,
             "universe_change_requires": PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR,
         },
         "missing_interval_semantics": (
-            "A missing interval stays missing. It is persisted as an explicit "
-            "absence, never zero-filled, never carried forward, never "
-            "interpolated and never silently compressed out of the series: the "
-            "common spot/perp timestamp simply does not exist, so the interval "
-            "contributes no observation to the frozen normalization window."
+            "The prospective selector requires the exact current UTC hour and "
+            "its 20 immediately preceding UTC hours for both market types. A "
+            "missing, late, invalid or incomplete interval makes CVD_SPREAD not "
+            "evaluable until that gap ages out of the 21-hour contiguous window. "
+            "It is never zero-filled, carried forward, interpolated or replaced "
+            "by an older observation; calendar time is never silently compressed "
+            "by row adjacency before the historical observation-count owner "
+            "runs."
         ),
         "observation_cadence": CVD_SELECTED_CADENCE,
         "observation_time_semantics": (
@@ -1182,23 +1280,56 @@ def prospective_cvd_acquisition_contract() -> dict[str, Any]:
         "provider_identity": {
             "identity_fields": ["provider", "market_type"],
             "one_provider_per_market_type_per_epoch": True,
+            "provider_by_market_type": dict(CVD_PROVIDER_BY_MARKET_TYPE),
+            "instrument_by_market_type": dict(CVD_INSTRUMENT_BY_MARKET_TYPE),
             "provider_replacement_requires": (
                 PROSPECTIVE_CVD_ACQUISITION_SUCCESSOR
             ),
             "recorded_per_observation": True,
             "statement": (
-                "Exactly one provider identity is frozen per market_type for a "
-                "collection epoch and is persisted on every row. Mixing two "
-                "providers into one market_type series inside an epoch is "
-                "refused."
+                "The exact provider and instrument above are frozen for each "
+                "market_type and persisted on every row. Any other identity, or "
+                "mixing providers inside one series, is refused."
             ),
+        },
+        "pre_owner_adapter": {
+            "input_type": "ProspectiveCvdAggregateObservation",
+            "output_type": "btc_predictor.features.flow.CvdObservation",
+            "selector": "select_contiguous_cvd_window",
+            "statement": (
+                "The prospective row retains provider, instrument and revision; "
+                "the selector verifies the exact identity and contiguous grid, "
+                "chooses one latest available revision, then strips only the "
+                "acquisition-only fields for the historical feature owner."
+            ),
+        },
+        "raw_feed_completion": {
+            "evidence_persistence": (
+                "The acknowledgement, connection/heartbeat coverage, source-id "
+                "and (for futures) sequence evidence is persisted and hash-bound "
+                "as completion_evidence_sha256 on the aggregate row."
+            ),
+            "decision_cutoff": "interval close + 5 minutes",
+            "perpetual": (
+                "subscription acknowledged before interval start; WebSocket and "
+                "heartbeat coverage continuous through interval close; no seq "
+                "gap, disconnect, invalid event or conflicting uid"
+            ),
+            "spot": (
+                "subscription acknowledged before interval start; WebSocket and "
+                "heartbeat coverage continuous through interval close; no "
+                "disconnect, invalid event or conflicting trade_id"
+            ),
+            "unmet_predicate": "REQUIRED_INPUT_MISSING",
         },
         "revision_semantics": (
             "Append-only. A provider restatement of a closed interval is a new "
             "revision row for the same (provider, market_type, "
             "observation_time); the earlier revision is retained verbatim and a "
-            "decision replays against the revision that was available at its "
-            "own decision_time."
+            "decision replays against exactly the latest revision available at "
+            "its own decision_time. The pre-owner selector passes one revision "
+            "per market_type/hour so the historical aggregation owner cannot "
+            "sum revisions together."
         ),
         "schema_version": "PROSPECTIVE_CVD_ACQUISITION_V1",
         "timestamp_alignment": "EXACT_UTC_HOUR_INTERVAL_START",
@@ -1207,6 +1338,166 @@ def prospective_cvd_acquisition_contract() -> dict[str, Any]:
     }
     payload["definition_sha256"] = _digest(payload)
     return payload
+
+
+def _require_utc_instant(value: datetime, field_name: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() != timedelta(0):
+        raise ProspectiveCorpusError(f"{field_name} must be timezone-aware UTC")
+    return value.astimezone(UTC)
+
+
+@dataclass(frozen=True)
+class ProspectiveCvdAggregateObservation:
+    """CVD aggregate with acquisition identity retained before owner adaptation."""
+
+    observation_time: datetime
+    market_type: str
+    cvd_usd: Decimal | None
+    provider: str
+    instrument: str
+    available_at: datetime
+    revision: int
+    interval_complete: bool
+    completion_evidence_sha256: str
+
+    def as_record(self) -> dict[str, Any]:
+        if self.market_type not in {"spot", "perp"}:
+            raise ProspectiveCorpusError("market_type must be spot or perp")
+        if not isinstance(self.revision, int) or isinstance(self.revision, bool):
+            raise ProspectiveCorpusError("CVD revision must be an integer")
+        if self.revision < 1:
+            raise ProspectiveCorpusError("CVD revision must be >= 1")
+        if self.cvd_usd is not None and not self.cvd_usd.is_finite():
+            raise ProspectiveCorpusError("CVD value must be finite")
+        if not _is_sha256(self.completion_evidence_sha256):
+            raise ProspectiveCorpusError(
+                "CVD completion_evidence_sha256 must be a SHA-256 digest"
+            )
+        if self.interval_complete != (self.cvd_usd is not None):
+            raise ProspectiveCorpusError(
+                "complete CVD intervals require a value and incomplete ones require null"
+            )
+        return {
+            "available_at": _require_utc_instant(
+                self.available_at,
+                "available_at",
+            ),
+            "completion_evidence_sha256": self.completion_evidence_sha256,
+            "cvd_usd": self.cvd_usd,
+            "instrument": self.instrument,
+            "interval_complete": self.interval_complete,
+            "market_type": self.market_type,
+            "observation_time": _require_utc_instant(
+                self.observation_time,
+                "observation_time",
+            ),
+            "provider": self.provider,
+            "revision": self.revision,
+        }
+
+    def as_owner_observation(self) -> _flow.CvdObservation:
+        record = self.as_record()
+        if not record["interval_complete"] or record["cvd_usd"] is None:
+            raise ProspectiveCorpusError(
+                "incomplete CVD intervals cannot reach the historical owner"
+            )
+        return _flow.CvdObservation(
+            observation_time=record["observation_time"],
+            market_type=record["market_type"],
+            cvd_usd=record["cvd_usd"],
+            provider=record["provider"],
+            available_at=record["available_at"],
+        )
+
+
+def select_contiguous_cvd_window(
+    observations: Sequence[ProspectiveCvdAggregateObservation],
+    *,
+    current_observation_time: datetime,
+    decision_time: datetime,
+) -> tuple[_flow.CvdObservation, ...]:
+    """Select exactly one PIT revision on the frozen contiguous CVD grid.
+
+    The Phase-1 feature owner intentionally remains observation-count based.
+    This prospective pre-owner boundary prevents row adjacency from replacing
+    an absent UTC hour and prevents append-only revisions from being summed.
+    """
+
+    current = _require_utc_instant(
+        current_observation_time,
+        "current_observation_time",
+    )
+    decision = _require_utc_instant(decision_time, "decision_time")
+    if current.minute or current.second or current.microsecond:
+        raise ProspectiveCorpusError("current CVD observation must be an exact UTC hour")
+    expected_times = tuple(
+        current - timedelta(hours=offset)
+        for offset in range(CVD_REQUIRED_CONTIGUOUS_HOURS - 1, -1, -1)
+    )
+    expected_time_set = set(expected_times)
+    grouped: dict[
+        tuple[str, datetime],
+        list[ProspectiveCvdAggregateObservation],
+    ] = {}
+    for observation in observations:
+        record = observation.as_record()
+        observation_time = record["observation_time"]
+        if observation_time not in expected_time_set:
+            continue
+        market_type = record["market_type"]
+        expected_provider = CVD_PROVIDER_BY_MARKET_TYPE[market_type]
+        expected_instrument = CVD_INSTRUMENT_BY_MARKET_TYPE[market_type]
+        if (
+            record["provider"] != expected_provider
+            or record["instrument"] != expected_instrument
+        ):
+            raise ProspectiveCorpusError(
+                f"unexpected {market_type} CVD provider/instrument identity"
+            )
+        if (
+            observation_time.minute
+            or observation_time.second
+            or observation_time.microsecond
+        ):
+            raise ProspectiveCorpusError("CVD observation must be an exact UTC hour")
+        if record["interval_complete"] and record["available_at"] < (
+            observation_time + timedelta(hours=1)
+        ):
+            raise ProspectiveCorpusError(
+                "complete CVD interval cannot be available before interval close"
+            )
+        if not record["interval_complete"]:
+            continue
+        if record["available_at"] <= decision:
+            grouped.setdefault((market_type, observation_time), []).append(observation)
+
+    selected: list[_flow.CvdObservation] = []
+    missing: list[str] = []
+    for observation_time in expected_times:
+        for market_type in ("spot", "perp"):
+            revisions = grouped.get((market_type, observation_time), [])
+            if not revisions:
+                missing.append(f"{market_type}:{observation_time.isoformat()}")
+                continue
+            revision_ids = [row.revision for row in revisions]
+            if len(revision_ids) != len(set(revision_ids)):
+                raise ProspectiveCorpusError(
+                    "duplicate CVD revision identity for one interval"
+                )
+            revisions.sort(key=lambda row: row.available_at)
+            if (
+                len(revisions) > 1
+                and revisions[-1].available_at == revisions[-2].available_at
+            ):
+                raise ProspectiveCorpusError(
+                    "conflicting CVD revisions share one available_at instant"
+                )
+            selected.append(revisions[-1].as_owner_observation())
+    if missing:
+        raise ProspectiveCorpusError(
+            "CVD_CONTIGUOUS_GRID_INCOMPLETE: " + ", ".join(missing)
+        )
+    return tuple(selected)
 
 
 # ---------------------------------------------------------------------------
@@ -1238,11 +1529,29 @@ MARKET_CAP_SERIES_TYPE = "market_cap"
 MARKET_CAP_SERIES_UNIT = "usd"
 MARKET_CAP_RAW_TABLE = "raw.generic_series"
 MARKET_CAP_PROVIDER_ID = "coingecko"
-MARKET_CAP_PROVIDER_SOURCE = "coingecko_v3_coins_bitcoin_market_chart"
+MARKET_CAP_PROVIDER_SOURCE = "coingecko_v3_coins_bitcoin_history_market_cap_usd"
 MARKET_CAP_PROVIDER_ASSET_IDENTIFIER = "bitcoin"
-MARKET_CAP_PROVIDER_FIELD = "market_caps"
+MARKET_CAP_PROVIDER_FIELD = "market_data.market_cap.usd"
 MARKET_CAP_OBSERVATION_CADENCE = "1d"
 MARKET_CAP_OBSERVATION_GRID = "EXACT_UTC_DAY_START_00_00_00Z"
+MARKET_CAP_PROVIDER_ENDPOINT = (
+    "https://api.coingecko.com/api/v3/coins/bitcoin/history"
+)
+MARKET_CAP_PROVIDER_DOCUMENTATION = (
+    "https://docs.coingecko.com/reference/coins-id-history"
+)
+MARKET_CAP_REVISION_DOCUMENTATION = (
+    "https://support.coingecko.com/hc/en-us/articles/"
+    "61976309053337-Why-do-historical-market-cap-values-change-shortly-after-a-date-then-settle"
+)
+MARKET_CAP_PROVIDER_DAILY_AVAILABLE_UTC = "00:35:00"
+MARKET_CAP_POLL_HOUR = 0
+MARKET_CAP_POLL_MINUTE = 45
+MARKET_CAP_POLL_ATTEMPT_OFFSETS_MINUTES = (0, 5, 10)
+MARKET_CAP_POLL_RESPONSE_TIMEOUT_SECONDS = 45
+MARKET_CAP_POLL_HARD_CUTOFF_MINUTE = 56
+MARKET_CAP_REQUERY_DATE_OFFSETS = (1, 2, 3)
+MARKET_CAP_SOURCE_METADATA_VERIFIED_AT = "2026-09-09"
 
 MARKET_CAP_SELECTION_CRITERIA = (
     "machine_accessible_without_a_negotiated_credential",
@@ -1274,15 +1583,15 @@ MARKET_CAP_DERIVED_CONSTRUCTION_CONSIDERED = {
 }
 
 MARKET_CAP_SOURCE_VERIFICATION_OBLIGATION = (
-    "This contract freezes the series identity, cadence, timestamp semantics "
-    "and PIT rule that a prospective market-cap source must satisfy, and names "
-    "the provider identity that POSTP1-004 must implement against the existing "
-    "btc_predictor.data.generic_series provider boundary. POSTP1-004 must "
-    "verify, before any qualifying observation is collected, that the named "
-    "provider actually publishes this series with these semantics. This task "
-    "collected nothing and therefore verified nothing empirically. If the "
-    "provider cannot satisfy the frozen semantics, the collector must fail "
-    "closed and the contract must be reissued as "
+    "Official CoinGecko documentation and one non-persisted schema probe on "
+    "2026-09-09 verified that /coins/bitcoin/history returns USD market cap for "
+    "a requested date, labels the snapshot at 00:00 UTC, and exposes the last "
+    "completed day at 00:35 on the next UTC day. CoinGecko also documents "
+    "scheduled market-cap restatements through day + 2 and exposes no finality "
+    "field. This contract therefore freezes observable scheduled retrieval, not "
+    "an unknowable provider-first-publication instant. POSTP1-004 must implement "
+    "this exact source against the generic-series boundary. If it cannot, the "
+    "collector must fail closed and the contract must be reissued as "
     f"{PROSPECTIVE_MARKET_CAP_ACQUISITION_SUCCESSOR} with a new collection "
     "epoch; it may never be silently adapted to whatever the provider happens "
     "to publish."
@@ -1303,14 +1612,57 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
         )
     payload = {
         "acquisition_governance": _acquisition_provenance(),
+        "acquisition_schedule": {
+            "attempt_offsets_minutes": list(
+                MARKET_CAP_POLL_ATTEMPT_OFFSETS_MINUTES
+            ),
+            "first_poll_utc": (
+                f"{MARKET_CAP_POLL_HOUR:02d}:{MARKET_CAP_POLL_MINUTE:02d}:00"
+            ),
+            "hard_cutoff_utc": (
+                f"{MARKET_CAP_POLL_HOUR:02d}:"
+                f"{MARKET_CAP_POLL_HARD_CUTOFF_MINUTE:02d}:00"
+            ),
+            "http_method": "GET",
+            "provider_documented_completed_day_available_utc": (
+                MARKET_CAP_PROVIDER_DAILY_AVAILABLE_UTC
+            ),
+            "provider_endpoint": MARKET_CAP_PROVIDER_ENDPOINT,
+            "query_parameters": {
+                "date": "DD-MM-YYYY for each requested UTC observation date",
+                "localization": "false",
+            },
+            "requested_date_offsets_from_poll_day": list(
+                MARKET_CAP_REQUERY_DATE_OFFSETS
+            ),
+            "response_field": MARKET_CAP_PROVIDER_FIELD,
+            "response_timeout_seconds": (
+                MARKET_CAP_POLL_RESPONSE_TIMEOUT_SECONDS
+            ),
+            "retry_rule": (
+                "At the fixed offsets 0, 5 and 10 minutes from 00:45 UTC, "
+                "request each still-unresolved date. Stop requesting that date "
+                "after its first valid response in the cycle. No response "
+                "completed after the 00:56 UTC hard cutoff belongs to that "
+                "cycle. Persist one audit result for every attempt, including "
+                "timeouts and invalid payloads."
+            ),
+            "revision_capture": (
+                "Each cycle requests poll-day minus 1, 2 and 3 UTC dates so "
+                "CoinGecko's documented through-day+2 recalculations can be "
+                "observed prospectively. Persist the raw response digest and "
+                "append a revision row only when the valid payload or parsed "
+                "USD value differs from the latest captured row."
+            ),
+        },
         "asset": "BTC",
         "available_at_semantics": (
-            "The instant the provider first published the completed daily "
-            "observation, recorded at capture and never back-dated to the "
-            "observation_time. A market-cap observation whose available_at is "
-            "later than a decision_time is invisible to that decision, and the "
-            "decision is NOT_EVALUABLE for every OI-intensity feature rather "
-            "than falling back to an earlier day."
+            "The collector's locally observed wall-clock instant at which the "
+            "complete, successful HTTP response for that requested date was "
+            "received and validated. It is not a claim about when CoinGecko "
+            "first published or finalized the value and is never back-dated "
+            "to observation_time. A revision whose available_at is later than "
+            "decision_time is invisible to that decision."
         ),
         "consumer_binding": {
             "consuming_features": [
@@ -1321,6 +1673,12 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
                 "btc_predictor.features.positioning.open_interest_intensity"
             ),
             "feature_semantics_unchanged": True,
+            "pre_owner_selector": (
+                "select_market_cap_revisions_for_decision; supplies at most "
+                "one, exactly latest-available revision per observation_time "
+                "because the historical owner averages duplicate timestamps"
+            ),
+            "pre_owner_selector_input": "ProspectiveMarketCapObservation",
             "observation_grid_alignment": (
                 "The frozen owner forms intensity only on the exact "
                 "intersection of the open-interest aggregate observation_time "
@@ -1341,6 +1699,25 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
             "typed_boundary": (
                 "btc_predictor.features.positioning.MarketCapObservation"
             ),
+        },
+        "decision_binding": {
+            "cycle_selection": (
+                "Use the current UTC poll day only once its 00:56 hard cutoff "
+                "has passed; before then use the prior UTC poll day."
+            ),
+            "daily_00_05_example": (
+                "A decision on UTC day D at 00:05 uses the completed prior "
+                "poll cycle on D-1, whose required observation is D-2 00:00."
+            ),
+            "hourly_01_05_example": (
+                "A decision on UTC day D at 01:05 uses the completed poll "
+                "cycle on D, whose required observation is D-1 00:00."
+            ),
+            "required_observation": (
+                "Exactly poll-day minus 1 at 00:00 UTC. The latest revision of "
+                "that date available by decision_time is required."
+            ),
+            "selector": "required_market_cap_observation_time",
         },
         "derived_construction": MARKET_CAP_DERIVED_CONSTRUCTION_CONSIDERED,
         "epoch_rule": (
@@ -1367,10 +1744,11 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
             "late_observation": ACQUISITION_FEED_STATE_REQUIRED,
             "missing_observation": ACQUISITION_FEED_STATE_REQUIRED,
             "statement": (
-                "A missing, late or invalid market-cap observation makes every "
-                "OI-intensity feature NOT_EVALUABLE at that decision. It is "
-                "never zero-filled, never defaulted, never carried forward from "
-                "an earlier day and never reconstructed from price."
+                "If the exact observation date required by decision_binding "
+                "has no valid revision available by decision_time, every "
+                "OI-intensity feature is NOT_EVALUABLE. An older observation "
+                "is never substituted. The value is never zero-filled, "
+                "defaulted, carried forward or reconstructed from price."
             ),
             "zero_fill_permitted": False,
         },
@@ -1393,6 +1771,13 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
             "provider_client_exists_in_repository": False,
             "recorded_per_observation": True,
             "source": MARKET_CAP_PROVIDER_SOURCE,
+            "source_documentation": MARKET_CAP_PROVIDER_DOCUMENTATION,
+            "source_metadata_verified_at": (
+                MARKET_CAP_SOURCE_METADATA_VERIFIED_AT
+            ),
+            "source_revision_documentation": (
+                MARKET_CAP_REVISION_DOCUMENTATION
+            ),
             "verification_obligation": (
                 MARKET_CAP_SOURCE_VERIFICATION_OBLIGATION
             ),
@@ -1401,26 +1786,26 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
             "NEW_REVISION_ROW_PER_RESTATEMENT, the existing raw.generic_series "
             "convention. A restated day is a new revision row keyed by "
             "(series_id, observation_time, revision); the earlier revision is "
-            "retained verbatim and a decision replays against the revision that "
-            "was available at its own decision_time."
+            "retained verbatim. For every observation_time, the pre-owner "
+            "selector chooses exactly the single revision having the greatest "
+            "available_at not later than decision_time. Revisions are never "
+            "averaged, and equal-available_at conflicts fail closed."
         ),
         "schema_version": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
         "selection": {
             "criteria": list(MARKET_CAP_SELECTION_CRITERIA),
             "oi_intensity_values_inspected": False,
             "rationale": (
-                "raw.generic_series is the repository's own point-in-time "
-                "scalar-series table and already carries every field this "
-                "contract needs -- observation_time, available_at, ingested_at, "
-                "provider, source, unit and an explicit revision key -- with a "
-                "collection path that already handles restatements and missing "
-                "observations. Freezing a named series on that table is the "
-                "simplest reliable prospective source and matches how every "
-                "other exogenous scalar series in this repository is already "
-                "governed. A direct market-cap feed is preferred over a "
-                "price-derived construction under the reasoning recorded in "
-                "derived_construction. No OI-intensity or Stage-B value was "
-                "inspected."
+                "CoinGecko's requested-date history endpoint exposes one BTC "
+                "USD market-cap field with documented daily timing and "
+                "restatement behavior. raw.generic_series is the repository's "
+                "point-in-time scalar-series boundary and already carries "
+                "observation_time, available_at, ingested_at, provider, source, "
+                "unit and revision. Fixed polling makes the provider's changing "
+                "value locally observable without pretending it exposes a "
+                "finality timestamp. A direct feed is preferred over the "
+                "price-derived construction under derived_construction. No "
+                "OI-intensity or Stage-B value was inspected."
             ),
             "stage_b_outcomes_inspected": False,
         },
@@ -1453,6 +1838,167 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
     return payload
 
 
+def market_cap_poll_cycle_for_decision(decision_time: datetime) -> datetime:
+    """Return the nominal 00:45 UTC poll cycle completed for a decision."""
+
+    decision = _require_utc_instant(decision_time, "decision_time")
+    poll_day = decision.date()
+    cutoff = datetime(
+        poll_day.year,
+        poll_day.month,
+        poll_day.day,
+        MARKET_CAP_POLL_HOUR,
+        MARKET_CAP_POLL_HARD_CUTOFF_MINUTE,
+        tzinfo=UTC,
+    )
+    if decision < cutoff:
+        poll_day -= timedelta(days=1)
+    return datetime(
+        poll_day.year,
+        poll_day.month,
+        poll_day.day,
+        MARKET_CAP_POLL_HOUR,
+        MARKET_CAP_POLL_MINUTE,
+        tzinfo=UTC,
+    )
+
+
+@dataclass(frozen=True)
+class ProspectiveMarketCapObservation:
+    """Exact acquired series row before adaptation to the historical owner."""
+
+    observation_time: datetime
+    market_cap_usd: Decimal
+    series_id: str
+    series_type: str
+    unit: str
+    provider: str
+    source: str
+    revision: str
+    raw_response_sha256: str
+    available_at: datetime
+    ingested_at: datetime
+
+    def as_record(self) -> dict[str, Any]:
+        observation_time = _require_utc_instant(
+            self.observation_time,
+            "observation_time",
+        )
+        available_at = _require_utc_instant(self.available_at, "available_at")
+        ingested_at = _require_utc_instant(self.ingested_at, "ingested_at")
+        if not self.market_cap_usd.is_finite() or self.market_cap_usd <= 0:
+            raise ProspectiveCorpusError("market_cap_usd must be > 0")
+        if available_at < observation_time:
+            raise ProspectiveCorpusError(
+                "market-cap available_at cannot precede observation_time"
+            )
+        if ingested_at < available_at:
+            raise ProspectiveCorpusError(
+                "market-cap ingested_at cannot precede available_at"
+            )
+        if not self.revision.strip():
+            raise ProspectiveCorpusError("market-cap revision must be non-empty")
+        if not _is_sha256(self.raw_response_sha256):
+            raise ProspectiveCorpusError(
+                "market-cap raw_response_sha256 must be a SHA-256 digest"
+            )
+        return {
+            "available_at": available_at,
+            "ingested_at": ingested_at,
+            "market_cap_usd": self.market_cap_usd,
+            "observation_time": observation_time,
+            "provider": self.provider,
+            "raw_response_sha256": self.raw_response_sha256,
+            "revision": self.revision,
+            "series_id": self.series_id,
+            "series_type": self.series_type,
+            "source": self.source,
+            "unit": self.unit,
+        }
+
+    def as_owner_observation(self) -> _positioning.MarketCapObservation:
+        record = self.as_record()
+        return _positioning.MarketCapObservation(
+            observation_time=record["observation_time"],
+            market_cap_usd=record["market_cap_usd"],
+            provider=record["provider"],
+            available_at=record["available_at"],
+        )
+
+
+def required_market_cap_observation_time(decision_time: datetime) -> datetime:
+    """Return the one daily observation required by the completed poll cycle."""
+
+    poll_cycle = market_cap_poll_cycle_for_decision(decision_time)
+    return poll_cycle.replace(hour=0, minute=0) - timedelta(days=1)
+
+
+def select_market_cap_revisions_for_decision(
+    market_caps: Sequence[ProspectiveMarketCapObservation],
+    *,
+    decision_time: datetime,
+) -> tuple[_positioning.MarketCapObservation, ...]:
+    """Select one latest PIT revision per day and require the scheduled date."""
+
+    decision = _require_utc_instant(decision_time, "decision_time")
+    required_time = required_market_cap_observation_time(decision)
+    grouped: dict[
+        datetime,
+        list[ProspectiveMarketCapObservation],
+    ] = {}
+    for observation in market_caps:
+        record = observation.as_record()
+        observation_time = record["observation_time"]
+        if (
+            observation_time.hour
+            or observation_time.minute
+            or observation_time.second
+            or observation_time.microsecond
+        ):
+            raise ProspectiveCorpusError(
+                "market-cap observation must be an exact UTC day start"
+            )
+        if (
+            record["series_id"] != MARKET_CAP_SERIES_ID
+            or record["series_type"] != MARKET_CAP_SERIES_TYPE
+            or record["unit"] != MARKET_CAP_SERIES_UNIT
+            or record["provider"] != MARKET_CAP_PROVIDER_ID
+            or record["source"] != MARKET_CAP_PROVIDER_SOURCE
+        ):
+            raise ProspectiveCorpusError(
+                "unexpected market-cap series/provider/source identity"
+            )
+        if (
+            observation_time <= required_time
+            and record["available_at"] <= decision
+        ):
+            grouped.setdefault(observation_time, []).append(observation)
+
+    selected: list[_positioning.MarketCapObservation] = []
+    for observation_time in sorted(grouped):
+        revisions = grouped[observation_time]
+        revision_ids = [row.revision for row in revisions]
+        if len(revision_ids) != len(set(revision_ids)):
+            raise ProspectiveCorpusError(
+                "duplicate market-cap revision identity for one observation"
+            )
+        revisions.sort(key=lambda row: row.available_at)
+        if (
+            len(revisions) > 1
+            and revisions[-1].available_at == revisions[-2].available_at
+        ):
+            raise ProspectiveCorpusError(
+                "conflicting market-cap revisions share one available_at instant"
+            )
+        selected.append(revisions[-1].as_owner_observation())
+    if required_time not in grouped:
+        raise ProspectiveCorpusError(
+            "MARKET_CAP_REQUIRED_OBSERVATION_MISSING: "
+            f"{required_time.isoformat()}"
+        )
+    return tuple(selected)
+
+
 # ---------------------------------------------------------------------------
 # 3b.3 PROSPECTIVE_LIQUIDATION_CAPTURE_V1
 # ---------------------------------------------------------------------------
@@ -1468,6 +2014,21 @@ def prospective_btc_market_cap_acquisition_contract() -> dict[str, Any]:
 LIQUIDATION_AGGREGATE_OWNER = (
     "btc_predictor.data.derivatives.aggregate_btc_derivatives_available_at"
 )
+LIQUIDATION_PROVIDER_ID = CVD_PERPETUAL_PROVIDER_ID
+LIQUIDATION_ENDPOINT = CVD_PERPETUAL_ENDPOINT
+LIQUIDATION_INSTRUMENT = CVD_PERPETUAL_INSTRUMENT
+LIQUIDATION_SOURCE_DOCUMENTATION = CVD_PERPETUAL_SOURCE_DOCUMENTATION
+LIQUIDATION_INSTRUMENT_METADATA_ENDPOINT = (
+    CVD_PERPETUAL_INSTRUMENT_METADATA_ENDPOINT
+)
+LIQUIDATION_EVENT_TYPE = "liquidation"
+LIQUIDATION_CONTRACT_SIZE_USD = Decimal("1")
+LIQUIDATION_TIMEFRAME = "1h"
+LIQUIDATION_SOURCE_METADATA_VERIFIED_AT = CVD_SOURCE_METADATA_VERIFIED_AT
+LIQUIDATION_SIDE_TO_POSITION = {
+    "buy": "short",
+    "sell": "long",
+}
 EXISTING_AGGREGATE_DISTINGUISHES_MISSING_FROM_EMPTY = False
 EXISTING_AGGREGATE_EVIDENCE = (
     "The owner initialises long_liquidations_usd and short_liquidations_usd to "
@@ -1503,8 +2064,9 @@ LIQUIDATION_UNUSABLE_FEED_STATUSES = (
 LIQUIDATION_FEED_STATUS_SEMANTICS: dict[str, dict[str, Any]] = {
     FEED_STATUS_OBSERVED_WITH_EVENTS: {
         "definition": (
-            "The provider's liquidation feed answered for the whole interval "
-            "and reported at least one liquidation event."
+            "The frozen Kraken PI_XBTUSD trade subscription satisfied every "
+            "interval-completion predicate and reported at least one event "
+            "whose provider trade type is liquidation."
         ),
         "event_count_rule": "event_count > 0",
         "feature_input_state": "PRESENT",
@@ -1513,9 +2075,10 @@ LIQUIDATION_FEED_STATUS_SEMANTICS: dict[str, dict[str, Any]] = {
     },
     FEED_STATUS_OBSERVED_ZERO_EVENTS: {
         "definition": (
-            "The provider's liquidation feed answered for the whole interval "
-            "and reported no liquidation event. The interval was observed; the "
-            "market simply produced nothing."
+            "The frozen Kraken PI_XBTUSD trade subscription satisfied every "
+            "interval-completion predicate and reported no event whose "
+            "provider trade type is liquidation. The interval was observed; "
+            "the market simply produced nothing."
         ),
         "event_count_rule": "event_count == 0",
         "feature_input_state": "PRESENT",
@@ -1526,8 +2089,9 @@ LIQUIDATION_FEED_STATUS_SEMANTICS: dict[str, dict[str, Any]] = {
     },
     FEED_STATUS_SOURCE_UNAVAILABLE: {
         "definition": (
-            "The provider's liquidation feed did not answer for the interval, "
-            "or answered without covering it."
+            "The frozen subscription was not acknowledged before interval "
+            "start, or its WebSocket/heartbeat coverage was not continuous "
+            "through interval close."
         ),
         "event_count_rule": "event_count is null",
         "feature_input_state": ACQUISITION_FEED_STATE_REQUIRED,
@@ -1552,8 +2116,9 @@ LIQUIDATION_FEED_STATUS_SEMANTICS: dict[str, dict[str, Any]] = {
     FEED_STATUS_INVALID: {
         "definition": (
             "The provider answered but the payload failed a capture-layer "
-            "validity rule: an unknown side, a negative quantity, a missing "
-            "notional on an event-bearing interval, or a digest mismatch."
+            "validity rule: wrong provider/instrument, sequence gap, unknown "
+            "side or event type, non-positive quantity, inconsistent count or "
+            "notional, conflicting uid, or source-id digest mismatch."
         ),
         "event_count_rule": "event_count is null",
         "feature_input_state": ACQUISITION_FEED_STATE_REQUIRED,
@@ -1571,6 +2136,14 @@ LIQUIDATION_CAPTURE_FIELDS = (
     "provider",
     "instrument",
     "timeframe",
+    "event_type",
+    "contract_size_usd",
+    "subscription_acknowledged_at",
+    "coverage_started_at",
+    "coverage_ended_at",
+    "websocket_continuous",
+    "heartbeat_continuous",
+    "sequence_gap_detected",
     "feed_status",
     "event_count",
     "long_liquidation_notional_usd",
@@ -1578,6 +2151,147 @@ LIQUIDATION_CAPTURE_FIELDS = (
     "source_record_ids_digest",
     "revision",
 )
+
+
+def classify_liquidation_feed_interval(
+    *,
+    provider: str,
+    instrument: str,
+    observation_time: datetime,
+    available_at: datetime,
+    decision_time: datetime,
+    subscription_acknowledged_at: datetime | None,
+    coverage_started_at: datetime | None,
+    coverage_ended_at: datetime | None,
+    websocket_continuous: bool,
+    heartbeat_continuous: bool,
+    sequence_gap_detected: bool,
+    invalid_event_detected: bool,
+    conflicting_source_id: bool,
+    event_count: int | None,
+    long_liquidation_notional_usd: Decimal | None,
+    short_liquidation_notional_usd: Decimal | None,
+    source_record_ids: Sequence[str],
+) -> dict[str, Any]:
+    """Classify one frozen-source liquidation interval without zero-filling."""
+
+    start = _require_utc_instant(observation_time, "observation_time")
+    observed_available_at = _require_utc_instant(available_at, "available_at")
+    decision = _require_utc_instant(decision_time, "decision_time")
+    if start.minute or start.second or start.microsecond:
+        raise ProspectiveCorpusError(
+            "liquidation observation must be an exact UTC hour"
+        )
+    end = start + timedelta(hours=1)
+
+    def unusable(status: str, reason: str) -> dict[str, Any]:
+        return {
+            "available_at": observed_available_at,
+            "event_count": None,
+            "feed_status": status,
+            "instrument": instrument,
+            "long_liquidation_notional_usd": None,
+            "observation_time": start,
+            "provider": provider,
+            "reason": reason,
+            "short_liquidation_notional_usd": None,
+            "source_record_ids_digest": None,
+            "timeframe": LIQUIDATION_TIMEFRAME,
+        }
+
+    if provider != LIQUIDATION_PROVIDER_ID or instrument != LIQUIDATION_INSTRUMENT:
+        return unusable(FEED_STATUS_INVALID, "UNEXPECTED_PROVIDER_OR_INSTRUMENT")
+    if observed_available_at > decision:
+        return unusable(FEED_STATUS_LATE, "INTERVAL_EVIDENCE_LATE")
+    if observed_available_at < end:
+        return unusable(FEED_STATUS_INVALID, "AVAILABLE_BEFORE_INTERVAL_CLOSE")
+
+    acknowledged = (
+        _require_utc_instant(
+            subscription_acknowledged_at,
+            "subscription_acknowledged_at",
+        )
+        if subscription_acknowledged_at is not None
+        else None
+    )
+    coverage_start = (
+        _require_utc_instant(coverage_started_at, "coverage_started_at")
+        if coverage_started_at is not None
+        else None
+    )
+    coverage_end = (
+        _require_utc_instant(coverage_ended_at, "coverage_ended_at")
+        if coverage_ended_at is not None
+        else None
+    )
+    if (
+        acknowledged is None
+        or acknowledged > start
+        or coverage_start is None
+        or coverage_start > start
+        or coverage_end is None
+        or coverage_end < end
+        or not websocket_continuous
+        or not heartbeat_continuous
+    ):
+        return unusable(FEED_STATUS_SOURCE_UNAVAILABLE, "INCOMPLETE_FEED_COVERAGE")
+    if sequence_gap_detected:
+        return unusable(FEED_STATUS_INVALID, "SEQUENCE_GAP")
+    if invalid_event_detected:
+        return unusable(FEED_STATUS_INVALID, "INVALID_EVENT")
+    if conflicting_source_id:
+        return unusable(FEED_STATUS_INVALID, "CONFLICTING_SOURCE_ID")
+
+    record_ids = tuple(source_record_ids)
+    ids_valid = (
+        all(isinstance(record_id, str) and record_id.strip() for record_id in record_ids)
+        and len(record_ids) == len(set(record_ids))
+    )
+    count_valid = (
+        isinstance(event_count, int)
+        and not isinstance(event_count, bool)
+        and event_count >= 0
+        and event_count == len(record_ids)
+    )
+    notionals_valid = (
+        long_liquidation_notional_usd is not None
+        and short_liquidation_notional_usd is not None
+        and long_liquidation_notional_usd.is_finite()
+        and short_liquidation_notional_usd.is_finite()
+        and long_liquidation_notional_usd >= 0
+        and short_liquidation_notional_usd >= 0
+    )
+    if not ids_valid or not count_valid or not notionals_valid:
+        return unusable(FEED_STATUS_INVALID, "INCONSISTENT_EVENT_CENSUS")
+    assert event_count is not None
+    assert long_liquidation_notional_usd is not None
+    assert short_liquidation_notional_usd is not None
+    total_notional = (
+        long_liquidation_notional_usd + short_liquidation_notional_usd
+    )
+    if (event_count == 0 and total_notional != 0) or (
+        event_count > 0 and total_notional <= 0
+    ):
+        return unusable(FEED_STATUS_INVALID, "INCONSISTENT_EVENT_NOTIONAL")
+
+    status = (
+        FEED_STATUS_OBSERVED_WITH_EVENTS
+        if event_count > 0
+        else FEED_STATUS_OBSERVED_ZERO_EVENTS
+    )
+    return {
+        "available_at": observed_available_at,
+        "event_count": event_count,
+        "feed_status": status,
+        "instrument": instrument,
+        "long_liquidation_notional_usd": long_liquidation_notional_usd,
+        "observation_time": start,
+        "provider": provider,
+        "reason": None,
+        "short_liquidation_notional_usd": short_liquidation_notional_usd,
+        "source_record_ids_digest": _digest(sorted(record_ids)),
+        "timeframe": LIQUIDATION_TIMEFRAME,
+    }
 
 
 def prospective_liquidation_capture_contract() -> dict[str, Any]:
@@ -1601,6 +2315,12 @@ def prospective_liquidation_capture_contract() -> dict[str, Any]:
             )
     payload = {
         "acquisition_governance": _acquisition_provenance(),
+        "available_at_semantics": (
+            "The local wall-clock instant at which the closed interval and all "
+            "of its completion evidence were validated. It is never back-dated "
+            "to interval close and makes no claim about a provider finality "
+            "timestamp."
+        ),
         "capture_fields": list(LIQUIDATION_CAPTURE_FIELDS),
         "captured_interval": {
             "cadence": "1h",
@@ -1622,6 +2342,26 @@ def prospective_liquidation_capture_contract() -> dict[str, Any]:
             "REGIME_SMOOTHED_SCORE",
             "VOLATILITY_SCORE",
         ],
+        "event_census": {
+            "contract_size_usd": str(LIQUIDATION_CONTRACT_SIZE_USD),
+            "included_event_type": LIQUIDATION_EVENT_TYPE,
+            "notional_rule": (
+                "For PI_XBTUSD, liquidation USD notional equals provider qty "
+                "times the instrument metadata contractSize of 1 USD."
+            ),
+            "other_trade_types_included": False,
+            "side_mapping": dict(LIQUIDATION_SIDE_TO_POSITION),
+            "side_rule": (
+                "Kraken side is taker side: sell liquidates a long position and "
+                "buy liquidates a short position. Unknown sides invalidate the "
+                "whole interval."
+            ),
+            "source_identity": (
+                "Every included provider uid is unique within the frozen "
+                "provider/instrument feed and the sorted set is hash-bound to "
+                "the interval."
+            ),
+        },
         "duplicate_semantics": (
             "One row per (provider, instrument, timeframe, observation_time, "
             "revision). A conflicting duplicate is refused and recorded as a "
@@ -1644,10 +2384,55 @@ def prospective_liquidation_capture_contract() -> dict[str, Any]:
         "feed_state_is_independent_of_the_numeric_value": True,
         "feed_status_semantics": LIQUIDATION_FEED_STATUS_SEMANTICS,
         "feed_status_vocabulary": list(LIQUIDATION_FEED_STATUSES),
+        "interval_completion_predicate": {
+            "all_required": True,
+            "classifier": "classify_liquidation_feed_interval",
+            "conditions": [
+                "subscription acknowledgement at or before interval start",
+                "WebSocket coverage continuous from at or before interval start through interval close",
+                "heartbeat coverage continuous through interval close",
+                "no provider sequence gap",
+                "no invalid event or conflicting uid",
+                "validated event_count equals the unique included uid count",
+                "available_at not later than the consuming decision",
+            ],
+            "failure_semantics": (
+                "Incomplete coverage is SOURCE_UNAVAILABLE; evidence arriving "
+                "after decision is LATE; malformed or internally inconsistent "
+                "evidence is INVALID. None may carry numeric notionals."
+            ),
+            "observed_zero_rule": (
+                "OBSERVED_ZERO_EVENTS is permitted only when every condition "
+                "passes, event_count is zero, the source-id set is empty and "
+                "both side notionals equal zero."
+            ),
+        },
         "missing_feed_can_become_numeric_zero": False,
         "observed_feed_statuses": list(LIQUIDATION_OBSERVED_FEED_STATUSES),
         "pit_rule": PIT_RULE,
         "protocol_version": PROTOCOL_VERSION,
+        "provider_identity": {
+            "endpoint": LIQUIDATION_ENDPOINT,
+            "event_feed": "Kraken Futures WebSocket v1 trade",
+            "instrument": LIQUIDATION_INSTRUMENT,
+            "instrument_metadata_endpoint": (
+                LIQUIDATION_INSTRUMENT_METADATA_ENDPOINT
+            ),
+            "instrument_type": "perpetual_swap",
+            "one_provider_and_instrument_per_epoch": True,
+            "provider": LIQUIDATION_PROVIDER_ID,
+            "quote_currency": "USD",
+            "source_documentation": LIQUIDATION_SOURCE_DOCUMENTATION,
+            "source_metadata_verified_at": (
+                LIQUIDATION_SOURCE_METADATA_VERIFIED_AT
+            ),
+            "statement": (
+                "Only liquidation-typed trade events from Kraken Futures "
+                "PI_XBTUSD form the interval census. A partial venue, alternate "
+                "instrument, stablecoin quote or secondary source may not be "
+                "called complete or patched into this epoch."
+            ),
+        },
         "provenance": {
             "raw_table": "raw.liquidations",
             "source_record_identity": (
@@ -1669,10 +2454,15 @@ def prospective_liquidation_capture_contract() -> dict[str, Any]:
             "revision row; the earlier revision is retained verbatim and a "
             "decision replays against the revision available at its own "
             "decision_time. A revision may change feed_status only forwards "
-            "into a new row, never by rewriting an existing one."
+            "into a new row, never by rewriting an existing one. The adapter "
+            "selects exactly the latest revision available per interval before "
+            "calling any historical aggregate owner."
         ),
         "schema_version": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
-        "units": "USD notional per side; event_count is a count",
+        "units": (
+            "USD notional per side from 1 USD PI_XBTUSD contracts; event_count "
+            "is a count"
+        ),
         "unusable_feed_statuses": list(LIQUIDATION_UNUSABLE_FEED_STATUSES),
         "version": PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION,
     }
@@ -1996,7 +2786,7 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
     },
     "liquidations": {
         "available_at_field": "available_at",
-        "capture_state": "EXISTING_RAW_PIT_TABLE",
+        "capture_state": "REQUIRES_PROSPECTIVE_COMPLETENESS_ADAPTER",
         "consuming_features": [
             "ORDERLINESS_SCORE",
             "VOLATILITY_SCORE",
@@ -2013,9 +2803,11 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
         ),
         "existing_aggregate_owner": LIQUIDATION_AGGREGATE_OWNER,
         "feed_state_owner": PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION,
-        "fields": ["timeframe", "side", "quantity", "quantity_unit", "notional_usd"],
-        "identity_fields": ["exchange", "symbol", "timeframe", "side", "provider"],
+        "fields": list(LIQUIDATION_CAPTURE_FIELDS),
+        "identity_fields": ["provider", "instrument", "timeframe"],
         "ingested_at_field": "ingested_at",
+        "instrument": LIQUIDATION_INSTRUMENT,
+        "interval_classifier": "classify_liquidation_feed_interval",
         "missing_policy": (
             "EXPLICIT_FEED_STATE_NO_ZERO_FILL_EMPTY_FEED_IS_DISTINCT_FROM_MISSING_FEED"
         ),
@@ -2036,13 +2828,12 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
             "source",
             "feed_status",
             "event_count",
+            "source_record_ids_digest",
         ],
+        "provider": LIQUIDATION_PROVIDER_ID,
         "raw_table": "raw.liquidations",
         "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
-        "units": (
-            "quantity in provider-declared quantity_unit; notional_usd in USD "
-            "when reported"
-        ),
+        "units": "1 USD inverse contracts; per-side notional in USD",
     },
     "btc_market_cap": {
         "available_at_field": "available_at",
@@ -2066,6 +2857,7 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
         "observation_cadence": MARKET_CAP_OBSERVATION_CADENCE,
         "observation_time_alignment": MARKET_CAP_OBSERVATION_GRID,
         "observation_time_field": "observation_time",
+        "poll_cycle_selector": "market_cap_poll_cycle_for_decision",
         "pit_rule": PIT_RULE,
         "prospective_acquisition_contract": (
             PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION
@@ -2078,8 +2870,11 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
             "source",
         ],
         "provider": MARKET_CAP_PROVIDER_ID,
+        "provider_endpoint": MARKET_CAP_PROVIDER_ENDPOINT,
+        "required_date_selector": "required_market_cap_observation_time",
         "raw_table": MARKET_CAP_RAW_TABLE,
         "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT",
+        "revision_selector": "select_market_cap_revisions_for_decision",
         "series_id": MARKET_CAP_SERIES_ID,
         "series_type": MARKET_CAP_SERIES_TYPE,
         "units": "USD",
@@ -2157,8 +2952,8 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
             "unit_tests_used_as_cadence_authority": False,
         },
         "consuming_features": ["CVD_SPREAD"],
-        "fields": ["cvd_usd", "market_type"],
-        "identity_fields": ["market_type", "provider"],
+        "fields": ["cvd_usd", "market_type", "instrument", "revision"],
+        "identity_fields": ["market_type", "provider", "instrument"],
         "ingested_at_field": "ingested_at",
         "missing_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_MISSING_INTERVAL_STAYS_MISSING",
         "normalization_owner": "btc_predictor.features.flow",
@@ -2166,7 +2961,10 @@ NON_PRICE_INPUT_SOURCES: dict[str, dict[str, Any]] = {
         "observation_time_alignment": "exact UTC hour",
         "observation_time_field": "observation_time",
         "pit_rule": PIT_RULE,
+        "pre_owner_selector": "select_contiguous_cvd_window",
         "prospective_acquisition_contract": PROSPECTIVE_CVD_ACQUISITION_VERSION,
+        "provider_by_market_type": dict(CVD_PROVIDER_BY_MARKET_TYPE),
+        "instrument_by_market_type": dict(CVD_INSTRUMENT_BY_MARKET_TYPE),
         "provenance_fields": ["observation_time", "available_at", "ingested_at", "source"],
         "raw_table": "research.prospective_source_input_snapshot (new capture)",
         "revision_policy": "APPEND_ONLY_NEW_REVISION_ROW_PER_RESTATEMENT",
@@ -3395,15 +4193,36 @@ def assert_required_semantics_unambiguous() -> None:
         or cvd["selected_cadence"] != CVD_SELECTED_CADENCE
     ):
         raise ProspectiveCorpusError(INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION)
+    cvd_source = NON_PRICE_INPUT_SOURCES["spot_perp_cvd"]
+    if (
+        cvd_source["provider_by_market_type"] != CVD_PROVIDER_BY_MARKET_TYPE
+        or cvd_source["instrument_by_market_type"]
+        != CVD_INSTRUMENT_BY_MARKET_TYPE
+        or cvd_source["pre_owner_selector"]
+        != "select_contiguous_cvd_window"
+    ):
+        raise ProspectiveCorpusError(INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION)
     market_cap = NON_PRICE_INPUT_SOURCES["btc_market_cap"]
     if (
         market_cap["series_id"] != MARKET_CAP_SERIES_ID
         or market_cap["series_type"] != MARKET_CAP_SERIES_TYPE
-        or not market_cap["provider"]
+        or market_cap["provider"] != MARKET_CAP_PROVIDER_ID
+        or market_cap["provider_endpoint"] != MARKET_CAP_PROVIDER_ENDPOINT
+        or market_cap["revision_selector"]
+        != "select_market_cap_revisions_for_decision"
+        or market_cap["required_date_selector"]
+        != "required_market_cap_observation_time"
     ):
         raise ProspectiveCorpusError(MISSING_MARKET_CAP_SOURCE_CLASSIFICATION)
     liquidations = NON_PRICE_INPUT_SOURCES["liquidations"]
-    if liquidations["existing_aggregate_distinguishes_missing_from_empty"] is not False:
+    if (
+        liquidations["existing_aggregate_distinguishes_missing_from_empty"]
+        is not False
+        or liquidations["provider"] != LIQUIDATION_PROVIDER_ID
+        or liquidations["instrument"] != LIQUIDATION_INSTRUMENT
+        or liquidations["interval_classifier"]
+        != "classify_liquidation_feed_interval"
+    ):
         raise ProspectiveCorpusError(INPUT_GOVERNANCE_INCOMPLETE_CLASSIFICATION)
     if not LIQUIDATION_PERCENTILE_ADAPTER_REQUIRED:
         raise ProspectiveCorpusError(
@@ -4628,8 +5447,13 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
         "append_only": True,
         "columns": {
             "available_at": "timestamptz not null",
+            "contract_size_usd": "numeric not null",
+            "coverage_ended_at": "timestamptz null",
+            "coverage_started_at": "timestamptz null",
             "event_count": "integer null",
+            "event_type": "text not null",
             "feed_status": "text not null",
+            "heartbeat_continuous": "boolean not null",
             "ingested_at": "timestamptz not null",
             "instrument": "text not null",
             "long_liquidation_notional_usd": "numeric null",
@@ -4637,9 +5461,12 @@ _TABLE_CONTRACT: dict[str, dict[str, Any]] = {
             "provider": "text not null",
             "revision": "text not null",
             "run_id": "uuid not null",
+            "sequence_gap_detected": "boolean not null",
             "short_liquidation_notional_usd": "numeric null",
             "source_record_ids_digest": "char(64) null",
+            "subscription_acknowledged_at": "timestamptz null",
             "timeframe": "text not null",
+            "websocket_continuous": "boolean not null",
         },
         "layer": "RAW",
         "primary_key": [
@@ -5693,19 +6520,26 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "arbitrary common timestamps and is observation-count based, requiring "
         f"`{CVD_HISTORICAL_OWNER_WINDOW}`. The "
         f"`{CVD_SELECTED_CADENCE}` acquisition cadence is selected here by new "
-        "pre-data governance, not inherited, and no Stage-B outcome was "
-        "inspected to choose it.",
+        "pre-data governance over exact Kraken `BTC/USD` spot and `PI_XBTUSD` "
+        "perpetual trade feeds. The selector requires the current and 20 prior "
+        "contiguous UTC hours before the observation-count owner; no Stage-B "
+        "outcome was inspected.",
         f"- `{PROSPECTIVE_MARKET_CAP_ACQUISITION_VERSION}`: no repository "
         "producer emits `market_cap_usd` today, and the unqualified "
         "`raw.generic_series` family is not a source contract. One exact series "
         f"identity is frozen: `{MARKET_CAP_SERIES_ID}` / "
         f"`{MARKET_CAP_SERIES_TYPE}` / `{MARKET_CAP_SERIES_UNIT}` from provider "
-        f"`{MARKET_CAP_PROVIDER_ID}` on `{MARKET_CAP_RAW_TABLE}` at "
-        f"`{MARKET_CAP_OBSERVATION_CADENCE}`.",
+        f"`{MARKET_CAP_PROVIDER_ID}` `{MARKET_CAP_PROVIDER_ENDPOINT}` on "
+        f"`{MARKET_CAP_RAW_TABLE}` at `{MARKET_CAP_OBSERVATION_CADENCE}`. Fixed "
+        "00:45/00:50/00:55 UTC polling records successful response completion "
+        "locally, requeries day-1 through day-3, requires the exact scheduled "
+        "date and selects one latest PIT revision per timestamp.",
         f"- `{PROSPECTIVE_LIQUIDATION_CAPTURE_VERSION}`: the existing aggregate "
         f"`{LIQUIDATION_AGGREGATE_OWNER}` collapses a missing feed and an "
         "observed zero-event feed to the same numeric zero. The prospective "
-        "capture layer persists feed state independently of the value, over "
+        "capture layer uses only Kraken Futures `PI_XBTUSD` liquidation-typed "
+        "trade events and persists subscription, WebSocket, heartbeat, sequence "
+        "and event-census evidence independently of the value, over "
         f"`{list(LIQUIDATION_FEED_STATUSES)}`.",
         f"- `{PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION}`: no "
         "executable owner produces `liquidation_percentile`, so one is frozen "
