@@ -614,7 +614,7 @@ warmup semantics. No observation was collected under the failed hash.
 
 ## POSTP1-001R4 — `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1`
 
-**Status:** `IMPLEMENTED / AWAITING FIFTH INDEPENDENT xHIGH REVIEW`
+**Status:** `COMPLETE / FAILED FIFTH INDEPENDENT xHIGH REVIEW / REQUIRES PRE-DATA CORRECTION`
 **Dependencies:** POSTP1-001R3 implementation and POSTP1-002R3 failed review
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** fifth independent xHigh review of the exact corrected hash
@@ -697,6 +697,49 @@ fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
   remain untouched. Classification is
   `PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FIFTH_XHIGH_REVIEW`.
 
+### POSTP1-002R4 review outcome
+
+**Status:** `COMPLETE / FAIL`
+**Result:** `FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID`
+**Classification:** `PROSPECTIVE_PROTOCOL_REQUIRES_FIX`
+
+The fifth independent xHigh review rejected exact hash
+`fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff`
+on four P1 pre-data source-integrity findings:
+
+1. CoinGecko validation hashes exact response bytes in memory but the frozen
+   schema persists neither those bytes nor the clock-interval record needed to
+   replay validation. The executable validator also admits a response taking
+   longer than the frozen 45-second timeout, and the schema has no unambiguous
+   representation for the required timeout-attempt audit rows.
+2. Clock intervals do not require the same collector host and process at both
+   ends, and the frozen protocol specifies no health-renewal cadence or maximum
+   clock-record age. The persistence contract retains only hashes for material
+   interval evidence and cannot independently reconstruct the cross-check.
+3. Stream liveness does not cross-check the wall interval duration against its
+   monotonic interval. Source events are not required to have arrived by
+   finalization or decision time, and the schema does not persist enough of the
+   epoch, interval, health and clock evidence to reproduce completeness. Frozen
+   Kraken metadata also has no runtime revalidation/fail-closed rule.
+4. The liquidation daily reducer validates only each hourly record's surface
+   fields and self-digest; it does not resolve and revalidate the cited
+   completeness evidence. An incomplete hour can therefore be relabelled as
+   `OBSERVED_ZERO_EVENTS`, rehashed and admitted to a `COMPLETE` daily zero.
+
+Independent adversarial probes demonstrated materially different conforming
+collector outcomes and a missing-evidence-to-favourable-evidence path. The
+review nevertheless reproduced the parent hash and all 22 child hashes,
+confirmed all 22 parent bindings and four failed predecessor lineage rows,
+verified zero changes to the eight Stage-B gates, and passed the previously
+accepted warmup, stop/action/eligibility/risk, 33-feature coverage, decimal,
+ordering and hash determinism areas. Validation passed 196 focused tests,
+3,346 selected source/feature/PIT/lifecycle/backtest/authority regressions and
+the complete 4,636-test Python 3.12.14 suite with `RuntimeWarning` promoted to
+an error. No qualifying observation was collected, no persistent collection
+started, no real Stage-B aggregate was evaluated, and BTC-019 and its sealed
+sample remained untouched. POSTP1-003, POSTP1-004 and collection remain
+unauthorized pending a corrected successor protocol and its independent review.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -708,7 +751,7 @@ fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
 | POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | COMPLETE / FAIL |
 | POSTP1-001R3 | `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED FOURTH REVIEW |
 | POSTP1-002R3 | fourth independent xHigh review of `e60a9514...a7dca` | COMPLETE / FAIL |
-| POSTP1-001R4 | `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1` | IMPLEMENTED / AWAITING FIFTH REVIEW |
-| POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | READY |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R4 PASS |
+| POSTP1-001R4 | `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED FIFTH REVIEW |
+| POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | COMPLETE / FAIL |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED; POSTP1-002R4 failed |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
