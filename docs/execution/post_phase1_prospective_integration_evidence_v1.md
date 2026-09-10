@@ -484,7 +484,7 @@ no BTC-019 sealed path was accessed, and collection remains unauthorized.
 
 ## POSTP1-001R3 — `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1`
 
-**Status:** `IN PROGRESS`
+**Status:** `IMPLEMENTED / AWAITING FOURTH INDEPENDENT xHIGH REVIEW`
 **Dependencies:** POSTP1-001R2 implementation and POSTP1-002R2 failed review
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** fourth independent xHigh review of the exact corrected hash
@@ -543,6 +543,52 @@ semantics, sufficiency minima, BTC-019, V3, certified V1, V4, V5 or EPIC T.
   and collection remains unauthorized pending the fourth review, POSTP1-003 and
   POSTP1-004 reviews.
 
+### POSTP1-001R3 implementation notes
+
+Implementation commit `f54025690975047c9c859567303088a5059f342e`
+refreezes `PROSPECTIVE_INTEGRATION_CORPUS_V1` at:
+
+```text
+e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca
+```
+
+- Market cap is the exact CoinGecko `/coins/bitcoin/history` response field
+  `market_data.market_cap.usd`. A UTC cycle polls at 00:45, 00:50 and 00:55,
+  ends at 00:56, and requeries poll-day minus 1, 2 and 3. `available_at` is the
+  locally observed successful-response completion instant. Before 00:56 a
+  decision uses the prior cycle; afterwards it uses the current cycle. The
+  required observation is exactly poll-day minus 1, with no older fallback.
+  `ProspectiveMarketCapObservation` retains the exact series, provider, source,
+  revision and response digest; the PIT selector emits only the latest
+  available revision per timestamp to the historical owner, preventing its
+  duplicate-timestamp average from blending revisions.
+- CVD is frozen to Kraken spot WebSocket v2 `BTC/USD` and Kraken Futures
+  WebSocket v1 `PI_XBTUSD`, a verified tradeable 1 USD inverse perpetual.
+  Provider taker side owns the sign; event timestamps, included futures trade
+  types, exact-hour bucketing, source IDs and completion evidence are explicit.
+  `ProspectiveCvdAggregateObservation` retains provider, instrument, revision
+  and a completion-evidence digest. Its selector passes exactly one latest
+  revision for both markets over the current hour plus the 20 immediately prior
+  hours; an incomplete or missing interior hour remains missing.
+- Liquidation capture uses only liquidation-typed events from the same Kraken
+  Futures `PI_XBTUSD` feed. Sell maps to long liquidation, buy to short, and
+  notional is quantity times the 1 USD contract size. The executable interval
+  classifier requires pre-start acknowledgement, continuous WebSocket and
+  heartbeat coverage through close, no sequence gap or invalid/conflicting
+  event, a consistent unique-UID census and timely local finalization.
+  `OBSERVED_ZERO_EVENTS` is therefore possible only for a complete empty
+  census; partial, late and invalid evidence carries null notionals.
+- All three failed hashes remain non-authoritative, pre-data lineage. Phase-1
+  feature formulas, all 39 V2 gates, stop/action/eligibility/risk contracts,
+  sufficiency sequencing, V3, certified V1, V4, V5 and EPIC T are unchanged.
+  Collection remains unauthorized and no qualifying observation or real
+  Stage-B outcome was produced.
+- Validation: 160 focused tests, 1,283 selected source/feature/authority
+  regressions and the complete 4,600-test Python 3.12.14 suite pass with
+  `RuntimeWarning` promoted to an error. `compileall`, scoped diff checks,
+  artifact restore/reproduction, 15-child binding, V2 gate parity and direct
+  immutable V3/certified-V1/V4/V5 recomputation all pass.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -552,7 +598,7 @@ semantics, sufficiency minima, BTC-019, V3, certified V1, V4, V5 or EPIC T.
 | POSTP1-002R | repeat independent xHigh review of `0d4f1437...f45a9e` | COMPLETE / FAIL |
 | POSTP1-001R2 | `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED THIRD REVIEW |
 | POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | COMPLETE / FAIL |
-| POSTP1-001R3 | `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1` | IN PROGRESS |
-| POSTP1-002R3 | fourth independent xHigh review of the POSTP1-001R3 exact hash | BLOCKED by POSTP1-001R3 implementation |
+| POSTP1-001R3 | `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1` | IMPLEMENTED / AWAITING FOURTH REVIEW |
+| POSTP1-002R3 | fourth independent xHigh review of `e60a9514...a7dca` | READY |
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R3 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
