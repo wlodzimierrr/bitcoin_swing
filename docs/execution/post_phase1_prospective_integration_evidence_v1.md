@@ -484,7 +484,7 @@ no BTC-019 sealed path was accessed, and collection remains unauthorized.
 
 ## POSTP1-001R3 — `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1`
 
-**Status:** `IMPLEMENTED / AWAITING FOURTH INDEPENDENT xHIGH REVIEW`
+**Status:** `COMPLETE / FAILED FOURTH INDEPENDENT xHIGH REVIEW / SUPERSEDED PRE-DATA BY POSTP1-001R4`
 **Dependencies:** POSTP1-001R2 implementation and POSTP1-002R2 failed review
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** fourth independent xHigh review of the exact corrected hash
@@ -589,6 +589,114 @@ e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca
   artifact restore/reproduction, 15-child binding, V2 gate parity and direct
   immutable V3/certified-V1/V4/V5 recomputation all pass.
 
+### POSTP1-002R3 review outcome
+
+**Status:** `COMPLETE / FAIL`
+**Result:** `FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID`
+**Classification:** `PROSPECTIVE_PROTOCOL_REQUIRES_FIX`
+
+The fourth independent xHigh review rejected exact hash
+`e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca`
+on four P1 acquisition-integrity findings:
+
+1. CoinGecko request/response observation identity was not reproducibly bound;
+2. Kraken spot/perpetual CVD stream completeness was not mechanically
+   reproducible;
+3. Kraken liquidation zero/completeness and the daily 24-hour census were not
+   mechanically reproducible; and
+4. scientifically material locally observed timestamps lacked governed local-
+   clock integrity.
+
+The review passed the existing source/instrument/event semantics, liquidation
+direction and notional, contiguous CVD selector, percentile adapter, 33-feature
+coverage, Stage-B parity and previously frozen stop/action/eligibility/risk/
+warmup semantics. No observation was collected under the failed hash.
+
+## POSTP1-001R4 — `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1`
+
+**Status:** `IMPLEMENTED / AWAITING FIFTH INDEPENDENT xHIGH REVIEW`
+**Dependencies:** POSTP1-001R3 implementation and POSTP1-002R3 failed review
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** fifth independent xHigh review of the exact corrected hash
+**Owner modules:** `btc_predictor/research/prospective_integration_corpus.py`,
+`btc_predictor/research/prospective_source_integrity.py`
+**Artifacts:** `prospective_evidence/prospective_integration_corpus_v1/`
+
+### Scope and acceptance criteria
+
+Correct only the four POSTP1-002R3 findings before collection:
+
+- bind every CoinGecko observation to one immutable `YYYY-MM-DD` request,
+  exact response bytes, exact case-sensitive `bitcoin`/`btc` identity, positive
+  finite USD payload, acquisition hash and usable request/response clock
+  evidence; derive `observation_time` solely from that requested date;
+- derive Kraken hourly completeness from one uninterrupted, pre-start
+  acknowledged `SOURCE_STREAM_EPOCH_V1`, collector-owned monotonic ping/pong
+  liveness, collector-health counters, clock integrity and an exact event
+  census; never stitch epochs or assume undocumented cross-reconnect sequence
+  continuity;
+- derive liquidation zero/positive states from that same Futures evidence and
+  admit a daily value only from the exact 24 expected UTC hourly identities,
+  with every hour complete and no duplicate identity; and
+- bind scientific local timestamps to `PROSPECTIVE_CLOCK_INTEGRITY_V1`, with
+  synchronized UTC offset and uncertainty each at most one second and a
+  monotonic/wall cross-check for material clock steps.
+
+The correction must preserve all passed R3 protocol areas, all eight Stage-B
+gate values and intent, Phase-1 formulas, BTC-019 terminality and immutable V3,
+certified V1, V4 and V5 hashes. It must implement neither persistent collection
+nor sufficiency governance and must authorize no collection.
+
+### POSTP1-001R4 implementation notes
+
+Implementation commit `b813365c39d0423babe17caeabf85e7b7473de09`
+refreezes `PROSPECTIVE_INTEGRATION_CORPUS_V1` at:
+
+```text
+fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
+```
+
+- Four failed hashes are retained with `authoritative = false`,
+  `qualifying_observations_collected = false` and
+  `superseded_before_collection = true`, including R3 hash
+  `e60a9514...a7dca` and implementation `f5402569...f342e`.
+- `CoinGeckoMarketCapRequest` persists the exact serialized query, scheduled and
+  actual timing, HTTP status, request/response digests, collector/acquisition
+  identity and clock bindings. `COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1`
+  rejects wrong or duplicate identity/schema fields and nonpositive/nonfinite
+  USD values. `ProspectiveMarketCapObservation` independently revalidates the
+  bound response and exposes no caller-supplied observation-time/value/provider
+  constructor path.
+- `SOURCE_STREAM_EPOCH_V1` defines exact start/end rules and reconnect as a new
+  epoch. `STREAM_LIVENESS_POLICY_V1` freezes 30-second collector pings, a
+  10-second pong timeout and 40-second maximum liveness gap on monotonic time.
+  Kraken spot `trade_id` remains an event identity, while Futures `seq` is
+  scoped to one subscription epoch with no undocumented cross-reconnect rule.
+- `CVD_INTERVAL_COMPLETENESS_V1` reconstructs both legs from their epoch,
+  liveness, health, clock and sorted/deduplicated event objects. The 21-hour
+  selector admits only exact complete common hours and cannot substitute an
+  older hour or a second epoch.
+- `LIQUIDATION_INTERVAL_COMPLETENESS_V1` reuses the Futures completeness owner.
+  Only a complete empty census produces `OBSERVED_ZERO_EVENTS`; partial,
+  late or invalid evidence produces no numeric value.
+  `LIQUIDATION_UTC_DAY_CENSUS_V1` requires exactly 24 ordinary UTC hours,
+  rejects duplicates and deterministically sums complete hours in a fixed
+  Decimal context. The accepted percentile adapter is unchanged.
+- Seven new hash-bound child artifacts cover clock integrity, stream epoch,
+  stream liveness, CoinGecko response validation, CVD completeness,
+  liquidation interval completeness and liquidation daily census. The parent
+  now binds 22 child definitions, and the schema exposes the underlying
+  request, response, clock, epoch, liveness, health, event and census records.
+- Validation: 196 focused tests, 1,838 selected source/feature/PIT/lifecycle/
+  backtest/authority regressions, and the complete 4,636-test Python 3.12.14
+  suite pass with `RuntimeWarning` promoted to an error. Artifact restoration,
+  `compileall`, scoped `git diff --check`, all eight gate-parity checks and
+  immutable V3/certified-V1/V4/V5 recomputation pass.
+- No persistent collector, migration, qualifying observation, real Stage-B
+  aggregate or sufficiency minimum was created. BTC-019 and its sealed sample
+  remain untouched. Classification is
+  `PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FIFTH_XHIGH_REVIEW`.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -598,7 +706,9 @@ e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca
 | POSTP1-002R | repeat independent xHigh review of `0d4f1437...f45a9e` | COMPLETE / FAIL |
 | POSTP1-001R2 | `FREEZE_MISSING_PROSPECTIVE_INPUT_SEMANTICS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED THIRD REVIEW |
 | POSTP1-002R2 | third independent xHigh review of `40e37067...c9862` | COMPLETE / FAIL |
-| POSTP1-001R3 | `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1` | IMPLEMENTED / AWAITING FOURTH REVIEW |
-| POSTP1-002R3 | fourth independent xHigh review of `e60a9514...a7dca` | READY |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R3 PASS |
+| POSTP1-001R3 | `CORRECT_SOURCE_COVERAGE_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED FOURTH REVIEW |
+| POSTP1-002R3 | fourth independent xHigh review of `e60a9514...a7dca` | COMPLETE / FAIL |
+| POSTP1-001R4 | `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1` | IMPLEMENTED / AWAITING FIFTH REVIEW |
+| POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | READY |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R4 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
