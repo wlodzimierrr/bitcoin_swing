@@ -1,0 +1,23 @@
+{
+  "accepted_health_interface": "POSTP1-004 must query a real OS synchronization interface such as chronyc tracking, timedatectl/DBus, or an equivalently auditable NTP source and persist its source, offset and uncertainty.",
+  "accuracy_selection": {
+    "maximum_permitted_absolute_error_seconds": "1",
+    "outcome_independent": true,
+    "rationale": "One second is 300 times smaller than the frozen five-minute decision delay and materially smaller than the 00:45/00:50/00:55 poll spacing and one-hour source intervals. It is a conservative pre-data infrastructure bound, not a historical strategy rule and not selected from Stage-B outcomes."
+  },
+  "definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
+  "duration_clock": "monotonic clock",
+  "fail_closed_conditions": [
+    "clock-health query failure",
+    "synchronization unavailable",
+    "absolute estimated UTC offset greater than one second",
+    "offset uncertainty unavailable or greater than one second",
+    "naive or non-UTC wall timestamp",
+    "wall/monotonic divergence greater than one second"
+  ],
+  "maximum_wall_step_seconds": "1",
+  "schema_version": "PROSPECTIVE_CLOCK_INTEGRITY_V1",
+  "scientific_timestamp_clock": "UTC wall clock",
+  "timeouts_and_liveness_use_wall_clock": false,
+  "version": "PROSPECTIVE_CLOCK_INTEGRITY_V1"
+}

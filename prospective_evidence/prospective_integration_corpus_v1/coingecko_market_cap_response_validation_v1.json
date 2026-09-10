@@ -1,0 +1,17 @@
+{
+  "asset_id": "bitcoin",
+  "clock_integrity_definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
+  "date_binding": "The response does not echo its requested date. observation_time is derived only as requested_date 00:00:00 UTC from the immutable request record bound to the exact response digest. Relabelling is refused.",
+  "definition_sha256": "fb15b3f4f75bfa1bf65a97d42602e034f5dd0b1c31ff51da9a96d03bc6bc1cb3",
+  "http_status": 200,
+  "missing_or_unexpected_schema_state": "INVALID / REQUIRED_INPUT_MISSING",
+  "required_payload": {
+    "id": "bitcoin (exact, case-sensitive)",
+    "market_data.market_cap.usd": "finite Decimal strictly greater than zero",
+    "symbol": "btc (exact, case-sensitive)"
+  },
+  "response_date_field_claimed": false,
+  "schema_version": "COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1",
+  "validator": "validate_coingecko_market_cap_response",
+  "version": "COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1"
+}

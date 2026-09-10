@@ -1,0 +1,13 @@
+{
+  "clock": "monotonic",
+  "definition_sha256": "0cbe771bb9f62b0294ed13ccd1938348e2114f9c5c811dc44386ad12115ffc7d",
+  "failure_classification": "MISSED_LIVENESS_DEADLINE_ENDS_EPOCH_AND_INVALIDATES_INTERVAL",
+  "maximum_permitted_liveness_gap_seconds": "40",
+  "mechanism": "collector-owned WebSocket ping/pong",
+  "ping_cadence_seconds": "30",
+  "pong_timeout_seconds": "10",
+  "provider_attribution": false,
+  "provider_heartbeat_role": "Optional provider/application liveness evidence only; never proof of trade-message completeness and no exact undocumented cadence.",
+  "schema_version": "STREAM_LIVENESS_POLICY_V1",
+  "version": "STREAM_LIVENESS_POLICY_V1"
+}

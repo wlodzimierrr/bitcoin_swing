@@ -12,7 +12,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, timezone
 from decimal import Context, Decimal, localcontext
 from pathlib import Path
 from typing import Any
@@ -994,23 +994,26 @@ def test_sufficiency_governance_and_review_precede_postp1_004_and_collection() -
     assert sequence["sufficiency_minima_selected_here"] is False
 
 
-def test_all_three_failed_protocol_hashes_are_retained_as_explicit_lineage() -> None:
+def test_all_four_failed_protocol_hashes_are_retained_as_explicit_lineage() -> None:
     lineage = protocol_definition()["lineage"]
     failed = lineage["failed_prospective_protocols"]
-    assert lineage["failed_prospective_protocol_count"] == 3
+    assert lineage["failed_prospective_protocol_count"] == 4
     assert [row["definition_sha256"] for row in failed] == [
         "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326",
         "0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e",
         "40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862",
+        "e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca",
     ]
     assert [row["implementation_commit"] for row in failed] == [
         "b38f387f822da713aa06489e6643c9d6909de32a",
         "8af223d708ee03b09bca6e43c204620aba44ecab",
         "9b2f23acc793457b0e8683387d8382f06472fdd4",
+        "f54025690975047c9c859567303088a5059f342e",
     ]
     assert [row["review_classification"] for row in failed] == [
         "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT",
+        "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
     ]
     for row in failed:
@@ -1069,7 +1072,7 @@ def test_the_protocol_binds_every_material_child_hash() -> None:
     protocol = protocol_definition()
     hashes = protocol_hashes()
     assert set(hashes) == set(protocol["child_definition_sha256"]) | {"corpus_protocol"}
-    assert len(protocol["child_definition_sha256"]) == 15
+    assert len(protocol["child_definition_sha256"]) == 22
     for name in (
         "prospective_btc_market_cap_acquisition",
         "prospective_cvd_acquisition",
@@ -1407,7 +1410,7 @@ def test_the_whole_suite_opens_no_sealed_or_collected_path(tmp_path: Path) -> No
 
 
 # =============================================================================
-# 12. POSTP1-001R3 -- corrected prospective source and coverage semantics
+# 12. POSTP1-001R4 -- hardened prospective source-completeness semantics
 # =============================================================================
 #
 # Every fixture below is synthetic.  Nothing here collects a qualifying
@@ -1453,16 +1456,47 @@ def _prospective_cvd(
     available_at: datetime | None = None,
     revision: int = 1,
 ) -> corpus.ProspectiveCvdAggregateObservation:
+    completeness = _cvd_hour_completeness(
+        observation_time,
+        spot_value=value if market_type == "spot" else "1",
+        perp_value=value if market_type == "perp" else "1",
+        finalized_at=available_at,
+    )
     return corpus.ProspectiveCvdAggregateObservation(
-        observation_time=observation_time,
+        completeness=completeness,
         market_type=market_type,
-        cvd_usd=Decimal(value),
-        provider=corpus.CVD_PROVIDER_BY_MARKET_TYPE[market_type],
-        instrument=corpus.CVD_INSTRUMENT_BY_MARKET_TYPE[market_type],
-        available_at=available_at or observation_time + timedelta(hours=1),
         revision=revision,
-        interval_complete=True,
-        completion_evidence_sha256="2" * 64,
+    )
+
+
+def _prospective_cvd_pair(
+    observation_time: datetime,
+    spot_value: str,
+    perp_value: str,
+    *,
+    available_at: datetime | None = None,
+    revision: int = 1,
+) -> tuple[
+    corpus.ProspectiveCvdAggregateObservation,
+    corpus.ProspectiveCvdAggregateObservation,
+]:
+    completeness = _cvd_hour_completeness(
+        observation_time,
+        spot_value=spot_value,
+        perp_value=perp_value,
+        finalized_at=available_at,
+    )
+    return (
+        corpus.ProspectiveCvdAggregateObservation(
+            completeness=completeness,
+            market_type="spot",
+            revision=revision,
+        ),
+        corpus.ProspectiveCvdAggregateObservation(
+            completeness=completeness,
+            market_type="perp",
+            revision=revision,
+        ),
     )
 
 
@@ -1487,18 +1521,55 @@ def _prospective_market_cap(
     available_at: datetime,
     revision: str = "1",
 ) -> corpus.ProspectiveMarketCapObservation:
+    requested_date = observation_time.date().isoformat()
+    response = (
+        '{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":'
+        + value
+        + "}}}"
+    ).encode("ascii")
+    request = _market_cap_request(requested_date, response, available_at=available_at)
     return corpus.ProspectiveMarketCapObservation(
-        observation_time=observation_time,
-        market_cap_usd=Decimal(value),
-        series_id=corpus.MARKET_CAP_SERIES_ID,
-        series_type=corpus.MARKET_CAP_SERIES_TYPE,
-        unit=corpus.MARKET_CAP_SERIES_UNIT,
-        provider=corpus.MARKET_CAP_PROVIDER_ID,
-        source=corpus.MARKET_CAP_PROVIDER_SOURCE,
+        validated_response=corpus.validate_coingecko_market_cap_response(request),
         revision=revision,
-        raw_response_sha256="1" * 64,
-        available_at=available_at,
         ingested_at=available_at + timedelta(seconds=1),
+    )
+
+
+def _market_cap_request(
+    requested_date: str,
+    response: bytes,
+    *,
+    available_at: datetime,
+    synchronized: bool = True,
+) -> corpus.CoinGeckoMarketCapRequest:
+    started_at = available_at - timedelta(seconds=1)
+    scheduled_minute = max(
+        minute
+        for minute in (45, 50, 55)
+        if started_at.hour > 0 or minute <= started_at.minute
+    )
+    scheduled_at = started_at.replace(
+        hour=0,
+        minute=scheduled_minute,
+        second=0,
+        microsecond=0,
+    )
+    return corpus.CoinGeckoMarketCapRequest(
+        requested_date=requested_date,
+        scheduled_poll_time=scheduled_at,
+        request_started_at=started_at,
+        response_completed_at=available_at,
+        http_status=200,
+        raw_response=response,
+        collector_version="synthetic-collector-v1",
+        acquisition_contract_sha256=(
+            corpus.prospective_btc_market_cap_acquisition_contract()[
+                "definition_sha256"
+            ]
+        ),
+        request_start_clock=_clock(started_at, synchronized=synchronized),
+        response_completion_clock=_clock(available_at, synchronized=synchronized),
+        monotonic_elapsed_seconds=Decimal("1"),
     )
 
 
@@ -1522,27 +1593,208 @@ def _open_interest(
     )
 
 
-def _complete_liquidation_interval_kwargs() -> dict[str, Any]:
+def _clock(
+    observed_at: datetime,
+    *,
+    synchronized: bool = True,
+    offset: str = "0",
+    uncertainty: str | None = "0.01",
+) -> corpus.ClockIntegrityRecord:
+    return corpus.ClockIntegrityRecord(
+        observed_at=observed_at,
+        synchronization_mechanism="NTP",
+        synchronization_source="synthetic-ntp.example",
+        synchronized=synchronized,
+        estimated_utc_offset_seconds=Decimal(offset),
+        offset_uncertainty_seconds=(
+            Decimal(uncertainty) if uncertainty is not None else None
+        ),
+        collector_host_id="synthetic-host",
+        collector_process_id="synthetic-process",
+    )
+
+
+def _event(
+    provider: str,
+    start: datetime,
+    value: str,
+    *,
+    event_id: str = "event-1",
+    event_type: str | None = None,
+    raw_digest: str = "a" * 64,
+    sequence_number: int | None = None,
+) -> corpus.CapturedSourceEvent:
+    amount = Decimal(value)
+    if amount == 0:
+        raise AssertionError("zero CVD is represented by an empty event census")
+    is_spot = provider == corpus.CVD_SPOT_PROVIDER_ID
+    return corpus.CapturedSourceEvent(
+        provider=provider,
+        instrument=(
+            corpus.CVD_SPOT_INSTRUMENT if is_spot else corpus.CVD_PERPETUAL_INSTRUMENT
+        ),
+        channel="trade",
+        epoch_id=f"epoch-{provider}-{start.isoformat()}",
+        source_event_id=event_id,
+        event_time=start + timedelta(minutes=30),
+        received_at=start + timedelta(minutes=30, milliseconds=1),
+        side="buy" if amount > 0 else "sell",
+        event_type=event_type or ("trade" if is_spot else "fill"),
+        quantity=abs(amount),
+        price=Decimal("1"),
+        raw_payload_sha256=raw_digest,
+        sequence_number=(None if is_spot else (sequence_number or 1)),
+    )
+
+
+def _stream_interval(
+    provider: str,
+    start: datetime,
+    *,
+    events: tuple[corpus.CapturedSourceEvent, ...] = (),
+    epoch_started_at: datetime | None = None,
+    epoch_ended_at: datetime | None = None,
+    end_reason: str | None = None,
+    finalized_at: datetime | None = None,
+    health_overrides: dict[str, int] | None = None,
+    clock_synchronized: bool = True,
+    final_clock_synchronized: bool | None = None,
+    missed_pong: bool = False,
+) -> corpus.StreamIntervalCompleteness:
+    epoch_start = epoch_started_at or start - timedelta(minutes=1)
+    final = finalized_at or start + timedelta(hours=1, seconds=30)
+    epoch_id = f"epoch-{provider}-{start.isoformat()}"
+    initial_clock = _clock(epoch_start, synchronized=clock_synchronized)
+    initial_health = corpus.CollectorHealthRecord(
+        epoch_id=epoch_id,
+        period_start=epoch_start,
+        period_end=epoch_start,
+        observed_at=epoch_start,
+        clock_integrity=initial_clock,
+    )
+    epoch = corpus.SourceStreamEpoch(
+        provider=provider,
+        instrument=(
+            corpus.CVD_SPOT_INSTRUMENT
+            if provider == corpus.CVD_SPOT_PROVIDER_ID
+            else corpus.CVD_PERPETUAL_INSTRUMENT
+        ),
+        channel="trade",
+        connection_session_id=f"session-{epoch_id}",
+        local_epoch_id=epoch_id,
+        connection_established_at=epoch_start - timedelta(seconds=1),
+        subscription_acknowledged_at=epoch_start,
+        epoch_started_at=epoch_start,
+        collector_version="synthetic-collector-v1",
+        collector_sha256="b" * 64,
+        source_contract_sha256="c" * 64,
+        establishment_clock=initial_clock,
+        establishment_health=initial_health,
+        epoch_ended_at=epoch_ended_at,
+        end_reason=end_reason,
+    )
+    checks = []
+    for offset in range(0, 3600, 30):
+        pong_delay = Decimal("11") if missed_pong and offset == 1800 else Decimal("1")
+        checks.append(
+            corpus.LivenessCheck(
+                request_id=f"ping-{offset}",
+                ping_sent_monotonic_seconds=Decimal(1000 + offset),
+                pong_received_monotonic_seconds=Decimal(1000 + offset) + pong_delay,
+            )
+        )
+    liveness = corpus.StreamLivenessEvidence(
+        epoch_id=epoch_id,
+        interval_start=start,
+        interval_end=start + timedelta(hours=1),
+        interval_start_monotonic_seconds=Decimal("1000"),
+        interval_end_monotonic_seconds=Decimal("4600"),
+        checks=tuple(checks),
+    )
+    health_clock = _clock(
+        start + timedelta(hours=1, seconds=20),
+        synchronized=clock_synchronized,
+    )
+    health = corpus.CollectorHealthRecord(
+        epoch_id=epoch_id,
+        period_start=epoch_start,
+        period_end=start + timedelta(hours=1),
+        observed_at=start + timedelta(hours=1, seconds=20),
+        clock_integrity=health_clock,
+        **(health_overrides or {}),
+    )
+    final_clock = _clock(
+        final,
+        synchronized=(
+            clock_synchronized
+            if final_clock_synchronized is None
+            else final_clock_synchronized
+        ),
+    )
+    timing = corpus.ClockIntervalEvidence(
+        start_clock=initial_clock,
+        end_clock=final_clock,
+        monotonic_elapsed_seconds=Decimal(
+            str((final - epoch_start).total_seconds())
+        ),
+    )
+    return corpus.StreamIntervalCompleteness(
+        epoch=epoch,
+        liveness=liveness,
+        collector_health=health,
+        events=events,
+        interval_start=start,
+        finalized_at=final,
+        finalization_clock=final_clock,
+        epoch_to_finalization_clock=timing,
+    )
+
+
+def _cvd_hour_completeness(
+    start: datetime,
+    *,
+    spot_value: str,
+    perp_value: str,
+    finalized_at: datetime | None = None,
+) -> corpus.CvdHourCompleteness:
+    spot_events = (
+        ()
+        if Decimal(spot_value) == 0
+        else (_event(corpus.CVD_SPOT_PROVIDER_ID, start, spot_value),)
+    )
+    perp_events = (
+        ()
+        if Decimal(perp_value) == 0
+        else (_event(corpus.CVD_PERPETUAL_PROVIDER_ID, start, perp_value),)
+    )
+    return corpus.CvdHourCompleteness(
+        spot=_stream_interval(
+            corpus.CVD_SPOT_PROVIDER_ID,
+            start,
+            events=spot_events,
+            finalized_at=finalized_at,
+        ),
+        perp=_stream_interval(
+            corpus.CVD_PERPETUAL_PROVIDER_ID,
+            start,
+            events=perp_events,
+            finalized_at=finalized_at,
+        ),
+    )
+
+
+def _complete_liquidation_interval(
+    *,
+    events: tuple[corpus.CapturedSourceEvent, ...] = (),
+    **kwargs: Any,
+) -> corpus.StreamIntervalCompleteness:
     start = datetime(2026, 1, 1, 12, tzinfo=UTC)
-    return {
-        "provider": corpus.LIQUIDATION_PROVIDER_ID,
-        "instrument": corpus.LIQUIDATION_INSTRUMENT,
-        "observation_time": start,
-        "available_at": start + timedelta(hours=1, seconds=30),
-        "decision_time": start + timedelta(hours=1, minutes=5),
-        "subscription_acknowledged_at": start - timedelta(minutes=1),
-        "coverage_started_at": start - timedelta(minutes=1),
-        "coverage_ended_at": start + timedelta(hours=1, seconds=1),
-        "websocket_continuous": True,
-        "heartbeat_continuous": True,
-        "sequence_gap_detected": False,
-        "invalid_event_detected": False,
-        "conflicting_source_id": False,
-        "event_count": 0,
-        "long_liquidation_notional_usd": Decimal("0"),
-        "short_liquidation_notional_usd": Decimal("0"),
-        "source_record_ids": (),
-    }
+    return _stream_interval(
+        corpus.CVD_PERPETUAL_PROVIDER_ID,
+        start,
+        events=events,
+        **kwargs,
+    )
 
 
 def _daily_bar(index: int, *, start: datetime) -> OhlcvBar:
@@ -1585,7 +1837,7 @@ def _rv20_results(sessions: int, *, start: datetime) -> tuple[Any, ...]:
 
 def test_every_new_acquisition_contract_declares_itself_new_pre_data_governance() -> None:
     governance = corpus.prospective_acquisition_governance()
-    assert governance["ticket"] == "POSTP1-001R3"
+    assert governance["ticket"] == "POSTP1-001R4"
     assert governance["phase_1_authority_claimed_for_new_rules"] is False
     assert governance["distinguishes_feature_semantics_from_acquisition_semantics"]
     assert sorted(governance["contract_versions"]) == [
@@ -1704,9 +1956,10 @@ def test_cvd_selector_requires_the_exact_twenty_one_hour_grid() -> None:
     observations = []
     for index in range(22):
         stamp = start + timedelta(hours=index)
+        spot, perp = _prospective_cvd_pair(stamp, str(index), str(-index))
         if index != 10:
-            observations.append(_prospective_cvd("spot", stamp, str(index)))
-        observations.append(_prospective_cvd("perp", stamp, str(-index)))
+            observations.append(spot)
+        observations.append(perp)
 
     with pytest.raises(
         ProspectiveCorpusError,
@@ -1726,13 +1979,12 @@ def test_cvd_selector_uses_one_latest_revision_before_the_historical_owner() -> 
     observations = []
     for index in range(21):
         stamp = start + timedelta(hours=index)
-        observations.append(_prospective_cvd("spot", stamp, str(index)))
-        observations.append(_prospective_cvd("perp", stamp, str(-index)))
-    observations.append(
-        _prospective_cvd(
-            "spot",
+        observations.extend(_prospective_cvd_pair(stamp, str(index), str(-index)))
+    observations.extend(
+        _prospective_cvd_pair(
             current,
             "999",
+            "-20",
             available_at=current + timedelta(hours=1, minutes=1),
             revision=2,
         )
@@ -1757,14 +2009,29 @@ def test_cvd_selector_uses_one_latest_revision_before_the_historical_owner() -> 
 
 def test_cvd_selector_rejects_an_unfrozen_instrument_identity() -> None:
     start = datetime(2026, 1, 1, tzinfo=UTC)
-    observation = _prospective_cvd("spot", start, "1")
-    wrong = corpus.ProspectiveCvdAggregateObservation(
+    observation = _prospective_cvd_pair(start, "1", "-1")[0]
+    spot = observation.completeness.spot
+    wrong_epoch = corpus.SourceStreamEpoch(
         **{
-            **observation.__dict__,
+            **spot.epoch.__dict__,
             "instrument": "BTC/USDT",
         }
     )
-    with pytest.raises(ProspectiveCorpusError, match="provider/instrument"):
+    wrong_spot = corpus.StreamIntervalCompleteness(
+        **{
+            **spot.__dict__,
+            "epoch": wrong_epoch,
+        }
+    )
+    wrong = corpus.ProspectiveCvdAggregateObservation(
+        completeness=corpus.CvdHourCompleteness(
+            spot=wrong_spot,
+            perp=observation.completeness.perp,
+        ),
+        market_type="spot",
+        revision=1,
+    )
+    with pytest.raises(ValueError, match="provider/instrument/channel"):
         corpus.select_contiguous_cvd_window(
             (wrong,),
             current_observation_time=start,
@@ -1778,15 +2045,27 @@ def test_incomplete_cvd_feed_evidence_cannot_reach_the_historical_owner() -> Non
     observations = []
     for index in range(21):
         stamp = start + timedelta(hours=index)
-        observations.append(_prospective_cvd("spot", stamp, str(index)))
-        observations.append(_prospective_cvd("perp", stamp, str(-index)))
+        observations.extend(_prospective_cvd_pair(stamp, str(index), str(-index)))
     affected = observations[20]
-    observations[20] = corpus.ProspectiveCvdAggregateObservation(
+    affected_start = affected.observation_time
+    ended_epoch = corpus.end_stream_epoch(
+        affected.completeness.spot.epoch,
+        ended_at=affected_start + timedelta(minutes=30),
+        reason="RECONNECT",
+    )
+    incomplete_spot = corpus.StreamIntervalCompleteness(
         **{
-            **affected.__dict__,
-            "cvd_usd": None,
-            "interval_complete": False,
+            **affected.completeness.spot.__dict__,
+            "epoch": ended_epoch,
         }
+    )
+    observations[20] = corpus.ProspectiveCvdAggregateObservation(
+        completeness=corpus.CvdHourCompleteness(
+            spot=incomplete_spot,
+            perp=affected.completeness.perp,
+        ),
+        market_type=affected.market_type,
+        revision=affected.revision,
     )
     with pytest.raises(
         ProspectiveCorpusError,
@@ -2006,7 +2285,7 @@ def test_market_cap_selector_refuses_an_older_date_as_fallback() -> None:
                 _prospective_market_cap(
                     day - timedelta(days=2),
                     "100",
-                    available_at=day - timedelta(days=1, hours=23),
+                    available_at=day - timedelta(days=1) + timedelta(minutes=46),
                 ),
             ),
             decision_time=decision,
@@ -2049,23 +2328,20 @@ def test_market_cap_selector_uses_latest_revision_without_owner_averaging() -> N
     assert result.market_cap_record_count == 1
 
 
-def test_market_cap_selector_rejects_an_unfrozen_series_identity() -> None:
+def test_market_cap_observation_identity_cannot_be_caller_overridden() -> None:
     day = datetime(2026, 1, 4, tzinfo=UTC)
     row = _prospective_market_cap(
         day - timedelta(days=1),
         "400",
         available_at=day + timedelta(minutes=46),
     )
-    wrong = corpus.ProspectiveMarketCapObservation(
-        **{
-            **row.__dict__,
-            "source": "another_provider_path",
-        }
-    )
-    with pytest.raises(ProspectiveCorpusError, match="series/provider/source"):
-        corpus.select_market_cap_revisions_for_decision(
-            (wrong,),
-            decision_time=day + timedelta(hours=1, minutes=5),
+    assert row.source == corpus.MARKET_CAP_PROVIDER_SOURCE
+    with pytest.raises(TypeError, match="unexpected keyword argument 'source'"):
+        corpus.ProspectiveMarketCapObservation(
+            validated_response=row.validated_response,
+            revision="1",
+            ingested_at=row.ingested_at,
+            source="another_provider_path",  # type: ignore[call-arg]
         )
 
 
@@ -2306,19 +2582,32 @@ def test_liquidation_contract_binds_one_exact_event_census() -> None:
 
 
 def test_liquidation_zero_is_observed_only_with_complete_feed_evidence() -> None:
-    kwargs = _complete_liquidation_interval_kwargs()
-    complete = corpus.classify_liquidation_feed_interval(**kwargs)
+    completeness = _complete_liquidation_interval()
+    start = completeness.interval_start
+    complete = corpus.classify_liquidation_feed_interval(
+        completeness,
+        decision_time=start + timedelta(hours=1, minutes=5),
+    )
     assert complete["feed_status"] == "OBSERVED_ZERO_EVENTS"
     assert complete["event_count"] == 0
     assert complete["long_liquidation_notional_usd"] == Decimal("0")
     assert corpus._is_sha256(complete["source_record_ids_digest"])
+    for field in (
+        "clock_integrity_sha256",
+        "collector_health_sha256",
+        "completeness_evidence_sha256",
+        "source_stream_epoch_sha256",
+        "stream_liveness_sha256",
+    ):
+        assert corpus._is_sha256(complete[field])
 
+    partial_completeness = _complete_liquidation_interval(
+        epoch_ended_at=start + timedelta(minutes=59),
+        end_reason="RECONNECT",
+    )
     partial = corpus.classify_liquidation_feed_interval(
-        **{
-            **kwargs,
-            "coverage_ended_at": kwargs["observation_time"]
-            + timedelta(minutes=59),
-        }
+        partial_completeness,
+        decision_time=start + timedelta(hours=1, minutes=5),
     )
     assert partial["feed_status"] == "SOURCE_UNAVAILABLE"
     assert partial["event_count"] is None
@@ -2327,15 +2616,30 @@ def test_liquidation_zero_is_observed_only_with_complete_feed_evidence() -> None
 
 
 def test_liquidation_event_census_and_sequence_fail_closed() -> None:
-    kwargs = _complete_liquidation_interval_kwargs()
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    events = (
+        _event(
+            corpus.CVD_PERPETUAL_PROVIDER_ID,
+            start,
+            "-3",
+            event_id="uid-2",
+            event_type="liquidation",
+            raw_digest="2" * 64,
+            sequence_number=2,
+        ),
+        _event(
+            corpus.CVD_PERPETUAL_PROVIDER_ID,
+            start,
+            "7",
+            event_id="uid-1",
+            event_type="liquidation",
+            raw_digest="1" * 64,
+            sequence_number=1,
+        ),
+    )
     observed = corpus.classify_liquidation_feed_interval(
-        **{
-            **kwargs,
-            "event_count": 2,
-            "long_liquidation_notional_usd": Decimal("3"),
-            "short_liquidation_notional_usd": Decimal("7"),
-            "source_record_ids": ("uid-2", "uid-1"),
-        }
+        _complete_liquidation_interval(events=events),
+        decision_time=start + timedelta(hours=1, minutes=5),
     )
     assert observed["feed_status"] == "OBSERVED_WITH_EVENTS"
     assert observed["event_count"] == 2
@@ -2344,31 +2648,36 @@ def test_liquidation_event_census_and_sequence_fail_closed() -> None:
     )
 
     gap = corpus.classify_liquidation_feed_interval(
-        **{
-            **kwargs,
-            "sequence_gap_detected": True,
-        }
+        _complete_liquidation_interval(
+            health_overrides={"provider_sequence_validation_failure_count": 1}
+        ),
+        decision_time=start + timedelta(hours=1, minutes=5),
     )
     assert gap["feed_status"] == "INVALID"
-    assert gap["reason"] == "SEQUENCE_GAP"
+    assert gap["reason"] == "INTERVAL_COMPLETENESS_FAILED"
 
 
 def test_liquidation_wrong_identity_and_late_evidence_are_never_observed_zero() -> None:
-    kwargs = _complete_liquidation_interval_kwargs()
-    wrong = corpus.classify_liquidation_feed_interval(
+    completeness = _complete_liquidation_interval()
+    wrong_epoch = corpus.SourceStreamEpoch(
         **{
-            **kwargs,
+            **completeness.epoch.__dict__,
             "instrument": "BTC/USDT",
         }
     )
-    assert wrong["feed_status"] == "INVALID"
-    assert wrong["event_count"] is None
+    wrong = corpus.StreamIntervalCompleteness(
+        **{**completeness.__dict__, "epoch": wrong_epoch}
+    )
+    with pytest.raises(ValueError, match="provider/instrument/channel"):
+        corpus.classify_liquidation_feed_interval(
+            wrong,
+            decision_time=completeness.interval_start
+            + timedelta(hours=1, minutes=5),
+        )
 
     late = corpus.classify_liquidation_feed_interval(
-        **{
-            **kwargs,
-            "available_at": kwargs["decision_time"] + timedelta(seconds=1),
-        }
+        completeness,
+        decision_time=completeness.finalized_at - timedelta(seconds=1),
     )
     assert late["feed_status"] == "LATE"
     assert late["event_count"] is None
@@ -2643,7 +2952,7 @@ def test_the_new_acquisition_semantics_change_no_historical_gate_value() -> None
     assert protocol["btc019"]["sealed_sample_opened"] is False
     assert protocol["safety"]["qualifying_observations_collected"] is False
     assert protocol["final_classification"] == (
-        "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FOURTH_XHIGH_REVIEW"
+        "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FIFTH_XHIGH_REVIEW"
     )
     assert protocol["collection_authorized"] is False
 
@@ -2667,3 +2976,544 @@ def test_the_passed_owners_and_the_risk_size_definition_are_untouched() -> None:
     sufficiency = evidence_sufficiency_contract()
     for metric in TARGET_METRICS:
         assert sufficiency["metrics"][metric]["minimum_denominator_chosen_here"] is None
+
+
+# =============================================================================
+# 13. POSTP1-001R4 source provenance and completeness correction
+# =============================================================================
+
+
+def test_r4_binds_all_seven_new_source_integrity_child_contracts() -> None:
+    protocol = protocol_definition()
+    expected = {
+        "coingecko_market_cap_response_validation",
+        "cvd_interval_completeness",
+        "liquidation_interval_completeness",
+        "liquidation_utc_day_census",
+        "prospective_clock_integrity",
+        "source_stream_epoch",
+        "stream_liveness_policy",
+    }
+    assert expected <= set(protocol["child_definition_sha256"])
+    for name in expected:
+        assert corpus._is_sha256(protocol["child_definition_sha256"][name])
+
+
+def test_coingecko_request_serializes_the_exact_documented_date_format() -> None:
+    response = b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":1}}}'
+    request = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    record = request.as_record()
+    assert record["serialized_query"] == "date=2026-01-03&localization=false"
+    assert record["requested_date"] == "2026-01-03"
+    assert corpus._is_sha256(record["request_digest"])
+    assert record["response_digest"] == corpus._source_integrity.byte_digest(response)
+    contract = corpus.prospective_btc_market_cap_acquisition_contract()
+    assert contract["acquisition_schedule"]["query_parameters"]["date"].startswith(
+        "YYYY-MM-DD"
+    )
+
+
+def test_coingecko_dd_mm_yyyy_request_date_is_refused() -> None:
+    request = _market_cap_request(
+        "03-01-2026",
+        b"{}",
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        request.as_record()
+
+
+def test_coingecko_rate_limit_and_response_after_cutoff_are_not_evidence() -> None:
+    response = b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":1}}}'
+    request = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    rate_limited = corpus.CoinGeckoMarketCapRequest(
+        **{**request.__dict__, "http_status": 429}
+    )
+    with pytest.raises(ValueError, match="HTTP status"):
+        corpus.validate_coingecko_market_cap_response(rate_limited)
+    after_cutoff = corpus.CoinGeckoMarketCapRequest(
+        **{
+            **request.__dict__,
+            "request_started_at": datetime(2026, 1, 4, 0, 55, 59, tzinfo=UTC),
+            "response_completed_at": datetime(2026, 1, 4, 0, 56, 1, tzinfo=UTC),
+            "request_start_clock": _clock(
+                datetime(2026, 1, 4, 0, 55, 59, tzinfo=UTC)
+            ),
+            "response_completion_clock": _clock(
+                datetime(2026, 1, 4, 0, 56, 1, tzinfo=UTC)
+            ),
+            "monotonic_elapsed_seconds": Decimal("2"),
+        }
+    )
+    with pytest.raises(ValueError, match="cycle cutoff"):
+        corpus.validate_coingecko_market_cap_response(after_cutoff)
+
+
+@pytest.mark.parametrize(
+    ("response", "message"),
+    [
+        (b'{"id":"ethereum","symbol":"btc","market_data":{"market_cap":{"usd":1}}}', "asset id"),
+        (b'{"id":"bitcoin","symbol":"BTC","market_data":{"market_cap":{"usd":1}}}', "symbol"),
+        (b'{"id":"bitcoin","symbol":"btc"}', "market_data"),
+        (b'{"id":"bitcoin","symbol":"btc","market_data":{}}', "market_cap"),
+        (b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{}}}', "market_data.market_cap.usd"),
+        (b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":0}}}', "market_data.market_cap.usd"),
+        (b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":-1}}}', "market_data.market_cap.usd"),
+        (b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":"nan"}}}', "market_data.market_cap.usd"),
+        (b'{"id":"ethereum","id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":1}}}', "duplicate JSON key"),
+    ],
+)
+def test_coingecko_response_schema_fails_closed(response: bytes, message: str) -> None:
+    request = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    with pytest.raises(ValueError, match=message):
+        corpus.validate_coingecko_market_cap_response(request)
+
+
+def test_market_cap_observation_time_is_derived_only_from_the_bound_request() -> None:
+    row = _prospective_market_cap(
+        datetime(2026, 1, 3, tzinfo=UTC),
+        "123",
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    record = row.as_record()
+    assert record["requested_date"] == "2026-01-03"
+    assert record["observation_time"] == datetime(2026, 1, 3, tzinfo=UTC)
+    assert record["available_at"] == record["request_record"][
+        "actual_response_completed_at"
+    ]
+    assert corpus._is_sha256(
+        row.validated_response.as_record()["validation_contract_sha256"]
+    )
+    with pytest.raises(TypeError, match="unexpected keyword argument 'observation_time'"):
+        corpus.ProspectiveMarketCapObservation(
+            validated_response=row.validated_response,
+            revision="2",
+            ingested_at=row.ingested_at,
+            observation_time=datetime(2026, 1, 4, tzinfo=UTC),  # type: ignore[call-arg]
+        )
+
+
+def test_market_cap_revisions_are_append_only_and_future_revision_is_invisible() -> None:
+    day = datetime(2026, 1, 4, tzinfo=UTC)
+    observation_time = day - timedelta(days=1)
+    rows = (
+        _prospective_market_cap(
+            observation_time,
+            "100",
+            available_at=day + timedelta(minutes=46),
+            revision="R1",
+        ),
+        _prospective_market_cap(
+            observation_time,
+            "200",
+            available_at=day + timedelta(minutes=51),
+            revision="R2",
+        ),
+        _prospective_market_cap(
+            observation_time,
+            "300",
+            available_at=day + timedelta(days=1, minutes=46),
+            revision="R3",
+        ),
+    )
+    selected = corpus.select_market_cap_revisions_for_decision(
+        rows,
+        decision_time=day + timedelta(hours=1, minutes=5),
+    )
+    assert [row.market_cap_usd for row in selected] == [Decimal("200")]
+    records = [row.as_record() for row in rows]
+    assert [record["revision"] for record in records] == ["R1", "R2", "R3"]
+    assert len({record["request_record_sha256"] for record in records}) == 3
+
+
+def test_clock_integrity_health_is_mechanical_and_fail_closed() -> None:
+    stamp = datetime(2026, 1, 1, tzinfo=UTC)
+    assert _clock(stamp).as_record()["usable"] is True
+    assert _clock(stamp, synchronized=False).as_record()["usable"] is False
+    assert _clock(stamp, offset="1.0001").as_record()["usable"] is False
+    assert _clock(stamp, uncertainty="1.0001").as_record()["usable"] is False
+    with pytest.raises(ValueError, match="aware UTC"):
+        _clock(stamp.replace(tzinfo=None)).as_record()
+    with pytest.raises(ValueError, match="must be UTC"):
+        _clock(stamp.astimezone(tz=timezone(timedelta(hours=1)))).as_record()
+
+
+def test_wall_clock_step_is_detected_while_monotonic_duration_remains_explicit() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    evidence = corpus.ClockIntervalEvidence(
+        start_clock=_clock(start),
+        end_clock=_clock(start + timedelta(seconds=10)),
+        monotonic_elapsed_seconds=Decimal("1"),
+    ).as_record()
+    assert evidence["usable"] is False
+    assert "WALL_CLOCK_STEP_EXCEEDED" in evidence["reason_codes"]
+    assert evidence["monotonic_elapsed_seconds"] == Decimal("1")
+
+
+def test_clock_invalid_market_cap_response_cannot_be_scientific_evidence() -> None:
+    request = _market_cap_request(
+        "2026-01-03",
+        b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":1}}}',
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+        synchronized=False,
+    )
+    with pytest.raises(ValueError, match="clock"):
+        corpus.validate_coingecko_market_cap_response(request)
+
+
+def test_stream_epoch_lifecycle_and_full_interval_rule_are_mechanical() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    healthy = _stream_interval(corpus.CVD_SPOT_PROVIDER_ID, start).as_record()
+    assert healthy["complete"] is True
+    late_start = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        epoch_started_at=start + timedelta(seconds=1),
+    ).as_record()
+    assert late_start["complete"] is False
+    boundary_start = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        epoch_started_at=start,
+    ).as_record()
+    assert boundary_start["complete"] is False
+    disconnected = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        epoch_ended_at=start + timedelta(minutes=30),
+        end_reason="SOCKET_CLOSE",
+    ).as_record()
+    assert disconnected["complete"] is False
+    assert "EPOCH_ENDED_INSIDE_INTERVAL" in disconnected["reason_codes"]
+    next_hour = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start + timedelta(hours=1),
+        epoch_started_at=start + timedelta(minutes=31),
+    ).as_record()
+    assert next_hour["complete"] is True
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "RECONNECT",
+        "PROVIDER_OR_SERVER_RESTART_INDICATION",
+        "SUBSCRIPTION_REJECTION",
+        "MISSED_LIVENESS_DEADLINE",
+    ],
+)
+def test_epoch_ending_source_outages_cannot_become_complete(reason: str) -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    interval = _stream_interval(
+        corpus.CVD_PERPETUAL_PROVIDER_ID,
+        start,
+        epoch_ended_at=start + timedelta(minutes=30),
+        end_reason=reason,
+    ).as_record()
+    assert interval["complete"] is False
+    assert interval["epoch_continuous_through_end"] is False
+
+
+@pytest.mark.parametrize(
+    ("reason", "counter"),
+    [
+        ("PARSER_FAILURE", "parser_failure_count"),
+        ("BUFFER_OR_QUEUE_OVERFLOW", "queue_overflow_count"),
+        ("SERIALIZATION_OR_DURABLE_APPEND_FAILURE", "durable_append_failure_count"),
+        ("COLLECTOR_PROCESS_INTERRUPTION", "collector_exception_count"),
+    ],
+)
+def test_local_capture_failure_ends_epoch_and_invalidates_hour(
+    reason: str,
+    counter: str,
+) -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    interval = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        epoch_ended_at=start + timedelta(minutes=20),
+        end_reason=reason,
+        health_overrides={counter: 1},
+    ).as_record()
+    assert interval["complete"] is False
+    assert interval["collector_health_pass"] is False
+
+
+def test_missed_collector_liveness_deadline_and_invalid_final_clock_fail_closed() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    missed = _stream_interval(
+        corpus.CVD_PERPETUAL_PROVIDER_ID,
+        start,
+        missed_pong=True,
+    ).as_record()
+    assert missed["complete"] is False
+    assert "MISSED_PONG_DEADLINE" in missed["reason_codes"]
+    invalid_clock = _stream_interval(
+        corpus.CVD_PERPETUAL_PROVIDER_ID,
+        start,
+        final_clock_synchronized=False,
+    ).as_record()
+    assert invalid_clock["complete"] is False
+    assert "FINALIZATION_CLOCK_INVALID" in invalid_clock["reason_codes"]
+
+
+def test_identical_stream_retransmission_is_idempotent_and_conflict_invalidates() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    original = _event(corpus.CVD_SPOT_PROVIDER_ID, start, "5")
+    retransmission = corpus.CapturedSourceEvent(
+        **{
+            **original.__dict__,
+            "received_at": original.received_at + timedelta(milliseconds=1),
+        }
+    )
+    idempotent = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        events=(retransmission, original),
+    ).as_record()
+    assert idempotent["complete"] is True
+    assert idempotent["event_count"] == 1
+    assert idempotent["duplicate_retransmission_count"] == 1
+    conflict = corpus.CapturedSourceEvent(
+        **{
+            **original.__dict__,
+            "quantity": Decimal("6"),
+            "raw_payload_sha256": "d" * 64,
+        }
+    )
+    conflicted = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        events=(original, conflict),
+    ).as_record()
+    assert conflicted["complete"] is False
+    assert "UNRECOVERABLE_DUPLICATE_CONFLICT" in conflicted["reason_codes"]
+
+
+def test_stream_event_order_and_ambient_decimal_context_do_not_move_cvd() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    first = _event(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        "2.123456789",
+        event_id="one",
+        raw_digest="1" * 64,
+    )
+    second = _event(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        "-1.000000001",
+        event_id="two",
+        raw_digest="2" * 64,
+    )
+    forward = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        events=(first, second),
+    ).as_record()
+    reverse = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        events=(second, first),
+    ).as_record()
+    assert forward["event_census_sha256"] == reverse["event_census_sha256"]
+    with localcontext(Context(prec=3)):
+        narrowed = _stream_interval(
+            corpus.CVD_SPOT_PROVIDER_ID,
+            start,
+            events=(second, first),
+        ).as_record()
+    assert narrowed["event_census_sha256"] == forward["event_census_sha256"]
+
+
+def test_cvd_common_hour_persists_both_epoch_and_census_identities() -> None:
+    record = _cvd_hour_completeness(
+        datetime(2026, 1, 1, 12, tzinfo=UTC),
+        spot_value="3",
+        perp_value="-2",
+    ).as_record()
+    assert record["complete"] is True
+    assert record["spot_cvd_usd"] == Decimal("3")
+    assert record["perp_cvd_usd"] == Decimal("-2")
+    for field in (
+        "spot_epoch_id",
+        "perp_epoch_id",
+        "spot_event_census_sha256",
+        "perp_event_census_sha256",
+        "record_sha256",
+    ):
+        assert record[field]
+    assert record["spot_interval_completeness"]["complete"] is True
+    assert record["perp_interval_completeness"]["complete"] is True
+    assert record["spot_subscription_ack_before_start"] is True
+    assert record["perp_subscription_ack_before_start"] is True
+    assert record["perp_sequence_integrity_pass"] is True
+
+
+def _liquidation_day_records(
+    day: date,
+    *,
+    positive_hour: int | None = None,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    day_start = datetime.combine(day, datetime.min.time(), tzinfo=UTC)
+    for hour in range(24):
+        start = day_start + timedelta(hours=hour)
+        events: tuple[corpus.CapturedSourceEvent, ...] = ()
+        if positive_hour == hour:
+            events = (
+                _event(
+                    corpus.CVD_PERPETUAL_PROVIDER_ID,
+                    start,
+                    "-3",
+                    event_id=f"long-{hour}",
+                    event_type="liquidation",
+                ),
+                _event(
+                    corpus.CVD_PERPETUAL_PROVIDER_ID,
+                    start,
+                    "7",
+                    event_id=f"short-{hour}",
+                    event_type="liquidation",
+                    raw_digest="e" * 64,
+                    sequence_number=2,
+                ),
+            )
+        rows.append(
+            corpus.classify_liquidation_feed_interval(
+                _stream_interval(
+                    corpus.CVD_PERPETUAL_PROVIDER_ID,
+                    start,
+                    events=events,
+                ),
+                decision_time=start + timedelta(hours=1, minutes=5),
+            )
+        )
+    return rows
+
+
+def test_liquidation_daily_zero_requires_all_twenty_four_exact_utc_hours() -> None:
+    day = date(2026, 3, 29)
+    rows = _liquidation_day_records(day)
+    complete = corpus.aggregate_liquidation_utc_day(day, rows)
+    assert complete["census_status"] == "COMPLETE"
+    assert complete["expected_hour_count"] == 24
+    assert complete["observed_hour_count"] == 24
+    assert complete["event_count"] == 0
+    assert complete["total_liquidation_notional_usd"] == Decimal("0")
+    assert len(complete["expected_interval_ids"]) == 24
+    assert complete["available_at"] == max(row["available_at"] for row in rows)
+    incomplete = corpus.aggregate_liquidation_utc_day(day, rows[:-1])
+    assert incomplete["census_status"] == "INCOMPLETE"
+    assert incomplete["total_liquidation_notional_usd"] is None
+
+
+def test_liquidation_daily_census_rejects_duplicate_and_unusable_hour() -> None:
+    day = date(2026, 1, 2)
+    rows = _liquidation_day_records(day)
+    duplicated = corpus.aggregate_liquidation_utc_day(day, [*rows[:-1], rows[0]])
+    assert duplicated["census_status"] == "INVALID"
+    assert "DUPLICATE_INTERVAL_IDENTITY" in duplicated["reason_codes"]
+    unusable = dict(rows[5])
+    unusable.pop("record_sha256")
+    unusable["feed_status"] = "SOURCE_UNAVAILABLE"
+    unusable["event_count"] = None
+    unusable["long_liquidation_notional_usd"] = None
+    unusable["short_liquidation_notional_usd"] = None
+    unusable["record_sha256"] = corpus._source_integrity.digest(unusable)
+    incomplete = corpus.aggregate_liquidation_utc_day(
+        day,
+        [*rows[:5], unusable, *rows[6:]],
+    )
+    assert incomplete["census_status"] == "INCOMPLETE"
+    assert incomplete["total_liquidation_notional_usd"] is None
+
+
+def test_liquidation_daily_positive_sum_and_utc_boundary_are_exact() -> None:
+    day = date(2026, 10, 25)
+    rows = _liquidation_day_records(day, positive_hour=23)
+    daily = corpus.aggregate_liquidation_utc_day(day, rows)
+    assert daily["census_status"] == "COMPLETE"
+    assert daily["event_count"] == 2
+    assert daily["long_liquidation_notional_usd"] == Decimal("3")
+    assert daily["short_liquidation_notional_usd"] == Decimal("7")
+    assert daily["total_liquidation_notional_usd"] == Decimal("10")
+    assert daily["expected_interval_ids"][-1].endswith(
+        "2026-10-26T00:00:00+00:00"
+    )
+
+
+def test_schema_exposes_first_class_request_clock_epoch_and_census_records() -> None:
+    schema = corpus.data_schema_contract()
+    required = {
+        "prospective_clock_integrity",
+        "prospective_cvd_interval_completeness",
+        "prospective_liquidation_day_census",
+        "prospective_liquidation_interval_completeness",
+        "prospective_source_request",
+        "prospective_source_response",
+        "prospective_stream_epoch",
+        "prospective_stream_liveness",
+    }
+    assert required <= set(schema["tables"])
+    assert required <= set(schema["append_only_raw_tables"])
+    liquidation_columns = schema["tables"][
+        "prospective_liquidation_feed_state"
+    ]["columns"]
+    for opaque in (
+        "websocket_continuous",
+        "heartbeat_continuous",
+        "sequence_gap_detected",
+    ):
+        assert opaque not in liquidation_columns
+    event_columns = schema["tables"]["prospective_source_event"]["columns"]
+    assert {
+        "price",
+        "quantity",
+        "sequence_number",
+        "side",
+        "signed_notional_usd",
+    } <= set(event_columns)
+    cvd_columns = schema["tables"][
+        "prospective_cvd_interval_completeness"
+    ]["columns"]
+    assert {
+        "spot_interval_completeness_sha256",
+        "perp_interval_completeness_sha256",
+        "spot_liveness_pass",
+        "perp_liveness_pass",
+    } <= set(cvd_columns)
+
+
+def test_r4_changes_no_stage_b_gate_or_passed_scientific_owner() -> None:
+    diff = corpus.semantic_diff_from_v5_blockers()
+    assert (
+        diff["threshold_change_count"],
+        diff["direction_change_count"],
+        diff["hard_role_change_count"],
+        diff["metric_intent_change_count"],
+    ) == (0, 0, 0, 0)
+    assert corpus.FROZEN_V3_DEFINITION_SHA256 == (
+        "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a"
+    )
+    assert corpus.CERTIFIED_V1_VALIDATOR_DEFINITION_SHA256 == (
+        "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7"
+    )
+    assert corpus.FROZEN_V4_DEFINITION_SHA256 == (
+        "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501"
+    )
+    assert corpus.FROZEN_V5_DEFINITION_SHA256 == (
+        "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89"
+    )

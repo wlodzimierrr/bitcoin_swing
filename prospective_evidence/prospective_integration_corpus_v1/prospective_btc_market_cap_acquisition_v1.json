@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R3",
+    "authored_by_ticket": "POSTP1-001R4",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -24,9 +24,10 @@
     "provider_documented_completed_day_available_utc": "00:35:00",
     "provider_endpoint": "https://api.coingecko.com/api/v3/coins/bitcoin/history",
     "query_parameters": {
-      "date": "DD-MM-YYYY for each requested UTC observation date",
+      "date": "YYYY-MM-DD for each requested UTC observation date",
       "localization": "false"
     },
+    "request_parameter_canonicalization": "UTF-8 RFC3986 query values, keys sorted lexicographically as date=YYYY-MM-DD&localization=false",
     "requested_date_offsets_from_poll_day": [
       1,
       2,
@@ -39,6 +40,11 @@
   },
   "asset": "BTC",
   "available_at_semantics": "The collector's locally observed wall-clock instant at which the complete, successful HTTP response for that requested date was received and validated. It is not a claim about when CoinGecko first published or finalized the value and is never back-dated to observation_time. A revision whose available_at is later than decision_time is invisible to that decision.",
+  "clock_integrity": {
+    "contract": "PROSPECTIVE_CLOCK_INTEGRITY_V1",
+    "definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
+    "response_without_valid_clock_is_scientific_evidence": false
+  },
   "consumer_binding": {
     "consuming_features": [
       "OI_INTENSITY",
@@ -59,7 +65,7 @@
     "required_observation": "Exactly poll-day minus 1 at 00:00 UTC. The latest revision of that date available by decision_time is required.",
     "selector": "required_market_cap_observation_time"
   },
-  "definition_sha256": "52667257ab8b20c8f718b1b64ebbe7d8ff0b20717b0688878b7d681b9b9fc32d",
+  "definition_sha256": "c44b93502af63ebf345fd6e6b42cb7d0c38598a46554156ade5505c694ebd73a",
   "derived_construction": {
     "construction": "market_cap = BTC price x circulating supply",
     "rejected": true,
@@ -97,6 +103,13 @@
     "source_metadata_verified_at": "2026-09-09",
     "source_revision_documentation": "https://support.coingecko.com/hc/en-us/articles/61976309053337-Why-do-historical-market-cap-values-change-shortly-after-a-date-then-settle",
     "verification_obligation": "Official CoinGecko documentation and one non-persisted schema probe on 2026-09-09 verified that /coins/bitcoin/history returns USD market cap for a requested date, labels the snapshot at 00:00 UTC, and exposes the last completed day at 00:35 on the next UTC day. CoinGecko also documents scheduled market-cap restatements through day + 2 and exposes no finality field. This contract therefore freezes observable scheduled retrieval, not an unknowable provider-first-publication instant. POSTP1-004 must implement this exact source against the generic-series boundary. If it cannot, the collector must fail closed and the contract must be reissued as PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V2 with a new collection epoch; it may never be silently adapted to whatever the provider happens to publish."
+  },
+  "request_response_identity": {
+    "observation_constructor": "ProspectiveMarketCapObservation",
+    "request_record": "CoinGeckoMarketCapRequest",
+    "response_validation_contract": "COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1",
+    "response_validation_definition_sha256": "fb15b3f4f75bfa1bf65a97d42602e034f5dd0b1c31ff51da9a96d03bc6bc1cb3",
+    "unbound_observation_time_value_provider_tuple_permitted": false
   },
   "revision_policy": "NEW_REVISION_ROW_PER_RESTATEMENT, the existing raw.generic_series convention. A restated day is a new revision row keyed by (series_id, observation_time, revision); the earlier revision is retained verbatim. For every observation_time, the pre-owner selector chooses exactly the single revision having the greatest available_at not later than decision_time. Revisions are never averaged, and equal-available_at conflicts fail closed.",
   "schema_version": "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",

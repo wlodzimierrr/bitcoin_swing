@@ -1,6 +1,16 @@
 {
   "append_only_raw_tables": [
     "prospective_run",
+    "prospective_source_request",
+    "prospective_source_response",
+    "prospective_clock_integrity",
+    "prospective_stream_epoch",
+    "prospective_stream_liveness",
+    "prospective_stream_collector_health",
+    "prospective_source_event",
+    "prospective_cvd_interval_completeness",
+    "prospective_liquidation_interval_completeness",
+    "prospective_liquidation_day_census",
     "prospective_decision_observation",
     "prospective_source_input_snapshot",
     "prospective_liquidation_feed_state",
@@ -13,13 +23,71 @@
     "sufficiency_governance_review_sha256": "independent PASS review of exact sufficiency_governance_sha256"
   },
   "database": "postgresql",
-  "definition_sha256": "1b00e7adab62f4910e692507a402e8501314461932d63d3d14f352a930898ab0",
+  "definition_sha256": "1f82de0384b18321f6d092bd697f592ec94db61c55135e474ff9fb105a48c178",
   "implementation_state": "CONTRACT_ONLY_MIGRATION_DEFERRED_TO_FIRST_COLLECTOR_TICKET",
   "redis_required": false,
   "schema": "research",
   "schema_version": "PROSPECTIVE_INTEGRATION_CORPUS_SCHEMA_V1",
   "table_prefix": "prospective_",
   "tables": {
+    "prospective_clock_integrity": {
+      "append_only": true,
+      "columns": {
+        "clock_health_sha256": "char(64) not null",
+        "collector_host_id": "text not null",
+        "collector_process_id": "text not null",
+        "estimated_utc_offset_seconds": "numeric not null",
+        "health_query_succeeded": "boolean not null",
+        "maximum_permitted_absolute_error_seconds": "numeric not null",
+        "observed_at": "timestamptz not null",
+        "offset_uncertainty_seconds": "numeric null",
+        "run_id": "uuid not null",
+        "synchronization_mechanism": "text not null",
+        "synchronization_source": "text not null",
+        "synchronized": "boolean not null",
+        "usable": "boolean not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "clock_health_sha256"
+      ],
+      "purpose": "OS/NTP/chrony evidence governing every scientific local timestamp."
+    },
+    "prospective_cvd_interval_completeness": {
+      "append_only": true,
+      "columns": {
+        "complete": "boolean not null",
+        "completion_evidence_sha256": "char(64) not null",
+        "finalized_at": "timestamptz not null",
+        "interval_end": "timestamptz not null",
+        "interval_start": "timestamptz not null",
+        "perp_clock_integrity_sha256": "char(64) not null",
+        "perp_collector_health_pass": "boolean not null",
+        "perp_epoch_id": "text not null",
+        "perp_event_census_sha256": "char(64) not null",
+        "perp_interval_completeness_sha256": "char(64) not null",
+        "perp_liveness_pass": "boolean not null",
+        "perp_sequence_integrity_pass": "boolean not null",
+        "perp_subscription_ack_before_start": "boolean not null",
+        "reason_codes": "jsonb not null",
+        "run_id": "uuid not null",
+        "spot_clock_integrity_sha256": "char(64) not null",
+        "spot_collector_health_pass": "boolean not null",
+        "spot_epoch_id": "text not null",
+        "spot_event_census_sha256": "char(64) not null",
+        "spot_interval_completeness_sha256": "char(64) not null",
+        "spot_liveness_pass": "boolean not null",
+        "spot_subscription_ack_before_start": "boolean not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "interval_start",
+        "completion_evidence_sha256"
+      ],
+      "purpose": "Mechanically derived common spot/perpetual CVD hour; complete is never caller supplied."
+    },
     "prospective_data_quality_event": {
       "append_only": true,
       "columns": {
@@ -61,17 +129,41 @@
       ],
       "purpose": "The complete scheduled slot census. Every slot the epoch schedules has exactly one row, so a silent omission is detectable by count."
     },
+    "prospective_liquidation_day_census": {
+      "append_only": true,
+      "columns": {
+        "available_at": "timestamptz null",
+        "census_sha256": "char(64) not null",
+        "census_status": "text not null",
+        "event_count": "integer null",
+        "expected_hour_count": "integer not null",
+        "hourly_record_digests": "jsonb not null",
+        "long_liquidation_notional_usd": "numeric null",
+        "observation_date": "date not null",
+        "observation_time": "timestamptz not null",
+        "run_id": "uuid not null",
+        "short_liquidation_notional_usd": "numeric null",
+        "total_liquidation_notional_usd": "numeric null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "observation_date",
+        "census_sha256"
+      ],
+      "purpose": "Exact 24-hour UTC census required before any daily liquidation value exists."
+    },
     "prospective_liquidation_feed_state": {
       "append_only": true,
       "columns": {
         "available_at": "timestamptz not null",
+        "clock_integrity_sha256": "char(64) not null",
+        "collector_health_sha256": "char(64) not null",
+        "completion_evidence_sha256": "char(64) not null",
         "contract_size_usd": "numeric not null",
-        "coverage_ended_at": "timestamptz null",
-        "coverage_started_at": "timestamptz null",
         "event_count": "integer null",
         "event_type": "text not null",
         "feed_status": "text not null",
-        "heartbeat_continuous": "boolean not null",
         "ingested_at": "timestamptz not null",
         "instrument": "text not null",
         "long_liquidation_notional_usd": "numeric null",
@@ -79,12 +171,11 @@
         "provider": "text not null",
         "revision": "text not null",
         "run_id": "uuid not null",
-        "sequence_gap_detected": "boolean not null",
         "short_liquidation_notional_usd": "numeric null",
         "source_record_ids_digest": "char(64) null",
-        "subscription_acknowledged_at": "timestamptz null",
-        "timeframe": "text not null",
-        "websocket_continuous": "boolean not null"
+        "source_stream_epoch_sha256": "char(64) not null",
+        "stream_liveness_sha256": "char(64) not null",
+        "timeframe": "text not null"
       },
       "layer": "RAW",
       "primary_key": [
@@ -96,6 +187,30 @@
         "revision"
       ],
       "purpose": "Liquidation feed state persisted independently of the aggregate numeric value, so an observed interval with zero liquidation events is never stored as, nor recovered as, a missing feed. feed_status is drawn from ['INVALID', 'LATE', 'OBSERVED_WITH_EVENTS', 'OBSERVED_ZERO_EVENTS', 'SOURCE_UNAVAILABLE'] and is owned by PROSPECTIVE_LIQUIDATION_CAPTURE_V1; the notional columns are null for every unusable status and are never defaulted to zero."
+    },
+    "prospective_liquidation_interval_completeness": {
+      "append_only": true,
+      "columns": {
+        "clock_integrity_sha256": "char(64) not null",
+        "collector_health_sha256": "char(64) not null",
+        "completion_evidence_sha256": "char(64) not null",
+        "event_count": "integer null",
+        "feed_status": "text not null",
+        "finalized_at": "timestamptz not null",
+        "interval_start": "timestamptz not null",
+        "long_liquidation_notional_usd": "numeric null",
+        "run_id": "uuid not null",
+        "short_liquidation_notional_usd": "numeric null",
+        "source_epoch_sha256": "char(64) not null",
+        "stream_liveness_sha256": "char(64) not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "interval_start",
+        "completion_evidence_sha256"
+      ],
+      "purpose": "Hourly liquidation state derived from the same verified Futures stream evidence as CVD."
     },
     "prospective_metric_comparison": {
       "append_only": true,
@@ -221,6 +336,35 @@
       ],
       "purpose": "One frozen prospective collection epoch."
     },
+    "prospective_source_event": {
+      "append_only": true,
+      "columns": {
+        "channel": "text not null",
+        "epoch_id": "text not null",
+        "event_time": "timestamptz not null",
+        "event_type": "text not null",
+        "instrument": "text not null",
+        "price": "numeric not null",
+        "provider": "text not null",
+        "quantity": "numeric not null",
+        "raw_payload_sha256": "char(64) not null",
+        "received_at": "timestamptz not null",
+        "run_id": "uuid not null",
+        "scientific_payload_sha256": "char(64) not null",
+        "sequence_number": "bigint null",
+        "side": "text not null",
+        "signed_notional_usd": "numeric not null",
+        "source_event_id": "text not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "epoch_id",
+        "source_event_id",
+        "raw_payload_sha256"
+      ],
+      "purpose": "Exact epoch-bound trade event; identical retransmissions deduplicate and conflicts invalidate."
+    },
     "prospective_source_input_snapshot": {
       "append_only": true,
       "columns": {
@@ -246,6 +390,61 @@
         "revision"
       ],
       "purpose": "Immutable point-in-time source observations, candidate-neutral. A restatement is a new revision row; an overwrite is refused."
+    },
+    "prospective_source_request": {
+      "append_only": true,
+      "columns": {
+        "acquisition_contract_sha256": "char(64) not null",
+        "asset_id": "text not null",
+        "clock_interval_evidence_sha256": "char(64) not null",
+        "collector_version": "text not null",
+        "endpoint_identity": "text not null",
+        "endpoint_version": "text not null",
+        "http_method": "text not null",
+        "http_status": "integer not null",
+        "parameter_canonicalization": "text not null",
+        "provider": "text not null",
+        "request_digest": "char(64) not null",
+        "request_record_sha256": "char(64) not null",
+        "request_start_clock_sha256": "char(64) not null",
+        "request_started_at": "timestamptz not null",
+        "requested_currency": "text not null",
+        "requested_date": "date not null",
+        "requested_field": "text not null",
+        "response_completed_at": "timestamptz not null",
+        "response_completion_clock_sha256": "char(64) not null",
+        "response_digest": "char(64) not null",
+        "run_id": "uuid not null",
+        "scheduled_poll_time": "timestamptz not null",
+        "serialized_query": "text not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "request_record_sha256"
+      ],
+      "purpose": "One immutable CoinGecko request/response provenance record. The request date, exact serialized query and response bytes are digest-bound before an observation can exist."
+    },
+    "prospective_source_response": {
+      "append_only": true,
+      "columns": {
+        "available_at": "timestamptz not null",
+        "market_cap_usd": "numeric not null",
+        "observation_time": "timestamptz not null",
+        "provider": "text not null",
+        "request_record_sha256": "char(64) not null",
+        "requested_date": "date not null",
+        "response_digest": "char(64) not null",
+        "run_id": "uuid not null",
+        "validated_response_sha256": "char(64) not null",
+        "validation_contract_sha256": "char(64) not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "validated_response_sha256"
+      ],
+      "purpose": "A validated bitcoin/USD response bound to exactly one request. observation_time is derived from requested_date and is not caller supplied."
     },
     "prospective_stop_event": {
       "append_only": true,
@@ -310,6 +509,76 @@
         "decision_time"
       ],
       "purpose": "Regime and setup outputs for one track at one decision."
+    },
+    "prospective_stream_collector_health": {
+      "append_only": true,
+      "columns": {
+        "clock_integrity_sha256": "char(64) not null",
+        "counters": "jsonb not null",
+        "epoch_id": "text not null",
+        "health_record_sha256": "char(64) not null",
+        "period_end": "timestamptz not null",
+        "period_start": "timestamptz not null",
+        "run_id": "uuid not null",
+        "usable": "boolean not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "health_record_sha256"
+      ],
+      "purpose": "Mechanical evidence that no local parser, queue, serialization or append loss occurred."
+    },
+    "prospective_stream_epoch": {
+      "append_only": true,
+      "columns": {
+        "channel": "text not null",
+        "collector_sha256": "char(64) not null",
+        "collector_version": "text not null",
+        "connection_established_at": "timestamptz not null",
+        "connection_session_id": "text null",
+        "end_reason": "text null",
+        "epoch_ended_at": "timestamptz null",
+        "epoch_started_at": "timestamptz not null",
+        "establishment_clock_sha256": "char(64) not null",
+        "establishment_health_sha256": "char(64) not null",
+        "instrument": "text not null",
+        "local_epoch_id": "text not null",
+        "provider": "text not null",
+        "run_id": "uuid not null",
+        "source_contract_sha256": "char(64) not null",
+        "subscription_acknowledged_at": "timestamptz not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "local_epoch_id"
+      ],
+      "purpose": "One uninterrupted acknowledged subscription epoch; reconnect always creates another."
+    },
+    "prospective_stream_liveness": {
+      "append_only": true,
+      "columns": {
+        "checks": "jsonb not null",
+        "epoch_id": "text not null",
+        "interval_end": "timestamptz not null",
+        "interval_end_monotonic_seconds": "numeric not null",
+        "interval_start": "timestamptz not null",
+        "interval_start_monotonic_seconds": "numeric not null",
+        "liveness_record_sha256": "char(64) not null",
+        "maximum_permitted_liveness_gap_seconds": "numeric not null",
+        "ping_cadence_seconds": "numeric not null",
+        "pong_timeout_seconds": "numeric not null",
+        "run_id": "uuid not null",
+        "usable": "boolean not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "epoch_id",
+        "interval_start"
+      ],
+      "purpose": "Collector-owned monotonic ping/pong deadline census for an exact interval."
     },
     "prospective_trade_action": {
       "append_only": true,

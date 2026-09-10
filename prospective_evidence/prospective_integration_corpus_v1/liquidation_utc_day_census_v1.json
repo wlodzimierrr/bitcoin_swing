@@ -1,0 +1,12 @@
+{
+  "admission": "The observed interval-id set must equal the exact 24 expected UTC hour identities, every hour must be OBSERVED_ZERO_EVENTS or OBSERVED_WITH_EVENTS, and duplicate identities are forbidden.",
+  "daily_positive": "deterministic Decimal sum over the exact 24 hours",
+  "daily_zero": "All 24 exact hours exist, are complete, and each has event_count=0",
+  "definition_sha256": "17ff94a70bca63c7719a3c99cc1233307828e4c081ff1da4dca16a7369dde242",
+  "dst_adjustment": false,
+  "expected_hour_count": 24,
+  "hour_identity": "[D HH:00:00Z, D HH+1:00:00Z)",
+  "interval_definition_sha256": "70382a88f01fbb4c0ef96ce1a8ff694663f4cdd803590042a2b57fba2a7c8506",
+  "schema_version": "LIQUIDATION_UTC_DAY_CENSUS_V1",
+  "version": "LIQUIDATION_UTC_DAY_CENSUS_V1"
+}

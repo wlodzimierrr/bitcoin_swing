@@ -1,0 +1,46 @@
+{
+  "begin_conditions": [
+    "connection established",
+    "trade subscription acknowledged",
+    "exact provider/instrument/channel validated",
+    "clock integrity usable",
+    "collector health usable"
+  ],
+  "clock_integrity_definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
+  "definition_sha256": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
+  "end_reasons": [
+    "BUFFER_OR_QUEUE_OVERFLOW",
+    "CLOCK_INTEGRITY_FAILURE",
+    "COLLECTOR_PROCESS_INTERRUPTION",
+    "MISSED_LIVENESS_DEADLINE",
+    "PARSER_FAILURE",
+    "PROVIDER_OR_SERVER_RESTART_INDICATION",
+    "RECONNECT",
+    "RESUBSCRIPTION",
+    "SERIALIZATION_OR_DURABLE_APPEND_FAILURE",
+    "SOCKET_CLOSE",
+    "SUBSCRIPTION_REJECTION",
+    "TRANSPORT_ERROR",
+    "UNRECOVERABLE_DUPLICATE_CONFLICT"
+  ],
+  "full_interval_rule": "One epoch must be established strictly before interval start and remain valid through interval end; reconnect and resubscription always create a new epoch and intervals are never stitched.",
+  "identity_fields": [
+    "provider",
+    "instrument",
+    "channel",
+    "connection_session_id",
+    "local_epoch_id",
+    "subscription_acknowledged_at",
+    "epoch_started_at",
+    "epoch_ended_at",
+    "end_reason",
+    "collector_version",
+    "collector_sha256",
+    "source_contract_sha256",
+    "establishment_clock_sha256",
+    "establishment_health_sha256"
+  ],
+  "reconnect_continues_epoch": false,
+  "schema_version": "SOURCE_STREAM_EPOCH_V1",
+  "version": "SOURCE_STREAM_EPOCH_V1"
+}

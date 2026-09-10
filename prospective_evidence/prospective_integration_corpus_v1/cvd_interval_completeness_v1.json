@@ -1,0 +1,22 @@
+{
+  "complete_is_caller_supplied": false,
+  "definition_sha256": "19e1a9c0e1455dbcbc192a8b9334060fd3517887ef25aa202b11cf2fe34b41e3",
+  "event_census": "Exact epoch-bound source records are sorted and deduplicated by provider event identity; identical retransmissions are idempotent and conflicting duplicates invalidate the interval.",
+  "futures_sequence_scope": "one subscription epoch",
+  "futures_sequence_semantics": "Kraken documents seq as a subscription-message sequence number but does not document cross-reconnect continuity here. Positive shape and duplicate conflicts are validated; no undocumented global or cross-reconnect increment guarantee is assumed.",
+  "liveness_definition_sha256": "0cbe771bb9f62b0294ed13ccd1938348e2114f9c5c811dc44386ad12115ffc7d",
+  "required_markets": {
+    "perp": [
+      "kraken_futures_websocket_v1_trade",
+      "PI_XBTUSD"
+    ],
+    "spot": [
+      "kraken_spot_websocket_v2_trade",
+      "BTC/USD"
+    ]
+  },
+  "schema_version": "CVD_INTERVAL_COMPLETENESS_V1",
+  "spot_trade_id_semantics": "Unique per book source-event identity and deduplication key; not a documented lossless connection-level continuity proof.",
+  "stream_epoch_definition_sha256": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
+  "version": "CVD_INTERVAL_COMPLETENESS_V1"
+}

@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R3",
+    "authored_by_ticket": "POSTP1-001R4",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -13,7 +13,7 @@
     "stage_b_outcomes_inspected": false
   },
   "consumer": "btc_predictor.features.volatility.calculate_orderliness_score liquidation_cascade component; the same normalized value is the STRESS and CAPITULATION market-state flag input",
-  "definition_sha256": "1ea06685becc20e7997c2d8761043c996f51eafce80b0e9a6f4a5d24662960a0",
+  "definition_sha256": "3cbe4693f724fbaad6927cf8fb0068395648d9a056a64b0bf13bad39186e3578",
   "downstream_formula_changed": false,
   "epoch_rule": "Any change to the input quantity, window, minimum observation count, observation universe or percentile convention requires PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V2 and a new prospective collection epoch.",
   "existing_owner": {
@@ -22,11 +22,13 @@
     "new_adapter_required": true
   },
   "input": {
+    "daily_census_contract": "LIQUIDATION_UTC_DAY_CENSUS_V1",
+    "daily_census_definition_sha256": "17ff94a70bca63c7719a3c99cc1233307828e4c081ff1da4dca16a7369dde242",
     "feed_status_gate": [
       "OBSERVED_WITH_EVENTS",
       "OBSERVED_ZERO_EVENTS"
     ],
-    "quantity": "total observed liquidation notional in USD for the daily observation: long_liquidation_notional_usd + short_liquidation_notional_usd summed over the day's captured intervals",
+    "quantity": "total observed liquidation notional in USD for one valid LIQUIDATION_UTC_DAY_CENSUS_V1: long plus short notionals summed over exactly the 24 expected complete UTC hours",
     "side_treatment": "Both sides are summed. liquidation_cascade is an aggregate market-stress component and no repository consumer of liquidation_percentile expresses a directional preference, so no side is weighted, dropped or taken as a maximum.",
     "source_contract": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
     "units": "USD"
@@ -48,7 +50,7 @@
     "observed_zero_events_notional": "0 USD",
     "statement": "A day containing any interval whose feed_status is ['INVALID', 'LATE', 'SOURCE_UNAVAILABLE'] yields no liquidation observation: the adapter returns None with reason LIQUIDATION_FEED_UNAVAILABLE, the day enters neither the current value nor the history, and the consuming decision is NOT_EVALUABLE with reason REQUIRED_INPUT_MISSING. A day whose intervals are all OBSERVED_ZERO_EVENTS yields a legitimate 0 USD notional that is normalized like any other observation. A missing feed can never become a zero percentile."
   },
-  "observation_universe": "One observation per canonical UTC daily session in which every captured hourly liquidation interval is observed, restricted to the frozen provider and instrument universe of PROSPECTIVE_LIQUIDATION_CAPTURE_V1. The universe is a predicate over feed state alone and never reads a comparison outcome.",
+  "observation_universe": "One observation per canonical UTC daily session in which every one of the exact 24 expected hourly liquidation intervals is present and observed, with no duplicate interval identity, restricted to the frozen provider and instrument universe of PROSPECTIVE_LIQUIDATION_CAPTURE_V1. The universe is a predicate over feed state alone and never reads a comparison outcome.",
   "output": {
     "field": "liquidation_percentile",
     "range": "0 to 100 inclusive",
