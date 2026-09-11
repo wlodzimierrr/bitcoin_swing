@@ -742,7 +742,7 @@ unauthorized pending a corrected successor protocol and its independent review.
 
 ## POSTP1-001R5 — `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1`
 
-**Status:** `COMPLETE / AWAITING SIXTH INDEPENDENT xHIGH REVIEW`
+**Status:** `COMPLETE / PASSED SIXTH INDEPENDENT xHIGH REVIEW`
 **Dependencies:** POSTP1-001R4 implementation and POSTP1-002R4 failed review
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** sixth independent xHigh review of the exact corrected hash
@@ -884,32 +884,80 @@ POSTP1-001R5 CORRECTED PROTOCOL 8915d991...fbfac7d7
   -> PROSPECTIVE COLLECTION
 ```
 
-Collection remains unauthorized. POSTP1-003 may not begin until the sixth
-independent review passes on this exact hash, POSTP1-004 stays transitively
-blocked, BTC-019 does not reopen, and Epic T remains closed. This is the final
-planned source-provenance correction pass; a further failure is a candidate for
-`PROSPECTIVE_PROTOCOL_TERMINALLY_BLOCKED_BY_SOURCE_INTEGRITY` rather than
-another correction microticket.
+The sixth independent review passed on this exact hash. POSTP1-003 is now
+dependency-satisfied, but POSTP1-004 and collection remain blocked pending the
+exact-hash POSTP1-003 review and the later POSTP1-004 implementation review.
+BTC-019 does not reopen and Epic T remains closed.
 
 ### POSTP1-002R5 — sixth independent exact-hash xHigh review
 
-**Status:** `READY / NOT STARTED`
+**Status:** `COMPLETE / PASS`
 **Dependency:** POSTP1-001R5 implementation commit
 `428356665dff0985cf8b1c379f6f18bf6cc5bac1`
 **Review target:** exact protocol hash
 `8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
 **Review model:** independent GPT-5.6 Sol — Extra High (xHigh)
 
-The review must independently reproduce the parent and all 25 mechanically
-enumerated child hashes, verify all 25 parent bindings, replay the complete
+The review independently reproduced the parent and all 25 mechanically
+enumerated child hashes, verified all 25 parent bindings, replayed the complete
 CoinGecko, clock, stream/CVD, runtime-metadata and liquidation evidence graphs,
-and rerun the P1-A through P1-D adversarial boundaries. It must also verify
-zero Stage-B threshold/direction/hard-role/intent changes, retained failed
-lineage, no sufficiency-minimum selection, no collection, and no BTC-019 sealed
-access. PASS makes POSTP1-003 dependency-satisfied; review failure leaves
-POSTP1-003, POSTP1-004 and collection blocked and must use one of the bounded
-terminal/incomplete source-integrity classifications rather than silently
-authoring another correction task.
+and reran the P1-A through P1-D adversarial boundaries. It also verified zero
+Stage-B threshold/direction/hard-role/intent changes, retained failed lineage,
+no sufficiency-minimum selection, no collection, and no BTC-019 sealed access.
+PASS makes POSTP1-003 dependency-satisfied; POSTP1-004 and collection remain
+blocked by their later required reviews.
+
+### POSTP1-002R5 review result
+
+The sixth independent GPT-5.6 Sol xHigh review returned `PASS` /
+`PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE` for implementation
+`428356665dff0985cf8b1c379f6f18bf6cc5bac1`, documentation handoff
+`933f0bce363779d8b68a75895d157290e821240d`, and exact protocol hash
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`.
+
+Review fix `ab3b353e344465966da321af02b08f6fe28213f5` closed two uniquely
+mechanical enforcement gaps without changing any frozen protocol semantics or
+artifact hash:
+
+- stream collector-health and epoch-establishment health must be PIT-valid,
+  share the epoch's explicit monotonic domain and resolve inside the interval's
+  clock evidence; clock/metadata Boolean schema fields now reject truthy
+  non-Booleans;
+- the CVD 21-hour and CoinGecko revision selectors must replay their persisted
+  surface and complete transitive evidence graph through
+  `SCIENTIFIC_EVIDENCE_RESOLVER_V1` before producing historical-owner inputs.
+
+After the fix, deletion of any tested clock, epoch, liveness,
+collector-health, metadata, completeness or source-event record refuses, as do
+wrong-hour/provider/instrument/epoch/domain substitutions and rehashed
+scientific surfaces. Exact CoinGecko bytes, request/date identity, the inclusive
+45.000-second boundary, the 45.001-second refusal, append-only PIT revisions,
+future-received event exclusion, the 24-hour liquidation census and the
+incomplete-hour rehash attack all replay fail closed. Arbitrary non-UTF-8 bytes
+round-trip through the tagged canonical content representation without
+confusing the provider-byte digest with the canonical-record digest.
+
+The review independently recomputed V3 `4232e886...bf71a`, certified V1
+`8e6254e0...c7ffe7`, V4 `670ff12d...3f501`, V5 `95e43ee1...775a89`, the
+prospective parent and all 25 children. All 25 children remain parent-bound and
+all 25 semantic mutation probes moved both child and parent hashes. The five
+failed predecessors remain explicitly non-authoritative and pre-data. Direct
+comparison with `reference_composite_v2.V2_APPROVAL_GATES` found zero threshold,
+direction, hard-role or metric-intent changes.
+
+Validation passed 230 focused replayability tests, 2,352 selected
+source/feature/PIT/lifecycle/paper/backtest/price-lineage/authority regressions,
+and the complete 4,670-test Python 3.12.14 suite with `RuntimeWarning` promoted
+to an error. Clean-directory artifact regeneration, hash-seed/CWD/fresh-process
+reproduction and `compileall` pass. Scoped `git diff --check` passes; the
+repository-wide command reports only the unrelated pre-existing trailing blank
+line in `prompts/review_epic.md`, which this review did not modify.
+
+No qualifying observation was collected, no persistent collection began, no
+real Stage-B aggregate was evaluated, no sufficiency minimum was selected, and
+the BTC-019 sealed sample was neither collected nor opened. PASS authorizes
+only POSTP1-003 sufficiency governance; it does not authorize POSTP1-004 or
+prospective collection.
 
 ## Next EPIC X tasks
 
@@ -924,7 +972,7 @@ authoring another correction task.
 | POSTP1-002R3 | fourth independent xHigh review of `e60a9514...a7dca` | COMPLETE / FAIL |
 | POSTP1-001R4 | `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED FIFTH REVIEW |
 | POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | COMPLETE / FAIL |
-| POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / AWAITING SIXTH REVIEW |
-| POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | READY; not started |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R5 exact-hash review PASS |
+| POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / PASSED SIXTH REVIEW |
+| POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | READY; next dependency-satisfied ticket |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |

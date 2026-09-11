@@ -28,7 +28,7 @@ canonical production reference = UNRESOLVED
 no further BTC-019 calibration/evidence-design work authorized
 
 PROSPECTIVE_INTEGRATION_CORPUS_V1 =
-REPLAYABLE_PRE_DATA_PROTOCOL_AWAITING_SIXTH_XHIGH_REVIEW
+PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
 
 corrected current protocol hash =
 8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
@@ -50,11 +50,14 @@ fifth review result =
 FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID /
 PROSPECTIVE_PROTOCOL_REQUIRES_FIX
 
-sixth review =
-NOT STARTED; POSTP1-002R5 must review exact hash 8915d991...fbfac7d7
+sixth review result =
+PASS
 
 execution classification =
-PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW
+PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
+
+review-fix commit =
+ab3b353e344465966da321af02b08f6fe28213f5
 
 newly frozen prospective acquisition contracts =
 PROSPECTIVE_CVD_ACQUISITION_V1
@@ -72,9 +75,8 @@ COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1
 KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1
 SCIENTIFIC_EVIDENCE_RESOLVER_V1
 
-collection = NOT AUTHORIZED; the POSTP1-002R5 sixth independent exact-hash
-review, the POSTP1-003 exact-hash review, and the POSTP1-004 implementation
-review must all pass first
+collection = NOT AUTHORIZED; the POSTP1-003 exact-hash review and the
+POSTP1-004 implementation review must both pass first
 qualifying observations collected = NONE
 real Stage-B outcomes evaluated = NONE
 BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
@@ -108,8 +110,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   liquidation daily reducer resolves and replays each cited hourly completeness
   record. Every material normalized record is also bound to an exact canonical
   payload in the content-addressed scientific evidence store; typed tables are
-  query projections, not authorities. The sixth independent exact-hash review
-  has not started.
+  query projections, not authorities. POSTP1-002R5 passed after the mechanical
+  review fix `ab3b353e...28213f5` made collector-health evidence same-domain
+  and PIT-valid, rejected truthy non-Boolean schema fields, and required the CVD
+  and market-cap selectors to consume resolver-replayed evidence. The protocol
+  and all 25 child hashes remain unchanged. POSTP1-003 is now ready.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -122,25 +127,26 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001R5 is complete and awaits its
-  required independent review; BTC-019 is terminal and is not in progress
-- **Current BLOCKED tickets:** POSTP1-003 remains blocked until POSTP1-002R5
-  passes on the exact hash `8915d991...fbfac7d7`. POSTP1-004 remains transitively
-  blocked
-- **Next dependency-satisfied ticket:** POSTP1-002R5, the sixth independent
-  exact-hash xHigh review of `8915d991...fbfac7d7`. POSTP1-003, POSTP1-004 and
+- **Current IN_PROGRESS ticket:** None. POSTP1-001R5 and its required
+  POSTP1-002R5 review are complete; BTC-019 is terminal and is not in progress
+- **Current BLOCKED tickets:** POSTP1-004 remains blocked until POSTP1-003 and
+  its independent exact-hash review pass. Collection remains blocked through
+  the independent POSTP1-004 implementation review
+- **Next dependency-satisfied ticket:** POSTP1-003,
+  `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1`. POSTP1-004 and
   collection remain unauthorized, and BTC-019 does not reopen. The failed V2
   hash `7fda8ac3...ad8be6` and its predecessors remain immutable lineage
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 4,660 passed with Python 3.12.14 and
-  `RuntimeWarning` treated as an error on 2026-09-11; the POSTP1-001R5 focused
-  prospective corpus/source-integrity suite is 220 passed and the selected
-  source/feature/PIT/lifecycle/backtest/authority regression suite is 3,800
-  passed
-- **Last relevant implementation/review commit:** POSTP1-001R5's implementation
-  commit `428356665dff0985cf8b1c379f6f18bf6cc5bac1` refreezes
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `8915d991...fbfac7d7`
-  and awaits POSTP1-002R5. Failed predecessors `aaa05c72...d37326`,
+- **Latest verified test baseline:** 4,670 passed with Python 3.12.14 and
+  `RuntimeWarning` treated as an error on 2026-09-11; the POSTP1-002R5 focused
+  prospective corpus/source-integrity suite is 230 passed and the selected
+  source/feature/PIT/lifecycle/paper/backtest/price-lineage/authority regression
+  suite is 2,352 passed
+- **Last relevant implementation/review commit:** POSTP1-002R5 passed with
+  review fix `ab3b353e344465966da321af02b08f6fe28213f5`. POSTP1-001R5's
+  implementation commit `428356665dff0985cf8b1c379f6f18bf6cc5bac1` remains
+  bound to `PROSPECTIVE_INTEGRATION_CORPUS_V1` hash
+  `8915d991...fbfac7d7`. Failed predecessors `aaa05c72...d37326`,
   `0d4f1437...f45a9e`, `40e37067...c9862`, `e60a9514...a7dca` and
   `fd946a09...bedff` remain
   explicit non-authoritative pre-data lineage. The failed immediate predecessor
@@ -194,7 +200,7 @@ V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
 PROSPECTIVE_INTEGRATION_CORPUS_V1
-  = REPLAYABLE_PRE_DATA_PROTOCOL_AWAITING_SIXTH_XHIGH_REVIEW
+  = PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
 corrected current prospective corpus protocol hash
   = 8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
 failed predecessor prospective protocol hashes
@@ -206,9 +212,9 @@ failed predecessor prospective protocol hashes
 POSTP1-002R4 review result
   = FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID
 POSTP1-002R5 sixth review
-  = NOT STARTED
+  = PASS
 prospective execution classification
-  = PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW
+  = PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
 prospective collection = NOT AUTHORIZED
 ```
 
@@ -837,8 +843,10 @@ four findings under the frozen principle that scientific surface records are
 not authorities: every derived row must resolve, re-digest, revalidate and
 identity-match its complete immutable evidence graph before any scientific
 value or status is derived. It refreezes the corpus at `8915d991...fbfac7d7`
-with 25 parent-bound children and awaits the sixth independent exact-hash
-review, POSTP1-002R5, which must pass before POSTP1-003.
+with 25 parent-bound children. POSTP1-002R5 passed after review fix
+`ab3b353e...28213f5` closed local health-domain/PIT/schema enforcement and
+selector replay gaps without moving that hash or any child. POSTP1-003 is now
+the next dependency-satisfied ticket.
 Collection is not authorized; no
 qualifying observation was collected, no real Stage-B outcome was evaluated,
 EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
@@ -847,12 +855,12 @@ unopened with no automatic dependency that would ever open it.
 ## Important Unresolved Decisions
 
 - EPIC X's source-replayability correction at `8915d991...fbfac7d7` resolves the
-  four P1 findings recorded against `fd946a09...bedff` and awaits POSTP1-002R5,
-  the sixth independent exact-hash review, which must pass before POSTP1-003 may
-  start. This was the final planned source-provenance correction pass: a further
-  failure is a candidate for
-  `PROSPECTIVE_PROTOCOL_TERMINALLY_BLOCKED_BY_SOURCE_INTEGRITY` rather than
-  another correction microticket.
+  four P1 findings recorded against `fd946a09...bedff` and passed POSTP1-002R5,
+  the sixth independent exact-hash review, after review fix
+  `ab3b353e...28213f5`. Protocol definition is closed for sufficiency
+  governance. POSTP1-003 must now select the still-undefined sufficiency minima
+  pre-data and pass its own independent exact-hash review before POSTP1-004 may
+  begin; no prospective collection is authorized.
 - Production canonical BTC reference selection remains unresolved under
   BTC-019, but the research branch that was blocking it has now converged. The
   calendar-contiguity contract, the re-measurement of the already-inspected
