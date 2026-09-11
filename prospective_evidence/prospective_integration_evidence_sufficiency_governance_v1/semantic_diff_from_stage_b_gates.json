@@ -1,12 +1,13 @@
 {
   "certified_corpus_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
-  "definition_sha256": "2cee76082cb82c157120c2a24ced0e4ec4756731531a95812dc0e546d01d9b03",
+  "definition_sha256": "3d8e9228248ab49d0004a04af53693f47499682f99765f7a6130f1ec818a5fdd",
   "direction_change_count": 0,
   "hard_role_change_count": 0,
   "metric_count": 8,
   "metric_intent_change_count": 0,
   "rows": {
     "cross_market_confirmed_stop_preservation_rate": {
+      "cadence": "STOP_HOURLY",
       "direction": "minimum",
       "hard": true,
       "metric": "cross_market_confirmed_stop_preservation_rate",
@@ -18,11 +19,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots at the control track's active stop where both reference outcomes are usable at that decision_time.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "1.0",
       "universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS"
     },
     "gap_through_stop_consensus_agreement_rate": {
+      "cadence": "STOP_HOURLY",
       "direction": "minimum",
       "hard": true,
       "metric": "gap_through_stop_consensus_agreement_rate",
@@ -34,11 +37,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Classified GAP_THROUGH_STOP_EVENT slots at the control track's active stop where the exact immediately preceding hourly raw-provider consensus close and both current reference opens are usable.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.99",
       "universe": "GAP_THROUGH_STOP_EVENTS"
     },
     "isolated_venue_stop_suppression_rate": {
+      "cadence": "STOP_HOURLY",
       "direction": "minimum",
       "hard": true,
       "metric": "isolated_venue_stop_suppression_rate",
@@ -50,11 +55,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Classified ISOLATED_VENUE_STOP_EVENT slots at the control track's active stop where exactly one provider touches, at least the confirmation quorum is observed not touching, and both reference outcomes are usable.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.95",
       "universe": "ISOLATED_VENUE_STOP_EVENTS"
     },
     "regime_classification_disagreement_rate": {
+      "cadence": "STRATEGY_DAILY",
       "direction": "maximum",
       "hard": true,
       "metric": "regime_classification_disagreement_rate",
@@ -66,11 +73,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Daily decision observations where both tracks hold the complete required regime inputs and both produce a REGIME_CLASSIFICATION.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.02",
       "universe": "REGIME_EVALUABLE_DECISION_TIMES"
     },
     "risk_size_p95_relative_difference": {
+      "cadence": "STRATEGY_DAILY",
       "direction": "maximum",
       "hard": true,
       "metric": "risk_size_p95_relative_difference",
@@ -82,11 +91,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Daily decision observations where both tracks independently permit an entry and both authoritative INITIAL_POSITION_SIZE results are complete with a strictly positive position_notional.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.10",
       "universe": "SIZING_EVALUABLE_DECISION_TIMES"
     },
     "setup_classification_disagreement_rate": {
+      "cadence": "STRATEGY_DAILY",
       "direction": "maximum",
       "hard": true,
       "metric": "setup_classification_disagreement_rate",
@@ -98,11 +109,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Daily decision observations where both tracks hold the complete input set of all four authoritative setup detectors.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.01",
       "universe": "SETUP_EVALUABLE_DECISION_TIMES"
     },
     "trade_action_disagreement_rate": {
+      "cadence": "STRATEGY_DAILY",
       "direction": "maximum",
       "hard": true,
       "metric": "trade_action_disagreement_rate",
@@ -114,11 +127,13 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Every daily decision observation where both tracks produce a complete deterministic ordered action envelope, whether flat or in position. Flat-vs-position slots remain comparable because both owners still produce actual action envelopes.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.01",
       "universe": "ACTION_EVALUABLE_DECISION_TIMES"
     },
     "trade_eligibility_disagreement_rate": {
+      "cadence": "STRATEGY_DAILY",
       "direction": "maximum",
       "hard": true,
       "metric": "trade_eligibility_disagreement_rate",
@@ -130,6 +145,7 @@
         "metric_intent": true,
         "threshold": true
       },
+      "performance_denominator": "Daily decision observations where both tracks have complete inputs for TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1 and each produces PERMITTED or NOT_PERMITTED. Flat-vs-position and both-position states stay in this universe; lifecycle state is a permission input.",
       "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
       "threshold": "0.01",
       "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES"

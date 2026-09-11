@@ -1,186 +1,133 @@
 {
   "ambient_decimal_context_consumed": false,
-  "definition_sha256": "a128969a3b2e1e0060a1b53ce2d01b153b436263509a67894b17b2d626bbd062",
+  "common_rate_evidence_strength_sha256": "03aba5d79c457e3a4004d2a84f84ca4b9ad854383e8e960a63455da1369e5fff",
+  "definition_sha256": "31ef1530f1de8c51551a0b528b7683d9120c2f8fc6b14539207314ec568b4d9e",
   "nearest_rank_p95": {
-    "derivation": "smallest positive n for which ceil(0.95*n) < n, so the selected nearest-rank p95 is not the sample maximum",
-    "estimator": "nearest_rank_p95_of_the_absolute_relative_differences",
-    "formula": "rank = ceil(0.95 * n)",
-    "metric": "risk_size_p95_relative_difference",
-    "minimum_denominator": 20,
-    "n_min": {
-      "denominator": 20,
-      "is_sample_maximum": false,
-      "rank": 19,
-      "tail_observations_above_rank": 1
+    "confidence": "0.95",
+    "definition_sha256": "7cca33f4ba085a946b193a786b53e7e0744611af43f5ada3bdd942ef468f34d1",
+    "formula": "1 - 0.95^n - n * 0.05 * 0.95^(n-1)",
+    "iid_scope": "PRE_DATA_SUFFICIENCY_CALCULATION_ONLY",
+    "minimum_denominator": 93,
+    "minimum_distinct_sizing_evidence_units": 93,
+    "minimum_repeated_tail_occurrences": 2,
+    "n_92": {
+      "probability": "0.94786359706832297071275334555109578761521757634568497087748121876263472445581796",
+      "satisfies": false
     },
-    "n_min_minus_one": {
-      "denominator": 19,
-      "is_sample_maximum": true,
-      "rank": 19
+    "n_93": {
+      "probability": "0.95002420475738346021474735105078010632665901011874667478706307816526427641530659",
+      "satisfies": true
     },
-    "n_min_plus_one": {
-      "denominator": 21,
-      "is_sample_maximum": false,
-      "rank": 20,
-      "tail_observations_above_rank": 1
-    },
-    "precision_claim": "TAIL_ORDER_STATISTIC_IDENTIFIABILITY_ONLY",
-    "probability": "0.95",
-    "rule_id": "NEAREST_RANK_P95_NOT_SAMPLE_MAXIMUM_V1",
-    "sufficiency_reason": "At n=20 the nearest-rank p95 first selects the nineteenth order statistic and leaves one observed value above it. This is enough to make the frozen integration diagnostic a tail statistic rather than the maximum; it is not a claim about population-quantile precision or distributional coverage."
+    "population_quantile_confidence_interval_claim": false,
+    "quantile": "0.95",
+    "risk_statistic_changed": false,
+    "risk_statistic_owner": "btc_predictor.research.prospective_integration_corpus.nearest_rank_percentile",
+    "schema_version": "P95_TAIL_REPEATABILITY_SUFFICIENCY_V1",
+    "tail_probability": "0.05"
   },
+  "p95_tail_repeatability_sha256": "7cca33f4ba085a946b193a786b53e7e0744611af43f5ada3bdd942ef468f34d1",
   "rate_metrics": {
     "cross_market_confirmed_stop_preservation_rate": {
-      "capability_formula": "WilsonLower(successes=n,n,z) >= threshold",
-      "derivation_trace": {
-        "boundary_proof": "For every finite positive n, WilsonLower(n,n) = n / (n + z^2) < 1 because z^2 > 0.",
-        "n_capability": null,
-        "n_capability_state": "NO_FINITE_POSITIVE_INTEGER",
-        "n_minus_one_exception_criterion_satisfied": false,
-        "n_selected": 1,
-        "n_selected_exception_criterion": "denominator is positive, the empirical rate is defined, and the only non-perfect one-observation sample is distinguishable",
-        "n_selected_exception_criterion_satisfied": true,
-        "wilson_lower_at_selected_n": "0.2065493143772373879497053966633758",
-        "z_squared": "3.841458820694125958778477605230983669968161"
-      },
       "derived_n_capability": null,
       "direction": "minimum",
-      "exception": {
-        "alternatives_considered": {
-          "change_inherited_threshold": "REFUSED_CERTIFIED_CORPUS_CHANGE",
-          "import_another_metrics_tolerance": "REFUSED_NEW_UNCALIBRATED_PERFORMANCE_THRESHOLD",
-          "round_wilson_lower_to_one": "REFUSED_HIDDEN_NUMERICAL_APPROXIMATION",
-          "unreachable_infinite_minimum": "REFUSED_NO_OPERATIONAL_STOPPING_POINT"
-        },
-        "applied": true,
-        "does_not_change_performance_gate": true,
-        "method_id": "EXACT_POINT_RATE_BOUNDARY_IDENTIFIABILITY_EXCEPTION_V1",
-        "precision_claim": "ESTIMATOR_IDENTIFIABILITY_ONLY",
-        "reason": "The inherited exact 1.0 point-rate boundary admits no finite Wilson lower-bound capability n. Replacing 1.0 by an interior tolerance would change the certified corpus. The smallest positive denominator is therefore frozen as an explicit estimator-identifiability exception, not as a confidence or population-precision claim."
-      },
+      "evidence_strength_confidence": "0.95",
+      "evidence_strength_epsilon": "0.01",
+      "evidence_strength_reference": "0.99",
+      "evidence_strength_rule_id": "COMMON_RATE_EVIDENCE_STRENGTH_V1",
       "metric": "cross_market_confirmed_stop_preservation_rate",
-      "minimum_denominator": 1,
-      "successes_at_capability_probe": "n",
+      "minimum_denominator": 381,
+      "performance_threshold": "1.0",
+      "performance_threshold_changed": false,
       "threshold": "1.0",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
     },
     "gap_through_stop_consensus_agreement_rate": {
-      "capability_formula": "WilsonLower(successes=n,n,z) >= threshold",
-      "derivation_trace": {
-        "bound_at_n_capability": "0.9900180743715454424098236476801804",
-        "bound_at_n_capability_minus_one": "0.9899920690367931131496650223886456",
-        "n_capability_criterion_satisfied": true,
-        "n_capability_minus_one_criterion_satisfied": false
-      },
       "derived_n_capability": 381,
       "direction": "minimum",
-      "exception": {
-        "applied": false
-      },
       "metric": "gap_through_stop_consensus_agreement_rate",
       "minimum_denominator": 381,
-      "successes_at_capability_probe": "n",
+      "n_capability_bound": "0.9900180743715454424098236476801804",
+      "n_capability_criterion_satisfied": true,
+      "n_capability_minus_one_bound": "0.9899920690367931131496650223886456",
+      "n_capability_minus_one_criterion_satisfied": false,
+      "performance_threshold": "0.99",
+      "performance_threshold_changed": false,
       "threshold": "0.99",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
     },
     "isolated_venue_stop_suppression_rate": {
-      "capability_formula": "WilsonLower(successes=n,n,z) >= threshold",
-      "derivation_trace": {
-        "bound_at_n_capability": "0.9500079920442688804183618378937623",
-        "bound_at_n_capability_minus_one": "0.9493488274035421874940576574846318",
-        "n_capability_criterion_satisfied": true,
-        "n_capability_minus_one_criterion_satisfied": false
-      },
       "derived_n_capability": 73,
       "direction": "minimum",
-      "exception": {
-        "applied": false
-      },
       "metric": "isolated_venue_stop_suppression_rate",
       "minimum_denominator": 73,
-      "successes_at_capability_probe": "n",
+      "n_capability_bound": "0.9500079920442688804183618378937623",
+      "n_capability_criterion_satisfied": true,
+      "n_capability_minus_one_bound": "0.9493488274035421874940576574846318",
+      "n_capability_minus_one_criterion_satisfied": false,
+      "performance_threshold": "0.95",
+      "performance_threshold_changed": false,
       "threshold": "0.95",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
     },
     "regime_classification_disagreement_rate": {
-      "capability_formula": "WilsonUpper(successes=0,n,z) <= threshold",
-      "derivation_trace": {
-        "bound_at_n_capability": "0.01992029537728166603718379552505547",
-        "bound_at_n_capability_minus_one": "0.02002413265781392210379911190213844",
-        "n_capability_criterion_satisfied": true,
-        "n_capability_minus_one_criterion_satisfied": false
-      },
       "derived_n_capability": 189,
       "direction": "maximum",
-      "exception": {
-        "applied": false
-      },
       "metric": "regime_classification_disagreement_rate",
       "minimum_denominator": 189,
-      "successes_at_capability_probe": 0,
+      "n_capability_bound": "0.01992029537728166603718379552505547",
+      "n_capability_criterion_satisfied": true,
+      "n_capability_minus_one_bound": "0.02002413265781392210379911190213844",
+      "n_capability_minus_one_criterion_satisfied": false,
+      "performance_threshold": "0.02",
+      "performance_threshold_changed": false,
       "threshold": "0.02",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
     },
     "setup_classification_disagreement_rate": {
-      "capability_formula": "WilsonUpper(successes=0,n,z) <= threshold",
-      "derivation_trace": {
-        "bound_at_n_capability": "0.009981925628454557590176352319818915",
-        "bound_at_n_capability_minus_one": "0.01000793096320688685033497761135422",
-        "n_capability_criterion_satisfied": true,
-        "n_capability_minus_one_criterion_satisfied": false
-      },
       "derived_n_capability": 381,
       "direction": "maximum",
-      "exception": {
-        "applied": false
-      },
       "metric": "setup_classification_disagreement_rate",
       "minimum_denominator": 381,
-      "successes_at_capability_probe": 0,
+      "n_capability_bound": "0.009981925628454557590176352319818915",
+      "n_capability_criterion_satisfied": true,
+      "n_capability_minus_one_bound": "0.01000793096320688685033497761135422",
+      "n_capability_minus_one_criterion_satisfied": false,
+      "performance_threshold": "0.01",
+      "performance_threshold_changed": false,
       "threshold": "0.01",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
     },
     "trade_action_disagreement_rate": {
-      "capability_formula": "WilsonUpper(successes=0,n,z) <= threshold",
-      "derivation_trace": {
-        "bound_at_n_capability": "0.009981925628454557590176352319818915",
-        "bound_at_n_capability_minus_one": "0.01000793096320688685033497761135422",
-        "n_capability_criterion_satisfied": true,
-        "n_capability_minus_one_criterion_satisfied": false
-      },
       "derived_n_capability": 381,
       "direction": "maximum",
-      "exception": {
-        "applied": false
-      },
       "metric": "trade_action_disagreement_rate",
       "minimum_denominator": 381,
-      "successes_at_capability_probe": 0,
+      "n_capability_bound": "0.009981925628454557590176352319818915",
+      "n_capability_criterion_satisfied": true,
+      "n_capability_minus_one_bound": "0.01000793096320688685033497761135422",
+      "n_capability_minus_one_criterion_satisfied": false,
+      "performance_threshold": "0.01",
+      "performance_threshold_changed": false,
       "threshold": "0.01",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
     },
     "trade_eligibility_disagreement_rate": {
-      "capability_formula": "WilsonUpper(successes=0,n,z) <= threshold",
-      "derivation_trace": {
-        "bound_at_n_capability": "0.009981925628454557590176352319818915",
-        "bound_at_n_capability_minus_one": "0.01000793096320688685033497761135422",
-        "n_capability_criterion_satisfied": true,
-        "n_capability_minus_one_criterion_satisfied": false
-      },
       "derived_n_capability": 381,
       "direction": "maximum",
-      "exception": {
-        "applied": false
-      },
       "metric": "trade_eligibility_disagreement_rate",
       "minimum_denominator": 381,
-      "successes_at_capability_probe": 0,
+      "n_capability_bound": "0.009981925628454557590176352319818915",
+      "n_capability_criterion_satisfied": true,
+      "n_capability_minus_one_bound": "0.01000793096320688685033497761135422",
+      "n_capability_minus_one_criterion_satisfied": false,
+      "performance_threshold": "0.01",
+      "performance_threshold_changed": false,
       "threshold": "0.01",
       "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
       "wilson_z": "1.959963984540054235631"
@@ -193,9 +140,7 @@
     "formula_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
     "method_owner": "btc_predictor.research.structural_threshold_calibration.wilson_interval",
     "owner_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
-    "purpose": "PRE_DATA_MINIMUM_DENOMINATOR_SELECTION_ONLY",
     "replaces_inherited_point_metric_pass_fail": false,
-    "rule_id": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
     "z": "1.959963984540054235631"
   }
 }

@@ -1,9 +1,4 @@
-"""Synthetic POSTP1-003 tests for the frozen pre-data sufficiency governance.
-
-No fixture contains a real candidate outcome, metric numerator, relative sizing
-difference or collected observation.  The blind monitor receives only scheduled
-slot identity, certified universe membership and accounting dispositions.
-"""
+"""Synthetic POSTP1-003R1 tests; no real outcome or observation is used."""
 
 from __future__ import annotations
 
@@ -29,118 +24,69 @@ from btc_predictor.research.structural_threshold_calibration import wilson_inter
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT_DIR = REPOSITORY_ROOT / sufficiency.OUTPUT_NAMESPACE
-EVALUATION_CONTRACT_SHA256 = "e" * 64
-EPOCH_ID = "SYNTHETIC_POSTP1_003_EPOCH"
 EPOCH_START = datetime(2026, 1, 1, tzinfo=UTC)
+SUFFICIENT_DECISION_TIME = EPOCH_START + timedelta(days=381, minutes=5)
 
 
-def _blind_slot(
-    expected: dict[str, str],
-    *,
-    overrides: dict[str, sufficiency.BlindMetricDisposition] | None = None,
-) -> sufficiency.BlindScheduledSlot:
-    observation_time = datetime.fromisoformat(expected["observation_time"])
-    decision_time = datetime.fromisoformat(expected["decision_time"])
-    applicable = {
-        metric
-        for metric, cadence in sufficiency._metric_cadences().items()
-        if cadence == expected["cadence"]
-    }
-    rows = {
-        metric: sufficiency.BlindMetricDisposition(
-            metric=metric,
-            universe_member=True,
-            disposition=corpus.STATE_EVALUATED,
-        )
-        for metric in applicable
-    }
-    rows.update(overrides or {})
-    return sufficiency.BlindScheduledSlot(
-        cadence=expected["cadence"],
-        observation_time=observation_time,
-        decision_time=decision_time,
-        slot_id=expected["slot_id"],
-        global_disposition=corpus.STATE_EVALUATED,
-        global_reason_codes=(),
-        metrics=tuple(rows[metric] for metric in sorted(rows)),
+def _evaluation_contract(tag: str = "A") -> dict[str, object]:
+    return sufficiency._with_definition_hash(
+        {
+            "candidate_reference_identity": f"SYNTHETIC_CANDIDATE_{tag}",
+            "control_reference_identity": "SYNTHETIC_CONTROL",
+            "schema_version": "SYNTHETIC_STAGE_B_EVALUATION_CONTRACT_V1",
+        }
     )
 
 
-def _synthetic_slots_through(
+def _authorized_registry(
+    *, tag: str = "A",
+) -> tuple[sufficiency.EvaluationEpochRegistry, dict[str, object]]:
+    registry = sufficiency.EvaluationEpochRegistry()
+    authorization = registry.authorize_initial_epoch(
+        evaluation_contract=_evaluation_contract(tag),
+        epoch_observation_start=EPOCH_START,
+    )
+    return registry, authorization
+
+
+def _evidence_through(
     current: datetime,
-) -> tuple[sufficiency.BlindScheduledSlot, ...]:
-    return tuple(
-        _blind_slot(row)
-        for row in sufficiency._expected_slots_through(EPOCH_START, current)
-    )
+    *,
+    authorization_sha256: str,
+    transform: object | None = None,
+) -> tuple[
+    tuple[sufficiency.BlindEvidenceReference, ...],
+    sufficiency.BlindEvidenceResolver,
+    dict[str, dict[str, object]],
+]:
+    references: list[sufficiency.BlindEvidenceReference] = []
+    records: dict[str, dict[str, object]] = {}
+    for index, row in enumerate(sufficiency._expected_slots_through(EPOCH_START, current)):
+        kwargs = {} if transform is None else transform(index, row)
+        reference, material = sufficiency.build_synthetic_blind_evidence(
+            row,
+            evaluation_epoch_authorization_sha256=authorization_sha256,
+            **kwargs,
+        )
+        references.append(reference)
+        records.update(material)
+    return tuple(references), sufficiency.BlindEvidenceResolver(records), records
 
 
 def _monitor(
-    slots: tuple[sufficiency.BlindScheduledSlot, ...],
+    references: tuple[sufficiency.BlindEvidenceReference, ...],
+    resolver: sufficiency.BlindEvidenceResolver,
+    registry: sufficiency.EvaluationEpochRegistry,
+    authorization: dict[str, object],
     current: datetime,
 ) -> dict[str, object]:
     return sufficiency.evaluate_blind_sufficiency(
-        slots,
-        collection_epoch_id=EPOCH_ID,
-        evaluation_contract_sha256=EVALUATION_CONTRACT_SHA256,
-        epoch_observation_start=EPOCH_START,
+        references,
+        resolver=resolver,
+        registry=registry,
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
         current_decision_time=current,
     )
-
-
-# ---------------------------------------------------------------------------
-# Historical parity and parent binding
-# ---------------------------------------------------------------------------
-
-
-def test_all_eight_target_metrics_are_recovered_exactly() -> None:
-    definition = sufficiency.sufficiency_governance_definition()
-    assert tuple(definition["target_metrics"]) == corpus.TARGET_METRICS
-    assert len(definition["target_metrics"]) == 8
-    assert definition["certified_parent"]["protocol_sha256"] == (
-        "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7"
-    )
-    assert corpus.protocol_definition()["definition_sha256"] == (
-        definition["certified_parent"]["protocol_sha256"]
-    )
-
-
-def test_threshold_direction_hard_role_and_intent_parity_is_mechanical() -> None:
-    frozen = {
-        gate.metric: gate
-        for gate in V2_APPROVAL_GATES
-        if gate.metric in corpus.TARGET_METRICS
-    }
-    diff = sufficiency.semantic_diff_from_stage_b_gates()
-    minima = sufficiency.metric_sufficiency_minima()["metrics"]
-    assert set(frozen) == set(minima)
-    assert diff["threshold_change_count"] == 0
-    assert diff["direction_change_count"] == 0
-    assert diff["hard_role_change_count"] == 0
-    assert diff["metric_intent_change_count"] == 0
-    for metric, gate in frozen.items():
-        assert minima[metric]["threshold"] == str(gate.threshold)
-        assert minima[metric]["direction"] == gate.direction
-        assert minima[metric]["hard"] is gate.hard is True
-        assert minima[metric]["metric_intent"] == gate.rationale
-
-
-def test_a_certified_corpus_hash_mismatch_refuses_governance(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    original = corpus.protocol_definition()
-    monkeypatch.setattr(
-        corpus,
-        "protocol_definition",
-        lambda: {**original, "definition_sha256": "0" * 64},
-    )
-    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="hash mismatch"):
-        sufficiency.sufficiency_governance_definition()
-
-
-# ---------------------------------------------------------------------------
-# Wilson and nearest-rank derivations
-# ---------------------------------------------------------------------------
 
 
 FINITE_RATE_EXPECTATIONS = {
@@ -153,14 +99,119 @@ FINITE_RATE_EXPECTATIONS = {
 }
 
 
+def test_corrected_definition_binds_exact_certified_parent_and_failed_lineage() -> None:
+    definition = sufficiency.sufficiency_governance_definition()
+    assert definition["program_ticket"] == "POSTP1-003R1"
+    assert definition["certified_parent"]["protocol_sha256"] == (
+        "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7"
+    )
+    assert corpus.protocol_definition()["definition_sha256"] == (
+        definition["certified_parent"]["protocol_sha256"]
+    )
+    assert corpus.protocol_definition()["material_child_count"] == 25
+    assert definition["definition_sha256"] != sufficiency.FAILED_GOVERNANCE_SHA256
+    assert definition["failed_governance_lineage"] == [
+        {
+            **definition["failed_governance_lineage"][0],
+            "authoritative": False,
+            "definition_sha256": sufficiency.FAILED_GOVERNANCE_SHA256,
+            "prospective_observations_collected": False,
+            "review_result": "FAIL — SUFFICIENCY GOVERNANCE INVALID",
+            "superseded_before_collection": True,
+        }
+    ]
+
+
+def test_all_eight_historical_gates_are_mechanically_unchanged() -> None:
+    frozen = {
+        gate.metric: gate
+        for gate in V2_APPROVAL_GATES
+        if gate.metric in corpus.TARGET_METRICS
+    }
+    diff = sufficiency.semantic_diff_from_stage_b_gates()
+    minima = sufficiency.metric_sufficiency_minima()["metrics"]
+    assert set(frozen) == set(minima) == set(corpus.TARGET_METRICS)
+    assert len(minima) == 8
+    assert diff["threshold_change_count"] == 0
+    assert diff["direction_change_count"] == 0
+    assert diff["hard_role_change_count"] == 0
+    assert diff["metric_intent_change_count"] == 0
+    for metric, gate in frozen.items():
+        assert minima[metric]["performance_threshold"] == str(gate.threshold)
+        assert minima[metric]["direction"] == gate.direction
+        assert minima[metric]["hard"] is gate.hard is True
+        assert minima[metric]["metric_intent"] == gate.rationale
+
+
+def test_parent_hash_mismatch_refuses_correction(monkeypatch: pytest.MonkeyPatch) -> None:
+    original = corpus.protocol_definition()
+    monkeypatch.setattr(
+        corpus,
+        "protocol_definition",
+        lambda: {**original, "definition_sha256": "0" * 64},
+    )
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="hash mismatch"):
+        sufficiency.sufficiency_governance_definition()
+
+
+def test_common_rate_evidence_strength_is_mechanically_derived() -> None:
+    row = sufficiency.common_rate_evidence_strength()
+    assert row["epsilon"] == "0.01"
+    assert row["confidence"] == "0.95"
+    assert row["closed_boundary_reference"] == "0.99"
+    assert row["minimum_all_success_raw_denominator"] == 381
+    assert row["boundary_probe"]["n_minus_one"] == 380
+    assert row["boundary_probe"]["n_minus_one_satisfies"] is False
+    assert row["boundary_probe"]["n_satisfies"] is True
+    assert row["performance_threshold_replacement"] is False
+    assert min(Decimal(value) for value in row["distance_by_finite_interior_rate_gate"].values()) == Decimal("0.01")
+
+
+def test_exact_one_point_zero_performance_gate_uses_381_evidence_units() -> None:
+    row = sufficiency.statistical_derivations()["rate_metrics"][
+        corpus.CROSS_MARKET_METRIC
+    ]
+    minimum = sufficiency.metric_sufficiency_minima()["metrics"][
+        corpus.CROSS_MARKET_METRIC
+    ]
+    assert row["performance_threshold"] == "1.0"
+    assert row["evidence_strength_reference"] == "0.99"
+    assert row["minimum_denominator"] == 381
+    assert minimum["minimum_raw_sufficiency_denominator"] == 381
+    assert minimum["minimum_distinct_dependence_units"] == 381
+    assert minimum["performance_gate_unchanged"] is True
+    assert wilson_interval(380, 380).lower < Decimal("0.99")
+    assert wilson_interval(381, 381).lower >= Decimal("0.99")
+
+
+def test_exact_one_point_zero_quantity_boundaries_are_enforced() -> None:
+    for count, expected in ((0, False), (1, False), (380, False), (381, True)):
+        counter = sufficiency._empty_metric_counter()
+        counter["raw_sufficiency_denominator"] = count
+        counter["authoritative_coverage_numerator"] = count
+        counter["authoritative_coverage_denominator"] = count
+        counter["dependence_unit_contributions"] = sufficiency.Counter(
+            {f"{index:064x}": 1 for index in range(count)}
+        )
+        assert sufficiency._metric_satisfied(counter, 381) is expected
+
+
+def test_one_cross_market_failure_still_fails_exact_performance_gate() -> None:
+    result = corpus.aggregate_stage_b_metric(
+        corpus.CROSS_MARKET_METRIC,
+        numerator=380,
+        denominator=381,
+        synthetic=True,
+    )
+    assert Decimal(result["value"]) < Decimal(result["threshold"]) == Decimal("1.0")
+
+
 @pytest.mark.parametrize(("metric", "n_min"), FINITE_RATE_EXPECTATIONS.items())
-def test_each_finite_rate_minimum_is_the_exact_wilson_boundary(
-    metric: str,
-    n_min: int,
+def test_each_finite_rate_minimum_retains_exact_wilson_boundary(
+    metric: str, n_min: int
 ) -> None:
     row = sufficiency.statistical_derivations()["rate_metrics"][metric]
     threshold = Decimal(row["threshold"])
-    assert row["derived_n_capability"] == n_min
     assert row["minimum_denominator"] == n_min
     if row["direction"] == "minimum":
         assert wilson_interval(n_min - 1, n_min - 1).lower < threshold
@@ -168,358 +219,564 @@ def test_each_finite_rate_minimum_is_the_exact_wilson_boundary(
     else:
         assert wilson_interval(0, n_min - 1).upper > threshold
         assert wilson_interval(0, n_min).upper <= threshold
-    assert row["derivation_trace"][
-        "n_capability_minus_one_criterion_satisfied"
-    ] is False
-    assert row["derivation_trace"]["n_capability_criterion_satisfied"] is True
+    assert row["n_capability_minus_one_criterion_satisfied"] is False
+    assert row["n_capability_criterion_satisfied"] is True
 
 
-def test_minimum_and_maximum_rate_directions_use_one_wilson_method() -> None:
-    rows = sufficiency.statistical_derivations()["rate_metrics"]
-    finite = [row for row in rows.values() if row["derived_n_capability"] is not None]
-    assert {row["direction"] for row in finite} == {"minimum", "maximum"}
-    assert {row["wilson_method_id"] for row in finite} == {
-        sufficiency.WILSON_FORMULA_ID
+def test_p95_repeatability_boundary_is_exact_and_estimator_unchanged() -> None:
+    row = sufficiency.p95_tail_repeatability()
+    assert row["quantile"] == "0.95"
+    assert row["tail_probability"] == "0.05"
+    assert row["minimum_repeated_tail_occurrences"] == 2
+    assert row["confidence"] == "0.95"
+    assert row["minimum_denominator"] == 93
+    assert row["minimum_distinct_sizing_evidence_units"] == 93
+    assert Decimal(row["n_92"]["probability"]) < Decimal("0.95")
+    assert Decimal(row["n_93"]["probability"]) >= Decimal("0.95")
+    assert row["n_92"]["satisfies"] is False
+    assert row["n_93"]["satisfies"] is True
+    assert row["risk_statistic_changed"] is False
+    values = tuple(Decimal(index) for index in range(1, 94))
+    assert corpus.nearest_rank_percentile(values, Decimal("0.95")) == Decimal(89)
+
+
+def test_three_sufficiency_quantities_are_explicitly_distinct() -> None:
+    for row in sufficiency.metric_sufficiency_minima()["metrics"].values():
+        assert row["performance_denominator"]
+        assert row["minimum_raw_sufficiency_denominator"] > 0
+        assert row["minimum_distinct_dependence_units"] > 0
+        assert set(row["sufficiency_quantities_are_distinct"]) == {
+            "effective_dependence_unit_count",
+            "performance_denominator",
+            "raw_sufficiency_denominator",
+        }
+
+
+def test_coverage_floor_uses_exact_integer_arithmetic() -> None:
+    assert sufficiency.authoritative_coverage_satisfied(98, 99) is False
+    assert sufficiency.authoritative_coverage_satisfied(99, 100) is True
+    assert sufficiency.authoritative_coverage_satisfied(381, 7_601) is False
+    assert sufficiency.authoritative_coverage_satisfied(0, 0) is False
+    policy = sufficiency.coverage_policy()
+    assert policy["floor"] == "0.99"
+    assert policy["per_metric"] is True
+    assert policy["floor_is_stage_b_performance_threshold"] is False
+    assert policy["accounting_requirement"][
+        "unaccounted_scheduled_slot_count_required"
+    ] == 0
+
+
+def test_coverage_taxonomy_counts_only_authoritatively_replayed_categories() -> None:
+    policy = sufficiency.coverage_policy()
+    assert set(policy["blind_categories_counting_as_authoritatively_replayed"]) == {
+        "EVALUATED",
+        "NOT_COMPARABLE",
+        "NOT_IN_UNIVERSE",
     }
-    assert {row["wilson_z"] for row in finite} == {
-        "1.959963984540054235631"
+    assert set(policy["blind_categories_counting_as_coverage_failure"]) == {
+        "DATA_QUALITY_FAIL",
+        "PIT_INVALID",
+        "REFERENCE_UNAVAILABLE",
+        "SOURCE_UNAVAILABLE",
+        "WARMUP_INCOMPLETE",
     }
 
 
-def test_the_exact_one_point_zero_boundary_records_the_no_finite_n_theorem() -> None:
-    row = sufficiency.statistical_derivations()["rate_metrics"][
+def test_stop_dependence_unit_reuses_certified_lifecycle_and_stop_lineage() -> None:
+    episode = "a" * 64
+    one = sufficiency._derive_dependence_unit_id(
+        corpus.CROSS_MARKET_METRIC,
+        slot_id="b" * 64,
+        control_position_episode_sha256=episode,
+        active_stop_identity="CONTROL_STOP_TRANSITION_1",
+    )
+    repeated = sufficiency._derive_dependence_unit_id(
+        corpus.CROSS_MARKET_METRIC,
+        slot_id="c" * 64,
+        control_position_episode_sha256=episode,
+        active_stop_identity="CONTROL_STOP_TRANSITION_1",
+    )
+    changed_stop = sufficiency._derive_dependence_unit_id(
+        corpus.CROSS_MARKET_METRIC,
+        slot_id="d" * 64,
+        control_position_episode_sha256=episode,
+        active_stop_identity="CONTROL_STOP_TRANSITION_2",
+    )
+    assert one == repeated
+    assert one != changed_stop
+    policy = sufficiency.evidence_unit_policy()["metrics"][
         corpus.CROSS_MARKET_METRIC
     ]
-    assert row["threshold"] == "1.0"
-    assert row["direction"] == "minimum"
-    assert row["derived_n_capability"] is None
-    assert row["derivation_trace"]["n_capability_state"] == (
-        "NO_FINITE_POSITIVE_INTEGER"
-    )
-    assert row["exception"] == {
-        **row["exception"],
-        "applied": True,
-        "does_not_change_performance_gate": True,
-        "method_id": sufficiency.EXACT_BOUNDARY_EXCEPTION_ID,
-        "precision_claim": "ESTIMATOR_IDENTIFIABILITY_ONLY",
-    }
-    assert row["minimum_denominator"] == 1
-    # Concrete probes accompany the exact algebra n/(n+z^2) < 1.
-    for denominator in (1, 2, 10, 381, 10_000):
-        assert wilson_interval(denominator, denominator).lower < Decimal("1.0")
+    assert policy["maximum_sufficiency_credit_per_unit"] == 1
+    assert "active_stop_identity" in policy["identity_fields"]
 
 
-def test_risk_p95_minimum_is_the_first_nonmaximum_nearest_rank() -> None:
-    row = sufficiency.statistical_derivations()["nearest_rank_p95"]
-    assert row["minimum_denominator"] == 20
-    assert row["n_min_minus_one"] == {
-        "denominator": 19,
-        "is_sample_maximum": True,
-        "rank": 19,
-    }
-    assert row["n_min"] == {
-        "denominator": 20,
-        "is_sample_maximum": False,
-        "rank": 19,
-        "tail_observations_above_rank": 1,
-    }
-    assert row["n_min_plus_one"] == {
-        "denominator": 21,
-        "is_sample_maximum": False,
-        "rank": 20,
-        "tail_observations_above_rank": 1,
-    }
-    assert row["precision_claim"] == "TAIL_ORDER_STATISTIC_IDENTIFIABILITY_ONLY"
+def test_daily_decision_and_sizing_units_are_the_canonical_slot() -> None:
+    slot_id = "a" * 64
+    for metric in (
+        corpus.REGIME_METRIC,
+        corpus.RISK_SIZE_METRIC,
+        corpus.SETUP_METRIC,
+        corpus.TRADE_ACTION_METRIC,
+        corpus.TRADE_ELIGIBILITY_METRIC,
+    ):
+        assert sufficiency._derive_dependence_unit_id(
+            metric,
+            slot_id=slot_id,
+            control_position_episode_sha256=None,
+            active_stop_identity=None,
+        ) == slot_id
 
 
-def test_zero_denominator_is_never_sufficient_for_any_metric() -> None:
-    current = EPOCH_START
-    result = _monitor((), current)
-    assert result["overall_sufficient"] is False
-    assert result["overall_stage_b_status"] == "INSUFFICIENT_EVIDENCE"
-    for row in result["metric_states"].values():
-        assert row["evaluable_denominator"] == 0
-        assert row["sufficient"] is False
-
-
-# ---------------------------------------------------------------------------
-# Coverage and temporal choices
-# ---------------------------------------------------------------------------
-
-
-def test_coverage_policy_requires_complete_accounting_without_an_invented_floor() -> None:
-    policy = sufficiency.coverage_policy()
-    assert policy["decision"] == sufficiency.NO_SEPARATE_COVERAGE_FLOOR
-    assert policy["evaluability_or_comparability_floor"] is None
-    assert policy["accounting_requirement"] == {
-        "accounted_scheduled_slot_rate": "1.0",
-        "exactly_one_persisted_disposition_per_scheduled_slot": True,
-        "unaccounted_scheduled_slot_count_required": 0,
-        "unknown_or_missing_disposition_is_an_exclusion": False,
-    }
-    assert policy["scoped_out_standard"]["id"] == (
-        "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V1"
-    )
-
-
-def test_temporal_policy_imports_no_stage_c_horizon() -> None:
+def test_temporal_policy_adds_no_arbitrary_calendar_gate() -> None:
     policy = sufficiency.temporal_policy()
-    assert policy["policy"] == "NONE"
+    assert policy["policy"] == "NO_SEPARATE_ARBITRARY_CALENDAR_MINIMUM"
     assert policy["minimum_calendar_duration"] is None
     assert policy["minimum_distinct_utc_days"] is None
     assert policy["minimum_distinct_iso_weeks"] is None
     assert policy["stage_c_live_shadow_days_imported"] is False
-    assert "90" in policy["stage_c_separation"]
-
-
-def test_all_frozen_exclusion_dispositions_are_counted_without_denominator_credit() -> None:
-    current = EPOCH_START + timedelta(days=1, minutes=5)
-    slots = list(_synthetic_slots_through(current))
-    daily_index = next(
-        index
-        for index, slot in enumerate(slots)
-        if slot.cadence == corpus.STRATEGY_DAILY_CADENCE
-    )
-    daily = slots[daily_index]
-    replacements = {
-        "regime_classification_disagreement_rate": sufficiency.BlindMetricDisposition(
-            "regime_classification_disagreement_rate",
-            False,
-            corpus.STATE_NOT_EVALUABLE,
-            "REQUIRED_INPUT_MISSING",
-        ),
-        "risk_size_p95_relative_difference": sufficiency.BlindMetricDisposition(
-            "risk_size_p95_relative_difference",
-            False,
-            corpus.STATE_NOT_COMPARABLE,
-            "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
-        ),
-        "setup_classification_disagreement_rate": sufficiency.BlindMetricDisposition(
-            "setup_classification_disagreement_rate",
-            False,
-            corpus.STATE_DATA_QUALITY_FAIL,
-            "HARD_DATA_QUALITY_GATE_FAILED",
-        ),
-        "trade_action_disagreement_rate": sufficiency.BlindMetricDisposition(
-            "trade_action_disagreement_rate",
-            False,
-            corpus.STATE_REFERENCE_UNAVAILABLE,
-            "CANDIDATE_REFERENCE_UNAVAILABLE",
-        ),
+    assert set(policy["concentration_diagnostics"]) == {
+        "distinct_utc_days",
+        "distinct_iso_weeks",
+        "first_evidence_time",
+        "last_evidence_time",
+        "largest_single_day_contribution",
+        "largest_single_week_contribution",
+        "distinct_dependence_unit_count",
+        "largest_dependence_unit_raw_contribution",
     }
-    by_metric = {row.metric: row for row in daily.metrics}
-    by_metric.update(replacements)
-    slots[daily_index] = replace(
+
+
+def test_monitor_api_contains_no_caller_authoritative_labels_or_outcomes() -> None:
+    accepted = {field.name for field in fields(sufficiency.BlindEvidenceReference)}
+    assert accepted == {
+        "authoritative_evidence_record_sha256",
+        "evaluation_epoch_authorization_sha256",
+        "slot_id",
+    }
+    prohibited = set(
+        sufficiency.blind_monitor_contract()["prohibited_monitor_input_fields"]
+    )
+    assert accepted.isdisjoint(prohibited)
+    assert set(inspect.signature(sufficiency.evaluate_blind_sufficiency).parameters).isdisjoint(
+        prohibited
+    )
+    assert sufficiency.blind_monitor_contract()[
+        "detailed_parent_reason_codes_exposed_to_monitor"
+    ] is False
+
+
+@pytest.mark.parametrize(
+    "fact_kwargs",
+    [
+        {"universe_member_by_metric": {corpus.REGIME_METRIC: False}},
+        {"comparable_by_metric": {corpus.REGIME_METRIC: False}},
+        {"warmup_history_complete": False},
+        {
+            "maximum_available_at_by_metric": {
+                corpus.REGIME_METRIC: EPOCH_START + timedelta(days=2)
+            }
+        },
+    ],
+)
+def test_hostile_declared_evaluated_surface_is_refused(fact_kwargs: dict[str, object]) -> None:
+    registry, authorization = _authorized_registry()
+    daily = next(
+        row
+        for row in sufficiency._expected_slots_through(
+            EPOCH_START, EPOCH_START + timedelta(days=1, minutes=5)
+        )
+        if row["cadence"] == corpus.STRATEGY_DAILY_CADENCE
+    )
+    reference, records = sufficiency.build_synthetic_blind_evidence(
         daily,
-        metrics=tuple(by_metric[metric] for metric in sorted(by_metric)),
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+        **fact_kwargs,
     )
-    result = _monitor(tuple(slots), current)
-    states = result["metric_states"]
-    assert states["regime_classification_disagreement_rate"][
-        "not_evaluable_count"
-    ] == 1
-    assert states["risk_size_p95_relative_difference"][
-        "not_comparable_count"
-    ] == 1
-    assert states["setup_classification_disagreement_rate"][
-        "data_quality_fail_count"
-    ] == 1
-    assert states["trade_action_disagreement_rate"][
-        "reference_unavailable_count"
-    ] == 1
-    for metric in replacements:
-        assert states[metric]["evaluable_denominator"] == 0
+    envelope = dict(records[reference.authoritative_evidence_record_sha256])
+    envelope.pop("record_sha256")
+    envelope["declared_blind_projection"] = dict(
+        envelope["declared_blind_projection"]
+    )
+    envelope["declared_blind_projection"][corpus.REGIME_METRIC] = {
+        "blind_category": "EVALUATED",
+        "dependence_unit_id": daily["slot_id"],
+    }
+    hostile = sufficiency._with_record_hash(envelope)
+    records[hostile["record_sha256"]] = hostile
+    hostile_reference = replace(
+        reference,
+        authoritative_evidence_record_sha256=hostile["record_sha256"],
+    )
+    resolver = sufficiency.BlindEvidenceResolver(records)
+    with pytest.raises(
+        sufficiency.SufficiencyGovernanceError,
+        match="differs from authoritative replay",
+    ):
+        resolver.replay(
+            hostile_reference,
+            authorization=authorization,
+            current_decision_time=EPOCH_START + timedelta(days=2),
+        )
 
 
-# ---------------------------------------------------------------------------
-# Blind progress, global cutoff and adversarial invariants
-# ---------------------------------------------------------------------------
+def test_reason_code_side_channel_is_refused() -> None:
+    _registry, authorization = _authorized_registry()
+    daily = next(
+        row
+        for row in sufficiency._expected_slots_through(
+            EPOCH_START, EPOCH_START + timedelta(days=1, minutes=5)
+        )
+        if row["cadence"] == corpus.STRATEGY_DAILY_CADENCE
+    )
+    reference, records = sufficiency.build_synthetic_blind_evidence(
+        daily,
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+    )
+    envelope = dict(records[reference.authoritative_evidence_record_sha256])
+    envelope.pop("record_sha256")
+    envelope["declared_blind_projection"] = dict(
+        envelope["declared_blind_projection"]
+    )
+    envelope["declared_blind_projection"][corpus.REGIME_METRIC] = {
+        "blind_category": "CANDIDATE_CONTROL_DISAGREEMENT",
+        "dependence_unit_id": daily["slot_id"],
+    }
+    hostile = sufficiency._with_record_hash(envelope)
+    records[hostile["record_sha256"]] = hostile
+    resolver = sufficiency.BlindEvidenceResolver(records)
+    with pytest.raises(sufficiency.SufficiencyGovernanceError):
+        resolver.replay(
+            replace(
+                reference,
+                authoritative_evidence_record_sha256=hostile["record_sha256"],
+            ),
+            authorization=authorization,
+            current_decision_time=EPOCH_START + timedelta(days=2),
+        )
 
 
-SUFFICIENT_DECISION_TIME = EPOCH_START + timedelta(days=381, minutes=5)
+def test_warmup_and_pit_failures_add_no_raw_or_unit_credit() -> None:
+    registry, authorization = _authorized_registry()
+    current = EPOCH_START + timedelta(days=1, minutes=5)
+
+    def transform(_index: int, row: dict[str, str]) -> dict[str, object]:
+        if row["cadence"] == corpus.STRATEGY_DAILY_CADENCE:
+            return {"warmup_history_complete": False}
+        return {}
+
+    references, resolver, _records = _evidence_through(
+        current,
+        authorization_sha256=authorization["record_sha256"],
+        transform=transform,
+    )
+    result = _monitor(references, resolver, registry, authorization, current)
+    for metric in corpus.DECISION_METRICS:
+        state = result["metric_states"][metric]
+        assert state["raw_sufficiency_denominator"] == 0
+        assert state["effective_dependence_unit_count"] == 0
+        assert state["authoritative_coverage_numerator"] == 0
+        assert state["blind_category_counts"] == {"WARMUP_INCOMPLETE": 1}
+
+
+def test_381_events_from_one_stop_episode_are_not_381_units() -> None:
+    registry, authorization = _authorized_registry()
+    current = EPOCH_START + timedelta(hours=381, minutes=5)
+    shared_episode = ("a" * 64, "ONE_CONTROL_ACTIVE_STOP_EPISODE")
+
+    def transform(_index: int, row: dict[str, str]) -> dict[str, object]:
+        if row["cadence"] != corpus.STOP_HOURLY_CADENCE:
+            return {}
+        return {
+            "stop_episode_by_metric": {
+                metric: shared_episode for metric in corpus.STOP_EVENT_METRICS
+            }
+        }
+
+    references, resolver, _records = _evidence_through(
+        current,
+        authorization_sha256=authorization["record_sha256"],
+        transform=transform,
+    )
+    result = _monitor(references, resolver, registry, authorization, current)
+    gap = result["metric_states"][corpus.GAP_THROUGH_METRIC]
+    assert gap["raw_sufficiency_denominator"] == 381
+    assert gap["distinct_dependence_unit_count"] == 1
+    assert gap["largest_dependence_unit_raw_contribution"] == 381
+    assert gap["sufficient"] is False
+    assert result["overall_sufficient"] is False
+
+
+def test_73_isolated_events_from_four_episodes_are_insufficient() -> None:
+    registry, authorization = _authorized_registry()
+    current = EPOCH_START + timedelta(hours=73, minutes=5)
+
+    def transform(index: int, row: dict[str, str]) -> dict[str, object]:
+        if row["cadence"] != corpus.STOP_HOURLY_CADENCE:
+            return {}
+        episode = (
+            sufficiency._digest({"episode": index % 4}),
+            f"STOP_{index % 4}",
+        )
+        return {
+            "stop_episode_by_metric": {
+                corpus.ISOLATED_VENUE_METRIC: episode
+            }
+        }
+
+    references, resolver, _records = _evidence_through(
+        current,
+        authorization_sha256=authorization["record_sha256"],
+        transform=transform,
+    )
+    result = _monitor(references, resolver, registry, authorization, current)
+    isolated = result["metric_states"][corpus.ISOLATED_VENUE_METRIC]
+    assert isolated["raw_sufficiency_denominator"] == 73
+    assert isolated["distinct_dependence_unit_count"] == 4
+    assert isolated["sufficient"] is False
+
+
+def test_93_risk_rows_from_fewer_than_93_opportunities_are_insufficient() -> None:
+    counter = sufficiency._empty_metric_counter()
+    counter["raw_sufficiency_denominator"] = 93
+    counter["authoritative_coverage_numerator"] = 93
+    counter["authoritative_coverage_denominator"] = 93
+    counter["dependence_unit_contributions"] = sufficiency.Counter(
+        {f"{index:064x}": 1 for index in range(92)}
+    )
+    assert sufficiency._metric_satisfied(counter, 93) is False
 
 
 @pytest.fixture(scope="module")
-def sufficient_slots() -> tuple[sufficiency.BlindScheduledSlot, ...]:
-    return _synthetic_slots_through(SUFFICIENT_DECISION_TIME)
-
-
-@pytest.fixture(scope="module")
-def sufficient_result(
-    sufficient_slots: tuple[sufficiency.BlindScheduledSlot, ...],
-) -> dict[str, object]:
-    return _monitor(sufficient_slots, SUFFICIENT_DECISION_TIME)
-
-
-def test_global_cutoff_waits_for_the_last_metric_and_is_earliest(
-    sufficient_result: dict[str, object],
-) -> None:
-    assert sufficient_result["overall_sufficient"] is True
-    assert sufficient_result["state"] == "EVALUATION_CUTOFF_FROZEN"
-    assert sufficient_result["stage_b_sufficiency_cutoff"] == (
-        SUFFICIENT_DECISION_TIME.isoformat()
+def sufficient_run() -> tuple[
+    tuple[sufficiency.BlindEvidenceReference, ...],
+    sufficiency.BlindEvidenceResolver,
+    sufficiency.EvaluationEpochRegistry,
+    dict[str, object],
+    dict[str, object],
+]:
+    registry, authorization = _authorized_registry()
+    references, resolver, _records = _evidence_through(
+        SUFFICIENT_DECISION_TIME,
+        authorization_sha256=authorization["record_sha256"],
     )
-    metric_states = sufficient_result["metric_states"]
-    assert all(row["sufficient"] for row in metric_states.values())
-    assert metric_states["setup_classification_disagreement_rate"][
-        "first_sufficient_at"
-    ] == SUFFICIENT_DECISION_TIME.isoformat()
-    assert sufficient_result["accounting"]["unaccounted_scheduled_slots"] == 0
-
-
-def test_one_unaccounted_slot_prevents_global_sufficiency(
-    sufficient_slots: tuple[sufficiency.BlindScheduledSlot, ...],
-) -> None:
-    missing_hourly = next(
-        index
-        for index, slot in enumerate(sufficient_slots)
-        if slot.cadence == corpus.STOP_HOURLY_CADENCE
+    result = _monitor(
+        references, resolver, registry, authorization, SUFFICIENT_DECISION_TIME
     )
-    incomplete = sufficient_slots[:missing_hourly] + sufficient_slots[missing_hourly + 1 :]
-    result = _monitor(incomplete, SUFFICIENT_DECISION_TIME)
+    return references, resolver, registry, authorization, result
+
+
+def test_global_cutoff_requires_all_raw_unit_coverage_and_accounting_gates(
+    sufficient_run: tuple[object, ...],
+) -> None:
+    _references, _resolver, registry, authorization, result = sufficient_run
+    assert result["overall_sufficient"] is True
+    assert result["state"] == "EVALUATION_CUTOFF_FROZEN"
+    assert result["stage_b_sufficiency_cutoff"] == SUFFICIENT_DECISION_TIME.isoformat()
+    assert result["accounting"]["unaccounted_scheduled_slots"] == 0
+    assert all(row["sufficient"] for row in result["metric_states"].values())
+    assert all(
+        row["authoritative_coverage_satisfied"]
+        for row in result["metric_states"].values()
+    )
+    cutoff = registry.cutoff(authorization["record_sha256"])
+    assert cutoff["record_sha256"] == result["cutoff_record_sha256"]
+    assert cutoff["authoritative_evidence_manifest_sha256"] == result[
+        "authoritative_evidence_manifest_sha256"
+    ]
+    manifest = registry.evidence_manifest(
+        result["authoritative_evidence_manifest_sha256"]
+    )
+    assert len(manifest) == result["accounting"]["scheduled_slots"]
+    assert sufficiency._digest(list(manifest)) == result[
+        "authoritative_evidence_manifest_sha256"
+    ]
+
+
+def test_one_unaccounted_slot_prevents_cutoff() -> None:
+    registry, authorization = _authorized_registry()
+    references, resolver, records = _evidence_through(
+        SUFFICIENT_DECISION_TIME,
+        authorization_sha256=authorization["record_sha256"],
+    )
+    missing = references[0]
+    incomplete = references[1:]
+    result = _monitor(
+        incomplete,
+        sufficiency.BlindEvidenceResolver(records),
+        registry,
+        authorization,
+        SUFFICIENT_DECISION_TIME,
+    )
+    assert missing.slot_id not in {row.slot_id for row in incomplete}
     assert result["overall_sufficient"] is False
     assert result["stage_b_sufficiency_cutoff"] is None
     assert result["accounting"]["unaccounted_scheduled_slots"] == 1
 
 
-def test_the_monitor_type_has_no_target_outcome_surface() -> None:
-    accepted = {field.name for field in fields(sufficiency.BlindMetricDisposition)}
-    prohibited = set(
-        sufficiency.blind_monitor_contract()["prohibited_input_fields"]
+def test_about_five_percent_authoritative_coverage_cannot_certify() -> None:
+    counter = sufficiency._empty_metric_counter()
+    counter["raw_sufficiency_denominator"] = 381
+    counter["authoritative_coverage_numerator"] = 381
+    counter["authoritative_coverage_denominator"] = 7_601
+    counter["dependence_unit_contributions"] = sufficiency.Counter(
+        {f"{index:064x}": 1 for index in range(381)}
     )
-    assert accepted.isdisjoint(prohibited)
-    signature = inspect.signature(sufficiency.evaluate_blind_sufficiency)
-    assert set(signature.parameters).isdisjoint(prohibited)
+    assert sufficiency._metric_satisfied(counter, 381) is False
 
 
-def test_opposite_candidate_outcomes_cannot_change_sufficiency(
-    sufficient_slots: tuple[sufficiency.BlindScheduledSlot, ...],
-) -> None:
-    all_favorable_outcomes = {
-        metric: [True] * 400 for metric in corpus.TARGET_METRICS
-    }
-    all_unfavorable_outcomes = {
-        metric: [False] * 400 for metric in corpus.TARGET_METRICS
-    }
-    assert all_favorable_outcomes != all_unfavorable_outcomes
-    first = _monitor(sufficient_slots, SUFFICIENT_DECISION_TIME)
-    second = _monitor(tuple(reversed(sufficient_slots)), SUFFICIENT_DECISION_TIME)
+def test_opposite_hidden_outcomes_have_identical_sufficiency_state() -> None:
+    first_registry, first_authorization = _authorized_registry()
+    second_registry, second_authorization = _authorized_registry()
+    assert first_authorization == second_authorization
+    current = EPOCH_START + timedelta(days=3, minutes=5)
+    references, resolver, records = _evidence_through(
+        current,
+        authorization_sha256=first_authorization["record_sha256"],
+    )
+    favorable_hidden_outcomes = {metric: True for metric in corpus.TARGET_METRICS}
+    adverse_hidden_outcomes = {metric: False for metric in corpus.TARGET_METRICS}
+    assert favorable_hidden_outcomes != adverse_hidden_outcomes
+    first = _monitor(
+        references, resolver, first_registry, first_authorization, current
+    )
+    second = _monitor(
+        tuple(reversed(references)),
+        sufficiency.BlindEvidenceResolver(records),
+        second_registry,
+        second_authorization,
+        current,
+    )
     assert first == second
-    assert first["stage_b_sufficiency_cutoff"] == second[
+
+
+def test_late_revision_and_surface_mutation_cannot_move_frozen_cutoff(
+    sufficient_run: tuple[object, ...],
+) -> None:
+    references, resolver, registry, authorization, frozen = sufficient_run
+    later = SUFFICIENT_DECISION_TIME + timedelta(days=2)
+    extended, extended_resolver, _records = _evidence_through(
+        later,
+        authorization_sha256=authorization["record_sha256"],
+    )
+    assert len(extended) > len(references)
+    replayed = _monitor(extended, extended_resolver, registry, authorization, later)
+    assert replayed == frozen
+    assert replayed["stage_b_sufficiency_cutoff"] == frozen[
         "stage_b_sufficiency_cutoff"
+    ]
+    assert replayed["authoritative_evidence_manifest_sha256"] == frozen[
+        "authoritative_evidence_manifest_sha256"
     ]
 
 
-def test_pass_fail_pass_optional_stopping_path_cannot_move_the_cutoff(
-    sufficient_slots: tuple[sufficiency.BlindScheduledSlot, ...],
-) -> None:
-    provisional_performance = ("PASS", "FAIL", "PASS")
-    assert provisional_performance == ("PASS", "FAIL", "PASS")
-    result = _monitor(sufficient_slots, SUFFICIENT_DECISION_TIME)
-    assert result["stage_b_sufficiency_cutoff"] == (
-        SUFFICIENT_DECISION_TIME.isoformat()
-    )
-    assert sufficiency.stopping_rule()["performance_results_consumed"] is False
-
-
-def test_excluding_an_observation_cannot_make_sufficiency_arrive_sooner() -> None:
-    extended_time = SUFFICIENT_DECISION_TIME + timedelta(days=1)
-    base = list(_synthetic_slots_through(extended_time))
-    target_index = next(
-        index
-        for index, slot in enumerate(base)
-        if slot.cadence == corpus.STRATEGY_DAILY_CADENCE
-    )
-    target = base[target_index]
-    replacements = {
-        row.metric: (
-            sufficiency.BlindMetricDisposition(
-                metric=row.metric,
-                universe_member=True,
-                disposition=corpus.STATE_NOT_COMPARABLE,
-                reason_code="CANDIDATE_TRACK_NOT_EVALUABLE",
-            )
-            if row.metric in {
-                "setup_classification_disagreement_rate",
-                "trade_action_disagreement_rate",
-                "trade_eligibility_disagreement_rate",
-            }
-            else row
+def test_epoch_authorization_requires_real_contract_hash_and_fixed_identity() -> None:
+    registry = sufficiency.EvaluationEpochRegistry()
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="real SHA-256"):
+        registry.authorize_initial_epoch(
+            evaluation_contract={
+                "definition_sha256": "e" * 64,
+                "schema_version": "PLACEHOLDER",
+            },
+            epoch_observation_start=EPOCH_START,
         )
-        for row in target.metrics
-    }
-    base[target_index] = replace(
-        target,
-        metrics=tuple(replacements[metric] for metric in sorted(replacements)),
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="arbitrary"):
+        registry.authorize_initial_epoch(
+            evaluation_contract=_evaluation_contract(),
+            epoch_observation_start=EPOCH_START,
+            evaluation_epoch_id="RANDOM_RETRY",
+        )
+    authorization = registry.authorize_initial_epoch(
+        evaluation_contract=_evaluation_contract(),
+        epoch_observation_start=EPOCH_START,
     )
-    result = _monitor(tuple(base), extended_time)
-    assert result["overall_sufficient"] is True
-    assert datetime.fromisoformat(result["stage_b_sufficiency_cutoff"]) > (
-        SUFFICIENT_DECISION_TIME
-    )
-    for metric in replacements:
-        if replacements[metric].disposition == corpus.STATE_NOT_COMPARABLE:
-            assert result["metric_states"][metric]["not_comparable_count"] == 1
-
-
-def test_data_after_cutoff_cannot_move_the_frozen_evaluation_corpus(
-    sufficient_slots: tuple[sufficiency.BlindScheduledSlot, ...],
-    sufficient_result: dict[str, object],
-) -> None:
-    later = SUFFICIENT_DECISION_TIME + timedelta(days=1)
-    extended = _synthetic_slots_through(later)
-    assert len(extended) > len(sufficient_slots)
-    later_result = _monitor(extended, later)
-    assert later_result["stage_b_sufficiency_cutoff"] == sufficient_result[
-        "stage_b_sufficiency_cutoff"
-    ]
-    assert later_result["evaluation_corpus_sha256"] == sufficient_result[
-        "evaluation_corpus_sha256"
-    ]
-    assert later_result["evaluation_corpus_slot_ids"] == sufficient_result[
-        "evaluation_corpus_slot_ids"
-    ]
-
-
-def test_failed_epoch_cannot_continue_until_it_passes() -> None:
-    with pytest.raises(
-        sufficiency.EvaluationEpochFrozenError,
-        match="frozen at its earliest sufficient cutoff",
+    assert authorization["evaluation_epoch_id"] == sufficiency.INITIAL_EPOCH_ID
+    assert sufficiency._is_sha256(authorization["evaluation_contract_sha256"])
+    for field in (
+        "blind_monitor_sha256",
+        "certified_corpus_sha256",
+        "coverage_policy_sha256",
+        "evidence_unit_policy_sha256",
+        "sufficiency_governance_sha256",
+        "temporal_policy_sha256",
     ):
-        sufficiency.assert_evaluation_epoch_not_extended(
-            frozen_cutoff=SUFFICIENT_DECISION_TIME,
-            proposed_cutoff=SUFFICIENT_DECISION_TIME + timedelta(days=1),
-            evaluated_result="FAIL",
+        assert sufficiency._is_sha256(authorization[field])
+
+
+def test_initial_epoch_is_unique_across_parallel_contract_retry() -> None:
+    registry, authorization = _authorized_registry()
+    assert registry.authorize_initial_epoch(
+        evaluation_contract=_evaluation_contract(),
+        epoch_observation_start=EPOCH_START,
+    ) == authorization
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="unique"):
+        registry.authorize_initial_epoch(
+            evaluation_contract=_evaluation_contract("CHANGED"),
+            epoch_observation_start=EPOCH_START,
         )
-    sufficiency.assert_evaluation_epoch_not_extended(
-        frozen_cutoff=SUFFICIENT_DECISION_TIME,
-        proposed_cutoff=SUFFICIENT_DECISION_TIME,
-        evaluated_result="FAIL",
-    )
 
 
-def test_blind_slot_validation_refuses_unknown_or_duplicate_accounting(
-    sufficient_slots: tuple[sufficiency.BlindScheduledSlot, ...],
+def test_fail_is_terminal_and_arbitrary_retry_id_is_not_authorization(
+    sufficient_run: tuple[object, ...],
 ) -> None:
-    first = sufficient_slots[0]
-    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="multiple"):
-        _monitor((first, first), first.decision_time)
-    bad = replace(first, global_disposition="MISSING_UNKNOWN")
-    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="unknown disposition"):
-        _monitor((bad,), first.decision_time)
+    references, resolver, registry, authorization, _result = sufficient_run
+    terminal = registry.persist_evaluation_result(
+        authorization_sha256=authorization["record_sha256"],
+        result="FAIL",
+    )
+    assert terminal["terminal"] is True
+    assert terminal["result"] == "FAIL"
+    assert terminal["cutoff_record_sha256"] == registry.cutoff(
+        authorization["record_sha256"]
+    )["record_sha256"]
+    with pytest.raises(sufficiency.EvaluationEpochFrozenError, match="terminal"):
+        _monitor(
+            references,
+            resolver,
+            registry,
+            authorization,
+            SUFFICIENT_DECISION_TIME,
+        )
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="arbitrary"):
+        registry.authorize_initial_epoch(
+            evaluation_contract=_evaluation_contract(),
+            epoch_observation_start=EPOCH_START,
+            evaluation_epoch_id="NEW_RANDOM_UUID",
+        )
 
 
-# ---------------------------------------------------------------------------
-# Hash and artifact integrity; pre-data boundary
-# ---------------------------------------------------------------------------
+def test_every_sufficiency_result_binds_parent_policy_and_epoch_identities() -> None:
+    registry, authorization = _authorized_registry()
+    current = EPOCH_START + timedelta(days=1, minutes=5)
+    references, resolver, _records = _evidence_through(
+        current,
+        authorization_sha256=authorization["record_sha256"],
+    )
+    result = _monitor(references, resolver, registry, authorization, current)
+    for field in (
+        "blind_monitor_sha256",
+        "certified_corpus_sha256",
+        "coverage_policy_sha256",
+        "decision_universe_sha256",
+        "evaluation_contract_sha256",
+        "evaluation_epoch_authorization_sha256",
+        "evidence_unit_policy_sha256",
+        "governance_sha256",
+        "metric_evidence_contract_sha256",
+        "temporal_policy_sha256",
+    ):
+        assert sufficiency._is_sha256(result[field])
+    assert result["window_start"] == EPOCH_START.isoformat()
+    assert result["current_decision_time"] == current.isoformat()
 
 
-def test_top_level_hash_binds_every_material_child() -> None:
+def test_top_level_hash_mechanically_binds_every_material_child() -> None:
     definition = sufficiency.sufficiency_governance_definition()
-    assert definition["material_child_count"] == 8
+    assert definition["material_child_count"] == len(sufficiency._CHILD_ARTIFACTS)
     assert definition["material_child_count"] == len(
         definition["child_definition_sha256"]
     )
+    assert definition["material_child_count"] == 13
     assert set(sufficiency.protocol_hashes()) == set(
         definition["child_definition_sha256"]
     ) | {"sufficiency_governance"}
@@ -532,49 +789,72 @@ def test_top_level_hash_binds_every_material_child() -> None:
 
 @pytest.mark.parametrize(
     "builder_name",
-    [
-        "blind_monitor_contract",
-        "coverage_policy",
-        "evaluation_cutoff_contract",
-        "metric_sufficiency_minima",
-        "semantic_diff_from_stage_b_gates",
-        "statistical_derivations",
-        "stopping_rule",
-        "temporal_policy",
-    ],
+    [builder for _filename, _child_key, builder in sufficiency._CHILD_ARTIFACTS],
 )
-def test_every_material_child_semantic_mutation_moves_the_parent_hash(
-    monkeypatch: pytest.MonkeyPatch,
-    builder_name: str,
+def test_every_material_child_mutation_moves_parent_hash(
+    monkeypatch: pytest.MonkeyPatch, builder_name: str
 ) -> None:
     baseline = sufficiency.sufficiency_governance_definition()["definition_sha256"]
     builder = getattr(sufficiency, builder_name)
     original = builder()
 
     def mutated_builder() -> dict[str, object]:
-        changed = {key: value for key, value in original.items() if key != "definition_sha256"}
+        changed = {
+            key: value for key, value in original.items() if key != "definition_sha256"
+        }
         changed["synthetic_mutation_probe"] = builder_name
         return sufficiency._with_definition_hash(changed)
 
     monkeypatch.setattr(sufficiency, builder_name, mutated_builder)
-    assert sufficiency.sufficiency_governance_definition()["definition_sha256"] != (
-        baseline
-    )
-    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="does not reproduce"):
-        sufficiency.restore_artifacts(ARTIFACT_DIR)
+    assert sufficiency.sufficiency_governance_definition()["definition_sha256"] != baseline
 
 
-def test_governance_hash_is_decimal_context_hash_seed_cwd_and_process_invariant(
-    tmp_path: Path,
+@pytest.mark.parametrize(
+    ("builder_name", "field"),
+    [
+        ("common_rate_evidence_strength", "minimum_all_success_raw_denominator"),
+        ("p95_tail_repeatability", "minimum_denominator"),
+        ("coverage_policy", "floor"),
+        ("evidence_unit_policy", "raw_observations_are_independent_by_default"),
+        ("blind_monitor_contract", "caller_declared_projection_is_authority"),
+        ("evaluation_epoch_contract", "initial_epoch_unique"),
+        ("evaluation_cutoff_contract", "first_cutoff_immutable"),
+    ],
+)
+def test_required_semantic_mutations_move_child_and_parent(
+    monkeypatch: pytest.MonkeyPatch,
+    builder_name: str,
+    field: str,
 ) -> None:
+    builder = getattr(sufficiency, builder_name)
+    original = builder()
+    baseline_parent = sufficiency.sufficiency_governance_definition()[
+        "definition_sha256"
+    ]
+
+    def mutated() -> dict[str, object]:
+        row = {key: value for key, value in original.items() if key != "definition_sha256"}
+        if isinstance(row[field], bool):
+            row[field] = not row[field]
+        elif isinstance(row[field], int):
+            row[field] += 1
+        else:
+            row[field] = "MUTATED"
+        return sufficiency._with_definition_hash(row)
+
+    monkeypatch.setattr(sufficiency, builder_name, mutated)
+    assert mutated()["definition_sha256"] != original["definition_sha256"]
+    assert sufficiency.sufficiency_governance_definition()["definition_sha256"] != baseline_parent
+
+
+def test_hash_is_decimal_context_seed_cwd_and_process_invariant(tmp_path: Path) -> None:
     expected = sufficiency.protocol_hashes()
     with localcontext(Context(prec=3)):
         assert sufficiency.protocol_hashes() == expected
     with localcontext(Context(prec=200)):
         assert sufficiency.protocol_hashes() == expected
     script = (
-        "import json;"
-        "from btc_predictor.research import "
+        "import json;from btc_predictor.research import "
         "prospective_integration_evidence_sufficiency as s;"
         "print(json.dumps(s.protocol_hashes(),sort_keys=True))"
     )
@@ -594,7 +874,7 @@ def test_governance_hash_is_decimal_context_hash_seed_cwd_and_process_invariant(
         assert json.loads(result.stdout) == expected
 
 
-def test_persisted_artifacts_reproduce_and_write_deterministically(tmp_path: Path) -> None:
+def test_artifacts_reproduce_and_regenerate_deterministically(tmp_path: Path) -> None:
     restored = sufficiency.restore_artifacts(ARTIFACT_DIR)
     assert restored == sufficiency.sufficiency_governance_definition()
     sufficiency.write_artifacts(tmp_path)
@@ -607,19 +887,23 @@ def test_persisted_artifacts_reproduce_and_write_deterministically(tmp_path: Pat
     assert first == second == persisted
 
 
-def test_tampered_child_and_top_level_artifacts_are_refused(tmp_path: Path) -> None:
+def test_tampered_child_and_unbound_artifact_are_refused(tmp_path: Path) -> None:
     sufficiency.write_artifacts(tmp_path)
     child_path = tmp_path / sufficiency.COVERAGE_FILENAME
     child = json.loads(child_path.read_text())
-    child["evaluability_or_comparability_floor"] = "0.95"
+    child["floor"] = "0.05"
     child_path.write_text(json.dumps(child, indent=2, sort_keys=True) + "\n")
     with pytest.raises(sufficiency.SufficiencyGovernanceError, match="does not reproduce"):
+        sufficiency.restore_artifacts(tmp_path)
+    sufficiency.write_artifacts(tmp_path)
+    (tmp_path / "unbound.json").write_text("{}\n")
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="unbound"):
         sufficiency.restore_artifacts(tmp_path)
 
 
 def test_governance_is_pre_data_and_authorizes_nothing_downstream() -> None:
     definition = sufficiency.sufficiency_governance_definition()
-    assert definition["status"] == "FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
+    assert definition["status"] == "CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
     assert definition["final_classification"] == sufficiency.FINAL_CLASSIFICATION
     assert definition["collection_authorized"] is False
     assert definition["postp1_004_authorized"] is False
@@ -635,16 +919,17 @@ def test_governance_is_pre_data_and_authorizes_nothing_downstream() -> None:
         "terminal": True,
     }
     assert definition["epic_t"] == {"modified": False, "reopened": False}
-    assert not sufficiency.OUTPUT_NAMESPACE.startswith("data/")
-    assert not sufficiency.OUTPUT_NAMESPACE.startswith("research_artifacts/")
 
 
-def test_report_states_review_handoff_and_boundaries() -> None:
+def test_report_states_central_answers_and_review_handoff() -> None:
     report = (ARTIFACT_DIR / sufficiency.REPORT_FILENAME).read_text()
     assert sufficiency.FINAL_CLASSIFICATION in report
-    assert "Threshold changes: `0`" in report
-    assert "Separate numerical coverage floor" in report
-    assert "Stage-C 90-day rule imported: `NO`" in report
-    assert "POSTP1-004 authorized: `NO`" in report
-    assert "Prospective collection authorized: `NO`" in report
-    assert "sealed sample touched: `NO / NO`" in report
+    assert "Threshold changes: 0" in report
+    assert "performance threshold remains exactly 1.0" in report
+    assert "380 all-success independent units fail and 381 pass" in report
+    assert "93 distinct sizing opportunities" in report
+    assert "at least 0.99" in report
+    assert "no separate arbitrary calendar minimum" in report
+    assert "POSTP1-004 authorized: NO" in report
+    assert "Prospective collection authorized: NO" in report
+    assert "sealed sample touched: NO / NO" in report

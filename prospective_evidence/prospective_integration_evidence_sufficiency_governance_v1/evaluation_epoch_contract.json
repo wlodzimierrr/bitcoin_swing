@@ -1,0 +1,22 @@
+{
+  "authorization_before_first_qualifying_observation": true,
+  "authorization_bindings": [
+    "blind_monitor_sha256",
+    "certified_corpus_sha256",
+    "coverage_policy_sha256",
+    "epoch_observation_start",
+    "evaluation_contract_sha256",
+    "evaluation_epoch_id",
+    "evidence_unit_policy_sha256",
+    "sufficiency_governance_sha256",
+    "temporal_policy_sha256"
+  ],
+  "definition_sha256": "94bad9185ffa37139416a51649f0010f7da6ef71318aaba800a8a03e52388c62",
+  "evaluation_contract_definition_must_recompute": true,
+  "initial_epoch_id": "INITIAL_STAGE_B_EVALUATION_EPOCH",
+  "initial_epoch_unique": true,
+  "postp1_004_persistent_transactional_enforcement_required": true,
+  "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_EPOCH_AUTHORIZATION_V1",
+  "successor_epoch_permitted_automatically": false,
+  "terminal_after_any_evaluation_result": true
+}

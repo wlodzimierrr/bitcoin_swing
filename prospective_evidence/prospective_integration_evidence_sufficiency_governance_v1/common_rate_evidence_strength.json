@@ -1,0 +1,30 @@
+{
+  "boundary_probe": {
+    "n": 381,
+    "n_lower": "0.9900180743715454424098236476801804",
+    "n_minus_one": 380,
+    "n_minus_one_lower": "0.9899920690367931131496650223886456",
+    "n_minus_one_satisfies": false,
+    "n_satisfies": true
+  },
+  "closed_boundary_reference": "0.99",
+  "confidence": "0.95",
+  "definition_sha256": "03aba5d79c457e3a4004d2a84f84ca4b9ad854383e8e960a63455da1369e5fff",
+  "distance_by_finite_interior_rate_gate": {
+    "gap_through_stop_consensus_agreement_rate": "0.01",
+    "isolated_venue_stop_suppression_rate": "0.05",
+    "regime_classification_disagreement_rate": "0.02",
+    "setup_classification_disagreement_rate": "0.01",
+    "trade_action_disagreement_rate": "0.01",
+    "trade_eligibility_disagreement_rate": "0.01"
+  },
+  "epsilon": "0.01",
+  "epsilon_derivation": "minimum positive distance from the closed boundary {0,1} among the inherited Stage-B rate thresholds",
+  "minimum_all_success_raw_denominator": 381,
+  "performance_threshold_replacement": false,
+  "purpose": "PRE_DATA_COMMON_RATE_EVIDENCE_STRENGTH_ONLY",
+  "schema_version": "COMMON_RATE_EVIDENCE_STRENGTH_V1",
+  "wilson_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1",
+  "wilson_owner_method_id": "WILSON_SCORE_INTERVAL_95_TWO_SIDED_V1",
+  "wilson_z": "1.959963984540054235631"
+}

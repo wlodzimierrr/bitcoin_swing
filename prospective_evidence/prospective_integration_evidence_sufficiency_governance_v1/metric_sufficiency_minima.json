@@ -1,253 +1,273 @@
 {
   "certified_corpus_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
   "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
-  "definition_sha256": "fb81141604eb602888da9b8fb4b6d0b9f2fa5b3ef429a32b1785f48780806bd7",
+  "definition_sha256": "5ffc971fdc808ba0f27c3f48f318c6c8f413f83b70f1755c84e3db95ba974d27",
+  "evidence_unit_policy_sha256": "a823ba79ba98672e0845609e9e6a7ff4b416af598b1d081b271f240068d56524",
   "metric_count": 8,
   "metrics": {
     "cross_market_confirmed_stop_preservation_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STOP_HOURLY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "minimum",
       "hard": true,
       "metric": "cross_market_confirmed_stop_preservation_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "A robust estimator must preserve genuine shared tail moves.",
-      "minimum_denominator": 1,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 381,
+      "minimum_raw_sufficiency_denominator": 381,
+      "performance_denominator": "Classified CROSS_MARKET_CONFIRMED_STOP_EVENT slots at the control track's active stop where both reference outcomes are usable at that decision_time.",
       "performance_gate_unchanged": true,
-      "statistical_method": "EXACT_POINT_RATE_BOUNDARY_IDENTIFIABILITY_EXCEPTION_V1",
-      "threshold": "1.0",
+      "performance_threshold": "1.0",
+      "statistical_method": "COMMON_RATE_EVIDENCE_STRENGTH_V1",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "sha256(control position opening-transition identity, active stop identity, certified corpus hash, policy version)",
+        "dependence_unit_kind": "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE",
+        "dependence_unit_owner": "certified control portfolio lifecycle hash chain plus prospective_stop_event.active_stop_identity",
+        "identity_fields": {
+          "active_stop_identity": "prospective_stop_event.active_stop_identity; control lifecycle active stop plus transition/source identity",
+          "control_position_episode_sha256": "replayed root opening transition from the control portfolio prior_state_sha256 hash chain"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "gap_through_stop_consensus_agreement_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STOP_HOURLY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "minimum",
       "hard": true,
       "metric": "gap_through_stop_consensus_agreement_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "Gap-through behavior must agree with deterministic venue consensus.",
-      "minimum_denominator": 381,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 381,
+      "minimum_raw_sufficiency_denominator": 381,
+      "performance_denominator": "Classified GAP_THROUGH_STOP_EVENT slots at the control track's active stop where the exact immediately preceding hourly raw-provider consensus close and both current reference opens are usable.",
       "performance_gate_unchanged": true,
+      "performance_threshold": "0.99",
       "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
-      "threshold": "0.99",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "sha256(control position opening-transition identity, active stop identity, certified corpus hash, policy version)",
+        "dependence_unit_kind": "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE",
+        "dependence_unit_owner": "certified control portfolio lifecycle hash chain plus prospective_stop_event.active_stop_identity",
+        "identity_fields": {
+          "active_stop_identity": "prospective_stop_event.active_stop_identity; control lifecycle active stop plus transition/source identity",
+          "control_position_episode_sha256": "replayed root opening transition from the control portfolio prior_state_sha256 hash chain"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "GAP_THROUGH_STOP_EVENTS",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "isolated_venue_stop_suppression_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STOP_HOURLY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "minimum",
       "hard": true,
       "metric": "isolated_venue_stop_suppression_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "Most isolated exchange wicks should not create canonical stop events.",
-      "minimum_denominator": 73,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 73,
+      "minimum_raw_sufficiency_denominator": 73,
+      "performance_denominator": "Classified ISOLATED_VENUE_STOP_EVENT slots at the control track's active stop where exactly one provider touches, at least the confirmation quorum is observed not touching, and both reference outcomes are usable.",
       "performance_gate_unchanged": true,
+      "performance_threshold": "0.95",
       "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
-      "threshold": "0.95",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "sha256(control position opening-transition identity, active stop identity, certified corpus hash, policy version)",
+        "dependence_unit_kind": "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE",
+        "dependence_unit_owner": "certified control portfolio lifecycle hash chain plus prospective_stop_event.active_stop_identity",
+        "identity_fields": {
+          "active_stop_identity": "prospective_stop_event.active_stop_identity; control lifecycle active stop plus transition/source identity",
+          "control_position_episode_sha256": "replayed root opening transition from the control portfolio prior_state_sha256 hash chain"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "ISOLATED_VENUE_STOP_EVENTS",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "regime_classification_disagreement_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STRATEGY_DAILY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "maximum",
       "hard": true,
       "metric": "regime_classification_disagreement_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "Regime labels should be robust to reference construction.",
-      "minimum_denominator": 189,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 189,
+      "minimum_raw_sufficiency_denominator": 189,
+      "performance_denominator": "Daily decision observations where both tracks hold the complete required regime inputs and both produce a REGIME_CLASSIFICATION.",
       "performance_gate_unchanged": true,
+      "performance_threshold": "0.02",
       "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
-      "threshold": "0.02",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "canonical STRATEGY_DAILY slot_id",
+        "dependence_unit_kind": "AUTHORITATIVE_DAILY_DECISION",
+        "dependence_unit_owner": "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1",
+        "identity_fields": {
+          "slot_id": "certified UTC strategy decision identity"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "REGIME_EVALUABLE_DECISION_TIMES",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "risk_size_p95_relative_difference": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STRATEGY_DAILY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "maximum",
       "hard": true,
       "metric": "risk_size_p95_relative_difference",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "Reference changes should not materially resize most positions.",
-      "minimum_denominator": 20,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 93,
+      "minimum_raw_sufficiency_denominator": 93,
+      "performance_denominator": "Daily decision observations where both tracks independently permit an entry and both authoritative INITIAL_POSITION_SIZE results are complete with a strictly positive position_notional.",
       "performance_gate_unchanged": true,
-      "statistical_method": "NEAREST_RANK_P95_NOT_SAMPLE_MAXIMUM_V1",
-      "threshold": "0.10",
+      "performance_threshold": "0.10",
+      "statistical_method": "P95_TAIL_REPEATABILITY_SUFFICIENCY_V1",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "canonical STRATEGY_DAILY slot_id",
+        "dependence_unit_kind": "AUTHORITATIVE_DAILY_SIZING_OPPORTUNITY",
+        "dependence_unit_owner": "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1 canonical daily slot plus paired prospective_risk_evaluation records",
+        "identity_fields": {
+          "slot_id": "certified UTC strategy decision identity"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "SIZING_EVALUABLE_DECISION_TIMES",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "setup_classification_disagreement_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STRATEGY_DAILY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "maximum",
       "hard": true,
       "metric": "setup_classification_disagreement_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "Setup selection should rarely depend on venue noise.",
-      "minimum_denominator": 381,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 381,
+      "minimum_raw_sufficiency_denominator": 381,
+      "performance_denominator": "Daily decision observations where both tracks hold the complete input set of all four authoritative setup detectors.",
       "performance_gate_unchanged": true,
+      "performance_threshold": "0.01",
       "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
-      "threshold": "0.01",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "canonical STRATEGY_DAILY slot_id",
+        "dependence_unit_kind": "AUTHORITATIVE_DAILY_DECISION",
+        "dependence_unit_owner": "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1",
+        "identity_fields": {
+          "slot_id": "certified UTC strategy decision identity"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "SETUP_EVALUABLE_DECISION_TIMES",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "trade_action_disagreement_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STRATEGY_DAILY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "maximum",
       "hard": true,
       "metric": "trade_action_disagreement_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
-      "minimum_denominator": 381,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 381,
+      "minimum_raw_sufficiency_denominator": 381,
+      "performance_denominator": "Every daily decision observation where both tracks produce a complete deterministic ordered action envelope, whether flat or in position. Flat-vs-position slots remain comparable because both owners still produce actual action envelopes.",
       "performance_gate_unchanged": true,
+      "performance_threshold": "0.01",
       "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
-      "threshold": "0.01",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "canonical STRATEGY_DAILY slot_id",
+        "dependence_unit_kind": "AUTHORITATIVE_DAILY_DECISION",
+        "dependence_unit_owner": "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1",
+        "identity_fields": {
+          "slot_id": "certified UTC strategy decision identity"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "ACTION_EVALUABLE_DECISION_TIMES",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
     },
     "trade_eligibility_disagreement_rate": {
-      "additional_conditions": [
-        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
-      ],
+      "authoritative_coverage_floor": "0.99",
       "cadence": "STRATEGY_DAILY",
-      "counter_fields": {
-        "accounted_opportunity_count": "accounted_opportunity_count",
-        "data_quality_fail_count": "data_quality_fail_count",
-        "denominator": "evaluable_denominator",
-        "exclusions": "exclusion_counts_by_reason",
-        "not_comparable": "not_comparable_count",
-        "not_evaluable": "not_evaluable_count",
-        "reference_unavailable": "reference_unavailable_count"
-      },
       "direction": "maximum",
       "hard": true,
       "metric": "trade_eligibility_disagreement_rate",
       "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
       "metric_intent": "Reference policy should rarely change whether a trade is permitted.",
-      "minimum_denominator": 381,
-      "no_pooling": true,
+      "minimum_distinct_dependence_units": 381,
+      "minimum_raw_sufficiency_denominator": 381,
+      "performance_denominator": "Daily decision observations where both tracks have complete inputs for TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1 and each produces PERMITTED or NOT_PERMITTED. Flat-vs-position and both-position states stay in this universe; lifecycle state is a permission input.",
       "performance_gate_unchanged": true,
+      "performance_threshold": "0.01",
       "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
-      "threshold": "0.01",
+      "sufficiency_quantities_are_distinct": {
+        "effective_dependence_unit_count": true,
+        "performance_denominator": true,
+        "raw_sufficiency_denominator": true
+      },
+      "unit_policy": {
+        "dependence_unit_derivation": "canonical STRATEGY_DAILY slot_id",
+        "dependence_unit_kind": "AUTHORITATIVE_DAILY_DECISION",
+        "dependence_unit_owner": "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1",
+        "identity_fields": {
+          "slot_id": "certified UTC strategy decision identity"
+        },
+        "maximum_sufficiency_credit_per_unit": 1,
+        "revisions_or_replays_create_new_unit": false
+      },
       "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES",
       "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
       "zero_denominator_sufficient": false
@@ -256,5 +276,5 @@
   "no_candidate_identity_used_to_choose_minima": true,
   "no_observed_outcome_used_to_choose_minima": true,
   "schema_version": "PROSPECTIVE_METRIC_SUFFICIENCY_MINIMA_V1",
-  "statistical_derivations_sha256": "a128969a3b2e1e0060a1b53ce2d01b153b436263509a67894b17b2d626bbd062"
+  "statistical_derivations_sha256": "31ef1530f1de8c51551a0b528b7683d9120c2f8fc6b14539207314ec568b4d9e"
 }

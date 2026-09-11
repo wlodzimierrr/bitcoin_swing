@@ -1,0 +1,23 @@
+{
+  "confidence": "0.95",
+  "definition_sha256": "7cca33f4ba085a946b193a786b53e7e0744611af43f5ada3bdd942ef468f34d1",
+  "formula": "1 - 0.95^n - n * 0.05 * 0.95^(n-1)",
+  "iid_scope": "PRE_DATA_SUFFICIENCY_CALCULATION_ONLY",
+  "minimum_denominator": 93,
+  "minimum_distinct_sizing_evidence_units": 93,
+  "minimum_repeated_tail_occurrences": 2,
+  "n_92": {
+    "probability": "0.94786359706832297071275334555109578761521757634568497087748121876263472445581796",
+    "satisfies": false
+  },
+  "n_93": {
+    "probability": "0.95002420475738346021474735105078010632665901011874667478706307816526427641530659",
+    "satisfies": true
+  },
+  "population_quantile_confidence_interval_claim": false,
+  "quantile": "0.95",
+  "risk_statistic_changed": false,
+  "risk_statistic_owner": "btc_predictor.research.prospective_integration_corpus.nearest_rank_percentile",
+  "schema_version": "P95_TAIL_REPEATABILITY_SUFFICIENCY_V1",
+  "tail_probability": "0.05"
+}

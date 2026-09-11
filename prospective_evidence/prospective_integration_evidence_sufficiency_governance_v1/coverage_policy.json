@@ -1,29 +1,30 @@
 {
   "accounting_requirement": {
     "accounted_scheduled_slot_rate": "1.0",
-    "exactly_one_persisted_disposition_per_scheduled_slot": true,
-    "unaccounted_scheduled_slot_count_required": 0,
-    "unknown_or_missing_disposition_is_an_exclusion": false
+    "exactly_one_persisted_evidence_reference_per_scheduled_slot": true,
+    "unaccounted_scheduled_slot_count_required": 0
   },
-  "alternatives_considered": {
-    "reuse_structural_pair_floor_0_50": "REFUSED_WRONG_FROZEN_SCOPE",
-    "select_conventional_0_90_0_95_or_0_99": "REFUSED_NO_OUTCOME_INDEPENDENT_OPERATIONAL_DERIVATION"
-  },
-  "applicable_existing_numerical_standard_found": false,
-  "candidate_neutral_exclusions_required": true,
-  "decision": "NO_SEPARATE_NUMERICAL_COVERAGE_FLOOR",
-  "definition_sha256": "565e4f3557d2105f6923d18383ecdae58df65ff6db5c979f663bcabb3dbc41bf",
-  "diagnostics_not_gates": [
-    "distinct_utc_days",
-    "distinct_iso_weeks",
-    "largest_single_day_denominator_contribution",
-    "largest_single_week_denominator_contribution"
+  "authoritative_coverage_denominator": "all expected post-warmup scheduled slots at the metric's certified cadence through the prefix",
+  "authoritative_coverage_numerator": "scheduled post-warmup slots where certified replay establishes warmup, PIT, universe membership, and a final EVALUATED, NOT_IN_UNIVERSE, or NOT_COMPARABLE disposition",
+  "blind_categories_counting_as_authoritatively_replayed": [
+    "EVALUATED",
+    "NOT_COMPARABLE",
+    "NOT_IN_UNIVERSE"
   ],
-  "evaluability_or_comparability_floor": null,
-  "reasoning": "No frozen repository percentage applies to these eight prospective universes. The historical 0.50 structural-pair comparability rule is explicitly scoped to a different V3 gate family, while the certified corpus already fixes candidate-neutral universes and exclusions. Requiring every scheduled slot to be accounted and each metric to reach its own denominator minimum prevents a candidate from buying sufficiency through silent omissions; a second percentage would add an uncalibrated conventional number.",
-  "schema_version": "PROSPECTIVE_SUFFICIENCY_COVERAGE_POLICY_V1",
-  "scoped_out_standard": {
-    "id": "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V1",
-    "reason": "applies only to V3 structural gate pairs, not these universes"
-  }
+  "blind_categories_counting_as_coverage_failure": [
+    "DATA_QUALITY_FAIL",
+    "PIT_INVALID",
+    "REFERENCE_UNAVAILABLE",
+    "SOURCE_UNAVAILABLE",
+    "WARMUP_INCOMPLETE"
+  ],
+  "common_rate_evidence_strength_sha256": "03aba5d79c457e3a4004d2a84f84ca4b9ad854383e8e960a63455da1369e5fff",
+  "comparison": "coverage_numerator * 100 >= coverage_denominator * 99",
+  "definition_sha256": "ea4bce2801d80b0a117239a40d2fef55e2fc32cd2d9da06a90a7eeb888fc4079",
+  "exact_integer_comparison": true,
+  "floor": "0.99",
+  "floor_is_stage_b_performance_threshold": false,
+  "floor_source_epsilon": "0.01",
+  "per_metric": true,
+  "schema_version": "PROSPECTIVE_STAGE_B_AUTHORITATIVE_COVERAGE_V1"
 }

@@ -6,42 +6,60 @@
   },
   "certified_parent": {
     "implementation_commit": "428356665dff0985cf8b1c379f6f18bf6cc5bac1",
+    "material_child_count": 25,
     "protocol_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
     "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
-    "review_documentation_commit": "946e393b9750aa775054ac49316c4e5465152966",
     "review_fix_commit": "ab3b353e344465966da321af02b08f6fe28213f5",
     "review_result": "PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE",
     "review_ticket": "POSTP1-002R5"
   },
-  "change_procedure": "Any material change to a minimum denominator, coverage policy, temporal rule, Wilson confidence level, quantile sufficiency rule, blind stopping logic or cutoff semantics requires PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V2 and a new prospective epoch where applicable.",
   "child_definition_sha256": {
-    "blind_monitor_contract": "9b2d25218b620950ccf11bfb3deee6afa5b9fc064b55043cc94bd03a433649ee",
-    "coverage_policy": "565e4f3557d2105f6923d18383ecdae58df65ff6db5c979f663bcabb3dbc41bf",
-    "evaluation_cutoff_contract": "b84b4af37cba5b068cc117d975d86bee25af9130d05fd22982b41500662a41b5",
-    "metric_sufficiency_minima": "fb81141604eb602888da9b8fb4b6d0b9f2fa5b3ef429a32b1785f48780806bd7",
-    "semantic_diff_from_stage_b_gates": "2cee76082cb82c157120c2a24ced0e4ec4756731531a95812dc0e546d01d9b03",
-    "statistical_derivations": "a128969a3b2e1e0060a1b53ce2d01b153b436263509a67894b17b2d626bbd062",
-    "stopping_rule": "1b9999061ab6cc5cf68849a363ce740f530968e2d05e72616e07069c646f3660",
-    "temporal_policy": "81f640d5360758140e1e31b4b01b987e27839d86dc4d7e8f89bd4e1638545670"
+    "blind_monitor_contract": "2841113f91e8d38f43bb81302825caf5775c16447f3bd54661e9082bae26b10d",
+    "common_rate_evidence_strength": "03aba5d79c457e3a4004d2a84f84ca4b9ad854383e8e960a63455da1369e5fff",
+    "coverage_policy": "ea4bce2801d80b0a117239a40d2fef55e2fc32cd2d9da06a90a7eeb888fc4079",
+    "evaluation_cutoff_contract": "5293afb5b3b9085ff305fdc7d837849ad80b07ac1e9c13f7dc196f4cb682f2ec",
+    "evaluation_epoch_contract": "94bad9185ffa37139416a51649f0010f7da6ef71318aaba800a8a03e52388c62",
+    "evaluation_result_identity": "8f5f0f1da864c2e2513bceaeb1b1e1af883b84678f3d0efa813146ff2cde5c54",
+    "evidence_unit_policy": "a823ba79ba98672e0845609e9e6a7ff4b416af598b1d081b271f240068d56524",
+    "metric_sufficiency_minima": "5ffc971fdc808ba0f27c3f48f318c6c8f413f83b70f1755c84e3db95ba974d27",
+    "p95_tail_repeatability": "7cca33f4ba085a946b193a786b53e7e0744611af43f5ada3bdd942ef468f34d1",
+    "semantic_diff_from_stage_b_gates": "3d8e9228248ab49d0004a04af53693f47499682f99765f7a6130f1ec818a5fdd",
+    "statistical_derivations": "31ef1530f1de8c51551a0b528b7683d9120c2f8fc6b14539207314ec568b4d9e",
+    "stopping_rule": "ec26454172dfcb6d8ce3b69df08d0a4663c4a7a9cf23d8cb2c42ab64ef2e9322",
+    "temporal_policy": "b4ec5cd895e5123d303e5263323d10a050a22db1e3912338ecb08fc623563fc8"
   },
   "collection_authorized": false,
-  "decimal_precision": 60,
-  "definition_sha256": "3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7",
+  "decimal_precision": 80,
+  "definition_sha256": "0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242",
   "epic_t": {
     "modified": false,
     "reopened": false
   },
-  "evaluation_contract_identity": "SUPPLIED_LATER_BY_PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_V1",
-  "final_classification": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_XHIGH_REVIEW",
+  "failed_governance_lineage": [
+    {
+      "authoritative": false,
+      "definition_sha256": "3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7",
+      "implementation_commit": "90a0252744f333e2168ad3904efbc1ec14c5693e",
+      "prospective_observations_collected": false,
+      "review_classification": "SUFFICIENCY_GOVERNANCE_REQUIRES_FIX",
+      "review_documentation_commit": "86def44f0a734efdf175b3be8541644029f5f31d",
+      "review_result": "FAIL \u2014 SUFFICIENCY GOVERNANCE INVALID",
+      "superseded_before_collection": true
+    }
+  ],
+  "final_classification": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_REPEAT_XHIGH_REVIEW",
   "governance_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
-  "material_child_count": 8,
+  "material_child_count": 13,
+  "material_child_enumeration": "single mechanical artifact registry",
   "parent_child_bindings": {
     "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
     "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
-    "stage_b_evaluation_contract_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0"
+    "scientific_evidence_resolver_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+    "stage_b_evaluation_contract_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
+    "warmup_history_definition_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac"
   },
   "postp1_004_authorized": false,
-  "program_ticket": "POSTP1-003",
+  "program_ticket": "POSTP1-003R1",
   "safety": {
     "btc019_sealed_data_accessed": false,
     "prospective_observations_collected": false,
@@ -51,7 +69,7 @@
   "schema_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_DEFINITION_V1",
   "stage_b_performance_gate_owner": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
   "stage_b_performance_gates_changed": false,
-  "status": "FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE",
+  "status": "CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE",
   "target_metrics": [
     "cross_market_confirmed_stop_preservation_rate",
     "gap_through_stop_consensus_agreement_rate",
@@ -62,5 +80,6 @@
     "trade_action_disagreement_rate",
     "trade_eligibility_disagreement_rate"
   ],
+  "version_retained_rationale": "The failed definition was never certified, no collection began, and the failed exact hash remains explicit non-authoritative lineage.",
   "workstream": "EPIC X"
 }

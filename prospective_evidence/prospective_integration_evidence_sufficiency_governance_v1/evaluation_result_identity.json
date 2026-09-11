@@ -1,0 +1,17 @@
+{
+  "candidate_control_identity_owner": "bound evaluation contract",
+  "definition_sha256": "8f5f0f1da864c2e2513bceaeb1b1e1af883b84678f3d0efa813146ff2cde5c54",
+  "floating_pass_fail_result_permitted": false,
+  "required_bindings": [
+    "certified_corpus_sha256",
+    "cutoff_record_sha256",
+    "evaluation_contract_sha256",
+    "evaluation_epoch_authorization_sha256",
+    "sufficiency_governance_sha256"
+  ],
+  "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_RESULT_IDENTITY_V1",
+  "terminal_results": [
+    "FAIL",
+    "PASS"
+  ]
+}

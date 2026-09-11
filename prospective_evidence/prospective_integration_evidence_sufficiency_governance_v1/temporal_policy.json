@@ -1,16 +1,22 @@
 {
-  "alternatives_considered": {
-    "30_60_90_or_180_calendar_days": "REFUSED_NO_OUTCOME_INDEPENDENT_DERIVATION",
-    "reuse_stage_c_90_days": "REFUSED_DIFFERENT_GOVERNANCE_STAGE"
-  },
-  "concentration_diagnostics_persisted": true,
-  "definition_sha256": "81f640d5360758140e1e31b4b01b987e27839d86dc4d7e8f89bd4e1638545670",
+  "concentration_diagnostics": [
+    "distinct_utc_days",
+    "distinct_iso_weeks",
+    "first_evidence_time",
+    "last_evidence_time",
+    "largest_single_day_contribution",
+    "largest_single_week_contribution",
+    "distinct_dependence_unit_count",
+    "largest_dependence_unit_raw_contribution"
+  ],
+  "definition_sha256": "b4ec5cd895e5123d303e5263323d10a050a22db1e3912338ecb08fc623563fc8",
+  "diagnostics_are_additional_hard_gates": false,
+  "evidence_unit_policy": "PROSPECTIVE_STAGE_B_EVIDENCE_UNIT_POLICY_V1",
   "minimum_calendar_duration": null,
   "minimum_distinct_iso_weeks": null,
   "minimum_distinct_utc_days": null,
-  "policy": "NONE",
-  "reasoning": "The metric-specific event and decision denominators define the amount of Stage-B integration evidence. No existing authority requires temporal spreading for these gates, and no outcome-free derivation identifies a calendar value. Concentration is therefore persisted diagnostically rather than turned into an arbitrary gate.",
-  "schema_version": "PROSPECTIVE_SUFFICIENCY_TEMPORAL_POLICY_V1",
-  "stage_c_live_shadow_days_imported": false,
-  "stage_c_separation": "live_shadow_days >= 90 remains the distinct post-certification Stage-C promotion gate and is not Stage-B sufficiency"
+  "policy": "NO_SEPARATE_ARBITRARY_CALENDAR_MINIMUM",
+  "reasoning": "Dependence is governed by hard natural evidence-unit rules rather than raw clustered observations or an arbitrary elapsed duration.",
+  "schema_version": "PROSPECTIVE_STAGE_B_TEMPORAL_POLICY_V1",
+  "stage_c_live_shadow_days_imported": false
 }

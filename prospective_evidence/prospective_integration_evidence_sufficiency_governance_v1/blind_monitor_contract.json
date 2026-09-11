@@ -1,70 +1,42 @@
 {
-  "allowed_input_fields": [
-    "cadence",
-    "decision_time",
-    "global_disposition",
-    "global_reason_codes",
-    "metric",
-    "metric_disposition",
-    "metric_reason_code",
-    "observation_time",
-    "slot_id",
-    "universe_member"
+  "allowed_monitor_input_fields": [
+    "authoritative_evidence_record_sha256",
+    "evaluation_epoch_authorization_sha256",
+    "slot_id"
   ],
+  "blind_category_vocabulary": [
+    "DATA_QUALITY_FAIL",
+    "EVALUATED",
+    "NOT_COMPARABLE",
+    "NOT_IN_UNIVERSE",
+    "PIT_INVALID",
+    "REFERENCE_UNAVAILABLE",
+    "SOURCE_UNAVAILABLE",
+    "WARMUP_INCOMPLETE"
+  ],
+  "caller_declared_projection_is_authority": false,
   "contract_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1",
-  "cutoff_clock": "decision_time",
   "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
-  "definition_sha256": "9b2d25218b620950ccf11bfb3deee6afa5b9fc064b55043cc94bd03a433649ee",
-  "denominator_contribution": "1 iff certified universe_member is true and metric_disposition is EVALUATED; otherwise 0",
+  "definition_sha256": "2841113f91e8d38f43bb81302825caf5775c16447f3bd54661e9082bae26b10d",
+  "dependence_unit_replayed": true,
+  "detailed_parent_reason_codes_exposed_to_monitor": false,
   "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
   "outcome_blind": true,
-  "production_visibility_before_cutoff": {
-    "decision_maker_visible": [
-      "accounting_progress",
-      "coverage_diagnostics",
-      "denominator_progress",
-      "sufficiency_state"
-    ],
-    "target_outcomes_visible": false
-  },
-  "prohibited_input_fields": [
+  "pit_replayed": true,
+  "prohibited_monitor_input_fields": [
     "aggregate_metric_result",
     "candidate_control_agreement",
+    "global_disposition",
+    "metric_disposition",
     "metric_numerator",
     "pass_fail_result",
+    "post_warmup",
+    "reason_code",
     "risk_size_relative_difference",
-    "success_or_failure_bit"
+    "universe_member"
   ],
-  "scheduled_slot_owner": "btc_predictor.research.prospective_integration_corpus.scheduled_decision_slots",
-  "schema_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_CONTRACT_V1",
-  "state_transitions": {
-    "ACCUMULATING": [
-      "METRIC_PARTIALLY_SUFFICIENT",
-      "ALL_METRICS_SUFFICIENT",
-      "EVALUATION_CUTOFF_FROZEN"
-    ],
-    "ALL_METRICS_SUFFICIENT": [
-      "EVALUATION_CUTOFF_FROZEN"
-    ],
-    "EVALUATION_CUTOFF_FROZEN": [],
-    "METRIC_PARTIALLY_SUFFICIENT": [
-      "ALL_METRICS_SUFFICIENT",
-      "EVALUATION_CUTOFF_FROZEN"
-    ],
-    "NOT_STARTED": [
-      "ACCUMULATING"
-    ]
-  },
-  "states": [
-    "NOT_STARTED",
-    "ACCUMULATING",
-    "METRIC_PARTIALLY_SUFFICIENT",
-    "ALL_METRICS_SUFFICIENT",
-    "EVALUATION_CUTOFF_FROZEN"
-  ],
-  "universe_membership_authority": {
-    "candidate_controlled_override_permitted": false,
-    "rule": "Replay and derive membership from the certified decision-universe predicate and evidence graph; never trust a caller-selected exclusion label"
-  },
-  "window_start_semantics": "epoch_observation_start is the first canonical post-warmup observation boundary; warmup capture is never denominator evidence"
+  "projection_rule": "Resolve content-addressed source evidence, verify certified parent identities, replay cadence/warmup/PIT/universe/comparability and the natural dependence unit, derive only the coarse blind category, then require any convenience projection to match exactly.",
+  "resolver_contract_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+  "schema_version": "PROSPECTIVE_STAGE_B_BLIND_EVIDENCE_PROJECTION_V1",
+  "warmup_replayed": true
 }

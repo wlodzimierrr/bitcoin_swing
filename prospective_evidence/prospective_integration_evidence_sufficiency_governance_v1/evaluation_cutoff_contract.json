@@ -1,11 +1,24 @@
 {
-  "corpus_freeze_rule": "Freeze the Stage-B evaluation corpus to evidence PIT-available at or before stage_b_sufficiency_cutoff",
-  "cutoff_definition": "earliest decision_time at which all eight metric minima and all global accounting/coverage requirements are simultaneously satisfied",
-  "cutoff_field": "stage_b_sufficiency_cutoff",
-  "definition_sha256": "b84b4af37cba5b068cc117d975d86bee25af9130d05fd22982b41500662a41b5",
-  "deterministic": true,
+  "cutoff_definition": "earliest decision_time where all eight raw minima, all eight distinct dependence-unit minima, all eight exact coverage floors, and complete scheduled-slot accounting hold",
+  "cutoff_record_schema_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_CUTOFF_RECORD_V1",
+  "definition_sha256": "5293afb5b3b9085ff305fdc7d837849ad80b07ac1e9c13f7dc196f4cb682f2ec",
   "evidence_after_cutoff_included": false,
-  "future_evaluation_contract_binding_required": true,
-  "pre_cutoff_stage_b_status": "INSUFFICIENT_EVIDENCE",
+  "evidence_manifest_content_addressed": true,
+  "first_cutoff_immutable": true,
+  "late_revision_moves_cutoff": false,
+  "replay_source": "frozen authoritative evidence manifest",
+  "required_bindings": [
+    "authoritative_evidence_manifest_sha256",
+    "certified_corpus_sha256",
+    "coverage_policy_sha256",
+    "cutoff_decision_time",
+    "evaluation_contract_sha256",
+    "evaluation_epoch_authorization_sha256",
+    "evidence_unit_policy_sha256",
+    "per_metric_counts",
+    "sufficiency_governance_sha256",
+    "temporal_policy_sha256",
+    "window_start"
+  ],
   "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_CUTOFF_CONTRACT_V1"
 }

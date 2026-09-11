@@ -1,18 +1,10 @@
-"""Frozen pre-data sufficiency governance for the eight prospective Stage-B gates.
+"""Corrected pre-data sufficiency governance for prospective Stage-B evidence.
 
-``PROSPECTIVE_INTEGRATION_CORPUS_V1`` deliberately left certification sample
-sizes to a separate, pre-collection decision.  This module makes that decision
-without collecting an observation and without reading a target numerator or
-candidate/control outcome.  It binds the certified corpus hash, imports all
-historical gate semantics mechanically, derives the finite Wilson capability
-floors, records the exact-boundary exception forced by the inherited ``1.0``
-minimum gate, and defines the blind earliest-cutoff monitor that POSTP1-004 must
-implement.
-
-The monitor's input types contain no target outcome field.  They account for
-scheduled slots, universe membership and dispositions only; consequently a
-numerator, relative-difference value or provisional PASS/FAIL result cannot
-move a sufficiency cutoff through this API.
+POSTP1-003R1 never collects evidence or consumes a numerator, target outcome,
+relative-difference value, or PASS/FAIL result while determining sufficiency.
+It binds the certified prospective corpus, separates the three relevant count
+types, and owns a stateful reference contract for future POSTP1-004 persistence.
+The scientific monitor accepts only content-addressed evidence references.
 """
 
 from __future__ import annotations
@@ -22,12 +14,16 @@ import json
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import ROUND_CEILING, Context, Decimal, localcontext
+from fractions import Fraction
+from functools import cache
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from btc_predictor.research import prospective_integration_corpus as _corpus
+from btc_predictor.research import prospective_source_integrity as _source_integrity
 from btc_predictor.research.structural_threshold_calibration import (
     UNCERTAINTY_METHOD_ID,
     WILSON_Z_95,
@@ -35,26 +31,29 @@ from btc_predictor.research.structural_threshold_calibration import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Frozen identity and dependency
-# ---------------------------------------------------------------------------
-
-GOVERNANCE_VERSION = (
-    "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1"
-)
+GOVERNANCE_VERSION = "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1"
 GOVERNANCE_SCHEMA_VERSION = (
     "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_DEFINITION_V1"
 )
-GOVERNANCE_STATUS = "FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
-PROGRAM_TICKET = "POSTP1-003"
+GOVERNANCE_STATUS = "CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
+PROGRAM_TICKET = "POSTP1-003R1"
 WORKSTREAM = "EPIC X"
 FINAL_CLASSIFICATION = (
     "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_"
-    "READY_FOR_XHIGH_REVIEW"
+    "READY_FOR_REPEAT_XHIGH_REVIEW"
 )
-SUCCESSOR_GOVERNANCE_VERSION = (
-    "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V2"
+
+FAILED_GOVERNANCE_SHA256 = (
+    "3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7"
 )
+FAILED_GOVERNANCE_IMPLEMENTATION_COMMIT = (
+    "90a0252744f333e2168ad3904efbc1ec14c5693e"
+)
+FAILED_GOVERNANCE_REVIEW_DOCUMENTATION_COMMIT = (
+    "86def44f0a734efdf175b3be8541644029f5f31d"
+)
+FAILED_GOVERNANCE_REVIEW_RESULT = "FAIL — SUFFICIENCY GOVERNANCE INVALID"
+FAILED_GOVERNANCE_CLASSIFICATION = "SUFFICIENCY_GOVERNANCE_REQUIRES_FIX"
 
 CERTIFIED_CORPUS_VERSION = _corpus.PROTOCOL_VERSION
 CERTIFIED_CORPUS_SHA256 = (
@@ -66,9 +65,6 @@ CERTIFIED_CORPUS_IMPLEMENTATION_COMMIT = (
 CERTIFIED_CORPUS_REVIEW_FIX_COMMIT = (
     "ab3b353e344465966da321af02b08f6fe28213f5"
 )
-CERTIFIED_CORPUS_REVIEW_DOCUMENTATION_COMMIT = (
-    "946e393b9750aa775054ac49316c4e5465152966"
-)
 CERTIFIED_CORPUS_REVIEW_TICKET = "POSTP1-002R5"
 CERTIFIED_CORPUS_REVIEW_RESULT = (
     "PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE"
@@ -79,28 +75,33 @@ OUTPUT_NAMESPACE = (
     "prospective_integration_evidence_sufficiency_governance_v1"
 )
 DEFINITION_FILENAME = "sufficiency_governance_definition.json"
+COMMON_RATE_FILENAME = "common_rate_evidence_strength.json"
+P95_FILENAME = "p95_tail_repeatability.json"
 MINIMA_FILENAME = "metric_sufficiency_minima.json"
 DERIVATIONS_FILENAME = "statistical_derivations.json"
 COVERAGE_FILENAME = "coverage_policy.json"
+EVIDENCE_UNIT_FILENAME = "evidence_unit_policy.json"
 TEMPORAL_FILENAME = "temporal_policy.json"
 BLIND_MONITOR_FILENAME = "blind_monitor_contract.json"
-STOPPING_RULE_FILENAME = "stopping_rule.json"
+EPOCH_FILENAME = "evaluation_epoch_contract.json"
 CUTOFF_FILENAME = "evaluation_cutoff_contract.json"
+RESULT_IDENTITY_FILENAME = "evaluation_result_identity.json"
+STOPPING_RULE_FILENAME = "stopping_rule.json"
 SEMANTIC_DIFF_FILENAME = "semantic_diff_from_stage_b_gates.json"
 REPORT_FILENAME = (
     "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_REPORT.md"
 )
 
-_DECIMAL_CONTEXT = Context(prec=60)
+_DECIMAL_CONTEXT = Context(prec=80)
 _SHA256_HEX_LENGTH = 64
 
 
 class SufficiencyGovernanceError(ValueError):
-    """Raised when frozen governance or blind evidence fails closed."""
+    """Frozen governance, evidence, or identity failed closed."""
 
 
 class EvaluationEpochFrozenError(SufficiencyGovernanceError):
-    """Raised when one evaluated epoch is extended past its frozen cutoff."""
+    """An immutable cutoff or terminal evaluation epoch was extended."""
 
 
 def _canonical_json(payload: Any) -> str:
@@ -127,44 +128,46 @@ def _is_sha256(value: Any) -> bool:
     return True
 
 
-def _with_definition_hash(payload: dict[str, Any]) -> dict[str, Any]:
+def _with_definition_hash(payload: Mapping[str, Any]) -> dict[str, Any]:
     result = dict(payload)
     result["definition_sha256"] = _digest(result)
     return result
 
 
+def _with_record_hash(payload: Mapping[str, Any]) -> dict[str, Any]:
+    result = dict(payload)
+    result["record_sha256"] = _source_integrity.digest(result)
+    return result
+
+
+def _verify_hashed_definition(payload: Mapping[str, Any], name: str) -> str:
+    row = dict(payload)
+    declared = row.pop("definition_sha256", None)
+    if not _is_sha256(declared) or _digest(row) != declared:
+        raise SufficiencyGovernanceError(f"{name} must carry its real SHA-256")
+    return declared
+
+
 def _require_certified_corpus() -> dict[str, Any]:
     protocol = _corpus.protocol_definition()
-    actual = protocol.get("definition_sha256")
-    if actual != CERTIFIED_CORPUS_SHA256:
-        raise SufficiencyGovernanceError(
-            "certified corpus hash mismatch: sufficiency governance refuses"
-        )
+    if protocol.get("definition_sha256") != CERTIFIED_CORPUS_SHA256:
+        raise SufficiencyGovernanceError("certified corpus hash mismatch")
     if protocol.get("protocol_version") != CERTIFIED_CORPUS_VERSION:
-        raise SufficiencyGovernanceError(
-            "certified corpus version mismatch: sufficiency governance refuses"
-        )
+        raise SufficiencyGovernanceError("certified corpus version mismatch")
     if tuple(protocol.get("target_metrics", ())) != _corpus.TARGET_METRICS:
-        raise SufficiencyGovernanceError(
-            "certified corpus target-metric census moved"
-        )
+        raise SufficiencyGovernanceError("certified corpus target census moved")
+    if protocol.get("material_child_count") != 25:
+        raise SufficiencyGovernanceError("certified corpus child census moved")
     return protocol
 
 
-# ---------------------------------------------------------------------------
-# Mechanical historical parity
-# ---------------------------------------------------------------------------
-
-
 def _historical_gate_rows() -> dict[str, dict[str, Any]]:
-    """Recover the eight immutable performance gates through their owner."""
-
     authority = _corpus.historical_gate_authority()
     contracts = _corpus.metric_evidence_contracts()["contracts"]
     if set(authority) != set(_corpus.TARGET_METRICS):
-        raise SufficiencyGovernanceError("historical authority does not carry eight gates")
+        raise SufficiencyGovernanceError("historical authority must carry eight gates")
     if set(contracts) != set(_corpus.TARGET_METRICS):
-        raise SufficiencyGovernanceError("certified corpus does not carry eight metrics")
+        raise SufficiencyGovernanceError("certified corpus must carry eight metrics")
     rows: dict[str, dict[str, Any]] = {}
     for metric in _corpus.TARGET_METRICS:
         gate = authority[metric]
@@ -173,21 +176,21 @@ def _historical_gate_rows() -> dict[str, dict[str, Any]]:
             "threshold": contract["threshold"] == gate["threshold"],
             "direction": contract["direction"] == gate["direction"],
             "hard": contract["hard"] == gate["hard"],
-            "metric_intent": (
-                contract["historical_definition"] == gate["definition"]
-            ),
+            "metric_intent": contract["historical_definition"] == gate["definition"],
         }
         if not all(parity.values()):
             raise SufficiencyGovernanceError(
                 f"{metric} differs from immutable Stage-B authority"
             )
         rows[metric] = {
+            "cadence": contract["cadence"],
             "direction": gate["direction"],
             "hard": gate["hard"],
             "metric": metric,
             "metric_intent": gate["definition"],
             "metric_intent_source": gate["source_of_rationale"],
             "parity": parity,
+            "performance_denominator": contract["denominator"],
             "source_authority": gate["source_authority"],
             "threshold": gate["threshold"],
             "universe": contract["universe"],
@@ -228,23 +231,20 @@ def semantic_diff_from_stage_b_gates() -> dict[str, Any]:
     return _with_definition_hash(payload)
 
 
-# ---------------------------------------------------------------------------
-# Statistical derivations
-# ---------------------------------------------------------------------------
-
 RATE_METRICS = tuple(
-    metric
-    for metric in _corpus.TARGET_METRICS
-    if metric != _corpus.RISK_SIZE_METRIC
+    metric for metric in _corpus.TARGET_METRICS if metric != _corpus.RISK_SIZE_METRIC
 )
 RISK_P95_METRIC = _corpus.RISK_SIZE_METRIC
-
 WILSON_FORMULA_ID = "WILSON_SCORE_INTERVAL_95_TWO_SIDED_UNCORRECTED_V1"
 WILSON_CAPABILITY_RULE_ID = "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1"
-EXACT_BOUNDARY_EXCEPTION_ID = (
-    "EXACT_POINT_RATE_BOUNDARY_IDENTIFIABILITY_EXCEPTION_V1"
-)
-NEAREST_RANK_RULE_ID = "NEAREST_RANK_P95_NOT_SAMPLE_MAXIMUM_V1"
+COMMON_RATE_EVIDENCE_STRENGTH_ID = "COMMON_RATE_EVIDENCE_STRENGTH_V1"
+P95_TAIL_REPEATABILITY_ID = "P95_TAIL_REPEATABILITY_SUFFICIENCY_V1"
+RATE_EVIDENCE_EPSILON = Decimal("0.01")
+RATE_EVIDENCE_REFERENCE = Decimal("0.99")
+P95_QUANTILE = Decimal("0.95")
+P95_TAIL_PROBABILITY = Decimal("0.05")
+P95_REPEATABILITY_HITS = 2
+EVIDENCE_CONFIDENCE = Decimal("0.95")
 
 
 def _decimal_ceiling(value: Decimal) -> int:
@@ -263,15 +263,10 @@ def _wilson_extreme_bound(direction: str, denominator: int) -> Decimal:
 
 
 def _finite_wilson_minimum(threshold: Decimal, direction: str) -> int | None:
-    """Derive the exact extreme-sample capability floor in a fixed context."""
-
     if direction not in ("minimum", "maximum"):
         raise SufficiencyGovernanceError("rate direction must be minimum or maximum")
     if threshold < 0 or threshold > 1:
-        raise SufficiencyGovernanceError("a rate threshold must lie in [0, 1]")
-    # At these closed boundaries every finite Wilson confidence limit is
-    # strictly inside the unit interval.  Returning None records the theorem;
-    # it must never be replaced by a search cap.
+        raise SufficiencyGovernanceError("a rate threshold must lie in [0,1]")
     if (direction == "minimum" and threshold == 1) or (
         direction == "maximum" and threshold == 0
     ):
@@ -298,219 +293,270 @@ def _finite_wilson_minimum(threshold: Decimal, direction: str) -> int | None:
             previous >= threshold if direction == "minimum" else previous <= threshold
         )
     if not satisfied or previous_satisfied:
-        raise SufficiencyGovernanceError("closed-form Wilson minimum failed owner parity")
+        raise SufficiencyGovernanceError("Wilson minimum failed owner parity")
     return candidate
+
+
+def common_rate_evidence_strength() -> dict[str, Any]:
+    gates = _historical_gate_rows()
+    distances: dict[str, str] = {}
+    for metric in RATE_METRICS:
+        threshold = Decimal(str(gates[metric]["threshold"]))
+        distance = min(threshold, Decimal(1) - threshold)
+        if distance > 0:
+            distances[metric] = str(distance)
+    epsilon = min(Decimal(value) for value in distances.values())
+    if epsilon != RATE_EVIDENCE_EPSILON:
+        raise SufficiencyGovernanceError("mechanical rate epsilon moved")
+    reference = Decimal(1) - epsilon
+    minimum = _finite_wilson_minimum(reference, "minimum")
+    if minimum != 381:
+        raise SufficiencyGovernanceError("common evidence-strength minimum moved")
+    payload = {
+        "boundary_probe": {
+            "n_minus_one": 380,
+            "n_minus_one_lower": str(_wilson_extreme_bound("minimum", 380)),
+            "n_minus_one_satisfies": False,
+            "n": 381,
+            "n_lower": str(_wilson_extreme_bound("minimum", 381)),
+            "n_satisfies": True,
+        },
+        "closed_boundary_reference": str(reference),
+        "confidence": str(EVIDENCE_CONFIDENCE),
+        "distance_by_finite_interior_rate_gate": dict(sorted(distances.items())),
+        "epsilon": str(epsilon),
+        "epsilon_derivation": (
+            "minimum positive distance from the closed boundary {0,1} among "
+            "the inherited Stage-B rate thresholds"
+        ),
+        "minimum_all_success_raw_denominator": minimum,
+        "performance_threshold_replacement": False,
+        "purpose": "PRE_DATA_COMMON_RATE_EVIDENCE_STRENGTH_ONLY",
+        "schema_version": COMMON_RATE_EVIDENCE_STRENGTH_ID,
+        "wilson_method_id": WILSON_FORMULA_ID,
+        "wilson_owner_method_id": UNCERTAINTY_METHOD_ID,
+        "wilson_z": str(WILSON_Z_95),
+    }
+    return _with_definition_hash(payload)
 
 
 def _rate_derivation(metric: str, gate: Mapping[str, Any]) -> dict[str, Any]:
     direction = str(gate["direction"])
     threshold = Decimal(str(gate["threshold"]))
-    capability = _finite_wilson_minimum(threshold, direction)
-    if capability is None:
-        # The inherited 1.0 performance boundary is exact.  For every finite n,
-        # WilsonLower(n,n) = n/(n+z^2) < 1, so no honest finite confidence floor
-        # exists.  The exception selects only the smallest positive n at which
-        # the inherited empirical point-rate gate is defined and can distinguish
-        # one success from one failure.  It does not claim population precision
-        # and does not alter the 1.0 performance threshold.
-        if not (direction == "minimum" and threshold == 1):
-            raise SufficiencyGovernanceError(
-                "an unsupported closed-boundary rate has no finite Wilson minimum"
-            )
-        minimum = 1
-        z_squared = _DECIMAL_CONTEXT.multiply(WILSON_Z_95, WILSON_Z_95)
-        trace = {
-            "boundary_proof": (
-                "For every finite positive n, WilsonLower(n,n) = "
-                "n / (n + z^2) < 1 because z^2 > 0."
-            ),
-            "n_capability": None,
-            "n_capability_state": "NO_FINITE_POSITIVE_INTEGER",
-            "n_minus_one_exception_criterion_satisfied": False,
-            "n_selected": minimum,
-            "n_selected_exception_criterion": (
-                "denominator is positive, the empirical rate is defined, and "
-                "the only non-perfect one-observation sample is distinguishable"
-            ),
-            "n_selected_exception_criterion_satisfied": True,
-            "wilson_lower_at_selected_n": str(
-                _wilson_extreme_bound(direction, minimum)
-            ),
-            "z_squared": str(z_squared),
-        }
+    if metric == _corpus.CROSS_MARKET_METRIC:
+        common = common_rate_evidence_strength()
         return {
-            "capability_formula": (
-                "WilsonLower(successes=n,n,z) >= threshold"
-            ),
             "derived_n_capability": None,
-            "derivation_trace": trace,
             "direction": direction,
-            "exception": {
-                "applied": True,
-                "alternatives_considered": {
-                    "change_inherited_threshold": (
-                        "REFUSED_CERTIFIED_CORPUS_CHANGE"
-                    ),
-                    "import_another_metrics_tolerance": (
-                        "REFUSED_NEW_UNCALIBRATED_PERFORMANCE_THRESHOLD"
-                    ),
-                    "round_wilson_lower_to_one": (
-                        "REFUSED_HIDDEN_NUMERICAL_APPROXIMATION"
-                    ),
-                    "unreachable_infinite_minimum": (
-                        "REFUSED_NO_OPERATIONAL_STOPPING_POINT"
-                    ),
-                },
-                "does_not_change_performance_gate": True,
-                "method_id": EXACT_BOUNDARY_EXCEPTION_ID,
-                "precision_claim": "ESTIMATOR_IDENTIFIABILITY_ONLY",
-                "reason": (
-                    "The inherited exact 1.0 point-rate boundary admits no "
-                    "finite Wilson lower-bound capability n. Replacing 1.0 by "
-                    "an interior tolerance would change the certified corpus. "
-                    "The smallest positive denominator is therefore frozen as "
-                    "an explicit estimator-identifiability exception, not as a "
-                    "confidence or population-precision claim."
-                ),
-            },
+            "evidence_strength_confidence": common["confidence"],
+            "evidence_strength_epsilon": common["epsilon"],
+            "evidence_strength_reference": common["closed_boundary_reference"],
+            "evidence_strength_rule_id": COMMON_RATE_EVIDENCE_STRENGTH_ID,
             "metric": metric,
-            "minimum_denominator": minimum,
-            "successes_at_capability_probe": "n",
+            "minimum_denominator": common["minimum_all_success_raw_denominator"],
+            "performance_threshold": str(gate["threshold"]),
+            "performance_threshold_changed": False,
             "threshold": str(gate["threshold"]),
             "wilson_method_id": WILSON_FORMULA_ID,
             "wilson_z": str(WILSON_Z_95),
         }
-
-    previous = capability - 1
-    current_bound = _wilson_extreme_bound(direction, capability)
-    previous_bound = (
-        None if previous == 0 else _wilson_extreme_bound(direction, previous)
-    )
-    if direction == "maximum":
-        formula = "WilsonUpper(successes=0,n,z) <= threshold"
-        probe = 0
-        current_satisfied = current_bound <= threshold
-        previous_satisfied = (
-            False if previous_bound is None else previous_bound <= threshold
-        )
-    else:
-        formula = "WilsonLower(successes=n,n,z) >= threshold"
-        probe = "n"
-        current_satisfied = current_bound >= threshold
-        previous_satisfied = (
-            False if previous_bound is None else previous_bound >= threshold
-        )
+    capability = _finite_wilson_minimum(threshold, direction)
+    if capability is None:
+        raise SufficiencyGovernanceError("unexpected closed rate boundary")
+    current = _wilson_extreme_bound(direction, capability)
+    previous = _wilson_extreme_bound(direction, capability - 1)
     return {
-        "capability_formula": formula,
         "derived_n_capability": capability,
-        "derivation_trace": {
-            "bound_at_n_capability": str(current_bound),
-            "bound_at_n_capability_minus_one": (
-                None if previous_bound is None else str(previous_bound)
-            ),
-            "n_capability_criterion_satisfied": current_satisfied,
-            "n_capability_minus_one_criterion_satisfied": previous_satisfied,
-        },
         "direction": direction,
-        "exception": {"applied": False},
         "metric": metric,
         "minimum_denominator": capability,
-        "successes_at_capability_probe": probe,
+        "n_capability_bound": str(current),
+        "n_capability_criterion_satisfied": (
+            current >= threshold if direction == "minimum" else current <= threshold
+        ),
+        "n_capability_minus_one_bound": str(previous),
+        "n_capability_minus_one_criterion_satisfied": (
+            previous >= threshold if direction == "minimum" else previous <= threshold
+        ),
+        "performance_threshold": str(gate["threshold"]),
+        "performance_threshold_changed": False,
         "threshold": str(gate["threshold"]),
         "wilson_method_id": WILSON_FORMULA_ID,
         "wilson_z": str(WILSON_Z_95),
     }
 
 
-def nearest_rank(probability: Decimal, denominator: int) -> int:
-    if denominator <= 0:
-        raise SufficiencyGovernanceError("nearest rank needs a positive denominator")
-    if probability <= 0 or probability > 1:
-        raise SufficiencyGovernanceError("nearest-rank probability must lie in (0, 1]")
-    with localcontext(_DECIMAL_CONTEXT) as context:
-        return int(
-            context.multiply(probability, Decimal(denominator)).to_integral_value(
-                rounding=ROUND_CEILING,
-                context=context,
-            )
-        )
-
-
-def _nearest_rank_p95_derivation() -> dict[str, Any]:
-    probability = _corpus.RISK_SIZE_PROBABILITY
-    minimum = next(
-        denominator
-        for denominator in range(1, 10_000)
-        if nearest_rank(probability, denominator) < denominator
+def _tail_repeatability_probability_fraction(denominator: int) -> Fraction:
+    if not isinstance(denominator, int) or isinstance(denominator, bool) or denominator < 0:
+        raise SufficiencyGovernanceError("tail denominator must be non-negative integer")
+    if denominator == 0:
+        return Fraction(0, 1)
+    tail = Fraction(1, 20)
+    non_tail = Fraction(19, 20)
+    return 1 - non_tail**denominator - denominator * tail * non_tail ** (
+        denominator - 1
     )
-    rank_before = nearest_rank(probability, minimum - 1)
-    rank_at = nearest_rank(probability, minimum)
-    rank_after = nearest_rank(probability, minimum + 1)
-    return {
-        "derivation": (
-            "smallest positive n for which ceil(0.95*n) < n, so the selected "
-            "nearest-rank p95 is not the sample maximum"
-        ),
-        "estimator": _corpus.RISK_SIZE_STATISTIC,
-        "formula": "rank = ceil(0.95 * n)",
-        "metric": RISK_P95_METRIC,
+
+
+def _fraction_decimal(value: Fraction) -> str:
+    with localcontext(_DECIMAL_CONTEXT):
+        return str(Decimal(value.numerator) / Decimal(value.denominator))
+
+
+def p95_tail_repeatability() -> dict[str, Any]:
+    target = Fraction(19, 20)
+    minimum = next(
+        n for n in range(1, 10_000) if _tail_repeatability_probability_fraction(n) >= target
+    )
+    if minimum != 93:
+        raise SufficiencyGovernanceError("p95 repeatability minimum moved")
+    p92 = _tail_repeatability_probability_fraction(92)
+    p93 = _tail_repeatability_probability_fraction(93)
+    payload = {
+        "confidence": str(EVIDENCE_CONFIDENCE),
+        "formula": "1 - 0.95^n - n * 0.05 * 0.95^(n-1)",
+        "iid_scope": "PRE_DATA_SUFFICIENCY_CALCULATION_ONLY",
         "minimum_denominator": minimum,
-        "n_min_minus_one": {
-            "denominator": minimum - 1,
-            "is_sample_maximum": rank_before == minimum - 1,
-            "rank": rank_before,
-        },
-        "n_min": {
-            "denominator": minimum,
-            "is_sample_maximum": rank_at == minimum,
-            "rank": rank_at,
-            "tail_observations_above_rank": minimum - rank_at,
-        },
-        "n_min_plus_one": {
-            "denominator": minimum + 1,
-            "is_sample_maximum": rank_after == minimum + 1,
-            "rank": rank_after,
-            "tail_observations_above_rank": minimum + 1 - rank_after,
-        },
-        "precision_claim": "TAIL_ORDER_STATISTIC_IDENTIFIABILITY_ONLY",
-        "probability": str(probability),
-        "rule_id": NEAREST_RANK_RULE_ID,
-        "sufficiency_reason": (
-            "At n=20 the nearest-rank p95 first selects the nineteenth order "
-            "statistic and leaves one observed value above it. This is enough "
-            "to make the frozen integration diagnostic a tail statistic rather "
-            "than the maximum; it is not a claim about population-quantile "
-            "precision or distributional coverage."
+        "minimum_distinct_sizing_evidence_units": minimum,
+        "minimum_repeated_tail_occurrences": P95_REPEATABILITY_HITS,
+        "n_92": {"probability": _fraction_decimal(p92), "satisfies": p92 >= target},
+        "n_93": {"probability": _fraction_decimal(p93), "satisfies": p93 >= target},
+        "population_quantile_confidence_interval_claim": False,
+        "quantile": str(P95_QUANTILE),
+        "risk_statistic_changed": False,
+        "risk_statistic_owner": (
+            "btc_predictor.research.prospective_integration_corpus."
+            "nearest_rank_percentile"
         ),
+        "schema_version": P95_TAIL_REPEATABILITY_ID,
+        "tail_probability": str(P95_TAIL_PROBABILITY),
     }
+    return _with_definition_hash(payload)
 
 
 def statistical_derivations() -> dict[str, Any]:
     gates = _historical_gate_rows()
-    rates = {
-        metric: _rate_derivation(metric, gates[metric]) for metric in RATE_METRICS
-    }
+    common = common_rate_evidence_strength()
+    p95 = p95_tail_repeatability()
     payload = {
         "ambient_decimal_context_consumed": False,
-        "nearest_rank_p95": _nearest_rank_p95_derivation(),
-        "rate_metrics": rates,
+        "common_rate_evidence_strength_sha256": common["definition_sha256"],
+        "nearest_rank_p95": p95,
+        "p95_tail_repeatability_sha256": p95["definition_sha256"],
+        "rate_metrics": {
+            metric: _rate_derivation(metric, gates[metric]) for metric in RATE_METRICS
+        },
         "schema_version": "PROSPECTIVE_SUFFICIENCY_STATISTICAL_DERIVATIONS_V1",
         "wilson": {
-            "confidence_level": "0.95",
+            "confidence_level": str(EVIDENCE_CONFIDENCE),
             "continuity_correction_applied": False,
             "formula_id": WILSON_FORMULA_ID,
             "method_owner": (
-                "btc_predictor.research.structural_threshold_calibration."
-                "wilson_interval"
+                "btc_predictor.research.structural_threshold_calibration.wilson_interval"
             ),
             "owner_method_id": UNCERTAINTY_METHOD_ID,
-            "purpose": "PRE_DATA_MINIMUM_DENOMINATOR_SELECTION_ONLY",
             "replaces_inherited_point_metric_pass_fail": False,
-            "rule_id": WILSON_CAPABILITY_RULE_ID,
             "z": str(WILSON_Z_95),
         },
     }
     return _with_definition_hash(payload)
+
+
+EVIDENCE_UNIT_POLICY_ID = "PROSPECTIVE_STAGE_B_EVIDENCE_UNIT_POLICY_V1"
+COVERAGE_POLICY_ID = "PROSPECTIVE_STAGE_B_AUTHORITATIVE_COVERAGE_V1"
+TEMPORAL_POLICY_ID = "PROSPECTIVE_STAGE_B_TEMPORAL_POLICY_V1"
+COVERAGE_FLOOR_NUMERATOR = 99
+COVERAGE_FLOOR_DENOMINATOR = 100
+NO_SEPARATE_ARBITRARY_CALENDAR_MINIMUM = "NONE"
+
+
+def evidence_unit_policy() -> dict[str, Any]:
+    protocol = _require_certified_corpus()
+    metrics: dict[str, Any] = {}
+    for metric in _corpus.TARGET_METRICS:
+        if metric in _corpus.STOP_EVENT_METRICS:
+            kind = "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE"
+            owner = (
+                "certified control portfolio lifecycle hash chain plus "
+                "prospective_stop_event.active_stop_identity"
+            )
+            derivation = (
+                "sha256(control position opening-transition identity, active stop "
+                "identity, certified corpus hash, policy version)"
+            )
+            fields = {
+                "active_stop_identity": (
+                    "prospective_stop_event.active_stop_identity; control lifecycle "
+                    "active stop plus transition/source identity"
+                ),
+                "control_position_episode_sha256": (
+                    "replayed root opening transition from the control portfolio "
+                    "prior_state_sha256 hash chain"
+                ),
+            }
+        elif metric == _corpus.RISK_SIZE_METRIC:
+            kind = "AUTHORITATIVE_DAILY_SIZING_OPPORTUNITY"
+            owner = (
+                "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1 canonical daily slot "
+                "plus paired prospective_risk_evaluation records"
+            )
+            derivation = "canonical STRATEGY_DAILY slot_id"
+            fields = {"slot_id": "certified UTC strategy decision identity"}
+        else:
+            kind = "AUTHORITATIVE_DAILY_DECISION"
+            owner = "PROSPECTIVE_INTEGRATION_DECISION_UNIVERSE_V1"
+            derivation = "canonical STRATEGY_DAILY slot_id"
+            fields = {"slot_id": "certified UTC strategy decision identity"}
+        metrics[metric] = {
+            "dependence_unit_derivation": derivation,
+            "dependence_unit_kind": kind,
+            "dependence_unit_owner": owner,
+            "identity_fields": fields,
+            "maximum_sufficiency_credit_per_unit": 1,
+            "revisions_or_replays_create_new_unit": False,
+        }
+    payload = {
+        "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+        "decision_universe_sha256": protocol["child_definition_sha256"][
+            "decision_universe"
+        ],
+        "metric_evidence_contract_sha256": protocol["child_definition_sha256"][
+            "metric_evidence_contracts"
+        ],
+        "metrics": metrics,
+        "raw_observations_are_independent_by_default": False,
+        "schema_version": EVIDENCE_UNIT_POLICY_ID,
+    }
+    return _with_definition_hash(payload)
+
+
+def _derive_dependence_unit_id(
+    metric: str,
+    *,
+    slot_id: str,
+    control_position_episode_sha256: str | None,
+    active_stop_identity: str | None,
+) -> str:
+    if metric in _corpus.STOP_EVENT_METRICS:
+        if not _is_sha256(control_position_episode_sha256):
+            raise SufficiencyGovernanceError(
+                "stop evidence lacks a replayed control position episode identity"
+            )
+        if not isinstance(active_stop_identity, str) or not active_stop_identity:
+            raise SufficiencyGovernanceError(
+                "stop evidence lacks a replayed active stop identity"
+            )
+        return _digest(
+            {
+                "active_stop_identity": active_stop_identity,
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "control_position_episode_sha256": control_position_episode_sha256,
+                "policy": EVIDENCE_UNIT_POLICY_ID,
+            }
+        )
+    if not _is_sha256(slot_id):
+        raise SufficiencyGovernanceError("daily evidence lacks canonical slot identity")
+    return slot_id
 
 
 def metric_sufficiency_minima() -> dict[str, Any]:
@@ -518,50 +564,42 @@ def metric_sufficiency_minima() -> dict[str, Any]:
     gates = _historical_gate_rows()
     contracts = _corpus.metric_evidence_contracts()["contracts"]
     derivations = statistical_derivations()
+    unit_policy = evidence_unit_policy()
     rows: dict[str, dict[str, Any]] = {}
     for metric in _corpus.TARGET_METRICS:
-        gate = gates[metric]
-        contract = contracts[metric]
         if metric == RISK_P95_METRIC:
-            derivation = derivations["nearest_rank_p95"]
-            method = NEAREST_RANK_RULE_ID
+            minimum = int(derivations["nearest_rank_p95"]["minimum_denominator"])
+            method = P95_TAIL_REPEATABILITY_ID
         else:
-            derivation = derivations["rate_metrics"][metric]
+            minimum = int(derivations["rate_metrics"][metric]["minimum_denominator"])
             method = (
-                derivation["exception"]["method_id"]
-                if derivation["exception"]["applied"]
+                COMMON_RATE_EVIDENCE_STRENGTH_ID
+                if metric == _corpus.CROSS_MARKET_METRIC
                 else WILSON_CAPABILITY_RULE_ID
             )
         rows[metric] = {
-            "additional_conditions": [
-                "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
-                "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
-                "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
-                "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE",
-            ],
-            "cadence": contract["cadence"],
-            "counter_fields": {
-                "accounted_opportunity_count": "accounted_opportunity_count",
-                "data_quality_fail_count": "data_quality_fail_count",
-                "denominator": "evaluable_denominator",
-                "exclusions": "exclusion_counts_by_reason",
-                "not_comparable": "not_comparable_count",
-                "not_evaluable": "not_evaluable_count",
-                "reference_unavailable": "reference_unavailable_count",
-            },
-            "direction": gate["direction"],
-            "hard": gate["hard"],
+            "authoritative_coverage_floor": "0.99",
+            "cadence": contracts[metric]["cadence"],
+            "direction": gates[metric]["direction"],
+            "hard": gates[metric]["hard"],
             "metric": metric,
             "metric_evidence_contract_sha256": protocol[
                 "child_definition_sha256"
             ]["metric_evidence_contracts"],
-            "metric_intent": gate["metric_intent"],
-            "minimum_denominator": derivation["minimum_denominator"],
-            "no_pooling": True,
+            "metric_intent": gates[metric]["metric_intent"],
+            "minimum_distinct_dependence_units": minimum,
+            "minimum_raw_sufficiency_denominator": minimum,
+            "performance_denominator": contracts[metric]["denominator"],
             "performance_gate_unchanged": True,
+            "performance_threshold": str(gates[metric]["threshold"]),
             "statistical_method": method,
-            "threshold": str(gate["threshold"]),
-            "universe": contract["universe"],
+            "sufficiency_quantities_are_distinct": {
+                "effective_dependence_unit_count": True,
+                "performance_denominator": True,
+                "raw_sufficiency_denominator": True,
+            },
+            "universe": contracts[metric]["universe"],
+            "unit_policy": unit_policy["metrics"][metric],
             "zero_denominator_outcome": _corpus.UNDEFINED_INSUFFICIENT_EVIDENCE,
             "zero_denominator_sufficient": False,
         }
@@ -570,6 +608,7 @@ def metric_sufficiency_minima() -> dict[str, Any]:
         "decision_universe_sha256": protocol["child_definition_sha256"][
             "decision_universe"
         ],
+        "evidence_unit_policy_sha256": unit_policy["definition_sha256"],
         "metric_count": len(rows),
         "metrics": rows,
         "no_candidate_identity_used_to_choose_minima": True,
@@ -580,173 +619,678 @@ def metric_sufficiency_minima() -> dict[str, Any]:
     return _with_definition_hash(payload)
 
 
-# ---------------------------------------------------------------------------
-# Coverage, temporal and stopping policies
-# ---------------------------------------------------------------------------
-
-NO_SEPARATE_COVERAGE_FLOOR = "NO_SEPARATE_NUMERICAL_COVERAGE_FLOOR"
-NO_TEMPORAL_MINIMUM = "NONE"
-
-
 def coverage_policy() -> dict[str, Any]:
+    common = common_rate_evidence_strength()
     payload = {
         "accounting_requirement": {
             "accounted_scheduled_slot_rate": "1.0",
-            "exactly_one_persisted_disposition_per_scheduled_slot": True,
+            "exactly_one_persisted_evidence_reference_per_scheduled_slot": True,
             "unaccounted_scheduled_slot_count_required": 0,
-            "unknown_or_missing_disposition_is_an_exclusion": False,
         },
-        "applicable_existing_numerical_standard_found": False,
-        "candidate_neutral_exclusions_required": True,
-        "decision": NO_SEPARATE_COVERAGE_FLOOR,
-        "diagnostics_not_gates": [
-            "distinct_utc_days",
-            "distinct_iso_weeks",
-            "largest_single_day_denominator_contribution",
-            "largest_single_week_denominator_contribution",
-        ],
-        "evaluability_or_comparability_floor": None,
-        "reasoning": (
-            "No frozen repository percentage applies to these eight prospective "
-            "universes. The historical 0.50 structural-pair comparability rule "
-            "is explicitly scoped to a different V3 gate family, while the "
-            "certified corpus already fixes candidate-neutral universes and "
-            "exclusions. Requiring every scheduled slot to be accounted and "
-            "each metric to reach its own denominator minimum prevents a "
-            "candidate from buying sufficiency through silent omissions; a "
-            "second percentage would add an uncalibrated conventional number."
+        "authoritative_coverage_denominator": (
+            "all expected post-warmup scheduled slots at the metric's certified "
+            "cadence through the prefix"
         ),
-        "alternatives_considered": {
-            "reuse_structural_pair_floor_0_50": "REFUSED_WRONG_FROZEN_SCOPE",
-            "select_conventional_0_90_0_95_or_0_99": (
-                "REFUSED_NO_OUTCOME_INDEPENDENT_OPERATIONAL_DERIVATION"
-            ),
-        },
-        "scoped_out_standard": {
-            "id": "STRUCTURAL_COMPARABILITY_SUFFICIENCY_V1",
-            "reason": "applies only to V3 structural gate pairs, not these universes",
-        },
-        "schema_version": "PROSPECTIVE_SUFFICIENCY_COVERAGE_POLICY_V1",
+        "authoritative_coverage_numerator": (
+            "scheduled post-warmup slots where certified replay establishes "
+            "warmup, PIT, universe membership, and a final EVALUATED, "
+            "NOT_IN_UNIVERSE, or NOT_COMPARABLE disposition"
+        ),
+        "blind_categories_counting_as_authoritatively_replayed": [
+            "EVALUATED",
+            "NOT_COMPARABLE",
+            "NOT_IN_UNIVERSE",
+        ],
+        "blind_categories_counting_as_coverage_failure": [
+            "DATA_QUALITY_FAIL",
+            "PIT_INVALID",
+            "REFERENCE_UNAVAILABLE",
+            "SOURCE_UNAVAILABLE",
+            "WARMUP_INCOMPLETE",
+        ],
+        "common_rate_evidence_strength_sha256": common["definition_sha256"],
+        "comparison": "coverage_numerator * 100 >= coverage_denominator * 99",
+        "exact_integer_comparison": True,
+        "floor": "0.99",
+        "floor_is_stage_b_performance_threshold": False,
+        "floor_source_epsilon": common["epsilon"],
+        "per_metric": True,
+        "schema_version": COVERAGE_POLICY_ID,
     }
     return _with_definition_hash(payload)
+
+
+def authoritative_coverage_satisfied(numerator: int, denominator: int) -> bool:
+    for name, value in (("numerator", numerator), ("denominator", denominator)):
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise SufficiencyGovernanceError(f"coverage {name} must be non-negative int")
+    if numerator > denominator:
+        raise SufficiencyGovernanceError("coverage numerator exceeds denominator")
+    return denominator > 0 and numerator * COVERAGE_FLOOR_DENOMINATOR >= (
+        denominator * COVERAGE_FLOOR_NUMERATOR
+    )
 
 
 def temporal_policy() -> dict[str, Any]:
     payload = {
-        "concentration_diagnostics_persisted": True,
+        "concentration_diagnostics": [
+            "distinct_utc_days",
+            "distinct_iso_weeks",
+            "first_evidence_time",
+            "last_evidence_time",
+            "largest_single_day_contribution",
+            "largest_single_week_contribution",
+            "distinct_dependence_unit_count",
+            "largest_dependence_unit_raw_contribution",
+        ],
+        "diagnostics_are_additional_hard_gates": False,
+        "evidence_unit_policy": EVIDENCE_UNIT_POLICY_ID,
         "minimum_calendar_duration": None,
         "minimum_distinct_iso_weeks": None,
         "minimum_distinct_utc_days": None,
-        "policy": NO_TEMPORAL_MINIMUM,
+        "policy": "NO_SEPARATE_ARBITRARY_CALENDAR_MINIMUM",
         "reasoning": (
-            "The metric-specific event and decision denominators define the "
-            "amount of Stage-B integration evidence. No existing authority "
-            "requires temporal spreading for these gates, and no outcome-free "
-            "derivation identifies a calendar value. Concentration is therefore "
-            "persisted diagnostically rather than turned into an arbitrary gate."
+            "Dependence is governed by hard natural evidence-unit rules rather "
+            "than raw clustered observations or an arbitrary elapsed duration."
         ),
-        "alternatives_considered": {
-            "30_60_90_or_180_calendar_days": (
-                "REFUSED_NO_OUTCOME_INDEPENDENT_DERIVATION"
-            ),
-            "reuse_stage_c_90_days": "REFUSED_DIFFERENT_GOVERNANCE_STAGE",
-        },
-        "schema_version": "PROSPECTIVE_SUFFICIENCY_TEMPORAL_POLICY_V1",
+        "schema_version": TEMPORAL_POLICY_ID,
         "stage_c_live_shadow_days_imported": False,
-        "stage_c_separation": (
-            "live_shadow_days >= 90 remains the distinct post-certification "
-            "Stage-C promotion gate and is not Stage-B sufficiency"
-        ),
     }
     return _with_definition_hash(payload)
 
 
-SUFFICIENCY_STATES = (
-    "NOT_STARTED",
-    "ACCUMULATING",
-    "METRIC_PARTIALLY_SUFFICIENT",
-    "ALL_METRICS_SUFFICIENT",
-    "EVALUATION_CUTOFF_FROZEN",
+BLIND_MONITOR_VERSION = "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1"
+BLIND_PROJECTION_VERSION = "PROSPECTIVE_STAGE_B_BLIND_EVIDENCE_PROJECTION_V1"
+BLIND_SOURCE_RECORD_VERSION = "PROSPECTIVE_STAGE_B_BLIND_SOURCE_EVIDENCE_V1"
+BLIND_CATEGORIES = (
+    "DATA_QUALITY_FAIL",
+    "EVALUATED",
+    "NOT_COMPARABLE",
+    "NOT_IN_UNIVERSE",
+    "PIT_INVALID",
+    "REFERENCE_UNAVAILABLE",
+    "SOURCE_UNAVAILABLE",
+    "WARMUP_INCOMPLETE",
 )
+AUTHORITATIVE_REPLAY_STATES = (
+    "AUTHORITATIVE_REPLAYED",
+    "DATA_QUALITY_FAIL",
+    "INVALID_CLOCK_OR_PIT_EVIDENCE",
+    "REFERENCE_UNAVAILABLE",
+    "SOURCE_UNAVAILABLE",
+    "UNREPLAYABLE_EVIDENCE",
+)
+_COVERED_CATEGORIES = frozenset({"EVALUATED", "NOT_COMPARABLE", "NOT_IN_UNIVERSE"})
+
+
+@dataclass(frozen=True)
+class BlindEvidenceReference:
+    """Identity-only input accepted by the scientific monitor."""
+
+    slot_id: str
+    authoritative_evidence_record_sha256: str
+    evaluation_epoch_authorization_sha256: str
+
+
+@dataclass(frozen=True)
+class ReplayedBlindProjection:
+    cadence: str
+    observation_time: datetime
+    decision_time: datetime
+    slot_id: str
+    source_record_sha256: str
+    projection_record_sha256: str
+    category_by_metric: Mapping[str, str]
+    dependence_unit_by_metric: Mapping[str, str | None]
 
 
 def blind_monitor_contract() -> dict[str, Any]:
     protocol = _require_certified_corpus()
     payload = {
-        "allowed_input_fields": [
-            "cadence",
-            "decision_time",
-            "global_disposition",
-            "global_reason_codes",
-            "metric",
-            "metric_disposition",
-            "metric_reason_code",
-            "observation_time",
+        "allowed_monitor_input_fields": [
+            "authoritative_evidence_record_sha256",
+            "evaluation_epoch_authorization_sha256",
             "slot_id",
-            "universe_member",
         ],
-        "contract_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1",
-        "cutoff_clock": "decision_time",
+        "blind_category_vocabulary": list(BLIND_CATEGORIES),
+        "caller_declared_projection_is_authority": False,
+        "contract_version": BLIND_MONITOR_VERSION,
         "decision_universe_sha256": protocol["child_definition_sha256"][
             "decision_universe"
         ],
-        "denominator_contribution": (
-            "1 iff certified universe_member is true and metric_disposition is "
-            "EVALUATED; otherwise 0"
-        ),
+        "dependence_unit_replayed": True,
+        "detailed_parent_reason_codes_exposed_to_monitor": False,
         "metric_evidence_contract_sha256": protocol["child_definition_sha256"][
             "metric_evidence_contracts"
         ],
         "outcome_blind": True,
-        "production_visibility_before_cutoff": {
-            "decision_maker_visible": [
-                "accounting_progress",
-                "coverage_diagnostics",
-                "denominator_progress",
-                "sufficiency_state",
-            ],
-            "target_outcomes_visible": False,
-        },
-        "prohibited_input_fields": [
+        "pit_replayed": True,
+        "prohibited_monitor_input_fields": [
             "aggregate_metric_result",
             "candidate_control_agreement",
+            "global_disposition",
+            "metric_disposition",
             "metric_numerator",
             "pass_fail_result",
+            "post_warmup",
+            "reason_code",
             "risk_size_relative_difference",
-            "success_or_failure_bit",
+            "universe_member",
         ],
-        "scheduled_slot_owner": (
-            "btc_predictor.research.prospective_integration_corpus."
-            "scheduled_decision_slots"
+        "projection_rule": (
+            "Resolve content-addressed source evidence, verify certified parent "
+            "identities, replay cadence/warmup/PIT/universe/comparability and the "
+            "natural dependence unit, derive only the coarse blind category, then "
+            "require any convenience projection to match exactly."
         ),
-        "schema_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_CONTRACT_V1",
-        "states": list(SUFFICIENCY_STATES),
-        "state_transitions": {
-            "NOT_STARTED": ["ACCUMULATING"],
-            "ACCUMULATING": [
-                "METRIC_PARTIALLY_SUFFICIENT",
-                "ALL_METRICS_SUFFICIENT",
-                "EVALUATION_CUTOFF_FROZEN",
-            ],
-            "METRIC_PARTIALLY_SUFFICIENT": [
-                "ALL_METRICS_SUFFICIENT",
-                "EVALUATION_CUTOFF_FROZEN",
-            ],
-            "ALL_METRICS_SUFFICIENT": ["EVALUATION_CUTOFF_FROZEN"],
-            "EVALUATION_CUTOFF_FROZEN": [],
-        },
-        "universe_membership_authority": {
-            "candidate_controlled_override_permitted": False,
-            "rule": (
-                "Replay and derive membership from the certified decision-"
-                "universe predicate and evidence graph; never trust a caller-"
-                "selected exclusion label"
+        "resolver_contract_sha256": protocol["child_definition_sha256"][
+            "scientific_evidence_resolver"
+        ],
+        "schema_version": BLIND_PROJECTION_VERSION,
+        "warmup_replayed": True,
+    }
+    return _with_definition_hash(payload)
+
+
+@cache
+def _blind_parent_bindings() -> dict[str, str]:
+    protocol = _require_certified_corpus()
+    return {
+        "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+        "decision_universe_sha256": protocol["child_definition_sha256"][
+            "decision_universe"
+        ],
+        "metric_evidence_contract_sha256": protocol["child_definition_sha256"][
+            "metric_evidence_contracts"
+        ],
+        "warmup_history_definition_sha256": protocol["child_definition_sha256"][
+            "warmup_history"
+        ],
+    }
+
+
+def _require_utc(value: datetime, name: str) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        raise SufficiencyGovernanceError(f"{name} must be timezone-aware UTC")
+    if value.utcoffset() != timedelta(0):
+        raise SufficiencyGovernanceError(f"{name} must be UTC")
+    return value.astimezone(UTC)
+
+
+def _strict_keys(row: Mapping[str, Any], expected: set[str], name: str) -> None:
+    actual = set(row)
+    if actual != expected:
+        raise SufficiencyGovernanceError(
+            f"{name} fields differ: missing={sorted(expected - actual)}, "
+            f"unexpected={sorted(actual - expected)}"
+        )
+
+
+@cache
+def _metric_cadences() -> dict[str, str]:
+    return {
+        metric: str(contract["cadence"])
+        for metric, contract in _corpus.metric_evidence_contracts()["contracts"].items()
+    }
+
+
+def _expected_slots_through(
+    epoch_observation_start: datetime,
+    current_decision_time: datetime,
+) -> tuple[dict[str, str], ...]:
+    start = _require_utc(epoch_observation_start, "epoch_observation_start")
+    current = _require_utc(current_decision_time, "current_decision_time")
+    if start != start.replace(hour=0, minute=0, second=0, microsecond=0):
+        raise SufficiencyGovernanceError(
+            "epoch_observation_start must be a canonical 00:00 UTC boundary"
+        )
+    rows: list[dict[str, str]] = []
+    for cadence in _corpus.DECISION_CADENCES:
+        observation_time = start
+        step = _corpus.CADENCE_BAR_INTERVAL[cadence]
+        while _corpus.decision_time_for(observation_time, cadence) <= current:
+            rows.extend(
+                _corpus.scheduled_decision_slots(
+                    observation_time, observation_time, cadence=cadence
+                )
+            )
+            observation_time += step
+    return tuple(
+        sorted(
+            rows,
+            key=lambda row: (row["decision_time"], row["cadence"], row["slot_id"]),
+        )
+    )
+
+
+def _derive_blind_category(
+    fact: Mapping[str, Any],
+    *,
+    warmup_complete: bool,
+    decision_time: datetime,
+) -> str:
+    if not warmup_complete:
+        return "WARMUP_INCOMPLETE"
+    state = fact["evidence_state"]
+    maximum_available_at = fact["maximum_available_at"]
+    if state == "INVALID_CLOCK_OR_PIT_EVIDENCE":
+        return "PIT_INVALID"
+    if maximum_available_at is not None:
+        available = datetime.fromisoformat(maximum_available_at)
+        _require_utc(available, "maximum_available_at")
+        if available > decision_time:
+            return "PIT_INVALID"
+    if state in {"SOURCE_UNAVAILABLE", "UNREPLAYABLE_EVIDENCE"}:
+        return "SOURCE_UNAVAILABLE"
+    if state == "DATA_QUALITY_FAIL":
+        return "DATA_QUALITY_FAIL"
+    if state == "REFERENCE_UNAVAILABLE":
+        return "REFERENCE_UNAVAILABLE"
+    if state != "AUTHORITATIVE_REPLAYED":
+        raise SufficiencyGovernanceError("unknown authoritative replay state")
+    if fact["universe_member"] is False:
+        return "NOT_IN_UNIVERSE"
+    if fact["universe_member"] is not True:
+        raise SufficiencyGovernanceError("replayed universe membership is unresolved")
+    if fact["comparable"] is False:
+        return "NOT_COMPARABLE"
+    if fact["comparable"] is not True:
+        raise SufficiencyGovernanceError("replayed comparability is unresolved")
+    return "EVALUATED"
+
+
+class BlindEvidenceResolver:
+    """Replay content-addressed blind source evidence into a coarse projection."""
+
+    def __init__(self, records: Mapping[str, Mapping[str, Any]]) -> None:
+        self._resolver = _source_integrity.PersistedEvidenceResolver(records=records)
+        self._expected_bindings = _blind_parent_bindings()
+
+    def replay(
+        self,
+        reference: BlindEvidenceReference,
+        *,
+        authorization: Mapping[str, Any],
+        current_decision_time: datetime,
+    ) -> ReplayedBlindProjection:
+        if not isinstance(reference, BlindEvidenceReference):
+            raise SufficiencyGovernanceError(
+                "scientific monitor accepts BlindEvidenceReference only"
+            )
+        if not _is_sha256(reference.slot_id):
+            raise SufficiencyGovernanceError("reference slot_id must be SHA-256")
+        if reference.evaluation_epoch_authorization_sha256 != authorization.get(
+            "record_sha256"
+        ):
+            raise SufficiencyGovernanceError("evidence references another epoch")
+        try:
+            envelope = self._resolver.resolve(
+                reference.authoritative_evidence_record_sha256,
+                schema_version=BLIND_PROJECTION_VERSION,
+            )
+            source = self._resolver.resolve(
+                envelope["source_evidence_record_sha256"],
+                schema_version=BLIND_SOURCE_RECORD_VERSION,
+            )
+        except _source_integrity.ProspectiveSourceIntegrityError as exc:
+            raise SufficiencyGovernanceError(str(exc)) from exc
+        _strict_keys(
+            envelope,
+            {
+                "declared_blind_projection",
+                "evaluation_epoch_authorization_sha256",
+                "record_sha256",
+                "schema_version",
+                "slot_id",
+                "source_evidence_record_sha256",
+            },
+            "blind projection envelope",
+        )
+        _strict_keys(
+            source,
+            {
+                "cadence",
+                "certified_corpus_sha256",
+                "decision_time",
+                "decision_universe_sha256",
+                "evaluation_epoch_authorization_sha256",
+                "metric_evidence_contract_sha256",
+                "metric_facts",
+                "observation_time",
+                "record_available_at",
+                "record_sha256",
+                "schema_version",
+                "slot_id",
+                "warmup_history_complete",
+                "warmup_history_definition_sha256",
+            },
+            "blind source evidence",
+        )
+        for key, expected in self._expected_bindings.items():
+            if source.get(key) != expected:
+                raise SufficiencyGovernanceError(f"source evidence has wrong {key}")
+        auth_hash = authorization["record_sha256"]
+        if source["evaluation_epoch_authorization_sha256"] != auth_hash:
+            raise SufficiencyGovernanceError("source evidence has wrong epoch authority")
+        if envelope["evaluation_epoch_authorization_sha256"] != auth_hash:
+            raise SufficiencyGovernanceError("projection has wrong epoch authority")
+        if envelope["slot_id"] != reference.slot_id or source["slot_id"] != reference.slot_id:
+            raise SufficiencyGovernanceError("blind evidence slot identity mismatch")
+
+        observation_time = _require_utc(
+            datetime.fromisoformat(source["observation_time"]), "observation_time"
+        )
+        decision_time = _require_utc(
+            datetime.fromisoformat(source["decision_time"]), "decision_time"
+        )
+        record_available_at = _require_utc(
+            datetime.fromisoformat(source["record_available_at"]), "record_available_at"
+        )
+        current = _require_utc(current_decision_time, "current_decision_time")
+        if record_available_at > current:
+            raise SufficiencyGovernanceError("evidence record is unavailable at current time")
+        cadence = source["cadence"]
+        if cadence not in _corpus.DECISION_CADENCES:
+            raise SufficiencyGovernanceError("source evidence has unknown cadence")
+        expected_decision = _corpus.decision_time_for(observation_time, cadence)
+        if decision_time != expected_decision:
+            raise SufficiencyGovernanceError("decision_time does not reproduce")
+        expected_slot = _corpus.scheduled_decision_slots(
+            observation_time, observation_time, cadence=cadence
+        )[0]
+        if source["slot_id"] != expected_slot["slot_id"]:
+            raise SufficiencyGovernanceError("slot_id does not reproduce")
+        if type(source["warmup_history_complete"]) is not bool:
+            raise SufficiencyGovernanceError("warmup state must be replayed Boolean")
+
+        facts = source["metric_facts"]
+        if not isinstance(facts, dict):
+            raise SufficiencyGovernanceError("metric facts must be an object")
+        required_metrics = {
+            metric
+            for metric, owner_cadence in _metric_cadences().items()
+            if owner_cadence == cadence
+        }
+        if set(facts) != required_metrics:
+            raise SufficiencyGovernanceError(
+                "source evidence must cover every cadence-applicable metric"
+            )
+        categories: dict[str, str] = {}
+        units: dict[str, str | None] = {}
+        for metric in sorted(facts):
+            fact = facts[metric]
+            if not isinstance(fact, dict):
+                raise SufficiencyGovernanceError("metric fact must be an object")
+            _strict_keys(
+                fact,
+                {
+                    "active_stop_identity",
+                    "comparable",
+                    "control_position_episode_sha256",
+                    "evidence_state",
+                    "maximum_available_at",
+                    "metric",
+                    "universe_member",
+                },
+                f"metric fact {metric}",
+            )
+            if fact["metric"] != metric:
+                raise SufficiencyGovernanceError("metric fact identity mismatch")
+            if fact["evidence_state"] not in AUTHORITATIVE_REPLAY_STATES:
+                raise SufficiencyGovernanceError("metric fact has unknown replay state")
+            for field in ("universe_member", "comparable"):
+                if fact[field] is not None and type(fact[field]) is not bool:
+                    raise SufficiencyGovernanceError(f"{field} must be Boolean or null")
+            category = _derive_blind_category(
+                fact,
+                warmup_complete=source["warmup_history_complete"],
+                decision_time=decision_time,
+            )
+            categories[metric] = category
+            units[metric] = (
+                _derive_dependence_unit_id(
+                    metric,
+                    slot_id=source["slot_id"],
+                    control_position_episode_sha256=fact[
+                        "control_position_episode_sha256"
+                    ],
+                    active_stop_identity=fact["active_stop_identity"],
+                )
+                if category == "EVALUATED"
+                else None
+            )
+        declared = envelope["declared_blind_projection"]
+        expected_projection = {
+            metric: {
+                "blind_category": categories[metric],
+                "dependence_unit_id": units[metric],
+            }
+            for metric in sorted(categories)
+        }
+        if declared != expected_projection:
+            raise SufficiencyGovernanceError(
+                "declared projection differs from authoritative replay"
+            )
+        for row in declared.values():
+            category = row["blind_category"]
+            if category not in BLIND_CATEGORIES:
+                raise SufficiencyGovernanceError(
+                    "blind projection exposes outcome side channel"
+                )
+        return ReplayedBlindProjection(
+            cadence=cadence,
+            observation_time=observation_time,
+            decision_time=decision_time,
+            slot_id=source["slot_id"],
+            source_record_sha256=source["record_sha256"],
+            projection_record_sha256=envelope["record_sha256"],
+            category_by_metric=categories,
+            dependence_unit_by_metric=units,
+        )
+
+
+def build_synthetic_blind_evidence(
+    expected_slot: Mapping[str, str],
+    *,
+    evaluation_epoch_authorization_sha256: str,
+    evidence_state_by_metric: Mapping[str, str] | None = None,
+    universe_member_by_metric: Mapping[str, bool | None] | None = None,
+    comparable_by_metric: Mapping[str, bool | None] | None = None,
+    maximum_available_at_by_metric: Mapping[str, datetime | None] | None = None,
+    warmup_history_complete: bool = True,
+    stop_episode_by_metric: Mapping[str, tuple[str, str]] | None = None,
+) -> tuple[BlindEvidenceReference, dict[str, dict[str, Any]]]:
+    """Build deterministic content records for explicitly synthetic tests only."""
+
+    if not _is_sha256(evaluation_epoch_authorization_sha256):
+        raise SufficiencyGovernanceError("synthetic evidence needs authorization hash")
+    parent_bindings = _blind_parent_bindings()
+    cadence = str(expected_slot["cadence"])
+    observation_time = _require_utc(
+        datetime.fromisoformat(expected_slot["observation_time"]), "observation_time"
+    )
+    decision_time = _require_utc(
+        datetime.fromisoformat(expected_slot["decision_time"]), "decision_time"
+    )
+    metrics = {
+        metric
+        for metric, owner_cadence in _metric_cadences().items()
+        if owner_cadence == cadence
+    }
+    states = dict(evidence_state_by_metric or {})
+    universes = dict(universe_member_by_metric or {})
+    comparability = dict(comparable_by_metric or {})
+    availability = dict(maximum_available_at_by_metric or {})
+    stop_episodes = dict(stop_episode_by_metric or {})
+    facts: dict[str, dict[str, Any]] = {}
+    for metric in sorted(metrics):
+        state = states.get(metric, "AUTHORITATIVE_REPLAYED")
+        universe = universes.get(metric, True)
+        comparable = comparability.get(metric, True)
+        available_at = availability.get(metric, decision_time)
+        episode = stop_episodes.get(metric)
+        if metric in _corpus.STOP_EVENT_METRICS and episode is None:
+            episode = (
+                _digest({"synthetic_control_position_episode": expected_slot["slot_id"]}),
+                f"SYNTHETIC_ACTIVE_STOP_{expected_slot['slot_id']}",
+            )
+        facts[metric] = {
+            "active_stop_identity": None if episode is None else episode[1],
+            "comparable": comparable,
+            "control_position_episode_sha256": None if episode is None else episode[0],
+            "evidence_state": state,
+            "maximum_available_at": (
+                None
+                if available_at is None
+                else _require_utc(available_at, "available_at").isoformat()
             ),
-        },
-        "window_start_semantics": (
-            "epoch_observation_start is the first canonical post-warmup "
-            "observation boundary; warmup capture is never denominator evidence"
+            "metric": metric,
+            "universe_member": universe,
+        }
+    source = _with_record_hash(
+        {
+            "cadence": cadence,
+            "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+            "decision_time": decision_time.isoformat(),
+            "decision_universe_sha256": parent_bindings["decision_universe_sha256"],
+            "evaluation_epoch_authorization_sha256": (
+                evaluation_epoch_authorization_sha256
+            ),
+            "metric_evidence_contract_sha256": parent_bindings[
+                "metric_evidence_contract_sha256"
+            ],
+            "metric_facts": facts,
+            "observation_time": observation_time.isoformat(),
+            "record_available_at": decision_time.isoformat(),
+            "schema_version": BLIND_SOURCE_RECORD_VERSION,
+            "slot_id": expected_slot["slot_id"],
+            "warmup_history_complete": warmup_history_complete,
+            "warmup_history_definition_sha256": parent_bindings[
+                "warmup_history_definition_sha256"
+            ],
+        }
+    )
+    derived: dict[str, dict[str, Any]] = {}
+    for metric, fact in facts.items():
+        category = _derive_blind_category(
+            fact,
+            warmup_complete=warmup_history_complete,
+            decision_time=decision_time,
+        )
+        derived[metric] = {
+            "blind_category": category,
+            "dependence_unit_id": (
+                _derive_dependence_unit_id(
+                    metric,
+                    slot_id=expected_slot["slot_id"],
+                    control_position_episode_sha256=fact[
+                        "control_position_episode_sha256"
+                    ],
+                    active_stop_identity=fact["active_stop_identity"],
+                )
+                if category == "EVALUATED"
+                else None
+            ),
+        }
+    envelope = _with_record_hash(
+        {
+            "declared_blind_projection": dict(sorted(derived.items())),
+            "evaluation_epoch_authorization_sha256": (
+                evaluation_epoch_authorization_sha256
+            ),
+            "schema_version": BLIND_PROJECTION_VERSION,
+            "slot_id": expected_slot["slot_id"],
+            "source_evidence_record_sha256": source["record_sha256"],
+        }
+    )
+    reference = BlindEvidenceReference(
+        slot_id=expected_slot["slot_id"],
+        authoritative_evidence_record_sha256=envelope["record_sha256"],
+        evaluation_epoch_authorization_sha256=(
+            evaluation_epoch_authorization_sha256
         ),
+    )
+    return reference, {
+        source["record_sha256"]: source,
+        envelope["record_sha256"]: envelope,
+    }
+
+
+EPOCH_AUTHORIZATION_VERSION = "PROSPECTIVE_STAGE_B_EVALUATION_EPOCH_AUTHORIZATION_V1"
+CUTOFF_RECORD_VERSION = "PROSPECTIVE_STAGE_B_SUFFICIENCY_CUTOFF_RECORD_V1"
+EVALUATION_RESULT_IDENTITY_VERSION = "PROSPECTIVE_STAGE_B_EVALUATION_RESULT_IDENTITY_V1"
+INITIAL_EPOCH_ID = "INITIAL_STAGE_B_EVALUATION_EPOCH"
+
+
+def evaluation_epoch_contract() -> dict[str, Any]:
+    payload = {
+        "authorization_before_first_qualifying_observation": True,
+        "authorization_bindings": [
+            "blind_monitor_sha256",
+            "certified_corpus_sha256",
+            "coverage_policy_sha256",
+            "epoch_observation_start",
+            "evaluation_contract_sha256",
+            "evaluation_epoch_id",
+            "evidence_unit_policy_sha256",
+            "sufficiency_governance_sha256",
+            "temporal_policy_sha256",
+        ],
+        "evaluation_contract_definition_must_recompute": True,
+        "initial_epoch_id": INITIAL_EPOCH_ID,
+        "initial_epoch_unique": True,
+        "postp1_004_persistent_transactional_enforcement_required": True,
+        "schema_version": EPOCH_AUTHORIZATION_VERSION,
+        "successor_epoch_permitted_automatically": False,
+        "terminal_after_any_evaluation_result": True,
+    }
+    return _with_definition_hash(payload)
+
+
+def evaluation_cutoff_contract() -> dict[str, Any]:
+    payload = {
+        "cutoff_definition": (
+            "earliest decision_time where all eight raw minima, all eight "
+            "distinct dependence-unit minima, all eight exact coverage floors, "
+            "and complete scheduled-slot accounting hold"
+        ),
+        "cutoff_record_schema_version": CUTOFF_RECORD_VERSION,
+        "evidence_after_cutoff_included": False,
+        "evidence_manifest_content_addressed": True,
+        "first_cutoff_immutable": True,
+        "late_revision_moves_cutoff": False,
+        "replay_source": "frozen authoritative evidence manifest",
+        "required_bindings": [
+            "authoritative_evidence_manifest_sha256",
+            "certified_corpus_sha256",
+            "coverage_policy_sha256",
+            "cutoff_decision_time",
+            "evaluation_contract_sha256",
+            "evaluation_epoch_authorization_sha256",
+            "evidence_unit_policy_sha256",
+            "per_metric_counts",
+            "sufficiency_governance_sha256",
+            "temporal_policy_sha256",
+            "window_start",
+        ],
+        "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_CUTOFF_CONTRACT_V1",
+    }
+    return _with_definition_hash(payload)
+
+
+def evaluation_result_identity() -> dict[str, Any]:
+    payload = {
+        "candidate_control_identity_owner": "bound evaluation contract",
+        "floating_pass_fail_result_permitted": False,
+        "required_bindings": [
+            "certified_corpus_sha256",
+            "cutoff_record_sha256",
+            "evaluation_contract_sha256",
+            "evaluation_epoch_authorization_sha256",
+            "sufficiency_governance_sha256",
+        ],
+        "schema_version": EVALUATION_RESULT_IDENTITY_VERSION,
+        "terminal_results": ["FAIL", "PASS"],
     }
     return _with_definition_hash(payload)
 
@@ -754,8 +1298,9 @@ def blind_monitor_contract() -> dict[str, Any]:
 def stopping_rule() -> dict[str, Any]:
     payload = {
         "collection_stop_condition": (
-            "ALL eight metric-specific sufficiency contracts satisfied AND "
-            "all global accounting and coverage requirements satisfied"
+            "ALL eight raw minima AND all eight distinct dependence-unit minima "
+            "AND all eight 0.99 coverage floors AND 100 percent scheduled-slot "
+            "accounting with zero unaccounted slots"
         ),
         "global_metric_rule": "ALL_8_NO_WEIGHTING_NO_SUBSTITUTION",
         "metric_numerators_consumed": False,
@@ -765,43 +1310,512 @@ def stopping_rule() -> dict[str, Any]:
         "performance_results_consumed": False,
         "same_epoch_extension_after_evaluation_permitted": False,
         "schema_version": "PROSPECTIVE_STAGE_B_STOPPING_RULE_V1",
-        "successor_epoch_rule": (
-            "A future re-evaluation requires separate prospective governance "
-            "authorized before that future epoch's outcomes are seen"
-        ),
+        "successor_epoch_permitted_automatically": False,
     }
     return _with_definition_hash(payload)
 
 
-def evaluation_cutoff_contract() -> dict[str, Any]:
-    payload = {
-        "corpus_freeze_rule": (
-            "Freeze the Stage-B evaluation corpus to evidence PIT-available at "
-            "or before stage_b_sufficiency_cutoff"
-        ),
-        "cutoff_definition": (
-            "earliest decision_time at which all eight metric minima and all "
-            "global accounting/coverage requirements are simultaneously satisfied"
-        ),
-        "cutoff_field": "stage_b_sufficiency_cutoff",
-        "deterministic": True,
-        "evidence_after_cutoff_included": False,
-        "future_evaluation_contract_binding_required": True,
-        "pre_cutoff_stage_b_status": "INSUFFICIENT_EVIDENCE",
-        "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_CUTOFF_CONTRACT_V1",
+class EvaluationEpochRegistry:
+    """Stateful reference owner; POSTP1-004 must persist it transactionally."""
+
+    def __init__(self) -> None:
+        self._lock = RLock()
+        self._authorization_by_hash: dict[str, dict[str, Any]] = {}
+        self._authorization_by_governance: dict[tuple[str, str], str] = {}
+        self._cutoff_by_authorization: dict[str, dict[str, Any]] = {}
+        self._manifest_by_hash: dict[str, tuple[dict[str, str], ...]] = {}
+        self._progress_by_authorization: dict[str, dict[str, Any]] = {}
+        self._terminal_result_by_authorization: dict[str, dict[str, Any]] = {}
+
+    def authorize_initial_epoch(
+        self,
+        *,
+        evaluation_contract: Mapping[str, Any],
+        epoch_observation_start: datetime,
+        evaluation_epoch_id: str = INITIAL_EPOCH_ID,
+    ) -> dict[str, Any]:
+        if evaluation_epoch_id != INITIAL_EPOCH_ID:
+            raise SufficiencyGovernanceError("arbitrary evaluation epoch IDs are forbidden")
+        evaluation_contract_sha256 = _verify_hashed_definition(
+            evaluation_contract, "evaluation contract"
+        )
+        start = _require_utc(epoch_observation_start, "epoch_observation_start")
+        if start != start.replace(hour=0, minute=0, second=0, microsecond=0):
+            raise SufficiencyGovernanceError(
+                "epoch observation start must be a canonical UTC-day boundary"
+            )
+        definition = sufficiency_governance_definition()
+        coverage = coverage_policy()
+        temporal = temporal_policy()
+        units = evidence_unit_policy()
+        blind = blind_monitor_contract()
+        record = _with_record_hash(
+            {
+                "blind_monitor_sha256": blind["definition_sha256"],
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "coverage_policy_sha256": coverage["definition_sha256"],
+                "epoch_observation_start": start.isoformat(),
+                "evaluation_contract_sha256": evaluation_contract_sha256,
+                "evaluation_epoch_id": evaluation_epoch_id,
+                "evidence_unit_policy_sha256": units["definition_sha256"],
+                "schema_version": EPOCH_AUTHORIZATION_VERSION,
+                "sufficiency_governance_sha256": definition["definition_sha256"],
+                "temporal_policy_sha256": temporal["definition_sha256"],
+            }
+        )
+        governance_key = (CERTIFIED_CORPUS_SHA256, definition["definition_sha256"])
+        with self._lock:
+            existing_hash = self._authorization_by_governance.get(governance_key)
+            if existing_hash is not None:
+                existing = self._authorization_by_hash[existing_hash]
+                if existing != record:
+                    raise SufficiencyGovernanceError(
+                        "this corpus/governance already has its unique initial epoch"
+                    )
+                return dict(existing)
+            self._authorization_by_governance[governance_key] = record["record_sha256"]
+            self._authorization_by_hash[record["record_sha256"]] = record
+        return dict(record)
+
+    def authorization(self, record_sha256: str) -> dict[str, Any]:
+        with self._lock:
+            try:
+                return dict(self._authorization_by_hash[record_sha256])
+            except KeyError as exc:
+                raise SufficiencyGovernanceError(
+                    "evaluation epoch lacks persisted authorization"
+                ) from exc
+
+    def frozen_progress(self, authorization_sha256: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._progress_by_authorization.get(authorization_sha256)
+            return None if row is None else dict(row)
+
+    def freeze_cutoff(
+        self,
+        authorization_sha256: str,
+        cutoff: Mapping[str, Any],
+        manifest_rows: Sequence[Mapping[str, str]],
+        progress: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        frozen_manifest = tuple(dict(row) for row in manifest_rows)
+        manifest_sha256 = cutoff.get("authoritative_evidence_manifest_sha256")
+        if _digest(list(frozen_manifest)) != manifest_sha256:
+            raise SufficiencyGovernanceError("cutoff evidence manifest does not reproduce")
+        with self._lock:
+            if authorization_sha256 in self._terminal_result_by_authorization:
+                raise EvaluationEpochFrozenError("evaluation epoch is terminal")
+            existing = self._cutoff_by_authorization.get(authorization_sha256)
+            if existing is not None:
+                if existing != dict(cutoff):
+                    raise EvaluationEpochFrozenError("first cutoff record is immutable")
+                return dict(existing)
+            self._cutoff_by_authorization[authorization_sha256] = dict(cutoff)
+            self._manifest_by_hash[str(manifest_sha256)] = frozen_manifest
+            self._progress_by_authorization[authorization_sha256] = dict(progress)
+            return dict(cutoff)
+
+    def cutoff(self, authorization_sha256: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._cutoff_by_authorization.get(authorization_sha256)
+            return None if row is None else dict(row)
+
+    def evidence_manifest(self, manifest_sha256: str) -> tuple[dict[str, str], ...]:
+        with self._lock:
+            try:
+                return tuple(
+                    dict(row) for row in self._manifest_by_hash[manifest_sha256]
+                )
+            except KeyError as exc:
+                raise SufficiencyGovernanceError(
+                    "frozen evidence manifest is not persisted"
+                ) from exc
+
+    def persist_evaluation_result(
+        self,
+        *,
+        authorization_sha256: str,
+        result: str,
+    ) -> dict[str, Any]:
+        if result not in ("PASS", "FAIL"):
+            raise SufficiencyGovernanceError("evaluation result must be PASS or FAIL")
+        with self._lock:
+            authorization = self.authorization(authorization_sha256)
+            cutoff = self._cutoff_by_authorization.get(authorization_sha256)
+            if cutoff is None:
+                raise SufficiencyGovernanceError("result requires a frozen cutoff")
+            if authorization_sha256 in self._terminal_result_by_authorization:
+                raise EvaluationEpochFrozenError("evaluation epoch is already terminal")
+            definition = sufficiency_governance_definition()
+            record = _with_record_hash(
+                {
+                    "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                    "cutoff_record_sha256": cutoff["record_sha256"],
+                    "evaluation_contract_sha256": authorization[
+                        "evaluation_contract_sha256"
+                    ],
+                    "evaluation_epoch_authorization_sha256": authorization_sha256,
+                    "result": result,
+                    "schema_version": EVALUATION_RESULT_IDENTITY_VERSION,
+                    "sufficiency_governance_sha256": definition["definition_sha256"],
+                    "terminal": True,
+                }
+            )
+            self._terminal_result_by_authorization[authorization_sha256] = record
+            return dict(record)
+
+    def is_terminal(self, authorization_sha256: str) -> bool:
+        with self._lock:
+            return authorization_sha256 in self._terminal_result_by_authorization
+
+
+def _iso_week(value: datetime) -> str:
+    year, week, _weekday = value.isocalendar()
+    return f"{year:04d}-W{week:02d}"
+
+
+def _empty_metric_counter() -> dict[str, Any]:
+    return {
+        "authoritative_coverage_denominator": 0,
+        "authoritative_coverage_numerator": 0,
+        "blind_category_counts": Counter(),
+        "day_contributions": Counter(),
+        "dependence_unit_contributions": Counter(),
+        "first_evidence_time": None,
+        "last_evidence_time": None,
+        "raw_sufficiency_denominator": 0,
+        "week_contributions": Counter(),
     }
-    return _with_definition_hash(payload)
 
 
-# ---------------------------------------------------------------------------
-# Top-level hash-bound definition and artifacts
-# ---------------------------------------------------------------------------
+def _add_projection(
+    counter: dict[str, Any],
+    *,
+    category: str,
+    dependence_unit_id: str | None,
+    decision_time: datetime,
+) -> None:
+    counter["blind_category_counts"][category] += 1
+    if category in _COVERED_CATEGORIES:
+        counter["authoritative_coverage_numerator"] += 1
+    if category != "EVALUATED":
+        return
+    if not _is_sha256(dependence_unit_id):
+        raise SufficiencyGovernanceError("evaluated evidence lacks dependence identity")
+    counter["raw_sufficiency_denominator"] += 1
+    counter["dependence_unit_contributions"][dependence_unit_id] += 1
+    counter["day_contributions"][decision_time.date().isoformat()] += 1
+    counter["week_contributions"][_iso_week(decision_time)] += 1
+    timestamp = decision_time.isoformat()
+    if counter["first_evidence_time"] is None:
+        counter["first_evidence_time"] = timestamp
+    counter["last_evidence_time"] = timestamp
+
+
+def _metric_satisfied(counter: Mapping[str, Any], required: int) -> bool:
+    return (
+        int(counter["raw_sufficiency_denominator"]) >= required
+        and len(counter["dependence_unit_contributions"]) >= required
+        and authoritative_coverage_satisfied(
+            int(counter["authoritative_coverage_numerator"]),
+            int(counter["authoritative_coverage_denominator"]),
+        )
+    )
+
+
+def _materialize_metric_state(
+    metric: str,
+    counter: Mapping[str, Any],
+    *,
+    required: int,
+) -> dict[str, Any]:
+    days: Counter[str] = counter["day_contributions"]
+    weeks: Counter[str] = counter["week_contributions"]
+    units: Counter[str] = counter["dependence_unit_contributions"]
+    coverage_numerator = int(counter["authoritative_coverage_numerator"])
+    coverage_denominator = int(counter["authoritative_coverage_denominator"])
+    coverage_ok = authoritative_coverage_satisfied(
+        coverage_numerator, coverage_denominator
+    )
+    raw = int(counter["raw_sufficiency_denominator"])
+    effective = len(units)
+    return {
+        "authoritative_coverage_denominator": coverage_denominator,
+        "authoritative_coverage_floor": "0.99",
+        "authoritative_coverage_numerator": coverage_numerator,
+        "authoritative_coverage_satisfied": coverage_ok,
+        "blind_category_counts": dict(sorted(counter["blind_category_counts"].items())),
+        "distinct_dependence_unit_count": effective,
+        "distinct_iso_weeks": len(weeks),
+        "distinct_utc_days": len(days),
+        "effective_dependence_unit_count": effective,
+        "first_evidence_time": counter["first_evidence_time"],
+        "largest_dependence_unit_raw_contribution": max(units.values(), default=0),
+        "largest_single_day_contribution": max(days.values(), default=0),
+        "largest_single_week_contribution": max(weeks.values(), default=0),
+        "last_evidence_time": counter["last_evidence_time"],
+        "metric": metric,
+        "minimum_distinct_dependence_units": required,
+        "minimum_raw_sufficiency_denominator": required,
+        "raw_sufficiency_denominator": raw,
+        "sufficient": _metric_satisfied(counter, required),
+    }
+
+
+def evaluate_blind_sufficiency(
+    evidence_references: Sequence[BlindEvidenceReference],
+    *,
+    resolver: BlindEvidenceResolver,
+    registry: EvaluationEpochRegistry,
+    evaluation_epoch_authorization_sha256: str,
+    current_decision_time: datetime,
+) -> dict[str, Any]:
+    """Derive and statefully freeze the earliest outcome-blind cutoff."""
+
+    if not isinstance(resolver, BlindEvidenceResolver):
+        raise SufficiencyGovernanceError("certified BlindEvidenceResolver required")
+    if not isinstance(registry, EvaluationEpochRegistry):
+        raise SufficiencyGovernanceError("stateful EvaluationEpochRegistry required")
+    authorization = registry.authorization(evaluation_epoch_authorization_sha256)
+    if registry.is_terminal(evaluation_epoch_authorization_sha256):
+        raise EvaluationEpochFrozenError("evaluation epoch is terminal")
+    frozen = registry.frozen_progress(evaluation_epoch_authorization_sha256)
+    if frozen is not None:
+        return frozen
+    current = _require_utc(current_decision_time, "current_decision_time")
+    start = _require_utc(
+        datetime.fromisoformat(authorization["epoch_observation_start"]),
+        "epoch_observation_start",
+    )
+    if current < start:
+        raise SufficiencyGovernanceError("current time precedes epoch start")
+    expected = _expected_slots_through(start, current)
+    expected_by_id = {row["slot_id"]: row for row in expected}
+
+    records: dict[str, ReplayedBlindProjection] = {}
+    for reference in evidence_references:
+        projection = resolver.replay(
+            reference,
+            authorization=authorization,
+            current_decision_time=current,
+        )
+        if projection.slot_id not in expected_by_id:
+            raise SufficiencyGovernanceError("evidence lies outside epoch census")
+        if projection.slot_id in records:
+            raise SufficiencyGovernanceError("scheduled slot has multiple evidence records")
+        records[projection.slot_id] = projection
+
+    minima_definition = metric_sufficiency_minima()
+    minima = minima_definition["metrics"]
+    counters = {metric: _empty_metric_counter() for metric in _corpus.TARGET_METRICS}
+    expected_by_time: dict[datetime, list[dict[str, str]]] = defaultdict(list)
+    for row in expected:
+        expected_by_time[datetime.fromisoformat(row["decision_time"])].append(row)
+
+    cutoff: datetime | None = None
+    expected_prefix = 0
+    accounted_prefix = 0
+    manifest_rows: list[dict[str, str]] = []
+    cadences = _metric_cadences()
+    for decision_time in sorted(expected_by_time):
+        group = expected_by_time[decision_time]
+        expected_prefix += len(group)
+        for expected_row in group:
+            applicable = [
+                metric
+                for metric, cadence in cadences.items()
+                if cadence == expected_row["cadence"]
+            ]
+            for metric in applicable:
+                counters[metric]["authoritative_coverage_denominator"] += 1
+            record = records.get(expected_row["slot_id"])
+            if record is None:
+                continue
+            accounted_prefix += 1
+            manifest_rows.append(
+                {
+                    "projection_record_sha256": record.projection_record_sha256,
+                    "slot_id": record.slot_id,
+                    "source_record_sha256": record.source_record_sha256,
+                }
+            )
+            for metric in applicable:
+                _add_projection(
+                    counters[metric],
+                    category=record.category_by_metric[metric],
+                    dependence_unit_id=record.dependence_unit_by_metric[metric],
+                    decision_time=decision_time,
+                )
+        all_metrics = all(
+            _metric_satisfied(
+                counters[metric],
+                int(minima[metric]["minimum_raw_sufficiency_denominator"]),
+            )
+            for metric in _corpus.TARGET_METRICS
+        )
+        if all_metrics and accounted_prefix == expected_prefix:
+            cutoff = decision_time
+            break
+
+    if cutoff is None:
+        accounting_expected = len(expected)
+        accounting_accounted = len(records)
+    else:
+        accounting_expected = expected_prefix
+        accounting_accounted = accounted_prefix
+    metric_states = {
+        metric: _materialize_metric_state(
+            metric,
+            counters[metric],
+            required=int(minima[metric]["minimum_raw_sufficiency_denominator"]),
+        )
+        for metric in _corpus.TARGET_METRICS
+    }
+    all_metric_specific = all(row["sufficient"] for row in metric_states.values())
+    unaccounted = accounting_expected - accounting_accounted
+    overall_sufficient = cutoff is not None and unaccounted == 0
+
+    definition = sufficiency_governance_definition()
+    coverage = coverage_policy()
+    temporal = temporal_policy()
+    units = evidence_unit_policy()
+    blind = blind_monitor_contract()
+    result: dict[str, Any] = {
+        "accounting": {
+            "accounted_scheduled_slots": accounting_accounted,
+            "scheduled_slots": accounting_expected,
+            "unaccounted_scheduled_slots": unaccounted,
+        },
+        "blind_monitor_sha256": blind["definition_sha256"],
+        "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+        "coverage_policy_sha256": coverage["definition_sha256"],
+        "current_decision_time": current.isoformat(),
+        "decision_universe_sha256": minima_definition["decision_universe_sha256"],
+        "evaluation_contract_sha256": authorization["evaluation_contract_sha256"],
+        "evaluation_epoch_authorization_sha256": (
+            evaluation_epoch_authorization_sha256
+        ),
+        "evidence_unit_policy_sha256": units["definition_sha256"],
+        "global_condition": "ALL_8_RAW_AND_UNITS_AND_COVERAGE_AND_ACCOUNTING",
+        "governance_sha256": definition["definition_sha256"],
+        "metric_evidence_contract_sha256": next(iter(minima.values()))[
+            "metric_evidence_contract_sha256"
+        ],
+        "metric_states": metric_states,
+        "overall_stage_b_status": (
+            "READY_FOR_STAGE_B_EVALUATION"
+            if overall_sufficient
+            else "INSUFFICIENT_EVIDENCE"
+        ),
+        "overall_sufficient": overall_sufficient,
+        "schema_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_RESULT_V1",
+        "stage_b_sufficiency_cutoff": None if cutoff is None else cutoff.isoformat(),
+        "state": (
+            "EVALUATION_CUTOFF_FROZEN"
+            if overall_sufficient
+            else (
+                "ALL_METRICS_SUFFICIENT"
+                if all_metric_specific
+                else (
+                    "METRIC_PARTIALLY_SUFFICIENT"
+                    if any(row["sufficient"] for row in metric_states.values())
+                    else ("ACCUMULATING" if records else "NOT_STARTED")
+                )
+            )
+        ),
+        "temporal_policy_sha256": temporal["definition_sha256"],
+        "window_start": start.isoformat(),
+    }
+    if cutoff is None:
+        result["authoritative_evidence_manifest_sha256"] = None
+        result["cutoff_record_sha256"] = None
+        result["result_sha256"] = _digest(result)
+        return result
+
+    manifest_rows = sorted(manifest_rows, key=lambda row: row["slot_id"])
+    manifest_sha256 = _digest(manifest_rows)
+    cutoff_record = _with_record_hash(
+        {
+            "accounting": result["accounting"],
+            "authoritative_evidence_manifest_sha256": manifest_sha256,
+            "blind_monitor_sha256": blind["definition_sha256"],
+            "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+            "coverage_policy_sha256": coverage["definition_sha256"],
+            "cutoff_decision_time": cutoff.isoformat(),
+            "evaluation_contract_sha256": authorization["evaluation_contract_sha256"],
+            "evaluation_epoch_authorization_sha256": (
+                evaluation_epoch_authorization_sha256
+            ),
+            "evidence_unit_policy_sha256": units["definition_sha256"],
+            "per_metric_counts": {
+                metric: {
+                    "authoritative_coverage_denominator": row[
+                        "authoritative_coverage_denominator"
+                    ],
+                    "authoritative_coverage_numerator": row[
+                        "authoritative_coverage_numerator"
+                    ],
+                    "distinct_dependence_unit_count": row[
+                        "distinct_dependence_unit_count"
+                    ],
+                    "raw_sufficiency_denominator": row[
+                        "raw_sufficiency_denominator"
+                    ],
+                }
+                for metric, row in metric_states.items()
+            },
+            "schema_version": CUTOFF_RECORD_VERSION,
+            "sufficiency_governance_sha256": definition["definition_sha256"],
+            "temporal_policy_sha256": temporal["definition_sha256"],
+            "window_start": start.isoformat(),
+        }
+    )
+    result["authoritative_evidence_manifest_sha256"] = manifest_sha256
+    result["cutoff_record_sha256"] = cutoff_record["record_sha256"]
+    result["result_sha256"] = _digest(result)
+    registry.freeze_cutoff(
+        evaluation_epoch_authorization_sha256,
+        cutoff_record,
+        manifest_rows,
+        result,
+    )
+    return result
+
+
+def assert_evaluation_epoch_not_extended(
+    *,
+    frozen_cutoff: datetime,
+    proposed_cutoff: datetime,
+    evaluated_result: str,
+) -> None:
+    """Compatibility guard; the registry is the authoritative stateful owner."""
+
+    frozen = _require_utc(frozen_cutoff, "frozen_cutoff")
+    proposed = _require_utc(proposed_cutoff, "proposed_cutoff")
+    if evaluated_result not in ("PASS", "FAIL"):
+        raise SufficiencyGovernanceError("evaluated_result must be PASS or FAIL")
+    if proposed != frozen:
+        raise EvaluationEpochFrozenError("evaluated Stage-B epoch is terminal")
+
 
 _CHILD_ARTIFACTS = (
     (BLIND_MONITOR_FILENAME, "blind_monitor_contract", "blind_monitor_contract"),
+    (
+        COMMON_RATE_FILENAME,
+        "common_rate_evidence_strength",
+        "common_rate_evidence_strength",
+    ),
     (COVERAGE_FILENAME, "coverage_policy", "coverage_policy"),
     (CUTOFF_FILENAME, "evaluation_cutoff_contract", "evaluation_cutoff_contract"),
+    (EPOCH_FILENAME, "evaluation_epoch_contract", "evaluation_epoch_contract"),
+    (
+        RESULT_IDENTITY_FILENAME,
+        "evaluation_result_identity",
+        "evaluation_result_identity",
+    ),
+    (EVIDENCE_UNIT_FILENAME, "evidence_unit_policy", "evidence_unit_policy"),
     (MINIMA_FILENAME, "metric_sufficiency_minima", "metric_sufficiency_minima"),
+    (P95_FILENAME, "p95_tail_repeatability", "p95_tail_repeatability"),
     (
         SEMANTIC_DIFF_FILENAME,
         "semantic_diff_from_stage_b_gates",
@@ -835,39 +1849,35 @@ def sufficiency_governance_definition() -> dict[str, Any]:
         },
         "certified_parent": {
             "implementation_commit": CERTIFIED_CORPUS_IMPLEMENTATION_COMMIT,
+            "material_child_count": protocol["material_child_count"],
             "protocol_sha256": CERTIFIED_CORPUS_SHA256,
             "protocol_version": CERTIFIED_CORPUS_VERSION,
-            "review_documentation_commit": (
-                CERTIFIED_CORPUS_REVIEW_DOCUMENTATION_COMMIT
-            ),
             "review_fix_commit": CERTIFIED_CORPUS_REVIEW_FIX_COMMIT,
             "review_result": CERTIFIED_CORPUS_REVIEW_RESULT,
             "review_ticket": CERTIFIED_CORPUS_REVIEW_TICKET,
         },
-        "change_procedure": (
-            "Any material change to a minimum denominator, coverage policy, "
-            "temporal rule, Wilson confidence level, quantile sufficiency rule, "
-            "blind stopping logic or cutoff semantics requires "
-            f"{SUCCESSOR_GOVERNANCE_VERSION} and a new prospective epoch where applicable."
-        ),
         "child_definition_sha256": dict(sorted(child_hashes.items())),
         "collection_authorized": False,
         "decimal_precision": _DECIMAL_CONTEXT.prec,
         "epic_t": {"modified": False, "reopened": False},
-        "evaluation_contract_identity": (
-            "SUPPLIED_LATER_BY_PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_V1"
-        ),
+        "failed_governance_lineage": [
+            {
+                "authoritative": False,
+                "definition_sha256": FAILED_GOVERNANCE_SHA256,
+                "implementation_commit": FAILED_GOVERNANCE_IMPLEMENTATION_COMMIT,
+                "prospective_observations_collected": False,
+                "review_classification": FAILED_GOVERNANCE_CLASSIFICATION,
+                "review_documentation_commit": (
+                    FAILED_GOVERNANCE_REVIEW_DOCUMENTATION_COMMIT
+                ),
+                "review_result": FAILED_GOVERNANCE_REVIEW_RESULT,
+                "superseded_before_collection": True,
+            }
+        ],
         "final_classification": FINAL_CLASSIFICATION,
         "governance_version": GOVERNANCE_VERSION,
         "material_child_count": len(child_hashes),
-        "postp1_004_authorized": False,
-        "program_ticket": PROGRAM_TICKET,
-        "schema_version": GOVERNANCE_SCHEMA_VERSION,
-        "stage_b_performance_gate_owner": _corpus.HISTORICAL_GATE_AUTHORITY,
-        "stage_b_performance_gates_changed": False,
-        "status": GOVERNANCE_STATUS,
-        "target_metrics": list(_corpus.TARGET_METRICS),
-        "workstream": WORKSTREAM,
+        "material_child_enumeration": "single mechanical artifact registry",
         "parent_child_bindings": {
             "decision_universe_sha256": protocol["child_definition_sha256"][
                 "decision_universe"
@@ -875,18 +1885,39 @@ def sufficiency_governance_definition() -> dict[str, Any]:
             "metric_evidence_contract_sha256": protocol[
                 "child_definition_sha256"
             ]["metric_evidence_contracts"],
+            "scientific_evidence_resolver_sha256": protocol[
+                "child_definition_sha256"
+            ]["scientific_evidence_resolver"],
             "stage_b_evaluation_contract_sha256": protocol[
                 "child_definition_sha256"
             ]["stage_b_evaluation_contract"],
+            "warmup_history_definition_sha256": protocol[
+                "child_definition_sha256"
+            ]["warmup_history"],
         },
+        "postp1_004_authorized": False,
+        "program_ticket": PROGRAM_TICKET,
         "safety": {
             "btc019_sealed_data_accessed": False,
             "prospective_observations_collected": False,
             "real_stage_b_evaluation_run": False,
             "real_stage_b_numerators_inspected": False,
         },
+        "schema_version": GOVERNANCE_SCHEMA_VERSION,
+        "stage_b_performance_gate_owner": _corpus.HISTORICAL_GATE_AUTHORITY,
+        "stage_b_performance_gates_changed": False,
+        "status": GOVERNANCE_STATUS,
+        "target_metrics": list(_corpus.TARGET_METRICS),
+        "version_retained_rationale": (
+            "The failed definition was never certified, no collection began, and "
+            "the failed exact hash remains explicit non-authoritative lineage."
+        ),
+        "workstream": WORKSTREAM,
     }
-    return _with_definition_hash(payload)
+    definition = _with_definition_hash(payload)
+    if definition["definition_sha256"] == FAILED_GOVERNANCE_SHA256:
+        raise SufficiencyGovernanceError("corrected governance hash did not move")
+    return definition
 
 
 def protocol_hashes() -> dict[str, str]:
@@ -899,562 +1930,76 @@ def protocol_hashes() -> dict[str, str]:
 def verify_sufficiency_governance_definition(persisted: Mapping[str, Any]) -> None:
     expected = sufficiency_governance_definition()
     if dict(persisted) != expected:
-        raise SufficiencyGovernanceError("persisted sufficiency governance does not reproduce")
-    recomputed = dict(persisted)
-    declared = recomputed.pop("definition_sha256", None)
-    if not _is_sha256(declared) or _digest(recomputed) != declared:
-        raise SufficiencyGovernanceError("sufficiency-governance hash does not recompute")
-
-
-# ---------------------------------------------------------------------------
-# Executable blind monitor over synthetic or future persisted projections
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class BlindMetricDisposition:
-    """Outcome-free quantity/accounting projection for one metric and slot."""
-
-    metric: str
-    universe_member: bool
-    disposition: str
-    reason_code: str | None = None
-
-
-@dataclass(frozen=True)
-class BlindScheduledSlot:
-    """One expected corpus slot and all cadence-applicable metric dispositions."""
-
-    cadence: str
-    observation_time: datetime
-    decision_time: datetime
-    slot_id: str
-    global_disposition: str
-    global_reason_codes: tuple[str, ...]
-    metrics: tuple[BlindMetricDisposition, ...]
-
-
-def _require_utc(value: datetime, name: str) -> datetime:
-    if not isinstance(value, datetime) or value.tzinfo is None:
-        raise SufficiencyGovernanceError(f"{name} must be timezone-aware UTC")
-    if value.utcoffset() != timedelta(0):
-        raise SufficiencyGovernanceError(f"{name} must be UTC")
-    return value
-
-
-def _expected_slots_through(
-    epoch_observation_start: datetime,
-    current_decision_time: datetime,
-) -> tuple[dict[str, str], ...]:
-    start = _require_utc(epoch_observation_start, "epoch_observation_start")
-    current = _require_utc(current_decision_time, "current_decision_time")
-    if start != start.replace(hour=0, minute=0, second=0, microsecond=0):
-        raise SufficiencyGovernanceError(
-            "epoch_observation_start must be a canonical 00:00 UTC boundary"
-        )
-    rows: list[dict[str, str]] = []
-    for cadence in _corpus.DECISION_CADENCES:
-        observation_time = start
-        step = _corpus.CADENCE_BAR_INTERVAL[cadence]
-        while _corpus.decision_time_for(observation_time, cadence) <= current:
-            rows.extend(
-                _corpus.scheduled_decision_slots(
-                    observation_time,
-                    observation_time,
-                    cadence=cadence,
-                )
-            )
-            observation_time += step
-    return tuple(
-        sorted(rows, key=lambda row: (row["decision_time"], row["cadence"], row["slot_id"]))
-    )
-
-
-_METRIC_CADENCES = {
-    metric: str(contract["cadence"])
-    for metric, contract in _corpus.metric_evidence_contracts()["contracts"].items()
-}
-
-
-def _metric_cadences() -> dict[str, str]:
-    return dict(_METRIC_CADENCES)
-
-
-def _validate_blind_slot(slot: BlindScheduledSlot) -> tuple[str, dict[str, BlindMetricDisposition]]:
-    if not isinstance(slot, BlindScheduledSlot):
-        raise SufficiencyGovernanceError("blind monitor accepts BlindScheduledSlot only")
-    observation_time = _require_utc(slot.observation_time, "observation_time")
-    decision_time = _require_utc(slot.decision_time, "decision_time")
-    if slot.cadence not in _corpus.DECISION_CADENCES:
-        raise SufficiencyGovernanceError("blind slot names an unknown cadence")
-    expected_decision = _corpus.decision_time_for(observation_time, slot.cadence)
-    if decision_time != expected_decision:
-        raise SufficiencyGovernanceError("blind slot decision_time does not reproduce")
-    expected = _corpus.scheduled_decision_slots(
-        observation_time,
-        observation_time,
-        cadence=slot.cadence,
-    )[0]
-    if slot.slot_id != expected["slot_id"]:
-        raise SufficiencyGovernanceError("blind slot id does not reproduce")
-    if slot.global_disposition not in _corpus.OBSERVATION_STATES:
-        raise SufficiencyGovernanceError("blind slot names an unknown disposition")
-    if len(set(slot.global_reason_codes)) != len(slot.global_reason_codes):
-        raise SufficiencyGovernanceError("global reason codes must be unique")
-    if any(
-        reason not in _corpus.OBSERVATION_REASON_VOCABULARY
-        for reason in slot.global_reason_codes
-    ):
-        raise SufficiencyGovernanceError("blind slot names an unknown reason code")
-    if slot.global_disposition != _corpus.STATE_EVALUATED and not slot.global_reason_codes:
-        raise SufficiencyGovernanceError(
-            "a non-evaluated scheduled slot needs a frozen reason code"
-        )
-
-    by_metric: dict[str, BlindMetricDisposition] = {}
-    for row in slot.metrics:
-        if not isinstance(row, BlindMetricDisposition):
-            raise SufficiencyGovernanceError("metric rows must be blind dispositions")
-        if row.metric in by_metric:
-            raise SufficiencyGovernanceError("a slot repeats a metric disposition")
-        if type(row.universe_member) is not bool:
-            raise SufficiencyGovernanceError("universe_member must be Boolean")
-        if row.disposition not in _corpus.OBSERVATION_STATES:
-            raise SufficiencyGovernanceError("metric row names an unknown disposition")
-        if row.disposition == _corpus.STATE_EVALUATED:
-            if row.reason_code is not None:
-                raise SufficiencyGovernanceError("an evaluated metric row has no exclusion reason")
-        elif row.reason_code not in _corpus.OBSERVATION_REASON_VOCABULARY:
-            raise SufficiencyGovernanceError("excluded metric row needs a frozen reason code")
-        expected_reasons = {
-            _corpus.STATE_NOT_EVALUABLE: set(_corpus.NOT_EVALUABLE_REASONS),
-            _corpus.STATE_NOT_COMPARABLE: set(_corpus.NOT_COMPARABLE_REASONS),
-            _corpus.STATE_DATA_QUALITY_FAIL: set(_corpus.DATA_QUALITY_FAIL_REASONS),
-            _corpus.STATE_REFERENCE_UNAVAILABLE: set(
-                _corpus.REFERENCE_UNAVAILABLE_REASONS
-            ),
-        }
-        if (
-            row.disposition != _corpus.STATE_EVALUATED
-            and row.reason_code not in expected_reasons[row.disposition]
-        ):
-            raise SufficiencyGovernanceError(
-                "metric disposition and frozen reason category disagree"
-            )
-        by_metric[row.metric] = row
-    cadences = _metric_cadences()
-    required = {metric for metric, cadence in cadences.items() if cadence == slot.cadence}
-    if set(by_metric) != required:
-        raise SufficiencyGovernanceError(
-            "a blind slot must account for every cadence-applicable target metric"
-        )
-    if slot.global_disposition != _corpus.STATE_EVALUATED and any(
-        row.disposition == _corpus.STATE_EVALUATED for row in by_metric.values()
-    ):
-        raise SufficiencyGovernanceError(
-            "a globally unusable slot cannot contribute an evaluated metric"
-        )
-    return slot.slot_id, by_metric
-
-
-def _iso_week(value: datetime) -> str:
-    year, week, _weekday = value.isocalendar()
-    return f"{year:04d}-W{week:02d}"
-
-
-def _blind_slot_payload(slot: BlindScheduledSlot) -> dict[str, Any]:
-    return {
-        "cadence": slot.cadence,
-        "decision_time": slot.decision_time.isoformat(),
-        "global_disposition": slot.global_disposition,
-        "global_reason_codes": list(slot.global_reason_codes),
-        "metrics": [
-            {
-                "disposition": row.disposition,
-                "metric": row.metric,
-                "reason_code": row.reason_code,
-                "universe_member": row.universe_member,
-            }
-            for row in sorted(slot.metrics, key=lambda item: item.metric)
-        ],
-        "observation_time": slot.observation_time.isoformat(),
-        "slot_id": slot.slot_id,
-    }
-
-
-def _empty_metric_counter() -> dict[str, Any]:
-    return {
-        "accounted_opportunity_count": 0,
-        "data_quality_fail_count": 0,
-        "evaluable_denominator": 0,
-        "eligible_opportunities": 0,
-        "exclusion_counts_by_reason": Counter(),
-        "not_comparable_count": 0,
-        "not_evaluable_count": 0,
-        "reference_unavailable_count": 0,
-        "day_contributions": Counter(),
-        "week_contributions": Counter(),
-    }
-
-
-def _add_metric_row(
-    counter: dict[str, Any],
-    row: BlindMetricDisposition,
-    decision_time: datetime,
-) -> None:
-    counter["accounted_opportunity_count"] += 1
-    if row.universe_member:
-        counter["eligible_opportunities"] += 1
-    if row.universe_member and row.disposition == _corpus.STATE_EVALUATED:
-        counter["evaluable_denominator"] += 1
-        counter["day_contributions"][decision_time.date().isoformat()] += 1
-        counter["week_contributions"][_iso_week(decision_time)] += 1
-    elif row.disposition != _corpus.STATE_EVALUATED:
-        counter["exclusion_counts_by_reason"][row.reason_code] += 1
-        if row.disposition == _corpus.STATE_NOT_EVALUABLE:
-            counter["not_evaluable_count"] += 1
-        elif row.disposition == _corpus.STATE_NOT_COMPARABLE:
-            counter["not_comparable_count"] += 1
-        elif row.disposition == _corpus.STATE_DATA_QUALITY_FAIL:
-            counter["data_quality_fail_count"] += 1
-        elif row.disposition == _corpus.STATE_REFERENCE_UNAVAILABLE:
-            counter["reference_unavailable_count"] += 1
-
-
-def _materialize_metric_state(
-    metric: str,
-    counter: Mapping[str, Any],
-    *,
-    required: int,
-    first_sufficient_at: str | None,
-    universe: str,
-) -> dict[str, Any]:
-    day_counts: Counter[str] = counter["day_contributions"]
-    week_counts: Counter[str] = counter["week_contributions"]
-    denominator = int(counter["evaluable_denominator"])
-    return {
-        "accounted_opportunity_count": int(counter["accounted_opportunity_count"]),
-        "data_quality_fail_count": int(counter["data_quality_fail_count"]),
-        "distinct_iso_weeks": len(week_counts),
-        "distinct_utc_days": len(day_counts),
-        "eligible_opportunities": int(counter["eligible_opportunities"]),
-        "event_count": (
-            int(counter["eligible_opportunities"])
-            if metric in _corpus.STOP_EVENT_METRICS
-            else None
-        ),
-        "evaluable_denominator": denominator,
-        "exclusion_counts_by_reason": dict(sorted(counter["exclusion_counts_by_reason"].items())),
-        "first_sufficient_at": first_sufficient_at,
-        "largest_single_day_denominator_contribution": max(day_counts.values(), default=0),
-        "largest_single_week_denominator_contribution": max(week_counts.values(), default=0),
-        "metric": metric,
-        "not_comparable_count": int(counter["not_comparable_count"]),
-        "not_evaluable_count": int(counter["not_evaluable_count"]),
-        "reference_unavailable_count": int(counter["reference_unavailable_count"]),
-        "required_denominator": required,
-        "sufficient": denominator >= required and denominator > 0,
-        "trade_count": denominator if metric == _corpus.RISK_SIZE_METRIC else None,
-        "universe": universe,
-    }
-
-
-def evaluate_blind_sufficiency(
-    slots: Sequence[BlindScheduledSlot],
-    *,
-    collection_epoch_id: str,
-    evaluation_contract_sha256: str,
-    epoch_observation_start: datetime,
-    current_decision_time: datetime,
-) -> dict[str, Any]:
-    """Evaluate quantity-only sufficiency and freeze the earliest valid cutoff.
-
-    There is intentionally no numerator or metric-value parameter.  Slot
-    coordinates are checked against the certified corpus scheduler and every
-    cadence-applicable metric must have one disposition projection.
-    """
-
-    _require_certified_corpus()
-    if not isinstance(collection_epoch_id, str) or not collection_epoch_id:
-        raise SufficiencyGovernanceError("collection_epoch_id must be non-empty")
-    if not _is_sha256(evaluation_contract_sha256):
-        raise SufficiencyGovernanceError("evaluation contract identity must be SHA-256")
-    start = _require_utc(epoch_observation_start, "epoch_observation_start")
-    current = _require_utc(current_decision_time, "current_decision_time")
-    if current < start:
-        raise SufficiencyGovernanceError(
-            "current_decision_time cannot precede the collection epoch"
-        )
-    expected = _expected_slots_through(start, current)
-    expected_by_id = {row["slot_id"]: row for row in expected}
-
-    records: dict[str, tuple[BlindScheduledSlot, dict[str, BlindMetricDisposition]]] = {}
-    for slot in slots:
-        slot_id, metrics = _validate_blind_slot(slot)
-        if slot.decision_time > current:
-            raise SufficiencyGovernanceError("blind evidence lies after current_decision_time")
-        if slot_id not in expected_by_id:
-            raise SufficiencyGovernanceError("blind evidence is outside the frozen epoch census")
-        if slot_id in records:
-            raise SufficiencyGovernanceError("a scheduled slot has multiple dispositions")
-        records[slot_id] = (slot, metrics)
-
-    minima = metric_sufficiency_minima()["metrics"]
-    counters = {metric: _empty_metric_counter() for metric in _corpus.TARGET_METRICS}
-    first_sufficient: dict[str, str | None] = {
-        metric: None for metric in _corpus.TARGET_METRICS
-    }
-    cutoff: datetime | None = None
-    expected_prefix = 0
-    accounted_prefix = 0
-
-    expected_by_time: dict[datetime, list[dict[str, str]]] = defaultdict(list)
-    for row in expected:
-        expected_by_time[datetime.fromisoformat(row["decision_time"])].append(row)
-    for decision_time in sorted(expected_by_time):
-        group = expected_by_time[decision_time]
-        expected_prefix += len(group)
-        for expected_row in group:
-            record = records.get(expected_row["slot_id"])
-            if record is None:
-                continue
-            accounted_prefix += 1
-            _slot, metric_rows = record
-            for metric, row in metric_rows.items():
-                _add_metric_row(counters[metric], row, decision_time)
-                required = int(minima[metric]["minimum_denominator"])
-                if (
-                    first_sufficient[metric] is None
-                    and counters[metric]["evaluable_denominator"] >= required
-                ):
-                    first_sufficient[metric] = decision_time.isoformat()
-        all_metrics = all(
-            counters[metric]["evaluable_denominator"]
-            >= int(minima[metric]["minimum_denominator"])
-            and counters[metric]["evaluable_denominator"] > 0
-            for metric in _corpus.TARGET_METRICS
-        )
-        if all_metrics and accounted_prefix == expected_prefix:
-            cutoff = decision_time
-            break
-
-    # If a cutoff was found, counters already stop exactly there. Otherwise
-    # they contain every accounted record through the requested current time.
-    metric_states = {
-        metric: _materialize_metric_state(
-            metric,
-            counters[metric],
-            required=int(minima[metric]["minimum_denominator"]),
-            first_sufficient_at=first_sufficient[metric],
-            universe=str(minima[metric]["universe"]),
-        )
-        for metric in _corpus.TARGET_METRICS
-    }
-    all_metric_specific = all(row["sufficient"] for row in metric_states.values())
-    if cutoff is not None:
-        state = "EVALUATION_CUTOFF_FROZEN"
-        cutoff_expected = sum(
-            1
-            for row in expected
-            if datetime.fromisoformat(row["decision_time"]) <= cutoff
-        )
-        cutoff_accounted = cutoff_expected
-    else:
-        cutoff_expected = len(expected)
-        cutoff_accounted = len(records)
-        if not records:
-            state = "NOT_STARTED"
-        elif all_metric_specific:
-            state = "ALL_METRICS_SUFFICIENT"
-        elif any(row["sufficient"] for row in metric_states.values()):
-            state = "METRIC_PARTIALLY_SUFFICIENT"
-        else:
-            state = "ACCUMULATING"
-    unaccounted = cutoff_expected - cutoff_accounted
-    overall_sufficient = cutoff is not None
-
-    definition = sufficiency_governance_definition()
-    minima_definition = metric_sufficiency_minima()
-    coverage = coverage_policy()
-    result = {
-        "accounting": {
-            "accounted_scheduled_slots": cutoff_accounted,
-            "scheduled_slots": cutoff_expected,
-            "unaccounted_scheduled_slots": unaccounted,
-        },
-        "collection_epoch_id": collection_epoch_id,
-        "coverage_policy_sha256": coverage["definition_sha256"],
-        "current_decision_time": current.isoformat(),
-        "decision_universe_sha256": minima_definition["decision_universe_sha256"],
-        "evaluation_contract_sha256": evaluation_contract_sha256,
-        "evaluation_contract_identity_owns": [
-            "candidate_reference_identity",
-            "configuration_identity",
-            "control_reference_identity",
-            "strategy_identity",
-        ],
-        "evaluation_corpus_frozen": overall_sufficient,
-        "evaluation_corpus_slot_ids": sorted(
-            slot_id
-            for slot_id, (slot, _metrics) in records.items()
-            if cutoff is not None and slot.decision_time <= cutoff
-        ),
-        "global_condition": "ALL_8_AND_GLOBAL_ACCOUNTING_COVERAGE",
-        "governance_sha256": definition["definition_sha256"],
-        "metric_evidence_contract_sha256": next(
-            iter(minima_definition["metrics"].values())
-        )["metric_evidence_contract_sha256"],
-        "metric_states": metric_states,
-        "overall_stage_b_status": (
-            "READY_FOR_STAGE_B_EVALUATION"
-            if overall_sufficient
-            else "INSUFFICIENT_EVIDENCE"
-        ),
-        "overall_sufficient": overall_sufficient,
-        "schema_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_RESULT_V1",
-        "stage_b_sufficiency_cutoff": (
-            None if cutoff is None else cutoff.isoformat()
-        ),
-        "state": state,
-        "window_start": start.isoformat(),
-    }
-    cutoff_blind_payloads = sorted(
-        (
-            _blind_slot_payload(slot)
-            for slot, _metrics in records.values()
-            if cutoff is not None and slot.decision_time <= cutoff
-        ),
-        key=lambda row: (row["decision_time"], row["cadence"], row["slot_id"]),
-    )
-    result["evaluation_corpus_blind_evidence_sha256"] = (
-        None if cutoff is None else _digest(cutoff_blind_payloads)
-    )
-    result["evaluation_corpus_sha256"] = (
-        None
-        if cutoff is None
-        else _digest(
-            {
-                "collection_epoch_id": collection_epoch_id,
-                "cutoff": cutoff.isoformat(),
-                "evaluation_contract_sha256": evaluation_contract_sha256,
-                "governance_sha256": definition["definition_sha256"],
-                "blind_evidence_sha256": result[
-                    "evaluation_corpus_blind_evidence_sha256"
-                ],
-                "slot_ids": result["evaluation_corpus_slot_ids"],
-            }
-        )
-    )
-    result["result_sha256"] = _digest(result)
-    return result
-
-
-def assert_evaluation_epoch_not_extended(
-    *,
-    frozen_cutoff: datetime,
-    proposed_cutoff: datetime,
-    evaluated_result: str,
-) -> None:
-    """Refuse pass-chasing or any other extension of an evaluated epoch."""
-
-    frozen = _require_utc(frozen_cutoff, "frozen_cutoff")
-    proposed = _require_utc(proposed_cutoff, "proposed_cutoff")
-    if evaluated_result not in ("PASS", "FAIL"):
-        raise SufficiencyGovernanceError("evaluated_result must be PASS or FAIL")
-    if proposed != frozen:
-        raise EvaluationEpochFrozenError(
-            "an evaluated Stage-B epoch is frozen at its earliest sufficient cutoff"
-        )
-
-
-# ---------------------------------------------------------------------------
-# Deterministic report and persistence
-# ---------------------------------------------------------------------------
+        raise SufficiencyGovernanceError("persisted governance does not reproduce")
+    _verify_hashed_definition(persisted, "sufficiency governance")
 
 
 def _report_markdown(definition: Mapping[str, Any]) -> str:
     minima = metric_sufficiency_minima()["metrics"]
-    derivations = statistical_derivations()
     diff = semantic_diff_from_stage_b_gates()
-    coverage = coverage_policy()
-    temporal = temporal_policy()
+    p95 = p95_tail_repeatability()
     lines = [
         f"# {GOVERNANCE_VERSION}",
         "",
-        f"- Ticket: `{PROGRAM_TICKET}`",
-        f"- Status: `{GOVERNANCE_STATUS}`",
-        f"- Definition hash: `{definition['definition_sha256']}`",
-        f"- Final classification: `{FINAL_CLASSIFICATION}`",
-        f"- Certified corpus: `{CERTIFIED_CORPUS_SHA256}`",
-        f"- Material child count: `{definition['material_child_count']}`",
-        "- Prospective observations collected: `NO`",
-        "- Real Stage-B evaluation run: `NO`",
-        "- POSTP1-004 authorized: `NO`",
-        "- Prospective collection authorized: `NO`",
-        "- BTC-019 reopened / sealed sample touched: `NO / NO`",
+        f"- Ticket: {PROGRAM_TICKET}",
+        f"- Status: {GOVERNANCE_STATUS}",
+        f"- Definition hash: {definition['definition_sha256']}",
+        f"- Final classification: {FINAL_CLASSIFICATION}",
+        f"- Certified corpus: {CERTIFIED_CORPUS_SHA256}",
+        f"- Failed predecessor: {FAILED_GOVERNANCE_SHA256} (non-authoritative)",
+        f"- Material child count: {definition['material_child_count']}",
+        "- Prospective observations collected: NO",
+        "- Real Stage-B evaluation run: NO",
+        "- POSTP1-004 authorized: NO",
+        "- Prospective collection authorized: NO",
+        "- BTC-019 reopened / sealed sample touched: NO / NO",
         "",
         "## Material children",
         "",
     ]
     for name, digest in definition["child_definition_sha256"].items():
-        lines.append(f"- `{name}`: `{digest}`")
+        lines.append(f"- {name}: {digest}")
     lines += [
         "",
-        "## Historical Stage-B parity",
+        "## Historical parity",
         "",
-        f"- Metrics recovered: `{diff['metric_count']}`",
-        f"- Threshold changes: `{diff['threshold_change_count']}`",
-        f"- Direction changes: `{diff['direction_change_count']}`",
-        f"- Hard-role changes: `{diff['hard_role_change_count']}`",
-        f"- Metric-intent changes: `{diff['metric_intent_change_count']}`",
-        "- Sufficiency changes the inherited point-metric PASS/FAIL rule: `NO`",
+        f"- Threshold changes: {diff['threshold_change_count']}",
+        f"- Direction changes: {diff['direction_change_count']}",
+        f"- Hard-role changes: {diff['hard_role_change_count']}",
+        f"- Metric-intent changes: {diff['metric_intent_change_count']}",
         "",
-        "## Metric minima",
+        "## Corrected sufficiency minima",
         "",
-        "| metric | threshold | direction | minimum n | method |",
-        "| --- | ---: | --- | ---: | --- |",
+        "| metric | performance threshold | raw minimum | distinct-unit minimum |",
+        "| --- | ---: | ---: | ---: |",
     ]
     for metric in _corpus.TARGET_METRICS:
         row = minima[metric]
         lines.append(
-            f"| `{metric}` | `{row['threshold']}` | `{row['direction']}` | "
-            f"`{row['minimum_denominator']}` | `{row['statistical_method']}` |"
+            f"| {metric} | {row['performance_threshold']} | "
+            f"{row['minimum_raw_sufficiency_denominator']} | "
+            f"{row['minimum_distinct_dependence_units']} |"
         )
-    boundary = derivations["rate_metrics"][_corpus.CROSS_MARKET_METRIC]
-    p95 = derivations["nearest_rank_p95"]
     lines += [
         "",
-        "The inherited `cross_market_confirmed_stop_preservation_rate >= 1.0` "
-        "has no finite Wilson capability denominator: for every finite positive "
-        "`n`, `WilsonLower(n,n) = n/(n+z^2) < 1`. Its explicit boundary "
-        f"exception freezes `n={boundary['minimum_denominator']}` only as point-"
-        "estimator identifiability; it makes no confidence or population-precision claim.",
+        "The exact 1.0 performance threshold remains exactly 1.0. Its common "
+        "evidence-strength reference is 0.99, not a replacement performance gate; "
+        "380 all-success independent units fail and 381 pass evidence quantity.",
         "",
-        f"The nearest-rank p95 minimum is `n={p95['minimum_denominator']}`: "
-        f"rank `{p95['n_min']['rank']}` leaves "
-        f"`{p95['n_min']['tail_observations_above_rank']}` observed tail value above it.",
+        "Nearest-rank p95 remains unchanged. Repeatable tail evidence requires "
+        f"93 distinct sizing opportunities: P92={p95['n_92']['probability']} and "
+        f"P93={p95['n_93']['probability']}.",
         "",
-        "## Coverage and time",
+        "Every metric independently requires exact authoritative replay coverage "
+        "of at least 0.99. Natural evidence units govern dependence; no separate "
+        "arbitrary calendar minimum or Stage-C 90-day rule is imported.",
         "",
-        "- Scheduled-slot accounting: `100%`",
-        "- Unaccounted slot permitted: `NO`",
-        f"- Separate numerical coverage floor: `{coverage['decision']}`",
-        f"- Calendar/days/weeks minimum: `{temporal['policy']}`",
-        "- Stage-C 90-day rule imported: `NO`",
-        "- Day/week concentration diagnostics persisted: `YES`",
+        "The blind monitor consumes only content-addressed evidence references and "
+        "a persisted initial-epoch authorization. It replays warmup, PIT, universe, "
+        "disposition and dependence identity, freezes an evidence manifest at the "
+        "first sufficient cutoff, and makes PASS and FAIL terminal.",
         "",
-        "## Blind stopping and cutoff",
-        "",
-        "`PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1` can consume only slot "
-        "identity, time, universe membership and disposition fields. It cannot "
-        "consume target numerators, agreement bits, relative-difference values, "
-        "aggregate metrics or PASS/FAIL results.",
-        "",
-        "The cutoff is the earliest decision time at which all eight minima and "
-        "all accounting/coverage rules hold. The evaluation corpus is frozen at "
-        "that cutoff. A failed epoch cannot continue until it passes.",
-        "",
-        f"Final classification: `{FINAL_CLASSIFICATION}`",
+        f"Final classification: {FINAL_CLASSIFICATION}",
         "",
     ]
     return "\n".join(lines)
@@ -1464,14 +2009,17 @@ def write_artifacts(output_dir: Path) -> dict[str, Any]:
     definition = sufficiency_governance_definition()
     output_dir.mkdir(parents=True, exist_ok=True)
     payloads = {DEFINITION_FILENAME: definition, **_child_payloads()}
+    expected_files = set(payloads) | {REPORT_FILENAME}
+    for existing in output_dir.iterdir():
+        if existing.is_file() and existing.name not in expected_files:
+            existing.unlink()
     for filename, payload in payloads.items():
         (output_dir / filename).write_text(
             json.dumps(payload, indent=2, sort_keys=True) + "\n",
             encoding="ascii",
         )
     (output_dir / REPORT_FILENAME).write_text(
-        _report_markdown(definition),
-        encoding="utf-8",
+        _report_markdown(definition), encoding="utf-8"
     )
     return definition
 
@@ -1481,7 +2029,9 @@ def restore_artifacts(output_dir: Path) -> dict[str, Any]:
         (output_dir / DEFINITION_FILENAME).read_text(encoding="ascii")
     )
     verify_sufficiency_governance_definition(definition)
+    expected_files = {DEFINITION_FILENAME, REPORT_FILENAME}
     for filename, child_key, builder in _CHILD_ARTIFACTS:
+        expected_files.add(filename)
         persisted = json.loads((output_dir / filename).read_text(encoding="ascii"))
         expected = globals()[builder]()
         if persisted != expected:
@@ -1489,17 +2039,18 @@ def restore_artifacts(output_dir: Path) -> dict[str, Any]:
         if definition["child_definition_sha256"].get(child_key) != expected[
             "definition_sha256"
         ]:
-            raise SufficiencyGovernanceError(
-                f"top-level definition does not bind {filename}"
-            )
+            raise SufficiencyGovernanceError(f"top-level does not bind {filename}")
+    actual_files = {path.name for path in output_dir.iterdir() if path.is_file()}
+    if actual_files != expected_files:
+        raise SufficiencyGovernanceError("artifact directory has unbound files")
     if (output_dir / REPORT_FILENAME).read_text(encoding="utf-8") != _report_markdown(
         definition
     ):
-        raise SufficiencyGovernanceError("persisted sufficiency report does not reproduce")
+        raise SufficiencyGovernanceError("persisted report does not reproduce")
     return definition
 
 
-def main() -> None:  # pragma: no cover - operational artifact writer
+def main() -> None:  # pragma: no cover
     root = Path(__file__).resolve().parents[2]
     definition = write_artifacts(root / OUTPUT_NAMESPACE)
     print(definition["definition_sha256"])
