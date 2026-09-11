@@ -60,7 +60,7 @@ review-fix commit =
 ab3b353e344465966da321af02b08f6fe28213f5
 
 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
-IMPLEMENTED / AWAITING INDEPENDENT EXACT-HASH XHIGH REVIEW
+FAILED INDEPENDENT EXACT-HASH XHIGH REVIEW
 
 sufficiency-governance definition hash =
 3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7
@@ -69,6 +69,12 @@ sufficiency-governance material child count = 8
 
 POSTP1-003 implementation commit =
 90a0252744f333e2168ad3904efbc1ec14c5693e
+
+POSTP1-003 review result =
+FAIL — SUFFICIENCY GOVERNANCE INVALID
+
+sufficiency execution classification =
+SUFFICIENCY_GOVERNANCE_REQUIRES_FIX
 
 newly frozen prospective acquisition contracts =
 PROSPECTIVE_CVD_ACQUISITION_V1
@@ -86,8 +92,8 @@ COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1
 KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1
 SCIENTIFIC_EVIDENCE_RESOLVER_V1
 
-collection = NOT AUTHORIZED; the POSTP1-003 exact-hash review and the
-POSTP1-004 implementation review must both pass first
+collection = NOT AUTHORIZED; corrected pre-data sufficiency governance and its
+exact-hash review plus the POSTP1-004 implementation review must pass first
 qualifying observations collected = NONE
 real Stage-B outcomes evaluated = NONE
 BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
@@ -125,16 +131,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review fix `ab3b353e...28213f5` made collector-health evidence same-domain
   and PIT-valid, rejected truthy non-Boolean schema fields, and required the CVD
   and market-cap selectors to consume resolver-replayed evidence. The protocol
-  and all 25 child hashes remain unchanged. POSTP1-003 is now implemented at
-  `3f51c4d9...f4ae2c7` with eight parent-bound semantic children and awaits its
-  required independent exact-hash xHigh review. The six finite Wilson-capability
-  minima are 381/73/189/381/381/381; the inherited exact 1.0 preservation gate
-  records that no finite Wilson lower-bound solution exists and uses an explicit
-  one-observation point-estimator-identifiability exception without changing the
-  performance threshold; nearest-rank risk p95 first becomes non-maximum at 20.
-  Coverage requires 100% scheduled-slot accounting and no unaccounted slot,
-  with no separate numerical or calendar floor, and the blind monitor freezes
-  the earliest all-eight cutoff without consuming outcomes.
+  and all 25 child hashes remain unchanged. POSTP1-003 froze
+  `3f51c4d9...f4ae2c7` with eight parent-bound semantic children, but its
+  independent exact-hash xHigh review failed. The six finite Wilson boundaries
+  and the p95 rank arithmetic are correct, but `n=1` for exact-1.0 preservation
+  and `n=20` for risk p95 establish only estimator structure, not scientifically
+  sufficient hard-certification evidence. A 95%-not-evaluable synthetic prefix
+  still certifies, temporally clustered stop evidence still certifies, the blind
+  monitor trusts caller-assigned universe/disposition fields without replay or
+  warmup/PIT proof, and its stateless API cannot enforce a frozen evaluated
+  epoch. Corrected pre-data governance and a new exact hash are required.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -147,26 +153,25 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-003 implementation is complete
-  and awaiting independent exact-hash review; BTC-019 is terminal and is not in
-  progress
-- **Current BLOCKED tickets:** POSTP1-004 remains blocked until POSTP1-003 and
-  its independent exact-hash review pass. Collection remains blocked through
-  the independent POSTP1-004 implementation review
-- **Next dependency-satisfied ticket:**
-  `FORMAL_XHIGH_REVIEW_PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1`
-  over exact hash `3f51c4d9...f4ae2c7`. POSTP1-004 and collection remain
-  unauthorized, and BTC-019 does not reopen. The failed V2 hash
-  `7fda8ac3...ad8be6` and its predecessors remain immutable lineage
+- **Current IN_PROGRESS ticket:** None. POSTP1-003 is complete with a failed
+  exact-hash review; BTC-019 is terminal and is not in progress
+- **Current BLOCKED tickets:** POSTP1-004 remains blocked because POSTP1-003's
+  exact-hash review failed. Collection remains transitively blocked
+- **Next dependency-satisfied ticket:** None is currently defined. The EPIC X
+  roadmap must add a bounded pre-data correction/refreeze for POSTP1-003's
+  scientific-sufficiency, evidence-authority and epoch-freeze findings before
+  another independent exact-hash review. POSTP1-004 and collection remain
+  unauthorized, and BTC-019 does not reopen
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 4,709 passed with Python 3.12.14 and
   `RuntimeWarning` treated as an error on 2026-09-11. The POSTP1-003 focused
-  synthetic suite is 39 passed, the prospective-corpus/reference-lineage suite
-  is 997 passed, and the selected feature/PIT/risk/stop/portfolio suite is 831
-  passed
-- **Last relevant implementation/review commit:** POSTP1-003 implementation
-  commit `90a0252744f333e2168ad3904efbc1ec14c5693e` freezes exact governance hash
-  `3f51c4d9...f4ae2c7` for independent review. POSTP1-002R5 passed with review
+  synthetic suite is 39 passed, the independently selected prospective-corpus/
+  reference-lineage/Wilson/authority suite is 1,136 passed, and the selected
+  feature/PIT/risk/stop/portfolio suite is 869 passed
+- **Last relevant implementation/review commit:** POSTP1-003's failed review is
+  recorded by the current documentation commit. Reviewed implementation commit
+  `90a0252744f333e2168ad3904efbc1ec14c5693e` retains failed exact governance
+  hash `3f51c4d9...f4ae2c7`. POSTP1-002R5 passed with review
   fix `ab3b353e344465966da321af02b08f6fe28213f5`. POSTP1-001R5's
   implementation commit `428356665dff0985cf8b1c379f6f18bf6cc5bac1` remains
   bound to `PROSPECTIVE_INTEGRATION_CORPUS_V1` hash
@@ -869,9 +874,10 @@ identity-match its complete immutable evidence graph before any scientific
 value or status is derived. It refreezes the corpus at `8915d991...fbfac7d7`
 with 25 parent-bound children. POSTP1-002R5 passed after review fix
 `ab3b353e...28213f5` closed local health-domain/PIT/schema enforcement and
-selector replay gaps without moving that hash or any child. POSTP1-003 is now
-implemented at `3f51c4d9...f4ae2c7` and awaits its independent exact-hash xHigh
-review.
+selector replay gaps without moving that hash or any child. POSTP1-003 froze
+`3f51c4d9...f4ae2c7`, but its independent exact-hash xHigh review failed on
+scientific evidence minima, coverage/concentration, blind evidence authority
+and epoch-freeze enforcement.
 Collection is not authorized; no
 qualifying observation was collected, no real Stage-B outcome was evaluated,
 EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
@@ -883,10 +889,13 @@ unopened with no automatic dependency that would ever open it.
   four P1 findings recorded against `fd946a09...bedff` and passed POSTP1-002R5,
   the sixth independent exact-hash review, after review fix
   `ab3b353e...28213f5`. Protocol definition is closed for sufficiency
-  governance. POSTP1-003 has selected and frozen every sufficiency minimum
-  pre-data at `3f51c4d9...f4ae2c7`; its independent exact-hash xHigh review must
-  still pass before POSTP1-004 may begin. No prospective collection is
-  authorized.
+  governance. POSTP1-003's pre-data definition at `3f51c4d9...f4ae2c7` failed
+  independent review: exact-boundary and p95 identifiability were mislabeled as
+  certification sufficiency; no-floor coverage and clustered-event policies
+  admit scientifically weak corpora; and the blind monitor does not replay its
+  authority or durably freeze an evaluated epoch. A corrected definition with a
+  new hash and independent review is required before POSTP1-004. No prospective
+  collection is authorized.
 - Production canonical BTC reference selection remains unresolved under
   BTC-019, but the research branch that was blocking it has now converged. The
   calendar-contiguity contract, the re-measurement of the already-inspected

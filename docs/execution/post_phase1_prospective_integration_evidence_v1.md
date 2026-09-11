@@ -884,10 +884,11 @@ POSTP1-001R5 CORRECTED PROTOCOL 8915d991...fbfac7d7
   -> PROSPECTIVE COLLECTION
 ```
 
-The sixth independent review passed on this exact hash. POSTP1-003 is now
-dependency-satisfied, but POSTP1-004 and collection remain blocked pending the
-exact-hash POSTP1-003 review and the later POSTP1-004 implementation review.
-BTC-019 does not reopen and Epic T remains closed.
+The sixth independent review passed on this exact hash and made POSTP1-003
+dependency-satisfied. POSTP1-003's later exact-hash review failed, so POSTP1-004
+and collection remain blocked pending corrected sufficiency governance and its
+review, followed by the POSTP1-004 implementation review. BTC-019 does not
+reopen and Epic T remains closed.
 
 ### POSTP1-002R5 — sixth independent exact-hash xHigh review
 
@@ -961,7 +962,7 @@ prospective collection.
 
 ## POSTP1-003 — `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1`
 
-**Status:** `IMPLEMENTED / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW / REQUIRES PRE-DATA CORRECTION`
 **Dependency:** POSTP1-002R5 PASS on certified corpus hash
 `8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -1044,6 +1045,81 @@ Implementation commit `90a0252744f333e2168ad3904efbc1ec14c5693e` freezes
   POSTP1-004 and collection remain blocked pending independent review of this
   exact hash; BTC-019 remains terminal and Epic T remains closed.
 
+### POSTP1-003 independent exact-hash review outcome
+
+**Status:** `COMPLETE / FAIL`
+**Result:** `FAIL — SUFFICIENCY GOVERNANCE INVALID`
+**Classification:** `SUFFICIENCY_GOVERNANCE_REQUIRES_FIX`
+
+The independent GPT-5.6 Sol xHigh review rejected exact hash
+`3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7`.
+The hash and arithmetic reproduce: all eight mechanically enumerated children
+are parent-bound; certified corpus `8915d991...fbfac7d7` and all 25 of its
+children reproduce; historical threshold, direction, hard-role and intent
+changes are zero; the six finite Wilson boundaries are exactly
+381/73/189/381/381/381; and nearest-rank p95 first becomes non-maximum at 20.
+Those facts establish mathematical definedness, not scientific sufficiency.
+
+The review found six release-blocking pre-data defects:
+
+1. The exact-1.0 exception permits hard certification after one successful
+   cross-market event. Its Wilson lower bound is only
+   `0.2065493143772373879497053966633758`; estimator definedness does not support
+   the inherited claim that a robust estimator preserves genuine shared tail
+   moves. No finite Wilson solution at exactly 1.0 rules out that criterion; it
+   does not logically select `n=1`. A separate outcome-independent
+   evidence-strength rule must be governed without changing the 1.0 performance
+   threshold.
+2. The risk p95 rule at `n=20` proves only that rank 19 is not the sample
+   maximum and leaves one observation above it. It freezes no precision,
+   repeatability or distribution-free tail-evidence claim sufficient for the
+   hard Stage-B certification statement. A stricter number cannot be invented
+   in review; a corrected governance must predeclare the scientific criterion.
+3. Complete accounting is not usable-coverage sufficiency. A synthetic prefix
+   with 7,220 of 7,601 daily opportunities not evaluable (about 95% missing)
+   still reached every minimum and certified. Candidate-neutral exclusions
+   prevent outcome-selected labels but do not prevent source-health or regime
+   selection bias. The corrected governance must freeze a defensible coverage
+   claim or explicitly narrow what certification means.
+4. Count-only stop-event evidence can be concentrated in one episode: a
+   conforming synthetic corpus certified with the 381 gap events in 16 UTC days,
+   73 isolated events in four days and the exact-boundary event in one day.
+   Persisted concentration diagnostics do not make clustered observations
+   independent Wilson evidence. A corrected rule must govern the evidence unit,
+   dependence/episode handling or defensible spreading criterion without
+   importing an arbitrary calendar duration.
+5. The executable blind monitor trusts caller-supplied `universe_member` and
+   `metric_disposition` surfaces. It accepts no authoritative evidence record,
+   availability time or warmup proof from which to replay those fields, so a
+   hostile projection can admit an ineligible observation, relabel an exclusion
+   as evaluated, admit warmup evidence or backfill a post-cutoff revision. This
+   contradicts the child contract's own replay requirement and the certified
+   parent's append-only PIT boundary.
+6. Cutoff immutability and same-epoch failure are not statefully enforceable.
+   Re-running the function with a revised pre-cutoff disposition moved the
+   accepted cutoff for the same epoch; the extension helper binds only two
+   timestamps and a PASS/FAIL string, while arbitrary non-empty epoch IDs and
+   arbitrary syntactically valid evaluation hashes are accepted. A failed epoch
+   can therefore be presented as a new epoch without the required pre-outcome
+   successor governance.
+
+The result schema also needs to bind the certified corpus and temporal-policy
+identity explicitly and the blind surface must not expose cross-track
+disagreement through unrestricted reason codes. These are non-blocking beside
+the six P1 findings but must be closed in the correction.
+
+Validation passed 39 focused tests, 1,136 prospective-corpus/reference-lineage/
+Wilson/authority tests, 869 selected feature/PIT/risk/stop/portfolio tests and
+the complete 4,709-test Python 3.12.14 suite with `RuntimeWarning` promoted to
+an error. Independent exact-rational boundary calculations, 8/8 and 25/25
+artifact reproduction, low-coverage/concentration/authority/revision probes,
+`compileall` and scoped `git diff --check` also pass. No prospective observation
+was collected, no real Stage-B outcome was inspected, and BTC-019 and its sealed
+sample remain untouched. These are semantic governance defects, not mechanical
+review fixes, so the failed V1 hash is preserved and a corrected pre-data
+governance definition with a new hash and independent review is required before
+POSTP1-004.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1059,5 +1135,5 @@ Implementation commit `90a0252744f333e2168ad3904efbc1ec14c5693e` freezes
 | POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | COMPLETE / FAIL |
 | POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / PASSED SIXTH REVIEW |
 | POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | IMPLEMENTED / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending corrected sufficiency governance and exact-hash independent review PASS |
