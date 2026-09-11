@@ -959,6 +959,91 @@ the BTC-019 sealed sample was neither collected nor opened. PASS authorizes
 only POSTP1-003 sufficiency governance; it does not authorize POSTP1-004 or
 prospective collection.
 
+## POSTP1-003 — `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1`
+
+**Status:** `IMPLEMENTED / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002R5 PASS on certified corpus hash
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact sufficiency-governance
+hash
+**Owner module:**
+`btc_predictor/research/prospective_integration_evidence_sufficiency.py`
+**Artifacts:**
+`prospective_evidence/prospective_integration_evidence_sufficiency_governance_v1/`
+
+### Scope and acceptance criteria
+
+Freeze, before collection, the evidence-quantity rules and blind stopping point
+for exactly the eight prospective Stage-B metrics. Threshold, direction, hard
+role, intent, universe, numerator, denominator and exclusion semantics remain
+owned by the certified corpus and immutable historical gates. A successful
+implementation must bind the certified corpus hash, recover zero semantic gate
+changes, select every minimum without observed outcomes, require complete slot
+accounting, define one outcome-blind earliest cutoff and freeze the evaluation
+corpus there. POSTP1-004, collection and BTC-019 remain unauthorized.
+
+### POSTP1-003 implementation notes
+
+Implementation commit `90a0252744f333e2168ad3904efbc1ec14c5693e` freezes
+`PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` at:
+
+```text
+3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7
+```
+
+- Eight mechanically enumerated semantic children are bound by the parent.
+  Direct import from `reference_composite_v2.V2_APPROVAL_GATES` and the
+  certified corpus produces zero threshold, direction, hard-role or
+  metric-intent changes.
+- The common finite-rate rule is the uncorrected two-sided 95% Wilson
+  capability floor at `z = 1.959963984540054235631`. It derives minima of 381
+  for `gap_through_stop_consensus_agreement_rate`, 73 for
+  `isolated_venue_stop_suppression_rate`, 189 for
+  `regime_classification_disagreement_rate`, and 381 for each of setup, action
+  and eligibility disagreement. Every finite boundary is pinned at `n-1` and
+  `n` through the repository Wilson owner.
+- The inherited exact
+  `cross_market_confirmed_stop_preservation_rate >= 1.0` boundary has no finite
+  Wilson capability denominator: for every finite positive `n`,
+  `WilsonLower(n,n) = n/(n+z^2) < 1`. The governance records that theorem
+  instead of rounding it away and freezes the smallest positive denominator,
+  1, under
+  `EXACT_POINT_RATE_BOUNDARY_IDENTIFIABILITY_EXCEPTION_V1`. This is explicitly
+  an estimator-definedness exception, not a confidence claim, and the inherited
+  point-rate performance gate remains exactly `>= 1.0`.
+- The non-binomial risk-size minimum is 20, the first sample size for which
+  nearest-rank p95 selects rank 19 rather than the sample maximum and leaves one
+  observed tail value above the selected order statistic. No distribution,
+  interpolation or bootstrap rule is introduced.
+- Coverage freezes 100% scheduled post-warmup slot accounting and zero
+  unaccounted slots. There is no separate numerical evaluability/comparability
+  floor: no frozen percentage applies to these universes, their exclusions are
+  candidate-neutral, and each metric must independently reach its own minimum.
+  The V3 structural-pair 0.50 floor stays scoped out. Calendar duration,
+  distinct-day and distinct-week minima are `NONE`; Stage-C's 90-day live
+  shadow is not imported. Day/week concentration remains a persisted
+  diagnostic.
+- `PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1` accepts only scheduler identity,
+  time, certified universe membership and disposition fields. It has no target
+  numerator, agreement bit, relative-difference value, aggregate or PASS/FAIL
+  input. All eight metrics plus global accounting are required, the cutoff is
+  the earliest qualifying `decision_time`, later evidence cannot move the
+  frozen evaluation corpus, and an evaluated epoch cannot be extended after a
+  FAIL to chase a PASS.
+- Validation passed 39 focused synthetic tests, 997 prospective-corpus and
+  reference-lineage tests, 831 selected feature/PIT/risk/stop/portfolio
+  regressions, and the complete 4,709-test Python 3.12.14 suite with
+  `RuntimeWarning` promoted to an error. Clean artifact regeneration,
+  Decimal/hash-seed/CWD/fresh-process reproduction, all eight child mutation
+  probes, `compileall` and scoped `git diff --check` pass.
+- No prospective observation was collected, no persistent collector or schema
+  was started, no real numerator or Stage-B result was inspected, and no
+  BTC-019 sealed path was accessed. The classification is
+  `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_XHIGH_REVIEW`.
+  POSTP1-004 and collection remain blocked pending independent review of this
+  exact hash; BTC-019 remains terminal and Epic T remains closed.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -974,5 +1059,5 @@ prospective collection.
 | POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | COMPLETE / FAIL |
 | POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / PASSED SIXTH REVIEW |
 | POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | READY; next dependency-satisfied ticket |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | IMPLEMENTED / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |
