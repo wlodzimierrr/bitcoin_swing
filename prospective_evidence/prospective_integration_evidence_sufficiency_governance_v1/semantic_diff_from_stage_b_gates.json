@@ -1,0 +1,140 @@
+{
+  "certified_corpus_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+  "definition_sha256": "2cee76082cb82c157120c2a24ced0e4ec4756731531a95812dc0e546d01d9b03",
+  "direction_change_count": 0,
+  "hard_role_change_count": 0,
+  "metric_count": 8,
+  "metric_intent_change_count": 0,
+  "rows": {
+    "cross_market_confirmed_stop_preservation_rate": {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "metric_intent": "A robust estimator must preserve genuine shared tail moves.",
+      "metric_intent_source": "Known-event requirement and BTC-019B stop analysis.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "1.0",
+      "universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS"
+    },
+    "gap_through_stop_consensus_agreement_rate": {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "metric_intent": "Gap-through behavior must agree with deterministic venue consensus.",
+      "metric_intent_source": "Stop-risk economic requirement.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.99",
+      "universe": "GAP_THROUGH_STOP_EVENTS"
+    },
+    "isolated_venue_stop_suppression_rate": {
+      "direction": "minimum",
+      "hard": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "metric_intent": "Most isolated exchange wicks should not create canonical stop events.",
+      "metric_intent_source": "Three known isolated V1 events were suppressed; 95% avoids event-specific perfection.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.95",
+      "universe": "ISOLATED_VENUE_STOP_EVENTS"
+    },
+    "regime_classification_disagreement_rate": {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "regime_classification_disagreement_rate",
+      "metric_intent": "Regime labels should be robust to reference construction.",
+      "metric_intent_source": "Reserved Phase-1 strategy consequence gate.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.02",
+      "universe": "REGIME_EVALUABLE_DECISION_TIMES"
+    },
+    "risk_size_p95_relative_difference": {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "risk_size_p95_relative_difference",
+      "metric_intent": "Reference changes should not materially resize most positions.",
+      "metric_intent_source": "Reserved Phase-1 risk consequence gate.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.10",
+      "universe": "SIZING_EVALUABLE_DECISION_TIMES"
+    },
+    "setup_classification_disagreement_rate": {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "setup_classification_disagreement_rate",
+      "metric_intent": "Setup selection should rarely depend on venue noise.",
+      "metric_intent_source": "Reserved Phase-1 strategy consequence gate.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.01",
+      "universe": "SETUP_EVALUABLE_DECISION_TIMES"
+    },
+    "trade_action_disagreement_rate": {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_action_disagreement_rate",
+      "metric_intent": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "metric_intent_source": "Reserved Phase-1 strategy consequence gate.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.01",
+      "universe": "ACTION_EVALUABLE_DECISION_TIMES"
+    },
+    "trade_eligibility_disagreement_rate": {
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "metric_intent": "Reference policy should rarely change whether a trade is permitted.",
+      "metric_intent_source": "Reserved Phase-1 strategy consequence gate.",
+      "parity": {
+        "direction": true,
+        "hard": true,
+        "metric_intent": true,
+        "threshold": true
+      },
+      "source_authority": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+      "threshold": "0.01",
+      "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES"
+    }
+  },
+  "schema_version": "STAGE_B_GATE_SEMANTIC_DIFF_V1",
+  "threshold_change_count": 0
+}

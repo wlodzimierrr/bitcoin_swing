@@ -1,0 +1,66 @@
+{
+  "btc019": {
+    "reopened": false,
+    "sealed_sample_accessed": false,
+    "terminal": true
+  },
+  "certified_parent": {
+    "implementation_commit": "428356665dff0985cf8b1c379f6f18bf6cc5bac1",
+    "protocol_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+    "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+    "review_documentation_commit": "946e393b9750aa775054ac49316c4e5465152966",
+    "review_fix_commit": "ab3b353e344465966da321af02b08f6fe28213f5",
+    "review_result": "PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE",
+    "review_ticket": "POSTP1-002R5"
+  },
+  "change_procedure": "Any material change to a minimum denominator, coverage policy, temporal rule, Wilson confidence level, quantile sufficiency rule, blind stopping logic or cutoff semantics requires PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V2 and a new prospective epoch where applicable.",
+  "child_definition_sha256": {
+    "blind_monitor_contract": "9b2d25218b620950ccf11bfb3deee6afa5b9fc064b55043cc94bd03a433649ee",
+    "coverage_policy": "565e4f3557d2105f6923d18383ecdae58df65ff6db5c979f663bcabb3dbc41bf",
+    "evaluation_cutoff_contract": "b84b4af37cba5b068cc117d975d86bee25af9130d05fd22982b41500662a41b5",
+    "metric_sufficiency_minima": "fb81141604eb602888da9b8fb4b6d0b9f2fa5b3ef429a32b1785f48780806bd7",
+    "semantic_diff_from_stage_b_gates": "2cee76082cb82c157120c2a24ced0e4ec4756731531a95812dc0e546d01d9b03",
+    "statistical_derivations": "a128969a3b2e1e0060a1b53ce2d01b153b436263509a67894b17b2d626bbd062",
+    "stopping_rule": "1b9999061ab6cc5cf68849a363ce740f530968e2d05e72616e07069c646f3660",
+    "temporal_policy": "81f640d5360758140e1e31b4b01b987e27839d86dc4d7e8f89bd4e1638545670"
+  },
+  "collection_authorized": false,
+  "decimal_precision": 60,
+  "definition_sha256": "3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7",
+  "epic_t": {
+    "modified": false,
+    "reopened": false
+  },
+  "evaluation_contract_identity": "SUPPLIED_LATER_BY_PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_V1",
+  "final_classification": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_XHIGH_REVIEW",
+  "governance_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
+  "material_child_count": 8,
+  "parent_child_bindings": {
+    "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
+    "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+    "stage_b_evaluation_contract_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0"
+  },
+  "postp1_004_authorized": false,
+  "program_ticket": "POSTP1-003",
+  "safety": {
+    "btc019_sealed_data_accessed": false,
+    "prospective_observations_collected": false,
+    "real_stage_b_evaluation_run": false,
+    "real_stage_b_numerators_inspected": false
+  },
+  "schema_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_DEFINITION_V1",
+  "stage_b_performance_gate_owner": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
+  "stage_b_performance_gates_changed": false,
+  "status": "FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE",
+  "target_metrics": [
+    "cross_market_confirmed_stop_preservation_rate",
+    "gap_through_stop_consensus_agreement_rate",
+    "isolated_venue_stop_suppression_rate",
+    "regime_classification_disagreement_rate",
+    "risk_size_p95_relative_difference",
+    "setup_classification_disagreement_rate",
+    "trade_action_disagreement_rate",
+    "trade_eligibility_disagreement_rate"
+  ],
+  "workstream": "EPIC X"
+}

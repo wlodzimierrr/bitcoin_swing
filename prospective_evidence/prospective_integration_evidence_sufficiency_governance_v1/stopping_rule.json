@@ -1,0 +1,13 @@
+{
+  "collection_stop_condition": "ALL eight metric-specific sufficiency contracts satisfied AND all global accounting and coverage requirements satisfied",
+  "definition_sha256": "1b9999061ab6cc5cf68849a363ce740f530968e2d05e72616e07069c646f3660",
+  "global_metric_rule": "ALL_8_NO_WEIGHTING_NO_SUBSTITUTION",
+  "metric_numerators_consumed": false,
+  "optional_stopping_permitted": false,
+  "outcome_blind": true,
+  "pass_chasing_permitted": false,
+  "performance_results_consumed": false,
+  "same_epoch_extension_after_evaluation_permitted": false,
+  "schema_version": "PROSPECTIVE_STAGE_B_STOPPING_RULE_V1",
+  "successor_epoch_rule": "A future re-evaluation requires separate prospective governance authorized before that future epoch's outcomes are seen"
+}

@@ -1,0 +1,260 @@
+{
+  "certified_corpus_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+  "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
+  "definition_sha256": "fb81141604eb602888da9b8fb4b6d0b9f2fa5b3ef429a32b1785f48780806bd7",
+  "metric_count": 8,
+  "metrics": {
+    "cross_market_confirmed_stop_preservation_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STOP_HOURLY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "minimum",
+      "hard": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "A robust estimator must preserve genuine shared tail moves.",
+      "minimum_denominator": 1,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "EXACT_POINT_RATE_BOUNDARY_IDENTIFIABILITY_EXCEPTION_V1",
+      "threshold": "1.0",
+      "universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "gap_through_stop_consensus_agreement_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STOP_HOURLY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "minimum",
+      "hard": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "Gap-through behavior must agree with deterministic venue consensus.",
+      "minimum_denominator": 381,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
+      "threshold": "0.99",
+      "universe": "GAP_THROUGH_STOP_EVENTS",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "isolated_venue_stop_suppression_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STOP_HOURLY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "minimum",
+      "hard": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "Most isolated exchange wicks should not create canonical stop events.",
+      "minimum_denominator": 73,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
+      "threshold": "0.95",
+      "universe": "ISOLATED_VENUE_STOP_EVENTS",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "regime_classification_disagreement_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STRATEGY_DAILY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "maximum",
+      "hard": true,
+      "metric": "regime_classification_disagreement_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "Regime labels should be robust to reference construction.",
+      "minimum_denominator": 189,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
+      "threshold": "0.02",
+      "universe": "REGIME_EVALUABLE_DECISION_TIMES",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "risk_size_p95_relative_difference": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STRATEGY_DAILY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "maximum",
+      "hard": true,
+      "metric": "risk_size_p95_relative_difference",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "Reference changes should not materially resize most positions.",
+      "minimum_denominator": 20,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "NEAREST_RANK_P95_NOT_SAMPLE_MAXIMUM_V1",
+      "threshold": "0.10",
+      "universe": "SIZING_EVALUABLE_DECISION_TIMES",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "setup_classification_disagreement_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STRATEGY_DAILY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "maximum",
+      "hard": true,
+      "metric": "setup_classification_disagreement_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "Setup selection should rarely depend on venue noise.",
+      "minimum_denominator": 381,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
+      "threshold": "0.01",
+      "universe": "SETUP_EVALUABLE_DECISION_TIMES",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "trade_action_disagreement_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STRATEGY_DAILY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_action_disagreement_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "minimum_denominator": 381,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
+      "threshold": "0.01",
+      "universe": "ACTION_EVALUABLE_DECISION_TIMES",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    },
+    "trade_eligibility_disagreement_rate": {
+      "additional_conditions": [
+        "100_PERCENT_SCHEDULED_SLOT_ACCOUNTING_AT_PREFIX",
+        "UNACCOUNTED_SCHEDULED_SLOT_COUNT_EQUALS_ZERO",
+        "CERTIFIED_CANDIDATE_NEUTRAL_UNIVERSE_AND_EXCLUSIONS",
+        "ZERO_DENOMINATOR_IS_UNDEFINED_INSUFFICIENT_EVIDENCE"
+      ],
+      "cadence": "STRATEGY_DAILY",
+      "counter_fields": {
+        "accounted_opportunity_count": "accounted_opportunity_count",
+        "data_quality_fail_count": "data_quality_fail_count",
+        "denominator": "evaluable_denominator",
+        "exclusions": "exclusion_counts_by_reason",
+        "not_comparable": "not_comparable_count",
+        "not_evaluable": "not_evaluable_count",
+        "reference_unavailable": "reference_unavailable_count"
+      },
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "metric_intent": "Reference policy should rarely change whether a trade is permitted.",
+      "minimum_denominator": 381,
+      "no_pooling": true,
+      "performance_gate_unchanged": true,
+      "statistical_method": "PERFECT_SAMPLE_WILSON_CAPABILITY_FLOOR_V1",
+      "threshold": "0.01",
+      "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES",
+      "zero_denominator_outcome": "UNDEFINED_INSUFFICIENT_EVIDENCE",
+      "zero_denominator_sufficient": false
+    }
+  },
+  "no_candidate_identity_used_to_choose_minima": true,
+  "no_observed_outcome_used_to_choose_minima": true,
+  "schema_version": "PROSPECTIVE_METRIC_SUFFICIENCY_MINIMA_V1",
+  "statistical_derivations_sha256": "a128969a3b2e1e0060a1b53ce2d01b153b436263509a67894b17b2d626bbd062"
+}

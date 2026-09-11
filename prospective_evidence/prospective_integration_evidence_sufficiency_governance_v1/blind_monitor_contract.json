@@ -1,0 +1,70 @@
+{
+  "allowed_input_fields": [
+    "cadence",
+    "decision_time",
+    "global_disposition",
+    "global_reason_codes",
+    "metric",
+    "metric_disposition",
+    "metric_reason_code",
+    "observation_time",
+    "slot_id",
+    "universe_member"
+  ],
+  "contract_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1",
+  "cutoff_clock": "decision_time",
+  "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
+  "definition_sha256": "9b2d25218b620950ccf11bfb3deee6afa5b9fc064b55043cc94bd03a433649ee",
+  "denominator_contribution": "1 iff certified universe_member is true and metric_disposition is EVALUATED; otherwise 0",
+  "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+  "outcome_blind": true,
+  "production_visibility_before_cutoff": {
+    "decision_maker_visible": [
+      "accounting_progress",
+      "coverage_diagnostics",
+      "denominator_progress",
+      "sufficiency_state"
+    ],
+    "target_outcomes_visible": false
+  },
+  "prohibited_input_fields": [
+    "aggregate_metric_result",
+    "candidate_control_agreement",
+    "metric_numerator",
+    "pass_fail_result",
+    "risk_size_relative_difference",
+    "success_or_failure_bit"
+  ],
+  "scheduled_slot_owner": "btc_predictor.research.prospective_integration_corpus.scheduled_decision_slots",
+  "schema_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_CONTRACT_V1",
+  "state_transitions": {
+    "ACCUMULATING": [
+      "METRIC_PARTIALLY_SUFFICIENT",
+      "ALL_METRICS_SUFFICIENT",
+      "EVALUATION_CUTOFF_FROZEN"
+    ],
+    "ALL_METRICS_SUFFICIENT": [
+      "EVALUATION_CUTOFF_FROZEN"
+    ],
+    "EVALUATION_CUTOFF_FROZEN": [],
+    "METRIC_PARTIALLY_SUFFICIENT": [
+      "ALL_METRICS_SUFFICIENT",
+      "EVALUATION_CUTOFF_FROZEN"
+    ],
+    "NOT_STARTED": [
+      "ACCUMULATING"
+    ]
+  },
+  "states": [
+    "NOT_STARTED",
+    "ACCUMULATING",
+    "METRIC_PARTIALLY_SUFFICIENT",
+    "ALL_METRICS_SUFFICIENT",
+    "EVALUATION_CUTOFF_FROZEN"
+  ],
+  "universe_membership_authority": {
+    "candidate_controlled_override_permitted": false,
+    "rule": "Replay and derive membership from the certified decision-universe predicate and evidence graph; never trust a caller-selected exclusion label"
+  },
+  "window_start_semantics": "epoch_observation_start is the first canonical post-warmup observation boundary; warmup capture is never denominator evidence"
+}

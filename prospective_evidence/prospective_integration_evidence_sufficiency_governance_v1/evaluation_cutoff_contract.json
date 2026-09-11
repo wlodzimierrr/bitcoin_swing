@@ -1,0 +1,11 @@
+{
+  "corpus_freeze_rule": "Freeze the Stage-B evaluation corpus to evidence PIT-available at or before stage_b_sufficiency_cutoff",
+  "cutoff_definition": "earliest decision_time at which all eight metric minima and all global accounting/coverage requirements are simultaneously satisfied",
+  "cutoff_field": "stage_b_sufficiency_cutoff",
+  "definition_sha256": "b84b4af37cba5b068cc117d975d86bee25af9130d05fd22982b41500662a41b5",
+  "deterministic": true,
+  "evidence_after_cutoff_included": false,
+  "future_evaluation_contract_binding_required": true,
+  "pre_cutoff_stage_b_status": "INSUFFICIENT_EVIDENCE",
+  "schema_version": "PROSPECTIVE_STAGE_B_EVALUATION_CUTOFF_CONTRACT_V1"
+}

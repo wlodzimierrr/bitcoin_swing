@@ -1,0 +1,16 @@
+{
+  "alternatives_considered": {
+    "30_60_90_or_180_calendar_days": "REFUSED_NO_OUTCOME_INDEPENDENT_DERIVATION",
+    "reuse_stage_c_90_days": "REFUSED_DIFFERENT_GOVERNANCE_STAGE"
+  },
+  "concentration_diagnostics_persisted": true,
+  "definition_sha256": "81f640d5360758140e1e31b4b01b987e27839d86dc4d7e8f89bd4e1638545670",
+  "minimum_calendar_duration": null,
+  "minimum_distinct_iso_weeks": null,
+  "minimum_distinct_utc_days": null,
+  "policy": "NONE",
+  "reasoning": "The metric-specific event and decision denominators define the amount of Stage-B integration evidence. No existing authority requires temporal spreading for these gates, and no outcome-free derivation identifies a calendar value. Concentration is therefore persisted diagnostically rather than turned into an arbitrary gate.",
+  "schema_version": "PROSPECTIVE_SUFFICIENCY_TEMPORAL_POLICY_V1",
+  "stage_c_live_shadow_days_imported": false,
+  "stage_c_separation": "live_shadow_days >= 90 remains the distinct post-certification Stage-C promotion gate and is not Stage-B sufficiency"
+}
