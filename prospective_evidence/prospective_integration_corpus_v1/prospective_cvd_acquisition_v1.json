@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R4",
+    "authored_by_ticket": "POSTP1-001R5",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -12,6 +12,7 @@
     "selected_by_new_pre_data_governance": true,
     "stage_b_outcomes_inspected": false
   },
+  "aggregate_observation_schema_version": "PROSPECTIVE_CVD_AGGREGATE_OBSERVATION_V1",
   "aggregation_method": "For Kraken spot BTC/USD, signed USD notional is price * qty with a positive sign for provider side=buy and negative for side=sell. For Kraken Futures PI_XBTUSD, contractSize=1 USD and signed USD notional is qty * 1 USD with the same taker-side signs. Every provider trade type in ['block', 'fill', 'liquidation', 'termination'] is included when it carries a valid taker side. The signed sums are accumulated directly inside [t,t+1h); no interval is built from other intervals or resampled.",
   "available_at_semantics": "The collector's clock-integrity-validated UTC wall-clock instant at which the closed interval and its completion evidence were validated. It is never back-dated to the interval boundary and makes no claim about a provider first-publication instant. Duration and liveness deadlines use the monotonic clock. An observation whose available_at is later than decision_time is invisible.",
   "buy_sell_classification_owner": "Kraken's exchange-native side field, documented on both selected trade feeds as the side of the taker order. The capture layer never infers a side from price, never reclassifies a trade and marks the whole interval INVALID if any captured trade lacks buy/sell side.",
@@ -82,11 +83,12 @@
     "CVD_SPREAD"
   ],
   "cvd_usd_definition": "cvd_usd is the signed USD notional taker delta of the interval: the sum of buyer-initiated trade notional minus the sum of seller-initiated trade notional, in USD, over the closed interval and the one exact frozen instrument for that market_type. Spot notional is price * BTC quantity; PI_XBTUSD is a 1 USD inverse contract and its notional is contract quantity * 1 USD. It is an interval delta, not a running cumulative total, so no observation depends on an unbounded history and a missing interval can never be reconstructed from its neighbours.",
-  "definition_sha256": "cbfe3bf3c132f309bd3b78529f445b0f3c3350482f9755a5665f848130162ec1",
+  "definition_sha256": "65ff928b3eaed7eba7db9f5ebd7f0a0c06e79648218dc851ca993960b896390f",
   "duplicate_semantics": "Raw spot trades are unique by (provider, instrument, trade_id) and raw perpetual trades by (provider, instrument, uid). A conflicting duplicate source id invalidates the hour. Aggregate revisions are append-only; the prospective selector passes exactly the latest revision available at the decision to the historical owner, never multiple revisions that the owner would sum.",
   "epoch_rule": "Any change to the cadence, provider set, spot or perpetual market universe, buy/sell classification or aggregation requires PROSPECTIVE_CVD_ACQUISITION_V2 and a new prospective collection epoch for every affected metric. Observations already captured under this contract are never resampled, re-bucketed or relabelled backwards.",
   "event_inclusion": {
     "interval_boundary": "half-open [t, t + 1h)",
+    "local_receipt_boundary": "received_at <= finalized_at; exact equality is admitted. An event received one microsecond later cannot enter that revision.",
     "perpetual_included_trade_types": [
       "block",
       "fill",
@@ -178,12 +180,14 @@
   "raw_feed_completion": {
     "complete_is_caller_supplied": false,
     "completion_contract": "CVD_INTERVAL_COMPLETENESS_V1",
-    "completion_contract_sha256": "19e1a9c0e1455dbcbc192a8b9334060fd3517887ef25aa202b11cf2fe34b41e3",
+    "completion_contract_sha256": "b26bd859c30648b182d06e669177b1c440e7329de18c135be429f41c3c6cc906",
     "decision_cutoff": "interval close + 5 minutes",
     "perpetual": "one SOURCE_STREAM_EPOCH_V1 acknowledged before interval start and continuous through interval close; collector-owned ping/pong liveness and health pass; no local loss, invalid event or conflicting uid. Futures seq is validated only inside its documented subscription scope and never across a reconnect.",
-    "source_stream_epoch_contract_sha256": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
+    "runtime_futures_metadata_validation_sha256": "efeb5be0164582370aea0cefc4c5be8802de80ee551bb77e763c6c713e84ee6e",
+    "scientific_evidence_resolver_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+    "source_stream_epoch_contract_sha256": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
     "spot": "one SOURCE_STREAM_EPOCH_V1 acknowledged before interval start and continuous through interval close; collector-owned ping/pong liveness and health pass; no local loss, invalid event or conflicting trade_id. trade_id is an identity and deduplication key, not an undocumented continuity proof.",
-    "stream_liveness_policy_sha256": "0cbe771bb9f62b0294ed13ccd1938348e2114f9c5c811dc44386ad12115ffc7d",
+    "stream_liveness_policy_sha256": "efe9402aa3721234cfe7d05791d3735b817d96130dc359acc50d102d2c0f80a5",
     "unmet_predicate": "REQUIRED_INPUT_MISSING"
   },
   "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row for the same (provider, market_type, observation_time); the earlier revision is retained verbatim and a decision replays against exactly the latest revision available at its own decision_time. The pre-owner selector passes one revision per market_type/hour so the historical aggregation owner cannot sum revisions together.",

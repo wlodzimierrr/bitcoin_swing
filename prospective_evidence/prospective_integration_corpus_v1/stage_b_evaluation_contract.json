@@ -1,5 +1,5 @@
 {
-  "definition_sha256": "3df077ec947c7350393aaa1e7ff73dbabcf7e8829b0b56adfbcc207c12edf98c",
+  "definition_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
   "evaluator_may_change_measurement_semantics": false,
   "executed_on_real_prospective_data_by_this_task": false,
   "metrics": {
@@ -234,8 +234,8 @@
   "warmup_entry_requirement": "WARMUP_HISTORY_COMPLETE must be true before a slot may enter any metric's evaluable universe",
   "warmup_history_definition_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac",
   "workflow": [
-    "POSTP1-001R CORRECTED PROTOCOL",
-    "REPEAT INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH",
+    "POSTP1-001R5 REPLAYABLE CORRECTED PROTOCOL",
+    "SIXTH INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH",
     "POSTP1-003 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
     "INDEPENDENT XHIGH REVIEW OF EXACT SUFFICIENCY-GOVERNANCE HASH",
     "POSTP1-004 SCHEMA + COLLECTORS + DECISION SNAPSHOT IMPLEMENTATION",

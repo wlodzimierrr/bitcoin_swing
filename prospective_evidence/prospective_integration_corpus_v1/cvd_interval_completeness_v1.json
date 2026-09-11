@@ -1,10 +1,12 @@
 {
   "complete_is_caller_supplied": false,
-  "definition_sha256": "19e1a9c0e1455dbcbc192a8b9334060fd3517887ef25aa202b11cf2fe34b41e3",
+  "definition_sha256": "b26bd859c30648b182d06e669177b1c440e7329de18c135be429f41c3c6cc906",
   "event_census": "Exact epoch-bound source records are sorted and deduplicated by provider event identity; identical retransmissions are idempotent and conflicting duplicates invalidate the interval.",
+  "event_receipt_cutoff": "Every event persists provider event_time, local received_at and its clock record; event_time must be in the half-open hour and received_at must be no later than finalized_at. Later arrivals can appear only in an append-only later revision with a later available_at.",
+  "evidence_replay": "Resolve and recompute the complete epoch, liveness, collector-health, clock interval, runtime metadata and canonical event census before trusting complete or any CVD value.",
   "futures_sequence_scope": "one subscription epoch",
   "futures_sequence_semantics": "Kraken documents seq as a subscription-message sequence number but does not document cross-reconnect continuity here. Positive shape and duplicate conflicts are validated; no undocumented global or cross-reconnect increment guarantee is assumed.",
-  "liveness_definition_sha256": "0cbe771bb9f62b0294ed13ccd1938348e2114f9c5c811dc44386ad12115ffc7d",
+  "liveness_definition_sha256": "efe9402aa3721234cfe7d05791d3735b817d96130dc359acc50d102d2c0f80a5",
   "required_markets": {
     "perp": [
       "kraken_futures_websocket_v1_trade",
@@ -15,8 +17,9 @@
       "BTC/USD"
     ]
   },
+  "runtime_futures_metadata_definition_sha256": "efeb5be0164582370aea0cefc4c5be8802de80ee551bb77e763c6c713e84ee6e",
   "schema_version": "CVD_INTERVAL_COMPLETENESS_V1",
   "spot_trade_id_semantics": "Unique per book source-event identity and deduplication key; not a documented lossless connection-level continuity proof.",
-  "stream_epoch_definition_sha256": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
+  "stream_epoch_definition_sha256": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
   "version": "CVD_INTERVAL_COMPLETENESS_V1"
 }

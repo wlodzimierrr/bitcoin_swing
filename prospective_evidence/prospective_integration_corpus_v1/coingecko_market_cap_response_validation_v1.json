@@ -1,10 +1,11 @@
 {
   "asset_id": "bitcoin",
-  "clock_integrity_definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
+  "clock_integrity_definition_sha256": "be449ebd62b7bcc8cf90ea8c9b38d3fb06f382ff16cc19a5cb04ff9697823ef2",
   "date_binding": "The response does not echo its requested date. observation_time is derived only as requested_date 00:00:00 UTC from the immutable request record bound to the exact response digest. Relabelling is refused.",
-  "definition_sha256": "fb15b3f4f75bfa1bf65a97d42602e034f5dd0b1c31ff51da9a96d03bc6bc1cb3",
+  "definition_sha256": "1cda159214ab5b2045790a5fa3c1ca7e3ba0d51d41456be4c5bc5d5e75f67eee",
   "http_status": 200,
   "missing_or_unexpected_schema_state": "INVALID / REQUIRED_INPUT_MISSING",
+  "request_attempt_definition_sha256": "4ea71f2461ac9d4a279c757ee349be4df76679e070e0a896e3e53ca9f0175fc6",
   "required_payload": {
     "id": "bitcoin (exact, case-sensitive)",
     "market_data.market_cap.usd": "finite Decimal strictly greater than zero",
@@ -12,6 +13,7 @@
   },
   "response_date_field_claimed": false,
   "schema_version": "COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1",
+  "scientific_replay": "Resolve the exact attempt, clock interval and all clock-health records; recompute request_sha256 and response_sha256; require SUCCESS within the inclusive 45-second monotonic timeout and cycle cutoff; parse raw_response_bytes; then derive value, observation_time and available_at without trusting surface fields.",
   "validator": "validate_coingecko_market_cap_response",
   "version": "COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1"
 }

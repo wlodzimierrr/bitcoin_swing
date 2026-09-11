@@ -2,7 +2,7 @@
   "classifier": "classify_liquidation_interval",
   "complete_is_caller_supplied": false,
   "cvd_stream_evidence_reused": true,
-  "definition_sha256": "70382a88f01fbb4c0ef96ce1a8ff694663f4cdd803590042a2b57fba2a7c8506",
+  "definition_sha256": "346214ec2b6c6dd7cf5b31b76134d85756d2a1a7aaa7e7006199c8a2c0ff2522",
   "healthy_positive_rule": "The same exact complete Futures hour required for zero, plus one or more valid liquidation-typed events.",
   "healthy_zero_rule": "Exact PI_XBTUSD liquidation source; one uninterrupted epoch over the full hour; liveness, clock, sequence-shape and collector health valid; zero valid liquidation events; timely finalization.",
   "missing_can_become_zero": false,
@@ -12,7 +12,10 @@
     "provider_sell": "long liquidation"
   },
   "schema_version": "LIQUIDATION_INTERVAL_COMPLETENESS_V1",
-  "stream_epoch_definition_sha256": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
-  "stream_liveness_definition_sha256": "0cbe771bb9f62b0294ed13ccd1938348e2114f9c5c811dc44386ad12115ffc7d",
+  "stream_epoch_definition_sha256": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
+  "stream_liveness_definition_sha256": "efe9402aa3721234cfe7d05791d3735b817d96130dc359acc50d102d2c0f80a5",
+  "surface_record_authoritative": false,
+  "verification_rule": "Resolve completeness_evidence_sha256 and its transitive graph, replay completeness, rederive status/count/notionals and verify interval identity before accepting the hourly surface.",
+  "verified_hour_version": "VERIFIED_LIQUIDATION_HOUR_V1",
   "version": "LIQUIDATION_INTERVAL_COMPLETENESS_V1"
 }

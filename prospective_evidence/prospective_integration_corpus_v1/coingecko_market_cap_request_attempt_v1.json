@@ -1,0 +1,34 @@
+{
+  "definition_sha256": "4ea71f2461ac9d4a279c757ee349be4df76679e070e0a896e3e53ca9f0175fc6",
+  "exact_response_bytes_persistence": "PostgreSQL BYTEA; nullable outside response-bearing outcomes",
+  "http_timeout_seconds": "45",
+  "outcome_vocabulary": [
+    "SUCCESS",
+    "TIMEOUT",
+    "HTTP_ERROR",
+    "TRANSPORT_ERROR",
+    "INVALID_RESPONSE",
+    "CLOCK_INVALID",
+    "CYCLE_CUTOFF"
+  ],
+  "request_identity_fields": [
+    "provider",
+    "endpoint_identity",
+    "http_method",
+    "asset_id",
+    "requested_date",
+    "query_parameters",
+    "scheduled_poll_time",
+    "collector_version",
+    "acquisition_contract_sha256"
+  ],
+  "schema_version": "COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1",
+  "scientific_success_boundary": "SUCCESS requires mechanically derived monotonic_elapsed_seconds <= 45; 45.000 is admitted and 45.001 is not. The 00:56 cycle cutoff is a separate independent bound.",
+  "timeout_nullability": {
+    "http_status": "null permitted",
+    "market_cap_usd": "absent",
+    "raw_response_bytes": "null permitted",
+    "response_sha256": "null iff raw_response_bytes is null"
+  },
+  "version": "COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1"
+}

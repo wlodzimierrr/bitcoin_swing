@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R4",
+    "authored_by_ticket": "POSTP1-001R5",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -47,10 +47,12 @@
   ],
   "daily_census": {
     "contract": "LIQUIDATION_UTC_DAY_CENSUS_V1",
-    "definition_sha256": "17ff94a70bca63c7719a3c99cc1233307828e4c081ff1da4dca16a7369dde242",
-    "expected_exact_utc_hours": 24
+    "definition_sha256": "7180ad6cb78f2abe03308618ab369e94509bb20c3f4bb8b7ac9535abb190a4a2",
+    "expected_exact_utc_hours": 24,
+    "requires_independent_hour_replay": true,
+    "surface_status_is_authority": false
   },
-  "definition_sha256": "79966de5b0c609622f57fe9035ededf81d6c087a72572f1ea015f7cc7d946043",
+  "definition_sha256": "d4268aa2833b8f386777729ae69c9625895b477733c1a62866ea896d141798c8",
   "duplicate_semantics": "One row per (provider, instrument, timeframe, observation_time, revision). A conflicting duplicate is refused and recorded as a data-quality event.",
   "epoch_rule": "Any change to the captured interval, provider, instrument universe or feed-status vocabulary requires PROSPECTIVE_LIQUIDATION_CAPTURE_V2 and a new prospective collection epoch.",
   "event_census": {
@@ -126,9 +128,11 @@
       "collector-owned STREAM_LIVENESS_POLICY_V1 passes",
       "collector health has no parser, serialization, durable-append, queue, drop, unexpected-message, duplicate-conflict, exception or sequence-validation failure",
       "event census is reconstructed from exact epoch-bound events",
+      "every event received_at is clock-validated and no later than finalization",
+      "PI_XBTUSD runtime metadata passes before interval start and again at finalization",
       "finalization and available_at bind usable clock-integrity evidence"
     ],
-    "definition_sha256": "70382a88f01fbb4c0ef96ce1a8ff694663f4cdd803590042a2b57fba2a7c8506",
+    "definition_sha256": "346214ec2b6c6dd7cf5b31b76134d85756d2a1a7aaa7e7006199c8a2c0ff2522",
     "failure_semantics": "Incomplete coverage is SOURCE_UNAVAILABLE; evidence arriving after decision is LATE; malformed or internally inconsistent evidence is INVALID. None may carry numeric notionals.",
     "observed_zero_rule": "OBSERVED_ZERO_EVENTS is permitted only when every condition passes, event_count is zero, the source-id set is empty and both side notionals equal zero."
   },
@@ -157,9 +161,10 @@
     "source_metadata_verified_at": "2026-09-09",
     "statement": "Only liquidation-typed trade events from Kraken Futures PI_XBTUSD form the interval census. A partial venue, alternate instrument, stablecoin quote or secondary source may not be called complete or patched into this epoch."
   },
-  "replay_rule": "The complete SOURCE_STREAM_EPOCH_V1, liveness, collector-health, clock and source-event census records are persisted with their digests; feed_status, event_count and the notional pair are all persisted, so a replay reproduces the missing-versus-empty distinction from storage by mechanically revalidating those objects. A replay may never re-derive feed_status merely from whether notional happens to be zero.",
+  "replay_rule": "Resolve the complete SOURCE_STREAM_EPOCH_V1, liveness, collector-health, clock, runtime metadata and source-event census records; recompute every digest and predicate; then rederive feed_status, event_count and notionals. This reproduces the missing-versus-empty distinction from storage. A self-consistent rehashed surface row cannot override its cited completeness evidence. The daily reducer repeats this transitive replay for all 24 exact hours.",
   "revision_semantics": "Append-only. A provider restatement of a closed interval is a new revision row; the earlier revision is retained verbatim and a decision replays against the revision available at its own decision_time. A revision may change feed_status only forwards into a new row, never by rewriting an existing one. The adapter selects exactly the latest revision available per interval before calling any historical aggregate owner.",
   "schema_version": "PROSPECTIVE_LIQUIDATION_CAPTURE_V1",
+  "scientific_evidence_resolver_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
   "units": "USD notional per side from 1 USD PI_XBTUSD contracts; event_count is a count",
   "unusable_feed_statuses": [
     "INVALID",

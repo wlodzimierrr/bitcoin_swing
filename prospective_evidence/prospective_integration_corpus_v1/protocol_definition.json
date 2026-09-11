@@ -7,27 +7,30 @@
     "terminal_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE"
   },
   "child_definition_sha256": {
-    "coingecko_market_cap_response_validation": "fb15b3f4f75bfa1bf65a97d42602e034f5dd0b1c31ff51da9a96d03bc6bc1cb3",
-    "cvd_interval_completeness": "19e1a9c0e1455dbcbc192a8b9334060fd3517887ef25aa202b11cf2fe34b41e3",
-    "data_schema_contract": "1f82de0384b18321f6d092bd697f592ec94db61c55135e474ff9fb105a48c178",
+    "coingecko_market_cap_request_attempt": "4ea71f2461ac9d4a279c757ee349be4df76679e070e0a896e3e53ca9f0175fc6",
+    "coingecko_market_cap_response_validation": "1cda159214ab5b2045790a5fa3c1ca7e3ba0d51d41456be4c5bc5d5e75f67eee",
+    "cvd_interval_completeness": "b26bd859c30648b182d06e669177b1c440e7329de18c135be429f41c3c6cc906",
+    "data_schema_contract": "0c29908f121c9060d47c5153aa938feed48f73a69268d323e9e72b9affcbf66d",
     "decision_universe": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
     "evidence_sufficiency": "af424423723f377d22fdddd01e396de9a2323db0c9aa59defd57b78076cc5df9",
     "feature_input_coverage": "73d5909cb47d4cd63efc9e743a706448c8e609e65593f4474d183e759513f580",
     "input_snapshot_schema": "c90999c6a73574fed161297eefc17ff55f2bdf068b79e5d55d6785f8fd25c69c",
-    "liquidation_interval_completeness": "70382a88f01fbb4c0ef96ce1a8ff694663f4cdd803590042a2b57fba2a7c8506",
-    "liquidation_utc_day_census": "17ff94a70bca63c7719a3c99cc1233307828e4c081ff1da4dca16a7369dde242",
+    "kraken_futures_instrument_metadata_validation": "efeb5be0164582370aea0cefc4c5be8802de80ee551bb77e763c6c713e84ee6e",
+    "liquidation_interval_completeness": "346214ec2b6c6dd7cf5b31b76134d85756d2a1a7aaa7e7006199c8a2c0ff2522",
+    "liquidation_utc_day_census": "7180ad6cb78f2abe03308618ab369e94509bb20c3f4bb8b7ac9535abb190a4a2",
     "metric_evidence_contracts": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
     "portfolio_track_contract": "92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4",
-    "prospective_btc_market_cap_acquisition": "c44b93502af63ebf345fd6e6b42cb7d0c38598a46554156ade5505c694ebd73a",
-    "prospective_clock_integrity": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
-    "prospective_cvd_acquisition": "cbfe3bf3c132f309bd3b78529f445b0f3c3350482f9755a5665f848130162ec1",
-    "prospective_liquidation_capture": "79966de5b0c609622f57fe9035ededf81d6c087a72572f1ea015f7cc7d946043",
-    "prospective_liquidation_percentile_adapter": "3cbe4693f724fbaad6927cf8fb0068395648d9a056a64b0bf13bad39186e3578",
+    "prospective_btc_market_cap_acquisition": "76738c92292058c557a9828d3b1d8c2e88fee591b2ef37096f01c163a590a798",
+    "prospective_clock_integrity": "be449ebd62b7bcc8cf90ea8c9b38d3fb06f382ff16cc19a5cb04ff9697823ef2",
+    "prospective_cvd_acquisition": "65ff928b3eaed7eba7db9f5ebd7f0a0c06e79648218dc851ca993960b896390f",
+    "prospective_liquidation_capture": "d4268aa2833b8f386777729ae69c9625895b477733c1a62866ea896d141798c8",
+    "prospective_liquidation_percentile_adapter": "606e3930d32f13550b86c6db918782274bd1758a5548dea147771eb766b215b7",
+    "scientific_evidence_resolver": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
     "semantic_diff_from_v5_blockers": "49b129afd07a08ddfbe6b4195e648b7ab28f712a3d2747739ec139ef7965673d",
-    "source_stream_epoch": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
-    "stage_b_evaluation_contract": "3df077ec947c7350393aaa1e7ff73dbabcf7e8829b0b56adfbcc207c12edf98c",
+    "source_stream_epoch": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
+    "stage_b_evaluation_contract": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
     "stop_event_taxonomy": "ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e",
-    "stream_liveness_policy": "0cbe771bb9f62b0294ed13ccd1938348e2114f9c5c811dc44386ad12115ffc7d",
+    "stream_liveness_policy": "efe9402aa3721234cfe7d05791d3735b817d96130dc359acc50d102d2c0f80a5",
     "warmup_history": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac"
   },
   "collection_authorization_semantics": {
@@ -50,13 +53,17 @@
         ],
         "may_write": [
           "prospective_run",
-          "prospective_source_request",
-          "prospective_source_response",
+          "prospective_scientific_evidence_record",
+          "prospective_coingecko_request_attempt",
+          "prospective_validated_market_cap_response",
           "prospective_clock_integrity",
+          "prospective_clock_interval_evidence",
           "prospective_stream_epoch",
           "prospective_stream_liveness",
           "prospective_stream_collector_health",
           "prospective_source_event",
+          "prospective_kraken_futures_metadata_validation",
+          "prospective_stream_interval_completeness",
           "prospective_cvd_interval_completeness",
           "prospective_liquidation_interval_completeness",
           "prospective_liquidation_day_census",
@@ -72,13 +79,17 @@
         "entry_point": "derive_decision_evidence(run_id, decision_time)",
         "may_read": [
           "prospective_run",
-          "prospective_source_request",
-          "prospective_source_response",
+          "prospective_scientific_evidence_record",
+          "prospective_coingecko_request_attempt",
+          "prospective_validated_market_cap_response",
           "prospective_clock_integrity",
+          "prospective_clock_interval_evidence",
           "prospective_stream_epoch",
           "prospective_stream_liveness",
           "prospective_stream_collector_health",
           "prospective_source_event",
+          "prospective_kraken_futures_metadata_validation",
+          "prospective_stream_interval_completeness",
           "prospective_cvd_interval_completeness",
           "prospective_liquidation_interval_completeness",
           "prospective_liquidation_day_census",
@@ -102,13 +113,17 @@
         "entry_point": "evaluate_stage_b(run_id, window)",
         "may_read": [
           "prospective_run",
-          "prospective_source_request",
-          "prospective_source_response",
+          "prospective_scientific_evidence_record",
+          "prospective_coingecko_request_attempt",
+          "prospective_validated_market_cap_response",
           "prospective_clock_integrity",
+          "prospective_clock_interval_evidence",
           "prospective_stream_epoch",
           "prospective_stream_liveness",
           "prospective_stream_collector_health",
           "prospective_source_event",
+          "prospective_kraken_futures_metadata_validation",
+          "prospective_stream_interval_completeness",
           "prospective_cvd_interval_completeness",
           "prospective_liquidation_interval_completeness",
           "prospective_liquidation_day_census",
@@ -137,7 +152,7 @@
       "EVALUATE"
     ]
   },
-  "definition_sha256": "fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff",
+  "definition_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
   "evidence_identity_fields": [
     "configuration_identity",
     "corpus_protocol_sha256",
@@ -152,7 +167,7 @@
     "risk_version",
     "strategy_version"
   ],
-  "final_classification": "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FIFTH_XHIGH_REVIEW",
+  "final_classification": "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW",
   "historical_gate_authority": {
     "cross_market_confirmed_stop_preservation_rate": {
       "definition": "A robust estimator must preserve genuine shared tail moves.",
@@ -310,7 +325,7 @@
   },
   "lineage": {
     "certified_v1_validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7",
-    "failed_prospective_protocol_count": 4,
+    "failed_prospective_protocol_count": 5,
     "failed_prospective_protocols": [
       {
         "attempt": 1,
@@ -359,14 +374,29 @@
         "review_classification": "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "superseded_before_collection": true,
         "ticket": "POSTP1-001R3"
+      },
+      {
+        "attempt": 5,
+        "authoritative": false,
+        "definition_sha256": "fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff",
+        "implementation_commit": "b813365c39d0423babe17caeabf85e7b7473de09",
+        "qualifying_observations_collected": false,
+        "retained": true,
+        "review": "FAIL \u2014 CORRECTED PROSPECTIVE PROTOCOL INVALID",
+        "review_classification": "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
+        "review_commit": "c61b16cba23a09e1056060a8cb2af4739f2ef5f1",
+        "superseded_before_collection": true,
+        "ticket": "POSTP1-001R4"
       }
     ],
     "frozen_v2_definition_sha256": "bc312f3e6a6035e00a3cd80103aacdee7b5a02ae69732b7bbca5785a3dd6106a",
     "frozen_v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
     "frozen_v4_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50c1fd9ad077a4923a3f501",
     "frozen_v5_definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89",
-    "protocol_version_retained_rationale": "All four prior definition hashes failed independent review before any collection epoch opened, so no persisted observation carries the superseded semantics. CHANGE_PROCEDURE binds PROSPECTIVE_INTEGRATION_CORPUS_V2 to a semantic change after collection starts, not to a pre-data correction, so the version is retained and the four failed definition hashes carry the lineage."
+    "protocol_version_retained_rationale": "All five prior definition hashes failed independent review before any collection epoch opened, so no persisted observation carries the superseded semantics. CHANGE_PROCEDURE binds PROSPECTIVE_INTEGRATION_CORPUS_V2 to a semantic change after collection starts, not to a pre-data correction, so the version is retained and the five failed definition hashes carry the lineage."
   },
+  "material_child_count": 25,
+  "material_child_enumeration": "mechanically enumerated from the single artifact/builder registry",
   "no_threshold_authored": true,
   "numerical_standards": {
     "decimal_precision": 60,
@@ -398,7 +428,7 @@
     ],
     "successor_protocol": "PROSPECTIVE_INTEGRATION_CORPUS_V2"
   },
-  "program_ticket": "POSTP1-001R4",
+  "program_ticket": "POSTP1-001R5",
   "prospective_acquisition_governance": {
     "contract_versions": [
       "PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1",
@@ -410,7 +440,7 @@
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
     "phase_1_authority_claimed_for_new_rules": false,
     "phase_1_feature_semantics_owner": "the frozen Phase-1 feature owners, which this program does not modify: spot_perp_cvd_spread, open_interest_intensity and calculate_orderliness_score keep their formulas, windows and reason codes exactly",
-    "ticket": "POSTP1-001R4"
+    "ticket": "POSTP1-001R5"
   },
   "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
   "provenance_detection_requirements": [
@@ -433,6 +463,14 @@
     "prospective_integration_evidence_program": "NEW_POST_PHASE_1_WORKSTREAM"
   },
   "replay_contract": {
+    "digest_only_material_evidence_permitted": false,
+    "evidence_resolution_order": [
+      "resolve every referenced record",
+      "recompute its digest and validate schema/version",
+      "resolve all transitive material evidence",
+      "re-run the owner predicate and verify cross-record identity",
+      "compare the replay-derived scientific fields with the surface"
+    ],
     "guarantee": "Every derived record regenerates byte-identically from the immutable raw rows, the frozen protocol hash and the declared version identities.",
     "mutable_application_state_permitted": false,
     "numerical_invariance": [
@@ -445,13 +483,17 @@
     ],
     "replay_inputs": [
       "prospective_run",
-      "prospective_source_request",
-      "prospective_source_response",
+      "prospective_scientific_evidence_record",
+      "prospective_coingecko_request_attempt",
+      "prospective_validated_market_cap_response",
       "prospective_clock_integrity",
+      "prospective_clock_interval_evidence",
       "prospective_stream_epoch",
       "prospective_stream_liveness",
       "prospective_stream_collector_health",
       "prospective_source_event",
+      "prospective_kraken_futures_metadata_validation",
+      "prospective_stream_interval_completeness",
       "prospective_cvd_interval_completeness",
       "prospective_liquidation_interval_completeness",
       "prospective_liquidation_day_census",
@@ -459,7 +501,8 @@
       "prospective_source_input_snapshot",
       "prospective_liquidation_feed_state",
       "prospective_data_quality_event"
-    ]
+    ],
+    "scientific_surface_records_are_authorities": false
   },
   "research_only": true,
   "safety": {
@@ -473,7 +516,7 @@
     "opens_btc019_on_stage_b_pass": false,
     "statement": "The historical BTC-019 sealed sample remains NOT COLLECTED, NOT OPENED and NOT EVALUATED. This program does not authorize opening it and creates no automatic future dependency that would; any use of it requires a separate explicit governance decision."
   },
-  "status": "HARDENED_PRE_DATA_PROTOCOL_AWAITING_FIFTH_XHIGH_REVIEW",
+  "status": "REPLAYABLE_PRE_DATA_PROTOCOL_AWAITING_SIXTH_XHIGH_REVIEW",
   "target_metrics": [
     "cross_market_confirmed_stop_preservation_rate",
     "gap_through_stop_consensus_agreement_rate",
@@ -485,8 +528,8 @@
     "trade_eligibility_disagreement_rate"
   ],
   "workflow": [
-    "POSTP1-001R CORRECTED PROTOCOL",
-    "REPEAT INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH",
+    "POSTP1-001R5 REPLAYABLE CORRECTED PROTOCOL",
+    "SIXTH INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH",
     "POSTP1-003 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
     "INDEPENDENT XHIGH REVIEW OF EXACT SUFFICIENCY-GOVERNANCE HASH",
     "POSTP1-004 SCHEMA + COLLECTORS + DECISION SNAPSHOT IMPLEMENTATION",

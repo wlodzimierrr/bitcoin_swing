@@ -5,7 +5,7 @@
     "outcome_independent": true,
     "rationale": "One second is 300 times smaller than the frozen five-minute decision delay and materially smaller than the 00:45/00:50/00:55 poll spacing and one-hour source intervals. It is a conservative pre-data infrastructure bound, not a historical strategy rule and not selected from Stage-B outcomes."
   },
-  "definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
+  "definition_sha256": "be449ebd62b7bcc8cf90ea8c9b38d3fb06f382ff16cc19a5cb04ff9697823ef2",
   "duration_clock": "monotonic clock",
   "fail_closed_conditions": [
     "clock-health query failure",
@@ -13,9 +13,25 @@
     "absolute estimated UTC offset greater than one second",
     "offset uncertainty unavailable or greater than one second",
     "naive or non-UTC wall timestamp",
-    "wall/monotonic divergence greater than one second"
+    "wall/monotonic divergence greater than one second",
+    "different host/process/process-start/boot monotonic domains",
+    "clock-health record older than 40 seconds",
+    "clock-health renewal gap greater than 40 seconds"
   ],
+  "health_freshness": {
+    "maximum_gap_between_valid_observations_seconds": "40",
+    "maximum_health_record_age_seconds": "40",
+    "polling_cadence_seconds": "30",
+    "request_start_and_end": "Each timing anchor references a valid same-domain health record no older than 40 seconds; the R5 executable reference uses exact start/end observations.",
+    "stream_interval_and_finalization": "Persist valid same-domain health observations covering the full interval and finalization path, with no wall or monotonic gap greater than 40 seconds."
+  },
   "maximum_wall_step_seconds": "1",
+  "monotonic_domain_identity_fields": [
+    "collector_host_id",
+    "collector_process_id",
+    "process_start_identity",
+    "boot_id"
+  ],
   "schema_version": "PROSPECTIVE_CLOCK_INTEGRITY_V1",
   "scientific_timestamp_clock": "UTC wall clock",
   "timeouts_and_liveness_use_wall_clock": false,

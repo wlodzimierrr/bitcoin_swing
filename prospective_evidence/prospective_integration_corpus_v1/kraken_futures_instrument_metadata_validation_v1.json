@@ -1,0 +1,19 @@
+{
+  "definition_sha256": "efeb5be0164582370aea0cefc4c5be8802de80ee551bb77e763c6c713e84ee6e",
+  "endpoint": "https://futures.kraken.com/derivatives/api/v3/instruments",
+  "fail_closed": true,
+  "frozen_material_fields": {
+    "contractSize": "1 USD",
+    "symbol": "PI_XBTUSD",
+    "tradeable": true,
+    "type": "futures_inverse",
+    "underlying": "rr_xbtusd"
+  },
+  "maximum_final_record_age_at_finalization_seconds": "300",
+  "maximum_start_record_age_seconds": "300",
+  "revalidation_cadence": "Validate no more than five minutes before each exact UTC hour and revalidate at or after interval close but no later than scientific finalization. Both records must match every material field.",
+  "schema_version": "KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1",
+  "selection_used_stage_b_outcomes": false,
+  "semantic_change_rule": "Any material drift makes the hour INVALID / REQUIRED_INPUT_MISSING; do not change contract size or substitute an instrument. A source semantic change requires successor pre-data governance.",
+  "version": "KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1"
+}

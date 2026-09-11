@@ -6,8 +6,8 @@
     "clock integrity usable",
     "collector health usable"
   ],
-  "clock_integrity_definition_sha256": "7ab132ef6661fe725bf43f8f12f84b2ad5ea3aadf3765dac07ea7223f20a7a94",
-  "definition_sha256": "450ddce4cf321211e113baa48ca8d84e42f6f1950987c89fc452770114e423db",
+  "clock_integrity_definition_sha256": "be449ebd62b7bcc8cf90ea8c9b38d3fb06f382ff16cc19a5cb04ff9697823ef2",
+  "definition_sha256": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
   "end_reasons": [
     "BUFFER_OR_QUEUE_OVERFLOW",
     "CLOCK_INTEGRITY_FAILURE",
@@ -30,6 +30,7 @@
     "channel",
     "connection_session_id",
     "local_epoch_id",
+    "monotonic_domain_id",
     "subscription_acknowledged_at",
     "epoch_started_at",
     "epoch_ended_at",
@@ -38,7 +39,10 @@
     "collector_sha256",
     "source_contract_sha256",
     "establishment_clock_sha256",
-    "establishment_health_sha256"
+    "establishment_health_sha256",
+    "connection_clock_sha256",
+    "subscription_ack_clock_sha256",
+    "end_clock_sha256"
   ],
   "reconnect_continues_epoch": false,
   "schema_version": "SOURCE_STREAM_EPOCH_V1",

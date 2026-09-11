@@ -1,6 +1,6 @@
 {
   "acquisition_governance": {
-    "authored_by_ticket": "POSTP1-001R4",
+    "authored_by_ticket": "POSTP1-001R5",
     "claimed_historically_implicit": false,
     "frozen_before_collection": true,
     "governance_class": "NEW_PROSPECTIVE_PRE_DATA_ACQUISITION_GOVERNANCE",
@@ -13,7 +13,7 @@
     "stage_b_outcomes_inspected": false
   },
   "consumer": "btc_predictor.features.volatility.calculate_orderliness_score liquidation_cascade component; the same normalized value is the STRESS and CAPITULATION market-state flag input",
-  "definition_sha256": "3cbe4693f724fbaad6927cf8fb0068395648d9a056a64b0bf13bad39186e3578",
+  "definition_sha256": "606e3930d32f13550b86c6db918782274bd1758a5548dea147771eb766b215b7",
   "downstream_formula_changed": false,
   "epoch_rule": "Any change to the input quantity, window, minimum observation count, observation universe or percentile convention requires PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V2 and a new prospective collection epoch.",
   "existing_owner": {
@@ -23,7 +23,7 @@
   },
   "input": {
     "daily_census_contract": "LIQUIDATION_UTC_DAY_CENSUS_V1",
-    "daily_census_definition_sha256": "17ff94a70bca63c7719a3c99cc1233307828e4c081ff1da4dca16a7369dde242",
+    "daily_census_definition_sha256": "7180ad6cb78f2abe03308618ab369e94509bb20c3f4bb8b7ac9535abb190a4a2",
     "feed_status_gate": [
       "OBSERVED_WITH_EVENTS",
       "OBSERVED_ZERO_EVENTS"

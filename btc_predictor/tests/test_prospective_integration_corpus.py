@@ -975,7 +975,7 @@ def test_this_revision_is_a_pre_data_protocol_and_authorizes_no_collection() -> 
 def test_sufficiency_governance_and_review_precede_postp1_004_and_collection() -> None:
     workflow = list(corpus.FUTURE_WORKFLOW)
     protocol_review = workflow.index(
-        "REPEAT INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH"
+        "SIXTH INDEPENDENT XHIGH REVIEW OF EXACT CORRECTED PROTOCOL HASH"
     )
     governance = workflow.index(
         "POSTP1-003 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1"
@@ -994,25 +994,28 @@ def test_sufficiency_governance_and_review_precede_postp1_004_and_collection() -
     assert sequence["sufficiency_minima_selected_here"] is False
 
 
-def test_all_four_failed_protocol_hashes_are_retained_as_explicit_lineage() -> None:
+def test_all_five_failed_protocol_hashes_are_retained_as_explicit_lineage() -> None:
     lineage = protocol_definition()["lineage"]
     failed = lineage["failed_prospective_protocols"]
-    assert lineage["failed_prospective_protocol_count"] == 4
+    assert lineage["failed_prospective_protocol_count"] == 5
     assert [row["definition_sha256"] for row in failed] == [
         "aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326",
         "0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e",
         "40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862",
         "e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca",
+        "fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff",
     ]
     assert [row["implementation_commit"] for row in failed] == [
         "b38f387f822da713aa06489e6643c9d6909de32a",
         "8af223d708ee03b09bca6e43c204620aba44ecab",
         "9b2f23acc793457b0e8683387d8382f06472fdd4",
         "f54025690975047c9c859567303088a5059f342e",
+        "b813365c39d0423babe17caeabf85e7b7473de09",
     ]
     assert [row["review_classification"] for row in failed] == [
         "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "PROSPECTIVE_PROTOCOL_BLOCKED_BY_AMBIGUOUS_FROZEN_INPUT",
+        "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
         "PROSPECTIVE_PROTOCOL_REQUIRES_FIX",
     ]
@@ -1072,7 +1075,10 @@ def test_the_protocol_binds_every_material_child_hash() -> None:
     protocol = protocol_definition()
     hashes = protocol_hashes()
     assert set(hashes) == set(protocol["child_definition_sha256"]) | {"corpus_protocol"}
-    assert len(protocol["child_definition_sha256"]) == 22
+    assert len(protocol["child_definition_sha256"]) == protocol[
+        "material_child_count"
+    ]
+    assert protocol["material_child_count"] == len(corpus._CHILD_ARTIFACTS)
     for name in (
         "prospective_btc_market_cap_acquisition",
         "prospective_cvd_acquisition",
@@ -1537,11 +1543,15 @@ def _prospective_market_cap(
 
 def _market_cap_request(
     requested_date: str,
-    response: bytes,
+    response: bytes | None,
     *,
     available_at: datetime,
     synchronized: bool = True,
-) -> corpus.CoinGeckoMarketCapRequest:
+    outcome: str | None = None,
+    http_status: int | None = 200,
+    reason_code: str | None = None,
+    elapsed_seconds: str = "1",
+) -> corpus.CoinGeckoMarketCapRequestAttempt:
     started_at = available_at - timedelta(seconds=1)
     scheduled_minute = max(
         minute
@@ -1554,22 +1564,43 @@ def _market_cap_request(
         second=0,
         microsecond=0,
     )
-    return corpus.CoinGeckoMarketCapRequest(
+    terminated_at = started_at + timedelta(seconds=float(elapsed_seconds))
+    if available_at != terminated_at and elapsed_seconds == "1":
+        terminated_at = available_at
+    if outcome is None:
+        if not synchronized:
+            outcome = "CLOCK_INVALID"
+        else:
+            try:
+                if response is None:
+                    raise ValueError("no response")
+                corpus._source_integrity._parse_coingecko_market_cap(response)
+                outcome = "SUCCESS"
+            except ValueError:
+                outcome = "INVALID_RESPONSE"
+    start_clock = _clock(started_at, synchronized=synchronized)
+    end_clock = _clock(terminated_at, synchronized=synchronized)
+    health_records = _clock_series(started_at, terminated_at)
+    return corpus.CoinGeckoMarketCapRequestAttempt(
+        attempt_id=f"attempt-{requested_date}-{scheduled_at.isoformat()}",
         requested_date=requested_date,
         scheduled_poll_time=scheduled_at,
         request_started_at=started_at,
-        response_completed_at=available_at,
-        http_status=200,
-        raw_response=response,
+        terminated_at=terminated_at,
+        outcome=outcome,
+        reason_code=(reason_code or f"{outcome}_SYNTHETIC") if outcome != "SUCCESS" else None,
+        http_status=http_status,
+        raw_response_bytes=response,
         collector_version="synthetic-collector-v1",
         acquisition_contract_sha256=(
             corpus.prospective_btc_market_cap_acquisition_contract()[
                 "definition_sha256"
             ]
         ),
-        request_start_clock=_clock(started_at, synchronized=synchronized),
-        response_completion_clock=_clock(available_at, synchronized=synchronized),
-        monotonic_elapsed_seconds=Decimal("1"),
+        request_start_clock=start_clock,
+        termination_clock=end_clock,
+        clock_health_records=health_records,
+        supplied_monotonic_elapsed_seconds=Decimal(elapsed_seconds),
     )
 
 
@@ -1597,21 +1628,53 @@ def _clock(
     observed_at: datetime,
     *,
     synchronized: bool = True,
+    health_query_succeeded: bool = True,
     offset: str = "0",
     uncertainty: str | None = "0.01",
+    host_id: str = "synthetic-host",
+    process_id: str = "synthetic-process",
+    process_start_identity: str = "synthetic-process-start",
+    boot_id: str = "synthetic-boot",
+    monotonic_seconds: Decimal | None = None,
 ) -> corpus.ClockIntegrityRecord:
+    if monotonic_seconds is None:
+        if observed_at.tzinfo is None or observed_at.utcoffset() != timedelta(0):
+            monotonic_seconds = Decimal("0")
+        else:
+            origin = datetime(1970, 1, 1, tzinfo=UTC)
+            delta = observed_at - origin
+            with localcontext(Context(prec=60)):
+                monotonic_seconds = +(
+                    Decimal(delta.days) * Decimal("86400")
+                    + Decimal(delta.seconds)
+                    + Decimal(delta.microseconds) / Decimal("1000000")
+                )
     return corpus.ClockIntegrityRecord(
         observed_at=observed_at,
         synchronization_mechanism="NTP",
         synchronization_source="synthetic-ntp.example",
         synchronized=synchronized,
+        health_query_succeeded=health_query_succeeded,
         estimated_utc_offset_seconds=Decimal(offset),
         offset_uncertainty_seconds=(
             Decimal(uncertainty) if uncertainty is not None else None
         ),
-        collector_host_id="synthetic-host",
-        collector_process_id="synthetic-process",
+        collector_host_id=host_id,
+        collector_process_id=process_id,
+        monotonic_observed_seconds=monotonic_seconds,
+        process_start_identity=process_start_identity,
+        boot_id=boot_id,
     )
+
+
+def _clock_series(start: datetime, end: datetime) -> tuple[corpus.ClockIntegrityRecord, ...]:
+    rows = []
+    current = start
+    while current < end:
+        rows.append(_clock(current))
+        current += timedelta(seconds=30)
+    rows.append(_clock(end))
+    return tuple(rows)
 
 
 def _event(
@@ -1644,6 +1707,7 @@ def _event(
         price=Decimal("1"),
         raw_payload_sha256=raw_digest,
         sequence_number=(None if is_spot else (sequence_number or 1)),
+        received_at_clock=_clock(start + timedelta(minutes=30, milliseconds=1)),
     )
 
 
@@ -1665,6 +1729,10 @@ def _stream_interval(
     final = finalized_at or start + timedelta(hours=1, seconds=30)
     epoch_id = f"epoch-{provider}-{start.isoformat()}"
     initial_clock = _clock(epoch_start, synchronized=clock_synchronized)
+    connection_clock = _clock(
+        epoch_start - timedelta(seconds=1), synchronized=clock_synchronized
+    )
+    acknowledgement_clock = _clock(epoch_start, synchronized=clock_synchronized)
     initial_health = corpus.CollectorHealthRecord(
         epoch_id=epoch_id,
         period_start=epoch_start,
@@ -1692,24 +1760,50 @@ def _stream_interval(
         establishment_health=initial_health,
         epoch_ended_at=epoch_ended_at,
         end_reason=end_reason,
+        connection_clock=connection_clock,
+        subscription_ack_clock=acknowledgement_clock,
+        end_clock=(
+            _clock(epoch_ended_at, synchronized=clock_synchronized)
+            if epoch_ended_at is not None
+            else None
+        ),
     )
+    interval_start_clock = _clock(start, synchronized=clock_synchronized)
+    interval_end_clock = _clock(
+        start + timedelta(hours=1), synchronized=clock_synchronized
+    )
+    interval_clock = corpus.ClockIntervalEvidence(
+        start_clock=interval_start_clock,
+        end_clock=interval_end_clock,
+        health_records=_clock_series(start, start + timedelta(hours=1)),
+    )
+    start_mono = interval_start_clock.monotonic_observed_seconds
     checks = []
-    for offset in range(0, 3600, 30):
-        pong_delay = Decimal("11") if missed_pong and offset == 1800 else Decimal("1")
-        checks.append(
-            corpus.LivenessCheck(
-                request_id=f"ping-{offset}",
-                ping_sent_monotonic_seconds=Decimal(1000 + offset),
-                pong_received_monotonic_seconds=Decimal(1000 + offset) + pong_delay,
+    with localcontext(Context(prec=60)):
+        for offset in range(0, 3600, 30):
+            pong_delay = (
+                Decimal("11") if missed_pong and offset == 1800 else Decimal("1")
             )
-        )
+            checks.append(
+                corpus.LivenessCheck(
+                    request_id=f"ping-{offset}",
+                    ping_sent_monotonic_seconds=+(start_mono + Decimal(offset)),
+                    pong_received_monotonic_seconds=+(
+                        start_mono + Decimal(offset) + pong_delay
+                    ),
+                )
+            )
     liveness = corpus.StreamLivenessEvidence(
         epoch_id=epoch_id,
         interval_start=start,
         interval_end=start + timedelta(hours=1),
-        interval_start_monotonic_seconds=Decimal("1000"),
-        interval_end_monotonic_seconds=Decimal("4600"),
+        interval_start_monotonic_seconds=start_mono,
+        interval_end_monotonic_seconds=(
+            interval_end_clock.monotonic_observed_seconds
+        ),
         checks=tuple(checks),
+        monotonic_domain_id=initial_clock.monotonic_domain.monotonic_domain_id,
+        interval_clock_evidence=interval_clock,
     )
     health_clock = _clock(
         start + timedelta(hours=1, seconds=20),
@@ -1731,12 +1825,46 @@ def _stream_interval(
             else final_clock_synchronized
         ),
     )
+    metadata_start = None
+    metadata_final = None
+    if provider == corpus.CVD_PERPETUAL_PROVIDER_ID:
+        metadata_start = corpus.KrakenFuturesInstrumentMetadataValidation(
+            validation_id=f"metadata-start-{epoch_id}",
+            retrieved_at=start,
+            retrieval_clock=interval_start_clock,
+            product_id=corpus.CVD_PERPETUAL_INSTRUMENT,
+            instrument_type="futures_inverse",
+            underlying="rr_xbtusd",
+            contract_size_usd=Decimal("1"),
+            tradeable=True,
+            raw_payload_sha256="f" * 64,
+        )
+        metadata_final = corpus.KrakenFuturesInstrumentMetadataValidation(
+            validation_id=f"metadata-final-{epoch_id}",
+            retrieved_at=final,
+            retrieval_clock=final_clock,
+            product_id=corpus.CVD_PERPETUAL_INSTRUMENT,
+            instrument_type="futures_inverse",
+            underlying="rr_xbtusd",
+            contract_size_usd=Decimal("1"),
+            tradeable=True,
+            raw_payload_sha256="e" * 64,
+        )
+    timing_health = list(_clock_series(epoch_start, final))
+    timing_health.extend(
+        event.received_at_clock
+        for event in events
+        if event.received_at_clock is not None
+    )
+    timing_health.append(health_clock)
+    if metadata_start is not None and metadata_final is not None:
+        timing_health.extend(
+            (metadata_start.retrieval_clock, metadata_final.retrieval_clock)
+        )
     timing = corpus.ClockIntervalEvidence(
         start_clock=initial_clock,
         end_clock=final_clock,
-        monotonic_elapsed_seconds=Decimal(
-            str((final - epoch_start).total_seconds())
-        ),
+        health_records=tuple(timing_health),
     )
     return corpus.StreamIntervalCompleteness(
         epoch=epoch,
@@ -1747,6 +1875,8 @@ def _stream_interval(
         finalized_at=final,
         finalization_clock=final_clock,
         epoch_to_finalization_clock=timing,
+        runtime_metadata_start=metadata_start,
+        runtime_metadata_finalization=metadata_final,
     )
 
 
@@ -1837,7 +1967,7 @@ def _rv20_results(sessions: int, *, start: datetime) -> tuple[Any, ...]:
 
 def test_every_new_acquisition_contract_declares_itself_new_pre_data_governance() -> None:
     governance = corpus.prospective_acquisition_governance()
-    assert governance["ticket"] == "POSTP1-001R4"
+    assert governance["ticket"] == "POSTP1-001R5"
     assert governance["phase_1_authority_claimed_for_new_rules"] is False
     assert governance["distinguishes_feature_semantics_from_acquisition_semantics"]
     assert sorted(governance["contract_versions"]) == [
@@ -2052,6 +2182,7 @@ def test_incomplete_cvd_feed_evidence_cannot_reach_the_historical_owner() -> Non
         affected.completeness.spot.epoch,
         ended_at=affected_start + timedelta(minutes=30),
         reason="RECONNECT",
+        end_clock=_clock(affected_start + timedelta(minutes=30)),
     )
     incomplete_spot = corpus.StreamIntervalCompleteness(
         **{
@@ -2733,7 +2864,11 @@ def test_the_missing_versus_empty_distinction_survives_replay() -> None:
     assert "reproduces the missing-versus-empty distinction from storage" in (
         contract["replay_rule"]
     )
-    assert "never re-derive feed_status" in contract["replay_rule"]
+    assert "rederive feed_status" in contract["replay_rule"]
+    assert (
+        "cannot override its cited completeness evidence"
+        in contract["replay_rule"]
+    )
     restored = corpus.restore_artifacts(ARTIFACT_DIR)
     persisted = json.loads(
         (ARTIFACT_DIR / corpus.LIQUIDATION_CAPTURE_FILENAME).read_text(
@@ -2952,7 +3087,7 @@ def test_the_new_acquisition_semantics_change_no_historical_gate_value() -> None
     assert protocol["btc019"]["sealed_sample_opened"] is False
     assert protocol["safety"]["qualifying_observations_collected"] is False
     assert protocol["final_classification"] == (
-        "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_FIFTH_XHIGH_REVIEW"
+        "PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW"
     )
     assert protocol["collection_authorized"] is False
 
@@ -2979,11 +3114,11 @@ def test_the_passed_owners_and_the_risk_size_definition_are_untouched() -> None:
 
 
 # =============================================================================
-# 13. POSTP1-001R4 source provenance and completeness correction
+# 13. POSTP1-001R5 source provenance and completeness correction
 # =============================================================================
 
 
-def test_r4_binds_all_seven_new_source_integrity_child_contracts() -> None:
+def test_r5_binds_every_new_source_integrity_child_contract() -> None:
     protocol = protocol_definition()
     expected = {
         "coingecko_market_cap_response_validation",
@@ -2993,6 +3128,9 @@ def test_r4_binds_all_seven_new_source_integrity_child_contracts() -> None:
         "prospective_clock_integrity",
         "source_stream_epoch",
         "stream_liveness_policy",
+        "coingecko_market_cap_request_attempt",
+        "kraken_futures_instrument_metadata_validation",
+        "scientific_evidence_resolver",
     }
     assert expected <= set(protocol["child_definition_sha256"])
     for name in expected:
@@ -3009,8 +3147,9 @@ def test_coingecko_request_serializes_the_exact_documented_date_format() -> None
     record = request.as_record()
     assert record["serialized_query"] == "date=2026-01-03&localization=false"
     assert record["requested_date"] == "2026-01-03"
-    assert corpus._is_sha256(record["request_digest"])
-    assert record["response_digest"] == corpus._source_integrity.byte_digest(response)
+    assert corpus._is_sha256(record["request_sha256"])
+    assert record["response_sha256"] == corpus._source_integrity.byte_digest(response)
+    assert record["raw_response_bytes"] == response
     contract = corpus.prospective_btc_market_cap_acquisition_contract()
     assert contract["acquisition_schedule"]["query_parameters"]["date"].startswith(
         "YYYY-MM-DD"
@@ -3034,26 +3173,26 @@ def test_coingecko_rate_limit_and_response_after_cutoff_are_not_evidence() -> No
         response,
         available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
     )
-    rate_limited = corpus.CoinGeckoMarketCapRequest(
-        **{**request.__dict__, "http_status": 429}
-    )
-    with pytest.raises(ValueError, match="HTTP status"):
-        corpus.validate_coingecko_market_cap_response(rate_limited)
-    after_cutoff = corpus.CoinGeckoMarketCapRequest(
+    rate_limited = corpus.CoinGeckoMarketCapRequestAttempt(
         **{
             **request.__dict__,
-            "request_started_at": datetime(2026, 1, 4, 0, 55, 59, tzinfo=UTC),
-            "response_completed_at": datetime(2026, 1, 4, 0, 56, 1, tzinfo=UTC),
-            "request_start_clock": _clock(
-                datetime(2026, 1, 4, 0, 55, 59, tzinfo=UTC)
-            ),
-            "response_completion_clock": _clock(
-                datetime(2026, 1, 4, 0, 56, 1, tzinfo=UTC)
-            ),
-            "monotonic_elapsed_seconds": Decimal("2"),
+            "http_status": 429,
+            "outcome": "HTTP_ERROR",
+            "reason_code": "HTTP_429",
         }
     )
-    with pytest.raises(ValueError, match="cycle cutoff"):
+    assert rate_limited.as_record()["outcome"] == "HTTP_ERROR"
+    with pytest.raises(ValueError, match="not a scientifically successful"):
+        corpus.validate_coingecko_market_cap_response(rate_limited)
+    after_cutoff = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 56, 1, tzinfo=UTC),
+        outcome="CYCLE_CUTOFF",
+        reason_code="AFTER_0056_CUTOFF",
+    )
+    assert after_cutoff.as_record()["outcome"] == "CYCLE_CUTOFF"
+    with pytest.raises(ValueError, match="not a scientifically successful"):
         corpus.validate_coingecko_market_cap_response(after_cutoff)
 
 
@@ -3077,7 +3216,8 @@ def test_coingecko_response_schema_fails_closed(response: bytes, message: str) -
         response,
         available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
     )
-    with pytest.raises(ValueError, match=message):
+    assert request.as_record()["outcome"] == "INVALID_RESPONSE"
+    with pytest.raises(ValueError, match="not a scientifically successful"):
         corpus.validate_coingecko_market_cap_response(request)
 
 
@@ -3091,7 +3231,7 @@ def test_market_cap_observation_time_is_derived_only_from_the_bound_request() ->
     assert record["requested_date"] == "2026-01-03"
     assert record["observation_time"] == datetime(2026, 1, 3, tzinfo=UTC)
     assert record["available_at"] == record["request_record"][
-        "actual_response_completed_at"
+        "terminated_at"
     ]
     assert corpus._is_sha256(
         row.validated_response.as_record()["validation_contract_sha256"]
@@ -3142,8 +3282,10 @@ def test_clock_integrity_health_is_mechanical_and_fail_closed() -> None:
     stamp = datetime(2026, 1, 1, tzinfo=UTC)
     assert _clock(stamp).as_record()["usable"] is True
     assert _clock(stamp, synchronized=False).as_record()["usable"] is False
+    assert _clock(stamp, health_query_succeeded=False).as_record()["usable"] is False
     assert _clock(stamp, offset="1.0001").as_record()["usable"] is False
     assert _clock(stamp, uncertainty="1.0001").as_record()["usable"] is False
+    assert _clock(stamp, uncertainty=None).as_record()["usable"] is False
     with pytest.raises(ValueError, match="aware UTC"):
         _clock(stamp.replace(tzinfo=None)).as_record()
     with pytest.raises(ValueError, match="must be UTC"):
@@ -3152,10 +3294,13 @@ def test_clock_integrity_health_is_mechanical_and_fail_closed() -> None:
 
 def test_wall_clock_step_is_detected_while_monotonic_duration_remains_explicit() -> None:
     start = datetime(2026, 1, 1, tzinfo=UTC)
+    start_clock = _clock(start)
     evidence = corpus.ClockIntervalEvidence(
-        start_clock=_clock(start),
-        end_clock=_clock(start + timedelta(seconds=10)),
-        monotonic_elapsed_seconds=Decimal("1"),
+        start_clock=start_clock,
+        end_clock=_clock(
+            start + timedelta(seconds=10),
+            monotonic_seconds=start_clock.monotonic_observed_seconds + Decimal("1"),
+        ),
     ).as_record()
     assert evidence["usable"] is False
     assert "WALL_CLOCK_STEP_EXCEEDED" in evidence["reason_codes"]
@@ -3169,7 +3314,7 @@ def test_clock_invalid_market_cap_response_cannot_be_scientific_evidence() -> No
         available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
         synchronized=False,
     )
-    with pytest.raises(ValueError, match="clock"):
+    with pytest.raises(ValueError, match="not a scientifically successful"):
         corpus.validate_coingecko_market_cap_response(request)
 
 
@@ -3276,6 +3421,9 @@ def test_identical_stream_retransmission_is_idempotent_and_conflict_invalidates(
         **{
             **original.__dict__,
             "received_at": original.received_at + timedelta(milliseconds=1),
+            "received_at_clock": _clock(
+                original.received_at + timedelta(milliseconds=1)
+            ),
         }
     )
     idempotent = _stream_interval(
@@ -3366,8 +3514,9 @@ def _liquidation_day_records(
     day: date,
     *,
     positive_hour: int | None = None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], corpus.PersistedEvidenceResolver]:
     rows: list[dict[str, Any]] = []
+    verified_hours: list[corpus.VerifiedLiquidationHour] = []
     day_start = datetime.combine(day, datetime.min.time(), tzinfo=UTC)
     for hour in range(24):
         start = day_start + timedelta(hours=hour)
@@ -3391,23 +3540,23 @@ def _liquidation_day_records(
                     sequence_number=2,
                 ),
             )
-        rows.append(
-            corpus.classify_liquidation_feed_interval(
-                _stream_interval(
-                    corpus.CVD_PERPETUAL_PROVIDER_ID,
-                    start,
-                    events=events,
-                ),
-                decision_time=start + timedelta(hours=1, minutes=5),
-            )
+        verified = corpus.VerifiedLiquidationHour(
+            completeness=_stream_interval(
+                corpus.CVD_PERPETUAL_PROVIDER_ID,
+                start,
+                events=events,
+            ),
+            decision_time=start + timedelta(hours=1, minutes=5),
         )
-    return rows
+        verified_hours.append(verified)
+        rows.append(verified.as_record())
+    return rows, corpus.PersistedEvidenceResolver.from_objects(*verified_hours)
 
 
 def test_liquidation_daily_zero_requires_all_twenty_four_exact_utc_hours() -> None:
     day = date(2026, 3, 29)
-    rows = _liquidation_day_records(day)
-    complete = corpus.aggregate_liquidation_utc_day(day, rows)
+    rows, resolver = _liquidation_day_records(day)
+    complete = corpus.aggregate_liquidation_utc_day(day, rows, resolver=resolver)
     assert complete["census_status"] == "COMPLETE"
     assert complete["expected_hour_count"] == 24
     assert complete["observed_hour_count"] == 24
@@ -3415,15 +3564,19 @@ def test_liquidation_daily_zero_requires_all_twenty_four_exact_utc_hours() -> No
     assert complete["total_liquidation_notional_usd"] == Decimal("0")
     assert len(complete["expected_interval_ids"]) == 24
     assert complete["available_at"] == max(row["available_at"] for row in rows)
-    incomplete = corpus.aggregate_liquidation_utc_day(day, rows[:-1])
+    incomplete = corpus.aggregate_liquidation_utc_day(
+        day, rows[:-1], resolver=resolver
+    )
     assert incomplete["census_status"] == "INCOMPLETE"
     assert incomplete["total_liquidation_notional_usd"] is None
 
 
 def test_liquidation_daily_census_rejects_duplicate_and_unusable_hour() -> None:
     day = date(2026, 1, 2)
-    rows = _liquidation_day_records(day)
-    duplicated = corpus.aggregate_liquidation_utc_day(day, [*rows[:-1], rows[0]])
+    rows, resolver = _liquidation_day_records(day)
+    duplicated = corpus.aggregate_liquidation_utc_day(
+        day, [*rows[:-1], rows[0]], resolver=resolver
+    )
     assert duplicated["census_status"] == "INVALID"
     assert "DUPLICATE_INTERVAL_IDENTITY" in duplicated["reason_codes"]
     unusable = dict(rows[5])
@@ -3433,18 +3586,20 @@ def test_liquidation_daily_census_rejects_duplicate_and_unusable_hour() -> None:
     unusable["long_liquidation_notional_usd"] = None
     unusable["short_liquidation_notional_usd"] = None
     unusable["record_sha256"] = corpus._source_integrity.digest(unusable)
-    incomplete = corpus.aggregate_liquidation_utc_day(
-        day,
-        [*rows[:5], unusable, *rows[6:]],
-    )
-    assert incomplete["census_status"] == "INCOMPLETE"
-    assert incomplete["total_liquidation_notional_usd"] is None
+    tampered_records = dict(resolver.records)
+    tampered_records[unusable["record_sha256"]] = unusable
+    with pytest.raises(ValueError, match="refused unresolved or invalid hourly"):
+        corpus.aggregate_liquidation_utc_day(
+            day,
+            [*rows[:5], unusable, *rows[6:]],
+            resolver=corpus.PersistedEvidenceResolver(tampered_records),
+        )
 
 
 def test_liquidation_daily_positive_sum_and_utc_boundary_are_exact() -> None:
     day = date(2026, 10, 25)
-    rows = _liquidation_day_records(day, positive_hour=23)
-    daily = corpus.aggregate_liquidation_utc_day(day, rows)
+    rows, resolver = _liquidation_day_records(day, positive_hour=23)
+    daily = corpus.aggregate_liquidation_utc_day(day, rows, resolver=resolver)
     assert daily["census_status"] == "COMPLETE"
     assert daily["event_count"] == 2
     assert daily["long_liquidation_notional_usd"] == Decimal("3")
@@ -3459,11 +3614,14 @@ def test_schema_exposes_first_class_request_clock_epoch_and_census_records() -> 
     schema = corpus.data_schema_contract()
     required = {
         "prospective_clock_integrity",
+        "prospective_clock_interval_evidence",
+        "prospective_coingecko_request_attempt",
         "prospective_cvd_interval_completeness",
+        "prospective_kraken_futures_metadata_validation",
         "prospective_liquidation_day_census",
         "prospective_liquidation_interval_completeness",
-        "prospective_source_request",
-        "prospective_source_response",
+        "prospective_stream_interval_completeness",
+        "prospective_validated_market_cap_response",
         "prospective_stream_epoch",
         "prospective_stream_liveness",
     }
@@ -3485,6 +3643,7 @@ def test_schema_exposes_first_class_request_clock_epoch_and_census_records() -> 
         "sequence_number",
         "side",
         "signed_notional_usd",
+        "received_at_clock_sha256",
     } <= set(event_columns)
     cvd_columns = schema["tables"][
         "prospective_cvd_interval_completeness"
@@ -3516,4 +3675,515 @@ def test_r4_changes_no_stage_b_gate_or_passed_scientific_owner() -> None:
     )
     assert corpus.FROZEN_V5_DEFINITION_SHA256 == (
         "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89"
+    )
+
+
+# =============================================================================
+# 14. POSTP1-001R5 evidence-graph replay and adversarial boundaries
+# =============================================================================
+
+
+def _rehash_source_record(record: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(record)
+    payload.pop("record_sha256", None)
+    payload["record_sha256"] = corpus._source_integrity.digest(payload)
+    return payload
+
+
+def test_coingecko_exact_bytes_and_request_identity_replay_from_persistence() -> None:
+    observation = _prospective_market_cap(
+        datetime(2026, 1, 3, tzinfo=UTC),
+        "123.456",
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    resolver = corpus.PersistedEvidenceResolver.from_objects(observation)
+    attempt = observation.validated_response.request.as_record()
+    assert attempt["raw_response_bytes"].startswith(b'{"id":"bitcoin"')
+    assert attempt["endpoint_identity"] == (
+        "https://api.coingecko.com/api/v3/coins/bitcoin/history"
+    )
+    assert corpus._source_integrity.byte_digest(attempt["raw_response_bytes"]) == (
+        attempt["response_sha256"]
+    )
+    replayed = corpus.replay_prospective_market_cap_observation(
+        observation.as_record()["record_sha256"], resolver
+    )
+    assert replayed["market_cap_usd"] == Decimal("123.456")
+    assert replayed["observation_time"] == datetime(2026, 1, 3, tzinfo=UTC)
+
+
+def test_coingecko_missing_or_modified_exact_bytes_refuse_scientific_replay() -> None:
+    observation = _prospective_market_cap(
+        datetime(2026, 1, 3, tzinfo=UTC),
+        "123",
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    attempt_sha = observation.validated_response.request.as_record()["record_sha256"]
+    records = dict(corpus.PersistedEvidenceResolver.from_objects(observation).records)
+    missing = dict(records[attempt_sha])
+    missing["raw_response_bytes"] = None
+    records[attempt_sha] = missing
+    with pytest.raises(ValueError, match="does not reproduce"):
+        corpus.replay_coingecko_market_cap_attempt(
+            attempt_sha, corpus.PersistedEvidenceResolver(records)
+        )
+    records = dict(corpus.PersistedEvidenceResolver.from_objects(observation).records)
+    modified = dict(records[attempt_sha])
+    modified["raw_response_bytes"] = modified["raw_response_bytes"] + b" "
+    records[attempt_sha] = modified
+    with pytest.raises(ValueError, match="does not reproduce"):
+        corpus.replay_coingecko_market_cap_attempt(
+            attempt_sha, corpus.PersistedEvidenceResolver(records)
+        )
+
+
+@pytest.mark.parametrize(
+    ("elapsed", "outcome", "scientific"),
+    [
+        ("44.999", "SUCCESS", True),
+        ("45.000", "SUCCESS", True),
+        ("45.001", "TIMEOUT", False),
+        ("60", "TIMEOUT", False),
+    ],
+)
+def test_coingecko_timeout_boundary_is_monotonic_and_inclusive(
+    elapsed: str, outcome: str, scientific: bool
+) -> None:
+    response = b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":1}}}'
+    attempt = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+        elapsed_seconds=elapsed,
+        outcome=outcome,
+        reason_code=None if scientific else "HTTP_TIMEOUT",
+    )
+    record = attempt.as_record()
+    assert record["monotonic_elapsed_seconds"] == Decimal(elapsed)
+    assert record["outcome"] == outcome
+    if scientific:
+        assert corpus.validate_coingecko_market_cap_response(attempt).market_cap_usd == 1
+    else:
+        with pytest.raises(ValueError, match="not a scientifically successful"):
+            corpus.validate_coingecko_market_cap_response(attempt)
+
+
+@pytest.mark.parametrize(
+    ("outcome", "status", "response"),
+    [
+        ("TIMEOUT", None, None),
+        ("TRANSPORT_ERROR", None, None),
+        ("HTTP_ERROR", 429, b"rate limited"),
+        ("HTTP_ERROR", 500, b"server error"),
+        ("INVALID_RESPONSE", 200, b"not json"),
+    ],
+)
+def test_coingecko_failure_attempts_need_no_fake_response_fields(
+    outcome: str, status: int | None, response: bytes | None
+) -> None:
+    elapsed = "45" if outcome == "TIMEOUT" else "1"
+    attempt = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+        elapsed_seconds=elapsed,
+        outcome=outcome,
+        http_status=status,
+        reason_code=f"SYNTHETIC_{outcome}",
+    )
+    record = attempt.as_record()
+    assert record["outcome"] == outcome
+    assert record["http_status"] == status
+    assert record["raw_response_bytes"] == response
+    if response is None:
+        assert record["response_sha256"] is None
+    else:
+        assert record["response_sha256"] == corpus._source_integrity.byte_digest(
+            response
+        )
+
+
+def test_market_cap_surface_cannot_relabel_the_bound_request_date() -> None:
+    observation = _prospective_market_cap(
+        datetime(2026, 1, 3, tzinfo=UTC),
+        "123",
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    resolver = corpus.PersistedEvidenceResolver.from_objects(observation)
+    surface = dict(observation.as_record())
+    surface["requested_date"] = "2026-01-04"
+    surface["observation_time"] = datetime(2026, 1, 4, tzinfo=UTC)
+    surface = _rehash_source_record(surface)
+    records = dict(resolver.records)
+    records[surface["record_sha256"]] = surface
+    with pytest.raises(ValueError, match="surface differs"):
+        corpus.replay_prospective_market_cap_observation(
+            surface["record_sha256"], corpus.PersistedEvidenceResolver(records)
+        )
+
+
+def test_clock_domains_renewal_and_wall_monotonic_cross_binding_fail_closed() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    start_clock = _clock(start)
+    cross_process = corpus.ClockIntervalEvidence(
+        start_clock=start_clock,
+        end_clock=_clock(start + timedelta(seconds=1), process_id="other-process"),
+    ).as_record()
+    assert cross_process["usable"] is False
+    assert "MONOTONIC_DOMAIN_MISMATCH" in cross_process["reason_codes"]
+
+    supplied_mismatch = corpus.ClockIntervalEvidence(
+        start_clock=start_clock,
+        end_clock=_clock(start + timedelta(seconds=1)),
+        monotonic_elapsed_seconds=Decimal("2"),
+    ).as_record()
+    assert supplied_mismatch["usable"] is False
+    assert "SUPPLIED_ELAPSED_MISMATCH" in supplied_mismatch["reason_codes"]
+
+    missing_renewal = corpus.ClockIntervalEvidence(
+        start_clock=start_clock,
+        end_clock=_clock(start + timedelta(seconds=100)),
+    ).as_record()
+    assert missing_renewal["usable"] is False
+    assert "CLOCK_HEALTH_RENEWAL_GAP_EXCEEDED" in missing_renewal["reason_codes"]
+
+    mismatched_end = _clock(
+        start + timedelta(hours=1),
+        monotonic_seconds=start_clock.monotonic_observed_seconds + Decimal("20"),
+    )
+    mismatched = corpus.ClockIntervalEvidence(
+        start_clock=start_clock,
+        end_clock=mismatched_end,
+        health_records=(start_clock, mismatched_end),
+    ).as_record()
+    assert mismatched["usable"] is False
+    assert mismatched["wall_clock_elapsed_seconds"] == Decimal("3600")
+    assert mismatched["monotonic_elapsed_seconds"] == Decimal("20")
+    assert "WALL_CLOCK_STEP_EXCEEDED" in mismatched["reason_codes"]
+
+
+def test_scientific_timing_rejects_an_old_request_clock_anchor() -> None:
+    response = b'{"id":"bitcoin","symbol":"btc","market_data":{"market_cap":{"usd":1}}}'
+    attempt = _market_cap_request(
+        "2026-01-03",
+        response,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    old_start = _clock(attempt.request_started_at - timedelta(seconds=41))
+    stale = corpus.CoinGeckoMarketCapRequestAttempt(
+        **{**attempt.__dict__, "request_start_clock": old_start}
+    )
+    with pytest.raises(ValueError, match="must equal its clock-health observed_at"):
+        stale.as_record()
+
+
+def test_clock_interval_replay_detects_transitive_health_deletion() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    evidence = corpus.ClockIntervalEvidence(
+        start_clock=_clock(start),
+        end_clock=_clock(start + timedelta(minutes=2)),
+        health_records=_clock_series(start, start + timedelta(minutes=2)),
+    )
+    resolver = corpus.PersistedEvidenceResolver.from_objects(evidence)
+    replayed = corpus.replay_clock_interval(evidence.as_record()["record_sha256"], resolver)
+    assert replayed.as_record()["usable"] is True
+    records = dict(resolver.records)
+    deleted = evidence.as_record()["clock_health_record_sha256s"][1]
+    records.pop(deleted)
+    with pytest.raises(ValueError, match="is missing"):
+        corpus.replay_clock_interval(
+            evidence.as_record()["record_sha256"],
+            corpus.PersistedEvidenceResolver(records),
+        )
+
+
+def test_event_receipt_cutoff_is_inclusive_and_later_receipt_is_invalid() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    final = start + timedelta(hours=1, seconds=30)
+    original = _event(corpus.CVD_SPOT_PROVIDER_ID, start, "5")
+    at_cutoff = corpus.CapturedSourceEvent(
+        **{
+            **original.__dict__,
+            "received_at": final,
+            "received_at_clock": _clock(final),
+        }
+    )
+    admitted = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        events=(at_cutoff,),
+        finalized_at=final,
+    ).as_record()
+    assert admitted["complete"] is True
+    after = corpus.CapturedSourceEvent(
+        **{
+            **original.__dict__,
+            "received_at": final + timedelta(microseconds=1),
+            "received_at_clock": _clock(final + timedelta(microseconds=1)),
+        }
+    )
+    refused = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID,
+        start,
+        events=(after,),
+        finalized_at=final,
+    ).as_record()
+    assert refused["complete"] is False
+    assert "SOURCE_EVENT_RECEIVED_AFTER_FINALIZATION" in refused["reason_codes"]
+
+
+def test_future_received_append_only_revision_is_invisible_to_earlier_decision() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    current = start + timedelta(hours=20)
+    decision = current + timedelta(hours=1, minutes=1)
+    observations: list[corpus.ProspectiveCvdAggregateObservation] = []
+    for index in range(21):
+        observations.extend(
+            _prospective_cvd_pair(start + timedelta(hours=index), "0", "0")
+        )
+
+    original = _event(corpus.CVD_SPOT_PROVIDER_ID, current, "9")
+    future_event = corpus.CapturedSourceEvent(
+        **{
+            **original.__dict__,
+            "received_at": decision + timedelta(seconds=1),
+            "received_at_clock": _clock(decision + timedelta(seconds=1)),
+        }
+    )
+    revision_two = corpus.CvdHourCompleteness(
+        spot=_stream_interval(
+            corpus.CVD_SPOT_PROVIDER_ID,
+            current,
+            events=(future_event,),
+            finalized_at=decision + timedelta(seconds=2),
+        ),
+        perp=_stream_interval(
+            corpus.CVD_PERPETUAL_PROVIDER_ID,
+            current,
+            finalized_at=decision + timedelta(seconds=2),
+        ),
+    )
+    observations.extend(
+        (
+            corpus.ProspectiveCvdAggregateObservation(revision_two, "spot", 2),
+            corpus.ProspectiveCvdAggregateObservation(revision_two, "perp", 2),
+        )
+    )
+    selected = corpus.select_contiguous_cvd_window(
+        observations,
+        current_observation_time=current,
+        decision_time=decision,
+    )
+    current_spot = [
+        row
+        for row in selected
+        if row.market_type == "spot" and row.observation_time == current
+    ]
+    assert [row.cvd_usd for row in current_spot] == [Decimal("0")]
+    assert revision_two.as_record()["spot_cvd_usd"] == Decimal("9")
+    assert revision_two.as_record()["finalized_at"] > decision
+
+
+def test_liveness_refuses_one_wall_hour_backed_by_twenty_monotonic_seconds() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    interval = _stream_interval(corpus.CVD_SPOT_PROVIDER_ID, start)
+    liveness = corpus.StreamLivenessEvidence(
+        **{
+            **interval.liveness.__dict__,
+            "interval_end_monotonic_seconds": (
+                interval.liveness.interval_start_monotonic_seconds + Decimal("20")
+            ),
+        }
+    )
+    row = corpus.StreamIntervalCompleteness(
+        **{**interval.__dict__, "liveness": liveness}
+    ).as_record()
+    assert row["complete"] is False
+    assert "LIVENESS_WALL_MONOTONIC_DIVERGENCE" in row["reason_codes"]
+
+
+def test_runtime_pi_xbtusd_metadata_revalidates_and_drift_fails_closed() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    interval = _stream_interval(corpus.CVD_PERPETUAL_PROVIDER_ID, start)
+    assert interval.as_record()["complete"] is True
+    assert interval.runtime_metadata_finalization is not None
+    drifted_metadata = corpus.KrakenFuturesInstrumentMetadataValidation(
+        **{
+            **interval.runtime_metadata_finalization.__dict__,
+            "contract_size_usd": Decimal("2"),
+        }
+    )
+    drifted = corpus.StreamIntervalCompleteness(
+        **{
+            **interval.__dict__,
+            "runtime_metadata_finalization": drifted_metadata,
+        }
+    ).as_record()
+    assert drifted["complete"] is False
+    assert "FUTURES_RUNTIME_METADATA_INVALID" in drifted["reason_codes"]
+    assert "FUTURES_RUNTIME_METADATA_DRIFT" in drifted["reason_codes"]
+
+    wrong_product = corpus.KrakenFuturesInstrumentMetadataValidation(
+        **{
+            **interval.runtime_metadata_finalization.__dict__,
+            "product_id": "PF_XBTUSD",
+        }
+    )
+    wrong = corpus.StreamIntervalCompleteness(
+        **{**interval.__dict__, "runtime_metadata_finalization": wrong_product}
+    ).as_record()
+    assert wrong["complete"] is False
+
+    unavailable = corpus.KrakenFuturesInstrumentMetadataValidation(
+        **{
+            **interval.runtime_metadata_finalization.__dict__,
+            "query_succeeded": False,
+        }
+    )
+    missing = corpus.StreamIntervalCompleteness(
+        **{**interval.__dict__, "runtime_metadata_finalization": unavailable}
+    ).as_record()
+    assert missing["complete"] is False
+
+    stale_time = start - timedelta(seconds=301)
+    stale = corpus.KrakenFuturesInstrumentMetadataValidation(
+        **{
+            **interval.runtime_metadata_start.__dict__,
+            "retrieved_at": stale_time,
+            "retrieval_clock": _clock(stale_time),
+        }
+    )
+    stale_interval = corpus.StreamIntervalCompleteness(
+        **{**interval.__dict__, "runtime_metadata_start": stale}
+    ).as_record()
+    assert stale_interval["complete"] is False
+    assert "FUTURES_START_METADATA_STALE" in stale_interval["reason_codes"]
+
+
+def test_cvd_hour_replays_only_with_full_epoch_health_event_clock_graph() -> None:
+    cvd = _cvd_hour_completeness(
+        datetime(2026, 1, 1, 12, tzinfo=UTC),
+        spot_value="3",
+        perp_value="-2",
+    )
+    resolver = corpus.PersistedEvidenceResolver.from_objects(cvd)
+    replayed = corpus.replay_cvd_hour_completeness(
+        cvd.as_record()["record_sha256"], resolver
+    )
+    assert replayed.as_record() == cvd.as_record()
+    records = dict(resolver.records)
+    records.pop(cvd.spot.collector_health.as_record()["record_sha256"])
+    with pytest.raises(ValueError, match="is missing"):
+        corpus.replay_cvd_hour_completeness(
+            cvd.as_record()["record_sha256"],
+            corpus.PersistedEvidenceResolver(records),
+        )
+
+
+def test_rehashed_source_surfaces_must_replay_their_full_semantics() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    cvd = corpus.ProspectiveCvdAggregateObservation(
+        _cvd_hour_completeness(start, spot_value="1", perp_value="-1"),
+        "spot",
+        1,
+    )
+    cvd_records = dict(corpus.PersistedEvidenceResolver.from_objects(cvd).records)
+    bad_cvd = dict(cvd.as_record())
+    bad_cvd["revision"] = 0
+    bad_cvd = _rehash_source_record(bad_cvd)
+    cvd_records[bad_cvd["record_sha256"]] = bad_cvd
+    with pytest.raises(ValueError, match="revision must be >= 1"):
+        corpus.replay_prospective_cvd_aggregate_observation(
+            bad_cvd["record_sha256"],
+            corpus.PersistedEvidenceResolver(cvd_records),
+        )
+
+    market_cap = _prospective_market_cap(
+        start,
+        "123",
+        available_at=start + timedelta(days=1, minutes=46),
+    )
+    cap_records = dict(
+        corpus.PersistedEvidenceResolver.from_objects(market_cap).records
+    )
+    bad_cap = dict(market_cap.as_record())
+    bad_cap["ingested_at"] = bad_cap["available_at"] - timedelta(microseconds=1)
+    bad_cap = _rehash_source_record(bad_cap)
+    cap_records[bad_cap["record_sha256"]] = bad_cap
+    with pytest.raises(ValueError, match="cannot precede available_at"):
+        corpus.replay_prospective_market_cap_observation(
+            bad_cap["record_sha256"],
+            corpus.PersistedEvidenceResolver(cap_records),
+        )
+
+
+def test_stream_completeness_replay_detects_cross_hour_epoch_substitution() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    first = _stream_interval(corpus.CVD_SPOT_PROVIDER_ID, start)
+    second = _stream_interval(
+        corpus.CVD_SPOT_PROVIDER_ID, start + timedelta(hours=1)
+    )
+    resolver = corpus.PersistedEvidenceResolver.from_objects(first, second)
+    surface = dict(first.as_record())
+    surface["source_epoch_sha256"] = second.epoch.as_record()["record_sha256"]
+    surface = _rehash_source_record(surface)
+    records = dict(resolver.records)
+    records[surface["record_sha256"]] = surface
+    with pytest.raises(ValueError, match="does not replay"):
+        corpus.replay_stream_interval_completeness(
+            surface["record_sha256"], corpus.PersistedEvidenceResolver(records)
+        )
+
+
+def test_rehashed_liquidation_zero_cannot_override_incomplete_evidence() -> None:
+    day = date(2026, 1, 2)
+    rows, resolver = _liquidation_day_records(day)
+    start = datetime.combine(day, datetime.min.time(), tzinfo=UTC) + timedelta(hours=5)
+    incomplete = corpus.VerifiedLiquidationHour(
+        completeness=_stream_interval(
+            corpus.CVD_PERPETUAL_PROVIDER_ID,
+            start,
+            health_overrides={"parser_failure_count": 1},
+        ),
+        decision_time=start + timedelta(hours=1, minutes=5),
+    )
+    attacked = dict(incomplete.as_record())
+    attacked["feed_status"] = "OBSERVED_ZERO_EVENTS"
+    attacked["event_count"] = 0
+    attacked["long_liquidation_notional_usd"] = Decimal("0")
+    attacked["short_liquidation_notional_usd"] = Decimal("0")
+    attacked["reason"] = None
+    attacked["source_record_ids_digest"] = corpus._source_integrity.digest([])
+    attacked = _rehash_source_record(attacked)
+    combined = corpus.PersistedEvidenceResolver.from_objects(incomplete)
+    records = {**resolver.records, **combined.records, attacked["record_sha256"]: attacked}
+    attacked_rows = [*rows[:5], attacked, *rows[6:]]
+    with pytest.raises(ValueError, match="refused unresolved or invalid hourly"):
+        corpus.aggregate_liquidation_utc_day(
+            day,
+            attacked_rows,
+            resolver=corpus.PersistedEvidenceResolver(records),
+        )
+
+
+def test_schema_persists_raw_bytes_nullable_attempts_and_transitive_references() -> None:
+    schema = corpus.data_schema_contract()
+    exact_store = schema["tables"]["prospective_scientific_evidence_record"]
+    assert exact_store["columns"]["canonical_payload_bytes"] == "bytea not null"
+    assert schema["exact_record_persistence"]["authority_table"] == (
+        "prospective_scientific_evidence_record"
+    )
+    attempts = schema["tables"]["prospective_coingecko_request_attempt"]["columns"]
+    assert attempts["raw_response_bytes"] == "bytea null"
+    assert attempts["http_status"] == "integer null"
+    assert attempts["response_sha256"] == "char(64) null"
+    assert "prospective_clock_interval_evidence" in schema["append_only_raw_tables"]
+    assert "prospective_stream_interval_completeness" in schema[
+        "append_only_raw_tables"
+    ]
+    assert "prospective_kraken_futures_metadata_validation" in schema[
+        "append_only_raw_tables"
+    ]
+    assert schema["evidence_graph_rule"].startswith(
+        "SCIENTIFIC SURFACE RECORDS ARE NOT AUTHORITIES"
     )

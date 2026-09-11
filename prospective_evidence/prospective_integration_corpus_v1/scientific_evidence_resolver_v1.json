@@ -1,0 +1,22 @@
+{
+  "content_addressed_store": {
+    "canonical_payload_encoding": "canonical ASCII JSON of the normalized payload without record_sha256, using the frozen lossless exact-bytes tag and schema-versioned Decimal/timestamp decoding",
+    "digest_rule": "sha256(canonical_payload_bytes) == record_sha256",
+    "table": "research.prospective_scientific_evidence_record",
+    "typed_tables_are_authority": false
+  },
+  "definition_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+  "digest_role": "identity and integrity check, never semantic authority",
+  "missing_reference": "REFUSE",
+  "replay_order": [
+    "load exact persisted record",
+    "recompute digest and validate schema/version",
+    "resolve every transitive material reference",
+    "re-run the owner predicate",
+    "verify cross-record interval/provider/instrument/epoch/clock identity",
+    "compare every scientific surface field with the replay-derived field"
+  ],
+  "scientific_surface_records_are_authorities": false,
+  "substitution_reference": "REFUSE",
+  "version": "SCIENTIFIC_EVIDENCE_RESOLVER_V1"
+}
