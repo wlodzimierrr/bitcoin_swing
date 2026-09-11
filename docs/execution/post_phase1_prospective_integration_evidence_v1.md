@@ -614,7 +614,7 @@ warmup semantics. No observation was collected under the failed hash.
 
 ## POSTP1-001R4 — `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1`
 
-**Status:** `COMPLETE / FAILED FIFTH INDEPENDENT xHIGH REVIEW / REQUIRES PRE-DATA CORRECTION`
+**Status:** `COMPLETE / FAILED FIFTH INDEPENDENT xHIGH REVIEW / SUPERSEDED PRE-DATA BY POSTP1-001R5`
 **Dependencies:** POSTP1-001R3 implementation and POSTP1-002R3 failed review
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** fifth independent xHigh review of the exact corrected hash
@@ -740,6 +740,177 @@ started, no real Stage-B aggregate was evaluated, and BTC-019 and its sealed
 sample remained untouched. POSTP1-003, POSTP1-004 and collection remain
 unauthorized pending a corrected successor protocol and its independent review.
 
+## POSTP1-001R5 — `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1`
+
+**Status:** `COMPLETE / AWAITING SIXTH INDEPENDENT xHIGH REVIEW`
+**Dependencies:** POSTP1-001R4 implementation and POSTP1-002R4 failed review
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** sixth independent xHigh review of the exact corrected hash
+**Owner modules:** `btc_predictor/research/prospective_integration_corpus.py`,
+`btc_predictor/research/prospective_source_integrity.py`
+**Artifacts:** `prospective_evidence/prospective_integration_corpus_v1/`
+
+### Scope and acceptance criteria
+
+Correct only the four POSTP1-002R4 P1 findings before collection, under one new
+governing principle: **scientific surface records are not authorities**. Every
+derived or surface row must resolve its complete immutable evidence graph —
+resolve the referenced evidence, recompute its digest, validate its full
+semantics, verify cross-record identity, and only then derive the scientific
+value or status. A `record_sha256`, `completion_evidence_sha256`,
+`request_sha256` or `response_sha256` is an identity and integrity check and
+never a replacement for the referenced evidence.
+
+- P1-A: make CoinGecko provenance replayable. Every scheduled attempt is a
+  first-class persistable record regardless of outcome; the 45-second HTTP
+  timeout is enforced mechanically from monotonic elapsed time; timeout and
+  other non-success attempts are representable without fabricated response
+  fields; exact raw response bytes are persisted and reverified on replay.
+- P1-B: bind clock evidence to one explicit monotonic domain, freeze a clock
+  health renewal and freshness contract pre-data, and persist every material
+  clock record rather than only its hash.
+- P1-C: cross-bind wall and monotonic interval coverage, bound source-event
+  `received_at` by interval finalization and decision time, persist the full
+  epoch, liveness, collector-health, event and metadata evidence graph, and
+  fail closed on PI_XBTUSD runtime metadata drift.
+- P1-D: resolve and independently revalidate the cited hourly completeness
+  evidence in the liquidation daily reducer instead of trusting a
+  caller-rehashable hourly surface row.
+
+The correction must preserve all passed R4 protocol areas, all eight Stage-B
+gate values and intent, the 33-feature inventory, warmup/evaluability, the stop
+and action/eligibility/risk owners, Phase-1 formulas, BTC-019 terminality and
+the immutable V3, certified V1, V4 and V5 hashes. It must implement neither
+persistent collection nor sufficiency governance and must authorize no
+collection.
+
+### POSTP1-001R5 implementation notes
+
+Implementation commit `428356665dff0985cf8b1c379f6f18bf6cc5bac1`
+refreezes `PROSPECTIVE_INTEGRATION_CORPUS_V1` at:
+
+```text
+8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
+```
+
+- Five failed hashes are retained with `authoritative = false`,
+  `qualifying_observations_collected = false` and
+  `superseded_before_collection = true`, including R4 hash `fd946a09...bedff`,
+  implementation `b813365c...b7473de09` and review `c61b16cb...39f2ef5f1`.
+- `COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1` makes every scheduled attempt
+  persistable over the outcome vocabulary `SUCCESS`, `TIMEOUT`, `HTTP_ERROR`,
+  `TRANSPORT_ERROR`, `INVALID_RESPONSE`, `CLOCK_INVALID` and `CYCLE_CUTOFF`.
+  `http_status`, `raw_response_bytes`, `response_sha256` and the market-cap
+  value are nullable or absent per outcome, so a timeout row needs no
+  fabricated status, empty body or zero value. Scientific success requires a
+  mechanically derived `monotonic_elapsed_seconds <= 45`: 45.000 is admitted
+  and 45.001 is not, and the 00:56 cycle cutoff remains a separate independent
+  bound. Exact response bytes are persisted as `BYTEA`, and replay reverifies
+  `sha256(raw_response_bytes) == response_sha256`, reparses the bytes,
+  rechecks `id == bitcoin` and `symbol == btc`, requires a finite positive
+  USD value, and derives `observation_time` from the persisted validated
+  requested date, so a response reattached to `D+1` is refused.
+- `PROSPECTIVE_CLOCK_INTEGRITY_V1` now carries a monotonic domain identity of
+  `collector_host_id`, `collector_process_id`, `process_start_identity` and
+  `boot_id`. Two anchors used for one duration must share that identity, so
+  cross-host or cross-process subtraction refuses. Elapsed time is recomputed
+  from the anchors rather than trusted from a caller field. Wall and monotonic
+  elapsed must agree within one second, so a 3600-second wall hour backed by 20
+  monotonic seconds refuses. Health polling is frozen at 30 seconds with a
+  maximum record age of 40 seconds and a maximum renewal gap of 40 seconds,
+  aligned with the existing 30-second stream-liveness cadence; a one-hour
+  interval needs valid same-domain observations covering the whole interval and
+  its finalization path.
+- `KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1` freezes `symbol`
+  `PI_XBTUSD`, `type` `futures_inverse`, `underlying` `rr_xbtusd`,
+  `contractSize` 1 USD and `tradeable` true, validated no more than five
+  minutes before each exact UTC hour and revalidated at or after interval close
+  but no later than, and no more than five minutes before, finalization. Any
+  material drift makes the hour
+  `INVALID / REQUIRED_INPUT_MISSING`, with no silent contract-size recompute
+  and no instrument substitution.
+- Source events persist both provider `event_time` and clock-validated local
+  `received_at`. An interval finalized at `F` admits only `received_at <= F`,
+  and decision-time use additionally requires the aggregate `available_at <= D`.
+  Revisions are append-only: a late event produces a new revision with a later
+  `available_at` and can never rewrite a closed one, so replay of an earlier
+  decision keeps using the earlier revision.
+- `SCIENTIFIC_EVIDENCE_RESOLVER_V1` freezes the transitive replay order — load
+  the exact persisted record, recompute the digest, validate schema and
+  version, resolve every material reference, re-run the owner predicate, verify
+  cross-record interval, provider, instrument, epoch and clock identity, and
+  compare every surface field with the replay-derived field. Missing,
+  substituted or digest-only evidence refuses. The liquidation hourly row
+  therefore derives `feed_status`, `event_count` and notionals from evidence, so
+  a correctly rehashed `OBSERVED_ZERO_EVENTS` surface row over an incomplete
+  hour cannot enter a daily zero, and `LIQUIDATION_UTC_DAY_CENSUS_V1` repeats
+  the same transitive replay for all 24 exact expected UTC hours.
+- The schema now freezes
+  `research.prospective_scientific_evidence_record` as the exact
+  content-addressed authority for every material normalized evidence object.
+  It persists canonical payload bytes, record kind and schema version; the
+  typed evidence tables are query/index projections only. Surface CVD and
+  market-cap observations carry explicit schema versions and are reconstructed
+  in full during replay, so a correctly rehashed row with an invalid revision
+  or ingestion timestamp is refused.
+- Three new hash-bound child artifacts cover the CoinGecko request attempt,
+  the Kraken Futures runtime metadata validation and the scientific evidence
+  resolver. The parent mechanically enumerates and binds 25 child definitions;
+  the count is derived rather than asserted, and no R4 child-count prose
+  survives.
+- The accepted percentile adapter is unchanged: a 730-day prior eligible
+  window, at least 365 prior valid complete daily observations and midrank,
+  with an incomplete day treated as missing and never as zero. The 21-hour CVD
+  contiguity rule is unchanged and every hour is now independently replayable.
+- Validation passed 220 focused tests, 3,800 selected source/feature/PIT/
+  lifecycle/backtest/authority regressions and the complete 4,660-test Python
+  3.12.14 suite with `RuntimeWarning` promoted to an error. Artifact
+  regeneration, all 25 parent bindings, `compileall` and scoped
+  `git diff --check` also pass.
+- No persistent collector, migration, qualifying observation, real Stage-B
+  aggregate or sufficiency minimum was created. BTC-019 and its sealed sample
+  remain untouched. Classification is
+  `PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW`.
+
+### POSTP1-001R5 frozen dependency order
+
+```text
+POSTP1-001R5 CORRECTED PROTOCOL 8915d991...fbfac7d7
+  -> SIXTH INDEPENDENT EXACT-HASH XHIGH REVIEW (POSTP1-002R5)
+  -> POSTP1-003 SUFFICIENCY GOVERNANCE
+  -> INDEPENDENT XHIGH REVIEW OF THE EXACT SUFFICIENCY HASH
+  -> POSTP1-004 COLLECTOR/SCHEMA IMPLEMENTATION
+  -> INDEPENDENT POSTP1-004 IMPLEMENTATION REVIEW
+  -> PROSPECTIVE COLLECTION
+```
+
+Collection remains unauthorized. POSTP1-003 may not begin until the sixth
+independent review passes on this exact hash, POSTP1-004 stays transitively
+blocked, BTC-019 does not reopen, and Epic T remains closed. This is the final
+planned source-provenance correction pass; a further failure is a candidate for
+`PROSPECTIVE_PROTOCOL_TERMINALLY_BLOCKED_BY_SOURCE_INTEGRITY` rather than
+another correction microticket.
+
+### POSTP1-002R5 — sixth independent exact-hash xHigh review
+
+**Status:** `READY / NOT STARTED`
+**Dependency:** POSTP1-001R5 implementation commit
+`428356665dff0985cf8b1c379f6f18bf6cc5bac1`
+**Review target:** exact protocol hash
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
+**Review model:** independent GPT-5.6 Sol — Extra High (xHigh)
+
+The review must independently reproduce the parent and all 25 mechanically
+enumerated child hashes, verify all 25 parent bindings, replay the complete
+CoinGecko, clock, stream/CVD, runtime-metadata and liquidation evidence graphs,
+and rerun the P1-A through P1-D adversarial boundaries. It must also verify
+zero Stage-B threshold/direction/hard-role/intent changes, retained failed
+lineage, no sufficiency-minimum selection, no collection, and no BTC-019 sealed
+access. PASS makes POSTP1-003 dependency-satisfied; review failure leaves
+POSTP1-003, POSTP1-004 and collection blocked and must use one of the bounded
+terminal/incomplete source-integrity classifications rather than silently
+authoring another correction task.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -753,5 +924,7 @@ unauthorized pending a corrected successor protocol and its independent review.
 | POSTP1-002R3 | fourth independent xHigh review of `e60a9514...a7dca` | COMPLETE / FAIL |
 | POSTP1-001R4 | `HARDEN_PROSPECTIVE_SOURCE_COMPLETENESS_AND_REFREEZE_CORPUS_V1` | COMPLETE / FAILED FIFTH REVIEW |
 | POSTP1-002R4 | fifth independent xHigh review of `fd946a09...bedff` | COMPLETE / FAIL |
-| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED; POSTP1-002R4 failed |
+| POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / AWAITING SIXTH REVIEW |
+| POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | READY; not started |
+| POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | BLOCKED by POSTP1-002R5 exact-hash review PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED by POSTP1-003 exact-hash independent review PASS |

@@ -28,16 +28,19 @@ canonical production reference = UNRESOLVED
 no further BTC-019 calibration/evidence-design work authorized
 
 PROSPECTIVE_INTEGRATION_CORPUS_V1 =
-HARDENED_PRE_DATA_PROTOCOL_FAILED_FIFTH_XHIGH_REVIEW
+REPLAYABLE_PRE_DATA_PROTOCOL_AWAITING_SIXTH_XHIGH_REVIEW
 
 corrected current protocol hash =
-fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
+8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
+
+material child contracts bound by the parent = 25
 
 failed predecessor hashes retained in the artifact lineage =
 aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
 e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca
+fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
 
 fourth review result =
 FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID /
@@ -47,8 +50,11 @@ fifth review result =
 FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID /
 PROSPECTIVE_PROTOCOL_REQUIRES_FIX
 
+sixth review =
+NOT STARTED; POSTP1-002R5 must review exact hash 8915d991...fbfac7d7
+
 execution classification =
-PROSPECTIVE_PROTOCOL_REQUIRES_FIX
+PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW
 
 newly frozen prospective acquisition contracts =
 PROSPECTIVE_CVD_ACQUISITION_V1
@@ -62,17 +68,20 @@ CVD_INTERVAL_COMPLETENESS_V1
 COINGECKO_MARKET_CAP_RESPONSE_VALIDATION_V1
 LIQUIDATION_INTERVAL_COMPLETENESS_V1
 LIQUIDATION_UTC_DAY_CENSUS_V1
+COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1
+KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1
+SCIENTIFIC_EVIDENCE_RESOLVER_V1
 
-collection = NOT AUTHORIZED; a corrected successor protocol and its independent
-xHigh review, the POSTP1-003 exact-hash review, and the POSTP1-004
-implementation review must all pass first
+collection = NOT AUTHORIZED; the POSTP1-002R5 sixth independent exact-hash
+review, the POSTP1-003 exact-hash review, and the POSTP1-004 implementation
+review must all pass first
 qualifying observations collected = NONE
 real Stage-B outcomes evaluated = NONE
 BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-10
+- **Last updated:** 2026-09-11
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -86,15 +95,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current implementation frontier:** Phase-1 implementation is complete and
   BTC-019 is terminal, so the frontier has moved to the new post-Phase-1
   workstream [EPIC X](execution/post_phase1_prospective_integration_evidence_v1.md).
-  POSTP1-001, POSTP1-001R, POSTP1-001R2 and POSTP1-001R3 failed independent
-  review. POSTP1-001R4 attempted to correct the fourth review's CoinGecko
-  request/response identity, Kraken stream/hour/day completeness and
-  local-clock integrity blockers and refroze
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `fd946a09...bedff`. POSTP1-002R4's
-  fifth independent xHigh review rejected that exact hash because the frozen
-  persistence and validators still admit non-replayable provenance,
-  cross-clock and stream-completeness ambiguity, future-arriving stream events,
-  and an incomplete-liquidation-hour-to-daily-zero path. Historically,
+  POSTP1-001, POSTP1-001R, POSTP1-001R2, POSTP1-001R3 and POSTP1-001R4 failed
+  independent review. POSTP1-001R5 corrected POSTP1-002R4's four P1 findings
+  under one new governing principle, `SCIENTIFIC SURFACE RECORDS ARE NOT
+  AUTHORITIES`, and refroze `PROSPECTIVE_INTEGRATION_CORPUS_V1` at
+  `8915d991...fbfac7d7` with 25 mechanically enumerated parent-bound children.
+  CoinGecko attempts are now first-class and persist exact response bytes under
+  a mechanically enforced 45-second monotonic timeout; clock evidence is bound
+  to one monotonic domain with a frozen 30-second/40-second renewal contract;
+  stream events carry a clock-validated `received_at` bounded by finalization
+  and decision time; PI_XBTUSD runtime metadata fails closed on drift; and the
+  liquidation daily reducer resolves and replays each cited hourly completeness
+  record. Every material normalized record is also bound to an exact canonical
+  payload in the content-addressed scientific evidence store; typed tables are
+  query projections, not authorities. The sixth independent exact-hash review
+  has not started.
+  Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
   `live_shadow_days >= 90` from historical validation to post-certification
@@ -106,28 +122,30 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002R4 is complete with a failed
-  review; BTC-019 is terminal and is not in progress
-- **Current BLOCKED tickets:** POSTP1-003 remains blocked because POSTP1-002R4
-  failed. POSTP1-004 remains transitively blocked
-- **Next dependency-satisfied ticket:** None is currently defined. The EPIC X
-  roadmap must add a bounded pre-data correction/refreeze for POSTP1-002R4's
-  four P1 findings before another independent exact-hash review. POSTP1-003 and
+- **Current IN_PROGRESS ticket:** None. POSTP1-001R5 is complete and awaits its
+  required independent review; BTC-019 is terminal and is not in progress
+- **Current BLOCKED tickets:** POSTP1-003 remains blocked until POSTP1-002R5
+  passes on the exact hash `8915d991...fbfac7d7`. POSTP1-004 remains transitively
+  blocked
+- **Next dependency-satisfied ticket:** POSTP1-002R5, the sixth independent
+  exact-hash xHigh review of `8915d991...fbfac7d7`. POSTP1-003, POSTP1-004 and
   collection remain unauthorized, and BTC-019 does not reopen. The failed V2
   hash `7fda8ac3...ad8be6` and its predecessors remain immutable lineage
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 4,636 passed with Python 3.12.14 and
-  `RuntimeWarning` treated as an error on 2026-09-10; the POSTP1-002R4 focused
-  suite is 196 passed and its selected source/feature/PIT/lifecycle/backtest/
-  authority regression suite is 3,346 passed
-- **Last relevant implementation/review commit:** POSTP1-002R4's failed review
-  is recorded by the current documentation commit. Reviewed POSTP1-001R4
-  implementation commit `b813365c39d0423babe17caeabf85e7b7473de09` refreezes
-  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `fd946a09...bedff`. Failed predecessors
-  `aaa05c72...d37326`, `0d4f1437...f45a9e`, `40e37067...c9862` and
-  `e60a9514...a7dca` remain
+- **Latest verified test baseline:** 4,660 passed with Python 3.12.14 and
+  `RuntimeWarning` treated as an error on 2026-09-11; the POSTP1-001R5 focused
+  prospective corpus/source-integrity suite is 220 passed and the selected
+  source/feature/PIT/lifecycle/backtest/authority regression suite is 3,800
+  passed
+- **Last relevant implementation/review commit:** POSTP1-001R5's implementation
+  commit `428356665dff0985cf8b1c379f6f18bf6cc5bac1` refreezes
+  `PROSPECTIVE_INTEGRATION_CORPUS_V1` at `8915d991...fbfac7d7`
+  and awaits POSTP1-002R5. Failed predecessors `aaa05c72...d37326`,
+  `0d4f1437...f45a9e`, `40e37067...c9862`, `e60a9514...a7dca` and
+  `fd946a09...bedff` remain
   explicit non-authoritative pre-data lineage. The failed immediate predecessor
-  is R3 implementation `f5402569...f342e`; the workstream ultimately follows
+  is R4 implementation `b813365c...b7473de09`, rejected by review
+  `c61b16cb...39f2ef5f1`; the workstream ultimately follows
   `a50efcc7d9861cae6a2c9f69958fd39d73fcdc25`, which staged
   `BTC_REFERENCE_COMPOSITE_V5` and terminated BTC-019. Frozen V3, V4, V5 and
   certified V1 remain valid and immutable; the 2015-2019 sample stays
@@ -176,18 +194,21 @@ V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
 PROSPECTIVE_INTEGRATION_CORPUS_V1
-  = HARDENED_PRE_DATA_PROTOCOL_FAILED_FIFTH_XHIGH_REVIEW
+  = REPLAYABLE_PRE_DATA_PROTOCOL_AWAITING_SIXTH_XHIGH_REVIEW
 corrected current prospective corpus protocol hash
-  = fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
+  = 8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
 failed predecessor prospective protocol hashes
   = aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
   = 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
   = 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
   = e60a951476afb41437347220e7ab043ed6261cc03489da379adfca915c9a7dca
+  = fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff
 POSTP1-002R4 review result
   = FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID
+POSTP1-002R5 sixth review
+  = NOT STARTED
 prospective execution classification
-  = PROSPECTIVE_PROTOCOL_REQUIRES_FIX
+  = PROSPECTIVE_INTEGRATION_CORPUS_READY_FOR_SIXTH_XHIGH_REVIEW
 prospective collection = NOT AUTHORIZED
 ```
 
@@ -710,8 +731,9 @@ action envelope; trade eligibility is bound to the full new-entry permission
 composite rather than the renderer or entry-score bucket. A zero denominator
 is `UNDEFINED_INSUFFICIENT_EVIDENCE`, never a PASS and never `0`. The corrected
 protocol hash is
-`fd946a091d9e1944163a78d331c31c518de2f21a35707a32141443d05f9bedff` and binds
-22 child contract hashes; 196 focused tests cover gate parity, universe
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7` and binds
+25 mechanically enumerated child contract hashes; 220 focused tests cover
+evidence-graph replay, gate parity, universe
 determinism, PIT refusal, duplicate refusal, the three event classifications,
 divergence, the three new acquisition contracts, the corrected warmup
 derivation, hash tamper and ordering/seed/cwd/Decimal-context invariance, and a
@@ -810,8 +832,13 @@ stream evidence cannot be replayed from the frozen schema; timeout and clock
 renewal/identity rules are incomplete; wall and monotonic stream intervals are
 not cross-bound; stream-event receipt is not bounded by finalization/decision;
 and the daily liquidation reducer can accept a rehashed zero-hour surface row
-whose cited completeness evidence is incomplete. A successor protocol and its
-independent exact-hash review are required before POSTP1-003.
+whose cited completeness evidence is incomplete. POSTP1-001R5 resolves those
+four findings under the frozen principle that scientific surface records are
+not authorities: every derived row must resolve, re-digest, revalidate and
+identity-match its complete immutable evidence graph before any scientific
+value or status is derived. It refreezes the corpus at `8915d991...fbfac7d7`
+with 25 parent-bound children and awaits the sixth independent exact-hash
+review, POSTP1-002R5, which must pass before POSTP1-003.
 Collection is not authorized; no
 qualifying observation was collected, no real Stage-B outcome was evaluated,
 EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
@@ -819,10 +846,13 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
-- EPIC X's source-completeness correction at `fd946a09...bedff` failed its fifth
-  independent review. A new bounded pre-data correction/refreeze must resolve
-  the four recorded P1 findings and then pass independent exact-hash review
-  before POSTP1-003 may start.
+- EPIC X's source-replayability correction at `8915d991...fbfac7d7` resolves the
+  four P1 findings recorded against `fd946a09...bedff` and awaits POSTP1-002R5,
+  the sixth independent exact-hash review, which must pass before POSTP1-003 may
+  start. This was the final planned source-provenance correction pass: a further
+  failure is a candidate for
+  `PROSPECTIVE_PROTOCOL_TERMINALLY_BLOCKED_BY_SOURCE_INTEGRITY` rather than
+  another correction microticket.
 - Production canonical BTC reference selection remains unresolved under
   BTC-019, but the research branch that was blocking it has now converged. The
   calendar-contiguity contract, the re-measurement of the already-inspected
