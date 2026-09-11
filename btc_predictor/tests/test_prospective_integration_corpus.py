@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta, timezone
 from decimal import Context, Decimal, localcontext
 from pathlib import Path
@@ -2099,6 +2100,7 @@ def test_cvd_selector_requires_the_exact_twenty_one_hour_grid() -> None:
             observations,
             current_observation_time=current,
             decision_time=decision,
+            resolver=corpus.PersistedEvidenceResolver.from_objects(*observations),
         )
 
 
@@ -2124,6 +2126,7 @@ def test_cvd_selector_uses_one_latest_revision_before_the_historical_owner() -> 
         observations,
         current_observation_time=current,
         decision_time=decision,
+        resolver=corpus.PersistedEvidenceResolver.from_objects(*observations),
     )
     assert len(selected) == 42
     current_spot = [
@@ -2166,6 +2169,7 @@ def test_cvd_selector_rejects_an_unfrozen_instrument_identity() -> None:
             (wrong,),
             current_observation_time=start,
             decision_time=start + timedelta(hours=2),
+            resolver=corpus.PersistedEvidenceResolver.from_objects(wrong),
         )
 
 
@@ -2206,6 +2210,7 @@ def test_incomplete_cvd_feed_evidence_cannot_reach_the_historical_owner() -> Non
             observations,
             current_observation_time=current,
             decision_time=current + timedelta(hours=1, minutes=5),
+            resolver=corpus.PersistedEvidenceResolver.from_objects(*observations),
         )
 
 
@@ -2407,19 +2412,21 @@ def test_market_cap_required_date_changes_only_after_the_poll_cutoff() -> None:
 def test_market_cap_selector_refuses_an_older_date_as_fallback() -> None:
     day = datetime(2026, 1, 4, tzinfo=UTC)
     decision = day + timedelta(hours=1, minutes=5)
+    rows = (
+        _prospective_market_cap(
+            day - timedelta(days=2),
+            "100",
+            available_at=day - timedelta(days=1) + timedelta(minutes=46),
+        ),
+    )
     with pytest.raises(
         ProspectiveCorpusError,
         match="MARKET_CAP_REQUIRED_OBSERVATION_MISSING",
     ):
         corpus.select_market_cap_revisions_for_decision(
-            (
-                _prospective_market_cap(
-                    day - timedelta(days=2),
-                    "100",
-                    available_at=day - timedelta(days=1) + timedelta(minutes=46),
-                ),
-            ),
+            rows,
             decision_time=decision,
+            resolver=corpus.PersistedEvidenceResolver.from_objects(*rows),
         )
 
 
@@ -2444,6 +2451,7 @@ def test_market_cap_selector_uses_latest_revision_without_owner_averaging() -> N
     selected = corpus.select_market_cap_revisions_for_decision(
         rows,
         decision_time=decision,
+        resolver=corpus.PersistedEvidenceResolver.from_objects(*rows),
     )
     assert len(selected) == 1
     assert selected[0].market_cap_usd == Decimal("400")
@@ -3271,6 +3279,7 @@ def test_market_cap_revisions_are_append_only_and_future_revision_is_invisible()
     selected = corpus.select_market_cap_revisions_for_decision(
         rows,
         decision_time=day + timedelta(hours=1, minutes=5),
+        resolver=corpus.PersistedEvidenceResolver.from_objects(*rows),
     )
     assert [row.market_cap_usd for row in selected] == [Decimal("200")]
     records = [row.as_record() for row in rows]
@@ -3973,6 +3982,7 @@ def test_future_received_append_only_revision_is_invisible_to_earlier_decision()
         observations,
         current_observation_time=current,
         decision_time=decision,
+        resolver=corpus.PersistedEvidenceResolver.from_objects(*observations),
     )
     current_spot = [
         row
@@ -4187,3 +4197,178 @@ def test_schema_persists_raw_bytes_nullable_attempts_and_transitive_references()
     assert schema["evidence_graph_rule"].startswith(
         "SCIENTIFIC SURFACE RECORDS ARE NOT AUTHORITIES"
     )
+
+
+def test_collector_health_must_be_pit_valid_and_share_the_stream_clock_domain() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    interval = _stream_interval(corpus.CVD_SPOT_PROVIDER_ID, start)
+
+    other_domain_clock = _clock(
+        interval.collector_health.observed_at,
+        host_id="other-host",
+        process_id="other-process",
+        process_start_identity="other-process-start",
+        boot_id="other-boot",
+    )
+    cross_domain_health = replace(
+        interval.collector_health,
+        clock_integrity=other_domain_clock,
+    )
+    cross_domain = replace(interval, collector_health=cross_domain_health).as_record()
+    assert cross_domain["complete"] is False
+    assert "COLLECTOR_HEALTH_CLOCK_DOMAIN_MISMATCH" in cross_domain["reason_codes"]
+    assert "COLLECTOR_HEALTH_CLOCK_NOT_IN_INTERVAL_EVIDENCE" in cross_domain[
+        "reason_codes"
+    ]
+
+    future_observed_at = interval.finalized_at + timedelta(microseconds=1)
+    future_health = replace(
+        interval.collector_health,
+        observed_at=future_observed_at,
+        clock_integrity=_clock(future_observed_at),
+    )
+    future = replace(interval, collector_health=future_health).as_record()
+    assert future["complete"] is False
+    assert "COLLECTOR_HEALTH_OBSERVED_AFTER_FINALIZATION" in future["reason_codes"]
+
+
+def test_epoch_establishment_health_cannot_come_from_the_future_or_another_domain() -> None:
+    start = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    interval = _stream_interval(corpus.CVD_SPOT_PROVIDER_ID, start)
+    epoch = interval.epoch
+
+    future_observed_at = epoch.epoch_started_at + timedelta(microseconds=1)
+    future_health = replace(
+        epoch.establishment_health,
+        period_end=epoch.epoch_started_at,
+        observed_at=future_observed_at,
+        clock_integrity=_clock(future_observed_at),
+    )
+    with pytest.raises(ValueError, match="needs valid collector health"):
+        replace(epoch, establishment_health=future_health).as_record()
+
+    other_domain_clock = _clock(
+        epoch.epoch_started_at,
+        host_id="other-host",
+        process_id="other-process",
+        process_start_identity="other-process-start",
+        boot_id="other-boot",
+    )
+    cross_domain_health = replace(
+        epoch.establishment_health,
+        clock_integrity=other_domain_clock,
+    )
+    with pytest.raises(ValueError, match="uses another clock domain"):
+        replace(epoch, establishment_health=cross_domain_health).as_record()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("synchronized", 1),
+        ("synchronized", "yes"),
+        ("health_query_succeeded", 1),
+        ("health_query_succeeded", "yes"),
+    ],
+)
+def test_clock_boolean_schema_rejects_truthy_non_booleans(
+    field: str,
+    value: object,
+) -> None:
+    clock = _clock(datetime(2026, 1, 1, tzinfo=UTC))
+    with pytest.raises(ValueError, match=f"{field} must be boolean"):
+        replace(clock, **{field: value}).as_record()
+
+
+def test_runtime_metadata_query_status_rejects_truthy_non_boolean() -> None:
+    interval = _stream_interval(
+        corpus.CVD_PERPETUAL_PROVIDER_ID,
+        datetime(2026, 1, 1, 12, tzinfo=UTC),
+    )
+    assert interval.runtime_metadata_start is not None
+    with pytest.raises(ValueError, match="query_succeeded must be boolean"):
+        replace(interval.runtime_metadata_start, query_succeeded="yes").as_record()
+
+
+def test_scientific_selectors_refuse_missing_persisted_transitive_evidence() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    current = start + timedelta(hours=20)
+    cvd_rows: list[corpus.ProspectiveCvdAggregateObservation] = []
+    for offset in range(21):
+        cvd_rows.extend(
+            _prospective_cvd_pair(start + timedelta(hours=offset), "1", "-1")
+        )
+    cvd_resolver = corpus.PersistedEvidenceResolver.from_objects(*cvd_rows)
+    cvd_records = dict(cvd_resolver.records)
+    missing_health = cvd_rows[0].completeness.spot.collector_health.as_record()[
+        "record_sha256"
+    ]
+    cvd_records.pop(missing_health)
+    with pytest.raises(ValueError, match="is missing"):
+        corpus.select_contiguous_cvd_window(
+            cvd_rows,
+            current_observation_time=current,
+            decision_time=current + timedelta(hours=1, minutes=5),
+            resolver=corpus.PersistedEvidenceResolver(cvd_records),
+        )
+
+    cap = _prospective_market_cap(
+        datetime(2026, 1, 3, tzinfo=UTC),
+        "123",
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+    )
+    cap_records = dict(
+        corpus.PersistedEvidenceResolver.from_objects(cap).records
+    )
+    cap_records.pop(
+        cap.validated_response.request.request_start_clock.as_record()[
+            "record_sha256"
+        ]
+    )
+    with pytest.raises(ValueError, match="is missing"):
+        corpus.select_market_cap_revisions_for_decision(
+            (cap,),
+            decision_time=datetime(2026, 1, 4, 1, 5, tzinfo=UTC),
+            resolver=corpus.PersistedEvidenceResolver(cap_records),
+        )
+
+
+def test_unspecified_monotonic_domains_are_never_usable() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    start_clock = replace(
+        _clock(start),
+        process_start_identity="UNSPECIFIED_PROCESS_START",
+        boot_id="UNSPECIFIED_BOOT",
+    )
+    end_clock = replace(
+        _clock(start + timedelta(seconds=1)),
+        process_start_identity="UNSPECIFIED_PROCESS_START",
+        boot_id="UNSPECIFIED_BOOT",
+    )
+    assert start_clock.as_record()["usable"] is False
+    interval = corpus.ClockIntervalEvidence(
+        start_clock=start_clock,
+        end_clock=end_clock,
+    ).as_record()
+    assert interval["usable"] is False
+    assert "CLOCK_HEALTH_INVALID" in interval["reason_codes"]
+
+
+def test_arbitrary_non_utf8_response_bytes_roundtrip_and_keep_distinct_hashes() -> None:
+    raw = b"\x00\xff\x80not-utf8\r\n"
+    encoded = corpus._source_integrity.canonical_json({"raw": raw})
+    assert '"__exact_bytes_hex__":"00ff806e6f742d757466380d0a"' in encoded
+    attempt = _market_cap_request(
+        "2026-01-03",
+        raw,
+        available_at=datetime(2026, 1, 4, 0, 46, tzinfo=UTC),
+        outcome="INVALID_RESPONSE",
+        reason_code="SYNTHETIC_INVALID_UTF8",
+    )
+    resolver = corpus.PersistedEvidenceResolver.from_objects(attempt)
+    replayed = corpus.replay_coingecko_market_cap_attempt(
+        attempt.as_record()["record_sha256"], resolver
+    ).as_record()
+    assert replayed["raw_response_bytes"] == raw
+    assert replayed["response_sha256"] == corpus._source_integrity.byte_digest(raw)
+    assert replayed["response_sha256"] != replayed["record_sha256"]

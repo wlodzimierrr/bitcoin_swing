@@ -1653,6 +1653,7 @@ def select_contiguous_cvd_window(
     *,
     current_observation_time: datetime,
     decision_time: datetime,
+    resolver: PersistedEvidenceResolver,
 ) -> tuple[_flow.CvdObservation, ...]:
     """Select exactly one PIT revision on the frozen contiguous CVD grid.
 
@@ -1675,10 +1676,17 @@ def select_contiguous_cvd_window(
     expected_time_set = set(expected_times)
     grouped: dict[
         tuple[str, datetime],
-        list[ProspectiveCvdAggregateObservation],
+        list[dict[str, Any]],
     ] = {}
     for observation in observations:
-        record = observation.as_record()
+        declared = observation.as_record()
+        record = replay_prospective_cvd_aggregate_observation(
+            declared["record_sha256"], resolver
+        )
+        if record != declared:
+            raise ProspectiveCorpusError(
+                "CVD observation differs from persisted replay evidence"
+            )
         observation_time = record["observation_time"]
         if observation_time not in expected_time_set:
             continue
@@ -1707,7 +1715,7 @@ def select_contiguous_cvd_window(
         if not record["interval_complete"]:
             continue
         if record["available_at"] <= decision:
-            grouped.setdefault((market_type, observation_time), []).append(observation)
+            grouped.setdefault((market_type, observation_time), []).append(record)
 
     selected: list[_flow.CvdObservation] = []
     missing: list[str] = []
@@ -1718,21 +1726,21 @@ def select_contiguous_cvd_window(
             if not revisions:
                 missing.append(f"{market_type}:{observation_time.isoformat()}")
                 continue
-            revision_ids = [row.revision for row in revisions]
+            revision_ids = [row["revision"] for row in revisions]
             if len(revision_ids) != len(set(revision_ids)):
                 raise ProspectiveCorpusError(
                     "duplicate CVD revision identity for one interval"
                 )
-            revisions.sort(key=lambda row: row.available_at)
+            revisions.sort(key=lambda row: row["available_at"])
             if (
                 len(revisions) > 1
-                and revisions[-1].available_at == revisions[-2].available_at
+                and revisions[-1]["available_at"] == revisions[-2]["available_at"]
             ):
                 raise ProspectiveCorpusError(
                     "conflicting CVD revisions share one available_at instant"
                 )
             chosen = revisions[-1]
-            completion_sha256 = chosen.as_record()["completion_evidence_sha256"]
+            completion_sha256 = chosen["completion_evidence_sha256"]
             prior_completion = common_completion_by_time.setdefault(
                 observation_time,
                 completion_sha256,
@@ -1741,7 +1749,15 @@ def select_contiguous_cvd_window(
                 raise ProspectiveCorpusError(
                     "spot and perp CVD rows do not bind one common completeness record"
                 )
-            selected.append(chosen.as_owner_observation())
+            selected.append(
+                _flow.CvdObservation(
+                    observation_time=chosen["observation_time"],
+                    market_type=chosen["market_type"],
+                    cvd_usd=chosen["cvd_usd"],
+                    provider=chosen["provider"],
+                    available_at=chosen["available_at"],
+                )
+            )
     if missing:
         raise ProspectiveCorpusError(
             "CVD_CONTIGUOUS_GRID_INCOMPLETE: " + ", ".join(missing)
@@ -2301,6 +2317,7 @@ def select_market_cap_revisions_for_decision(
     market_caps: Sequence[ProspectiveMarketCapObservation],
     *,
     decision_time: datetime,
+    resolver: PersistedEvidenceResolver,
 ) -> tuple[_positioning.MarketCapObservation, ...]:
     """Select one latest PIT revision per day and require the scheduled date."""
 
@@ -2308,10 +2325,17 @@ def select_market_cap_revisions_for_decision(
     required_time = required_market_cap_observation_time(decision)
     grouped: dict[
         datetime,
-        list[ProspectiveMarketCapObservation],
+        list[dict[str, Any]],
     ] = {}
     for observation in market_caps:
-        record = observation.as_record()
+        declared = observation.as_record()
+        record = replay_prospective_market_cap_observation(
+            declared["record_sha256"], resolver
+        )
+        if record != declared:
+            raise ProspectiveCorpusError(
+                "market-cap observation differs from persisted replay evidence"
+            )
         observation_time = record["observation_time"]
         if (
             observation_time.hour
@@ -2336,25 +2360,33 @@ def select_market_cap_revisions_for_decision(
             observation_time <= required_time
             and record["available_at"] <= decision
         ):
-            grouped.setdefault(observation_time, []).append(observation)
+            grouped.setdefault(observation_time, []).append(record)
 
     selected: list[_positioning.MarketCapObservation] = []
     for observation_time in sorted(grouped):
         revisions = grouped[observation_time]
-        revision_ids = [row.revision for row in revisions]
+        revision_ids = [row["revision"] for row in revisions]
         if len(revision_ids) != len(set(revision_ids)):
             raise ProspectiveCorpusError(
                 "duplicate market-cap revision identity for one observation"
             )
-        revisions.sort(key=lambda row: row.available_at)
+        revisions.sort(key=lambda row: row["available_at"])
         if (
             len(revisions) > 1
-            and revisions[-1].available_at == revisions[-2].available_at
+            and revisions[-1]["available_at"] == revisions[-2]["available_at"]
         ):
             raise ProspectiveCorpusError(
                 "conflicting market-cap revisions share one available_at instant"
             )
-        selected.append(revisions[-1].as_owner_observation())
+        chosen = revisions[-1]
+        selected.append(
+            _positioning.MarketCapObservation(
+                observation_time=chosen["observation_time"],
+                market_cap_usd=chosen["market_cap_usd"],
+                provider=chosen["provider"],
+                available_at=chosen["available_at"],
+            )
+        )
     if required_time not in grouped:
         raise ProspectiveCorpusError(
             "MARKET_CAP_REQUIRED_OBSERVATION_MISSING: "

@@ -163,6 +163,12 @@ def _require_nonnegative_int(value: int, field_name: str) -> int:
     return value
 
 
+def _require_bool(value: bool, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ProspectiveSourceIntegrityError(f"{field_name} must be boolean")
+    return value
+
+
 def _with_digest(payload: dict[str, Any]) -> dict[str, Any]:
     result = dict(payload)
     result["record_sha256"] = digest(payload)
@@ -248,6 +254,8 @@ class ClockIntegrityRecord:
         observed_at = _require_utc(self.observed_at, "clock observed_at")
         _require_text(self.synchronization_mechanism, "synchronization_mechanism")
         _require_text(self.synchronization_source, "synchronization_source")
+        _require_bool(self.synchronized, "synchronized")
+        _require_bool(self.health_query_succeeded, "health_query_succeeded")
         _require_text(self.collector_host_id, "collector_host_id")
         _require_text(self.collector_process_id, "collector_process_id")
         _require_text(self.process_start_identity, "process_start_identity")
@@ -1012,6 +1020,7 @@ class SourceStreamEpoch:
             )
         clock = self.establishment_clock.as_record()
         health = self.establishment_health.as_record()
+        health_clock = self.establishment_health.clock_integrity.as_record()
         if self.connection_clock is None or self.subscription_ack_clock is None:
             raise ProspectiveSourceIntegrityError(
                 "connection and subscription acknowledgement need clock evidence"
@@ -1036,10 +1045,18 @@ class SourceStreamEpoch:
             or not health["usable"]
             or health["period_start"] > started
             or health["period_end"] < started
-            or health["observed_at"] < started
+            or health["observed_at"] != started
         ):
             raise ProspectiveSourceIntegrityError(
                 "stream epoch establishment needs valid collector health"
+            )
+        if (
+            health_clock["monotonic_domain_id"] != clock["monotonic_domain_id"]
+            or health_clock["monotonic_observed_seconds"]
+            != clock["monotonic_observed_seconds"]
+        ):
+            raise ProspectiveSourceIntegrityError(
+                "stream epoch establishment health uses another clock domain"
             )
         ended = (
             _require_utc(self.epoch_ended_at, "epoch_ended_at")
@@ -1434,6 +1451,7 @@ class KrakenFuturesInstrumentMetadataValidation:
     def as_record(self) -> dict[str, Any]:
         _require_text(self.validation_id, "metadata validation_id")
         retrieved = _require_utc(self.retrieved_at, "metadata retrieved_at")
+        _require_bool(self.query_succeeded, "query_succeeded")
         clock = self.retrieval_clock.as_record()
         if clock["observed_at"] != retrieved:
             raise ProspectiveSourceIntegrityError(
@@ -1567,6 +1585,7 @@ class StreamIntervalCompleteness:
         epoch = self.epoch.as_record()
         liveness = self.liveness.as_record()
         health = self.collector_health.as_record()
+        health_clock = self.collector_health.clock_integrity.as_record()
         final_clock = self.finalization_clock.as_record()
         timing = self.epoch_to_finalization_clock.as_record()
         reasons: list[str] = []
@@ -1588,6 +1607,10 @@ class StreamIntervalCompleteness:
             reasons.append("COLLECTOR_HEALTH_INTERVAL_GAP")
         if not health["usable"]:
             reasons.extend(health["reason_codes"])
+        if health["observed_at"] > finalized:
+            reasons.append("COLLECTOR_HEALTH_OBSERVED_AFTER_FINALIZATION")
+        if health_clock["monotonic_domain_id"] != epoch["monotonic_domain_id"]:
+            reasons.append("COLLECTOR_HEALTH_CLOCK_DOMAIN_MISMATCH")
         if finalized < end:
             reasons.append("FINALIZED_BEFORE_INTERVAL_END")
         if final_clock["observed_at"] != finalized or not final_clock["usable"]:
@@ -1596,6 +1619,10 @@ class StreamIntervalCompleteness:
             reasons.append("FINALIZATION_CLOCK_DOMAIN_MISMATCH")
         if not timing["usable"]:
             reasons.extend(timing["reason_codes"])
+        if health_clock["record_sha256"] not in timing[
+            "clock_health_record_sha256s"
+        ]:
+            reasons.append("COLLECTOR_HEALTH_CLOCK_NOT_IN_INTERVAL_EVIDENCE")
         if (
             timing["start_clock_sha256"]
             != epoch["establishment_clock_sha256"]
