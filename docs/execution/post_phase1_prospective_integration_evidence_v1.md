@@ -1295,6 +1295,105 @@ No prospective observation was collected, no persistent collection began, no
 real Stage-B numerator or result was inspected, and BTC-019, its sealed sample
 and Epic T remain untouched. POSTP1-004 and collection remain blocked.
 
+## POSTP1-003R2 — `CLOSE_SUFFICIENCY_EVIDENCE_AUTHORITY_AND_EPOCH_ENFORCEMENT_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / READY FOR FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-003R1 failed repeat review on non-authoritative hash
+`0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242`,
+with failed implementation `8540e80e58511818eaa2ce4d976470a405234a53` and
+review documentation `1342ff9eca04d254bf17566dcc80b5796310af92`; certified parent corpus
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
+remains immutable
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact corrected governance hash
+**Owner module:**
+`btc_predictor/research/prospective_integration_evidence_sufficiency.py`
+**Artifacts:**
+`prospective_evidence/prospective_integration_evidence_sufficiency_governance_v1/`
+
+### Scope and acceptance criteria
+
+Apply only the bounded pre-data corrections required by POSTP1-003R1 findings:
+count every stop metric at the root control-position lifecycle episode rather
+than by active-stop revision; replace caller-authored blind conclusions with a
+full transitive replay of certified-parent evidence; require a strict,
+scientifically identified Stage-B evaluation contract before the initial epoch;
+and derive, validate, freeze and terminally revalidate the earliest cutoff and
+its exact evidence manifest. Hash-bind the blind source/replay schemas,
+evaluation-contract schema and cutoff replay-validation semantics. Preserve the
+certified parent, all historical performance gates, the already-defended
+statistical minima and exact 0.99 coverage rule. Retain both failed predecessor
+hashes as non-authoritative pre-data lineage. Do not collect observations,
+authorize POSTP1-004, inspect a real Stage-B numerator, reopen BTC-019 or touch
+Epic T.
+
+Acceptance requires deterministic hostile tests proving that ordinary stop
+moves cannot manufacture independent units; self-rehashed blind summaries and
+cross-identity substitutions cannot override certified-parent replay; empty,
+under-schema or mismatched evaluation contracts cannot authorize an epoch;
+caller-supplied, fabricated, early or late cutoffs cannot be frozen; frozen
+evidence deletion or substitution prevents a terminal result; PASS and FAIL are
+both terminal; and later evidence cannot move the first valid cutoff. The
+corrected exact hash must pass a final independent xHigh review before this
+ticket is DONE or POSTP1-004 becomes dependency-satisfied.
+
+### POSTP1-003R2 implementation notes
+
+Implementation commit `d476a16e4d87656bac39b1a925004901a19b9374`
+closes the bounded findings and refreezes
+`PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` at:
+
+```text
+0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
+```
+
+- Failed hashes `3f51c4d9...f4ae2c7` and `0ca7a2a8...e86c8242` remain
+  explicit with `authoritative = false`, zero collected observations and
+  `superseded_before_collection = true`. No failed definition was rewritten.
+- Stop sufficiency identity is now one content-addressed root control-position
+  lifecycle episode. The complete certified control state/action chain and
+  current active-stop membership are replayed, but `active_stop_identity` is
+  excluded from the dependence-unit hash. Stop revisions in one open position
+  remain one unit; exit/re-entry creates a new root episode.
+- The monitor accepts only slot, certified-parent manifest hash and persisted
+  epoch-authorization hash. Strict content-addressed manifests transitively
+  resolve warmup, PIT/source/quality, decision universe, comparability, paired
+  risk outputs and complete stop lifecycle/classifier inputs. Coarse blind
+  categories and dependence units are freshly derived; blind projections and
+  scientific surface records are never authorities.
+- The evaluation contract has an exact hash-bound schema containing candidate
+  and control reference identities, certified corpus, sufficiency governance,
+  parent Stage-B contract, creation time and its own hash. Empty, unknown-field,
+  same-identity, cross-corpus, cross-governance and late contracts are refused.
+- Cutoff derivation is a pure replay over identity-only manifest rows. The
+  registry rejects caller-supplied cutoff/progress/manifest data, freezes only
+  a fully recomputed earliest qualifying prefix, and revalidates the strict
+  cutoff, manifest, evidence graph, epoch and evaluation contract before either
+  terminal PASS or terminal FAIL. Deletion, substitution, fabricated records,
+  early/late cutoffs, second results and epoch retries fail closed; later
+  evidence cannot move the frozen cutoff.
+- Eighteen material children are mechanically enumerated. New hash-bound
+  children define blind-category mapping, the certified blind-parent manifest,
+  blind replay derivation, evaluation-contract schema and cutoff replay
+  validation. Every material child is top-bound; the certified parent remains
+  exactly `8915d991...fbfac7d7` with all 25 children unchanged.
+- Historical gate parity remains zero for threshold, direction, hard role and
+  metric intent. The exact common-rate science remains epsilon `0.01`, evidence
+  reference `0.99`, confidence `0.95`; raw/distinct minima remain
+  `381/381/73/189/93/381/381/381`; and exact authoritative replay coverage
+  remains `0.99`. The common-rate, p95-tail, coverage and statistical-derivation
+  child bytes are unchanged from R1.
+- Validation passed 95 focused corrected-governance tests, 1,661 selected
+  corpus/Wilson/PIT/warmup/reference/risk/stop/lifecycle regressions, and the
+  complete 4,765-test Python 3.12.14 suite with `RuntimeWarning` promoted to an
+  error. Artifact restoration exactly reproduces 18/18 child bindings and the
+  top hash; `compileall` and scoped diff checks pass.
+- No prospective observation was collected, no real Stage-B evaluation or
+  numerator was inspected, BTC-019 stayed terminal and sealed, Epic T was not
+  modified, and POSTP1-004 remains unauthorized. The implementation
+  classification is
+  `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_FINAL_XHIGH_REVIEW`.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1312,4 +1411,5 @@ and Epic T remain untouched. POSTP1-004 and collection remain blocked.
 | POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending corrected sufficiency governance and exact-hash independent review PASS |
+| POSTP1-003R2 | bounded authority/epoch correction `0c0c0f96...5863c64e` | IMPLEMENTATION COMPLETE / READY FOR FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending POSTP1-003R2 final independent exact-hash review PASS |
