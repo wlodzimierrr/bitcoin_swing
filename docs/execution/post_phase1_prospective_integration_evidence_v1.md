@@ -1120,6 +1120,96 @@ review fixes, so the failed V1 hash is preserved and a corrected pre-data
 governance definition with a new hash and independent review is required before
 POSTP1-004.
 
+## POSTP1-003R1 — `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-003 failed review on non-authoritative hash
+`3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7`,
+with certified parent corpus
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
+remaining immutable
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact corrected governance hash
+**Owner module:**
+`btc_predictor/research/prospective_integration_evidence_sufficiency.py`
+**Artifacts:**
+`prospective_evidence/prospective_integration_evidence_sufficiency_governance_v1/`
+
+### Scope and acceptance criteria
+
+Correct only POSTP1-003 review findings P1-01 through P1-06 and the associated
+identity/reason-code P2 findings before collection. Preserve all eight
+historical performance gates and every certified parent semantic. Separate the
+historical performance denominator, raw sufficiency denominator and effective
+dependence-unit count; impose outcome-independent common-rate, p95-tail,
+coverage and natural evidence-unit requirements; make the blind monitor replay
+content-addressed evidence rather than trust caller labels; and make the unique
+initial epoch, first cutoff, frozen evidence manifest and terminal result
+statefully enforceable. Retain the failed hash as non-authoritative pre-data
+lineage. POSTP1-004 and collection require this exact corrected hash to pass
+independent xHigh review first.
+
+### POSTP1-003R1 implementation notes
+
+Implementation commit `8540e80e58511818eaa2ce4d976470a405234a53` corrects and
+refreezes `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` at:
+
+```text
+0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242
+```
+
+- Failed predecessor `3f51c4d9...f4ae2c7` remains explicit with
+  `authoritative = false`, failed review result, zero collected observations and
+  `superseded_before_collection = true`. V1 is retained because that definition
+  was never certified and no collection began.
+- All eight gates are mechanically re-imported with zero threshold, direction,
+  hard-role or metric-intent changes. The cross-market performance gate remains
+  exactly `>= 1.0`; its separate common 95% / 1%-error evidence reference
+  derives `n=381`, with 380 failing and 381 passing. The other six finite Wilson
+  minima remain 381/73/189/381/381/381.
+- Nearest-rank p95 remains unchanged. Exact rational binomial arithmetic derives
+  93 as the first sample size with at least 95% probability of at least two
+  population-tail hits: `n=92` gives
+  `0.94786359706832297071275334555109578761521757634568497087748121876263472445581796`
+  and `n=93` gives
+  `0.95002420475738346021474735105078010632665901011874667478706307816526427641530659`.
+- Each metric requires authoritative replay coverage `>= 0.99` by exact integer
+  comparison, 100% scheduled-slot accounting and zero unaccounted slots.
+  Legitimately replayed `NOT_IN_UNIVERSE` and `NOT_COMPARABLE` count as coverage;
+  unavailable, invalid, late, unreplayable, reference-unavailable and warmup-
+  incomplete evidence does not.
+- Stop metrics count one unit per replayed control-position/active-stop lifecycle
+  episode using the parent lifecycle hash chain and `active_stop_identity`.
+  Daily decision metrics and risk sizing use the certified canonical UTC slot.
+  Repeated rows do not inflate unit counts. There is no separate arbitrary
+  calendar minimum and Stage-C's 90 days are not imported.
+- The scientific API accepts only slot, content SHA and persisted epoch-
+  authorization identity. It replays warmup, PIT, universe, disposition and
+  dependence identity, exposes only coarse outcome-blind categories and refuses
+  projection mismatches or outcome-sensitive categories.
+- A real recomputing evaluation-contract SHA is required before the first
+  qualifying observation. The stateful reference registry permits one
+  `INITIAL_STAGE_B_EVALUATION_EPOCH`, persists the first cutoff and exact
+  content-addressed evidence manifest, returns that immutable cutoff after later
+  revisions, and makes PASS or FAIL terminal. Random epoch IDs and automatic
+  successors are refused. POSTP1-004 must enforce this transactionally and
+  persistently.
+- Thirteen material children are mechanically enumerated and parent-bound.
+  Required 381/93/0.99/dependence/blind-authority/epoch/cutoff mutation probes
+  move their child and the top-level hash. The certified parent remains exactly
+  `8915d991...fbfac7d7` with all 25 children unchanged.
+- Validation passed 65 focused corrected-governance tests, 1,167 selected
+  corpus/Wilson/PIT/warmup/reference/risk/stop/lifecycle regressions, and the
+  complete 4,735-test Python 3.12.14 suite with `RuntimeWarning` promoted to an
+  error. Artifact regeneration, hash-seed/CWD/fresh-process reproduction,
+  `compileall` and scoped diff checks pass.
+- No prospective observation was collected, no real Stage-B evaluation or
+  numerator was inspected, BTC-019 stayed terminal and its sealed sample stayed
+  untouched, and Epic T was not modified. Final classification is
+  `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_REPEAT_XHIGH_REVIEW`.
+  POSTP1-004 and collection remain unauthorized pending independent review of
+  this exact corrected hash.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1136,4 +1226,5 @@ POSTP1-004.
 | POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / PASSED SIXTH REVIEW |
 | POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending corrected sufficiency governance and exact-hash independent review PASS |
