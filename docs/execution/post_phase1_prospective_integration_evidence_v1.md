@@ -1297,7 +1297,7 @@ and Epic T remain untouched. POSTP1-004 and collection remain blocked.
 
 ## POSTP1-003R2 — `CLOSE_SUFFICIENCY_EVIDENCE_AUTHORITY_AND_EPOCH_ENFORCEMENT_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / READY FOR FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW / NON-AUTHORITATIVE`
 **Dependency:** POSTP1-003R1 failed repeat review on non-authoritative hash
 `0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242`,
 with failed implementation `8540e80e58511818eaa2ce4d976470a405234a53` and
@@ -1394,6 +1394,68 @@ closes the bounded findings and refreezes
   classification is
   `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_FINAL_XHIGH_REVIEW`.
 
+### POSTP1-003R2 final independent exact-hash review outcome
+
+**Status:** `COMPLETE / FAIL`
+**Result:** `FAIL — BLIND PARENT REPLAY INVALID`
+**Classification:** `SUFFICIENCY_GOVERNANCE_REQUIRES_FIX`
+
+The final review found that governance-authored parent-input, warmup and metric
+records still supplied scientific conclusions instead of replaying the actual
+certified-parent graph. It also found that materially scientific executable
+replay and cutoff-validation behavior was not bound into the governance hash,
+and that candidate/control string identities were not canonically enforced.
+Hash `0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e`
+is therefore retained as failed, non-authoritative pre-data lineage with no
+prospective observations collected and `superseded_before_collection = true`.
+POSTP1-004 and collection remain unauthorized.
+
+## POSTP1-003R3 — `CLOSE_CERTIFIED_PARENT_REPLAY_AND_EXECUTABLE_SEMANTIC_BINDING_V1`
+
+**Status:** `BLOCKED / CERTIFIED PARENT CHANGE REQUIRED`
+**Dependency:** POSTP1-003R2 failed final review on non-authoritative hash
+`0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e`;
+certified parent corpus
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
+was audited unchanged
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required classification:** `SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE`
+
+### Parent-completeness audit and stopping-rule result
+
+The mandatory pre-adapter audit established that genuine transitive replay
+cannot be implemented from the immutable certified parent without inventing a
+new governance authority:
+
+- `prospective_decision_observation` persists
+  `warmup_history_complete` as a Boolean, while no frozen content-addressed
+  slot input-manifest schema enumerates the complete owner-specific history and
+  transitive raw-record references from which every warmup predicate can be
+  rerun. The generic `prospective_source_input_snapshot.payload` row and a
+  derived record's singular `input_snapshot_sha256` do not define that closure
+  or make omitted qualifying/adverse history detectable.
+- `prospective_portfolio_state` binds only `prior_state_sha256`; it does not
+  bind the content-addressed predecessor record or the transition/action record
+  that produced the resulting state. `prospective_trade_action` binds its prior
+  state but not the resulting state. Consequently the exact root opening
+  transition and complete active-stop lifecycle membership cannot be uniquely
+  traversed and validated from parent-bound references alone.
+- The R2-only `CERTIFIED_PARENT_INPUT_EVIDENCE_V1` and related warmup/metric
+  records fill these gaps with asserted `quality_state`, initialization and
+  other conclusions. Rehashing or replacing those governance records is not a
+  replay of certified evidence and cannot repair the missing parent closure.
+
+The ticket's hard stopping rule therefore applies. No R3 governance artifact,
+executable-semantic manifest or new governance hash was issued. The accepted
+381/381/73/189/93/381/381/381 minima, exact 0.99 coverage rule, Wilson inputs,
+stop dependence-unit policy and historical Stage-B gates remain unchanged.
+All three failed governance hashes remain non-authoritative, superseded before
+collection and associated with zero collected prospective observations. No
+real Stage-B numerator or result was inspected, BTC-019 and its sealed sample
+were untouched, Epic T was not modified, and POSTP1-004 and collection remain
+unauthorized. A new certified-corpus authority decision is required; this
+ticket does not propose POSTP1-003R4.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1411,5 +1473,6 @@ closes the bounded findings and refreezes
 | POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-003R2 | bounded authority/epoch correction `0c0c0f96...5863c64e` | IMPLEMENTATION COMPLETE / READY FOR FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending POSTP1-003R2 final independent exact-hash review PASS |
+| POSTP1-003R2 | bounded authority/epoch correction `0c0c0f96...5863c64e` | COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-003R3 | certified-parent replay and executable-semantic binding audit | BLOCKED / CERTIFIED PARENT CHANGE REQUIRED |
+| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending new certified-corpus authority and valid sufficiency governance reviews |

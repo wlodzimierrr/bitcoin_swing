@@ -60,18 +60,29 @@ review-fix commit =
 ab3b353e344465966da321af02b08f6fe28213f5
 
 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
-R2 CORRECTED FROZEN PRE-DATA GOVERNANCE READY FOR FINAL XHIGH REVIEW
+NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
 
-current sufficiency-governance definition hash =
+latest failed sufficiency-governance definition hash =
 0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
 
-current sufficiency-governance material child count = 18
+latest failed sufficiency-governance material child count = 18
 
 POSTP1-003R2 implementation commit =
 d476a16e4d87656bac39b1a925004901a19b9374
 
 POSTP1-003R2 review result =
-PENDING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW
+FAIL — BLIND PARENT REPLAY INVALID /
+SUFFICIENCY_GOVERNANCE_REQUIRES_FIX
+
+POSTP1-003R2 governance hash retained as non-authoritative =
+0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
+
+POSTP1-003R3 result =
+SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE
+
+POSTP1-003R3 blocker =
+IMMUTABLE PARENT DOES NOT PERSIST A COMPLETE CONTENT-ADDRESSED OWNER-HISTORY
+MANIFEST OR A FULLY CROSS-BOUND PORTFOLIO STATE/TRANSITION GRAPH
 
 POSTP1-003R1 implementation commit =
 8540e80e58511818eaa2ce4d976470a405234a53
@@ -92,7 +103,7 @@ failed POSTP1-003 review result =
 FAIL — SUFFICIENCY GOVERNANCE INVALID
 
 sufficiency execution classification =
-PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_FINAL_XHIGH_REVIEW
+SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE
 
 newly frozen prospective acquisition contracts =
 PROSPECTIVE_CVD_ACQUISITION_V1
@@ -110,8 +121,9 @@ COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1
 KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1
 SCIENTIFIC_EVIDENCE_RESOLVER_V1
 
-collection = NOT AUTHORIZED; corrected pre-data sufficiency governance and its
-exact-hash review plus the POSTP1-004 implementation review must pass first
+collection = NOT AUTHORIZED; a new certified-corpus authority decision,
+valid pre-data sufficiency governance and its exact-hash review, plus the
+POSTP1-004 implementation review must pass first
 qualifying observations collected = NONE
 real Stage-B outcomes evaluated = NONE
 BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
@@ -153,8 +165,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `3f51c4d9...f4ae2c7` with eight parent-bound semantic children, but its
   independent exact-hash xHigh review failed. POSTP1-003R1 refroze the
   governance at `0ca7a2a8...e86c8242` with 13 parent-bound children, but its
-  repeat independent exact-hash xHigh review also failed. POSTP1-003R2 closes
-  those bounded pre-data findings and refreezes governance at
+  repeat independent exact-hash xHigh review also failed. POSTP1-003R2 attempted
+  to close those bounded pre-data findings and refroze governance at
   `0c0c0f96...5863c64e` with 18 mechanically enumerated children. Stop metrics
   now count the root control-position lifecycle episode, while every active-stop
   revision is replayed only for membership. Identity-only blind manifests
@@ -165,9 +177,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   is refused, only the earliest qualifying prefix can freeze, and the complete
   frozen graph is revalidated before a terminal PASS or FAIL. The exact `1.0`
   performance gate, 381/381/73/189/93/381/381/381 raw/distinct minima and 0.99
-  per-metric authoritative replay coverage are unchanged. This exact R2 hash is
-  ready for, but has not yet passed, the mandatory final independent xHigh
-  review.
+  per-metric authoritative replay coverage are unchanged. Final review rejected
+  R2 because governance-authored input/warmup/metric records remained scientific
+  authorities and material executable replay behavior was not hash-bound.
+  POSTP1-003R3's mandatory parent-completeness audit then found that the
+  immutable parent lacks both a complete content-addressed owner-history
+  manifest and the cross-bound lifecycle state/transition graph required for
+  genuine replay. The mandated result is
+  `SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE`; no R3 governance
+  hash was issued.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -180,22 +198,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** POSTP1-003R2 implementation is complete and
-  awaits mandatory final independent exact-hash xHigh review; it is not DONE
-- **Current BLOCKED tickets:** POSTP1-004 remains blocked because
-  POSTP1-003R2 has not yet passed final exact-hash review. Collection remains
-  transitively blocked
-- **Next dependency-satisfied ticket:** Final independent exact-hash xHigh review
-  of POSTP1-003R2 governance `0c0c0f96...5863c64e`. POSTP1-004 and collection
-  remain unauthorized, and BTC-019 does not reopen
+- **Current IN_PROGRESS ticket:** None. POSTP1-003R3 reached its mandatory hard
+  stopping rule before implementation
+- **Current BLOCKED tickets:** POSTP1-003R3 requires a certified-corpus authority
+  change. POSTP1-004 and collection remain transitively blocked
+- **Next dependency-satisfied ticket:** None. A new certified-corpus authority
+  decision is required before sufficiency governance can be reissued.
+  POSTP1-004 and collection remain unauthorized, and BTC-019 does not reopen
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 4,765 passed with Python 3.12.14 and
   `RuntimeWarning` treated as an error on 2026-09-12. The POSTP1-003R2 focused
   synthetic suite is 95 passed, and the selected prospective-corpus/Wilson/PIT/
   warmup/reference/risk/stop/lifecycle suite is 1,661 passed
 - **Last relevant implementation/review commit:** POSTP1-003R2 implementation
-  `d476a16e4d87656bac39b1a925004901a19b9374` freezes candidate governance hash
-  `0c0c0f96...5863c64e`; its final independent review is pending. POSTP1-003R1
+  `d476a16e4d87656bac39b1a925004901a19b9374` froze failed governance hash
+  `0c0c0f96...5863c64e`; its final independent review failed. POSTP1-003R3
+  stopped because genuine replay requires a certified-parent change. POSTP1-003R1
   implementation `8540e80e58511818eaa2ce4d976470a405234a53` and governance hash
   `0ca7a2a8...e86c8242` remain non-authoritative failed lineage. Failed POSTP1-003
   implementation `90a0252744f333e2168ad3904efbc1ec14c5693e` and failed hash
