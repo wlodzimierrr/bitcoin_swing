@@ -1122,7 +1122,7 @@ POSTP1-004.
 
 ## POSTP1-003R1 — `CORRECT_AND_REFREEZE_PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW / REQUIRES PRE-DATA CORRECTION`
 **Dependency:** POSTP1-003 failed review on non-authoritative hash
 `3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7`,
 with certified parent corpus
@@ -1210,6 +1210,91 @@ refreezes `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` at:
   POSTP1-004 and collection remain unauthorized pending independent review of
   this exact corrected hash.
 
+### POSTP1-003R1 repeat independent exact-hash review outcome
+
+**Status:** `COMPLETE / FAIL`
+**Result:** `FAIL — CORRECTED SUFFICIENCY GOVERNANCE INVALID`
+**Classification:** `SUFFICIENCY_GOVERNANCE_REQUIRES_FIX`
+
+The independent GPT-5.6 Sol xHigh repeat review rejected corrected exact hash
+`0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242`.
+The hash, all 13 mechanically enumerated child hashes and all parent bindings
+reproduce. Certified corpus `8915d991...fbfac7d7` and all 25 children are
+unchanged, the failed predecessor remains explicit non-authoritative pre-data
+lineage, and direct comparison with `reference_composite_v2.V2_APPROVAL_GATES`
+finds zero threshold, direction, hard-role or metric-intent changes.
+
+The common-rate epsilon is mechanically and scientifically defensible at
+`0.01`; the exact-1.0 gate remains a performance threshold of exactly `1.0`,
+while 380 all-success units fail and 381 pass its separate common 95% Wilson
+evidence-strength reference of `0.99`. The six finite Wilson minima remain
+381/73/189/381/381/381. Exact rational p95-tail arithmetic gives
+`P(n=92)=0.94786359706832297071275334555109578761521757634568497087748121876263472445581796`
+and
+`P(n=93)=0.95002420475738346021474735105078010632665901011874667478706307816526427641530659`;
+93 distinct natural sizing opportunities is a defensible limited repeated-tail
+exposure rule, not a population p95 confidence interval. Exact per-metric 0.99
+coverage and complete prefix accounting also reject the synthetic 5%-coverage
+case. These policies do not prove missing-at-random sampling or temporal
+stationarity, but those limitations are accurately outside their narrow claims.
+
+The review found three release-blocking defects and one associated P2 identity
+defect:
+
+1. **P1 — dependence-unit governance invalid.** The stop-unit hash includes
+   both the root control-position episode and `active_stop_identity`, while the
+   certified parent defines that stop identity as the active stop plus its
+   transition/source identity. Three ordinary trailing-stop transitions in one
+   still-open position therefore produce three distinct sufficiency units. The
+   existing test explicitly expects this inflation. Hash distinctness does not
+   make stop updates inside one economic position independent; 381 updates can
+   satisfy a 381-unit rule without 381 independent position/risk episodes.
+2. **P1 — blind evidence authority invalid.** `BlindEvidenceResolver` resolves
+   a blind envelope and a newly authored
+   `PROSPECTIVE_STAGE_B_BLIND_SOURCE_EVIDENCE_V1` summary, but that summary
+   carries caller-populated warmup, PIT, universe, comparability and dependence
+   facts and no transitive references to the certified decision, source,
+   portfolio, stop or risk evidence that owns them. Changing a summary's
+   `universe_member`, recomputing both content hashes and matching the declared
+   projection is accepted. This violates the certified parent's rule that
+   scientific surface records are not authorities.
+3. **P1 — evaluation-cutoff governance invalid.** The public registry
+   `freeze_cutoff` path verifies only the manifest-list digest. It does not
+   verify the cutoff record hash, schema, required policy/epoch bindings,
+   recomputed earliest counts or the cited evidence records. A two-field fake
+   cutoff carrying an arbitrary `record_sha256` was accepted and a terminal
+   PASS was then bound to that fake hash. Persisting a result also does not
+   replay the frozen manifest, so later integrity invalidation of cited evidence
+   is neither detected nor failed closed.
+4. **P2 — evaluation-contract identity under-specified.** Epoch authorization
+   verifies only that a supplied mapping's digest reproduces. An empty mapping
+   plus its correct digest is accepted as an evaluation contract, leaving no
+   candidate/control identity or required evaluation-contract schema behind the
+   hash that the cutoff and terminal result bind.
+
+These are scientific authority and state-contract defects, not uniquely
+mechanical review fixes. Correcting the stop dependence unit or authoritative
+blind graph changes hash-bound semantics, while correcting cutoff and
+evaluation-contract validation must move their bound children. The failed R1
+hash is therefore retained unchanged and non-authoritative. A bounded pre-data
+successor governance correction with a new exact hash and another independent
+review is required; no certified-parent semantic change has yet been shown
+necessary.
+
+Validation passed 65 focused R1 tests, 1,922 independently selected prospective-
+corpus/Wilson/PIT/warmup/reference/risk/stop/lifecycle/portfolio regressions and
+the complete 4,735-test Python 3.12.14 suite with `RuntimeWarning` promoted to an
+error. Independent hash reconstruction reproduced 13/13 governance and 25/25
+parent children; exact-rational arithmetic, clean-directory regeneration,
+Decimal/hash-seed/CWD/fresh-process determinism, `compileall` and scoped diff
+checks pass. Repository-wide `git diff --check` reports only the unrelated
+pre-existing trailing blank line in `prompts/review_epic.md`, which this review
+did not modify.
+
+No prospective observation was collected, no persistent collection began, no
+real Stage-B numerator or result was inspected, and BTC-019, its sealed sample
+and Epic T remain untouched. POSTP1-004 and collection remain blocked.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1226,5 +1311,5 @@ refreezes `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` at:
 | POSTP1-001R5 | `MAKE_PROSPECTIVE_SOURCE_EVIDENCE_REPLAYABLE_AND_REFREEZE_CORPUS_V1` | COMPLETE / PASSED SIXTH REVIEW |
 | POSTP1-002R5 | sixth independent xHigh review of `8915d991...fbfac7d7` | COMPLETE / PASS |
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending corrected sufficiency governance and exact-hash independent review PASS |
