@@ -1,7 +1,10 @@
 {
   "candidate_control_identity_owner": "bound evaluation contract",
-  "definition_sha256": "8f5f0f1da864c2e2513bceaeb1b1e1af883b84678f3d0efa813146ff2cde5c54",
+  "cutoff_revalidated_before_terminal_result": true,
+  "definition_sha256": "34638004d15bdcec0f3c85f23e122d751f20b568a5c9ed8e1bacb5eb2d11ff42",
+  "evaluation_contract_revalidated_before_terminal_result": true,
   "floating_pass_fail_result_permitted": false,
+  "frozen_parent_manifest_replayed_before_terminal_result": true,
   "required_bindings": [
     "certified_corpus_sha256",
     "cutoff_record_sha256",

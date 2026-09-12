@@ -1,9 +1,10 @@
 {
   "allowed_monitor_input_fields": [
-    "authoritative_evidence_record_sha256",
+    "certified_parent_evidence_manifest_sha256",
     "evaluation_epoch_authorization_sha256",
     "slot_id"
   ],
+  "blind_category_mapping_sha256": "219c69c1c931428fb44ebb942dc557f6ab921733bb581c508d4984a7f730ef80",
   "blind_category_vocabulary": [
     "DATA_QUALITY_FAIL",
     "EVALUATED",
@@ -14,10 +15,13 @@
     "SOURCE_UNAVAILABLE",
     "WARMUP_INCOMPLETE"
   ],
+  "blind_projection_is_a_derivation_never_an_authority": true,
+  "blind_replay_derivation_contract_sha256": "c8eb238d5e4c87ba932f13f88cd966acc429a287b9f7b9dcb166c4636e4379d9",
   "caller_declared_projection_is_authority": false,
+  "certified_parent_manifest_sha256": "c0d97397e1dea1219883e57f30833f0699e5d1fbf2421c46e480065f0ec75ef8",
   "contract_version": "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1",
   "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
-  "definition_sha256": "2841113f91e8d38f43bb81302825caf5775c16447f3bd54661e9082bae26b10d",
+  "definition_sha256": "f9cf595cc14ca35b8964ac2324bd8489fa436b764a0a6a3de901c03c5647345a",
   "dependence_unit_replayed": true,
   "detailed_parent_reason_codes_exposed_to_monitor": false,
   "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
@@ -35,7 +39,7 @@
     "risk_size_relative_difference",
     "universe_member"
   ],
-  "projection_rule": "Resolve content-addressed source evidence, verify certified parent identities, replay cadence/warmup/PIT/universe/comparability and the natural dependence unit, derive only the coarse blind category, then require any convenience projection to match exactly.",
+  "projection_rule": "Resolve the identity-only parent manifest, transitively replay each certified-parent record and named owner, and derive cadence, warmup, PIT, universe, comparability and the natural dependence unit. A governance-authored projection is never an evidence root.",
   "resolver_contract_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
   "schema_version": "PROSPECTIVE_STAGE_B_BLIND_EVIDENCE_PROJECTION_V1",
   "warmup_replayed": true

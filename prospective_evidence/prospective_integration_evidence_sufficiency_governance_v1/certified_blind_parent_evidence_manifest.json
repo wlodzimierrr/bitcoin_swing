@@ -1,0 +1,186 @@
+{
+  "conclusion_fields_permitted": false,
+  "cross_identity_rules": [
+    "every record binds the same certified corpus, slot and decision time",
+    "every referenced record is content-addressed and schema/version checked",
+    "stop evidence binds the replayed control lifecycle tip and active stop",
+    "risk evidence binds paired candidate/control owner outputs",
+    "cross-slot, cross-position and cross-metric substitution is refused"
+  ],
+  "definition_sha256": "c0d97397e1dea1219883e57f30833f0699e5d1fbf2421c46e480065f0ec75ef8",
+  "manifest_fields": [
+    "cadence",
+    "certified_corpus_sha256",
+    "decision_time",
+    "evaluation_epoch_authorization_sha256",
+    "input_evidence_sha256_by_metric",
+    "metric_owner_evidence_sha256_by_metric",
+    "observation_time",
+    "record_sha256",
+    "schema_version",
+    "slot_id",
+    "warmup_evidence_sha256"
+  ],
+  "parent_bindings": {
+    "data_schema_sha256": "0c29908f121c9060d47c5153aa938feed48f73a69268d323e9e72b9affcbf66d",
+    "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
+    "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+    "portfolio_track_sha256": "92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4",
+    "scientific_evidence_resolver_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+    "stage_b_evaluation_contract_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
+    "stop_event_taxonomy_sha256": "ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e",
+    "warmup_history_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac"
+  },
+  "referenced_record_schemas": {
+    "CERTIFIED_PARENT_INPUT_EVIDENCE_V1": {
+      "fields": [
+        "available_at",
+        "certified_corpus_sha256",
+        "decision_time",
+        "quality_state",
+        "record_sha256",
+        "schema_version",
+        "slot_id",
+        "source_identity"
+      ],
+      "replay": "resolve the exact parent source record and its transitive source/clock evidence; derive availability and quality under the certified source owner"
+    },
+    "CERTIFIED_PARENT_METRIC_OWNER_EVIDENCE_V1": {
+      "fields": [
+        "certified_corpus_sha256",
+        "comparison_input_record_sha256s",
+        "decision_time",
+        "metric",
+        "owner_output_record_sha256s",
+        "record_sha256",
+        "schema_version",
+        "slot_id",
+        "universe_input_record_sha256s"
+      ],
+      "replay": "re-run the metric's certified universe and comparability predicates from its exact owner inputs and paired outputs"
+    },
+    "CERTIFIED_PARENT_PORTFOLIO_STATE_EVIDENCE_V1": {
+      "fields": [
+        "active_stop",
+        "as_of",
+        "certified_corpus_sha256",
+        "lifecycle_state",
+        "prior_state_record_sha256",
+        "record_sha256",
+        "schema_version",
+        "state_sha256",
+        "track",
+        "transition_action_record_sha256"
+      ],
+      "replay": "traverse and verify the complete control prior-state/action chain to the ENTER opening transition of the current episode"
+    },
+    "CERTIFIED_PARENT_RISK_OWNER_OUTPUT_V1": {
+      "fields": [
+        "certified_corpus_sha256",
+        "decision_time",
+        "input_record_sha256s",
+        "position_notional",
+        "record_sha256",
+        "reference_identity",
+        "reference_role",
+        "risk_size_complete",
+        "schema_version",
+        "slot_id",
+        "trade_permitted"
+      ],
+      "replay": "require the bound candidate/control pair, complete positive owner sizing outputs and every transitive input"
+    },
+    "CERTIFIED_PARENT_STOP_CLASSIFIER_INPUT_V1": {
+      "fields": [
+        "active_stop",
+        "active_stop_identity",
+        "candidate_position_state",
+        "candidate_reference_available",
+        "certified_corpus_sha256",
+        "control_portfolio_tip_sha256",
+        "control_position_state",
+        "decision_time",
+        "direction",
+        "first_divergence_decision_time",
+        "observation_time",
+        "prior_provider_observations",
+        "provider_observations",
+        "record_sha256",
+        "schema_version",
+        "slot_id"
+      ],
+      "replay": "invoke classify_stop_event on exact provider observations and the lifecycle-replayed control active stop"
+    },
+    "CERTIFIED_PARENT_TRADE_ACTION_EVIDENCE_V1": {
+      "fields": [
+        "active_stop",
+        "certified_corpus_sha256",
+        "decision_time",
+        "lifecycle_event",
+        "lifecycle_state_after",
+        "lifecycle_state_before",
+        "prior_portfolio_state_record_sha256",
+        "record_sha256",
+        "schema_version",
+        "track"
+      ],
+      "replay": "verify transition legality and prior-state cross-binding"
+    },
+    "CERTIFIED_PARENT_WARMUP_REPLAY_EVIDENCE_V1": {
+      "fields": [
+        "certified_corpus_sha256",
+        "decision_time",
+        "owner_evidence",
+        "record_sha256",
+        "schema_version",
+        "slot_id",
+        "warmup_history_definition_sha256"
+      ],
+      "replay": "enumerate every certified warmup owner, resolve all qualifying input records, and re-run its exact owner evaluability predicate"
+    }
+  },
+  "required_owner_evidence": {
+    "STOP_HOURLY": {
+      "cross_market_confirmed_stop_preservation_rate": [
+        "prospective_source_input_snapshot",
+        "prospective_portfolio_state:CONTROL_REFERENCE_TRACK",
+        "prospective_trade_action lifecycle chain",
+        "prospective_stop_event classifier inputs",
+        "prospective_reference_evaluation:candidate"
+      ],
+      "gap_through_stop_consensus_agreement_rate": [
+        "prospective_source_input_snapshot",
+        "prospective_portfolio_state:CONTROL_REFERENCE_TRACK",
+        "prospective_trade_action lifecycle chain",
+        "prospective_stop_event classifier inputs",
+        "prospective_reference_evaluation:candidate"
+      ],
+      "isolated_venue_stop_suppression_rate": [
+        "prospective_source_input_snapshot",
+        "prospective_portfolio_state:CONTROL_REFERENCE_TRACK",
+        "prospective_trade_action lifecycle chain",
+        "prospective_stop_event classifier inputs",
+        "prospective_reference_evaluation:candidate"
+      ]
+    },
+    "STRATEGY_DAILY": {
+      "regime_classification_disagreement_rate": [
+        "paired prospective_strategy_evaluation"
+      ],
+      "risk_size_p95_relative_difference": [
+        "paired prospective_risk_evaluation"
+      ],
+      "setup_classification_disagreement_rate": [
+        "paired prospective_strategy_evaluation"
+      ],
+      "trade_action_disagreement_rate": [
+        "paired prospective_trade_action"
+      ],
+      "trade_eligibility_disagreement_rate": [
+        "paired prospective_risk_evaluation"
+      ]
+    }
+  },
+  "schema_version": "CERTIFIED_BLIND_PARENT_EVIDENCE_MANIFEST_V1",
+  "strict_schema": true
+}

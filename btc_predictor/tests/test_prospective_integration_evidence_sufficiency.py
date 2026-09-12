@@ -1,7 +1,8 @@
-"""Synthetic POSTP1-003R1 tests; no real outcome or observation is used."""
+"""Synthetic POSTP1-003R2 tests; no real outcome or observation is used."""
 
 from __future__ import annotations
 
+import copy
 import inspect
 import json
 import os
@@ -29,12 +30,10 @@ SUFFICIENT_DECISION_TIME = EPOCH_START + timedelta(days=381, minutes=5)
 
 
 def _evaluation_contract(tag: str = "A") -> dict[str, object]:
-    return sufficiency._with_definition_hash(
-        {
-            "candidate_reference_identity": f"SYNTHETIC_CANDIDATE_{tag}",
-            "control_reference_identity": "SYNTHETIC_CONTROL",
-            "schema_version": "SYNTHETIC_STAGE_B_EVALUATION_CONTRACT_V1",
-        }
+    return sufficiency.build_evaluation_contract(
+        candidate_reference_identity=f"SYNTHETIC_CANDIDATE_{tag}",
+        control_reference_identity="SYNTHETIC_CONTROL",
+        contract_created_at=EPOCH_START - timedelta(seconds=2),
     )
 
 
@@ -45,6 +44,7 @@ def _authorized_registry(
     authorization = registry.authorize_initial_epoch(
         evaluation_contract=_evaluation_contract(tag),
         epoch_observation_start=EPOCH_START,
+        authorized_at=EPOCH_START - timedelta(seconds=1),
     )
     return registry, authorization
 
@@ -101,7 +101,7 @@ FINITE_RATE_EXPECTATIONS = {
 
 def test_corrected_definition_binds_exact_certified_parent_and_failed_lineage() -> None:
     definition = sufficiency.sufficiency_governance_definition()
-    assert definition["program_ticket"] == "POSTP1-003R1"
+    assert definition["program_ticket"] == "POSTP1-003R2"
     assert definition["certified_parent"]["protocol_sha256"] == (
         "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7"
     )
@@ -110,16 +110,14 @@ def test_corrected_definition_binds_exact_certified_parent_and_failed_lineage() 
     )
     assert corpus.protocol_definition()["material_child_count"] == 25
     assert definition["definition_sha256"] != sufficiency.FAILED_GOVERNANCE_SHA256
-    assert definition["failed_governance_lineage"] == [
-        {
-            **definition["failed_governance_lineage"][0],
-            "authoritative": False,
-            "definition_sha256": sufficiency.FAILED_GOVERNANCE_SHA256,
-            "prospective_observations_collected": False,
-            "review_result": "FAIL — SUFFICIENCY GOVERNANCE INVALID",
-            "superseded_before_collection": True,
-        }
+    assert [row["definition_sha256"] for row in definition["failed_governance_lineage"]] == [
+        sufficiency.FAILED_GOVERNANCE_SHA256,
+        sufficiency.FAILED_R1_GOVERNANCE_SHA256,
     ]
+    for row in definition["failed_governance_lineage"]:
+        assert row["authoritative"] is False
+        assert row["prospective_observations_collected"] is False
+        assert row["superseded_before_collection"] is True
 
 
 def test_all_eight_historical_gates_are_mechanically_unchanged() -> None:
@@ -282,7 +280,7 @@ def test_coverage_taxonomy_counts_only_authoritatively_replayed_categories() -> 
     }
 
 
-def test_stop_dependence_unit_reuses_certified_lifecycle_and_stop_lineage() -> None:
+def test_stop_dependence_unit_uses_only_replayed_root_position_episode() -> None:
     episode = "a" * 64
     one = sufficiency._derive_dependence_unit_id(
         corpus.CROSS_MARKET_METRIC,
@@ -303,12 +301,20 @@ def test_stop_dependence_unit_reuses_certified_lifecycle_and_stop_lineage() -> N
         active_stop_identity="CONTROL_STOP_TRANSITION_2",
     )
     assert one == repeated
-    assert one != changed_stop
+    assert one == changed_stop
+    new_position = sufficiency._derive_dependence_unit_id(
+        corpus.CROSS_MARKET_METRIC,
+        slot_id="e" * 64,
+        control_position_episode_sha256="f" * 64,
+        active_stop_identity="CONTROL_STOP_TRANSITION_3",
+    )
+    assert one != new_position
     policy = sufficiency.evidence_unit_policy()["metrics"][
         corpus.CROSS_MARKET_METRIC
     ]
     assert policy["maximum_sufficiency_credit_per_unit"] == 1
-    assert "active_stop_identity" in policy["identity_fields"]
+    assert "active_stop_identity" not in policy["identity_fields"]
+    assert policy["dependence_unit_kind"] == "CONTROL_POSITION_ROOT_LIFECYCLE_EPISODE"
 
 
 def test_daily_decision_and_sizing_units_are_the_canonical_slot() -> None:
@@ -350,7 +356,7 @@ def test_temporal_policy_adds_no_arbitrary_calendar_gate() -> None:
 def test_monitor_api_contains_no_caller_authoritative_labels_or_outcomes() -> None:
     accepted = {field.name for field in fields(sufficiency.BlindEvidenceReference)}
     assert accepted == {
-        "authoritative_evidence_record_sha256",
+        "certified_parent_evidence_manifest_sha256",
         "evaluation_epoch_authorization_sha256",
         "slot_id",
     }
@@ -377,9 +383,16 @@ def test_monitor_api_contains_no_caller_authoritative_labels_or_outcomes() -> No
                 corpus.REGIME_METRIC: EPOCH_START + timedelta(days=2)
             }
         },
+        {
+            "evidence_state_by_metric": {
+                corpus.REGIME_METRIC: "SOURCE_UNAVAILABLE"
+            }
+        },
     ],
 )
-def test_hostile_declared_evaluated_surface_is_refused(fact_kwargs: dict[str, object]) -> None:
+def test_parent_replay_wins_over_any_rehashed_blind_surface(
+    fact_kwargs: dict[str, object],
+) -> None:
     registry, authorization = _authorized_registry()
     daily = next(
         row
@@ -393,25 +406,34 @@ def test_hostile_declared_evaluated_surface_is_refused(fact_kwargs: dict[str, ob
         evaluation_epoch_authorization_sha256=authorization["record_sha256"],
         **fact_kwargs,
     )
-    envelope = dict(records[reference.authoritative_evidence_record_sha256])
-    envelope.pop("record_sha256")
-    envelope["declared_blind_projection"] = dict(
-        envelope["declared_blind_projection"]
+    replayed = sufficiency.BlindEvidenceResolver(records).replay(
+        reference,
+        authorization=authorization,
+        current_decision_time=EPOCH_START + timedelta(days=2),
     )
-    envelope["declared_blind_projection"][corpus.REGIME_METRIC] = {
-        "blind_category": "EVALUATED",
-        "dependence_unit_id": daily["slot_id"],
-    }
-    hostile = sufficiency._with_record_hash(envelope)
+    assert replayed.category_by_metric[corpus.REGIME_METRIC] != "EVALUATED"
+    hostile = sufficiency._with_record_hash(
+        {
+            "declared_blind_projection": {
+                corpus.REGIME_METRIC: {
+                    "blind_category": "EVALUATED",
+                    "dependence_unit_id": daily["slot_id"],
+                }
+            },
+            "evaluation_epoch_authorization_sha256": authorization["record_sha256"],
+            "schema_version": sufficiency.BLIND_PROJECTION_VERSION,
+            "slot_id": daily["slot_id"],
+        }
+    )
     records[hostile["record_sha256"]] = hostile
     hostile_reference = replace(
         reference,
-        authoritative_evidence_record_sha256=hostile["record_sha256"],
+        certified_parent_evidence_manifest_sha256=hostile["record_sha256"],
     )
     resolver = sufficiency.BlindEvidenceResolver(records)
     with pytest.raises(
         sufficiency.SufficiencyGovernanceError,
-        match="differs from authoritative replay",
+        match="wrong schema/version",
     ):
         resolver.replay(
             hostile_reference,
@@ -433,23 +455,154 @@ def test_reason_code_side_channel_is_refused() -> None:
         daily,
         evaluation_epoch_authorization_sha256=authorization["record_sha256"],
     )
-    envelope = dict(records[reference.authoritative_evidence_record_sha256])
-    envelope.pop("record_sha256")
-    envelope["declared_blind_projection"] = dict(
-        envelope["declared_blind_projection"]
+    hostile = sufficiency._with_record_hash(
+        {
+            "declared_blind_projection": {
+                corpus.REGIME_METRIC: {
+                    "blind_category": "CANDIDATE_CONTROL_DISAGREEMENT",
+                    "dependence_unit_id": daily["slot_id"],
+                }
+            },
+            "evaluation_epoch_authorization_sha256": authorization["record_sha256"],
+            "schema_version": sufficiency.BLIND_PROJECTION_VERSION,
+            "slot_id": daily["slot_id"],
+        }
     )
-    envelope["declared_blind_projection"][corpus.REGIME_METRIC] = {
-        "blind_category": "CANDIDATE_CONTROL_DISAGREEMENT",
-        "dependence_unit_id": daily["slot_id"],
-    }
-    hostile = sufficiency._with_record_hash(envelope)
     records[hostile["record_sha256"]] = hostile
     resolver = sufficiency.BlindEvidenceResolver(records)
     with pytest.raises(sufficiency.SufficiencyGovernanceError):
         resolver.replay(
             replace(
                 reference,
-                authoritative_evidence_record_sha256=hostile["record_sha256"],
+                certified_parent_evidence_manifest_sha256=hostile["record_sha256"],
+            ),
+            authorization=authorization,
+            current_decision_time=EPOCH_START + timedelta(days=2),
+        )
+
+
+def test_rehashed_control_stop_identity_cannot_override_lifecycle_replay() -> None:
+    _registry, authorization = _authorized_registry()
+    hourly = next(
+        row
+        for row in sufficiency._expected_slots_through(
+            EPOCH_START, EPOCH_START + timedelta(hours=2)
+        )
+        if row["cadence"] == corpus.STOP_HOURLY_CADENCE
+    )
+    reference, records = sufficiency.build_synthetic_blind_evidence(
+        hourly,
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+    )
+    manifest = copy.deepcopy(
+        records[reference.certified_parent_evidence_manifest_sha256]
+    )
+    stop_sha = next(iter(manifest["metric_owner_evidence_sha256_by_metric"].values()))
+    hostile_stop = copy.deepcopy(records[stop_sha])
+    hostile_stop.pop("record_sha256")
+    hostile_stop["active_stop_identity"] = "f" * 64
+    hostile_stop = sufficiency._with_record_hash(hostile_stop)
+    records[hostile_stop["record_sha256"]] = hostile_stop
+    manifest.pop("record_sha256")
+    manifest["metric_owner_evidence_sha256_by_metric"] = {
+        metric: hostile_stop["record_sha256"]
+        for metric in corpus.STOP_EVENT_METRICS
+    }
+    manifest = sufficiency._with_record_hash(manifest)
+    records[manifest["record_sha256"]] = manifest
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="does not replay"):
+        sufficiency.BlindEvidenceResolver(records).replay(
+            replace(
+                reference,
+                certified_parent_evidence_manifest_sha256=manifest["record_sha256"],
+            ),
+            authorization=authorization,
+            current_decision_time=EPOCH_START + timedelta(hours=2),
+        )
+
+
+def test_cross_slot_parent_substitution_is_refused() -> None:
+    _registry, authorization = _authorized_registry()
+    daily_rows = [
+        row
+        for row in sufficiency._expected_slots_through(
+            EPOCH_START, EPOCH_START + timedelta(days=2, minutes=5)
+        )
+        if row["cadence"] == corpus.STRATEGY_DAILY_CADENCE
+    ]
+    first, first_records = sufficiency.build_synthetic_blind_evidence(
+        daily_rows[0],
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+    )
+    second, second_records = sufficiency.build_synthetic_blind_evidence(
+        daily_rows[1],
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+    )
+    records = {**first_records, **second_records}
+    first_manifest = copy.deepcopy(
+        records[first.certified_parent_evidence_manifest_sha256]
+    )
+    second_manifest = records[second.certified_parent_evidence_manifest_sha256]
+    first_manifest.pop("record_sha256")
+    first_manifest["metric_owner_evidence_sha256_by_metric"][corpus.REGIME_METRIC] = (
+        second_manifest["metric_owner_evidence_sha256_by_metric"][corpus.REGIME_METRIC]
+    )
+    first_manifest = sufficiency._with_record_hash(first_manifest)
+    records[first_manifest["record_sha256"]] = first_manifest
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="wrong slot"):
+        sufficiency.BlindEvidenceResolver(records).replay(
+            replace(
+                first,
+                certified_parent_evidence_manifest_sha256=first_manifest[
+                    "record_sha256"
+                ],
+            ),
+            authorization=authorization,
+            current_decision_time=EPOCH_START + timedelta(days=3),
+        )
+
+
+def test_risk_sizing_opportunity_requires_bound_candidate_control_outputs() -> None:
+    _registry, authorization = _authorized_registry()
+    daily = next(
+        row
+        for row in sufficiency._expected_slots_through(
+            EPOCH_START, EPOCH_START + timedelta(days=1, minutes=5)
+        )
+        if row["cadence"] == corpus.STRATEGY_DAILY_CADENCE
+    )
+    reference, records = sufficiency.build_synthetic_blind_evidence(
+        daily,
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+    )
+    manifest = copy.deepcopy(
+        records[reference.certified_parent_evidence_manifest_sha256]
+    )
+    owner_sha = manifest["metric_owner_evidence_sha256_by_metric"][
+        corpus.RISK_SIZE_METRIC
+    ]
+    owner = copy.deepcopy(records[owner_sha])
+    candidate_sha = owner["owner_output_record_sha256s"][0]
+    hostile_candidate = copy.deepcopy(records[candidate_sha])
+    hostile_candidate.pop("record_sha256")
+    hostile_candidate["reference_identity"] = "ANOTHER_CANDIDATE"
+    hostile_candidate = sufficiency._with_record_hash(hostile_candidate)
+    records[hostile_candidate["record_sha256"]] = hostile_candidate
+    owner.pop("record_sha256")
+    owner["owner_output_record_sha256s"][0] = hostile_candidate["record_sha256"]
+    owner = sufficiency._with_record_hash(owner)
+    records[owner["record_sha256"]] = owner
+    manifest.pop("record_sha256")
+    manifest["metric_owner_evidence_sha256_by_metric"][corpus.RISK_SIZE_METRIC] = (
+        owner["record_sha256"]
+    )
+    manifest = sufficiency._with_record_hash(manifest)
+    records[manifest["record_sha256"]] = manifest
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="substituted"):
+        sufficiency.BlindEvidenceResolver(records).replay(
+            replace(
+                reference,
+                certified_parent_evidence_manifest_sha256=manifest["record_sha256"],
             ),
             authorization=authorization,
             current_decision_time=EPOCH_START + timedelta(days=2),
@@ -481,7 +634,7 @@ def test_warmup_and_pit_failures_add_no_raw_or_unit_credit() -> None:
 
 def test_381_events_from_one_stop_episode_are_not_381_units() -> None:
     registry, authorization = _authorized_registry()
-    current = EPOCH_START + timedelta(hours=381, minutes=5)
+    current = EPOCH_START + timedelta(hours=398, minutes=5)
     shared_episode = ("a" * 64, "ONE_CONTROL_ACTIVE_STOP_EPISODE")
 
     def transform(_index: int, row: dict[str, str]) -> dict[str, object]:
@@ -509,7 +662,7 @@ def test_381_events_from_one_stop_episode_are_not_381_units() -> None:
 
 def test_73_isolated_events_from_four_episodes_are_insufficient() -> None:
     registry, authorization = _authorized_registry()
-    current = EPOCH_START + timedelta(hours=73, minutes=5)
+    current = EPOCH_START + timedelta(days=73, minutes=5)
 
     def transform(index: int, row: dict[str, str]) -> dict[str, object]:
         if row["cadence"] != corpus.STOP_HOURLY_CADENCE:
@@ -593,6 +746,177 @@ def test_global_cutoff_requires_all_raw_unit_coverage_and_accounting_gates(
     ]
 
 
+def test_cutoff_validator_replays_strict_manifest_and_all_counters(
+    sufficient_run: tuple[object, ...],
+) -> None:
+    references, resolver, registry, authorization, _result = sufficient_run
+    cutoff = registry.cutoff(authorization["record_sha256"])
+    manifest = registry.evidence_manifest(
+        cutoff["authoritative_evidence_manifest_sha256"]
+    )
+    assert sufficiency.validate_cutoff_record(
+        cutoff,
+        manifest_rows=manifest,
+        evidence_references=references,
+        resolver=resolver,
+        authorization=authorization,
+    ) == cutoff
+
+
+def test_caller_fabricated_cutoffs_cannot_be_frozen_or_validated(
+    sufficient_run: tuple[object, ...],
+) -> None:
+    references, resolver, registry, authorization, _result = sufficient_run
+    fabricated = {
+        "record_sha256": "a" * 64,
+        "authoritative_evidence_manifest_sha256": "b" * 64,
+    }
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="caller-supplied"):
+        registry.freeze_cutoff(
+            authorization["record_sha256"], fabricated, (), {}
+        )
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="fields differ"):
+        sufficiency.validate_cutoff_record(
+            fabricated,
+            manifest_rows=(),
+            evidence_references=references,
+            resolver=resolver,
+            authorization=authorization,
+        )
+
+
+@pytest.mark.parametrize("manifest_attack", ["missing", "duplicate"])
+def test_cutoff_manifest_census_attack_is_refused(
+    sufficient_run: tuple[object, ...], manifest_attack: str
+) -> None:
+    references, resolver, registry, authorization, _result = sufficient_run
+    cutoff = copy.deepcopy(registry.cutoff(authorization["record_sha256"]))
+    manifest = list(
+        registry.evidence_manifest(cutoff["authoritative_evidence_manifest_sha256"])
+    )
+    if manifest_attack == "missing":
+        manifest.pop()
+    else:
+        manifest.append(dict(manifest[-1]))
+    cutoff["authoritative_evidence_manifest_sha256"] = sufficiency._digest(manifest)
+    cutoff.pop("record_sha256")
+    cutoff = sufficiency._with_record_hash(cutoff)
+    with pytest.raises(sufficiency.SufficiencyGovernanceError):
+        sufficiency.validate_cutoff_record(
+            cutoff,
+            manifest_rows=manifest,
+            evidence_references=references,
+            resolver=resolver,
+            authorization=authorization,
+        )
+
+
+def test_manifest_reference_from_another_epoch_is_refused() -> None:
+    _registry, authorization = _authorized_registry()
+    daily = next(
+        row
+        for row in sufficiency._expected_slots_through(
+            EPOCH_START, EPOCH_START + timedelta(days=1, minutes=5)
+        )
+        if row["cadence"] == corpus.STRATEGY_DAILY_CADENCE
+    )
+    reference, records = sufficiency.build_synthetic_blind_evidence(
+        daily,
+        evaluation_epoch_authorization_sha256=authorization["record_sha256"],
+    )
+    manifest = copy.deepcopy(
+        records[reference.certified_parent_evidence_manifest_sha256]
+    )
+    manifest.pop("record_sha256")
+    manifest["evaluation_epoch_authorization_sha256"] = "e" * 64
+    manifest = sufficiency._with_record_hash(manifest)
+    records[manifest["record_sha256"]] = manifest
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="wrong epoch"):
+        sufficiency.BlindEvidenceResolver(records).replay(
+            replace(
+                reference,
+                certified_parent_evidence_manifest_sha256=manifest["record_sha256"],
+            ),
+            authorization=authorization,
+            current_decision_time=EPOCH_START + timedelta(days=2),
+        )
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        ("raw", 1),
+        ("dependence", 1),
+        ("coverage", -1),
+        ("late_cutoff", 1),
+        ("early_cutoff", -1),
+    ],
+)
+def test_self_rehashed_false_cutoff_is_refused(
+    sufficient_run: tuple[object, ...], mutation: tuple[str, int]
+) -> None:
+    references, resolver, registry, authorization, _result = sufficient_run
+    cutoff = copy.deepcopy(registry.cutoff(authorization["record_sha256"]))
+    manifest = registry.evidence_manifest(
+        cutoff["authoritative_evidence_manifest_sha256"]
+    )
+    kind, delta = mutation
+    if kind == "raw":
+        cutoff["per_metric_counts"][corpus.CROSS_MARKET_METRIC][
+            "raw_sufficiency_denominator"
+        ] += delta
+    elif kind == "dependence":
+        cutoff["per_metric_counts"][corpus.CROSS_MARKET_METRIC][
+            "distinct_dependence_unit_count"
+        ] += delta
+    elif kind == "coverage":
+        cutoff["per_metric_counts"][corpus.CROSS_MARKET_METRIC][
+            "authoritative_coverage_numerator"
+        ] += delta
+    else:
+        cutoff["cutoff_decision_time"] = (
+            datetime.fromisoformat(cutoff["cutoff_decision_time"])
+            + timedelta(days=delta)
+        ).isoformat()
+    cutoff.pop("record_sha256")
+    cutoff = sufficiency._with_record_hash(cutoff)
+    with pytest.raises(sufficiency.SufficiencyGovernanceError):
+        sufficiency.validate_cutoff_record(
+            cutoff,
+            manifest_rows=manifest,
+            evidence_references=references,
+            resolver=resolver,
+            authorization=authorization,
+        )
+
+
+@pytest.mark.parametrize("corruption", ["deleted", "substituted"])
+def test_frozen_parent_evidence_corruption_prevents_terminal_result(
+    sufficient_run: tuple[object, ...], corruption: str
+) -> None:
+    _references, resolver, registry, authorization, _result = sufficient_run
+    cutoff = registry.cutoff(authorization["record_sha256"])
+    manifest = registry.evidence_manifest(
+        cutoff["authoritative_evidence_manifest_sha256"]
+    )
+    parent_sha = manifest[0]["certified_parent_evidence_manifest_sha256"]
+    records = resolver.records
+    original = records[parent_sha]
+    if corruption == "deleted":
+        del records[parent_sha]
+    else:
+        records[parent_sha] = {
+            **original,
+            "cadence": "SUBSTITUTED_CADENCE",
+        }
+    try:
+        with pytest.raises(sufficiency.SufficiencyGovernanceError):
+            registry.persist_evaluation_result(
+                authorization_sha256=authorization["record_sha256"],
+                result="PASS",
+            )
+    finally:
+        records[parent_sha] = original
+
+
 def test_one_unaccounted_slot_prevents_cutoff() -> None:
     registry, authorization = _authorized_registry()
     references, resolver, records = _evidence_through(
@@ -672,7 +996,7 @@ def test_late_revision_and_surface_mutation_cannot_move_frozen_cutoff(
 
 def test_epoch_authorization_requires_real_contract_hash_and_fixed_identity() -> None:
     registry = sufficiency.EvaluationEpochRegistry()
-    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="real SHA-256"):
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="fields differ"):
         registry.authorize_initial_epoch(
             evaluation_contract={
                 "definition_sha256": "e" * 64,
@@ -703,16 +1027,88 @@ def test_epoch_authorization_requires_real_contract_hash_and_fixed_identity() ->
         assert sufficiency._is_sha256(authorization[field])
 
 
+def test_evaluation_contract_strict_schema_and_bindings_fail_closed() -> None:
+    registry = sufficiency.EvaluationEpochRegistry()
+    for payload in ({}, {"foo": "bar"}):
+        with pytest.raises(sufficiency.SufficiencyGovernanceError):
+            registry.authorize_initial_epoch(
+                evaluation_contract=sufficiency._with_definition_hash(payload),
+                epoch_observation_start=EPOCH_START,
+            )
+
+    valid = _evaluation_contract()
+    mutations = [
+        {key: value for key, value in valid.items() if key != "candidate_reference_identity"},
+        {key: value for key, value in valid.items() if key != "control_reference_identity"},
+        {**valid, "candidate_reference_identity": valid["control_reference_identity"]},
+        {**valid, "certified_corpus_sha256": "0" * 64},
+        {**valid, "sufficiency_governance_sha256": "1" * 64},
+        {**valid, "stage_b_evaluation_contract_sha256": "2" * 64},
+    ]
+    for mutation in mutations:
+        mutation.pop("definition_sha256", None)
+        with pytest.raises(sufficiency.SufficiencyGovernanceError):
+            registry.authorize_initial_epoch(
+                evaluation_contract=sufficiency._with_definition_hash(mutation),
+                epoch_observation_start=EPOCH_START,
+            )
+
+
+def test_evaluation_contract_and_authorization_must_precede_epoch() -> None:
+    late_contract = sufficiency.build_evaluation_contract(
+        candidate_reference_identity="SYNTHETIC_CANDIDATE_A",
+        control_reference_identity="SYNTHETIC_CONTROL",
+        contract_created_at=EPOCH_START,
+    )
+    registry = sufficiency.EvaluationEpochRegistry()
+    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="prospective"):
+        registry.authorize_initial_epoch(
+            evaluation_contract=late_contract,
+            epoch_observation_start=EPOCH_START,
+            authorized_at=EPOCH_START,
+        )
+
+
 def test_initial_epoch_is_unique_across_parallel_contract_retry() -> None:
     registry, authorization = _authorized_registry()
     assert registry.authorize_initial_epoch(
         evaluation_contract=_evaluation_contract(),
         epoch_observation_start=EPOCH_START,
+        authorized_at=EPOCH_START - timedelta(seconds=1),
     ) == authorization
-    with pytest.raises(sufficiency.SufficiencyGovernanceError, match="unique"):
-        registry.authorize_initial_epoch(
-            evaluation_contract=_evaluation_contract("CHANGED"),
-            epoch_observation_start=EPOCH_START,
+    changed = registry.authorize_initial_epoch(
+        evaluation_contract=_evaluation_contract("CHANGED"),
+        epoch_observation_start=EPOCH_START,
+        authorized_at=EPOCH_START - timedelta(seconds=1),
+    )
+    assert changed["evaluation_contract_sha256"] != authorization[
+        "evaluation_contract_sha256"
+    ]
+
+
+def test_valid_revalidated_cutoff_allows_pass_terminal(
+    sufficient_run: tuple[object, ...],
+) -> None:
+    _references, _resolver, registry, authorization, _result = sufficient_run
+    derivation = registry._derivation_by_authorization[authorization["record_sha256"]]
+    fresh = sufficiency.EvaluationEpochRegistry()
+    fresh_authorization = fresh.authorize_initial_epoch(
+        evaluation_contract=_evaluation_contract(),
+        epoch_observation_start=EPOCH_START,
+        authorized_at=EPOCH_START - timedelta(seconds=1),
+    )
+    assert fresh_authorization == authorization
+    fresh.freeze_derived_cutoff(derivation)
+    terminal = fresh.persist_evaluation_result(
+        authorization_sha256=authorization["record_sha256"],
+        result="PASS",
+    )
+    assert terminal["result"] == "PASS"
+    assert terminal["terminal"] is True
+    with pytest.raises(sufficiency.EvaluationEpochFrozenError):
+        fresh.persist_evaluation_result(
+            authorization_sha256=authorization["record_sha256"],
+            result="PASS",
         )
 
 
@@ -736,6 +1132,12 @@ def test_fail_is_terminal_and_arbitrary_retry_id_is_not_authorization(
             registry,
             authorization,
             SUFFICIENT_DECISION_TIME,
+        )
+    with pytest.raises(sufficiency.EvaluationEpochFrozenError, match="terminal"):
+        registry.authorize_initial_epoch(
+            evaluation_contract=_evaluation_contract(),
+            epoch_observation_start=EPOCH_START,
+            authorized_at=EPOCH_START - timedelta(seconds=1),
         )
     with pytest.raises(sufficiency.SufficiencyGovernanceError, match="arbitrary"):
         registry.authorize_initial_epoch(
@@ -776,7 +1178,7 @@ def test_top_level_hash_mechanically_binds_every_material_child() -> None:
     assert definition["material_child_count"] == len(
         definition["child_definition_sha256"]
     )
-    assert definition["material_child_count"] == 13
+    assert definition["material_child_count"] == 18
     assert set(sufficiency.protocol_hashes()) == set(
         definition["child_definition_sha256"]
     ) | {"sufficiency_governance"}
@@ -785,6 +1187,38 @@ def test_top_level_hash_mechanically_binds_every_material_child() -> None:
         for value in definition["child_definition_sha256"].values()
     )
     sufficiency.verify_sufficiency_governance_definition(definition)
+
+
+def test_blind_and_cutoff_executable_schemas_are_hash_bound() -> None:
+    manifest = sufficiency.certified_blind_parent_evidence_manifest_contract()
+    assert set(manifest["referenced_record_schemas"]) == {
+        sufficiency.PARENT_INPUT_RECORD_VERSION,
+        sufficiency.PARENT_METRIC_RECORD_VERSION,
+        sufficiency.PARENT_PORTFOLIO_STATE_VERSION,
+        sufficiency.PARENT_RISK_OUTPUT_VERSION,
+        sufficiency.PARENT_STOP_INPUT_VERSION,
+        sufficiency.PARENT_TRADE_ACTION_VERSION,
+        sufficiency.PARENT_WARMUP_RECORD_VERSION,
+    }
+    cutoff = sufficiency.evaluation_cutoff_contract()
+    assert set(cutoff["cutoff_record_strict_fields"]) == (
+        sufficiency._strict_cutoff_fields()
+    )
+    assert cutoff["manifest_row_strict_fields"] == [
+        "certified_parent_evidence_manifest_sha256",
+        "slot_id",
+    ]
+    evaluation = sufficiency.evaluation_contract_schema()
+    assert set(evaluation["exact_fields"]) == {
+        "candidate_reference_identity",
+        "certified_corpus_sha256",
+        "contract_created_at",
+        "control_reference_identity",
+        "definition_sha256",
+        "schema_version",
+        "stage_b_evaluation_contract_sha256",
+        "sufficiency_governance_sha256",
+    }
 
 
 @pytest.mark.parametrize(
@@ -817,8 +1251,13 @@ def test_every_material_child_mutation_moves_parent_hash(
         ("coverage_policy", "floor"),
         ("evidence_unit_policy", "raw_observations_are_independent_by_default"),
         ("blind_monitor_contract", "caller_declared_projection_is_authority"),
+        ("certified_blind_parent_evidence_manifest_contract", "required_owner_evidence"),
+        ("blind_replay_derivation_contract", "replay_steps"),
+        ("blind_category_mapping", "mapping_precedence"),
+        ("evaluation_contract_schema", "exact_fields"),
         ("evaluation_epoch_contract", "initial_epoch_unique"),
         ("evaluation_cutoff_contract", "first_cutoff_immutable"),
+        ("cutoff_validation_contract", "earliest_proof"),
     ],
 )
 def test_required_semantic_mutations_move_child_and_parent(
@@ -903,7 +1342,7 @@ def test_tampered_child_and_unbound_artifact_are_refused(tmp_path: Path) -> None
 
 def test_governance_is_pre_data_and_authorizes_nothing_downstream() -> None:
     definition = sufficiency.sufficiency_governance_definition()
-    assert definition["status"] == "CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
+    assert definition["status"] == "R2_CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
     assert definition["final_classification"] == sufficiency.FINAL_CLASSIFICATION
     assert definition["collection_authorized"] is False
     assert definition["postp1_004_authorized"] is False

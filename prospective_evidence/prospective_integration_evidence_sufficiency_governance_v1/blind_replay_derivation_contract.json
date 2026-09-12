@@ -1,0 +1,25 @@
+{
+  "active_stop_membership_replayed": true,
+  "blind_category_mapping_sha256": "219c69c1c931428fb44ebb942dc557f6ab921733bb581c508d4984a7f730ef80",
+  "cached_projection_authoritative": false,
+  "certified_parent_manifest_contract_sha256": "c0d97397e1dea1219883e57f30833f0699e5d1fbf2421c46e480065f0ec75ef8",
+  "comparability_replayed": true,
+  "control_root_lifecycle_replayed": true,
+  "definition_sha256": "c8eb238d5e4c87ba932f13f88cd966acc429a287b9f7b9dcb166c4636e4379d9",
+  "digest_only_leaf_permitted": false,
+  "genuine_sizing_opportunity_replayed": true,
+  "pit_replayed_for_every_material_input": true,
+  "replay_steps": [
+    "resolve exact persisted record",
+    "recompute record hash and validate strict schema/version",
+    "verify certified-corpus, epoch, slot, cadence and time identities",
+    "resolve every transitive parent reference",
+    "re-run the certified parent owner predicate",
+    "derive the coarse blind category",
+    "derive the natural dependence unit without reading an outcome"
+  ],
+  "schema_version": "CERTIFIED_BLIND_EVIDENCE_REPLAY_V1",
+  "scientific_surface_record_authoritative": false,
+  "universe_replayed": true,
+  "warmup_replayed": true
+}

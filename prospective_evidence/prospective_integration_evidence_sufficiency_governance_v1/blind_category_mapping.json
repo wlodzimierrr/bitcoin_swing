@@ -1,0 +1,25 @@
+{
+  "definition_sha256": "219c69c1c931428fb44ebb942dc557f6ab921733bb581c508d4984a7f730ef80",
+  "mapping_precedence": [
+    "WARMUP_INCOMPLETE",
+    "PIT_INVALID",
+    "SOURCE_UNAVAILABLE",
+    "DATA_QUALITY_FAIL",
+    "REFERENCE_UNAVAILABLE",
+    "NOT_IN_UNIVERSE",
+    "NOT_COMPARABLE",
+    "EVALUATED"
+  ],
+  "outcome_fields_consumed": false,
+  "schema_version": "PROSPECTIVE_STAGE_B_BLIND_CATEGORY_MAPPING_V1",
+  "states": [
+    "DATA_QUALITY_FAIL",
+    "EVALUATED",
+    "NOT_COMPARABLE",
+    "NOT_IN_UNIVERSE",
+    "PIT_INVALID",
+    "REFERENCE_UNAVAILABLE",
+    "SOURCE_UNAVAILABLE",
+    "WARMUP_INCOMPLETE"
+  ]
+}

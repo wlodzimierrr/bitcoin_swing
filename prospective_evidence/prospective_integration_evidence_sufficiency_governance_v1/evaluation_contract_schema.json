@@ -1,0 +1,23 @@
+{
+  "candidate_control_must_be_distinct": true,
+  "definition_sha256": "9b59a4ec68a16997af12ada74dda402015e27988599ec0fcfb01199141576659",
+  "exact_fields": [
+    "candidate_reference_identity",
+    "certified_corpus_sha256",
+    "contract_created_at",
+    "control_reference_identity",
+    "definition_sha256",
+    "schema_version",
+    "stage_b_evaluation_contract_sha256",
+    "sufficiency_governance_sha256"
+  ],
+  "identity_rules": {
+    "candidate_reference_identity": "non-empty canonical identity",
+    "control_reference_identity": "non-empty canonical identity",
+    "definition_sha256": "canonical exact-contract digest"
+  },
+  "schema_version": "PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_SCHEMA_V1",
+  "stage_b_evaluation_contract_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
+  "unexpected_fields_permitted": false,
+  "version": "PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_V1"
+}

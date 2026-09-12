@@ -14,14 +14,19 @@
     "review_ticket": "POSTP1-002R5"
   },
   "child_definition_sha256": {
-    "blind_monitor_contract": "2841113f91e8d38f43bb81302825caf5775c16447f3bd54661e9082bae26b10d",
+    "blind_category_mapping": "219c69c1c931428fb44ebb942dc557f6ab921733bb581c508d4984a7f730ef80",
+    "blind_monitor_contract": "f9cf595cc14ca35b8964ac2324bd8489fa436b764a0a6a3de901c03c5647345a",
+    "blind_replay_derivation_contract": "c8eb238d5e4c87ba932f13f88cd966acc429a287b9f7b9dcb166c4636e4379d9",
+    "certified_blind_parent_evidence_manifest": "c0d97397e1dea1219883e57f30833f0699e5d1fbf2421c46e480065f0ec75ef8",
     "common_rate_evidence_strength": "03aba5d79c457e3a4004d2a84f84ca4b9ad854383e8e960a63455da1369e5fff",
     "coverage_policy": "ea4bce2801d80b0a117239a40d2fef55e2fc32cd2d9da06a90a7eeb888fc4079",
-    "evaluation_cutoff_contract": "5293afb5b3b9085ff305fdc7d837849ad80b07ac1e9c13f7dc196f4cb682f2ec",
-    "evaluation_epoch_contract": "94bad9185ffa37139416a51649f0010f7da6ef71318aaba800a8a03e52388c62",
-    "evaluation_result_identity": "8f5f0f1da864c2e2513bceaeb1b1e1af883b84678f3d0efa813146ff2cde5c54",
-    "evidence_unit_policy": "a823ba79ba98672e0845609e9e6a7ff4b416af598b1d081b271f240068d56524",
-    "metric_sufficiency_minima": "5ffc971fdc808ba0f27c3f48f318c6c8f413f83b70f1755c84e3db95ba974d27",
+    "cutoff_validation_contract": "b4ac0fd4db3bef2431684509d52896ed2c9ac4284c89d997d720b5024f7663c2",
+    "evaluation_contract_schema": "9b59a4ec68a16997af12ada74dda402015e27988599ec0fcfb01199141576659",
+    "evaluation_cutoff_contract": "7da5a4b7110239bacb957197acb78d1b71ccbb0bbc7e65a0bc23b2c1df0d0a36",
+    "evaluation_epoch_contract": "feefd02315a552e87f31aba49b99c0070f06136a06a74d1b4886b2ebd19c1f51",
+    "evaluation_result_identity": "34638004d15bdcec0f3c85f23e122d751f20b568a5c9ed8e1bacb5eb2d11ff42",
+    "evidence_unit_policy": "1389960d7d4c8e2c962a12d289697a67cdcaec406c49b6b2a6f6f92775578c74",
+    "metric_sufficiency_minima": "103c58141bf99fd7bcdcddcf0ca19a25e3f45fdf8a4805a163b4b3677a9417e7",
     "p95_tail_repeatability": "7cca33f4ba085a946b193a786b53e7e0744611af43f5ada3bdd942ef468f34d1",
     "semantic_diff_from_stage_b_gates": "3d8e9228248ab49d0004a04af53693f47499682f99765f7a6130f1ec818a5fdd",
     "statistical_derivations": "31ef1530f1de8c51551a0b528b7683d9120c2f8fc6b14539207314ec568b4d9e",
@@ -30,7 +35,7 @@
   },
   "collection_authorized": false,
   "decimal_precision": 80,
-  "definition_sha256": "0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242",
+  "definition_sha256": "0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e",
   "epic_t": {
     "modified": false,
     "reopened": false
@@ -45,21 +50,34 @@
       "review_documentation_commit": "86def44f0a734efdf175b3be8541644029f5f31d",
       "review_result": "FAIL \u2014 SUFFICIENCY GOVERNANCE INVALID",
       "superseded_before_collection": true
+    },
+    {
+      "authoritative": false,
+      "definition_sha256": "0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242",
+      "implementation_commit": "8540e80e58511818eaa2ce4d976470a405234a53",
+      "prospective_observations_collected": false,
+      "review_classification": "SUFFICIENCY_GOVERNANCE_REQUIRES_FIX",
+      "review_documentation_commit": "1342ff9eca04d254bf17566dcc80b5796310af92",
+      "review_result": "FAIL \u2014 CORRECTED SUFFICIENCY GOVERNANCE INVALID",
+      "superseded_before_collection": true
     }
   ],
-  "final_classification": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_REPEAT_XHIGH_REVIEW",
+  "final_classification": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_READY_FOR_FINAL_XHIGH_REVIEW",
   "governance_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1",
-  "material_child_count": 13,
+  "material_child_count": 18,
   "material_child_enumeration": "single mechanical artifact registry",
   "parent_child_bindings": {
+    "data_schema_sha256": "0c29908f121c9060d47c5153aa938feed48f73a69268d323e9e72b9affcbf66d",
     "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
     "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+    "portfolio_track_sha256": "92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4",
     "scientific_evidence_resolver_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
     "stage_b_evaluation_contract_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
+    "stop_event_taxonomy_sha256": "ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e",
     "warmup_history_definition_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac"
   },
   "postp1_004_authorized": false,
-  "program_ticket": "POSTP1-003R1",
+  "program_ticket": "POSTP1-003R2",
   "safety": {
     "btc019_sealed_data_accessed": false,
     "prospective_observations_collected": false,
@@ -69,7 +87,7 @@
   "schema_version": "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_DEFINITION_V1",
   "stage_b_performance_gate_owner": "btc_predictor.research.reference_composite_v2.V2_APPROVAL_GATES",
   "stage_b_performance_gates_changed": false,
-  "status": "CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE",
+  "status": "R2_CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE",
   "target_metrics": [
     "cross_market_confirmed_stop_preservation_rate",
     "gap_through_stop_consensus_agreement_rate",

@@ -1,38 +1,35 @@
 {
   "certified_corpus_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
   "decision_universe_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
-  "definition_sha256": "a823ba79ba98672e0845609e9e6a7ff4b416af598b1d081b271f240068d56524",
+  "definition_sha256": "1389960d7d4c8e2c962a12d289697a67cdcaec406c49b6b2a6f6f92775578c74",
   "metric_evidence_contract_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
   "metrics": {
     "cross_market_confirmed_stop_preservation_rate": {
-      "dependence_unit_derivation": "sha256(control position opening-transition identity, active stop identity, certified corpus hash, policy version)",
-      "dependence_unit_kind": "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE",
-      "dependence_unit_owner": "certified control portfolio lifecycle hash chain plus prospective_stop_event.active_stop_identity",
+      "dependence_unit_derivation": "sha256(policy version, metric name, certified corpus hash, replayed control position root opening-transition SHA-256)",
+      "dependence_unit_kind": "CONTROL_POSITION_ROOT_LIFECYCLE_EPISODE",
+      "dependence_unit_owner": "certified control portfolio lifecycle hash chain; the root opening transition of one economic control position",
       "identity_fields": {
-        "active_stop_identity": "prospective_stop_event.active_stop_identity; control lifecycle active stop plus transition/source identity",
-        "control_position_episode_sha256": "replayed root opening transition from the control portfolio prior_state_sha256 hash chain"
+        "control_position_root_opening_transition_sha256": "derived only by replaying the control portfolio prior-state hash chain to the opening transition of the current episode"
       },
       "maximum_sufficiency_credit_per_unit": 1,
       "revisions_or_replays_create_new_unit": false
     },
     "gap_through_stop_consensus_agreement_rate": {
-      "dependence_unit_derivation": "sha256(control position opening-transition identity, active stop identity, certified corpus hash, policy version)",
-      "dependence_unit_kind": "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE",
-      "dependence_unit_owner": "certified control portfolio lifecycle hash chain plus prospective_stop_event.active_stop_identity",
+      "dependence_unit_derivation": "sha256(policy version, metric name, certified corpus hash, replayed control position root opening-transition SHA-256)",
+      "dependence_unit_kind": "CONTROL_POSITION_ROOT_LIFECYCLE_EPISODE",
+      "dependence_unit_owner": "certified control portfolio lifecycle hash chain; the root opening transition of one economic control position",
       "identity_fields": {
-        "active_stop_identity": "prospective_stop_event.active_stop_identity; control lifecycle active stop plus transition/source identity",
-        "control_position_episode_sha256": "replayed root opening transition from the control portfolio prior_state_sha256 hash chain"
+        "control_position_root_opening_transition_sha256": "derived only by replaying the control portfolio prior-state hash chain to the opening transition of the current episode"
       },
       "maximum_sufficiency_credit_per_unit": 1,
       "revisions_or_replays_create_new_unit": false
     },
     "isolated_venue_stop_suppression_rate": {
-      "dependence_unit_derivation": "sha256(control position opening-transition identity, active stop identity, certified corpus hash, policy version)",
-      "dependence_unit_kind": "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE",
-      "dependence_unit_owner": "certified control portfolio lifecycle hash chain plus prospective_stop_event.active_stop_identity",
+      "dependence_unit_derivation": "sha256(policy version, metric name, certified corpus hash, replayed control position root opening-transition SHA-256)",
+      "dependence_unit_kind": "CONTROL_POSITION_ROOT_LIFECYCLE_EPISODE",
+      "dependence_unit_owner": "certified control portfolio lifecycle hash chain; the root opening transition of one economic control position",
       "identity_fields": {
-        "active_stop_identity": "prospective_stop_event.active_stop_identity; control lifecycle active stop plus transition/source identity",
-        "control_position_episode_sha256": "replayed root opening transition from the control portfolio prior_state_sha256 hash chain"
+        "control_position_root_opening_transition_sha256": "derived only by replaying the control portfolio prior-state hash chain to the opening transition of the current episode"
       },
       "maximum_sufficiency_credit_per_unit": 1,
       "revisions_or_replays_create_new_unit": false
@@ -89,5 +86,8 @@
     }
   },
   "raw_observations_are_independent_by_default": false,
-  "schema_version": "PROSPECTIVE_STAGE_B_EVIDENCE_UNIT_POLICY_V1"
+  "schema_version": "PROSPECTIVE_STAGE_B_EVIDENCE_UNIT_POLICY_V1",
+  "stop_active_identity_membership_only": true,
+  "stop_active_identity_part_of_dependence_unit": false,
+  "stop_move_creates_new_dependence_unit": false
 }

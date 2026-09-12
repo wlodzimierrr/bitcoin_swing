@@ -1,4 +1,5 @@
 {
+  "authorization_at_before_epoch_observation_start": true,
   "authorization_before_first_qualifying_observation": true,
   "authorization_bindings": [
     "blind_monitor_sha256",
@@ -11,8 +12,9 @@
     "sufficiency_governance_sha256",
     "temporal_policy_sha256"
   ],
-  "definition_sha256": "94bad9185ffa37139416a51649f0010f7da6ef71318aaba800a8a03e52388c62",
+  "definition_sha256": "feefd02315a552e87f31aba49b99c0070f06136a06a74d1b4886b2ebd19c1f51",
   "evaluation_contract_definition_must_recompute": true,
+  "evaluation_contract_schema_sha256": "9b59a4ec68a16997af12ada74dda402015e27988599ec0fcfb01199141576659",
   "initial_epoch_id": "INITIAL_STAGE_B_EVALUATION_EPOCH",
   "initial_epoch_unique": true,
   "postp1_004_persistent_transactional_enforcement_required": true,

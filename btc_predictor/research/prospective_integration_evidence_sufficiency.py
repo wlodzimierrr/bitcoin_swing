@@ -1,10 +1,13 @@
 """Corrected pre-data sufficiency governance for prospective Stage-B evidence.
 
-POSTP1-003R1 never collects evidence or consumes a numerator, target outcome,
+POSTP1-003R2 never collects evidence or consumes a numerator, target outcome,
 relative-difference value, or PASS/FAIL result while determining sufficiency.
 It binds the certified prospective corpus, separates the three relevant count
 types, and owns a stateful reference contract for future POSTP1-004 persistence.
-The scientific monitor accepts only content-addressed evidence references.
+The scientific monitor accepts only content-addressed certified-parent manifests
+and derives every blind fact by transitive replay.  Blind projections, cutoff
+records and evaluation contracts are cached results, never self-authenticating
+scientific authorities.
 """
 
 from __future__ import annotations
@@ -35,12 +38,12 @@ GOVERNANCE_VERSION = "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1
 GOVERNANCE_SCHEMA_VERSION = (
     "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_DEFINITION_V1"
 )
-GOVERNANCE_STATUS = "CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
-PROGRAM_TICKET = "POSTP1-003R1"
+GOVERNANCE_STATUS = "R2_CORRECTED_FROZEN_PRE_DATA_SUFFICIENCY_GOVERNANCE"
+PROGRAM_TICKET = "POSTP1-003R2"
 WORKSTREAM = "EPIC X"
 FINAL_CLASSIFICATION = (
     "PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1_"
-    "READY_FOR_REPEAT_XHIGH_REVIEW"
+    "READY_FOR_FINAL_XHIGH_REVIEW"
 )
 
 FAILED_GOVERNANCE_SHA256 = (
@@ -54,6 +57,20 @@ FAILED_GOVERNANCE_REVIEW_DOCUMENTATION_COMMIT = (
 )
 FAILED_GOVERNANCE_REVIEW_RESULT = "FAIL — SUFFICIENCY GOVERNANCE INVALID"
 FAILED_GOVERNANCE_CLASSIFICATION = "SUFFICIENCY_GOVERNANCE_REQUIRES_FIX"
+
+FAILED_R1_GOVERNANCE_SHA256 = (
+    "0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242"
+)
+FAILED_R1_GOVERNANCE_IMPLEMENTATION_COMMIT = (
+    "8540e80e58511818eaa2ce4d976470a405234a53"
+)
+FAILED_R1_GOVERNANCE_REVIEW_DOCUMENTATION_COMMIT = (
+    "1342ff9eca04d254bf17566dcc80b5796310af92"
+)
+FAILED_R1_GOVERNANCE_REVIEW_RESULT = (
+    "FAIL — CORRECTED SUFFICIENCY GOVERNANCE INVALID"
+)
+FAILED_R1_GOVERNANCE_CLASSIFICATION = "SUFFICIENCY_GOVERNANCE_REQUIRES_FIX"
 
 CERTIFIED_CORPUS_VERSION = _corpus.PROTOCOL_VERSION
 CERTIFIED_CORPUS_SHA256 = (
@@ -83,8 +100,13 @@ COVERAGE_FILENAME = "coverage_policy.json"
 EVIDENCE_UNIT_FILENAME = "evidence_unit_policy.json"
 TEMPORAL_FILENAME = "temporal_policy.json"
 BLIND_MONITOR_FILENAME = "blind_monitor_contract.json"
+BLIND_PARENT_MANIFEST_FILENAME = "certified_blind_parent_evidence_manifest.json"
+BLIND_REPLAY_FILENAME = "blind_replay_derivation_contract.json"
+BLIND_CATEGORY_FILENAME = "blind_category_mapping.json"
+EVALUATION_CONTRACT_SCHEMA_FILENAME = "evaluation_contract_schema.json"
 EPOCH_FILENAME = "evaluation_epoch_contract.json"
 CUTOFF_FILENAME = "evaluation_cutoff_contract.json"
+CUTOFF_VALIDATION_FILENAME = "cutoff_replay_validation_contract.json"
 RESULT_IDENTITY_FILENAME = "evaluation_result_identity.json"
 STOPPING_RULE_FILENAME = "stopping_rule.json"
 SEMANTIC_DIFF_FILENAME = "semantic_diff_from_stage_b_gates.json"
@@ -138,6 +160,14 @@ def _with_record_hash(payload: Mapping[str, Any]) -> dict[str, Any]:
     result = dict(payload)
     result["record_sha256"] = _source_integrity.digest(result)
     return result
+
+
+def _verify_record_hash(payload: Mapping[str, Any], name: str) -> str:
+    row = dict(payload)
+    declared = row.pop("record_sha256", None)
+    if not _is_sha256(declared) or _source_integrity.digest(row) != declared:
+        raise SufficiencyGovernanceError(f"{name} must carry its real record SHA-256")
+    return declared
 
 
 def _verify_hashed_definition(payload: Mapping[str, Any], name: str) -> str:
@@ -475,23 +505,19 @@ def evidence_unit_policy() -> dict[str, Any]:
     metrics: dict[str, Any] = {}
     for metric in _corpus.TARGET_METRICS:
         if metric in _corpus.STOP_EVENT_METRICS:
-            kind = "CONTROL_POSITION_ACTIVE_STOP_LIFECYCLE_EPISODE"
+            kind = "CONTROL_POSITION_ROOT_LIFECYCLE_EPISODE"
             owner = (
-                "certified control portfolio lifecycle hash chain plus "
-                "prospective_stop_event.active_stop_identity"
+                "certified control portfolio lifecycle hash chain; the root "
+                "opening transition of one economic control position"
             )
             derivation = (
-                "sha256(control position opening-transition identity, active stop "
-                "identity, certified corpus hash, policy version)"
+                "sha256(policy version, metric name, certified corpus hash, "
+                "replayed control position root opening-transition SHA-256)"
             )
             fields = {
-                "active_stop_identity": (
-                    "prospective_stop_event.active_stop_identity; control lifecycle "
-                    "active stop plus transition/source identity"
-                ),
-                "control_position_episode_sha256": (
-                    "replayed root opening transition from the control portfolio "
-                    "prior_state_sha256 hash chain"
+                "control_position_root_opening_transition_sha256": (
+                    "derived only by replaying the control portfolio prior-state "
+                    "hash chain to the opening transition of the current episode"
                 ),
             }
         elif metric == _corpus.RISK_SIZE_METRIC:
@@ -525,6 +551,9 @@ def evidence_unit_policy() -> dict[str, Any]:
         ],
         "metrics": metrics,
         "raw_observations_are_independent_by_default": False,
+        "stop_active_identity_membership_only": True,
+        "stop_active_identity_part_of_dependence_unit": False,
+        "stop_move_creates_new_dependence_unit": False,
         "schema_version": EVIDENCE_UNIT_POLICY_ID,
     }
     return _with_definition_hash(payload)
@@ -535,23 +564,21 @@ def _derive_dependence_unit_id(
     *,
     slot_id: str,
     control_position_episode_sha256: str | None,
-    active_stop_identity: str | None,
+    active_stop_identity: str | None = None,
 ) -> str:
     if metric in _corpus.STOP_EVENT_METRICS:
         if not _is_sha256(control_position_episode_sha256):
             raise SufficiencyGovernanceError(
                 "stop evidence lacks a replayed control position episode identity"
             )
-        if not isinstance(active_stop_identity, str) or not active_stop_identity:
-            raise SufficiencyGovernanceError(
-                "stop evidence lacks a replayed active stop identity"
-            )
         return _digest(
             {
-                "active_stop_identity": active_stop_identity,
                 "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
-                "control_position_episode_sha256": control_position_episode_sha256,
-                "policy": EVIDENCE_UNIT_POLICY_ID,
+                "control_position_root_opening_transition_sha256": (
+                    control_position_episode_sha256
+                ),
+                "metric_name": metric,
+                "policy_version": EVIDENCE_UNIT_POLICY_ID,
             }
         )
     if not _is_sha256(slot_id):
@@ -702,6 +729,16 @@ def temporal_policy() -> dict[str, Any]:
 BLIND_MONITOR_VERSION = "PROSPECTIVE_STAGE_B_SUFFICIENCY_MONITOR_V1"
 BLIND_PROJECTION_VERSION = "PROSPECTIVE_STAGE_B_BLIND_EVIDENCE_PROJECTION_V1"
 BLIND_SOURCE_RECORD_VERSION = "PROSPECTIVE_STAGE_B_BLIND_SOURCE_EVIDENCE_V1"
+BLIND_PARENT_MANIFEST_VERSION = "CERTIFIED_BLIND_PARENT_EVIDENCE_MANIFEST_V1"
+BLIND_REPLAY_CONTRACT_VERSION = "CERTIFIED_BLIND_EVIDENCE_REPLAY_V1"
+BLIND_CATEGORY_MAPPING_VERSION = "PROSPECTIVE_STAGE_B_BLIND_CATEGORY_MAPPING_V1"
+PARENT_INPUT_RECORD_VERSION = "CERTIFIED_PARENT_INPUT_EVIDENCE_V1"
+PARENT_WARMUP_RECORD_VERSION = "CERTIFIED_PARENT_WARMUP_REPLAY_EVIDENCE_V1"
+PARENT_METRIC_RECORD_VERSION = "CERTIFIED_PARENT_METRIC_OWNER_EVIDENCE_V1"
+PARENT_PORTFOLIO_STATE_VERSION = "CERTIFIED_PARENT_PORTFOLIO_STATE_EVIDENCE_V1"
+PARENT_TRADE_ACTION_VERSION = "CERTIFIED_PARENT_TRADE_ACTION_EVIDENCE_V1"
+PARENT_STOP_INPUT_VERSION = "CERTIFIED_PARENT_STOP_CLASSIFIER_INPUT_V1"
+PARENT_RISK_OUTPUT_VERSION = "CERTIFIED_PARENT_RISK_OWNER_OUTPUT_V1"
 BLIND_CATEGORIES = (
     "DATA_QUALITY_FAIL",
     "EVALUATED",
@@ -721,6 +758,15 @@ AUTHORITATIVE_REPLAY_STATES = (
     "UNREPLAYABLE_EVIDENCE",
 )
 _COVERED_CATEGORIES = frozenset({"EVALUATED", "NOT_COMPARABLE", "NOT_IN_UNIVERSE"})
+PARENT_INPUT_STATES = (
+    "DATA_QUALITY_FAIL",
+    "NOT_COMPARABLE",
+    "NOT_IN_UNIVERSE",
+    "PIT_INVALID",
+    "REFERENCE_UNAVAILABLE",
+    "SOURCE_UNAVAILABLE",
+    "USABLE",
+)
 
 
 @dataclass(frozen=True)
@@ -728,7 +774,7 @@ class BlindEvidenceReference:
     """Identity-only input accepted by the scientific monitor."""
 
     slot_id: str
-    authoritative_evidence_record_sha256: str
+    certified_parent_evidence_manifest_sha256: str
     evaluation_epoch_authorization_sha256: str
 
 
@@ -738,22 +784,28 @@ class ReplayedBlindProjection:
     observation_time: datetime
     decision_time: datetime
     slot_id: str
-    source_record_sha256: str
-    projection_record_sha256: str
+    parent_manifest_record_sha256: str
     category_by_metric: Mapping[str, str]
     dependence_unit_by_metric: Mapping[str, str | None]
 
 
 def blind_monitor_contract() -> dict[str, Any]:
     protocol = _require_certified_corpus()
+    parent_manifest = certified_blind_parent_evidence_manifest_contract()
+    replay = blind_replay_derivation_contract()
+    categories = blind_category_mapping()
     payload = {
         "allowed_monitor_input_fields": [
-            "authoritative_evidence_record_sha256",
+            "certified_parent_evidence_manifest_sha256",
             "evaluation_epoch_authorization_sha256",
             "slot_id",
         ],
+        "blind_category_mapping_sha256": categories["definition_sha256"],
         "blind_category_vocabulary": list(BLIND_CATEGORIES),
+        "blind_projection_is_a_derivation_never_an_authority": True,
+        "blind_replay_derivation_contract_sha256": replay["definition_sha256"],
         "caller_declared_projection_is_authority": False,
+        "certified_parent_manifest_sha256": parent_manifest["definition_sha256"],
         "contract_version": BLIND_MONITOR_VERSION,
         "decision_universe_sha256": protocol["child_definition_sha256"][
             "decision_universe"
@@ -778,15 +830,261 @@ def blind_monitor_contract() -> dict[str, Any]:
             "universe_member",
         ],
         "projection_rule": (
-            "Resolve content-addressed source evidence, verify certified parent "
-            "identities, replay cadence/warmup/PIT/universe/comparability and the "
-            "natural dependence unit, derive only the coarse blind category, then "
-            "require any convenience projection to match exactly."
+            "Resolve the identity-only parent manifest, transitively replay each "
+            "certified-parent record and named owner, and derive cadence, warmup, "
+            "PIT, universe, comparability and the natural dependence unit. A "
+            "governance-authored projection is never an evidence root."
         ),
         "resolver_contract_sha256": protocol["child_definition_sha256"][
             "scientific_evidence_resolver"
         ],
         "schema_version": BLIND_PROJECTION_VERSION,
+        "warmup_replayed": True,
+    }
+    return _with_definition_hash(payload)
+
+
+def certified_blind_parent_evidence_manifest_contract() -> dict[str, Any]:
+    """Freeze identity-only parent inputs required at each certified cadence."""
+
+    protocol = _require_certified_corpus()
+    parent_hashes = protocol["child_definition_sha256"]
+    payload = {
+        "conclusion_fields_permitted": False,
+        "cross_identity_rules": [
+            "every record binds the same certified corpus, slot and decision time",
+            "every referenced record is content-addressed and schema/version checked",
+            "stop evidence binds the replayed control lifecycle tip and active stop",
+            "risk evidence binds paired candidate/control owner outputs",
+            "cross-slot, cross-position and cross-metric substitution is refused",
+        ],
+        "manifest_fields": [
+            "cadence",
+            "certified_corpus_sha256",
+            "decision_time",
+            "evaluation_epoch_authorization_sha256",
+            "input_evidence_sha256_by_metric",
+            "metric_owner_evidence_sha256_by_metric",
+            "observation_time",
+            "record_sha256",
+            "schema_version",
+            "slot_id",
+            "warmup_evidence_sha256",
+        ],
+        "parent_bindings": {
+            "data_schema_sha256": parent_hashes["data_schema_contract"],
+            "decision_universe_sha256": parent_hashes["decision_universe"],
+            "metric_evidence_contract_sha256": parent_hashes[
+                "metric_evidence_contracts"
+            ],
+            "portfolio_track_sha256": parent_hashes["portfolio_track_contract"],
+            "scientific_evidence_resolver_sha256": parent_hashes[
+                "scientific_evidence_resolver"
+            ],
+            "stage_b_evaluation_contract_sha256": parent_hashes[
+                "stage_b_evaluation_contract"
+            ],
+            "stop_event_taxonomy_sha256": parent_hashes["stop_event_taxonomy"],
+            "warmup_history_sha256": parent_hashes["warmup_history"],
+        },
+        "referenced_record_schemas": {
+            PARENT_INPUT_RECORD_VERSION: {
+                "fields": [
+                    "available_at",
+                    "certified_corpus_sha256",
+                    "decision_time",
+                    "quality_state",
+                    "record_sha256",
+                    "schema_version",
+                    "slot_id",
+                    "source_identity",
+                ],
+                "replay": (
+                    "resolve the exact parent source record and its transitive "
+                    "source/clock evidence; derive availability and quality under "
+                    "the certified source owner"
+                ),
+            },
+            PARENT_WARMUP_RECORD_VERSION: {
+                "fields": [
+                    "certified_corpus_sha256",
+                    "decision_time",
+                    "owner_evidence",
+                    "record_sha256",
+                    "schema_version",
+                    "slot_id",
+                    "warmup_history_definition_sha256",
+                ],
+                "replay": (
+                    "enumerate every certified warmup owner, resolve all qualifying "
+                    "input records, and re-run its exact owner evaluability predicate"
+                ),
+            },
+            PARENT_METRIC_RECORD_VERSION: {
+                "fields": [
+                    "certified_corpus_sha256",
+                    "comparison_input_record_sha256s",
+                    "decision_time",
+                    "metric",
+                    "owner_output_record_sha256s",
+                    "record_sha256",
+                    "schema_version",
+                    "slot_id",
+                    "universe_input_record_sha256s",
+                ],
+                "replay": (
+                    "re-run the metric's certified universe and comparability "
+                    "predicates from its exact owner inputs and paired outputs"
+                ),
+            },
+            PARENT_PORTFOLIO_STATE_VERSION: {
+                "fields": [
+                    "active_stop",
+                    "as_of",
+                    "certified_corpus_sha256",
+                    "lifecycle_state",
+                    "prior_state_record_sha256",
+                    "record_sha256",
+                    "schema_version",
+                    "state_sha256",
+                    "track",
+                    "transition_action_record_sha256",
+                ],
+                "replay": (
+                    "traverse and verify the complete control prior-state/action "
+                    "chain to the ENTER opening transition of the current episode"
+                ),
+            },
+            PARENT_TRADE_ACTION_VERSION: {
+                "fields": [
+                    "active_stop",
+                    "certified_corpus_sha256",
+                    "decision_time",
+                    "lifecycle_event",
+                    "lifecycle_state_after",
+                    "lifecycle_state_before",
+                    "prior_portfolio_state_record_sha256",
+                    "record_sha256",
+                    "schema_version",
+                    "track",
+                ],
+                "replay": "verify transition legality and prior-state cross-binding",
+            },
+            PARENT_STOP_INPUT_VERSION: {
+                "fields": [
+                    "active_stop",
+                    "active_stop_identity",
+                    "candidate_position_state",
+                    "candidate_reference_available",
+                    "certified_corpus_sha256",
+                    "control_portfolio_tip_sha256",
+                    "control_position_state",
+                    "decision_time",
+                    "direction",
+                    "first_divergence_decision_time",
+                    "observation_time",
+                    "prior_provider_observations",
+                    "provider_observations",
+                    "record_sha256",
+                    "schema_version",
+                    "slot_id",
+                ],
+                "replay": (
+                    "invoke classify_stop_event on exact provider observations and "
+                    "the lifecycle-replayed control active stop"
+                ),
+            },
+            PARENT_RISK_OUTPUT_VERSION: {
+                "fields": [
+                    "certified_corpus_sha256",
+                    "decision_time",
+                    "input_record_sha256s",
+                    "position_notional",
+                    "record_sha256",
+                    "reference_identity",
+                    "reference_role",
+                    "risk_size_complete",
+                    "schema_version",
+                    "slot_id",
+                    "trade_permitted",
+                ],
+                "replay": (
+                    "require the bound candidate/control pair, complete positive "
+                    "owner sizing outputs and every transitive input"
+                ),
+            },
+        },
+        "required_owner_evidence": {
+            _corpus.STOP_HOURLY_CADENCE: {
+                metric: [
+                    "prospective_source_input_snapshot",
+                    "prospective_portfolio_state:CONTROL_REFERENCE_TRACK",
+                    "prospective_trade_action lifecycle chain",
+                    "prospective_stop_event classifier inputs",
+                    "prospective_reference_evaluation:candidate",
+                ]
+                for metric in _corpus.STOP_EVENT_METRICS
+            },
+            _corpus.STRATEGY_DAILY_CADENCE: {
+                _corpus.REGIME_METRIC: ["paired prospective_strategy_evaluation"],
+                _corpus.RISK_SIZE_METRIC: ["paired prospective_risk_evaluation"],
+                _corpus.SETUP_METRIC: ["paired prospective_strategy_evaluation"],
+                _corpus.TRADE_ACTION_METRIC: ["paired prospective_trade_action"],
+                _corpus.TRADE_ELIGIBILITY_METRIC: [
+                    "paired prospective_risk_evaluation"
+                ],
+            },
+        },
+        "schema_version": BLIND_PARENT_MANIFEST_VERSION,
+        "strict_schema": True,
+    }
+    return _with_definition_hash(payload)
+
+
+def blind_category_mapping() -> dict[str, Any]:
+    payload = {
+        "mapping_precedence": [
+            "WARMUP_INCOMPLETE",
+            "PIT_INVALID",
+            "SOURCE_UNAVAILABLE",
+            "DATA_QUALITY_FAIL",
+            "REFERENCE_UNAVAILABLE",
+            "NOT_IN_UNIVERSE",
+            "NOT_COMPARABLE",
+            "EVALUATED",
+        ],
+        "outcome_fields_consumed": False,
+        "schema_version": BLIND_CATEGORY_MAPPING_VERSION,
+        "states": list(BLIND_CATEGORIES),
+    }
+    return _with_definition_hash(payload)
+
+
+def blind_replay_derivation_contract() -> dict[str, Any]:
+    manifest = certified_blind_parent_evidence_manifest_contract()
+    categories = blind_category_mapping()
+    payload = {
+        "active_stop_membership_replayed": True,
+        "blind_category_mapping_sha256": categories["definition_sha256"],
+        "cached_projection_authoritative": False,
+        "certified_parent_manifest_contract_sha256": manifest["definition_sha256"],
+        "comparability_replayed": True,
+        "control_root_lifecycle_replayed": True,
+        "digest_only_leaf_permitted": False,
+        "genuine_sizing_opportunity_replayed": True,
+        "pit_replayed_for_every_material_input": True,
+        "replay_steps": [
+            "resolve exact persisted record",
+            "recompute record hash and validate strict schema/version",
+            "verify certified-corpus, epoch, slot, cadence and time identities",
+            "resolve every transitive parent reference",
+            "re-run the certified parent owner predicate",
+            "derive the coarse blind category",
+            "derive the natural dependence unit without reading an outcome",
+        ],
+        "schema_version": BLIND_REPLAY_CONTRACT_VERSION,
+        "scientific_surface_record_authoritative": False,
+        "universe_replayed": True,
         "warmup_replayed": True,
     }
     return _with_definition_hash(payload)
@@ -805,6 +1103,18 @@ def _blind_parent_bindings() -> dict[str, str]:
         ],
         "warmup_history_definition_sha256": protocol["child_definition_sha256"][
             "warmup_history"
+        ],
+        "data_schema_sha256": protocol["child_definition_sha256"][
+            "data_schema_contract"
+        ],
+        "portfolio_track_sha256": protocol["child_definition_sha256"][
+            "portfolio_track_contract"
+        ],
+        "stage_b_evaluation_contract_sha256": protocol["child_definition_sha256"][
+            "stage_b_evaluation_contract"
+        ],
+        "stop_event_taxonomy_sha256": protocol["child_definition_sha256"][
+            "stop_event_taxonomy"
         ],
     }
 
@@ -832,6 +1142,11 @@ def _metric_cadences() -> dict[str, str]:
         metric: str(contract["cadence"])
         for metric, contract in _corpus.metric_evidence_contracts()["contracts"].items()
     }
+
+
+@cache
+def _warmup_parent_rows() -> dict[str, dict[str, Any]]:
+    return dict(_corpus.warmup_history_contract()["rows"])
 
 
 def _expected_slots_through(
@@ -863,46 +1178,490 @@ def _expected_slots_through(
     )
 
 
-def _derive_blind_category(
-    fact: Mapping[str, Any],
+def _resolve_record(
+    resolver: _source_integrity.PersistedEvidenceResolver,
+    record_sha256: str,
+    schema_version: str,
+) -> dict[str, Any]:
+    try:
+        return resolver.resolve(record_sha256, schema_version=schema_version)
+    except _source_integrity.ProspectiveSourceIntegrityError as exc:
+        raise SufficiencyGovernanceError(str(exc)) from exc
+
+
+def _validate_parent_identity(
+    row: Mapping[str, Any],
     *,
-    warmup_complete: bool,
+    slot_id: str,
+    decision_time: datetime,
+) -> None:
+    if row.get("certified_corpus_sha256") != CERTIFIED_CORPUS_SHA256:
+        raise SufficiencyGovernanceError("parent evidence has wrong certified corpus")
+    if row.get("slot_id") != slot_id:
+        raise SufficiencyGovernanceError("parent evidence has wrong slot identity")
+    if row.get("decision_time") != decision_time.isoformat():
+        raise SufficiencyGovernanceError("parent evidence has wrong decision time")
+
+
+def _replay_parent_input(
+    resolver: _source_integrity.PersistedEvidenceResolver,
+    record_sha256: str,
+    *,
+    slot_id: str,
     decision_time: datetime,
 ) -> str:
-    if not warmup_complete:
-        return "WARMUP_INCOMPLETE"
-    state = fact["evidence_state"]
-    maximum_available_at = fact["maximum_available_at"]
-    if state == "INVALID_CLOCK_OR_PIT_EVIDENCE":
+    row = _resolve_record(resolver, record_sha256, PARENT_INPUT_RECORD_VERSION)
+    _strict_keys(
+        row,
+        {
+            "available_at",
+            "certified_corpus_sha256",
+            "decision_time",
+            "quality_state",
+            "record_sha256",
+            "schema_version",
+            "slot_id",
+            "source_identity",
+        },
+        "certified parent input evidence",
+    )
+    _validate_parent_identity(row, slot_id=slot_id, decision_time=decision_time)
+    available_at = _require_utc(
+        datetime.fromisoformat(row["available_at"]), "parent input available_at"
+    )
+    if available_at > decision_time:
         return "PIT_INVALID"
-    if maximum_available_at is not None:
-        available = datetime.fromisoformat(maximum_available_at)
-        _require_utc(available, "maximum_available_at")
-        if available > decision_time:
-            return "PIT_INVALID"
-    if state in {"SOURCE_UNAVAILABLE", "UNREPLAYABLE_EVIDENCE"}:
-        return "SOURCE_UNAVAILABLE"
-    if state == "DATA_QUALITY_FAIL":
-        return "DATA_QUALITY_FAIL"
-    if state == "REFERENCE_UNAVAILABLE":
-        return "REFERENCE_UNAVAILABLE"
-    if state != "AUTHORITATIVE_REPLAYED":
-        raise SufficiencyGovernanceError("unknown authoritative replay state")
-    if fact["universe_member"] is False:
-        return "NOT_IN_UNIVERSE"
-    if fact["universe_member"] is not True:
-        raise SufficiencyGovernanceError("replayed universe membership is unresolved")
-    if fact["comparable"] is False:
-        return "NOT_COMPARABLE"
-    if fact["comparable"] is not True:
-        raise SufficiencyGovernanceError("replayed comparability is unresolved")
-    return "EVALUATED"
+    if row["quality_state"] not in PARENT_INPUT_STATES:
+        raise SufficiencyGovernanceError("parent input has unknown quality state")
+    if not isinstance(row["source_identity"], str) or not row["source_identity"]:
+        raise SufficiencyGovernanceError("parent input lacks source identity")
+    return str(row["quality_state"])
+
+
+def _replay_warmup(
+    resolver: _source_integrity.PersistedEvidenceResolver,
+    record_sha256: str,
+    *,
+    slot_id: str,
+    decision_time: datetime,
+) -> bool:
+    row = _resolve_record(resolver, record_sha256, PARENT_WARMUP_RECORD_VERSION)
+    _strict_keys(
+        row,
+        {
+            "certified_corpus_sha256",
+            "decision_time",
+            "owner_evidence",
+            "record_sha256",
+            "schema_version",
+            "slot_id",
+            "warmup_history_definition_sha256",
+        },
+        "certified parent warmup evidence",
+    )
+    _validate_parent_identity(row, slot_id=slot_id, decision_time=decision_time)
+    if row["warmup_history_definition_sha256"] != _blind_parent_bindings()[
+        "warmup_history_definition_sha256"
+    ]:
+        raise SufficiencyGovernanceError("warmup evidence has wrong owner contract")
+    owner_evidence = row["owner_evidence"]
+    if not isinstance(owner_evidence, dict) or not owner_evidence:
+        raise SufficiencyGovernanceError("warmup evidence must enumerate owners")
+    parent_rows = _warmup_parent_rows()
+    if set(owner_evidence) != set(parent_rows):
+        raise SufficiencyGovernanceError("warmup owner census differs from parent")
+    complete = True
+    for feature, evidence in owner_evidence.items():
+        _strict_keys(
+            evidence,
+            {
+                "owner",
+                "owner_contract_sha256",
+                "qualifying_input_record_sha256s",
+                "required_observation_count",
+                "upstream_initialization_complete",
+            },
+            f"warmup owner evidence {feature}",
+        )
+        parent = parent_rows[feature]
+        if evidence["owner"] != parent["owner"]:
+            raise SufficiencyGovernanceError("warmup owner identity differs")
+        if evidence["owner_contract_sha256"] != _digest(parent):
+            raise SufficiencyGovernanceError("warmup owner contract differs")
+        required = evidence["required_observation_count"]
+        references = evidence["qualifying_input_record_sha256s"]
+        if not isinstance(required, int) or isinstance(required, bool) or required <= 0:
+            raise SufficiencyGovernanceError("warmup required count must be positive")
+        if not isinstance(references, list) or len(references) != len(set(references)):
+            raise SufficiencyGovernanceError("warmup inputs must be a unique list")
+        inputs_complete = all(
+            _replay_parent_input(
+                resolver, item, slot_id=slot_id, decision_time=decision_time
+            )
+            == "USABLE"
+            for item in references
+        )
+        upstream = evidence["upstream_initialization_complete"]
+        if type(upstream) is not bool:
+            raise SufficiencyGovernanceError("warmup upstream state must be Boolean")
+        complete &= upstream and inputs_complete and len(references) >= required
+    return complete
+
+
+def _replay_metric_owner_evidence(
+    resolver: _source_integrity.PersistedEvidenceResolver,
+    record_sha256: str,
+    *,
+    metric: str,
+    slot_id: str,
+    decision_time: datetime,
+    evaluation_contract: Mapping[str, Any],
+) -> tuple[bool, str | None]:
+    row = _resolve_record(resolver, record_sha256, PARENT_METRIC_RECORD_VERSION)
+    _strict_keys(
+        row,
+        {
+            "certified_corpus_sha256",
+            "comparison_input_record_sha256s",
+            "decision_time",
+            "metric",
+            "owner_output_record_sha256s",
+            "record_sha256",
+            "schema_version",
+            "slot_id",
+            "universe_input_record_sha256s",
+        },
+        f"certified parent metric evidence {metric}",
+    )
+    _validate_parent_identity(row, slot_id=slot_id, decision_time=decision_time)
+    if row["metric"] != metric:
+        raise SufficiencyGovernanceError("metric evidence substitution refused")
+    universe_states = [
+        _replay_parent_input(
+            resolver, item, slot_id=slot_id, decision_time=decision_time
+        )
+        for item in row["universe_input_record_sha256s"]
+    ]
+    comparison_states = [
+        _replay_parent_input(
+            resolver, item, slot_id=slot_id, decision_time=decision_time
+        )
+        for item in row["comparison_input_record_sha256s"]
+    ]
+    state_order = blind_category_mapping()["mapping_precedence"]
+    all_states = universe_states + comparison_states
+    for category in state_order:
+        if category in {"WARMUP_INCOMPLETE", "EVALUATED"}:
+            continue
+        if category in all_states:
+            return False, category
+    if not universe_states or not comparison_states:
+        raise SufficiencyGovernanceError("metric evidence lacks predicate inputs")
+
+    output_refs = row["owner_output_record_sha256s"]
+    if metric == _corpus.RISK_SIZE_METRIC:
+        if not isinstance(output_refs, list) or len(output_refs) != 2:
+            raise SufficiencyGovernanceError("risk metric needs paired owner outputs")
+        outputs = [
+            _resolve_record(resolver, item, PARENT_RISK_OUTPUT_VERSION)
+            for item in output_refs
+        ]
+        by_role = {item["reference_role"]: item for item in outputs}
+        if set(by_role) != set(_corpus.REFERENCE_ROLES):
+            raise SufficiencyGovernanceError("risk outputs lack candidate/control pair")
+        identities = {
+            _corpus.CANDIDATE_REFERENCE_ROLE: evaluation_contract[
+                "candidate_reference_identity"
+            ],
+            _corpus.CONTROL_REFERENCE_ROLE: evaluation_contract[
+                "control_reference_identity"
+            ],
+        }
+        for role, output in by_role.items():
+            _strict_keys(
+                output,
+                {
+                    "certified_corpus_sha256",
+                    "decision_time",
+                    "input_record_sha256s",
+                    "position_notional",
+                    "record_sha256",
+                    "reference_identity",
+                    "reference_role",
+                    "risk_size_complete",
+                    "schema_version",
+                    "slot_id",
+                    "trade_permitted",
+                },
+                "certified parent risk output",
+            )
+            _validate_parent_identity(
+                output, slot_id=slot_id, decision_time=decision_time
+            )
+            if output["reference_identity"] != identities[role]:
+                raise SufficiencyGovernanceError("risk output reference substituted")
+            transitive = [
+                _replay_parent_input(
+                    resolver, item, slot_id=slot_id, decision_time=decision_time
+                )
+                for item in output["input_record_sha256s"]
+            ]
+            if not transitive or any(item != "USABLE" for item in transitive):
+                return False, "NOT_COMPARABLE"
+            try:
+                positive = Decimal(output["position_notional"]) > 0
+            except Exception as exc:
+                raise SufficiencyGovernanceError(
+                    "risk output position_notional is invalid"
+                ) from exc
+            if (
+                type(output["trade_permitted"]) is not bool
+                or type(output["risk_size_complete"]) is not bool
+            ):
+                raise SufficiencyGovernanceError("risk owner states must be Boolean")
+            if not (
+                output["trade_permitted"]
+                and output["risk_size_complete"]
+                and positive
+            ):
+                return False, "NOT_IN_UNIVERSE"
+    else:
+        if not isinstance(output_refs, list) or len(output_refs) != 2:
+            raise SufficiencyGovernanceError("daily metric needs paired owner outputs")
+        outputs = [
+            _resolve_record(resolver, item, PARENT_INPUT_RECORD_VERSION)
+            for item in output_refs
+        ]
+        if any(
+            _replay_parent_input(
+                resolver,
+                item["record_sha256"],
+                slot_id=slot_id,
+                decision_time=decision_time,
+            )
+            != "USABLE"
+            for item in outputs
+        ):
+            return False, "NOT_COMPARABLE"
+    return True, None
+
+
+def _replay_control_position_root(
+    resolver: _source_integrity.PersistedEvidenceResolver,
+    tip_sha256: str,
+    *,
+    slot_id: str,
+    decision_time: datetime,
+    expected_active_stop_identity: str,
+    expected_active_stop: str,
+) -> str:
+    seen: set[str] = set()
+    current_sha = tip_sha256
+    opening_transition_sha: str | None = None
+    current_episode_open = True
+    first = True
+    while current_sha is not None:
+        if current_sha in seen:
+            raise SufficiencyGovernanceError("control portfolio chain cycles")
+        seen.add(current_sha)
+        row = _resolve_record(resolver, current_sha, PARENT_PORTFOLIO_STATE_VERSION)
+        _strict_keys(
+            row,
+            {
+                "active_stop",
+                "as_of",
+                "certified_corpus_sha256",
+                "lifecycle_state",
+                "prior_state_record_sha256",
+                "record_sha256",
+                "schema_version",
+                "state_sha256",
+                "track",
+                "transition_action_record_sha256",
+            },
+            "certified control portfolio state",
+        )
+        if row["certified_corpus_sha256"] != CERTIFIED_CORPUS_SHA256:
+            raise SufficiencyGovernanceError("portfolio state has wrong certified corpus")
+        if _require_utc(
+            datetime.fromisoformat(row["as_of"]), "portfolio state as_of"
+        ) > decision_time:
+            raise SufficiencyGovernanceError("portfolio state is not PIT-valid")
+        if row["track"] != _corpus.CONTROL_TRACK:
+            raise SufficiencyGovernanceError("stop root must use control track")
+        state_payload = {
+            key: value
+            for key, value in row.items()
+            if key not in {"record_sha256", "schema_version", "state_sha256"}
+        }
+        if row["state_sha256"] != _digest(state_payload):
+            raise SufficiencyGovernanceError("portfolio state hash does not reproduce")
+        action = _resolve_record(
+            resolver, row["transition_action_record_sha256"], PARENT_TRADE_ACTION_VERSION
+        )
+        _strict_keys(
+            action,
+            {
+                "active_stop",
+                "certified_corpus_sha256",
+                "decision_time",
+                "lifecycle_event",
+                "lifecycle_state_after",
+                "lifecycle_state_before",
+                "prior_portfolio_state_record_sha256",
+                "record_sha256",
+                "schema_version",
+                "track",
+            },
+            "certified parent trade action",
+        )
+        if action["certified_corpus_sha256"] != CERTIFIED_CORPUS_SHA256:
+            raise SufficiencyGovernanceError("portfolio action has wrong corpus")
+        if _require_utc(
+            datetime.fromisoformat(action["decision_time"]),
+            "portfolio action decision_time",
+        ) > decision_time:
+            raise SufficiencyGovernanceError("portfolio action is not PIT-valid")
+        if action["track"] != _corpus.CONTROL_TRACK:
+            raise SufficiencyGovernanceError("portfolio action is not control track")
+        if action["prior_portfolio_state_record_sha256"] != row[
+            "prior_state_record_sha256"
+        ]:
+            raise SufficiencyGovernanceError("portfolio action breaks prior-state chain")
+        if first:
+            if row["active_stop"] != expected_active_stop:
+                raise SufficiencyGovernanceError("stop event active stop differs from lifecycle")
+            expected_identity = _digest(
+                {
+                    "active_stop": row["active_stop"],
+                    "active_stop_source_state_sha256": row["state_sha256"],
+                    "track": _corpus.CONTROL_TRACK,
+                }
+            )
+            if expected_identity != expected_active_stop_identity:
+                raise SufficiencyGovernanceError(
+                    "stop event active-stop identity does not replay"
+                )
+            first = False
+        event = action["lifecycle_event"]
+        if event == "ENTER":
+            if not current_episode_open:
+                raise SufficiencyGovernanceError("opening transition lies outside episode")
+            opening_transition_sha = row["state_sha256"]
+            break
+        if event == "EXIT":
+            current_episode_open = False
+        current_sha = row["prior_state_record_sha256"]
+    if not _is_sha256(opening_transition_sha):
+        raise SufficiencyGovernanceError("control position opening transition not found")
+    return opening_transition_sha
+
+
+def _provider_from_payload(payload: Mapping[str, Any]) -> _corpus.ProviderObservation:
+    return _corpus.ProviderObservation(
+        provider_id=str(payload["provider_id"]),
+        observation_time=_require_utc(
+            datetime.fromisoformat(payload["observation_time"]),
+            "provider observation_time",
+        ),
+        available_at=_require_utc(
+            datetime.fromisoformat(payload["available_at"]), "provider available_at"
+        ),
+        open=Decimal(payload["open"]),
+        high=Decimal(payload["high"]),
+        low=Decimal(payload["low"]),
+        close=Decimal(payload["close"]),
+    )
+
+
+def _replay_stop_metric(
+    resolver: _source_integrity.PersistedEvidenceResolver,
+    record_sha256: str,
+    *,
+    metric: str,
+    slot_id: str,
+    decision_time: datetime,
+) -> tuple[str, str | None]:
+    row = _resolve_record(resolver, record_sha256, PARENT_STOP_INPUT_VERSION)
+    _strict_keys(
+        row,
+        {
+            "active_stop",
+            "active_stop_identity",
+            "candidate_position_state",
+            "candidate_reference_available",
+            "certified_corpus_sha256",
+            "control_portfolio_tip_sha256",
+            "control_position_state",
+            "decision_time",
+            "direction",
+            "first_divergence_decision_time",
+            "observation_time",
+            "prior_provider_observations",
+            "provider_observations",
+            "record_sha256",
+            "schema_version",
+            "slot_id",
+        },
+        "certified parent stop classifier input",
+    )
+    _validate_parent_identity(row, slot_id=slot_id, decision_time=decision_time)
+    root = _replay_control_position_root(
+        resolver,
+        row["control_portfolio_tip_sha256"],
+        slot_id=slot_id,
+        decision_time=decision_time,
+        expected_active_stop_identity=row["active_stop_identity"],
+        expected_active_stop=row["active_stop"],
+    )
+    observation_time = _require_utc(
+        datetime.fromisoformat(row["observation_time"]), "stop observation_time"
+    )
+    slot = _corpus.StopEvaluationSlot(
+        observation_time=observation_time,
+        track=_corpus.CONTROL_TRACK,
+        direction=row["direction"],
+        active_stop=Decimal(row["active_stop"]),
+        active_stop_identity=row["active_stop_identity"],
+        control_position_state=row["control_position_state"],
+        candidate_position_state=row["candidate_position_state"],
+        providers=tuple(_provider_from_payload(item) for item in row["provider_observations"]),
+        prior_providers=tuple(
+            _provider_from_payload(item) for item in row["prior_provider_observations"]
+        ),
+        first_divergence_decision_time=(
+            None
+            if row["first_divergence_decision_time"] is None
+            else datetime.fromisoformat(row["first_divergence_decision_time"])
+        ),
+    )
+    try:
+        classified = _corpus.classify_stop_event(slot)
+    except _corpus.ProspectiveCorpusError as exc:
+        raise SufficiencyGovernanceError(str(exc)) from exc
+    if row["candidate_reference_available"] is not True:
+        return "REFERENCE_UNAVAILABLE", None
+    universe = {
+        _corpus.CROSS_MARKET_METRIC: (
+            classified["classification"] == _corpus.EVENT_CROSS_MARKET
+        ),
+        _corpus.GAP_THROUGH_METRIC: (
+            classified["gap_through_state"] == _corpus.GAP_THROUGH_EVENT
+        ),
+        _corpus.ISOLATED_VENUE_METRIC: (
+            classified["classification"] == _corpus.EVENT_ISOLATED_VENUE
+        ),
+    }
+    if not universe[metric]:
+        return "NOT_IN_UNIVERSE", None
+    return "EVALUATED", root
 
 
 class BlindEvidenceResolver:
-    """Replay content-addressed blind source evidence into a coarse projection."""
+    """Transitively replay certified-parent evidence into a coarse projection."""
 
     def __init__(self, records: Mapping[str, Mapping[str, Any]]) -> None:
+        self.records = records
         self._resolver = _source_integrity.PersistedEvidenceResolver(records=records)
         self._expected_bindings = _blind_parent_bindings()
 
@@ -923,73 +1682,47 @@ class BlindEvidenceResolver:
             "record_sha256"
         ):
             raise SufficiencyGovernanceError("evidence references another epoch")
-        try:
-            envelope = self._resolver.resolve(
-                reference.authoritative_evidence_record_sha256,
-                schema_version=BLIND_PROJECTION_VERSION,
-            )
-            source = self._resolver.resolve(
-                envelope["source_evidence_record_sha256"],
-                schema_version=BLIND_SOURCE_RECORD_VERSION,
-            )
-        except _source_integrity.ProspectiveSourceIntegrityError as exc:
-            raise SufficiencyGovernanceError(str(exc)) from exc
-        _strict_keys(
-            envelope,
-            {
-                "declared_blind_projection",
-                "evaluation_epoch_authorization_sha256",
-                "record_sha256",
-                "schema_version",
-                "slot_id",
-                "source_evidence_record_sha256",
-            },
-            "blind projection envelope",
+        evaluation_contract = authorization["evaluation_contract"]
+        manifest = _resolve_record(
+            self._resolver,
+            reference.certified_parent_evidence_manifest_sha256,
+            BLIND_PARENT_MANIFEST_VERSION,
         )
         _strict_keys(
-            source,
+            manifest,
             {
                 "cadence",
                 "certified_corpus_sha256",
                 "decision_time",
-                "decision_universe_sha256",
                 "evaluation_epoch_authorization_sha256",
-                "metric_evidence_contract_sha256",
-                "metric_facts",
+                "input_evidence_sha256_by_metric",
+                "metric_owner_evidence_sha256_by_metric",
                 "observation_time",
-                "record_available_at",
                 "record_sha256",
                 "schema_version",
                 "slot_id",
-                "warmup_history_complete",
-                "warmup_history_definition_sha256",
+                "warmup_evidence_sha256",
             },
-            "blind source evidence",
+            "certified blind parent manifest",
         )
-        for key, expected in self._expected_bindings.items():
-            if source.get(key) != expected:
-                raise SufficiencyGovernanceError(f"source evidence has wrong {key}")
         auth_hash = authorization["record_sha256"]
-        if source["evaluation_epoch_authorization_sha256"] != auth_hash:
-            raise SufficiencyGovernanceError("source evidence has wrong epoch authority")
-        if envelope["evaluation_epoch_authorization_sha256"] != auth_hash:
-            raise SufficiencyGovernanceError("projection has wrong epoch authority")
-        if envelope["slot_id"] != reference.slot_id or source["slot_id"] != reference.slot_id:
+        if manifest["certified_corpus_sha256"] != CERTIFIED_CORPUS_SHA256:
+            raise SufficiencyGovernanceError("manifest has wrong certified corpus")
+        if manifest["evaluation_epoch_authorization_sha256"] != auth_hash:
+            raise SufficiencyGovernanceError("manifest has wrong epoch authority")
+        if manifest["slot_id"] != reference.slot_id:
             raise SufficiencyGovernanceError("blind evidence slot identity mismatch")
 
         observation_time = _require_utc(
-            datetime.fromisoformat(source["observation_time"]), "observation_time"
+            datetime.fromisoformat(manifest["observation_time"]), "observation_time"
         )
         decision_time = _require_utc(
-            datetime.fromisoformat(source["decision_time"]), "decision_time"
-        )
-        record_available_at = _require_utc(
-            datetime.fromisoformat(source["record_available_at"]), "record_available_at"
+            datetime.fromisoformat(manifest["decision_time"]), "decision_time"
         )
         current = _require_utc(current_decision_time, "current_decision_time")
-        if record_available_at > current:
-            raise SufficiencyGovernanceError("evidence record is unavailable at current time")
-        cadence = source["cadence"]
+        if decision_time > current:
+            raise SufficiencyGovernanceError("parent evidence is not yet available")
+        cadence = manifest["cadence"]
         if cadence not in _corpus.DECISION_CADENCES:
             raise SufficiencyGovernanceError("source evidence has unknown cadence")
         expected_decision = _corpus.decision_time_for(observation_time, cadence)
@@ -998,92 +1731,88 @@ class BlindEvidenceResolver:
         expected_slot = _corpus.scheduled_decision_slots(
             observation_time, observation_time, cadence=cadence
         )[0]
-        if source["slot_id"] != expected_slot["slot_id"]:
+        if manifest["slot_id"] != expected_slot["slot_id"]:
             raise SufficiencyGovernanceError("slot_id does not reproduce")
-        if type(source["warmup_history_complete"]) is not bool:
-            raise SufficiencyGovernanceError("warmup state must be replayed Boolean")
-
-        facts = source["metric_facts"]
-        if not isinstance(facts, dict):
-            raise SufficiencyGovernanceError("metric facts must be an object")
+        warmup_complete = _replay_warmup(
+            self._resolver,
+            manifest["warmup_evidence_sha256"],
+            slot_id=reference.slot_id,
+            decision_time=decision_time,
+        )
         required_metrics = {
             metric
             for metric, owner_cadence in _metric_cadences().items()
             if owner_cadence == cadence
         }
-        if set(facts) != required_metrics:
+        input_by_metric = manifest["input_evidence_sha256_by_metric"]
+        owner_by_metric = manifest["metric_owner_evidence_sha256_by_metric"]
+        if set(input_by_metric) != required_metrics or set(owner_by_metric) != required_metrics:
             raise SufficiencyGovernanceError(
-                "source evidence must cover every cadence-applicable metric"
+                "parent manifest must cover every cadence-applicable metric"
             )
         categories: dict[str, str] = {}
         units: dict[str, str | None] = {}
-        for metric in sorted(facts):
-            fact = facts[metric]
-            if not isinstance(fact, dict):
-                raise SufficiencyGovernanceError("metric fact must be an object")
-            _strict_keys(
-                fact,
-                {
-                    "active_stop_identity",
-                    "comparable",
-                    "control_position_episode_sha256",
-                    "evidence_state",
-                    "maximum_available_at",
-                    "metric",
-                    "universe_member",
-                },
-                f"metric fact {metric}",
-            )
-            if fact["metric"] != metric:
-                raise SufficiencyGovernanceError("metric fact identity mismatch")
-            if fact["evidence_state"] not in AUTHORITATIVE_REPLAY_STATES:
-                raise SufficiencyGovernanceError("metric fact has unknown replay state")
-            for field in ("universe_member", "comparable"):
-                if fact[field] is not None and type(fact[field]) is not bool:
-                    raise SufficiencyGovernanceError(f"{field} must be Boolean or null")
-            category = _derive_blind_category(
-                fact,
-                warmup_complete=source["warmup_history_complete"],
-                decision_time=decision_time,
-            )
+        for metric in sorted(required_metrics):
+            input_states = [
+                _replay_parent_input(
+                    self._resolver,
+                    item,
+                    slot_id=reference.slot_id,
+                    decision_time=decision_time,
+                )
+                for item in input_by_metric[metric]
+            ]
+            if not warmup_complete:
+                category, root = "WARMUP_INCOMPLETE", None
+            elif "PIT_INVALID" in input_states:
+                category, root = "PIT_INVALID", None
+            elif "SOURCE_UNAVAILABLE" in input_states:
+                category, root = "SOURCE_UNAVAILABLE", None
+            elif "DATA_QUALITY_FAIL" in input_states:
+                category, root = "DATA_QUALITY_FAIL", None
+            elif "REFERENCE_UNAVAILABLE" in input_states:
+                category, root = "REFERENCE_UNAVAILABLE", None
+            elif "NOT_IN_UNIVERSE" in input_states:
+                category, root = "NOT_IN_UNIVERSE", None
+            elif "NOT_COMPARABLE" in input_states:
+                category, root = "NOT_COMPARABLE", None
+            elif metric in _corpus.STOP_EVENT_METRICS:
+                category, root = _replay_stop_metric(
+                    self._resolver,
+                    owner_by_metric[metric],
+                    metric=metric,
+                    slot_id=reference.slot_id,
+                    decision_time=decision_time,
+                )
+            else:
+                evaluated, category = _replay_metric_owner_evidence(
+                    self._resolver,
+                    owner_by_metric[metric],
+                    metric=metric,
+                    slot_id=reference.slot_id,
+                    decision_time=decision_time,
+                    evaluation_contract=evaluation_contract,
+                )
+                root = None
+                category = "EVALUATED" if evaluated else category
+            if category not in BLIND_CATEGORIES:
+                raise SufficiencyGovernanceError("blind category replay unresolved")
             categories[metric] = category
             units[metric] = (
                 _derive_dependence_unit_id(
                     metric,
-                    slot_id=source["slot_id"],
-                    control_position_episode_sha256=fact[
-                        "control_position_episode_sha256"
-                    ],
-                    active_stop_identity=fact["active_stop_identity"],
+                    slot_id=manifest["slot_id"],
+                    control_position_episode_sha256=root,
                 )
                 if category == "EVALUATED"
                 else None
             )
-        declared = envelope["declared_blind_projection"]
-        expected_projection = {
-            metric: {
-                "blind_category": categories[metric],
-                "dependence_unit_id": units[metric],
-            }
-            for metric in sorted(categories)
-        }
-        if declared != expected_projection:
-            raise SufficiencyGovernanceError(
-                "declared projection differs from authoritative replay"
-            )
-        for row in declared.values():
-            category = row["blind_category"]
-            if category not in BLIND_CATEGORIES:
-                raise SufficiencyGovernanceError(
-                    "blind projection exposes outcome side channel"
-                )
         return ReplayedBlindProjection(
             cadence=cadence,
             observation_time=observation_time,
             decision_time=decision_time,
-            slot_id=source["slot_id"],
-            source_record_sha256=source["record_sha256"],
-            projection_record_sha256=envelope["record_sha256"],
+            slot_id=manifest["slot_id"],
+            parent_manifest_record_sha256=manifest["record_sha256"],
             category_by_metric=categories,
             dependence_unit_by_metric=units,
         )
@@ -1100,12 +1829,16 @@ def build_synthetic_blind_evidence(
     warmup_history_complete: bool = True,
     stop_episode_by_metric: Mapping[str, tuple[str, str]] | None = None,
 ) -> tuple[BlindEvidenceReference, dict[str, dict[str, Any]]]:
-    """Build deterministic content records for explicitly synthetic tests only."""
+    """Build a strict synthetic certified-parent graph for adversarial tests.
+
+    The helper creates the same record schemas consumed by ``BlindEvidenceResolver``;
+    it does not create or authorize a summary-only production path.
+    """
 
     if not _is_sha256(evaluation_epoch_authorization_sha256):
         raise SufficiencyGovernanceError("synthetic evidence needs authorization hash")
-    parent_bindings = _blind_parent_bindings()
     cadence = str(expected_slot["cadence"])
+    slot_id = str(expected_slot["slot_id"])
     observation_time = _require_utc(
         datetime.fromisoformat(expected_slot["observation_time"]), "observation_time"
     )
@@ -1122,98 +1855,402 @@ def build_synthetic_blind_evidence(
     comparability = dict(comparable_by_metric or {})
     availability = dict(maximum_available_at_by_metric or {})
     stop_episodes = dict(stop_episode_by_metric or {})
-    facts: dict[str, dict[str, Any]] = {}
-    for metric in sorted(metrics):
-        state = states.get(metric, "AUTHORITATIVE_REPLAYED")
-        universe = universes.get(metric, True)
-        comparable = comparability.get(metric, True)
-        available_at = availability.get(metric, decision_time)
-        episode = stop_episodes.get(metric)
-        if metric in _corpus.STOP_EVENT_METRICS and episode is None:
-            episode = (
-                _digest({"synthetic_control_position_episode": expected_slot["slot_id"]}),
-                f"SYNTHETIC_ACTIVE_STOP_{expected_slot['slot_id']}",
-            )
-        facts[metric] = {
-            "active_stop_identity": None if episode is None else episode[1],
-            "comparable": comparable,
-            "control_position_episode_sha256": None if episode is None else episode[0],
-            "evidence_state": state,
-            "maximum_available_at": (
-                None
-                if available_at is None
-                else _require_utc(available_at, "available_at").isoformat()
-            ),
-            "metric": metric,
-            "universe_member": universe,
-        }
-    source = _with_record_hash(
+    records: dict[str, dict[str, Any]] = {}
+
+    def persist(payload: Mapping[str, Any]) -> dict[str, Any]:
+        record = _with_record_hash(payload)
+        existing = records.get(record["record_sha256"])
+        if existing is not None and existing != record:
+            raise SufficiencyGovernanceError("synthetic evidence hash collision")
+        records[record["record_sha256"]] = record
+        return record
+
+    def parent_input(
+        identity: str,
+        *,
+        quality_state: str = "USABLE",
+        available_at: datetime = decision_time,
+    ) -> dict[str, Any]:
+        return persist(
+            {
+                "available_at": _require_utc(available_at, "available_at").isoformat(),
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "decision_time": decision_time.isoformat(),
+                "quality_state": quality_state,
+                "schema_version": PARENT_INPUT_RECORD_VERSION,
+                "slot_id": slot_id,
+                "source_identity": identity,
+            }
+        )
+
+    warmup_input = parent_input("SYNTHETIC_WARMUP_HISTORY_INPUT")
+    warmup_rows = _warmup_parent_rows()
+    warmup = persist(
         {
-            "cadence": cadence,
             "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
             "decision_time": decision_time.isoformat(),
-            "decision_universe_sha256": parent_bindings["decision_universe_sha256"],
-            "evaluation_epoch_authorization_sha256": (
-                evaluation_epoch_authorization_sha256
-            ),
-            "metric_evidence_contract_sha256": parent_bindings[
-                "metric_evidence_contract_sha256"
-            ],
-            "metric_facts": facts,
-            "observation_time": observation_time.isoformat(),
-            "record_available_at": decision_time.isoformat(),
-            "schema_version": BLIND_SOURCE_RECORD_VERSION,
-            "slot_id": expected_slot["slot_id"],
-            "warmup_history_complete": warmup_history_complete,
-            "warmup_history_definition_sha256": parent_bindings[
+            "owner_evidence": {
+                feature: {
+                    "owner": row["owner"],
+                    "owner_contract_sha256": _digest(row),
+                    "qualifying_input_record_sha256s": (
+                        [warmup_input["record_sha256"]]
+                        if warmup_history_complete
+                        else []
+                    ),
+                    "required_observation_count": 1,
+                    "upstream_initialization_complete": warmup_history_complete,
+                }
+                for feature, row in sorted(warmup_rows.items())
+            },
+            "schema_version": PARENT_WARMUP_RECORD_VERSION,
+            "slot_id": slot_id,
+            "warmup_history_definition_sha256": _blind_parent_bindings()[
                 "warmup_history_definition_sha256"
             ],
         }
     )
-    derived: dict[str, dict[str, Any]] = {}
-    for metric, fact in facts.items():
-        category = _derive_blind_category(
-            fact,
-            warmup_complete=warmup_history_complete,
-            decision_time=decision_time,
+
+    def translated_state(metric: str) -> str:
+        value = states.get(metric, "AUTHORITATIVE_REPLAYED")
+        return {
+            "AUTHORITATIVE_REPLAYED": "USABLE",
+            "DATA_QUALITY_FAIL": "DATA_QUALITY_FAIL",
+            "INVALID_CLOCK_OR_PIT_EVIDENCE": "PIT_INVALID",
+            "REFERENCE_UNAVAILABLE": "REFERENCE_UNAVAILABLE",
+            "SOURCE_UNAVAILABLE": "SOURCE_UNAVAILABLE",
+            "UNREPLAYABLE_EVIDENCE": "SOURCE_UNAVAILABLE",
+        }.get(value, value)
+
+    input_by_metric: dict[str, list[str]] = {}
+    owner_by_metric: dict[str, str] = {}
+    common_input_by_metric: dict[str, dict[str, Any]] = {}
+    for metric in sorted(metrics):
+        quality = translated_state(metric)
+        if universes.get(metric) is False:
+            quality = "NOT_IN_UNIVERSE"
+        elif comparability.get(metric) is False:
+            quality = "NOT_COMPARABLE"
+        available_at = availability.get(metric, decision_time)
+        if available_at is None:
+            quality = "SOURCE_UNAVAILABLE"
+            available_at = decision_time
+        common = parent_input(
+            f"SYNTHETIC_PARENT_INPUT:{metric}",
+            quality_state=quality,
+            available_at=available_at,
         )
-        derived[metric] = {
-            "blind_category": category,
-            "dependence_unit_id": (
-                _derive_dependence_unit_id(
-                    metric,
-                    slot_id=expected_slot["slot_id"],
-                    control_position_episode_sha256=fact[
-                        "control_position_episode_sha256"
+        common_input_by_metric[metric] = common
+        input_by_metric[metric] = [common["record_sha256"]]
+
+    if cadence == _corpus.STRATEGY_DAILY_CADENCE:
+        for metric in sorted(metrics):
+            output_records: list[str] = []
+            if metric == _corpus.RISK_SIZE_METRIC:
+                for role, identity in (
+                    (_corpus.CANDIDATE_REFERENCE_ROLE, "SYNTHETIC_CANDIDATE_A"),
+                    (_corpus.CONTROL_REFERENCE_ROLE, "SYNTHETIC_CONTROL"),
+                ):
+                    risk = persist(
+                        {
+                            "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                            "decision_time": decision_time.isoformat(),
+                            "input_record_sha256s": [
+                                common_input_by_metric[metric]["record_sha256"]
+                            ],
+                            "position_notional": "100",
+                            "reference_identity": identity,
+                            "reference_role": role,
+                            "risk_size_complete": True,
+                            "schema_version": PARENT_RISK_OUTPUT_VERSION,
+                            "slot_id": slot_id,
+                            "trade_permitted": True,
+                        }
+                    )
+                    output_records.append(risk["record_sha256"])
+            else:
+                for role in _corpus.REFERENCE_ROLES:
+                    output = parent_input(
+                        f"SYNTHETIC_OWNER_OUTPUT:{metric}:{role}"
+                    )
+                    output_records.append(output["record_sha256"])
+            owner = persist(
+                {
+                    "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                    "comparison_input_record_sha256s": [
+                        common_input_by_metric[metric]["record_sha256"]
                     ],
-                    active_stop_identity=fact["active_stop_identity"],
-                )
-                if category == "EVALUATED"
-                else None
-            ),
+                    "decision_time": decision_time.isoformat(),
+                    "metric": metric,
+                    "owner_output_record_sha256s": output_records,
+                    "schema_version": PARENT_METRIC_RECORD_VERSION,
+                    "slot_id": slot_id,
+                    "universe_input_record_sha256s": [
+                        common_input_by_metric[metric]["record_sha256"]
+                    ],
+                }
+            )
+            owner_by_metric[metric] = owner["record_sha256"]
+    else:
+        explicit_episodes = set(stop_episodes.values())
+        if len(explicit_episodes) > 1:
+            raise SufficiencyGovernanceError(
+                "one stop slot cannot cite multiple control position episodes"
+            )
+        episode = next(iter(explicit_episodes), (slot_id, "INITIAL"))
+        episode_seed, stop_revision = episode
+        if stop_episodes:
+            seed_digest = _digest({"synthetic_position_episode": str(episode_seed)})
+            enter_time = datetime(2024, 1, 1, tzinfo=UTC) + timedelta(
+                seconds=int(seed_digest[:8], 16) % (300 * 86400)
+            )
+        else:
+            enter_time = observation_time - timedelta(hours=2)
+        enter_action = persist(
+            {
+                "active_stop": "100",
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "decision_time": enter_time.isoformat(),
+                "lifecycle_event": "ENTER",
+                "lifecycle_state_after": "OPEN_INITIAL",
+                "lifecycle_state_before": "WATCH",
+                "prior_portfolio_state_record_sha256": None,
+                "schema_version": PARENT_TRADE_ACTION_VERSION,
+                "track": _corpus.CONTROL_TRACK,
+            }
+        )
+        enter_payload = {
+            "active_stop": "100",
+            "as_of": enter_time.isoformat(),
+            "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+            "lifecycle_state": "OPEN_INITIAL",
+            "prior_state_record_sha256": None,
+            "track": _corpus.CONTROL_TRACK,
+            "transition_action_record_sha256": enter_action["record_sha256"],
         }
-    envelope = _with_record_hash(
+        enter_state = persist(
+            {
+                **enter_payload,
+                "schema_version": PARENT_PORTFOLIO_STATE_VERSION,
+                "state_sha256": _digest(enter_payload),
+            }
+        )
+        tip = enter_state
+        if stop_revision != "INITIAL":
+            move_action = persist(
+                {
+                    "active_stop": "100",
+                    "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                    "decision_time": (enter_time + timedelta(minutes=1)).isoformat(),
+                    "lifecycle_event": "STOP_MOVE",
+                    "lifecycle_state_after": "OPEN_INITIAL",
+                    "lifecycle_state_before": "OPEN_INITIAL",
+                    "prior_portfolio_state_record_sha256": enter_state["record_sha256"],
+                    "schema_version": PARENT_TRADE_ACTION_VERSION,
+                    "track": _corpus.CONTROL_TRACK,
+                }
+            )
+            move_payload = {
+                "active_stop": "100",
+                "as_of": (enter_time + timedelta(minutes=1)).isoformat(),
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "lifecycle_state": "OPEN_INITIAL",
+                "prior_state_record_sha256": enter_state["record_sha256"],
+                "track": _corpus.CONTROL_TRACK,
+                "transition_action_record_sha256": move_action["record_sha256"],
+            }
+            tip = persist(
+                {
+                    **move_payload,
+                    "schema_version": PARENT_PORTFOLIO_STATE_VERSION,
+                    "state_sha256": _digest(move_payload),
+                }
+            )
+        active_stop_identity = _digest(
+            {
+                "active_stop": tip["active_stop"],
+                "active_stop_source_state_sha256": tip["state_sha256"],
+                "track": _corpus.CONTROL_TRACK,
+            }
+        )
+        hour_index = int(observation_time.timestamp() // 3600)
+        isolated = hour_index % 24 == 0
+        providers = []
+        prior = []
+        for index, provider_id in enumerate(_corpus.REQUIRED_PROVIDER_IDS):
+            touching = not isolated or index == 0
+            providers.append(
+                {
+                    "available_at": decision_time.isoformat(),
+                    "close": "99" if touching else "101",
+                    "high": "102",
+                    "low": "99" if touching else "101",
+                    "observation_time": observation_time.isoformat(),
+                    "open": "99" if touching else "101",
+                    "provider_id": provider_id,
+                }
+            )
+            prior.append(
+                {
+                    "available_at": decision_time.isoformat(),
+                    "close": "101",
+                    "high": "102",
+                    "low": "100.5",
+                    "observation_time": (
+                        observation_time - timedelta(hours=1)
+                    ).isoformat(),
+                    "open": "101",
+                    "provider_id": provider_id,
+                }
+            )
+        stop_input = persist(
+            {
+                "active_stop": "100",
+                "active_stop_identity": active_stop_identity,
+                "candidate_position_state": "OPEN_INITIAL",
+                "candidate_reference_available": True,
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "control_portfolio_tip_sha256": tip["record_sha256"],
+                "control_position_state": "OPEN_INITIAL",
+                "decision_time": decision_time.isoformat(),
+                "direction": "long",
+                "first_divergence_decision_time": None,
+                "observation_time": observation_time.isoformat(),
+                "prior_provider_observations": prior,
+                "provider_observations": providers,
+                "schema_version": PARENT_STOP_INPUT_VERSION,
+                "slot_id": slot_id,
+            }
+        )
+        owner_by_metric = {metric: stop_input["record_sha256"] for metric in metrics}
+
+    manifest = persist(
         {
-            "declared_blind_projection": dict(sorted(derived.items())),
+            "cadence": cadence,
+            "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+            "decision_time": decision_time.isoformat(),
             "evaluation_epoch_authorization_sha256": (
                 evaluation_epoch_authorization_sha256
             ),
-            "schema_version": BLIND_PROJECTION_VERSION,
-            "slot_id": expected_slot["slot_id"],
-            "source_evidence_record_sha256": source["record_sha256"],
+            "input_evidence_sha256_by_metric": dict(sorted(input_by_metric.items())),
+            "metric_owner_evidence_sha256_by_metric": dict(
+                sorted(owner_by_metric.items())
+            ),
+            "observation_time": observation_time.isoformat(),
+            "schema_version": BLIND_PARENT_MANIFEST_VERSION,
+            "slot_id": slot_id,
+            "warmup_evidence_sha256": warmup["record_sha256"],
         }
     )
     reference = BlindEvidenceReference(
-        slot_id=expected_slot["slot_id"],
-        authoritative_evidence_record_sha256=envelope["record_sha256"],
-        evaluation_epoch_authorization_sha256=(
-            evaluation_epoch_authorization_sha256
-        ),
+        slot_id=slot_id,
+        certified_parent_evidence_manifest_sha256=manifest["record_sha256"],
+        evaluation_epoch_authorization_sha256=evaluation_epoch_authorization_sha256,
     )
-    return reference, {
-        source["record_sha256"]: source,
-        envelope["record_sha256"]: envelope,
+    return reference, records
+
+
+EVALUATION_CONTRACT_SCHEMA_VERSION = (
+    "PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_SCHEMA_V1"
+)
+EVALUATION_CONTRACT_VERSION = "PROSPECTIVE_INTEGRATION_EVALUATION_CONTRACT_V1"
+
+
+def evaluation_contract_schema() -> dict[str, Any]:
+    protocol = _require_certified_corpus()
+    payload = {
+        "candidate_control_must_be_distinct": True,
+        "exact_fields": [
+            "candidate_reference_identity",
+            "certified_corpus_sha256",
+            "contract_created_at",
+            "control_reference_identity",
+            "definition_sha256",
+            "schema_version",
+            "stage_b_evaluation_contract_sha256",
+            "sufficiency_governance_sha256",
+        ],
+        "identity_rules": {
+            "candidate_reference_identity": "non-empty canonical identity",
+            "control_reference_identity": "non-empty canonical identity",
+            "definition_sha256": "canonical exact-contract digest",
+        },
+        "schema_version": EVALUATION_CONTRACT_SCHEMA_VERSION,
+        "stage_b_evaluation_contract_sha256": protocol[
+            "child_definition_sha256"
+        ]["stage_b_evaluation_contract"],
+        "unexpected_fields_permitted": False,
+        "version": EVALUATION_CONTRACT_VERSION,
     }
+    return _with_definition_hash(payload)
+
+
+def build_evaluation_contract(
+    *,
+    candidate_reference_identity: str,
+    control_reference_identity: str,
+    contract_created_at: datetime,
+) -> dict[str, Any]:
+    protocol = _require_certified_corpus()
+    payload = {
+        "candidate_reference_identity": candidate_reference_identity,
+        "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+        "contract_created_at": _require_utc(
+            contract_created_at, "contract_created_at"
+        ).isoformat(),
+        "control_reference_identity": control_reference_identity,
+        "schema_version": EVALUATION_CONTRACT_VERSION,
+        "stage_b_evaluation_contract_sha256": protocol[
+            "child_definition_sha256"
+        ]["stage_b_evaluation_contract"],
+        "sufficiency_governance_sha256": sufficiency_governance_definition()[
+            "definition_sha256"
+        ],
+    }
+    contract = _with_definition_hash(payload)
+    validate_evaluation_contract(contract)
+    return contract
+
+
+def validate_evaluation_contract(
+    evaluation_contract: Mapping[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(evaluation_contract, Mapping):
+        raise SufficiencyGovernanceError("evaluation contract must be an object")
+    expected_fields = set(evaluation_contract_schema()["exact_fields"])
+    _strict_keys(evaluation_contract, expected_fields, "evaluation contract")
+    digest = _verify_hashed_definition(evaluation_contract, "evaluation contract")
+    if evaluation_contract["schema_version"] != EVALUATION_CONTRACT_VERSION:
+        raise SufficiencyGovernanceError("evaluation contract has wrong schema")
+    if evaluation_contract["certified_corpus_sha256"] != CERTIFIED_CORPUS_SHA256:
+        raise SufficiencyGovernanceError("evaluation contract has wrong corpus")
+    protocol = _require_certified_corpus()
+    if evaluation_contract["stage_b_evaluation_contract_sha256"] != protocol[
+        "child_definition_sha256"
+    ]["stage_b_evaluation_contract"]:
+        raise SufficiencyGovernanceError("evaluation contract has wrong Stage-B owner")
+    if evaluation_contract["sufficiency_governance_sha256"] != (
+        sufficiency_governance_definition()["definition_sha256"]
+    ):
+        raise SufficiencyGovernanceError("evaluation contract has wrong governance")
+    candidate = evaluation_contract["candidate_reference_identity"]
+    control = evaluation_contract["control_reference_identity"]
+    if not isinstance(candidate, str) or not candidate.strip():
+        raise SufficiencyGovernanceError("candidate reference identity is required")
+    if not isinstance(control, str) or not control.strip():
+        raise SufficiencyGovernanceError("control reference identity is required")
+    if candidate == control:
+        raise SufficiencyGovernanceError("candidate and control must be distinct")
+    try:
+        _require_utc(
+            datetime.fromisoformat(evaluation_contract["contract_created_at"]),
+            "contract_created_at",
+        )
+    except (TypeError, ValueError) as exc:
+        raise SufficiencyGovernanceError(
+            "evaluation contract created_at is invalid"
+        ) from exc
+    return {**dict(evaluation_contract), "definition_sha256": digest}
 
 
 EPOCH_AUTHORIZATION_VERSION = "PROSPECTIVE_STAGE_B_EVALUATION_EPOCH_AUTHORIZATION_V1"
@@ -1223,7 +2260,9 @@ INITIAL_EPOCH_ID = "INITIAL_STAGE_B_EVALUATION_EPOCH"
 
 
 def evaluation_epoch_contract() -> dict[str, Any]:
+    contract_schema = evaluation_contract_schema()
     payload = {
+        "authorization_at_before_epoch_observation_start": True,
         "authorization_before_first_qualifying_observation": True,
         "authorization_bindings": [
             "blind_monitor_sha256",
@@ -1237,6 +2276,7 @@ def evaluation_epoch_contract() -> dict[str, Any]:
             "temporal_policy_sha256",
         ],
         "evaluation_contract_definition_must_recompute": True,
+        "evaluation_contract_schema_sha256": contract_schema["definition_sha256"],
         "initial_epoch_id": INITIAL_EPOCH_ID,
         "initial_epoch_unique": True,
         "postp1_004_persistent_transactional_enforcement_required": True,
@@ -1247,27 +2287,96 @@ def evaluation_epoch_contract() -> dict[str, Any]:
     return _with_definition_hash(payload)
 
 
+def validate_epoch_authorization(authorization: Mapping[str, Any]) -> dict[str, Any]:
+    row = dict(authorization)
+    _strict_keys(
+        row,
+        {
+            "authorized_at",
+            "blind_monitor_sha256",
+            "certified_corpus_sha256",
+            "coverage_policy_sha256",
+            "epoch_observation_start",
+            "evaluation_contract",
+            "evaluation_contract_sha256",
+            "evaluation_epoch_id",
+            "evidence_unit_policy_sha256",
+            "record_sha256",
+            "schema_version",
+            "sufficiency_governance_sha256",
+            "temporal_policy_sha256",
+        },
+        "evaluation epoch authorization",
+    )
+    _verify_record_hash(row, "evaluation epoch authorization")
+    if row["schema_version"] != EPOCH_AUTHORIZATION_VERSION:
+        raise SufficiencyGovernanceError("authorization has wrong schema")
+    if row["evaluation_epoch_id"] != INITIAL_EPOCH_ID:
+        raise SufficiencyGovernanceError("authorization has arbitrary epoch identity")
+    contract = validate_evaluation_contract(row["evaluation_contract"])
+    expected = {
+        "blind_monitor_sha256": blind_monitor_contract()["definition_sha256"],
+        "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+        "coverage_policy_sha256": coverage_policy()["definition_sha256"],
+        "evaluation_contract_sha256": contract["definition_sha256"],
+        "evidence_unit_policy_sha256": evidence_unit_policy()["definition_sha256"],
+        "sufficiency_governance_sha256": sufficiency_governance_definition()[
+            "definition_sha256"
+        ],
+        "temporal_policy_sha256": temporal_policy()["definition_sha256"],
+    }
+    for key, value in expected.items():
+        if row[key] != value:
+            raise SufficiencyGovernanceError(f"authorization has wrong {key}")
+    start = _require_utc(
+        datetime.fromisoformat(row["epoch_observation_start"]),
+        "epoch_observation_start",
+    )
+    authorized = _require_utc(
+        datetime.fromisoformat(row["authorized_at"]), "authorized_at"
+    )
+    created = _require_utc(
+        datetime.fromisoformat(contract["contract_created_at"]),
+        "contract_created_at",
+    )
+    if created > authorized or authorized >= start:
+        raise SufficiencyGovernanceError("authorization timing is not prospective")
+    return row
+
+
 def evaluation_cutoff_contract() -> dict[str, Any]:
+    replay = blind_replay_derivation_contract()
     payload = {
+        "caller_supplied_cutoff_is_scientific_state": False,
         "cutoff_definition": (
             "earliest decision_time where all eight raw minima, all eight "
             "distinct dependence-unit minima, all eight exact coverage floors, "
             "and complete scheduled-slot accounting hold"
         ),
         "cutoff_record_schema_version": CUTOFF_RECORD_VERSION,
+        "cutoff_record_strict_fields": sorted(_strict_cutoff_fields()),
         "evidence_after_cutoff_included": False,
         "evidence_manifest_content_addressed": True,
         "first_cutoff_immutable": True,
         "late_revision_moves_cutoff": False,
+        "manifest_row_strict_fields": [
+            "certified_parent_evidence_manifest_sha256",
+            "slot_id",
+        ],
         "replay_source": "frozen authoritative evidence manifest",
+        "blind_replay_contract_sha256": replay["definition_sha256"],
+        "earliest_cutoff_independently_reproduced": True,
+        "frozen_manifest_revalidated_before_terminal_result": True,
         "required_bindings": [
             "authoritative_evidence_manifest_sha256",
             "certified_corpus_sha256",
             "coverage_policy_sha256",
             "cutoff_decision_time",
+            "decision_universe_sha256",
             "evaluation_contract_sha256",
             "evaluation_epoch_authorization_sha256",
             "evidence_unit_policy_sha256",
+            "metric_evidence_contract_sha256",
             "per_metric_counts",
             "sufficiency_governance_sha256",
             "temporal_policy_sha256",
@@ -1278,9 +2387,39 @@ def evaluation_cutoff_contract() -> dict[str, Any]:
     return _with_definition_hash(payload)
 
 
+def cutoff_validation_contract() -> dict[str, Any]:
+    cutoff = evaluation_cutoff_contract()
+    manifest = certified_blind_parent_evidence_manifest_contract()
+    payload = {
+        "cutoff_contract_sha256": cutoff["definition_sha256"],
+        "earliest_proof": (
+            "cutoff T is globally sufficient and the preceding distinct decision "
+            "timestamp in the same replayed authoritative prefix is not"
+        ),
+        "manifest_contract_sha256": manifest["definition_sha256"],
+        "manifest_integrity_failure": "REFUSE_WITHOUT_MOVING_CUTOFF",
+        "recomputed_fields": [
+            "expected scheduled-slot census",
+            "all eight raw denominators",
+            "all eight distinct dependence-unit counts",
+            "all eight coverage numerators and denominators",
+            "complete accounting",
+            "earliest sufficient decision_time",
+            "exact identity-only evidence manifest hash",
+        ],
+        "schema_version": "PROSPECTIVE_STAGE_B_CUTOFF_REPLAY_VALIDATION_V1",
+        "self_rehashed_caller_mapping_authoritative": False,
+        "terminal_result_precondition": "FULL_CUTOFF_AND_MANIFEST_REVALIDATION",
+    }
+    return _with_definition_hash(payload)
+
+
 def evaluation_result_identity() -> dict[str, Any]:
     payload = {
         "candidate_control_identity_owner": "bound evaluation contract",
+        "cutoff_revalidated_before_terminal_result": True,
+        "evaluation_contract_revalidated_before_terminal_result": True,
+        "frozen_parent_manifest_replayed_before_terminal_result": True,
         "floating_pass_fail_result_permitted": False,
         "required_bindings": [
             "certified_corpus_sha256",
@@ -1315,16 +2454,30 @@ def stopping_rule() -> dict[str, Any]:
     return _with_definition_hash(payload)
 
 
+@dataclass(frozen=True)
+class SufficiencyDerivation:
+    """Pure replay output; possession is never sufficient for persistence."""
+
+    authorization_sha256: str
+    cutoff_record: Mapping[str, Any] | None
+    evidence_references: tuple[BlindEvidenceReference, ...]
+    manifest_rows: tuple[Mapping[str, str], ...]
+    progress: Mapping[str, Any]
+    replay_decision_time: datetime
+    resolver: BlindEvidenceResolver
+
+
 class EvaluationEpochRegistry:
     """Stateful reference owner; POSTP1-004 must persist it transactionally."""
 
     def __init__(self) -> None:
         self._lock = RLock()
         self._authorization_by_hash: dict[str, dict[str, Any]] = {}
-        self._authorization_by_governance: dict[tuple[str, str], str] = {}
+        self._authorization_by_tuple: dict[tuple[str, str, str], str] = {}
         self._cutoff_by_authorization: dict[str, dict[str, Any]] = {}
         self._manifest_by_hash: dict[str, tuple[dict[str, str], ...]] = {}
         self._progress_by_authorization: dict[str, dict[str, Any]] = {}
+        self._derivation_by_authorization: dict[str, SufficiencyDerivation] = {}
         self._terminal_result_by_authorization: dict[str, dict[str, Any]] = {}
 
     def authorize_initial_epoch(
@@ -1332,17 +2485,29 @@ class EvaluationEpochRegistry:
         *,
         evaluation_contract: Mapping[str, Any],
         epoch_observation_start: datetime,
+        authorized_at: datetime | None = None,
         evaluation_epoch_id: str = INITIAL_EPOCH_ID,
     ) -> dict[str, Any]:
         if evaluation_epoch_id != INITIAL_EPOCH_ID:
             raise SufficiencyGovernanceError("arbitrary evaluation epoch IDs are forbidden")
-        evaluation_contract_sha256 = _verify_hashed_definition(
-            evaluation_contract, "evaluation contract"
-        )
+        contract = validate_evaluation_contract(evaluation_contract)
+        evaluation_contract_sha256 = contract["definition_sha256"]
         start = _require_utc(epoch_observation_start, "epoch_observation_start")
         if start != start.replace(hour=0, minute=0, second=0, microsecond=0):
             raise SufficiencyGovernanceError(
                 "epoch observation start must be a canonical UTC-day boundary"
+            )
+        authorized = _require_utc(
+            start - timedelta(microseconds=1) if authorized_at is None else authorized_at,
+            "authorized_at",
+        )
+        created = _require_utc(
+            datetime.fromisoformat(contract["contract_created_at"]),
+            "contract_created_at",
+        )
+        if created > authorized or authorized >= start:
+            raise SufficiencyGovernanceError(
+                "evaluation contract and epoch authorization must be prospective"
             )
         definition = sufficiency_governance_definition()
         coverage = coverage_policy()
@@ -1351,10 +2516,12 @@ class EvaluationEpochRegistry:
         blind = blind_monitor_contract()
         record = _with_record_hash(
             {
+                "authorized_at": authorized.isoformat(),
                 "blind_monitor_sha256": blind["definition_sha256"],
                 "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
                 "coverage_policy_sha256": coverage["definition_sha256"],
                 "epoch_observation_start": start.isoformat(),
+                "evaluation_contract": contract,
                 "evaluation_contract_sha256": evaluation_contract_sha256,
                 "evaluation_epoch_id": evaluation_epoch_id,
                 "evidence_unit_policy_sha256": units["definition_sha256"],
@@ -1363,45 +2530,65 @@ class EvaluationEpochRegistry:
                 "temporal_policy_sha256": temporal["definition_sha256"],
             }
         )
-        governance_key = (CERTIFIED_CORPUS_SHA256, definition["definition_sha256"])
+        epoch_key = (
+            evaluation_contract_sha256,
+            CERTIFIED_CORPUS_SHA256,
+            definition["definition_sha256"],
+        )
         with self._lock:
-            existing_hash = self._authorization_by_governance.get(governance_key)
+            existing_hash = self._authorization_by_tuple.get(epoch_key)
             if existing_hash is not None:
+                if existing_hash in self._terminal_result_by_authorization:
+                    raise EvaluationEpochFrozenError(
+                        "the initial epoch for this contract is terminal"
+                    )
                 existing = self._authorization_by_hash[existing_hash]
                 if existing != record:
                     raise SufficiencyGovernanceError(
-                        "this corpus/governance already has its unique initial epoch"
+                        "this contract/corpus/governance already has its unique initial epoch"
                     )
                 return dict(existing)
-            self._authorization_by_governance[governance_key] = record["record_sha256"]
+            self._authorization_by_tuple[epoch_key] = record["record_sha256"]
             self._authorization_by_hash[record["record_sha256"]] = record
         return dict(record)
 
     def authorization(self, record_sha256: str) -> dict[str, Any]:
         with self._lock:
             try:
-                return dict(self._authorization_by_hash[record_sha256])
+                record = dict(self._authorization_by_hash[record_sha256])
             except KeyError as exc:
                 raise SufficiencyGovernanceError(
                     "evaluation epoch lacks persisted authorization"
                 ) from exc
+        return validate_epoch_authorization(record)
 
     def frozen_progress(self, authorization_sha256: str) -> dict[str, Any] | None:
         with self._lock:
             row = self._progress_by_authorization.get(authorization_sha256)
             return None if row is None else dict(row)
 
-    def freeze_cutoff(
-        self,
-        authorization_sha256: str,
-        cutoff: Mapping[str, Any],
-        manifest_rows: Sequence[Mapping[str, str]],
-        progress: Mapping[str, Any],
-    ) -> dict[str, Any]:
-        frozen_manifest = tuple(dict(row) for row in manifest_rows)
-        manifest_sha256 = cutoff.get("authoritative_evidence_manifest_sha256")
-        if _digest(list(frozen_manifest)) != manifest_sha256:
-            raise SufficiencyGovernanceError("cutoff evidence manifest does not reproduce")
+    def freeze_cutoff(self, *_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise SufficiencyGovernanceError(
+            "caller-supplied cutoff/progress/manifest state is forbidden"
+        )
+
+    def freeze_derived_cutoff(self, derivation: SufficiencyDerivation) -> dict[str, Any]:
+        if not isinstance(derivation, SufficiencyDerivation):
+            raise SufficiencyGovernanceError("authoritative derivation required")
+        authorization_sha256 = derivation.authorization_sha256
+        authorization = self.authorization(authorization_sha256)
+        cutoff = derivation.cutoff_record
+        if cutoff is None:
+            raise SufficiencyGovernanceError("insufficient derivation has no cutoff")
+        validate_cutoff_record(
+            cutoff,
+            manifest_rows=derivation.manifest_rows,
+            evidence_references=derivation.evidence_references,
+            resolver=derivation.resolver,
+            authorization=authorization,
+        )
+        frozen_manifest = tuple(dict(row) for row in derivation.manifest_rows)
+        manifest_sha256 = cutoff["authoritative_evidence_manifest_sha256"]
         with self._lock:
             if authorization_sha256 in self._terminal_result_by_authorization:
                 raise EvaluationEpochFrozenError("evaluation epoch is terminal")
@@ -1412,7 +2599,10 @@ class EvaluationEpochRegistry:
                 return dict(existing)
             self._cutoff_by_authorization[authorization_sha256] = dict(cutoff)
             self._manifest_by_hash[str(manifest_sha256)] = frozen_manifest
-            self._progress_by_authorization[authorization_sha256] = dict(progress)
+            self._progress_by_authorization[authorization_sha256] = dict(
+                derivation.progress
+            )
+            self._derivation_by_authorization[authorization_sha256] = derivation
             return dict(cutoff)
 
     def cutoff(self, authorization_sha256: str) -> dict[str, Any] | None:
@@ -1440,29 +2630,43 @@ class EvaluationEpochRegistry:
         if result not in ("PASS", "FAIL"):
             raise SufficiencyGovernanceError("evaluation result must be PASS or FAIL")
         with self._lock:
-            authorization = self.authorization(authorization_sha256)
-            cutoff = self._cutoff_by_authorization.get(authorization_sha256)
-            if cutoff is None:
-                raise SufficiencyGovernanceError("result requires a frozen cutoff")
             if authorization_sha256 in self._terminal_result_by_authorization:
                 raise EvaluationEpochFrozenError("evaluation epoch is already terminal")
-            definition = sufficiency_governance_definition()
-            record = _with_record_hash(
-                {
-                    "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
-                    "cutoff_record_sha256": cutoff["record_sha256"],
-                    "evaluation_contract_sha256": authorization[
-                        "evaluation_contract_sha256"
-                    ],
-                    "evaluation_epoch_authorization_sha256": authorization_sha256,
-                    "result": result,
-                    "schema_version": EVALUATION_RESULT_IDENTITY_VERSION,
-                    "sufficiency_governance_sha256": definition["definition_sha256"],
-                    "terminal": True,
-                }
-            )
+            cutoff = self._cutoff_by_authorization.get(authorization_sha256)
+            derivation = self._derivation_by_authorization.get(authorization_sha256)
+        if cutoff is None or derivation is None:
+            raise SufficiencyGovernanceError("result requires a frozen derived cutoff")
+        authorization = self.authorization(authorization_sha256)
+        validate_cutoff_record(
+            cutoff,
+            manifest_rows=self.evidence_manifest(
+                cutoff["authoritative_evidence_manifest_sha256"]
+            ),
+            evidence_references=derivation.evidence_references,
+            resolver=derivation.resolver,
+            authorization=authorization,
+        )
+        validate_evaluation_contract(authorization["evaluation_contract"])
+        definition = sufficiency_governance_definition()
+        record = _with_record_hash(
+            {
+                "certified_corpus_sha256": CERTIFIED_CORPUS_SHA256,
+                "cutoff_record_sha256": cutoff["record_sha256"],
+                "evaluation_contract_sha256": authorization[
+                    "evaluation_contract_sha256"
+                ],
+                "evaluation_epoch_authorization_sha256": authorization_sha256,
+                "result": result,
+                "schema_version": EVALUATION_RESULT_IDENTITY_VERSION,
+                "sufficiency_governance_sha256": definition["definition_sha256"],
+                "terminal": True,
+            }
+        )
+        with self._lock:
+            if authorization_sha256 in self._terminal_result_by_authorization:
+                raise EvaluationEpochFrozenError("evaluation epoch is already terminal")
             self._terminal_result_by_authorization[authorization_sha256] = record
-            return dict(record)
+        return dict(record)
 
     def is_terminal(self, authorization_sha256: str) -> bool:
         with self._lock:
@@ -1562,26 +2766,20 @@ def _materialize_metric_state(
     }
 
 
-def evaluate_blind_sufficiency(
+def derive_stage_b_sufficiency_state(
     evidence_references: Sequence[BlindEvidenceReference],
     *,
     resolver: BlindEvidenceResolver,
-    registry: EvaluationEpochRegistry,
-    evaluation_epoch_authorization_sha256: str,
+    authorization: Mapping[str, Any],
     current_decision_time: datetime,
-) -> dict[str, Any]:
-    """Derive and statefully freeze the earliest outcome-blind cutoff."""
+) -> SufficiencyDerivation:
+    """Purely derive the earliest outcome-blind cutoff from parent evidence."""
 
     if not isinstance(resolver, BlindEvidenceResolver):
         raise SufficiencyGovernanceError("certified BlindEvidenceResolver required")
-    if not isinstance(registry, EvaluationEpochRegistry):
-        raise SufficiencyGovernanceError("stateful EvaluationEpochRegistry required")
-    authorization = registry.authorization(evaluation_epoch_authorization_sha256)
-    if registry.is_terminal(evaluation_epoch_authorization_sha256):
-        raise EvaluationEpochFrozenError("evaluation epoch is terminal")
-    frozen = registry.frozen_progress(evaluation_epoch_authorization_sha256)
-    if frozen is not None:
-        return frozen
+    authorization = dict(authorization)
+    authorization = validate_epoch_authorization(authorization)
+    authorization_sha256 = authorization["record_sha256"]
     current = _require_utc(current_decision_time, "current_decision_time")
     start = _require_utc(
         datetime.fromisoformat(authorization["epoch_observation_start"]),
@@ -1634,9 +2832,10 @@ def evaluate_blind_sufficiency(
             accounted_prefix += 1
             manifest_rows.append(
                 {
-                    "projection_record_sha256": record.projection_record_sha256,
+                    "certified_parent_evidence_manifest_sha256": (
+                        record.parent_manifest_record_sha256
+                    ),
                     "slot_id": record.slot_id,
-                    "source_record_sha256": record.source_record_sha256,
                 }
             )
             for metric in applicable:
@@ -1693,7 +2892,7 @@ def evaluate_blind_sufficiency(
         "decision_universe_sha256": minima_definition["decision_universe_sha256"],
         "evaluation_contract_sha256": authorization["evaluation_contract_sha256"],
         "evaluation_epoch_authorization_sha256": (
-            evaluation_epoch_authorization_sha256
+            authorization_sha256
         ),
         "evidence_unit_policy_sha256": units["definition_sha256"],
         "global_condition": "ALL_8_RAW_AND_UNITS_AND_COVERAGE_AND_ACCOUNTING",
@@ -1730,7 +2929,15 @@ def evaluate_blind_sufficiency(
         result["authoritative_evidence_manifest_sha256"] = None
         result["cutoff_record_sha256"] = None
         result["result_sha256"] = _digest(result)
-        return result
+        return SufficiencyDerivation(
+            authorization_sha256=authorization_sha256,
+            cutoff_record=None,
+            evidence_references=tuple(evidence_references),
+            manifest_rows=tuple(sorted(manifest_rows, key=lambda row: row["slot_id"])),
+            progress=result,
+            replay_decision_time=current,
+            resolver=resolver,
+        )
 
     manifest_rows = sorted(manifest_rows, key=lambda row: row["slot_id"])
     manifest_sha256 = _digest(manifest_rows)
@@ -1744,9 +2951,16 @@ def evaluate_blind_sufficiency(
             "cutoff_decision_time": cutoff.isoformat(),
             "evaluation_contract_sha256": authorization["evaluation_contract_sha256"],
             "evaluation_epoch_authorization_sha256": (
-                evaluation_epoch_authorization_sha256
+                authorization_sha256
             ),
             "evidence_unit_policy_sha256": units["definition_sha256"],
+            "decision_universe_sha256": minima_definition["decision_universe_sha256"],
+            "metric_evidence_contract_sha256": next(iter(minima.values()))[
+                "metric_evidence_contract_sha256"
+            ],
+            "blind_replay_contract_sha256": blind_replay_derivation_contract()[
+                "definition_sha256"
+            ],
             "per_metric_counts": {
                 metric: {
                     "authoritative_coverage_denominator": row[
@@ -1761,6 +2975,13 @@ def evaluate_blind_sufficiency(
                     "raw_sufficiency_denominator": row[
                         "raw_sufficiency_denominator"
                     ],
+                    "authoritative_coverage_floor": "0.99",
+                    "minimum_distinct_dependence_units": row[
+                        "minimum_distinct_dependence_units"
+                    ],
+                    "minimum_raw_sufficiency_denominator": row[
+                        "minimum_raw_sufficiency_denominator"
+                    ],
                 }
                 for metric, row in metric_states.items()
             },
@@ -1773,13 +2994,126 @@ def evaluate_blind_sufficiency(
     result["authoritative_evidence_manifest_sha256"] = manifest_sha256
     result["cutoff_record_sha256"] = cutoff_record["record_sha256"]
     result["result_sha256"] = _digest(result)
-    registry.freeze_cutoff(
-        evaluation_epoch_authorization_sha256,
-        cutoff_record,
-        manifest_rows,
-        result,
+    frozen_ids = {row["slot_id"] for row in manifest_rows}
+    frozen_references = tuple(
+        reference for reference in evidence_references if reference.slot_id in frozen_ids
     )
-    return result
+    return SufficiencyDerivation(
+        authorization_sha256=authorization_sha256,
+        cutoff_record=cutoff_record,
+        evidence_references=frozen_references,
+        manifest_rows=tuple(manifest_rows),
+        progress=result,
+        replay_decision_time=current,
+        resolver=resolver,
+    )
+
+
+def _strict_cutoff_fields() -> set[str]:
+    return {
+        "accounting",
+        "authoritative_evidence_manifest_sha256",
+        "blind_monitor_sha256",
+        "blind_replay_contract_sha256",
+        "certified_corpus_sha256",
+        "coverage_policy_sha256",
+        "cutoff_decision_time",
+        "decision_universe_sha256",
+        "evaluation_contract_sha256",
+        "evaluation_epoch_authorization_sha256",
+        "evidence_unit_policy_sha256",
+        "metric_evidence_contract_sha256",
+        "per_metric_counts",
+        "record_sha256",
+        "schema_version",
+        "sufficiency_governance_sha256",
+        "temporal_policy_sha256",
+        "window_start",
+    }
+
+
+def validate_cutoff_record(
+    cutoff: Mapping[str, Any],
+    *,
+    manifest_rows: Sequence[Mapping[str, str]],
+    evidence_references: Sequence[BlindEvidenceReference],
+    resolver: BlindEvidenceResolver,
+    authorization: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Reproduce a cutoff, its manifest, all counters and earliest timestamp."""
+
+    if not isinstance(cutoff, Mapping):
+        raise SufficiencyGovernanceError("cutoff record must be an object")
+    _strict_keys(cutoff, _strict_cutoff_fields(), "cutoff record")
+    _verify_record_hash(cutoff, "cutoff record")
+    if cutoff["schema_version"] != CUTOFF_RECORD_VERSION:
+        raise SufficiencyGovernanceError("cutoff record has wrong schema")
+    auth = dict(authorization)
+    auth_sha = _verify_record_hash(auth, "evaluation epoch authorization")
+    if cutoff["evaluation_epoch_authorization_sha256"] != auth_sha:
+        raise SufficiencyGovernanceError("cutoff record has wrong epoch")
+    validate_evaluation_contract(auth["evaluation_contract"])
+    cutoff_time = _require_utc(
+        datetime.fromisoformat(cutoff["cutoff_decision_time"]),
+        "cutoff_decision_time",
+    )
+    strict_manifest = tuple(dict(row) for row in manifest_rows)
+    for row in strict_manifest:
+        _strict_keys(
+            row,
+            {"certified_parent_evidence_manifest_sha256", "slot_id"},
+            "cutoff evidence manifest row",
+        )
+    if len({row["slot_id"] for row in strict_manifest}) != len(strict_manifest):
+        raise SufficiencyGovernanceError("cutoff manifest duplicates a slot")
+    if _digest(list(strict_manifest)) != cutoff[
+        "authoritative_evidence_manifest_sha256"
+    ]:
+        raise SufficiencyGovernanceError("cutoff evidence manifest does not reproduce")
+    recomputed = derive_stage_b_sufficiency_state(
+        evidence_references,
+        resolver=resolver,
+        authorization=auth,
+        current_decision_time=cutoff_time,
+    )
+    if recomputed.cutoff_record is None:
+        raise SufficiencyGovernanceError("cutoff prefix is not globally sufficient")
+    if tuple(recomputed.manifest_rows) != strict_manifest:
+        raise SufficiencyGovernanceError("cutoff manifest differs from parent replay")
+    if dict(recomputed.cutoff_record) != dict(cutoff):
+        raise SufficiencyGovernanceError(
+            "cutoff fields or earliest sufficiency differ from parent replay"
+        )
+    return dict(cutoff)
+
+
+def evaluate_blind_sufficiency(
+    evidence_references: Sequence[BlindEvidenceReference],
+    *,
+    resolver: BlindEvidenceResolver,
+    registry: EvaluationEpochRegistry,
+    evaluation_epoch_authorization_sha256: str,
+    current_decision_time: datetime,
+) -> dict[str, Any]:
+    """Derive and statefully freeze the earliest outcome-blind cutoff."""
+
+    if not isinstance(registry, EvaluationEpochRegistry):
+        raise SufficiencyGovernanceError("stateful EvaluationEpochRegistry required")
+    authorization = registry.authorization(evaluation_epoch_authorization_sha256)
+    if registry.is_terminal(evaluation_epoch_authorization_sha256):
+        raise EvaluationEpochFrozenError("evaluation epoch is terminal")
+    frozen = registry.frozen_progress(evaluation_epoch_authorization_sha256)
+    if frozen is not None:
+        return frozen
+    derivation = derive_stage_b_sufficiency_state(
+        evidence_references,
+        resolver=resolver,
+        authorization=authorization,
+        current_decision_time=current_decision_time,
+    )
+    if derivation.cutoff_record is not None:
+        registry.freeze_derived_cutoff(derivation)
+    return dict(derivation.progress)
 
 
 def assert_evaluation_epoch_not_extended(
@@ -1799,7 +3133,22 @@ def assert_evaluation_epoch_not_extended(
 
 
 _CHILD_ARTIFACTS = (
+    (
+        BLIND_CATEGORY_FILENAME,
+        "blind_category_mapping",
+        "blind_category_mapping",
+    ),
     (BLIND_MONITOR_FILENAME, "blind_monitor_contract", "blind_monitor_contract"),
+    (
+        BLIND_PARENT_MANIFEST_FILENAME,
+        "certified_blind_parent_evidence_manifest",
+        "certified_blind_parent_evidence_manifest_contract",
+    ),
+    (
+        BLIND_REPLAY_FILENAME,
+        "blind_replay_derivation_contract",
+        "blind_replay_derivation_contract",
+    ),
     (
         COMMON_RATE_FILENAME,
         "common_rate_evidence_strength",
@@ -1807,6 +3156,16 @@ _CHILD_ARTIFACTS = (
     ),
     (COVERAGE_FILENAME, "coverage_policy", "coverage_policy"),
     (CUTOFF_FILENAME, "evaluation_cutoff_contract", "evaluation_cutoff_contract"),
+    (
+        CUTOFF_VALIDATION_FILENAME,
+        "cutoff_validation_contract",
+        "cutoff_validation_contract",
+    ),
+    (
+        EVALUATION_CONTRACT_SCHEMA_FILENAME,
+        "evaluation_contract_schema",
+        "evaluation_contract_schema",
+    ),
     (EPOCH_FILENAME, "evaluation_epoch_contract", "evaluation_epoch_contract"),
     (
         RESULT_IDENTITY_FILENAME,
@@ -1872,7 +3231,19 @@ def sufficiency_governance_definition() -> dict[str, Any]:
                 ),
                 "review_result": FAILED_GOVERNANCE_REVIEW_RESULT,
                 "superseded_before_collection": True,
-            }
+            },
+            {
+                "authoritative": False,
+                "definition_sha256": FAILED_R1_GOVERNANCE_SHA256,
+                "implementation_commit": FAILED_R1_GOVERNANCE_IMPLEMENTATION_COMMIT,
+                "prospective_observations_collected": False,
+                "review_classification": FAILED_R1_GOVERNANCE_CLASSIFICATION,
+                "review_documentation_commit": (
+                    FAILED_R1_GOVERNANCE_REVIEW_DOCUMENTATION_COMMIT
+                ),
+                "review_result": FAILED_R1_GOVERNANCE_REVIEW_RESULT,
+                "superseded_before_collection": True,
+            },
         ],
         "final_classification": FINAL_CLASSIFICATION,
         "governance_version": GOVERNANCE_VERSION,
@@ -1888,6 +3259,15 @@ def sufficiency_governance_definition() -> dict[str, Any]:
             "scientific_evidence_resolver_sha256": protocol[
                 "child_definition_sha256"
             ]["scientific_evidence_resolver"],
+            "data_schema_sha256": protocol["child_definition_sha256"][
+                "data_schema_contract"
+            ],
+            "portfolio_track_sha256": protocol["child_definition_sha256"][
+                "portfolio_track_contract"
+            ],
+            "stop_event_taxonomy_sha256": protocol["child_definition_sha256"][
+                "stop_event_taxonomy"
+            ],
             "stage_b_evaluation_contract_sha256": protocol[
                 "child_definition_sha256"
             ]["stage_b_evaluation_contract"],
@@ -1915,7 +3295,10 @@ def sufficiency_governance_definition() -> dict[str, Any]:
         "workstream": WORKSTREAM,
     }
     definition = _with_definition_hash(payload)
-    if definition["definition_sha256"] == FAILED_GOVERNANCE_SHA256:
+    if definition["definition_sha256"] in {
+        FAILED_GOVERNANCE_SHA256,
+        FAILED_R1_GOVERNANCE_SHA256,
+    }:
         raise SufficiencyGovernanceError("corrected governance hash did not move")
     return definition
 
@@ -1947,6 +3330,7 @@ def _report_markdown(definition: Mapping[str, Any]) -> str:
         f"- Final classification: {FINAL_CLASSIFICATION}",
         f"- Certified corpus: {CERTIFIED_CORPUS_SHA256}",
         f"- Failed predecessor: {FAILED_GOVERNANCE_SHA256} (non-authoritative)",
+        f"- Failed R1 predecessor: {FAILED_R1_GOVERNANCE_SHA256} (non-authoritative)",
         f"- Material child count: {definition['material_child_count']}",
         "- Prospective observations collected: NO",
         "- Real Stage-B evaluation run: NO",
@@ -1994,10 +3378,12 @@ def _report_markdown(definition: Mapping[str, Any]) -> str:
         "of at least 0.99. Natural evidence units govern dependence; no separate "
         "arbitrary calendar minimum or Stage-C 90-day rule is imported.",
         "",
-        "The blind monitor consumes only content-addressed evidence references and "
-        "a persisted initial-epoch authorization. It replays warmup, PIT, universe, "
-        "disposition and dependence identity, freezes an evidence manifest at the "
-        "first sufficient cutoff, and makes PASS and FAIL terminal.",
+        "The blind monitor consumes only identity-only certified-parent manifests "
+        "and a persisted initial-epoch authorization. It transitively replays "
+        "warmup, PIT, universe, comparability, stop-root and genuine sizing "
+        "evidence; a self-rehashed projection is never authority. The registry "
+        "independently revalidates the strict cutoff and frozen manifest before "
+        "either PASS or FAIL becomes terminal.",
         "",
         f"Final classification: {FINAL_CLASSIFICATION}",
         "",

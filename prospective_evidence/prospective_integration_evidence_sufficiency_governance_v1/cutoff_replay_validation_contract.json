@@ -1,0 +1,19 @@
+{
+  "cutoff_contract_sha256": "7da5a4b7110239bacb957197acb78d1b71ccbb0bbc7e65a0bc23b2c1df0d0a36",
+  "definition_sha256": "b4ac0fd4db3bef2431684509d52896ed2c9ac4284c89d997d720b5024f7663c2",
+  "earliest_proof": "cutoff T is globally sufficient and the preceding distinct decision timestamp in the same replayed authoritative prefix is not",
+  "manifest_contract_sha256": "c0d97397e1dea1219883e57f30833f0699e5d1fbf2421c46e480065f0ec75ef8",
+  "manifest_integrity_failure": "REFUSE_WITHOUT_MOVING_CUTOFF",
+  "recomputed_fields": [
+    "expected scheduled-slot census",
+    "all eight raw denominators",
+    "all eight distinct dependence-unit counts",
+    "all eight coverage numerators and denominators",
+    "complete accounting",
+    "earliest sufficient decision_time",
+    "exact identity-only evidence manifest hash"
+  ],
+  "schema_version": "PROSPECTIVE_STAGE_B_CUTOFF_REPLAY_VALIDATION_V1",
+  "self_rehashed_caller_mapping_authoritative": false,
+  "terminal_result_precondition": "FULL_CUTOFF_AND_MANIFEST_REVALIDATION"
+}
