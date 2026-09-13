@@ -1,0 +1,15 @@
+{
+  "active_stop_identity_derivation": "sha256 over canonical {root_opening_transition_sha256, installing_transition_sha256, version}",
+  "active_stop_identity_version": "PROSPECTIVE_ACTIVE_STOP_IDENTITY_V2",
+  "asserted_identity_establishes_membership": false,
+  "definition_sha256": "46157c0cd2cd0af54cfa511969f2b6dadf9b6366cba7c50824fe956aebfd77fd",
+  "lineage_rule": "ENTER establishes the initial stop; STOP_MOVE replaces it; ADD may modify the position and, where the existing owner permits, its stop; TRIM preserves or modifies state under the existing owner; EXIT terminates the position and its stop. Every stop therefore has a producing transition, and a stop that appears without one is refused.",
+  "membership_owner": "btc_predictor.research.prospective_integration_corpus_v2.prove_active_stop_membership",
+  "membership_rule": "A stop-event record proves membership by naming the control state record whose replayed lifecycle carries that exact active stop at the event time, inside the same root lifecycle episode. An asserted active_stop_identity establishes nothing on its own: the identity is re-derived from the graph and compared, and a stop belonging to another position moves the root and is refused.",
+  "no_stop_without_a_producing_transition": true,
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "schema_version": "PROSPECTIVE_ACTIVE_STOP_MEMBERSHIP_V2",
+  "stop_event_classifier_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
+  "stop_event_classifier_version": "PROSPECTIVE_STOP_EVENT_CLASSIFIER_V1",
+  "stop_event_universe_anchor": "CONTROL_REFERENCE_TRACK_ACTIVE_STOP"
+}

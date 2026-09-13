@@ -1,0 +1,47 @@
+{
+  "definition_sha256": "7332ed64a87a5f39cf5e43d7fa4484ab708b2074ade90870f9aca6ef7fea0793",
+  "demonstration": {
+    "daily_slot_evidence_manifest_sha256": "38b71f87f8664ce4ca8b039b26cb040d651af6846303a272ac4fc57cea84710b",
+    "daily_slot_id": "c2222488a7815b42db01d6c9207a5fb34ee1b9353b1ccd5a7e4e016a20f57ccc",
+    "decision_observation_sha256": "e4e4e5845d86a33b9254c3f5c47a15756e0add63b4403b320f0fd628bad19e46",
+    "derived_warmup_state": "WARMUP_HISTORY_COMPLETE",
+    "evidence_record_count": 767,
+    "hourly_slot_evidence_manifest_sha256": "29d47e55ffeed5a58bf4563482da3d6be6efdef6517f31572974ee2722d2a4b5",
+    "hourly_slot_id": "5ea3e0ad731f5a7e4fcc21ec58ac775f830ad1e6d8b6e914bb4cb1e60126e39b",
+    "owner_history_manifest_count": 33,
+    "root_opening_transition_sha256": "f6d267381a8626779308529761cce9e3c32d2741e7e86b8e8de14821193c3382",
+    "sizing_relative_difference": "0.0384615384615384615384615385",
+    "stop_membership_active_stop": "96000",
+    "stop_membership_proved": true,
+    "stop_membership_root_sha256": "f6d267381a8626779308529761cce9e3c32d2741e7e86b8e8de14821193c3382",
+    "stop_move_slot_id": "47eea9a8afff9ee47ac89cac7fdd650a27e9e08c74be2f166c9d1f55691f9bd2",
+    "stop_replay_membership_proved": true
+  },
+  "demonstration_owner": "btc_predictor.research.prospective_integration_corpus_v2.demonstrate_parent_completeness",
+  "demonstration_sha256": "0387bb9415a716735a346e6fbcdf7911472f318874939720e0baea5e78430451",
+  "invented_outside_the_parent_graph": [],
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "required_blind_facts": {
+    "active-stop membership": "prove_active_stop_membership re-derives the control track's active stop and its identity from the verified transition graph",
+    "comparability": "the slot manifest binds both reference evaluations and both tracks' portfolio states, and the replay refuses a substituted role, track or slot",
+    "control-position root lifecycle": "derive_root_opening_transition walks the verified chain to the ENTER that opened the current position",
+    "genuine paired sizing opportunity": "prove_paired_sizing_opportunity re-runs the sizing owner for both roles from their own bound inputs and requires distinct identities, distinct tracks, completeness and strict positivity",
+    "metric universe membership": "the metric replay-closure matrix names the V2 references each universe predicate needs and all eight are replayable",
+    "point-in-time visibility": "every owner-history reference is resolved under the frozen revision rule and a future-available record is excluded and refused",
+    "regime/setup/action/eligibility owner state": "each decision owner's output is a content-addressed record bound to its slot, track and owner-history manifests",
+    "source quality": "each observation carries a frozen feed status, adverse statuses enter the manifest as adverse evidence, and the certified source layer is bound unchanged by hash",
+    "warmup/evaluability": "replay_decision_evaluability reruns every required owner's own predicate over its resolved history and refuses a disagreeing cache"
+  },
+  "schema_version": "PROSPECTIVE_PARENT_COMPLETENESS_ACCEPTANCE_V2",
+  "surrogate_authorities_not_required": [
+    "active_stop_membership",
+    "comparability Boolean",
+    "control root SHA",
+    "quality_state",
+    "sizing-opportunity Boolean",
+    "universe Boolean",
+    "warmup Boolean"
+  ],
+  "synthetic_evidence_only": true,
+  "synthetic_evidence_rule": "Every record these builders produce is synthetic. No qualifying prospective observation is collected, no live capture starts, no real Stage-B numerator is inspected and no BTC-019 sealed data is opened."
+}

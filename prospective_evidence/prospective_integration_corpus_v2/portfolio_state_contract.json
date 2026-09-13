@@ -1,0 +1,54 @@
+{
+  "account_owner": "btc_predictor.portfolio.account",
+  "account_owner_version": "PAPER_ACCOUNT_V1",
+  "binds_predecessor_record": true,
+  "binds_producing_transition": true,
+  "definition_sha256": "265bc0282fe683f4ee5f92461cd76bfc23e6c524c00d30fa2c4bfc9c00ef995e",
+  "digest_of_selected_fields_is_insufficient": "A prior_state_sha256 over selected state fields commits to a summary, not to the predecessor scientific record, so a replay cannot load and validate what actually preceded this state. V2 binds prior_state_record_sha256, the content address of the predecessor record itself, and the replay loads it.",
+  "genesis_contract": {
+    "distinguishable_from_missing_predecessor": true,
+    "prior_state_record_sha256": null,
+    "producing_transition_record_sha256": null,
+    "rule": "Exactly one state per track may declare state_kind GENESIS, and only a GENESIS state may carry a null predecessor or a null producing transition. Every later state must bind both. A null predecessor on a DERIVED state is refused, so 'no predecessor recorded' and 'this is the beginning' can never be confused.",
+    "state_kind": "GENESIS"
+  },
+  "initial_state_owner": "PROSPECTIVE_INTEGRATION_CORPUS_V1.INITIAL_PORTFOLIO_STATE",
+  "initial_state_sha256": "87f7c7ba8d93ac21783557ec93ced6f1c9f05d258bf45ba4cd620d3d38d60659",
+  "lifecycle_owner": "btc_predictor.portfolio.state_machine",
+  "lifecycle_owner_version": "PAPER_POSITION_STATE_MACHINE_V1",
+  "nav_owner": "btc_predictor.portfolio.account.PaperAccount.nav",
+  "numerical_context_rule": "None of the authoritative owners V2 invokes -- the position state machine, the paper account and the initial position sizer -- pins a Decimal context, so the persisted digit count of an average entry, a pro-rata trim quantity, an available-cash balance or a position notional follows getcontext().prec. Evidence whose bytes move with an ambient setting is not deterministic, so V2 constructs and replays every record that invokes one of those owners inside one pinned context, and pins it to the interpreter default those owners already run under throughout this repository (precision 28, rounding ROUND_HALF_EVEN). No owner, formula or economic meaning changes, no byte an existing caller produces moves, and persisted V2 evidence becomes invariant to whatever ambient context a future collector happens to set. The corpus statistic context of precision 60 governs the corpus's own arithmetic and is deliberately not imposed on owner code, because doing so would change the persisted strings those certified owners produce.",
+  "owner_replay_decimal_precision": 28,
+  "owner_replay_decimal_rounding": "ROUND_HALF_EVEN",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "record_fields": [
+    "account_record",
+    "as_of",
+    "certified_corpus_sha256",
+    "decision_time",
+    "nav",
+    "nav_unrealized_pnl",
+    "nav_unrealized_pnl_evidence_sha256",
+    "nav_unrealized_pnl_owner",
+    "position_lifecycle_record",
+    "prior_state_record_sha256",
+    "producing_transition_record_sha256",
+    "record_kind",
+    "schema_version",
+    "slot_id",
+    "state_kind",
+    "track"
+  ],
+  "record_kind": "PROSPECTIVE_PORTFOLIO_STATE_V2",
+  "schema_version": "PROSPECTIVE_PORTFOLIO_STATE_CONTRACT_V2",
+  "state_kinds": [
+    "DERIVED",
+    "GENESIS"
+  ],
+  "tracks": [
+    "CANDIDATE_REFERENCE_TRACK",
+    "CONTROL_REFERENCE_TRACK"
+  ],
+  "unrealized_pnl_binding_rule": "Unrealized profit and loss is bound by content-addressed reference to the accounting owner's own output and is never re-derived here. NAV is then obtained by invoking the existing PaperAccount.nav owner on the replayed account and the referenced unrealized value, and the replay refuses if the persisted NAV does not equal that invocation. V2 binds and re-invokes; it authors no portfolio economics.",
+  "unrealized_pnl_owner": "btc_predictor.portfolio.accounting"
+}

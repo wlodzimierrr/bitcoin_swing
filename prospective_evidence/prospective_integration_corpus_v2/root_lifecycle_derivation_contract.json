@@ -1,0 +1,14 @@
+{
+  "definition_sha256": "a768ead194cd1431b27035763c17b1868ec7b89af03ed9bb2edc9df0a22bcbce",
+  "derivation_owner": "btc_predictor.research.prospective_integration_corpus_v2.derive_root_opening_transition",
+  "exit_reentry_rule": "A STOP_MOVE inside one position keeps the same root opening transition, because the chain reaches the same ENTER. An EXIT terminates the lifecycle, and the next ENTER can only occur on a new lifecycle, whose chain reaches a different ENTER. The two are therefore distinguishable by traversal alone, so a later sufficiency layer can count one root lifecycle unit per episode without a surrogate authority.",
+  "governance_authored_root_position_sha": false,
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "root_lifecycle_rule": "Walk the verified predecessor/transition chain backwards from the state under evaluation until the ENTER transition that opened the currently open position after flat. That transition record's own content address is the root lifecycle identity. There is no governance-authored root-position SHA: the identity is a traversal result, and a forged root opening transition moves the chain and is refused by the state replay before the traversal reaches it.",
+  "schema_version": "PROSPECTIVE_ROOT_LIFECYCLE_DERIVATION_V2",
+  "traversal": [
+    "verify the state and its whole predecessor chain",
+    "walk backwards until the ENTER transition that opened the currently open position after flat",
+    "return that transition's own content address as the root identity"
+  ]
+}

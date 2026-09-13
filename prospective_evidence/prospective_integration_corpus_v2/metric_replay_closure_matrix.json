@@ -1,0 +1,233 @@
+{
+  "definition_sha256": "6822762cecb701d0a79b2e68c603fdbabe34db3698bfa53030471985dd50b76d",
+  "governance_authored_conclusions_required": false,
+  "metric_count": 8,
+  "parent_v1_metric_evidence_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "replayable_count": 8,
+  "replayable_ratio": "8/8",
+  "rows": {
+    "cross_market_confirmed_stop_preservation_rate": {
+      "authoritative_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
+      "cadence": "STOP_HOURLY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "minimum",
+      "hard": true,
+      "metric": "cross_market_confirmed_stop_preservation_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.prove_active_stop_membership",
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_chain"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.stop_event_record_sha256",
+        "PROSPECTIVE_STOP_EVENT_V2.provider_observation_sha256s",
+        "PROSPECTIVE_STOP_EVENT_V2.prior_provider_observation_sha256s",
+        "PROSPECTIVE_STOP_EVENT_V2.control_state_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2.prior_state_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2.producing_transition_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_TRANSITION_V2.action_evidence_record_sha256",
+        "PROSPECTIVE_STOP_EVENT_V2.candidate_reference_record_sha256"
+      ],
+      "threshold": "1.0",
+      "universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS",
+      "universe_predicate_replayable": true
+    },
+    "gap_through_stop_consensus_agreement_rate": {
+      "authoritative_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
+      "cadence": "STOP_HOURLY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "minimum",
+      "hard": true,
+      "metric": "gap_through_stop_consensus_agreement_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.prove_active_stop_membership",
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_chain"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.stop_event_record_sha256",
+        "PROSPECTIVE_STOP_EVENT_V2.provider_observation_sha256s",
+        "PROSPECTIVE_STOP_EVENT_V2.prior_provider_observation_sha256s",
+        "PROSPECTIVE_STOP_EVENT_V2.control_state_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2.prior_state_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2.producing_transition_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_TRANSITION_V2.action_evidence_record_sha256",
+        "PROSPECTIVE_STOP_EVENT_V2.candidate_reference_record_sha256"
+      ],
+      "threshold": "0.99",
+      "universe": "GAP_THROUGH_STOP_EVENTS",
+      "universe_predicate_replayable": true
+    },
+    "isolated_venue_stop_suppression_rate": {
+      "authoritative_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
+      "cadence": "STOP_HOURLY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "minimum",
+      "hard": true,
+      "metric": "isolated_venue_stop_suppression_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.prove_active_stop_membership",
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_chain"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.stop_event_record_sha256",
+        "PROSPECTIVE_STOP_EVENT_V2.provider_observation_sha256s",
+        "PROSPECTIVE_STOP_EVENT_V2.prior_provider_observation_sha256s",
+        "PROSPECTIVE_STOP_EVENT_V2.control_state_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2.prior_state_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2.producing_transition_record_sha256",
+        "PROSPECTIVE_PORTFOLIO_TRANSITION_V2.action_evidence_record_sha256",
+        "PROSPECTIVE_STOP_EVENT_V2.candidate_reference_record_sha256"
+      ],
+      "threshold": "0.95",
+      "universe": "ISOLATED_VENUE_STOP_EVENTS",
+      "universe_predicate_replayable": true
+    },
+    "regime_classification_disagreement_rate": {
+      "authoritative_owner": "btc_predictor.features.regime.calculate_regime_classification",
+      "cadence": "STRATEGY_DAILY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "maximum",
+      "hard": true,
+      "metric": "regime_classification_disagreement_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_evaluability"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.owner_history_manifest_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.observation_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.adverse_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.component_manifest_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.derived_feature_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.decision_owner_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.reference_evaluation_record_sha256s"
+      ],
+      "threshold": "0.02",
+      "universe": "REGIME_EVALUABLE_DECISION_TIMES",
+      "universe_predicate_replayable": true
+    },
+    "risk_size_p95_relative_difference": {
+      "authoritative_owner": "btc_predictor.risk.sizing.calculate_initial_position_size",
+      "cadence": "STRATEGY_DAILY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "maximum",
+      "hard": true,
+      "metric": "risk_size_p95_relative_difference",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_evaluability",
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_risk_evaluation",
+        "btc_predictor.research.prospective_integration_corpus_v2.prove_paired_sizing_opportunity"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.owner_history_manifest_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.observation_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.adverse_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.component_manifest_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.derived_feature_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.decision_owner_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.reference_evaluation_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.portfolio_state_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.portfolio_transition_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.risk_evaluation_record_sha256s",
+        "PROSPECTIVE_RISK_EVALUATION_V2.sizing_inputs",
+        "PROSPECTIVE_RISK_EVALUATION_V2.owner_record",
+        "PROSPECTIVE_RISK_EVALUATION_V2.input_record_sha256s"
+      ],
+      "threshold": "0.10",
+      "universe": "SIZING_EVALUABLE_DECISION_TIMES",
+      "universe_predicate_replayable": true
+    },
+    "setup_classification_disagreement_rate": {
+      "authoritative_owner": "btc_predictor.features.setup",
+      "cadence": "STRATEGY_DAILY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "maximum",
+      "hard": true,
+      "metric": "setup_classification_disagreement_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_evaluability"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.owner_history_manifest_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.observation_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.adverse_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.component_manifest_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.derived_feature_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.decision_owner_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.reference_evaluation_record_sha256s"
+      ],
+      "threshold": "0.01",
+      "universe": "SETUP_EVALUABLE_DECISION_TIMES",
+      "universe_predicate_replayable": true
+    },
+    "trade_action_disagreement_rate": {
+      "authoritative_owner": "btc_predictor.research.prospective_integration_corpus.TRADE_ACTION_COMPARISON_OWNER_V1",
+      "cadence": "STRATEGY_DAILY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_action_disagreement_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_evaluability",
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_state"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.owner_history_manifest_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.observation_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.adverse_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.component_manifest_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.derived_feature_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.decision_owner_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.reference_evaluation_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.portfolio_state_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.portfolio_transition_record_sha256s"
+      ],
+      "threshold": "0.01",
+      "universe": "ACTION_EVALUABLE_DECISION_TIMES",
+      "universe_predicate_replayable": true
+    },
+    "trade_eligibility_disagreement_rate": {
+      "authoritative_owner": "btc_predictor.research.prospective_integration_corpus.TRADE_ELIGIBILITY_COMPOSITE_OWNER_V1",
+      "cadence": "STRATEGY_DAILY",
+      "comparability_predicate_replayable": true,
+      "denominator_membership_predicate_replayable": true,
+      "direction": "maximum",
+      "hard": true,
+      "metric": "trade_eligibility_disagreement_rate",
+      "replay_owners": [
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_evaluability",
+        "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_state"
+      ],
+      "replayable": "YES",
+      "required_v2_evidence_references": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.owner_history_manifest_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.observation_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.adverse_record_sha256s",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2.component_manifest_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.derived_feature_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.decision_owner_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.reference_evaluation_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.portfolio_state_record_sha256s",
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2.portfolio_transition_record_sha256s"
+      ],
+      "threshold": "0.01",
+      "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES",
+      "universe_predicate_replayable": true
+    }
+  },
+  "schema_version": "PROSPECTIVE_METRIC_REPLAY_CLOSURE_MATRIX_V2",
+  "universe_definitions_owner": "PROSPECTIVE_INTEGRATION_CORPUS_V1.decision_universe_contract"
+}

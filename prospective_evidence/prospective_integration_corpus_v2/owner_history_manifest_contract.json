@@ -1,0 +1,62 @@
+{
+  "adverse_observation_statuses": [
+    "INVALID",
+    "LATE",
+    "SOURCE_UNAVAILABLE"
+  ],
+  "conclusion_fields_refused": [
+    "comparability",
+    "evaluability_state",
+    "quality_state",
+    "universe_member",
+    "upstream_initialization_complete",
+    "warmup_history_complete"
+  ],
+  "content_addressed": true,
+  "definition_sha256": "ee98e9d3893ef089e22f83c2360744a2521b8eabfa0aa577d78d6a019ce27e9e",
+  "manifest_fields": [
+    "additional_record_sha256s",
+    "adverse_record_sha256s",
+    "cadence",
+    "certified_corpus_sha256",
+    "component_manifest_sha256s",
+    "decision_time",
+    "evidence_selector",
+    "observation_record_sha256s",
+    "observation_time",
+    "owner_class",
+    "owner_contract",
+    "owner_contract_sha256",
+    "owner_id",
+    "pit_selection_semantics",
+    "record_kind",
+    "required_cadence",
+    "schema_version",
+    "series_identity",
+    "slot_id"
+  ],
+  "observation_status_rule": "An observed interval carrying zero events is a scientific observation, not a missing feed, and an unavailable, late or invalid interval is adverse evidence that the history is incomplete -- never a zero and never an omission. V2 reuses the certified V1 feed-status vocabulary verbatim rather than authoring a second one.",
+  "one_manifest_per_owner_per_slot": true,
+  "persists_for_every_required_owner": [
+    "feature / owner identity",
+    "owner contract hash",
+    "decision slot",
+    "decision time",
+    "source / series identities",
+    "required cadence",
+    "required historical interval and window semantics",
+    "exact ordered qualifying observation record SHAs",
+    "exact ordered adverse observation record SHAs",
+    "exact historical availability and point-in-time selection semantics",
+    "manifest digest"
+  ],
+  "pit_revision_rule": "For each observation_time, the qualifying record is the highest revision whose available_at does not exceed decision_time. A later revision that became available after the decision is excluded, never spliced in, and never silently replaces the revision the decision actually saw.",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "qualifying_observation_statuses": [
+    "OBSERVED_WITH_EVENTS",
+    "OBSERVED_ZERO_EVENTS"
+  ],
+  "record_kind": "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2",
+  "schema_version": "PROSPECTIVE_OWNER_HISTORY_MANIFEST_CONTRACT_V2",
+  "singular_input_snapshot_is_insufficient": "A generic input_snapshot_sha256 commits to a payload, not to the owner-specific history each warmup predicate reruns, so it cannot make an omitted qualifying or adverse observation detectable. That is the certified parent's named limitation and the reason this contract exists."
+}

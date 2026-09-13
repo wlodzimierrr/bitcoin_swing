@@ -1,0 +1,1255 @@
+{
+  "adverse_observation_statuses": [
+    "INVALID",
+    "LATE",
+    "SOURCE_UNAVAILABLE"
+  ],
+  "class_predicates": {
+    "AT_OR_BEFORE_LOOKBACK_PAIR_V2": "A qualifying observation exists at observation_time and at least one exists at or before observation_time - lookback_span.",
+    "COMPONENT_CONJUNCTION_V2": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+    "CONTIGUOUS_SESSION_CLOSES_V2": "minimum_contiguous_count consecutive canonical sessions ending at observation_time each carry a qualifying observation with no gap, and every one of them is strictly positive.",
+    "CURRENT_VECTOR_ONLY_V2": "Every named current input is present at this decision with available_at <= decision_time. No history window applies at this owner.",
+    "DETERMINISTIC_INIT_SMOOTHING_V2": "The upstream component is evaluable. A missing previous smoothed score is deterministically initialized by the owner itself and is recorded, never treated as missing evidence.",
+    "DUAL_WINDOW_GROWTH_ZSCORE_V2": "minimum_count common observations exist, enough for two equal growth windows plus the prior growth history the z-score needs, and both growth z-scores are defined.",
+    "EXACT_LOOKBACK_PAIR_V2": "A qualifying observation exists at observation_time and at exactly observation_time - lookback_periods sessions.",
+    "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2": "At least minimum_prior_count qualifying observations of the required series fall inside the half-open elapsed window [observation_time - window_span, observation_time), and the current observation_time itself carries a qualifying observation. The window span alone never implies completeness.",
+    "PRIOR_WINDOW_MIN_COUNT_OBSERVATIONS_V2": "At least minimum_prior_count qualifying observations of the required series precede observation_time on the owner's acquisition grid, and the current observation_time carries one. The owner counts observations, not elapsed days, and supplies no cadence of its own.",
+    "PUBLICATION_DAY_COUNT_V2": "minimum_count complete fund-universe publication days fall inside the trailing publication-calendar window, and the current point-in-time AUM observation is present.",
+    "TRAILING_WINDOW_AT_LEAST_ONE_V2": "At least one qualifying observation falls inside the half-open trailing window (observation_time - window_span, observation_time].",
+    "WEEKLY_SESSION_COUNT_V2": "minimum_count qualifying weekly-session observations fall inside the trailing weekly window ending at observation_time."
+  },
+  "definition_sha256": "bce172a6ef28596797ebda0d31c1cb314bdf323c5bbb5f287a19babed9982e65",
+  "delegated_grid_owners": {
+    "canonical_session_owner": "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION",
+    "decision_delay_owner": "btc_predictor.research.reference_composite.DEFAULT_DECISION_DELAY",
+    "decision_grid_owner": "btc_predictor.research.feature_matrix.decision_timestamp_range",
+    "pit_policy_owner": "btc_predictor.research.feature_matrix.POINT_IN_TIME_POLICY_VERSION"
+  },
+  "every_feature_in_exactly_one_class": true,
+  "feature_count": 33,
+  "feature_inventory": [
+    "TREND_SCORE",
+    "FLOW_SCORE",
+    "POSITIONING_SCORE",
+    "VOLATILITY_SCORE",
+    "STRUCTURE_SCORE",
+    "REGIME_SCORE",
+    "REGIME_SMOOTHED_SCORE",
+    "ORDERLINESS_SCORE",
+    "MOMENTUM_4W",
+    "MOMENTUM_12W",
+    "MA_DISTANCE_20W",
+    "HIGH_DISTANCE_52W",
+    "ETF_NORM_5D",
+    "ETF_NORM_20D",
+    "FLOW_ACCEL",
+    "CVD_SPREAD",
+    "SPOT_DOMINANCE",
+    "FUNDING_7D_AVG",
+    "FUNDING_ZSCORE_180D",
+    "FUNDING_HEALTH",
+    "OI_GROWTH_7D",
+    "OI_GROWTH_ZSCORE_180D",
+    "OI_GROWTH_HEALTH",
+    "OI_INTENSITY",
+    "OI_INTENSITY_PERCENTILE_180D",
+    "FUTURES_BASIS_AVG",
+    "FUTURES_BASIS_ZSCORE_180D",
+    "FUTURES_BASIS_HEALTH",
+    "RV_7",
+    "RV_20",
+    "RV_60",
+    "VOL_COMPRESSION_RATIO",
+    "VOL_PERCENTILE_2Y"
+  ],
+  "feature_inventory_owner": "btc_predictor.research.feature_matrix.INITIAL_FEATURE_NAMES",
+  "frozen_input_policies": {
+    "duplicate_policy": "REFUSE_A_SECOND_OBSERVATION_FOR_ONE_SOURCE_KEY_AT_ONE_SLOT",
+    "late_data_policy": "NEVER_WAIT_NEVER_BACKFILL_A_CLOSED_DECISION",
+    "missing_data_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_NO_SILENT_OMISSION",
+    "revision_policy": "APPEND_A_NEW_REVISION_ROW_NEVER_OVERWRITE"
+  },
+  "generic_count_rule_substituted_for_owner_predicates": false,
+  "missing_data_policy": "EXPLICIT_STATUS_NO_ZERO_FILL_NO_SILENT_OMISSION",
+  "observation_status_owner": "btc_predictor.research.prospective_integration_corpus.LIQUIDATION_FEED_STATUSES",
+  "observation_status_rule": "An observed interval carrying zero events is a scientific observation, not a missing feed, and an unavailable, late or invalid interval is adverse evidence that the history is incomplete -- never a zero and never an omission. V2 reuses the certified V1 feed-status vocabulary verbatim rather than authoring a second one.",
+  "owner_classes": [
+    "AT_OR_BEFORE_LOOKBACK_PAIR_V2",
+    "COMPONENT_CONJUNCTION_V2",
+    "CONTIGUOUS_SESSION_CLOSES_V2",
+    "CURRENT_VECTOR_ONLY_V2",
+    "DETERMINISTIC_INIT_SMOOTHING_V2",
+    "DUAL_WINDOW_GROWTH_ZSCORE_V2",
+    "EXACT_LOOKBACK_PAIR_V2",
+    "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2",
+    "PRIOR_WINDOW_MIN_COUNT_OBSERVATIONS_V2",
+    "PUBLICATION_DAY_COUNT_V2",
+    "TRAILING_WINDOW_AT_LEAST_ONE_V2",
+    "WEEKLY_SESSION_COUNT_V2"
+  ],
+  "owner_parameters": {
+    "basis_min": 30,
+    "basis_window_days": 180,
+    "cvd_prior_observations": 20,
+    "cvd_selected_cadence": "1h",
+    "etf_20_days": 20,
+    "etf_5_days": 5,
+    "funding_average_window_days": 7,
+    "funding_min": 30,
+    "funding_window_days": 180,
+    "high_distance_weeks": 52,
+    "liquidation_percentile_min": 365,
+    "liquidation_percentile_window_days": 730,
+    "ma_distance_weeks": 20,
+    "momentum_12w_periods": 84,
+    "momentum_4w_periods": 28,
+    "oi_growth_min": 30,
+    "oi_growth_window_days": 7,
+    "oi_growth_zscore_window_days": 180,
+    "oi_intensity_min": 30,
+    "oi_intensity_window_days": 180,
+    "participation_growth_periods": 5,
+    "participation_zscore_periods": 20,
+    "rv_20_returns": 20,
+    "rv_60_returns": 60,
+    "rv_7_returns": 7,
+    "vol_percentile_min_prior": 365,
+    "vol_percentile_source_feature_id": "RV_20",
+    "vol_percentile_window_days": 730
+  },
+  "owner_symbol_resolution_rule": "Every owner string V2 freezes is imported and resolved on every build. The certified parent's feature_input_coverage child validated only that its owner string was a non-empty str, and two of its declared feature owners -- btc_predictor.features.positioning.funding_features and btc_predictor.features.positioning.open_interest_growth_features -- do not exist. Their real owners are the *_health functions the parent's own warmup_history child already names, so no science is affected: the parent measured the right predicate under a wrong label. V2 therefore records both the parent-declared string, for exact lineage, and the resolved symbol it verifies, and refuses to build if a resolved symbol disappears. The correction lives in this new V2 child; the certified V1 child is not edited, because editing it would move the immutable parent hash.",
+  "owners_by_class": {
+    "AT_OR_BEFORE_LOOKBACK_PAIR_V2": [
+      "OI_GROWTH_7D"
+    ],
+    "COMPONENT_CONJUNCTION_V2": [
+      "FLOW_ACCEL",
+      "FLOW_SCORE",
+      "FUNDING_HEALTH",
+      "FUTURES_BASIS_HEALTH",
+      "OI_GROWTH_HEALTH",
+      "POSITIONING_SCORE",
+      "REGIME_SCORE",
+      "TREND_SCORE",
+      "VOLATILITY_SCORE",
+      "VOL_COMPRESSION_RATIO"
+    ],
+    "CONTIGUOUS_SESSION_CLOSES_V2": [
+      "RV_20",
+      "RV_60",
+      "RV_7"
+    ],
+    "CURRENT_VECTOR_ONLY_V2": [
+      "OI_INTENSITY",
+      "ORDERLINESS_SCORE",
+      "STRUCTURE_SCORE"
+    ],
+    "DETERMINISTIC_INIT_SMOOTHING_V2": [
+      "REGIME_SMOOTHED_SCORE"
+    ],
+    "DUAL_WINDOW_GROWTH_ZSCORE_V2": [
+      "SPOT_DOMINANCE"
+    ],
+    "EXACT_LOOKBACK_PAIR_V2": [
+      "MOMENTUM_12W",
+      "MOMENTUM_4W"
+    ],
+    "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2": [
+      "FUNDING_ZSCORE_180D",
+      "FUTURES_BASIS_ZSCORE_180D",
+      "OI_GROWTH_ZSCORE_180D",
+      "OI_INTENSITY_PERCENTILE_180D",
+      "VOL_PERCENTILE_2Y"
+    ],
+    "PRIOR_WINDOW_MIN_COUNT_OBSERVATIONS_V2": [
+      "CVD_SPREAD"
+    ],
+    "PUBLICATION_DAY_COUNT_V2": [
+      "ETF_NORM_20D",
+      "ETF_NORM_5D"
+    ],
+    "TRAILING_WINDOW_AT_LEAST_ONE_V2": [
+      "FUNDING_7D_AVG",
+      "FUTURES_BASIS_AVG"
+    ],
+    "WEEKLY_SESSION_COUNT_V2": [
+      "HIGH_DISTANCE_52W",
+      "MA_DISTANCE_20W"
+    ]
+  },
+  "parent_declared_feature_owners_that_do_not_resolve": [
+    "FUNDING_7D_AVG",
+    "FUNDING_ZSCORE_180D",
+    "OI_GROWTH_7D",
+    "OI_GROWTH_ZSCORE_180D"
+  ],
+  "parent_v1_warmup_history_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac",
+  "pit_policy_version": "AVAILABLE_AT_LTE_DECISION_TIME_V1",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "qualifying_observation_statuses": [
+    "OBSERVED_WITH_EVENTS",
+    "OBSERVED_ZERO_EVENTS"
+  ],
+  "rows": {
+    "CVD_SPREAD": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1h",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 20,
+        "series_family": "spot_perp_cvd",
+        "series_id": "SPOT_PERP_COMMON_CVD_OBSERVATION",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "PRIOR_OBSERVATION_COUNT_ON_THE_OWNER_GRID",
+        "window_span": "20 prior common observations",
+        "window_span_days": null,
+        "window_span_observations": 20
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least minimum_prior_count qualifying observations of the required series precede observation_time on the owner's acquisition grid, and the current observation_time carries one. The owner counts observations, not elapsed days, and supplies no cadence of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PRIOR_WINDOW_MIN_COUNT_OBSERVATIONS_V2",
+      "owner_contract": "btc_predictor.features.flow.spot_perp_cvd_spread",
+      "parent_declared_feature_owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the z-score excludes the current observation from its own history, and both the spot and perp sides must carry the same common timestamps; neither side's history may be degenerate"
+    },
+    "ETF_NORM_20D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "ETF_PUBLICATION_DAY",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 20,
+        "series_family": "etf_flows",
+        "series_id": "ETF_FUND_UNIVERSE_PUBLICATION_DAY",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "TRAILING_SESSION_COUNT_ENDING_AT_t",
+        "window_span": "20 publication days",
+        "window_span_days": null,
+        "window_span_observations": 20
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_count complete fund-universe publication days fall inside the trailing publication-calendar window, and the current point-in-time AUM observation is present.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PUBLICATION_DAY_COUNT_V2",
+      "owner_contract": "btc_predictor.features.flow.twenty_day_etf_flow",
+      "parent_declared_feature_owner": "btc_predictor.features.flow.twenty_day_etf_flow",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.flow.twenty_day_etf_flow",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the latest point-in-time AUM is required"
+    },
+    "ETF_NORM_5D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "ETF_PUBLICATION_DAY",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 5,
+        "series_family": "etf_flows",
+        "series_id": "ETF_FUND_UNIVERSE_PUBLICATION_DAY",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "TRAILING_SESSION_COUNT_ENDING_AT_t",
+        "window_span": "5 publication days",
+        "window_span_days": null,
+        "window_span_observations": 5
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_count complete fund-universe publication days fall inside the trailing publication-calendar window, and the current point-in-time AUM observation is present.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PUBLICATION_DAY_COUNT_V2",
+      "owner_contract": "btc_predictor.features.flow.five_day_etf_flow",
+      "parent_declared_feature_owner": "btc_predictor.features.flow.five_day_etf_flow",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.flow.five_day_etf_flow",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the latest point-in-time AUM is required"
+    },
+    "FLOW_ACCEL": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "ETF_NORM_5D",
+          "ETF_NORM_20D"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.flow.etf_flow_acceleration",
+      "parent_declared_feature_owner": "btc_predictor.features.flow.etf_flow_acceleration",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.flow.etf_flow_acceleration",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none beyond the two source windows"
+    },
+    "FLOW_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "ETF_NORM_5D",
+          "ETF_NORM_20D",
+          "FLOW_ACCEL",
+          "CVD_SPREAD",
+          "SPOT_DOMINANCE"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.flow.calculate_flow_score",
+      "parent_declared_feature_owner": "btc_predictor.features.flow.calculate_flow_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.flow.calculate_flow_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the participation growth series needs two equal windows before its own z-score history exists"
+    },
+    "FUNDING_7D_AVG": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": false,
+        "minimum_count": 1,
+        "series_family": "derivatives_funding",
+        "series_id": "DERIVATIVES_FUNDING_RATE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "HALF_OPEN_TRAILING_ELAPSED_(t-W,t]",
+        "window_span": "7d",
+        "window_span_days": 7,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least one qualifying observation falls inside the half-open trailing window (observation_time - window_span, observation_time].",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "TRAILING_WINDOW_AT_LEAST_ONE_V2",
+      "owner_contract": "btc_predictor.features.positioning.funding_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.funding_features",
+      "parent_declared_feature_owner_resolves": false,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.funding_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none"
+    },
+    "FUNDING_HEALTH": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "FUNDING_ZSCORE_180D"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.positioning.funding_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.funding_health",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.funding_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none beyond the funding z-score"
+    },
+    "FUNDING_ZSCORE_180D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 30,
+        "series_family": "derivatives_funding",
+        "series_id": "DERIVATIVES_FUNDING_RATE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "HALF_OPEN_PRIOR_ELAPSED_[t-W,t)",
+        "window_span": "180d",
+        "window_span_days": 180,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least minimum_prior_count qualifying observations of the required series fall inside the half-open elapsed window [observation_time - window_span, observation_time), and the current observation_time itself carries a qualifying observation. The window span alone never implies completeness.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2",
+      "owner_contract": "btc_predictor.features.positioning.funding_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.funding_features",
+      "parent_declared_feature_owner_resolves": false,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.funding_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the current observation is excluded from its own history and the prior history's variance must be non-zero"
+    },
+    "FUTURES_BASIS_AVG": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": false,
+        "minimum_count": 1,
+        "series_family": "derivatives_futures_basis",
+        "series_id": "DERIVATIVES_FUTURES_BASIS",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "UNBOUNDED_TRAILING_AT_OR_BEFORE_t",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least one qualifying observation falls inside the half-open trailing window (observation_time - window_span, observation_time].",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "TRAILING_WINDOW_AT_LEAST_ONE_V2",
+      "owner_contract": "btc_predictor.features.positioning.futures_basis_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none"
+    },
+    "FUTURES_BASIS_HEALTH": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "FUTURES_BASIS_ZSCORE_180D"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.positioning.futures_basis_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none beyond the basis z-score"
+    },
+    "FUTURES_BASIS_ZSCORE_180D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 30,
+        "series_family": "derivatives_futures_basis",
+        "series_id": "DERIVATIVES_FUTURES_BASIS",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "HALF_OPEN_PRIOR_ELAPSED_[t-W,t)",
+        "window_span": "180d",
+        "window_span_days": 180,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least minimum_prior_count qualifying observations of the required series fall inside the half-open elapsed window [observation_time - window_span, observation_time), and the current observation_time itself carries a qualifying observation. The window span alone never implies completeness.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2",
+      "owner_contract": "btc_predictor.features.positioning.futures_basis_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.futures_basis_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the current observation is excluded from its own history and the prior history's variance must be non-zero"
+    },
+    "HIGH_DISTANCE_52W": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1w",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 52,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_WEEKLY_SESSION",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "TRAILING_SESSION_COUNT_ENDING_AT_t",
+        "window_span": "52 weekly periods",
+        "window_span_days": null,
+        "window_span_observations": 52
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_count qualifying weekly-session observations fall inside the trailing weekly window ending at observation_time.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "WEEKLY_SESSION_COUNT_V2",
+      "owner_contract": "btc_predictor.features.trend.fifty_two_week_high_distance",
+      "parent_declared_feature_owner": "btc_predictor.features.trend.fifty_two_week_high_distance",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.trend.fifty_two_week_high_distance",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none"
+    },
+    "MA_DISTANCE_20W": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1w",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 20,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_WEEKLY_SESSION",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "TRAILING_SESSION_COUNT_ENDING_AT_t",
+        "window_span": "20 weekly periods",
+        "window_span_days": null,
+        "window_span_observations": 20
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_count qualifying weekly-session observations fall inside the trailing weekly window ending at observation_time.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "WEEKLY_SESSION_COUNT_V2",
+      "owner_contract": "btc_predictor.features.trend.twenty_week_ma_distance",
+      "parent_declared_feature_owner": "btc_predictor.features.trend.twenty_week_ma_distance",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.trend.twenty_week_ma_distance",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none"
+    },
+    "MOMENTUM_12W": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 2,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_DAILY_CLOSE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "EXACT_LOOKBACK_SESSION_OFFSET",
+        "window_span": "84 daily periods",
+        "window_span_days": null,
+        "window_span_observations": 84
+      },
+      "lookback_periods": 84,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "A qualifying observation exists at observation_time and at exactly observation_time - lookback_periods sessions.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "EXACT_LOOKBACK_PAIR_V2",
+      "owner_contract": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars",
+      "parent_declared_feature_owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.momentum.twelve_week_momentum_from_daily_bars",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the current close plus the lookback close"
+    },
+    "MOMENTUM_4W": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 2,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_DAILY_CLOSE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "EXACT_LOOKBACK_SESSION_OFFSET",
+        "window_span": "28 daily periods",
+        "window_span_days": null,
+        "window_span_observations": 28
+      },
+      "lookback_periods": 28,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "A qualifying observation exists at observation_time and at exactly observation_time - lookback_periods sessions.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "EXACT_LOOKBACK_PAIR_V2",
+      "owner_contract": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars",
+      "parent_declared_feature_owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.momentum.four_week_momentum_from_daily_bars",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the current close plus the lookback close"
+    },
+    "OI_GROWTH_7D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 2,
+        "series_family": "derivatives_open_interest",
+        "series_id": "DERIVATIVES_OPEN_INTEREST",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "AT_OR_BEFORE_ELAPSED_LOOKBACK",
+        "window_span": "7d",
+        "window_span_days": 7,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": 7,
+      "minimum_history_predicate": "A qualifying observation exists at observation_time and at least one exists at or before observation_time - lookback_span.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "AT_OR_BEFORE_LOOKBACK_PAIR_V2",
+      "owner_contract": "btc_predictor.features.positioning.open_interest_growth_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.open_interest_growth_features",
+      "parent_declared_feature_owner_resolves": false,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.open_interest_growth_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "a prior open-interest observation at or before t - 7d is required"
+    },
+    "OI_GROWTH_HEALTH": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "OI_GROWTH_ZSCORE_180D"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.positioning.open_interest_growth_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.open_interest_growth_health",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.open_interest_growth_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none beyond the OI-growth z-score"
+    },
+    "OI_GROWTH_ZSCORE_180D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "OI_GROWTH_7D"
+        ],
+        "current_observation_required": true,
+        "minimum_count": 30,
+        "series_family": null,
+        "series_id": "OI_GROWTH_7D",
+        "series_kind": "DERIVED_FEATURE_SERIES",
+        "window_kind": "HALF_OPEN_PRIOR_ELAPSED_[t-W,t)",
+        "window_span": "180d",
+        "window_span_days": 180,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least minimum_prior_count qualifying observations of the required series fall inside the half-open elapsed window [observation_time - window_span, observation_time), and the current observation_time itself carries a qualifying observation. The window span alone never implies completeness.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2",
+      "owner_contract": "btc_predictor.features.positioning.open_interest_growth_health",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.open_interest_growth_features",
+      "parent_declared_feature_owner_resolves": false,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.open_interest_growth_health",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the earliest retained growth observation itself needs an open-interest observation 7d earlier"
+    },
+    "OI_INTENSITY": {
+      "evidence_selector": {
+        "additional_series": [
+          "BTC_MARKET_CAP_USD"
+        ],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 1,
+        "series_family": "derivatives_open_interest",
+        "series_id": "DERIVATIVES_OPEN_INTEREST",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named current input is present at this decision with available_at <= decision_time. No history window applies at this owner.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "CURRENT_VECTOR_ONLY_V2",
+      "owner_contract": "btc_predictor.features.positioning.open_interest_intensity",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the market-cap input is supplied by PROSPECTIVE_BTC_MARKET_CAP_ACQUISITION_V1 on the EXACT_UTC_DAY_START_00_00_00Z grid; the open-interest aggregate and the market-cap observation must share an exact observation_time"
+    },
+    "OI_INTENSITY_PERCENTILE_180D": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "OI_INTENSITY"
+        ],
+        "current_observation_required": true,
+        "minimum_count": 30,
+        "series_family": null,
+        "series_id": "OI_INTENSITY",
+        "series_kind": "DERIVED_FEATURE_SERIES",
+        "window_kind": "HALF_OPEN_PRIOR_ELAPSED_[t-W,t)",
+        "window_span": "180d",
+        "window_span_days": 180,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least minimum_prior_count qualifying observations of the required series fall inside the half-open elapsed window [observation_time - window_span, observation_time), and the current observation_time itself carries a qualifying observation. The window span alone never implies completeness.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2",
+      "owner_contract": "btc_predictor.features.positioning.open_interest_intensity",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.open_interest_intensity",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "every historical intensity observation needs its own aligned open-interest and market-cap pair"
+    },
+    "ORDERLINESS_SCORE": {
+      "evidence_selector": {
+        "additional_series": [
+          "CANONICAL_DAILY_CLOSE"
+        ],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 1,
+        "series_family": "liquidations",
+        "series_id": "LIQUIDATION_UTC_DAY_AGGREGATE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named current input is present at this decision with available_at <= decision_time. No history window applies at this owner.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "CURRENT_VECTOR_ONLY_V2",
+      "owner_contract": "btc_predictor.features.volatility.calculate_orderliness_score",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.calculate_orderliness_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.calculate_orderliness_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the volatility-percentile owner and PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1 must each be complete; an unavailable, late or invalid liquidation feed leaves the liquidation input missing and never zero"
+    },
+    "POSITIONING_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "FUNDING_HEALTH",
+          "OI_GROWTH_HEALTH",
+          "FUTURES_BASIS_HEALTH"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.positioning.calculate_positioning_score",
+      "parent_declared_feature_owner": "btc_predictor.features.positioning.calculate_positioning_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.positioning.calculate_positioning_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the earliest OI-growth observation needs an OI observation 7d earlier"
+    },
+    "REGIME_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "TREND_SCORE",
+          "FLOW_SCORE",
+          "POSITIONING_SCORE",
+          "VOLATILITY_SCORE",
+          "STRUCTURE_SCORE",
+          "ORDERLINESS_SCORE"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.regime.calculate_regime_score",
+      "parent_declared_feature_owner": "btc_predictor.features.regime.calculate_regime_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.regime.calculate_regime_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the full model additionally requires the point-in-time macro, on-chain and liquidity inputs"
+    },
+    "REGIME_SMOOTHED_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "REGIME_SCORE"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "The upstream component is evaluable. A missing previous smoothed score is deterministically initialized by the owner itself and is recorded, never treated as missing evidence.",
+      "missing_data_behavior": "THE_OWNER_DETERMINISTICALLY_INITIALIZES_AND_RECORDS_ITS_OWN_REASON_CODE",
+      "owner_class": "DETERMINISTIC_INIT_SMOOTHING_V2",
+      "owner_contract": "btc_predictor.features.regime.calculate_regime_smoothing",
+      "parent_declared_feature_owner": "btc_predictor.features.regime.calculate_regime_smoothing",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.regime.calculate_regime_smoothing",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the owner deterministically initializes a missing previous smoothed score from the current score and records REGIME_SMOOTHING_PREVIOUS_SCORE_MISSING"
+    },
+    "RV_20": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 21,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_DAILY_CLOSE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "CONTIGUOUS_SESSIONS_ENDING_AT_t",
+        "window_span": "20 daily returns",
+        "window_span_days": null,
+        "window_span_observations": 21
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_contiguous_count consecutive canonical sessions ending at observation_time each carry a qualifying observation with no gap, and every one of them is strictly positive.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "CONTIGUOUS_SESSION_CLOSES_V2",
+      "owner_contract": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "strictly_positive_required": true,
+      "upstream_initialization_predicate": "the first return needs the previous close"
+    },
+    "RV_60": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 61,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_DAILY_CLOSE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "CONTIGUOUS_SESSIONS_ENDING_AT_t",
+        "window_span": "60 daily returns",
+        "window_span_days": null,
+        "window_span_observations": 61
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_contiguous_count consecutive canonical sessions ending at observation_time each carry a qualifying observation with no gap, and every one of them is strictly positive.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "CONTIGUOUS_SESSION_CLOSES_V2",
+      "owner_contract": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "strictly_positive_required": true,
+      "upstream_initialization_predicate": "the first return needs the previous close"
+    },
+    "RV_7": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 8,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "CANONICAL_DAILY_CLOSE",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "CONTIGUOUS_SESSIONS_ENDING_AT_t",
+        "window_span": "7 daily returns",
+        "window_span_days": null,
+        "window_span_observations": 8
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_contiguous_count consecutive canonical sessions ending at observation_time each carry a qualifying observation with no gap, and every one of them is strictly positive.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "CONTIGUOUS_SESSION_CLOSES_V2",
+      "owner_contract": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.realized_volatility_from_daily_bars",
+      "strictly_positive_required": true,
+      "upstream_initialization_predicate": "the first return needs the previous close"
+    },
+    "SPOT_DOMINANCE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1h",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 30,
+        "series_family": "spot_perp_volume_participation",
+        "series_id": "SPOT_PERP_COMMON_VOLUME_PARTICIPATION",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "CONTIGUOUS_SESSIONS_ENDING_AT_t",
+        "window_span": "5-period current and prior growth windows plus 20 prior growth values",
+        "window_span_days": null,
+        "window_span_observations": 30
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "minimum_count common observations exist, enough for two equal growth windows plus the prior growth history the z-score needs, and both growth z-scores are defined.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "DUAL_WINDOW_GROWTH_ZSCORE_V2",
+      "owner_contract": "btc_predictor.features.flow.spot_perp_participation_from_rows",
+      "parent_declared_feature_owner": "btc_predictor.features.flow.spot_perp_participation_from_rows",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.flow.spot_perp_participation_from_rows",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the growth series initializes only after two equal windows"
+    },
+    "STRUCTURE_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [],
+        "current_observation_required": true,
+        "minimum_count": 1,
+        "series_family": "raw_provider_ohlcv",
+        "series_id": "STRUCTURE_POINT_IN_TIME_INPUT_VECTOR",
+        "series_kind": "SOURCE_OBSERVATION_SERIES",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named current input is present at this decision with available_at <= decision_time. No history window applies at this owner.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "CURRENT_VECTOR_ONLY_V2",
+      "owner_contract": "btc_predictor.features.structure.calculate_structure_score",
+      "parent_declared_feature_owner": "btc_predictor.features.structure.calculate_structure_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.structure.calculate_structure_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the structural level and risk/reward owners must be complete"
+    },
+    "TREND_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "MA_DISTANCE_20W",
+          "HIGH_DISTANCE_52W",
+          "MOMENTUM_12W"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.trend.calculate_trend_score",
+      "parent_declared_feature_owner": "btc_predictor.features.trend.calculate_trend_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.trend.calculate_trend_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "the weekly structure and every selected component owner must be independently complete"
+    },
+    "VOLATILITY_SCORE": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "RV_7",
+          "RV_20",
+          "RV_60",
+          "VOL_COMPRESSION_RATIO",
+          "VOL_PERCENTILE_2Y"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.volatility.calculate_volatility_score",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.calculate_volatility_score",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.calculate_volatility_score",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "each RV_20 result needs 21 contiguous daily closes"
+    },
+    "VOL_COMPRESSION_RATIO": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "RV_7",
+          "RV_20"
+        ],
+        "current_observation_required": true,
+        "minimum_count": null,
+        "series_family": null,
+        "series_id": "COMPONENT_OWNERS",
+        "series_kind": "COMPONENT_OWNER_SET",
+        "window_kind": "NO_WINDOW_AT_THIS_OWNER",
+        "window_span": null,
+        "window_span_days": null,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "Every named component owner is independently evaluable under its own predicate. The composite inherits their predicates and invents no window of its own.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "COMPONENT_CONJUNCTION_V2",
+      "owner_contract": "btc_predictor.features.volatility.volatility_compression_ratio",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.volatility_compression_ratio",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.volatility_compression_ratio",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "none beyond RV_20; RV_20 must be non-zero"
+    },
+    "VOL_PERCENTILE_2Y": {
+      "evidence_selector": {
+        "additional_series": [],
+        "cadence": "1d",
+        "components": [
+          "RV_20"
+        ],
+        "current_observation_required": true,
+        "minimum_count": 365,
+        "series_family": null,
+        "series_id": "RV_20",
+        "series_kind": "DERIVED_FEATURE_SERIES",
+        "window_kind": "HALF_OPEN_PRIOR_ELAPSED_[t-W,t)",
+        "window_span": "730d",
+        "window_span_days": 730,
+        "window_span_observations": null
+      },
+      "lookback_periods": null,
+      "lookback_span_days": null,
+      "minimum_history_predicate": "At least minimum_prior_count qualifying observations of the required series fall inside the half-open elapsed window [observation_time - window_span, observation_time), and the current observation_time itself carries a qualifying observation. The window span alone never implies completeness.",
+      "missing_data_behavior": "NOT_EVALUABLE_WITH_AN_EXPLICIT_REASON_CODE_NEVER_ZERO_FILLED",
+      "owner_class": "PRIOR_WINDOW_MIN_COUNT_ELAPSED_V2",
+      "owner_contract": "btc_predictor.features.volatility.volatility_percentile",
+      "parent_declared_feature_owner": "btc_predictor.features.volatility.volatility_percentile",
+      "parent_declared_feature_owner_resolves": true,
+      "pit_predicate": "AVAILABLE_AT_LTE_DECISION_TIME_V1: available_at <= decision_time, resolved per observation_time to the latest revision whose available_at does not exceed decision_time; a later revision and a future-available observation are both excluded.",
+      "resolved_feature_owner": "btc_predictor.features.volatility.volatility_percentile",
+      "strictly_positive_required": false,
+      "upstream_initialization_predicate": "each RV_20 result needs 21 contiguous daily closes (20 daily returns)"
+    }
+  },
+  "schema_version": "PROSPECTIVE_OWNER_EVALUABILITY_CENSUS_V2",
+  "series_identities": {
+    "BTC_MARKET_CAP_USD": {
+      "cadence": "1d",
+      "family": "btc_market_cap"
+    },
+    "CANONICAL_DAILY_CLOSE": {
+      "cadence": "1d",
+      "family": "raw_provider_ohlcv"
+    },
+    "CANONICAL_HOURLY_BAR": {
+      "cadence": "1h",
+      "family": "raw_provider_ohlcv"
+    },
+    "CANONICAL_WEEKLY_SESSION": {
+      "cadence": "1w",
+      "family": "raw_provider_ohlcv"
+    },
+    "DERIVATIVES_FUNDING_RATE": {
+      "cadence": "1d",
+      "family": "derivatives_funding"
+    },
+    "DERIVATIVES_FUTURES_BASIS": {
+      "cadence": "1d",
+      "family": "derivatives_futures_basis"
+    },
+    "DERIVATIVES_OPEN_INTEREST": {
+      "cadence": "1d",
+      "family": "derivatives_open_interest"
+    },
+    "ETF_FUND_UNIVERSE_PUBLICATION_DAY": {
+      "cadence": "ETF_PUBLICATION_DAY",
+      "family": "etf_flows"
+    },
+    "LIQUIDATION_UTC_DAY_AGGREGATE": {
+      "cadence": "1d",
+      "family": "liquidations"
+    },
+    "SPOT_PERP_COMMON_CVD_OBSERVATION": {
+      "cadence": "1h",
+      "family": "spot_perp_cvd"
+    },
+    "SPOT_PERP_COMMON_VOLUME_PARTICIPATION": {
+      "cadence": "1h",
+      "family": "spot_perp_volume_participation"
+    },
+    "STRUCTURE_POINT_IN_TIME_INPUT_VECTOR": {
+      "cadence": "1d",
+      "family": "raw_provider_ohlcv"
+    }
+  },
+  "unowned_input_boundaries": {
+    "canonical_bar_derivation_cutoff": {
+      "consumers": [
+        "btc_predictor.data.ohlcv.build_canonical_market_bars"
+      ],
+      "default": "the caller's data_available_at cutoff",
+      "existing_owner": "btc_predictor.data.ohlcv.CANONICAL_BTC_MARKET_BAR_SESSION",
+      "replay_requirement": "Daily and weekly canonical bars are derived from 1h source bars and a bar is emitted only when every constituent hour is present, so a bar's very existence is point-in-time evidence. Every V2 source observation on a derived session therefore carries the constituent source-record references that produced it, and the manifest resolves them; a bar without its constituents is not replayable evidence.",
+      "search_evidence": "The canonical session owner defines the weekly boundary as Monday 00:00 UTC and the daily boundary as 00:00 UTC."
+    },
+    "market_holidays": {
+      "consumers": [
+        "btc_predictor.features.flow.five_day_etf_flow",
+        "btc_predictor.features.flow.twenty_day_etf_flow",
+        "btc_predictor.features.flow.etf_flow_window"
+      ],
+      "default": "an empty holiday set",
+      "existing_owner": null,
+      "replay_requirement": "The ETF publication window is walked backwards over weekdays that are not in the supplied holiday set, so window membership is a function of that set. With the default empty set a market holiday is indistinguishable from a missing publication. A V2 owner-history manifest for ETF_NORM_5D, ETF_NORM_20D and FLOW_ACCEL therefore carries the exact ordered publication observations it selected, so membership is evidence rather than a recomputation.",
+      "search_evidence": "No holiday calendar source family exists in the certified parent's PRICE_INPUT_SOURCES or NON_PRICE_INPUT_SOURCES, and no warmup row names one."
+    },
+    "same_timestamp_revision_resolution": {
+      "consumers": [
+        "btc_predictor.features.positioning.funding_health",
+        "btc_predictor.features.positioning.futures_basis_health",
+        "btc_predictor.features.positioning.open_interest_growth_health",
+        "btc_predictor.features.positioning.open_interest_intensity"
+      ],
+      "default": "the owners aggregate every row sharing an observation_time rather than resolving a revision",
+      "existing_owner": null,
+      "replay_requirement": "The certified parent freezes APPEND_A_NEW_REVISION_ROW_NEVER_OVERWRITE and REFUSE_A_SECOND_OBSERVATION_FOR_ONE_SOURCE_KEY_AT_ONE_SLOT, but only the ETF owner resolves revisions; the positioning owners sum or average rows that share a timestamp. V2 does not change any owner. It records the exact revision selected per observation_time in the owner-history manifest and refuses two distinct records claiming one revision, so a restatement is visible evidence instead of a silent blend.",
+      "search_evidence": "Revision resolution appears in exactly one feature owner module."
+    }
+  }
+}

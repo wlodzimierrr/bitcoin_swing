@@ -1,0 +1,35 @@
+{
+  "certified_parent_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+  "definition_sha256": "fa35a4553e77020013bf360b5cf1bff0a545b03ce95e18d77ead5685feef235e",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "redesigned": false,
+  "resolver_version": "SCIENTIFIC_EVIDENCE_RESOLVER_V1",
+  "reused_child_count": 14,
+  "reused_child_sha256": {
+    "coingecko_market_cap_request_attempt": "4ea71f2461ac9d4a279c757ee349be4df76679e070e0a896e3e53ca9f0175fc6",
+    "coingecko_market_cap_response_validation": "1cda159214ab5b2045790a5fa3c1ca7e3ba0d51d41456be4c5bc5d5e75f67eee",
+    "cvd_interval_completeness": "b26bd859c30648b182d06e669177b1c440e7329de18c135be429f41c3c6cc906",
+    "kraken_futures_instrument_metadata_validation": "efeb5be0164582370aea0cefc4c5be8802de80ee551bb77e763c6c713e84ee6e",
+    "liquidation_interval_completeness": "346214ec2b6c6dd7cf5b31b76134d85756d2a1a7aaa7e7006199c8a2c0ff2522",
+    "liquidation_utc_day_census": "7180ad6cb78f2abe03308618ab369e94509bb20c3f4bb8b7ac9535abb190a4a2",
+    "prospective_btc_market_cap_acquisition": "76738c92292058c557a9828d3b1d8c2e88fee591b2ef37096f01c163a590a798",
+    "prospective_clock_integrity": "be449ebd62b7bcc8cf90ea8c9b38d3fb06f382ff16cc19a5cb04ff9697823ef2",
+    "prospective_cvd_acquisition": "65ff928b3eaed7eba7db9f5ebd7f0a0c06e79648218dc851ca993960b896390f",
+    "prospective_liquidation_capture": "d4268aa2833b8f386777729ae69c9625895b477733c1a62866ea896d141798c8",
+    "prospective_liquidation_percentile_adapter": "606e3930d32f13550b86c6db918782274bd1758a5548dea147771eb766b215b7",
+    "scientific_evidence_resolver": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+    "source_stream_epoch": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
+    "stream_liveness_policy": "efe9402aa3721234cfe7d05791d3735b817d96130dc359acc50d102d2c0f80a5"
+  },
+  "rule": "V2 does not redesign the already-certified source-completeness layer. CoinGecko request and response evidence, clock integrity, stream epochs, liveness, collector health, CVD completeness, liquidation completeness and the UTC day census, and runtime metadata validation are reused exactly as the certified parent froze them, bound here by hash. V2 adds the decision, owner-history and portfolio closure that references them.",
+  "schema_version": "PROSPECTIVE_SOURCE_EVIDENCE_REUSE_V2",
+  "v2_resolver_extension": {
+    "adds": [
+      "owner-history expected-set recomputation",
+      "portfolio predecessor and producing-transition resolution",
+      "slot manifest total-closure verification"
+    ],
+    "changes_source_semantics": false,
+    "version": "SCIENTIFIC_EVIDENCE_RESOLVER_V2"
+  }
+}

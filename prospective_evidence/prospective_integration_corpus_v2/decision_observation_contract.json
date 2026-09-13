@@ -1,0 +1,55 @@
+{
+  "binds_at_minimum": [
+    "slot identity",
+    "observation time",
+    "decision time",
+    "slot evidence manifest SHA",
+    "strategy / rulebook version",
+    "certified corpus V2 hash and version",
+    "decision and output record hashes",
+    "portfolio context hashes where applicable"
+  ],
+  "cached_projection_fields": [
+    "comparability",
+    "quality_state",
+    "universe_membership",
+    "warmup_history_state"
+  ],
+  "cached_projection_role": "Every field in cached_projections is a non-authoritative derived cache kept for query convenience. Each must equal the value the replay derives; a disagreement refuses. None of them may be read as evidence.",
+  "cached_warmup_mismatch_behavior": "REFUSE",
+  "definition_sha256": "a9a734b002f8f0df1ed5ab2a74beabecbb41912454a67544327fc266789d52e0",
+  "observation_states": [
+    "DATA_QUALITY_FAIL",
+    "EVALUATED",
+    "NOT_COMPARABLE",
+    "NOT_EVALUABLE",
+    "REFERENCE_UNAVAILABLE"
+  ],
+  "parent_v1_warmup_boolean": {
+    "field": "warmup_history_complete",
+    "v1_role": "INDEPENDENT_SCIENTIFIC_AUTHORITY",
+    "v2_disposition": "REMOVED_FROM_THE_V2_DECISION_RECORD_AND_RETAINED_ONLY_AS_A_CACHED_PROJECTION_UNDER_cached_projections.warmup_history_state",
+    "v2_role": "NON_AUTHORITATIVE_CACHED_DERIVED_PROJECTION"
+  },
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "record_fields": [
+    "cadence",
+    "cached_projections",
+    "certified_corpus_sha256",
+    "decision_time",
+    "observation_state",
+    "observation_time",
+    "output_record_sha256s",
+    "portfolio_context_record_sha256s",
+    "reason_codes",
+    "record_kind",
+    "schema_version",
+    "slot_evidence_manifest_sha256",
+    "slot_id",
+    "strategy_identity_sha256"
+  ],
+  "record_kind": "PROSPECTIVE_DECISION_OBSERVATION_V2",
+  "schema_version": "PROSPECTIVE_DECISION_OBSERVATION_CONTRACT_V2",
+  "slot_manifest_is_the_evidence_root": true,
+  "warmup_authority_rule": "Authoritative warmup state is obtained by resolving each required owner's history manifest, resolving every referenced source and derived record, running that owner's own frozen evaluability predicate, and combining the results under the frozen decision-evaluability contract. No warmup_history_complete Boolean, no upstream_initialization_complete flag and no governance-authored conclusion may substitute for that replay."
+}

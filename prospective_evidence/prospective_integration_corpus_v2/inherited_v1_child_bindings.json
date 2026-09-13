@@ -1,0 +1,166 @@
+{
+  "certified_parent_child_count": 25,
+  "certified_parent_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+  "certified_parent_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1",
+  "definition_sha256": "3ceacc17a8cb453b750431d5364d38cf8f0e1d4923e4ddc69bcde8588883ff7d",
+  "extended_count": 9,
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "reused_unchanged_count": 14,
+  "rows": {
+    "coingecko_market_cap_request_attempt": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "4ea71f2461ac9d4a279c757ee349be4df76679e070e0a896e3e53ca9f0175fc6",
+      "v2_successors": []
+    },
+    "coingecko_market_cap_response_validation": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "1cda159214ab5b2045790a5fa3c1ca7e3ba0d51d41456be4c5bc5d5e75f67eee",
+      "v2_successors": []
+    },
+    "cvd_interval_completeness": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "b26bd859c30648b182d06e669177b1c440e7329de18c135be429f41c3c6cc906",
+      "v2_successors": []
+    },
+    "data_schema_contract": {
+      "disposition": "SUPERSEDED_FOR_REPLAY_CLOSURE_V1_RETAINED_IMMUTABLE",
+      "v1_definition_sha256": "0c29908f121c9060d47c5153aa938feed48f73a69268d323e9e72b9affcbf66d",
+      "v2_successors": [
+        "data_schema_contract_v2"
+      ]
+    },
+    "decision_universe": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "b78abe4e34dfdcd097523dc80548bc452c4a5eb787fda4ea82ba47784a36c3ce",
+      "v2_successors": [
+        "decision_evaluability_contract"
+      ]
+    },
+    "evidence_sufficiency": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "af424423723f377d22fdddd01e396de9a2323db0c9aa59defd57b78076cc5df9",
+      "v2_successors": [
+        "collection_epoch_contract"
+      ]
+    },
+    "feature_input_coverage": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "73d5909cb47d4cd63efc9e743a706448c8e609e65593f4474d183e759513f580",
+      "v2_successors": [
+        "feature_replay_closure_matrix"
+      ]
+    },
+    "input_snapshot_schema": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "c90999c6a73574fed161297eefc17ff55f2bdf068b79e5d55d6785f8fd25c69c",
+      "v2_successors": [
+        "slot_evidence_manifest_contract"
+      ]
+    },
+    "kraken_futures_instrument_metadata_validation": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "efeb5be0164582370aea0cefc4c5be8802de80ee551bb77e763c6c713e84ee6e",
+      "v2_successors": []
+    },
+    "liquidation_interval_completeness": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "346214ec2b6c6dd7cf5b31b76134d85756d2a1a7aaa7e7006199c8a2c0ff2522",
+      "v2_successors": []
+    },
+    "liquidation_utc_day_census": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "7180ad6cb78f2abe03308618ab369e94509bb20c3f4bb8b7ac9535abb190a4a2",
+      "v2_successors": []
+    },
+    "metric_evidence_contracts": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "98746db2d5d8d9a7d2d5846a83333ff356c6747f39949c2c0bdae38f799e3c98",
+      "v2_successors": [
+        "metric_replay_closure_matrix"
+      ]
+    },
+    "portfolio_track_contract": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "92887cc240c77ebcea24eb5e9b521fda84f036f33e1d033eea663587cd5360f4",
+      "v2_successors": [
+        "portfolio_state_contract",
+        "portfolio_transition_contract"
+      ]
+    },
+    "prospective_btc_market_cap_acquisition": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "76738c92292058c557a9828d3b1d8c2e88fee591b2ef37096f01c163a590a798",
+      "v2_successors": []
+    },
+    "prospective_clock_integrity": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "be449ebd62b7bcc8cf90ea8c9b38d3fb06f382ff16cc19a5cb04ff9697823ef2",
+      "v2_successors": []
+    },
+    "prospective_cvd_acquisition": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "65ff928b3eaed7eba7db9f5ebd7f0a0c06e79648218dc851ca993960b896390f",
+      "v2_successors": []
+    },
+    "prospective_liquidation_capture": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "d4268aa2833b8f386777729ae69c9625895b477733c1a62866ea896d141798c8",
+      "v2_successors": []
+    },
+    "prospective_liquidation_percentile_adapter": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "606e3930d32f13550b86c6db918782274bd1758a5548dea147771eb766b215b7",
+      "v2_successors": []
+    },
+    "scientific_evidence_resolver": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "ea8ce4f3c79638b322a3c9c354ed38f8b2f2689b5dc79c1538aa2b9b9e41ac1e",
+      "v2_successors": []
+    },
+    "semantic_diff_from_v5_blockers": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "49b129afd07a08ddfbe6b4195e648b7ab28f712a3d2747739ec139ef7965673d",
+      "v2_successors": [
+        "semantic_diff_v1_to_v2"
+      ]
+    },
+    "source_stream_epoch": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "b8e35f3bc14252334d1a651c3a6e28cb1685cfcfb4e415ab5b9e8f73bb6434e5",
+      "v2_successors": []
+    },
+    "stage_b_evaluation_contract": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "a98c161de21ecb31467fbd73c80f606e2999bd1843429976147ec46d299212f0",
+      "v2_successors": [
+        "parent_replay_contract_registry"
+      ]
+    },
+    "stop_event_taxonomy": {
+      "disposition": "EXTENDED_BY_A_NEW_V2_CHILD_V1_SEMANTICS_UNCHANGED",
+      "v1_definition_sha256": "ebd2d322db1994332844a6a597fcad7673b61632fb34f1361e758546af6e971e",
+      "v2_successors": [
+        "active_stop_membership_contract"
+      ]
+    },
+    "stream_liveness_policy": {
+      "disposition": "REUSED_UNCHANGED_BY_HASH",
+      "v1_definition_sha256": "efe9402aa3721234cfe7d05791d3735b817d96130dc359acc50d102d2c0f80a5",
+      "v2_successors": []
+    },
+    "warmup_history": {
+      "disposition": "SUPERSEDED_FOR_REPLAY_CLOSURE_V1_RETAINED_IMMUTABLE",
+      "v1_definition_sha256": "71af8a1a0fe31e60d0be3bd37292a73f174b8112b731eb619d41ad26d1de50ac",
+      "v2_successors": [
+        "owner_evaluability_census"
+      ]
+    }
+  },
+  "schema_version": "PROSPECTIVE_INHERITED_V1_CHILD_BINDINGS_V2",
+  "superseded_count": 2,
+  "v1_artifact_directory": "prospective_evidence/prospective_integration_corpus_v1",
+  "v1_child_hashes_verified_against_v2_commitment": true,
+  "v1_mutated": false,
+  "v1_mutation_check": "the certified parent hash and all 25 of its child hashes are compared against V2's own frozen transcription of them on every build; a single moved byte refuses",
+  "v2_artifact_directory": "prospective_evidence/prospective_integration_corpus_v2"
+}

@@ -1,0 +1,155 @@
+{
+  "contract_count": 11,
+  "contracts": {
+    "derive_root_opening_transition": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.derive_root_opening_transition",
+      "owner_contract_sha256": "54d6d2498f410bef9126ba5cf694dbb68717ef5ee37e318e96caf1a48cee420d",
+      "owner_identity": "derive_root_opening_transition",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_PORTFOLIO_STATE_V2",
+        "PROSPECTIVE_PORTFOLIO_TRANSITION_V2"
+      ],
+      "selection_semantics": "Verify the whole chain, then walk backwards to the ENTER transition that opened the currently open position after flat."
+    },
+    "evaluate_owner_predicate": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.evaluate_owner_predicate",
+      "owner_contract_sha256": "254dbd519b40fe0c5f2c895bce46c1ca47c0769c32ae3384911ace5fff031856",
+      "owner_identity": "evaluate_owner_predicate",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_SOURCE_OBSERVATION_V2",
+        "PROSPECTIVE_DERIVED_FEATURE_V2",
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2"
+      ],
+      "selection_semantics": "Run the owner's own class predicate over the resolved qualifying and adverse records and over the components' replayed results. Heterogeneous owner predicates are preserved; no generic count rule substitutes for one."
+    },
+    "expected_owner_evidence": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.expected_owner_evidence",
+      "owner_contract_sha256": "240356a2d6f81b44e5c8e29773e877214d5dc85ebae9104e9646d8539a7a0391",
+      "owner_identity": "expected_owner_evidence",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_SOURCE_OBSERVATION_V2",
+        "PROSPECTIVE_DERIVED_FEATURE_V2"
+      ],
+      "selection_semantics": "Resolve every record of the owner's declared series and cadence, keep only revisions available at or before the decision instant, take the highest such revision per observation_time, then apply the owner's own frozen window kind. The manifest under test is never read."
+    },
+    "prove_active_stop_membership": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.prove_active_stop_membership",
+      "owner_contract_sha256": "0e55dc78b48a991848ce2c577ae0df46a4f8dba82dd8f7817e4c07af569c7c2f",
+      "owner_identity": "prove_active_stop_membership",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_STOP_EVENT_V2",
+        "PROSPECTIVE_PORTFOLIO_STATE_V2",
+        "PROSPECTIVE_PORTFOLIO_TRANSITION_V2"
+      ],
+      "selection_semantics": "Derive the control track's active stop and its installing transition from the graph, re-derive the stop identity, and require the stop event's asserted stop and identity to equal them."
+    },
+    "prove_paired_sizing_opportunity": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.prove_paired_sizing_opportunity",
+      "owner_contract_sha256": "efc62f900ba8581e602ef729aab1de4e7a98c432ab10e71bcb63b2965186bcc9",
+      "owner_identity": "prove_paired_sizing_opportunity",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_RISK_EVALUATION_V2"
+      ],
+      "selection_semantics": "Require exactly one replayed risk evaluation per reference role at one slot, distinct reference identities, distinct tracks, both permitted, both complete and both notionals strictly positive."
+    },
+    "replay_decision_evaluability": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_evaluability",
+      "owner_contract_sha256": "a6f36b716bad4950bd395772a6ff987539eff51310bd0ca134d0f88e5181c3d5",
+      "owner_identity": "replay_decision_evaluability",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2"
+      ],
+      "selection_semantics": "Replay every required owner in dependency order and combine the results under the frozen conjunction. A cached warmup projection that disagrees with the derived state refuses."
+    },
+    "replay_decision_observation": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_decision_observation",
+      "owner_contract_sha256": "d9895212f012e6eda9b348895f88ac9bddae1f4062ee067e787ba450a3b571ec",
+      "owner_identity": "replay_decision_observation",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_DECISION_OBSERVATION_V2"
+      ],
+      "selection_semantics": "Replay the bound slot evidence manifest and compare every cached projection with the derived result."
+    },
+    "replay_owner_history_manifest": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_owner_history_manifest",
+      "owner_contract_sha256": "e0d81055071c51fe331aa035f053fc611244119cf75244b493cb178bbd5c1252",
+      "owner_identity": "replay_owner_history_manifest",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2"
+      ],
+      "selection_semantics": "Verify identity, cadence, window, owner contract hash and point-in-time validity, require the persisted reference sets to equal the independently recomputed expected sets, recursively replay every component manifest, then run the owner predicate."
+    },
+    "replay_portfolio_state": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_state",
+      "owner_contract_sha256": "6c30f8efa46e33185cea047961439bdb484816a1dbb099878a396cf04e3e7883",
+      "owner_identity": "replay_portfolio_state",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_PORTFOLIO_STATE_V2",
+        "PROSPECTIVE_PORTFOLIO_TRANSITION_V2",
+        "PROSPECTIVE_DECISION_OWNER_OUTPUT_V2"
+      ],
+      "selection_semantics": "Load the exact predecessor record and the exact producing transition, require the transition to name that same predecessor, re-run the authoritative lifecycle and account owners, and require exact equality with the persisted resulting state."
+    },
+    "replay_risk_evaluation": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_risk_evaluation",
+      "owner_contract_sha256": "b0e0e5de3ea79f686528e9b5a414d704f53fa99ded24a6cf6a17c378fe2ddf1c",
+      "owner_identity": "replay_risk_evaluation",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_RISK_EVALUATION_V2"
+      ],
+      "selection_semantics": "Re-run the authoritative sizing owner over the record's own bound inputs and require exact equality with the persisted owner result."
+    },
+    "replay_slot_evidence_manifest": {
+      "failure_semantics": "REFUSE",
+      "owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_slot_evidence_manifest",
+      "owner_contract_sha256": "fe08c02fead0558e7f844d9f2be83928d700d90e11f69bd9dcdfc6179dcd5023",
+      "owner_identity": "replay_slot_evidence_manifest",
+      "required_evidence_schemas": [
+        "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2"
+      ],
+      "selection_semantics": "Verify slot identity and schema identities, replay owner-history evaluability, resolve and cross-check every bound record, replay the portfolio states and their producing transitions, prove the sizing pair and the stop membership where present."
+    }
+  },
+  "definition_sha256": "0621f330bf1a8724715f52f49075aa956f4e46d4ef9b6ff147187be901b6df8b",
+  "executable_semantic_manifest_owner": "POSTP1-003R3 may additionally bind concrete runtime code; this parent binds the selection semantics, the required evidence schemas and the failure semantics so that they do not live only in code.",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "record_kinds": [
+    "PROSPECTIVE_DECISION_OBSERVATION_V2",
+    "PROSPECTIVE_DECISION_OWNER_OUTPUT_V2",
+    "PROSPECTIVE_DERIVED_FEATURE_V2",
+    "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2",
+    "PROSPECTIVE_PORTFOLIO_STATE_V2",
+    "PROSPECTIVE_PORTFOLIO_TRANSITION_V2",
+    "PROSPECTIVE_REFERENCE_EVALUATION_V2",
+    "PROSPECTIVE_RISK_EVALUATION_V2",
+    "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2",
+    "PROSPECTIVE_SOURCE_ACQUISITION_EVIDENCE_V2",
+    "PROSPECTIVE_SOURCE_OBSERVATION_V2",
+    "PROSPECTIVE_STOP_EVENT_V2"
+  ],
+  "record_schema_versions": {
+    "PROSPECTIVE_DECISION_OBSERVATION_V2": "PROSPECTIVE_DECISION_OBSERVATION_V2_SCHEMA_V1",
+    "PROSPECTIVE_DECISION_OWNER_OUTPUT_V2": "PROSPECTIVE_DECISION_OWNER_OUTPUT_V2_SCHEMA_V1",
+    "PROSPECTIVE_DERIVED_FEATURE_V2": "PROSPECTIVE_DERIVED_FEATURE_V2_SCHEMA_V1",
+    "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2": "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2_SCHEMA_V1",
+    "PROSPECTIVE_PORTFOLIO_STATE_V2": "PROSPECTIVE_PORTFOLIO_STATE_V2_SCHEMA_V1",
+    "PROSPECTIVE_PORTFOLIO_TRANSITION_V2": "PROSPECTIVE_PORTFOLIO_TRANSITION_V2_SCHEMA_V1",
+    "PROSPECTIVE_REFERENCE_EVALUATION_V2": "PROSPECTIVE_REFERENCE_EVALUATION_V2_SCHEMA_V1",
+    "PROSPECTIVE_RISK_EVALUATION_V2": "PROSPECTIVE_RISK_EVALUATION_V2_SCHEMA_V1",
+    "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2": "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2_SCHEMA_V1",
+    "PROSPECTIVE_SOURCE_ACQUISITION_EVIDENCE_V2": "PROSPECTIVE_SOURCE_ACQUISITION_EVIDENCE_V2_SCHEMA_V1",
+    "PROSPECTIVE_SOURCE_OBSERVATION_V2": "PROSPECTIVE_SOURCE_OBSERVATION_V2_SCHEMA_V1",
+    "PROSPECTIVE_STOP_EVENT_V2": "PROSPECTIVE_STOP_EVENT_V2_SCHEMA_V1"
+  },
+  "schema_version": "PROSPECTIVE_PARENT_REPLAY_CONTRACT_REGISTRY_V2"
+}

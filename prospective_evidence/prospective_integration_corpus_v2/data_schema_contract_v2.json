@@ -1,0 +1,237 @@
+{
+  "additive_extension_of": "PROSPECTIVE_INTEGRATION_CORPUS_SCHEMA_V1",
+  "content_addressed_immutability_rule": "Every scientifically material V2 record's identity is the digest of its canonical payload without the digest field. Changing a history reference, a predecessor state, a transition, a source record, an owner contract or a slot identity therefore moves that record's hash, and moves the slot manifest and parent evidence identity that reference it.",
+  "database": "postgresql",
+  "definition_sha256": "677e1c240ddc8f832af718acdd0445c2a9ed3e624a2e897101796ffa576b0ab3",
+  "evidence_graph_rule": "SCIENTIFIC SURFACE RECORDS ARE NOT AUTHORITIES. Every surface must resolve its exact referenced records, recompute all digests, validate schema/version and transitive semantics, verify cross-record identity, and only then derive a value or status. Digest-only evidence is refused.",
+  "implementation_state": "CONTRACT_ONLY_MIGRATION_DEFERRED_TO_FIRST_COLLECTOR_TICKET",
+  "parent_schema_sha256": "0c29908f121c9060d47c5153aa938feed48f73a69268d323e9e72b9affcbf66d",
+  "parent_tables_unchanged": true,
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "referential_integrity": {
+    "decision_observation_to_slot_manifest": "slot_evidence_manifest_sha256 resolves and belongs to this slot",
+    "owner_history_to_observations": "every observation and adverse reference resolves and is point-in-time valid",
+    "slot_manifest_to_owner_history": "every required owner's manifest resolves and replays",
+    "state_to_predecessor": "prior_state_record_sha256 resolves",
+    "state_to_transition": "producing_transition_record_sha256 resolves and names this state's own predecessor",
+    "stop_event_to_control_state": "control_state_record_sha256 resolves and replays to this active stop",
+    "transition_to_action": "action_evidence_record_sha256 resolves"
+  },
+  "schema": "research",
+  "schema_version": "PROSPECTIVE_INTEGRATION_CORPUS_SCHEMA_V2",
+  "table_prefix": "prospective_",
+  "tables": {
+    "prospective_decision_observation_v2": {
+      "append_only": true,
+      "columns": {
+        "cached_projections": "jsonb not null",
+        "cadence": "text not null",
+        "certified_corpus_sha256": "char(64) not null",
+        "decision_time": "timestamptz not null",
+        "observation_state": "text not null",
+        "observation_time": "timestamptz not null",
+        "output_record_sha256s": "jsonb not null",
+        "portfolio_context_record_sha256s": "jsonb not null",
+        "reason_codes": "jsonb not null",
+        "record_sha256": "char(64) not null",
+        "run_id": "uuid not null",
+        "schema_version": "text not null",
+        "slot_evidence_manifest_sha256": "char(64) not null",
+        "slot_id": "char(64) not null",
+        "strategy_identity_sha256": "char(64) not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "cadence",
+        "observation_time"
+      ],
+      "purpose": "The V2 scheduled slot census. warmup_history_complete is gone from this row: warmup lives in cached_projections as a non-authoritative derived cache that must equal the replayed owner-specific result."
+    },
+    "prospective_owner_history_manifest_v2": {
+      "append_only": true,
+      "columns": {
+        "additional_record_sha256s": "jsonb not null",
+        "adverse_record_sha256s": "jsonb not null",
+        "cadence": "text not null",
+        "certified_corpus_sha256": "char(64) not null",
+        "component_manifest_sha256s": "jsonb not null",
+        "decision_time": "timestamptz not null",
+        "evidence_selector": "jsonb not null",
+        "manifest_sha256": "char(64) not null",
+        "observation_record_sha256s": "jsonb not null",
+        "observation_time": "timestamptz not null",
+        "owner_class": "text not null",
+        "owner_contract": "text not null",
+        "owner_contract_sha256": "char(64) not null",
+        "owner_id": "text not null",
+        "pit_selection_semantics": "jsonb not null",
+        "required_cadence": "text not null",
+        "run_id": "uuid not null",
+        "schema_version": "text not null",
+        "series_identity": "jsonb not null",
+        "slot_id": "char(64) not null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "manifest_sha256"
+      ],
+      "purpose": "The complete owner-specific history for one owner at one slot. The reference lists are ordered and exhaustive, and a replay recomputes the expected set independently rather than trusting them."
+    },
+    "prospective_portfolio_state_v2": {
+      "append_only": true,
+      "columns": {
+        "account_record": "jsonb not null",
+        "as_of": "timestamptz not null",
+        "certified_corpus_sha256": "char(64) not null",
+        "decision_time": "timestamptz not null",
+        "nav": "numeric not null",
+        "nav_unrealized_pnl": "numeric not null",
+        "nav_unrealized_pnl_evidence_sha256": "char(64) null",
+        "nav_unrealized_pnl_owner": "text not null",
+        "position_lifecycle_record": "jsonb not null",
+        "prior_state_record_sha256": "char(64) null",
+        "producing_transition_record_sha256": "char(64) null",
+        "record_sha256": "char(64) not null",
+        "run_id": "uuid not null",
+        "schema_version": "text not null",
+        "slot_id": "char(64) not null",
+        "state_kind": "text not null",
+        "track": "text not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "record_sha256"
+      ],
+      "purpose": "One resulting portfolio state, binding the content address of its predecessor record and of the transition that produced it. Both are null only for the single GENESIS state of a track."
+    },
+    "prospective_portfolio_transition_v2": {
+      "append_only": true,
+      "columns": {
+        "account_operations": "jsonb not null",
+        "action_evidence_record_sha256": "char(64) not null",
+        "certified_corpus_sha256": "char(64) not null",
+        "decision_time": "timestamptz not null",
+        "nav_unrealized_pnl": "numeric not null",
+        "nav_unrealized_pnl_evidence_sha256": "char(64) null",
+        "new_lifecycle_parameters": "jsonb null",
+        "opens_new_position_lifecycle": "boolean not null",
+        "position_events": "jsonb not null",
+        "prior_state_record_sha256": "char(64) not null",
+        "record_sha256": "char(64) not null",
+        "risk_evidence_record_sha256": "char(64) null",
+        "run_id": "uuid not null",
+        "schema_version": "text not null",
+        "slot_id": "char(64) not null",
+        "stop_evidence_record_sha256": "char(64) null",
+        "track": "text not null",
+        "transition_class": "text not null",
+        "transition_owner": "text not null",
+        "transition_owner_version": "text not null",
+        "transition_type": "text not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "record_sha256"
+      ],
+      "purpose": "One portfolio transition, binding its exact predecessor record and its exact action evidence. It deliberately does not bind the resulting state, so no hash cycle can form."
+    },
+    "prospective_risk_evaluation_v2": {
+      "append_only": true,
+      "columns": {
+        "cadence": "text not null",
+        "certified_corpus_sha256": "char(64) not null",
+        "decision_time": "timestamptz not null",
+        "input_record_sha256s": "jsonb not null",
+        "observation_time": "timestamptz not null",
+        "owner_feature_id": "text not null",
+        "owner_record": "jsonb not null",
+        "owner_version": "text not null",
+        "position_notional": "numeric null",
+        "record_sha256": "char(64) not null",
+        "reference_identity": "text not null",
+        "reference_role": "text not null",
+        "risk_size_complete": "boolean not null",
+        "run_id": "uuid not null",
+        "schema_version": "text not null",
+        "sizing_inputs": "jsonb not null",
+        "slot_id": "char(64) not null",
+        "track": "text not null",
+        "trade_permitted": "boolean not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "reference_role",
+        "slot_id"
+      ],
+      "purpose": "One reference role's risk evaluation at one slot, carrying every input the authoritative sizing owner consumes so the owner can be re-run rather than read back. trade_permitted is strictly Boolean."
+    },
+    "prospective_slot_evidence_manifest_v2": {
+      "append_only": true,
+      "columns": {
+        "cadence": "text not null",
+        "certified_corpus_sha256": "char(64) not null",
+        "decision_owner_record_sha256s": "jsonb not null",
+        "decision_time": "timestamptz not null",
+        "derived_feature_record_sha256s": "jsonb not null",
+        "input_snapshot_record_sha256": "char(64) null",
+        "manifest_sha256": "char(64) not null",
+        "observation_time": "timestamptz not null",
+        "owner_history_manifest_sha256s": "jsonb not null",
+        "portfolio_state_record_sha256s": "jsonb not null",
+        "portfolio_transition_record_sha256s": "jsonb not null",
+        "reference_evaluation_record_sha256s": "jsonb not null",
+        "risk_evaluation_record_sha256s": "jsonb not null",
+        "run_id": "uuid not null",
+        "schema_identities": "jsonb not null",
+        "schema_version": "text not null",
+        "slot_id": "char(64) not null",
+        "source_acquisition_record_sha256s": "jsonb not null",
+        "stop_event_record_sha256": "char(64) null"
+      },
+      "layer": "RAW",
+      "primary_key": [
+        "run_id",
+        "manifest_sha256"
+      ],
+      "purpose": "One immutable content-addressed commitment to the exact evidence set needed to reproduce one scientific decision slot. It carries references only; a conclusion column is refused."
+    },
+    "prospective_stop_event_v2": {
+      "append_only": true,
+      "columns": {
+        "active_stop": "numeric not null",
+        "active_stop_identity": "char(64) not null",
+        "candidate_reference_record_sha256": "char(64) null",
+        "certified_corpus_sha256": "char(64) not null",
+        "classification": "text not null",
+        "classifier_owner": "text not null",
+        "classifier_version": "text not null",
+        "control_state_record_sha256": "char(64) not null",
+        "decision_time": "timestamptz not null",
+        "direction": "text not null",
+        "gap_through_state": "text not null",
+        "observation_time": "timestamptz not null",
+        "prior_provider_observation_sha256s": "jsonb not null",
+        "provider_observation_sha256s": "jsonb not null",
+        "record_sha256": "char(64) not null",
+        "run_id": "uuid not null",
+        "schema_version": "text not null",
+        "slot_id": "char(64) not null",
+        "track": "text not null",
+        "universe_anchor": "text not null"
+      },
+      "layer": "DERIVED",
+      "primary_key": [
+        "run_id",
+        "track",
+        "observation_time"
+      ],
+      "purpose": "One stop-evaluation slot whose active stop and stop identity are re-derived from the control track's verified transition graph. The asserted identity is a claim the replay checks, never the authority."
+    }
+  },
+  "typed_table_role": "Query/index projection only; never evidence authority and never a replacement for the exact content-addressed record."
+}

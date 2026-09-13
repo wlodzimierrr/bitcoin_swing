@@ -1,0 +1,21 @@
+{
+  "collection_authorized": false,
+  "definition_sha256": "11f3b03924fddf614bacd6f3887eeadf9ac8bd0a28fd5c2d1d6304e04097d745",
+  "postp1_004_authorized": false,
+  "preconditions_in_order": [
+    "V2 implementation",
+    "exact-hash independent xHigh review PASS",
+    "sufficiency governance reissued against V2",
+    "sufficiency governance exact-hash review PASS",
+    "POSTP1-004 implementation",
+    "POSTP1-004 independent review PASS"
+  ],
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "qualifying_v1_evidence_exists": false,
+  "schema_version": "PROSPECTIVE_V2_COLLECTION_EPOCH_V2",
+  "v1_evidence_counts_toward_v2_sufficiency": false,
+  "v1_migration_required": false,
+  "v1_observation_fabrication_permitted": false,
+  "v1_qualifying_observations_collected": false,
+  "v2_starts_fresh_rationale": "Zero qualifying prospective observations were ever collected under V1, so there is nothing to migrate and nothing may be fabricated backwards. V2's collection epoch begins empty."
+}

@@ -1,0 +1,32 @@
+{
+  "comparison": "expected owner evidence refs == persisted owner-history manifest refs",
+  "definition_sha256": "e7f34efb702f2deed333473d0b659b2c1d071c295a272af6ab24ca4182645210",
+  "detects": [
+    "omitted qualifying observation",
+    "omitted adverse or missing observation required by the predicate",
+    "extra substituted observation",
+    "wrong date",
+    "wrong cadence",
+    "wrong source",
+    "future-available observation"
+  ],
+  "expected_set_owner": "btc_predictor.research.prospective_integration_corpus_v2.expected_owner_evidence",
+  "expected_set_reads_the_manifest": false,
+  "failure_semantics": "REFUSE",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "rationale": "A manifest checked only against itself is self-consistent whatever it omits. The expected set is therefore recomputed from the evidence store alone, under the owner's own frozen selector, and never reads the manifest it is checking.",
+  "replay_owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_owner_history_manifest",
+  "schema_version": "PROSPECTIVE_OWNER_HISTORY_COMPLETENESS_V2",
+  "selector_semantics_frozen_by": "PROSPECTIVE_OWNER_EVALUABILITY_CENSUS_V2",
+  "window_kinds": [
+    "AT_OR_BEFORE_ELAPSED_LOOKBACK",
+    "CONTIGUOUS_SESSIONS_ENDING_AT_t",
+    "EXACT_LOOKBACK_SESSION_OFFSET",
+    "HALF_OPEN_PRIOR_ELAPSED_[t-W,t)",
+    "HALF_OPEN_TRAILING_ELAPSED_(t-W,t]",
+    "NO_WINDOW_AT_THIS_OWNER",
+    "PRIOR_OBSERVATION_COUNT_ON_THE_OWNER_GRID",
+    "TRAILING_SESSION_COUNT_ENDING_AT_t",
+    "UNBOUNDED_TRAILING_AT_OR_BEFORE_t"
+  ]
+}

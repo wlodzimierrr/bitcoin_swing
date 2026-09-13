@@ -1,0 +1,58 @@
+{
+  "binds": [
+    "candidate risk-evaluation output",
+    "control risk-evaluation output",
+    "reference identities",
+    "decision slot",
+    "entry and risk context",
+    "portfolio and input evidence",
+    "point-in-time availability"
+  ],
+  "definition_sha256": "5d278aff3a75cd2b54f73dbd94dfa555d4bafc2381d8a8f597dfa8ca72c8b97d",
+  "generic_daily_slot_boolean_permitted": false,
+  "metric": "risk_size_p95_relative_difference",
+  "opportunity_owner": "btc_predictor.research.prospective_integration_corpus_v2.prove_paired_sizing_opportunity",
+  "opportunity_rule": "A sizing comparison is admissible only when one slot carries exactly two risk-evaluation records, one per reference role, with distinct reference identities, both permitting a trade, both complete under INITIAL_POSITION_SIZE_V1, both replaying to their persisted output from their own bound inputs, both notionals strictly positive, and both bound to the same slot identity, the same certified corpus and their own track's portfolio state. No daily-slot Boolean establishes the opportunity.",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "refusal_reasons": [
+    "CANDIDATE_REFERENCE_UNAVAILABLE",
+    "CONTROL_REFERENCE_UNAVAILABLE",
+    "ONE_TRACK_PRODUCED_NO_POSITIVE_RISK_SIZE",
+    "REFERENCE_IDENTITY_NOT_DISTINCT",
+    "SIZING_PAIR_INCOMPLETE"
+  ],
+  "risk_evaluation_fields": [
+    "cadence",
+    "certified_corpus_sha256",
+    "decision_time",
+    "input_record_sha256s",
+    "observation_time",
+    "owner_feature_id",
+    "owner_record",
+    "owner_version",
+    "position_notional",
+    "record_kind",
+    "reference_identity",
+    "reference_role",
+    "risk_size_complete",
+    "schema_version",
+    "sizing_inputs",
+    "slot_id",
+    "track",
+    "trade_permitted"
+  ],
+  "schema_version": "PROSPECTIVE_RISK_OPPORTUNITY_EVIDENCE_V2",
+  "sizing_input_fields": [
+    "entry_price",
+    "maximum_notional_fraction_nav",
+    "nav",
+    "risk_fraction_nav",
+    "stop_distance_fraction"
+  ],
+  "sizing_owner": "btc_predictor.risk.sizing.calculate_initial_position_size",
+  "sizing_owner_feature_id": "INITIAL_POSITION_SIZE",
+  "sizing_owner_version": "INITIAL_POSITION_SIZE_V1",
+  "statistic": "nearest_rank_p95_of_the_absolute_relative_differences",
+  "trade_permitted_null_rule": "trade_permitted is a strict Boolean in V2. The certified parent's typed projection allowed NULL and the blind parent evidence schema forbids a non-Boolean, which left an unresolved gate with no defined mapping. V2 closes that by construction: an unresolved eligibility gate is not a null permission, it is a slot that never becomes sizing-evaluable, and the universe predicate excludes it with an explicit reason code.",
+  "v1_gap": "The certified parent's typed risk projection carried the notional, the completeness flag and one shared decision_time, but neither NAV nor the risk fraction, so the sizing owner could not be re-run, and neither the slot identity nor the two reference identities, so 'same slot, paired and distinct' was not checkable. V2 binds all of them and changes no sizing parameter."
+}

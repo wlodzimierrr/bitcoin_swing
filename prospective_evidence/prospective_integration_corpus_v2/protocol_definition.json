@@ -1,0 +1,187 @@
+{
+  "btc019": {
+    "reopened": false,
+    "sealed_data_accessed": false,
+    "sealed_sample_collected": false,
+    "sealed_sample_opened": false,
+    "terminal_classification": "BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE"
+  },
+  "certification": {
+    "certification_authority": "Only an independent exact-hash xHigh review may certify V2. This module may classify itself no higher than PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW.",
+    "certification_state": "NOT_CERTIFIED_PENDING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+    "certified": false,
+    "permitted_classifications": [
+      "PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW",
+      "PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY",
+      "PROSPECTIVE_CORPUS_V2_REQUIRES_EPIC_T_AUTHORITY_CHANGE",
+      "PROSPECTIVE_CORPUS_V2_BLOCKED_BY_CONFLICTING_AUTHORITY"
+    ]
+  },
+  "child_definition_sha256": {
+    "active_stop_membership_contract": "46157c0cd2cd0af54cfa511969f2b6dadf9b6366cba7c50824fe956aebfd77fd",
+    "collection_epoch_contract": "11f3b03924fddf614bacd6f3887eeadf9ac8bd0a28fd5c2d1d6304e04097d745",
+    "data_schema_contract_v2": "677e1c240ddc8f832af718acdd0445c2a9ed3e624a2e897101796ffa576b0ab3",
+    "decision_evaluability_contract": "cbeb193cda8fb35e22e28d96eaacbcae6de07b87b2b4e31fe6479d405da01652",
+    "decision_observation_contract": "a9a734b002f8f0df1ed5ab2a74beabecbb41912454a67544327fc266789d52e0",
+    "feature_replay_closure_matrix": "009e5caf0bbe85bf2bc647efdb635ce6d5ea52a09fc3a1aee8d38017a3c46d21",
+    "inherited_v1_child_bindings": "3ceacc17a8cb453b750431d5364d38cf8f0e1d4923e4ddc69bcde8588883ff7d",
+    "metric_replay_closure_matrix": "6822762cecb701d0a79b2e68c603fdbabe34db3698bfa53030471985dd50b76d",
+    "owner_evaluability_census": "bce172a6ef28596797ebda0d31c1cb314bdf323c5bbb5f287a19babed9982e65",
+    "owner_history_completeness_contract": "e7f34efb702f2deed333473d0b659b2c1d071c295a272af6ab24ca4182645210",
+    "owner_history_manifest_contract": "ee98e9d3893ef089e22f83c2360744a2521b8eabfa0aa577d78d6a019ce27e9e",
+    "parent_completeness_acceptance": "7332ed64a87a5f39cf5e43d7fa4484ab708b2074ade90870f9aca6ef7fea0793",
+    "parent_replay_contract_registry": "0621f330bf1a8724715f52f49075aa956f4e46d4ef9b6ff147187be901b6df8b",
+    "portfolio_state_contract": "265bc0282fe683f4ee5f92461cd76bfc23e6c524c00d30fa2c4bfc9c00ef995e",
+    "portfolio_transition_contract": "63322d43a52ecfdb7b07f1274f7d5eeaa08611f02d2130bce71504c2ad491520",
+    "portfolio_transition_replay_contract": "f499f7747dc456b0d21b412b39c4c70c909001c9b3361db80b47c3b69a7f66a2",
+    "risk_opportunity_evidence_contract": "5d278aff3a75cd2b54f73dbd94dfa555d4bafc2381d8a8f597dfa8ca72c8b97d",
+    "root_lifecycle_derivation_contract": "a768ead194cd1431b27035763c17b1868ec7b89af03ed9bb2edc9df0a22bcbce",
+    "semantic_diff_v1_to_v2": "83146e3063fd81824183e5637bcd5064475f62b029999dd56f6e6e01a8b3839e",
+    "slot_evidence_manifest_contract": "287289d2d13850e2819b78cd74b78723ddee063969a948d613039eab8978154f",
+    "source_evidence_reuse_contract": "fa35a4553e77020013bf360b5cf1bff0a545b03ce95e18d77ead5685feef235e"
+  },
+  "collection_authorized": false,
+  "collection_entry_requirement": "V2 qualifying prospective collection may begin only after this corpus passes an exact-hash independent xHigh review, sufficiency governance is reissued against the V2 hash and passes its own exact-hash review, and POSTP1-004 is implemented and passes its independent review.",
+  "content_addressed_immutability": {
+    "identity_moves_when_any_of_these_change": [
+      "a history reference",
+      "a predecessor state",
+      "a transition",
+      "a source record",
+      "an owner contract",
+      "a slot identity"
+    ],
+    "rule": "Every scientifically material V2 record's identity is the digest of its canonical payload without the digest field. Changing a history reference, a predecessor state, a transition, a source record, an owner contract or a slot identity therefore moves that record's hash, and moves the slot manifest and parent evidence identity that reference it."
+  },
+  "definition_sha256": "488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d",
+  "final_classification": "PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW",
+  "lineage": {
+    "blocking_audit": {
+      "commit": "49a817f6d39fde6be6cff584ba8d75c0b9e62ba7",
+      "result": "SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE",
+      "ticket": "POSTP1-003R3"
+    },
+    "certified_v1_validator_definition_sha256": "8e6254e0354c04de077bf482ccb6852bfe4299f138d3c97f1ba33859bfc7ffe7",
+    "frozen_v3_definition_sha256": "4232e886e7888b85833f778fcba6b2cb3eb5b7d802748aebf3b8adf19c5bf71a",
+    "frozen_v4_definition_sha256": "670ff12dd3d63615e9ddb3be05d65505bab16b50e50f1fd9ad077a4923a3f501",
+    "frozen_v5_definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89",
+    "parent_v1": {
+      "artifact_directory": "prospective_evidence/prospective_integration_corpus_v1",
+      "certification": "POSTP1-002R5 PASS",
+      "classification_after_v2_review_pass": "SUPERSEDED_PRE_COLLECTION_BY_REPLAY_COMPLETE_V2",
+      "classification_now": "IMMUTABLE_CERTIFIED_LINEAGE_COLLECTION_AUTHORITY_UNCHANGED_UNTIL_V2_REVIEW_PASS",
+      "definition_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+      "limitation": "REPLAY PROVENANCE INCOMPLETE FOR THE NEW SUFFICIENCY-AUTHORITY REQUIREMENT",
+      "limitation_scope": "V1 remains immutable historical certified lineage and is not invalid for any semantics its six reviews already accepted. It is insufficient only as the authoritative parent for the full transitive scientific replay that Stage-B sufficiency governance now requires.",
+      "material_child_count": 25,
+      "mutated_by_v2": false,
+      "qualifying_observations_collected": false,
+      "version": "PROSPECTIVE_INTEGRATION_CORPUS_V1"
+    }
+  },
+  "material_child_count": 21,
+  "material_child_enumeration": "mechanically enumerated from the single artifact/builder registry",
+  "no_threshold_authored": true,
+  "numerical_standards": {
+    "corpus_decimal_precision": 60,
+    "invariant_to": [
+      "ambient Decimal precision and rounding",
+      "PYTHONHASHSEED",
+      "the working directory",
+      "process restart",
+      "input ordering permutations"
+    ],
+    "owner_replay_context_owners": [
+      "btc_predictor.portfolio.account",
+      "btc_predictor.portfolio.state_machine",
+      "btc_predictor.risk.sizing"
+    ],
+    "owner_replay_decimal_precision": 28,
+    "owner_replay_decimal_rounding": "ROUND_HALF_EVEN",
+    "rule": "None of the authoritative owners V2 invokes -- the position state machine, the paper account and the initial position sizer -- pins a Decimal context, so the persisted digit count of an average entry, a pro-rata trim quantity, an available-cash balance or a position notional follows getcontext().prec. Evidence whose bytes move with an ambient setting is not deterministic, so V2 constructs and replays every record that invokes one of those owners inside one pinned context, and pins it to the interpreter default those owners already run under throughout this repository (precision 28, rounding ROUND_HALF_EVEN). No owner, formula or economic meaning changes, no byte an existing caller produces moves, and persisted V2 evidence becomes invariant to whatever ambient context a future collector happens to set. The corpus statistic context of precision 60 governs the corpus's own arithmetic and is deliberately not imposed on owner code, because doing so would change the persisted strings those certified owners produce."
+  },
+  "primary_requirement": "Every scientifically material blind fact required by Stage-B sufficiency can be regenerated from immutable persisted parent evidence without trusting a Boolean, a summary state, a digest-only leaf, or a governance-authored conclusion.",
+  "program_ticket": "POSTP1-001V2",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "record_kinds": [
+    "PROSPECTIVE_DECISION_OBSERVATION_V2",
+    "PROSPECTIVE_DECISION_OWNER_OUTPUT_V2",
+    "PROSPECTIVE_DERIVED_FEATURE_V2",
+    "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2",
+    "PROSPECTIVE_PORTFOLIO_STATE_V2",
+    "PROSPECTIVE_PORTFOLIO_TRANSITION_V2",
+    "PROSPECTIVE_REFERENCE_EVALUATION_V2",
+    "PROSPECTIVE_RISK_EVALUATION_V2",
+    "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2",
+    "PROSPECTIVE_SOURCE_ACQUISITION_EVIDENCE_V2",
+    "PROSPECTIVE_SOURCE_OBSERVATION_V2",
+    "PROSPECTIVE_STOP_EVENT_V2"
+  ],
+  "relationship_to_epic_t": {
+    "epic_t_authority_change_required": false,
+    "epic_t_modified": false,
+    "epic_t_re_review_required": false,
+    "epic_t_state": "CLOSED / PASS WITH NON-BLOCKING FINDINGS"
+  },
+  "required_replayable_facts": [
+    "active-stop membership",
+    "comparability",
+    "control-position root lifecycle",
+    "genuine paired sizing opportunity",
+    "metric universe membership",
+    "point-in-time visibility",
+    "regime/setup/action/eligibility owner state",
+    "source quality",
+    "warmup/evaluability"
+  ],
+  "safety": {
+    "btc019_sealed_data_accessed": false,
+    "new_market_evidence_collected": false,
+    "persistent_live_collection_started": false,
+    "qualifying_observations_collected": false,
+    "real_stage_b_evaluated": false,
+    "synthetic_evidence_only": true
+  },
+  "schema_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2_PROTOCOL_DEFINITION_V1",
+  "status": "FROZEN_PRE_DATA_REPLAY_COMPLETE_PARENT_V2_AWAITING_XHIGH_REVIEW",
+  "sufficiency_governance": {
+    "failed_hashes_retained_non_authoritative": [
+      "3f51c4d9d8f14689b3f6c863e1731a6ef170b9764162b79bd56cc369af4ae2c7",
+      "0ca7a2a8487e9c54b1b0f5ad07201ec39dfd20b328b5e09cb3b51b0de86c8242",
+      "0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e"
+    ],
+    "new_governance_hash_issued_here": false,
+    "postp1_003r3_blocked_pending_v2_review": true,
+    "postp1_003r3_must_then": [
+      "bind the V2 parent",
+      "perform true owner-level replay",
+      "bind executable semantics",
+      "enforce canonical candidate/control identity"
+    ],
+    "postp1_003r3_rules_unchanged": "381 / 93 / 0.99",
+    "successor_ticket": "POSTP1-003R3"
+  },
+  "surrogate_authorities_not_required": [
+    "active_stop_membership",
+    "comparability Boolean",
+    "control root SHA",
+    "quality_state",
+    "sizing-opportunity Boolean",
+    "universe Boolean",
+    "warmup Boolean"
+  ],
+  "target_metrics": [
+    "cross_market_confirmed_stop_preservation_rate",
+    "gap_through_stop_consensus_agreement_rate",
+    "isolated_venue_stop_suppression_rate",
+    "regime_classification_disagreement_rate",
+    "risk_size_p95_relative_difference",
+    "setup_classification_disagreement_rate",
+    "trade_action_disagreement_rate",
+    "trade_eligibility_disagreement_rate"
+  ],
+  "workstream": {
+    "epic": "EPIC X",
+    "name": "PROSPECTIVE INTEGRATION EVIDENCE"
+  }
+}

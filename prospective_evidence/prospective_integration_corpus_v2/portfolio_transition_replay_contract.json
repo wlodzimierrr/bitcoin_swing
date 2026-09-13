@@ -1,0 +1,55 @@
+{
+  "account_operations": [
+    "apply_funding_cost",
+    "archive",
+    "charge_fee",
+    "charge_funding",
+    "settle_realized_pnl"
+  ],
+  "definition_sha256": "f499f7747dc456b0d21b412b39c4c70c909001c9b3361db80b47c3b69a7f66a2",
+  "economic_meaning_changed": false,
+  "failure_semantics": "REFUSE",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "replay_order": [
+    "load the prior state record",
+    "load the producing transition record",
+    "require the transition's prior_state_record_sha256 to equal the state's own predecessor reference",
+    "load the transition's action, stop and risk evidence",
+    "restore the prior position lifecycle through its own owner",
+    "apply each bound position event through the authoritative owner",
+    "apply each bound account operation through the account owner",
+    "recompute NAV by invoking the account owner's nav",
+    "require exact equality with the persisted resulting state"
+  ],
+  "replay_owner": "btc_predictor.research.prospective_integration_corpus_v2.replay_portfolio_state",
+  "schema_version": "PROSPECTIVE_PORTFOLIO_TRANSITION_REPLAY_V2",
+  "single_step_public_api_absent": "The authoritative module's single-step transition replay helper is private and unexported, and every public replay entry point begins at a pre-position root. V2 therefore restores the prior lifecycle through the public restore_position_lifecycle -- which itself re-replays the whole chain and compares field for field -- and then applies the transition's events through the public apply_position_event. No private helper is called and no invariant is re-encoded.",
+  "supported_transitions": {
+    "ADD": [
+      "ADD"
+    ],
+    "ENTER": [
+      "ENTER"
+    ],
+    "EXIT": [
+      "EXIT"
+    ],
+    "NO_ACTION_STATE_PRESERVING": [
+      "ARM_ENTRY",
+      "DEFEND",
+      "DISARM_ENTRY",
+      "HOLD",
+      "MISS",
+      "OBSERVE",
+      "RECOVER"
+    ],
+    "STOP_MOVE": [
+      "STOP_MOVE"
+    ],
+    "TRIM": [
+      "TRIM"
+    ]
+  },
+  "transition_owner": "btc_predictor.portfolio.state_machine",
+  "transition_owner_version": "PAPER_POSITION_STATE_MACHINE_V1"
+}

@@ -1,0 +1,196 @@
+{
+  "changes": {
+    "acquisition_source_changes": 0,
+    "decision_rule_changes": 0,
+    "feature_formula_changes": 0,
+    "metric_intent_changes": 0,
+    "risk_changes": 0,
+    "stage_b_direction_changes": 0,
+    "stage_b_hard_role_changes": 0,
+    "stage_b_threshold_changes": 0,
+    "stop_event_definition_changes": 0
+  },
+  "definition_sha256": "83146e3063fd81824183e5637bcd5064475f62b029999dd56f6e6e01a8b3839e",
+  "expected_semantic_parity_with_v1": {
+    "direction_changes": 0,
+    "feature_semantic_changes": 0,
+    "hard_role_changes": 0,
+    "metric_intent_changes": 0,
+    "risk_semantic_changes": 0,
+    "source_semantic_changes": 0,
+    "stop_event_semantic_changes": 0,
+    "threshold_changes": 0
+  },
+  "feature_parity": {
+    "feature_semantic_changes": 0,
+    "features_with_a_changed_owner": [],
+    "owner_label_correction_is_a_science_change": false,
+    "owner_labels_corrected_to_a_resolving_symbol": [
+      "FUNDING_7D_AVG",
+      "FUNDING_ZSCORE_180D",
+      "OI_GROWTH_7D",
+      "OI_GROWTH_ZSCORE_180D"
+    ]
+  },
+  "metric_parity": {
+    "cross_market_confirmed_stop_preservation_rate": {
+      "direction": "minimum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "A robust estimator must preserve genuine shared tail moves.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "1.0",
+      "threshold_changed": false,
+      "universe": "CROSS_MARKET_CONFIRMED_STOP_EVENTS"
+    },
+    "gap_through_stop_consensus_agreement_rate": {
+      "direction": "minimum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "Gap-through behavior must agree with deterministic venue consensus.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "0.99",
+      "threshold_changed": false,
+      "universe": "GAP_THROUGH_STOP_EVENTS"
+    },
+    "isolated_venue_stop_suppression_rate": {
+      "direction": "minimum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "Most isolated exchange wicks should not create canonical stop events.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "0.95",
+      "threshold_changed": false,
+      "universe": "ISOLATED_VENUE_STOP_EVENTS"
+    },
+    "regime_classification_disagreement_rate": {
+      "direction": "maximum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "Regime labels should be robust to reference construction.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "0.02",
+      "threshold_changed": false,
+      "universe": "REGIME_EVALUABLE_DECISION_TIMES"
+    },
+    "risk_size_p95_relative_difference": {
+      "direction": "maximum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "Reference changes should not materially resize most positions.",
+      "metric_intent_changed": false,
+      "statistic": "nearest_rank_p95_of_the_absolute_relative_differences",
+      "threshold": "0.10",
+      "threshold_changed": false,
+      "universe": "SIZING_EVALUABLE_DECISION_TIMES"
+    },
+    "setup_classification_disagreement_rate": {
+      "direction": "maximum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "Setup selection should rarely depend on venue noise.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "0.01",
+      "threshold_changed": false,
+      "universe": "SETUP_EVALUABLE_DECISION_TIMES"
+    },
+    "trade_action_disagreement_rate": {
+      "direction": "maximum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "ENTER/HOLD/ADD/TRIM/EXIT decisions should be stable.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "0.01",
+      "threshold_changed": false,
+      "universe": "ACTION_EVALUABLE_DECISION_TIMES"
+    },
+    "trade_eligibility_disagreement_rate": {
+      "direction": "maximum",
+      "direction_changed": false,
+      "hard": true,
+      "hard_role_changed": false,
+      "historical_definition": "Reference policy should rarely change whether a trade is permitted.",
+      "metric_intent_changed": false,
+      "statistic": "rate",
+      "threshold": "0.01",
+      "threshold_changed": false,
+      "universe": "ELIGIBILITY_EVALUABLE_DECISION_TIMES"
+    }
+  },
+  "parent_v1_sha256": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+  "permitted_v2_changes": [
+    "new evidence manifests",
+    "new transitive references",
+    "new parent replay contracts",
+    "new portfolio state/transition cross-binding",
+    "derived/cache fields demoted from authority",
+    "schema/version changes required to support replay"
+  ],
+  "preserved_unchanged": [
+    "provider and source identities",
+    "CoinGecko acquisition semantics",
+    "Kraken acquisition semantics",
+    "clock-integrity semantics",
+    "stream-completeness semantics",
+    "CVD definition",
+    "liquidation definition",
+    "the 33 feature scientific definitions",
+    "decision cadences",
+    "the point-in-time rule",
+    "warmup scientific predicates",
+    "regime and setup definitions",
+    "the stop-event taxonomy",
+    "portfolio economic semantics",
+    "trade-action semantics",
+    "trade-eligibility semantics",
+    "risk-sizing semantics",
+    "Stage-B metric definitions, thresholds, directions, hard roles and intent"
+  ],
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "schema_version": "PROSPECTIVE_INTEGRATION_CORPUS_V1_TO_V2_SEMANTIC_DIFF",
+  "v2_changes_are_evidence_architecture_only": true,
+  "what_v2_adds": {
+    "cached_fields_demoted": [
+      "warmup_history_complete becomes a non-authoritative cached projection that must equal the replayed owner-specific result"
+    ],
+    "new_cross_bindings": [
+      "a state binds its predecessor record and its producing transition",
+      "a transition binds its exact prior state and action evidence",
+      "a stop event binds the control state whose replay carries its stop",
+      "a risk evaluation binds every input its owner consumes"
+    ],
+    "new_manifests": [
+      "PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2",
+      "PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2"
+    ],
+    "new_replay_contracts": [
+      "derive_root_opening_transition",
+      "evaluate_owner_predicate",
+      "expected_owner_evidence",
+      "prove_active_stop_membership",
+      "prove_paired_sizing_opportunity",
+      "replay_decision_evaluability",
+      "replay_decision_observation",
+      "replay_owner_history_manifest",
+      "replay_portfolio_state",
+      "replay_risk_evaluation",
+      "replay_slot_evidence_manifest"
+    ],
+    "numerical_context_pinning": "None of the authoritative owners V2 invokes -- the position state machine, the paper account and the initial position sizer -- pins a Decimal context, so the persisted digit count of an average entry, a pro-rata trim quantity, an available-cash balance or a position notional follows getcontext().prec. Evidence whose bytes move with an ambient setting is not deterministic, so V2 constructs and replays every record that invokes one of those owners inside one pinned context, and pins it to the interpreter default those owners already run under throughout this repository (precision 28, rounding ROUND_HALF_EVEN). No owner, formula or economic meaning changes, no byte an existing caller produces moves, and persisted V2 evidence becomes invariant to whatever ambient context a future collector happens to set. The corpus statistic context of precision 60 governs the corpus's own arithmetic and is deliberately not imposed on owner code, because doing so would change the persisted strings those certified owners produce.",
+    "owner_label_correction": "Four certified-parent feature-owner labels do not resolve to a real symbol. V2 records both the parent's label and the resolving symbol -- which is the parent's own evaluability owner in every case -- and verifies the latter imports. The predicate measured is unchanged; only the label is corrected, in a new V2 child, leaving the certified V1 child untouched.",
+    "slot_identity_space": "sha256 over canonical {cadence, observation_time, protocol_version}, the certified parent's own derivation shape from scheduled_decision_slots, with protocol_version bound to this corpus. Because the corpus version is part of the preimage, V2 slot identities are a new identity space. That is correct and harmless here: V1 collected zero qualifying observations, so no slot identity is being reassigned, and the sufficiency layer's counts and minima are counts of units rather than of particular identity values."
+  }
+}

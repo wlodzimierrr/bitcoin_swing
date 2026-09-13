@@ -1,0 +1,92 @@
+{
+  "cached_warmup_mismatch_behavior": "REFUSE",
+  "cached_warmup_role": "NON_AUTHORITATIVE_CACHED_DERIVED_PROJECTION",
+  "combination_rule": "A slot's warmup/evaluability state is COMPLETE only when every owner the consuming decision owner requires at that cadence is independently EVALUABLE under its own predicate. The combination is a conjunction over heterogeneous owner results; it is never a count, never an elapsed-time comparison, and never a shortcut through one composite.",
+  "definition_sha256": "cbeb193cda8fb35e22e28d96eaacbcae6de07b87b2b4e31fe6479d405da01652",
+  "elapsed_time_is_an_evaluability_test": false,
+  "evaluability_reason_codes": [
+    "ADVERSE_OBSERVATION_IN_REQUIRED_HISTORY",
+    "CONTIGUOUS_HISTORY_BROKEN",
+    "CURRENT_OBSERVATION_MISSING",
+    "LOOKBACK_OBSERVATION_MISSING",
+    "NON_POSITIVE_OBSERVATION_IN_REQUIRED_HISTORY",
+    "OWNER_HISTORY_INCOMPLETE",
+    "REQUIRED_INPUT_MISSING",
+    "UPSTREAM_COMPONENT_NOT_EVALUABLE"
+  ],
+  "evaluability_states": [
+    "EVALUABLE",
+    "NOT_EVALUABLE"
+  ],
+  "owner_census_sha256": "bce172a6ef28596797ebda0d31c1cb314bdf323c5bbb5f287a19babed9982e65",
+  "parent_v1_evaluability_rule": "A feature is evaluable at a decision when enough qualifying observations exist inside its owner's applicable trailing window AND every upstream initialization requirement is satisfied from point-in-time inputs. Elapsed time is never the test: elapsed_days >= a hardcoded longest warmup is neither necessary nor sufficient, and no such comparison may gate a slot.",
+  "protocol_version": "PROSPECTIVE_INTEGRATION_CORPUS_V2",
+  "replay_order": [
+    "resolve the slot's owner-history manifest for every required owner",
+    "recompute the expected owner evidence set from the evidence store",
+    "refuse on any omission, substitution, identity or PIT violation",
+    "resolve every referenced source and derived record",
+    "run that owner's own frozen evaluability predicate",
+    "combine the owner results under the frozen conjunction",
+    "compare any cached projection and refuse on disagreement"
+  ],
+  "required_owners_by_cadence": {
+    "STOP_HOURLY": [],
+    "STRATEGY_DAILY": [
+      "CVD_SPREAD",
+      "ETF_NORM_20D",
+      "ETF_NORM_5D",
+      "FLOW_ACCEL",
+      "FLOW_SCORE",
+      "FUNDING_7D_AVG",
+      "FUNDING_HEALTH",
+      "FUNDING_ZSCORE_180D",
+      "FUTURES_BASIS_AVG",
+      "FUTURES_BASIS_HEALTH",
+      "FUTURES_BASIS_ZSCORE_180D",
+      "HIGH_DISTANCE_52W",
+      "MA_DISTANCE_20W",
+      "MOMENTUM_12W",
+      "MOMENTUM_4W",
+      "OI_GROWTH_7D",
+      "OI_GROWTH_HEALTH",
+      "OI_GROWTH_ZSCORE_180D",
+      "OI_INTENSITY",
+      "OI_INTENSITY_PERCENTILE_180D",
+      "ORDERLINESS_SCORE",
+      "POSITIONING_SCORE",
+      "REGIME_SCORE",
+      "REGIME_SMOOTHED_SCORE",
+      "RV_20",
+      "RV_60",
+      "RV_7",
+      "SPOT_DOMINANCE",
+      "STRUCTURE_SCORE",
+      "TREND_SCORE",
+      "VOLATILITY_SCORE",
+      "VOL_COMPRESSION_RATIO",
+      "VOL_PERCENTILE_2Y"
+    ]
+  },
+  "schema_version": "PROSPECTIVE_DECISION_EVALUABILITY_CONTRACT_V2",
+  "stop_cadence_feature_owner_rationale": "The frozen stop-event classifier btc_predictor.research.prospective_integration_corpus.classify_stop_event consumes only the required providers' raw hourly observations and the control track's replayed active stop; its input contract names no member of INITIAL_FEATURE_NAMES. The hourly cadence therefore requires no frozen feature owner, and its evidence closure is the stop-event and portfolio-transition closure instead. This is stated rather than left implicit, and it is verified against the classifier's own input fields on every build.",
+  "stop_event_classifier_input_fields": [
+    "active_stop",
+    "active_stop_identity",
+    "candidate_position_state",
+    "control_position_state",
+    "direction",
+    "first_divergence_decision_time",
+    "observation_time",
+    "prior_providers",
+    "providers",
+    "track"
+  ],
+  "stop_event_classifier_owner": "btc_predictor.research.prospective_integration_corpus.classify_stop_event",
+  "warmup_authority_rule": "Authoritative warmup state is obtained by resolving each required owner's history manifest, resolving every referenced source and derived record, running that owner's own frozen evaluability predicate, and combining the results under the frozen decision-evaluability contract. No warmup_history_complete Boolean, no upstream_initialization_complete flag and no governance-authored conclusion may substitute for that replay.",
+  "warmup_boolean_is_authoritative": false,
+  "warmup_states": [
+    "WARMUP_HISTORY_COMPLETE",
+    "WARMUP_HISTORY_INCOMPLETE"
+  ]
+}
