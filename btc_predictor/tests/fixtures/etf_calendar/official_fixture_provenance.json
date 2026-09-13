@@ -1,0 +1,32 @@
+{
+  "acquired_at": "2026-09-13T08:54:45+00:00",
+  "fixtures": {
+    "CBOE_BZX": {
+      "final_url": "https://www.cboe.com/about/hours",
+      "fixture": "cboe_2026_official_html.gz.b64",
+      "request_url": "https://www.cboe.com/about/hours",
+      "response_content_type": "text/html; charset=utf-8",
+      "response_sha256": "7b588cbf5f34d88b0918ff8a11223095df68c1d4f966076317c3ae0676eb2c43",
+      "source_profile_id": "CBOE_BZX_OFFICIAL_SOURCE_PROFILE_V1"
+    },
+    "NASDAQ": {
+      "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+      "fixture": "nasdaq_2026_official_html.gz.b64",
+      "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+      "response_content_type": "text/html; charset=utf-8",
+      "response_sha256": "a6735765262dc8454ff00e681878ad800e0d4c9e609690d8decb35407a28b4e4",
+      "source_profile_id": "NASDAQ_OFFICIAL_SOURCE_PROFILE_V1"
+    },
+    "NYSE_ARCA": {
+      "final_url": "https://www.nyse.com/trade/hours-calendars",
+      "fixture": "nyse_2026_official_html.gz.b64",
+      "request_url": "https://www.nyse.com/trade/hours-calendars",
+      "response_content_type": "text/html; charset=utf-8",
+      "response_sha256": "49ee8a651ec01ef2866e347842c0fb11309541f247d17aeaaf7ad9d6a513b1ed",
+      "source_profile_id": "NYSE_ARCA_OFFICIAL_SOURCE_PROFILE_V1"
+    }
+  },
+  "http_method": "GET",
+  "http_status": 200,
+  "schema_version": "ETF_OFFICIAL_CALENDAR_FIXTURE_PROVENANCE_V1"
+}

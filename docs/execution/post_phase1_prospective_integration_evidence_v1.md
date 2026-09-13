@@ -1835,6 +1835,79 @@ created no review-fix commit. The authority remains non-certified; the failed
 V2 hash is unchanged; POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and prospective
 collection remain blocked; BTC-019 and Epic T remain untouched.
 
+## POSTP1-001V2A-R1 — `CORRECT_AND_REFREEZE_ETF_PUBLICATION_CALENDAR_SOURCE_DERIVATION_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002V2A review failure and its four bounded P1 findings
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact corrected calendar-authority hash
+**Owner modules:** `btc_predictor/research/etf_publication_calendar.py`,
+`btc_predictor/research/etf_calendar_semantics.py`
+**Artifacts:** `prospective_evidence/etf_publication_calendar_authority_v1_r1/`
+
+### Corrected authority decision
+
+The failed authority `a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9`
+remains preserved in its original directory as non-authoritative, non-certified,
+unused pre-data lineage. The corrected authority remains versioned
+`ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` and is refrozen at:
+
+```text
+b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af
+```
+
+It binds **10 material children**, mechanically enumerated from one registry:
+the official source-profile registry, HTTP acquisition schema, source-parser
+registry, source-derived normalized-schedule contract, venue-session row
+contract, PIT/revision contract, common-session contract, ETF adapter contract,
+authority-completion semantic diff and executable-semantic manifest.
+
+Scientific evidence now begins with a validated HTTPS GET acquisition envelope.
+The request/final URL resolves exactly one frozen NYSE Arca, Nasdaq or Cboe BZX
+profile, and venue/source authority derive from that resolution rather than a
+caller field. The envelope binds exact response bytes and SHA-256, HTTP identity,
+response receipt/acquisition time and parser/executable identity. Source-specific
+parsers validate product scope and supported official format, then derive exact
+annual coverage, closures, early closes and the source-supported regular-weekday
+default. Caller-authored coverage and exception maps cannot enter the scientific
+path. Schedule and venue-row validators rerun the acquisition/profile/parser
+chain and require exact equality, so omissions, inventions, relabels and coverage
+extensions refuse even after downstream rehashing.
+
+Scientific `available_at` is structurally fixed to
+`response_received_at == acquired_at`; `published_at` is optional informational
+provenance and cannot own PIT eligibility. Strict append-only store admission
+rejects unknown kinds, schema/digest/timestamp defects and invalid parent links.
+Queries select exact venue/date evidence, filter `available_at <= decision_time`,
+then resolve/replay the latest eligible evidence; a malformed or conflicting
+future row therefore cannot affect an earlier result. Same-time incompatible
+eligible schedules remain unresolved.
+
+Exact compressed official response fixtures and acquisition provenance for all
+three source formats are retained under
+`btc_predictor/tests/fixtures/etf_calendar/`. Parser tests cover normal weekdays,
+full closures, early closes, annual coverage, product scope, cross-venue relabels,
+truncation, malformed dates and unknown labels. The executable semantic manifest
+binds normalized AST identity for profile/acquisition handling, all three parsers,
+normalization and venue replay, PIT selection, common reduction and the ETF
+adapter. Runtime identity mismatch refuses scientific replay; isolated extractor,
+early-close and PIT mutations move the executable child and corrected top hash.
+
+The accepted venue set, intersection/weekend/full-closure/early-close/unresolved
+rules and all ETF flow formula, 5/20-day lookback, normalization, AUM,
+fund-completeness, FlowAccel and flow-revision semantics are unchanged. The
+failed V2 remains exactly `488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d`.
+No prospective observation was collected, no real Stage-B evaluation ran,
+BTC-019 sealed data was untouched, and Epic T was unchanged.
+
+### Authorization boundary
+
+The implementation classification is
+`ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW`. It
+authorizes only repeat independent exact-hash xHigh review. POSTP1-001V2R1,
+POSTP1-003R3, POSTP1-004 and prospective collection remain blocked. Only a PASS
+on the corrected exact hash may unlock POSTP1-001V2R1.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1858,5 +1931,6 @@ collection remain blocked; BTC-019 and Epic T remain untouched.
 | POSTP1-002V2 | independent exact-hash xHigh review of `488251df...0ec0b6d` | COMPLETE / FAIL — V2 INVALID / MISSING EXISTING OWNER AUTHORITY |
 | POSTP1-001V2A | `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2A | independent exact-hash xHigh review of `a1ceb66b...7db0b9` | COMPLETE / FAIL — ETF CALENDAR SOURCE DERIVATION INVALID |
+| POSTP1-001V2A-R1 | source-derived correction/refreeze of `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `b81c1702...b357af` | IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending POSTP1-001V2A exact-hash review PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

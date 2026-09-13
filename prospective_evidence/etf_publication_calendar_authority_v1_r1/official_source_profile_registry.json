@@ -1,0 +1,98 @@
+{
+  "canonical_venue_set": [
+    "NYSE_ARCA",
+    "NASDAQ",
+    "CBOE_BZX"
+  ],
+  "contract_version": "ETF_CALENDAR_OFFICIAL_SOURCE_PROFILE_REGISTRY_V1",
+  "definition_sha256": "07e771ac05fb347a78282a1ff5fc8d29044f14b124d8fbf4230a231ac5f8abe8",
+  "dynamic_source_discovery": false,
+  "dynamic_venue_addition": "REFUSE_REQUIRES_NEW_AUTHORITY_VERSION",
+  "profile_resolution": "request/final HTTPS URL resolves exactly one profile; venue and authority derive from it",
+  "source_profiles": {
+    "CBOE_BZX": {
+      "allowed_https_hostnames": [
+        "www.cboe.com"
+      ],
+      "allowed_paths": [
+        "/about/hours",
+        "/about/hours/",
+        "/en/about/hours/"
+      ],
+      "allowed_query": {},
+      "allowed_redirect_targets": [
+        "https://www.cboe.com/en/about/hours/"
+      ],
+      "coverage_semantics": "the single explicit equities schedule year covers exactly that civil year",
+      "document_types": [
+        "text/html"
+      ],
+      "parser_id": "CBOE_BZX_US_EQUITIES_NEXTJS_HTML",
+      "parser_version": "1",
+      "product_scope": "Cboe BZX U.S. Equities annual calendar",
+      "required_content_markers": [
+        "Cboe BZX and EDGX Equities Trading Hours",
+        "Equities Holiday Schedule"
+      ],
+      "source_authority_id": "CBOE_US_EQUITIES_HOURS_HOLIDAYS",
+      "source_class": "Cboe official U.S. Equities Hours & Holidays / schedule-update notices"
+    },
+    "NASDAQ": {
+      "allowed_https_hostnames": [
+        "www.nasdaqtrader.com"
+      ],
+      "allowed_paths": [
+        "/Trader.aspx"
+      ],
+      "allowed_query": {
+        "id": [
+          "calendar"
+        ]
+      },
+      "allowed_redirect_targets": [],
+      "coverage_semantics": "the single explicit heading year covers exactly that civil year",
+      "document_types": [
+        "text/html"
+      ],
+      "parser_id": "NASDAQ_TRADER_US_EQUITIES_HTML",
+      "parser_version": "1",
+      "product_scope": "Nasdaq U.S. Equity and Options Markets annual calendar",
+      "required_content_markers": [
+        "U.S. Equity and Options Markets Holiday Schedule",
+        "NasdaqTrader.com"
+      ],
+      "source_authority_id": "NASDAQ_TRADER_US_EQUITIES_CALENDAR",
+      "source_class": "Nasdaq Trader official U.S. Equity and Options Markets Trading Calendar"
+    },
+    "NYSE_ARCA": {
+      "allowed_https_hostnames": [
+        "www.nyse.com"
+      ],
+      "allowed_paths": [
+        "/trade/hours-calendars",
+        "/markets/hours-calendars"
+      ],
+      "allowed_query": {},
+      "allowed_redirect_targets": [
+        "https://www.nyse.com/trade/hours-calendars"
+      ],
+      "coverage_semantics": "each explicit year column covers exactly that civil year",
+      "document_types": [
+        "text/html"
+      ],
+      "parser_id": "NYSE_HOLIDAYS_TRADING_HOURS_HTML",
+      "parser_version": "1",
+      "product_scope": "NYSE Arca Equities annual trading calendar",
+      "required_content_markers": [
+        "Holidays & Trading Hours",
+        "NYSE Arca Equities"
+      ],
+      "source_authority_id": "NYSE_ARCA_OFFICIAL_TRADING_CALENDAR",
+      "source_class": "NYSE / NYSE Arca official Holidays & Trading Hours / annual trading calendar"
+    }
+  },
+  "third_party_calendars": "DIAGNOSTICS_ONLY_NOT_SCIENTIFIC_AUTHORITY",
+  "timezone": "America/New_York",
+  "trade_date_encoding": "YYYY-MM-DD",
+  "venue_supplied_by_caller": false
+}

@@ -1,0 +1,20 @@
+{
+  "aum_semantics_changed": false,
+  "caller_calendar_is_scientific_authority": false,
+  "closed_date": "NOT_AN_EXPECTED_ETF_INPUT",
+  "contract_version": "ETF_CALENDAR_FEATURE_ADAPTER_V1",
+  "definition_sha256": "640d3cb22a321d3e8d09affe9890a92251a36ee121b0c7303a61c7cc5e9df3b7",
+  "etf_flow_revision_semantics_changed": false,
+  "expected_date_missing_flow": "ETF_FLOW_INPUT_MISSING",
+  "flow_accel_formula": "ETFNorm_5 - ETFNorm_20 / 4",
+  "formula_changed": false,
+  "fund_completeness_changed": false,
+  "low_level_compatibility_parameter_retained": true,
+  "market_holidays": "weekday dates whose common-session status is CLOSED",
+  "normalization_changed": false,
+  "unresolved_action": "DO_NOT_INVOKE_FEATURE_NOT_EVALUABLE",
+  "window_days": {
+    "ETF_FLOW_20D": 20,
+    "ETF_FLOW_5D": 5
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "contract_version": "ETF_CALENDAR_EXECUTABLE_SEMANTIC_MANIFEST_V1",
+  "definition_sha256": "e222b18449805ac09131ca44638b7bd22a384d1fbf7d7ea784e9a8852b24bacf",
+  "identity_method": "SHA-256 of normalized Python AST; locations excluded",
+  "normalized_ast_sha256": "237fb8e2eb00b990f92bf64d13ba45311b88227328ede88cb6dc7dc8633cb1d5",
+  "owners": [
+    "source profile resolver",
+    "NYSE parser",
+    "Nasdaq parser",
+    "Cboe parser",
+    "normalized schedule validator",
+    "venue-row derivation",
+    "PIT revision selector",
+    "common-session reducer",
+    "ETF adapter"
+  ],
+  "runtime_mismatch": "REFUSE_SCIENTIFIC_REPLAY",
+  "semantic_module": "btc_predictor.research.etf_calendar_semantics"
+}

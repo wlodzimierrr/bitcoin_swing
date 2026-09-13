@@ -1,0 +1,18 @@
+{
+  "calendar_authority_row_forced_to_zero": false,
+  "classification": "one previously unowned ETF calendar input is now explicitly governed prospectively before collection",
+  "contract_version": "ETF_CALENDAR_AUTHORITY_COMPLETION_DIFF_V1",
+  "definition_sha256": "b413d3cd46038672a5ae61a5e97910f3d43c4d0cc206f9eb863620d877af87cc",
+  "early_close_treatment_changed": 0,
+  "etf_feature_formula_changed": 0,
+  "etf_flow_revision_selection_changed_here": false,
+  "etf_lookbacks_changed": 0,
+  "etf_source_quality_defined_here": false,
+  "intersection_semantics_changed": 0,
+  "provider_source_semantics_changed": 0,
+  "risk_stops_thresholds_changed": 0,
+  "stage_b_metrics_changed": 0,
+  "v1": "UNOWNED INPUT",
+  "v2": "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1",
+  "venue_scope_changed": 0
+}

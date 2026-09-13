@@ -1,0 +1,26 @@
+{
+  "authority": "validated HTTPS acquisition envelope + exact response bytes + frozen profile/parser",
+  "clock_integrity": "future POSTP1-004 collector must bind response receipt to existing PROSPECTIVE_CLOCK_INTEGRITY_V1; this standalone pre-data authority enforces that availability cannot precede local receipt/acquisition",
+  "contract_version": "ETF_OFFICIAL_CALENDAR_HTTP_ACQUISITION_V1",
+  "definition_sha256": "3a905bd2cf08b529e4ad8fa8b90fa996e6ab748837dbe11e0a9cf88a31ecb416",
+  "external_source_change_mutates_persisted_evidence": false,
+  "https_only": true,
+  "manual_date_without_source_evidence_authoritative": false,
+  "method": "GET",
+  "minimum_bindings": [
+    "request/final URL",
+    "redirect chain",
+    "HTTP method/status/content type",
+    "exact response bytes and SHA-256",
+    "source profile/venue/authority",
+    "response_received_at/acquired_at",
+    "executable semantic identity"
+  ],
+  "naked_bytes_constructor_authoritative": false,
+  "published_at": "informational only; null unless reliable; when present <= acquired_at",
+  "scientific_available_at": "response_received_at == acquired_at == available_at",
+  "successful_statuses": [
+    200
+  ],
+  "url_alone_sufficient": false
+}

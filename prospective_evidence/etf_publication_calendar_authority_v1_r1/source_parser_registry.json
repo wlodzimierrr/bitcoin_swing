@@ -1,0 +1,48 @@
+{
+  "contract_version": "ETF_CALENDAR_SOURCE_FORMAT_PARSER_REGISTRY_V1",
+  "definition_sha256": "e00ac6259a44aef565d990d3195da09f0b89104b2fc5b7caab04d4a74aead4a2",
+  "parsers": {
+    "CBOE_BZX": {
+      "closure_extraction": "explicit Closed/holiday table rows",
+      "coverage_derivation": "the single explicit equities schedule year covers exactly that civil year",
+      "early_close_extraction": "explicit early-close rows/notices only",
+      "parser_id": "CBOE_BZX_US_EQUITIES_NEXTJS_HTML",
+      "parser_version": "1",
+      "product_scope": "Cboe BZX U.S. Equities annual calendar",
+      "recognition": [
+        "Cboe BZX and EDGX Equities Trading Hours",
+        "Equities Holiday Schedule"
+      ],
+      "regular_default": "remaining weekdays only inside explicit annual coverage",
+      "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE"
+    },
+    "NASDAQ": {
+      "closure_extraction": "explicit Closed/holiday table rows",
+      "coverage_derivation": "the single explicit heading year covers exactly that civil year",
+      "early_close_extraction": "explicit early-close rows/notices only",
+      "parser_id": "NASDAQ_TRADER_US_EQUITIES_HTML",
+      "parser_version": "1",
+      "product_scope": "Nasdaq U.S. Equity and Options Markets annual calendar",
+      "recognition": [
+        "U.S. Equity and Options Markets Holiday Schedule",
+        "NasdaqTrader.com"
+      ],
+      "regular_default": "remaining weekdays only inside explicit annual coverage",
+      "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE"
+    },
+    "NYSE_ARCA": {
+      "closure_extraction": "explicit Closed/holiday table rows",
+      "coverage_derivation": "each explicit year column covers exactly that civil year",
+      "early_close_extraction": "explicit early-close rows/notices only",
+      "parser_id": "NYSE_HOLIDAYS_TRADING_HOURS_HTML",
+      "parser_version": "1",
+      "product_scope": "NYSE Arca Equities annual trading calendar",
+      "recognition": [
+        "Holidays & Trading Hours",
+        "NYSE Arca Equities"
+      ],
+      "regular_default": "remaining weekdays only inside explicit annual coverage",
+      "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE"
+    }
+  }
+}
