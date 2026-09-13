@@ -37,15 +37,14 @@ certified predecessor corpus protocol hash =
 material child contracts bound by the certified predecessor = 25
 
 PROSPECTIVE_INTEGRATION_CORPUS_V2 =
-FROZEN_PRE_DATA_REPLAY_COMPLETE_PARENT_V2_AWAITING_XHIGH_REVIEW
+FROZEN_PRE_DATA_CANDIDATE_V2_FAILED_XHIGH_REVIEW
 
 current prospective corpus protocol hash =
 488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d
 
 material child contracts bound by the V2 parent = 21
 
-V2 certification = NOT CERTIFIED; only an independent exact-hash xHigh review
-may certify it
+V2 certification = NOT CERTIFIED; exact-hash xHigh review failed
 
 failed predecessor hashes retained in the artifact lineage
 (none of these is the certified predecessor above) =
@@ -67,7 +66,7 @@ sixth review result =
 PASS
 
 execution classification =
-PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW
+PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY
 
 review-fix commit =
 ab3b353e344465966da321af02b08f6fe28213f5
@@ -76,7 +75,10 @@ POSTP1-001V2 implementation commit =
 40993038ac81cca9f2a4c2f03b971b3bc99f82c3
 
 POSTP1-001V2 review result =
-NOT YET REVIEWED / INDEPENDENT EXACT-HASH xHIGH REVIEW REQUIRED
+FAIL — PROSPECTIVE INTEGRATION CORPUS V2 INVALID
+
+POSTP1-002V2 documentation commit =
+RECORDED IN THE POSTP1-002V2 REVIEW HANDOFF
 
 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
@@ -104,8 +106,8 @@ IMMUTABLE PARENT DOES NOT PERSIST A COMPLETE CONTENT-ADDRESSED OWNER-HISTORY
 MANIFEST OR A FULLY CROSS-BOUND PORTFOLIO STATE/TRANSITION GRAPH
 
 POSTP1-003R3 blocker addressed by =
-PROSPECTIVE_INTEGRATION_CORPUS_V2 (POSTP1-001V2), pending its own independent
-exact-hash xHigh review; POSTP1-003R3 stays blocked until that review passes
+PROSPECTIVE_INTEGRATION_CORPUS_V2 (POSTP1-001V2), whose independent exact-hash
+xHigh review failed; POSTP1-003R3 stays blocked until a corrected parent passes
 and must then bind the V2 parent, perform true owner-level replay, bind
 executable semantics and enforce canonical candidate/control identity, using
 the accepted 381 / 93 / 0.99 rules unchanged
@@ -257,7 +259,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the owner is re-run rather than read back. The matrices report 8/8 Stage-B
   metrics and 33/33 features replayable and refuse the build below full
   coverage, and `semantic_diff_v1_to_v2` recomputes all nine change families to
-  zero. Its independent exact-hash xHigh review has not yet run, so V2 is not
+  zero. POSTP1-002V2 independently reproduced its hash and all 21 child
+  bindings but failed the candidate: ETF publication-calendar behavior has no
+  existing authority; revision selection differs from V1 latest-available
+  semantics; source quality and decision outputs can remain asserted surfaces;
+  no executable owner derives all eight metric universe/comparability/
+  denominator facts; risk evidence is not cross-bound to its claimed inputs;
+  and feature-owner drift can leave semantic-diff counters at zero. V2 is not
   certified and collection stays unauthorized.
   Historically,
   BTC-019 stopped because ten Stage-A
@@ -272,20 +280,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. POSTP1-001V2 is implemented and frozen
-  at `488251df...0ec0b6d`, awaiting its independent exact-hash xHigh review
-- **Current BLOCKED tickets:** POSTP1-003R3 stays blocked until the POSTP1-001V2
-  review passes, and must then be reissued against the V2 parent. POSTP1-004 and
-  collection remain transitively blocked
-- **Next dependency-satisfied ticket:** the independent exact-hash xHigh review
-  of `PROSPECTIVE_INTEGRATION_CORPUS_V2` `488251df...0ec0b6d`. Nothing else is
-  unblocked: POSTP1-004 and collection remain unauthorized and BTC-019 does not
-  reopen
+  at `488251df...0ec0b6d`, but POSTP1-002V2 failed its independent exact-hash
+  xHigh review
+- **Current BLOCKED tickets:** POSTP1-003R3 stays blocked until a corrected V2
+  parent passes exact-hash review, and must then be reissued against that
+  parent. POSTP1-004 and collection remain transitively blocked
+- **Next dependency-satisfied ticket:** a bounded correction/refreeze of the V2
+  candidate after an existing ETF publication-calendar authority is identified
+  or explicitly authorized; no corrected ticket is yet issued. POSTP1-003R3,
+  POSTP1-004 and collection remain blocked and BTC-019 does not reopen
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 4,911 passed, 2 skipped with Python 3.12.14
   and `RuntimeWarning` treated as an error on 2026-09-13. The POSTP1-001V2
   focused synthetic suite is 146 passed, 2 skipped; the pre-existing
   POSTP1-003R2 focused synthetic suite remains 95 passed
-- **Last relevant implementation/review commit:** POSTP1-001V2 froze
+- **Last relevant implementation/review commit:** POSTP1-002V2 failed review of
+  the POSTP1-001V2 candidate; this handoff records that result. POSTP1-001V2 froze
   `PROSPECTIVE_INTEGRATION_CORPUS_V2` at `488251df...0ec0b6d` with 21
   parent-bound children under
   `prospective_evidence/prospective_integration_corpus_v2/`; V1
@@ -358,7 +368,7 @@ PROSPECTIVE_INTEGRATION_CORPUS_V1
 certified predecessor prospective corpus protocol hash
   = 8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
 PROSPECTIVE_INTEGRATION_CORPUS_V2
-  = FROZEN_PRE_DATA_REPLAY_COMPLETE_PARENT_V2_AWAITING_XHIGH_REVIEW
+  = FROZEN_PRE_DATA_CANDIDATE_V2_FAILED_XHIGH_REVIEW
 current prospective corpus protocol hash
   = 488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d
 failed predecessor prospective protocol hashes
@@ -372,9 +382,9 @@ POSTP1-002R4 review result
 POSTP1-002R5 sixth review
   = PASS
 POSTP1-001V2 review
-  = NOT YET REVIEWED
+  = FAIL — PROSPECTIVE INTEGRATION CORPUS V2 INVALID
 prospective execution classification
-  = PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW
+  = PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY
 prospective collection = NOT AUTHORIZED
 ```
 

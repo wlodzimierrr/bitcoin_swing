@@ -1458,7 +1458,7 @@ ticket does not propose POSTP1-003R4.
 
 ## POSTP1-001V2 — `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE`
 
-**Status:** `IMPLEMENTATION COMPLETE / READY FOR INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW`
 **Dependencies:** POSTP1-002R5 PASS on certified corpus hash
 `8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`, and the
 POSTP1-003R3 parent-completeness audit result
@@ -1648,6 +1648,59 @@ identity, using the accepted 381 / 93 / 0.99 rules unchanged. POSTP1-004 and
 collection remain unauthorized, BTC-019 does not reopen and Epic T remains
 closed.
 
+## POSTP1-002V2 — `INDEPENDENT_XHIGH_REVIEW_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `40993038ac81cca9f2a4c2f03b971b3bc99f82c3`
+**Reviewed candidate:** `488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — PROSPECTIVE INTEGRATION CORPUS V2 INVALID`
+**Execution classification:** `PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY`
+
+### Exact-hash and lineage result
+
+Independent regeneration reproduced the V2 hash above, all 21 mechanically
+enumerated child definitions and their parent bindings. Mutating each child
+moved both its child hash and the V2 top hash in 21/21 cases. Certified V1
+reproduced unchanged at
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`
+with all 25 children and artifact restoration unchanged. V3, the certified V1
+validator, V4 and V5 also retain their frozen hashes. No prospective evidence
+was collected, no real Stage-B evaluation ran, BTC-019 sealed data was not
+opened and Epic T was not modified.
+
+### Blocking findings
+
+1. `market_holidays` has no existing certified owner even though it changes the
+   ETF publication window, expected observations, missingness and feature
+   values. Persisting the rows selected under the empty-set default does not
+   make that new scientific calendar choice inherited authority. The required
+   fail-closed classification is therefore
+   `PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY`.
+2. The owner-history selector does not inherit V1's latest-available revision
+   rule. It selects the greatest integer revision, so two PIT-valid revisions
+   whose revision-number and `available_at` order differ select a different
+   record from the certified source owners.
+3. Source quality is not transitively replayed. An asserted qualifying status
+   with no underlying V1 acquisition/completeness evidence is accepted as
+   evaluable; source-acquisition references in a slot are only resolved for
+   existence.
+4. The advertised 8/8 metric closure is declarative. No executable metric
+   replay owner derives universe, comparability and denominator membership.
+   Arbitrary regime/setup/action/eligibility outputs pass slot replay, stop
+   classification is caller supplied rather than rerun, and a paired sizing
+   opportunity can pass with no bound reference, portfolio or scientific input
+   records.
+5. The semantic-diff validator does not fail on all material owner drift. A
+   synthetic mutation of the authoritative ETF five-day lookback to six is
+   accepted while `feature_formula_changes` remains zero.
+
+These are scientific-authority and replay-architecture defects, not uniquely
+mechanical review fixes. The review therefore made no implementation change and
+created no review-fix commit. V2 is not certified, V1 remains the immutable
+certified pre-collection authority, POSTP1-003R3 remains blocked, and
+POSTP1-004 and collection remain unauthorized.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1667,5 +1720,6 @@ closed.
 | POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-003R2 | bounded authority/epoch correction `0c0c0f96...5863c64e` | COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-003R3 | certified-parent replay and executable-semantic binding audit | BLOCKED / AWAITING THE POSTP1-001V2 REVIEW PASS BEFORE IT MAY BE REISSUED AGAINST THE V2 PARENT |
-| POSTP1-001V2 | `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE` | IMPLEMENTATION COMPLETE / READY FOR INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2 | `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2 | independent exact-hash xHigh review of `488251df...0ec0b6d` | COMPLETE / FAIL — V2 INVALID / MISSING EXISTING OWNER AUTHORITY |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
