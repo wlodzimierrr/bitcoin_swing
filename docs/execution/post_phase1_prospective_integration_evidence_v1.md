@@ -1844,6 +1844,7 @@ collection remain blocked; BTC-019 and Epic T remain untouched.
 **Owner modules:** `btc_predictor/research/etf_publication_calendar.py`,
 `btc_predictor/research/etf_calendar_semantics.py`
 **Artifacts:** `prospective_evidence/etf_publication_calendar_authority_v1_r1/`
+**Implementation commit:** `ab2bce5241e7372de3bbb70c938d08357054b615`
 
 ### Corrected authority decision
 
@@ -1907,6 +1908,14 @@ The implementation classification is
 authorizes only repeat independent exact-hash xHigh review. POSTP1-001V2R1,
 POSTP1-003R3, POSTP1-004 and prospective collection remain blocked. Only a PASS
 on the corrected exact hash may unlock POSTP1-001V2R1.
+
+Validation used Python 3.12.14. The corrected exact-source/hostile suite passed
+62 tests; the focused ETF/calendar/V1/V2 regression set passed 488 tests with 2
+skips; and the full suite passed 4,973 tests with 2 skips under
+`-W error::RuntimeWarning`. `python -m compileall btc_predictor` and scoped
+`git diff --check` passed. The repository-wide diff check reports only the
+pre-existing unrelated trailing blank line in `prompts/review_epic.md`, which
+this ticket did not modify.
 
 ## Next EPIC X tasks
 
