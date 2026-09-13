@@ -28,14 +28,27 @@ canonical production reference = UNRESOLVED
 no further BTC-019 calibration/evidence-design work authorized
 
 PROSPECTIVE_INTEGRATION_CORPUS_V1 =
-PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
+IMMUTABLE_CERTIFIED_LINEAGE_COLLECTION_AUTHORITY_UNCHANGED_UNTIL_V2_REVIEW_PASS
+(V2 is only the intended pre-data successor until its review passes)
 
-corrected current protocol hash =
+certified predecessor corpus protocol hash =
 8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
 
-material child contracts bound by the parent = 25
+material child contracts bound by the certified predecessor = 25
 
-failed predecessor hashes retained in the artifact lineage =
+PROSPECTIVE_INTEGRATION_CORPUS_V2 =
+FROZEN_PRE_DATA_REPLAY_COMPLETE_PARENT_V2_AWAITING_XHIGH_REVIEW
+
+current prospective corpus protocol hash =
+488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d
+
+material child contracts bound by the V2 parent = 21
+
+V2 certification = NOT CERTIFIED; only an independent exact-hash xHigh review
+may certify it
+
+failed predecessor hashes retained in the artifact lineage
+(none of these is the certified predecessor above) =
 aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
 40e37067fdddee467ea6c8f0094a2498573e3ff379d35f0fdd5586af423c9862
@@ -54,10 +67,16 @@ sixth review result =
 PASS
 
 execution classification =
-PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
+PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW
 
 review-fix commit =
 ab3b353e344465966da321af02b08f6fe28213f5
+
+POSTP1-001V2 implementation commit =
+40993038ac81cca9f2a4c2f03b971b3bc99f82c3
+
+POSTP1-001V2 review result =
+NOT YET REVIEWED / INDEPENDENT EXACT-HASH xHIGH REVIEW REQUIRED
 
 PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
@@ -83,6 +102,13 @@ SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE
 POSTP1-003R3 blocker =
 IMMUTABLE PARENT DOES NOT PERSIST A COMPLETE CONTENT-ADDRESSED OWNER-HISTORY
 MANIFEST OR A FULLY CROSS-BOUND PORTFOLIO STATE/TRANSITION GRAPH
+
+POSTP1-003R3 blocker addressed by =
+PROSPECTIVE_INTEGRATION_CORPUS_V2 (POSTP1-001V2), pending its own independent
+exact-hash xHigh review; POSTP1-003R3 stays blocked until that review passes
+and must then bind the V2 parent, perform true owner-level replay, bind
+executable semantics and enforce canonical candidate/control identity, using
+the accepted 381 / 93 / 0.99 rules unchanged
 
 POSTP1-003R1 implementation commit =
 8540e80e58511818eaa2ce4d976470a405234a53
@@ -121,16 +147,33 @@ COINGECKO_MARKET_CAP_REQUEST_ATTEMPT_V1
 KRAKEN_FUTURES_INSTRUMENT_METADATA_VALIDATION_V1
 SCIENTIFIC_EVIDENCE_RESOLVER_V1
 
-collection = NOT AUTHORIZED; a new certified-corpus authority decision,
-valid pre-data sufficiency governance and its exact-hash review, plus the
-POSTP1-004 implementation review must pass first
+newly frozen prospective replay-closure contracts (V2) =
+PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2
+PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2
+PROSPECTIVE_OWNER_EVALUABILITY_CENSUS_V2
+PROSPECTIVE_DECISION_EVALUABILITY_CONTRACT_V2
+PROSPECTIVE_DECISION_OBSERVATION_V2
+PROSPECTIVE_PORTFOLIO_TRANSITION_V2
+PROSPECTIVE_PORTFOLIO_STATE_V2
+PROSPECTIVE_PORTFOLIO_TRANSITION_REPLAY_V2
+PROSPECTIVE_ROOT_LIFECYCLE_DERIVATION_V2
+PROSPECTIVE_ACTIVE_STOP_MEMBERSHIP_V2
+PROSPECTIVE_RISK_OPPORTUNITY_EVIDENCE_V2
+PROSPECTIVE_METRIC_REPLAY_CLOSURE_MATRIX_V2
+PROSPECTIVE_FEATURE_REPLAY_CLOSURE_MATRIX_V2
+PROSPECTIVE_PARENT_REPLAY_CONTRACT_REGISTRY_V2
+PROSPECTIVE_INTEGRATION_CORPUS_V1_TO_V2_SEMANTIC_DIFF
+
+collection = NOT AUTHORIZED; the POSTP1-001V2 exact-hash xHigh review,
+sufficiency governance reissued against the V2 parent and its own exact-hash
+review, plus the POSTP1-004 implementation review must all pass first
 qualifying observations collected = NONE
 real Stage-B outcomes evaluated = NONE
 BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-12
+- **Last updated:** 2026-09-13
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -186,6 +229,36 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   genuine replay. The mandated result is
   `SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE`; no R3 governance
   hash was issued.
+  POSTP1-001V2 answers that mandated certified-corpus authority change. It
+  leaves V1 byte-identical — the hash and all 25 child hashes are unchanged and
+  its artifacts still restore — and freezes the pre-data successor
+  `PROSPECTIVE_INTEGRATION_CORPUS_V2` at `488251df...0ec0b6d` with 21
+  mechanically enumerated parent-bound children in a distinct artifact
+  directory. `PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2` persists, per owner per
+  slot, the exact ordered qualifying and adverse observation SHAs, the owner
+  contract hash, the window semantics and the PIT selection rule, and a second
+  independent derivation recomputes that expected set from the evidence store
+  without reading the manifest, so an omission, a substitution, a wrong
+  date/cadence/source or a future-available revision refuses.
+  `warmup_history_complete` leaves the decision record entirely and survives
+  only as a non-authoritative cached projection that must equal the replayed
+  owner-specific result. All 33 features sit in exactly one of twelve owner
+  classes, each keeping its own owner-derived parameters rather than a generic
+  count rule. The portfolio graph is content-addressed and acyclic: a
+  transition binds its exact prior state record and action evidence and never
+  names its result, while a resulting state binds both its predecessor record
+  and its producing transition, down to one explicit `GENESIS` per track. The
+  replay owner restores the prior lifecycle through the authoritative public
+  API, re-applies each bound event and account operation through the existing
+  owners and requires exact equality, so the root opening transition, the
+  active-stop lineage and exit/re-entry separation are traversal results rather
+  than governance surrogates. A V2 risk record carries every input
+  `INITIAL_POSITION_SIZE_V1` consumes, NAV and the risk fraction included, so
+  the owner is re-run rather than read back. The matrices report 8/8 Stage-B
+  metrics and 33/33 features replayable and refuse the build below full
+  coverage, and `semantic_diff_v1_to_v2` recomputes all nine change families to
+  zero. Its independent exact-hash xHigh review has not yet run, so V2 is not
+  certified and collection stays unauthorized.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -198,19 +271,25 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-003R3 reached its mandatory hard
-  stopping rule before implementation
-- **Current BLOCKED tickets:** POSTP1-003R3 requires a certified-corpus authority
-  change. POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** None. A new certified-corpus authority
-  decision is required before sufficiency governance can be reissued.
-  POSTP1-004 and collection remain unauthorized, and BTC-019 does not reopen
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2 is implemented and frozen
+  at `488251df...0ec0b6d`, awaiting its independent exact-hash xHigh review
+- **Current BLOCKED tickets:** POSTP1-003R3 stays blocked until the POSTP1-001V2
+  review passes, and must then be reissued against the V2 parent. POSTP1-004 and
+  collection remain transitively blocked
+- **Next dependency-satisfied ticket:** the independent exact-hash xHigh review
+  of `PROSPECTIVE_INTEGRATION_CORPUS_V2` `488251df...0ec0b6d`. Nothing else is
+  unblocked: POSTP1-004 and collection remain unauthorized and BTC-019 does not
+  reopen
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 4,765 passed with Python 3.12.14 and
-  `RuntimeWarning` treated as an error on 2026-09-12. The POSTP1-003R2 focused
-  synthetic suite is 95 passed, and the selected prospective-corpus/Wilson/PIT/
-  warmup/reference/risk/stop/lifecycle suite is 1,661 passed
-- **Last relevant implementation/review commit:** POSTP1-003R2 implementation
+- **Latest verified test baseline:** 4,911 passed, 2 skipped with Python 3.12.14
+  and `RuntimeWarning` treated as an error on 2026-09-13. The POSTP1-001V2
+  focused synthetic suite is 146 passed, 2 skipped; the pre-existing
+  POSTP1-003R2 focused synthetic suite remains 95 passed
+- **Last relevant implementation/review commit:** POSTP1-001V2 froze
+  `PROSPECTIVE_INTEGRATION_CORPUS_V2` at `488251df...0ec0b6d` with 21
+  parent-bound children under
+  `prospective_evidence/prospective_integration_corpus_v2/`; V1
+  `8915d991...fbfac7d7` and its 25 children are unchanged. POSTP1-003R2 implementation
   `d476a16e4d87656bac39b1a925004901a19b9374` froze failed governance hash
   `0c0c0f96...5863c64e`; its final independent review failed. POSTP1-003R3
   stopped because genuine replay requires a certified-parent change. POSTP1-003R1
@@ -275,9 +354,13 @@ V3 sealed execution state = NOT_PREPARED
 candidate final V3 result = NOT EVALUATED
 sealed sample = NOT COLLECTED, NOT OPENED
 PROSPECTIVE_INTEGRATION_CORPUS_V1
-  = PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
-corrected current prospective corpus protocol hash
+  = IMMUTABLE_CERTIFIED_LINEAGE_COLLECTION_AUTHORITY_UNCHANGED_UNTIL_V2_REVIEW_PASS
+certified predecessor prospective corpus protocol hash
   = 8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7
+PROSPECTIVE_INTEGRATION_CORPUS_V2
+  = FROZEN_PRE_DATA_REPLAY_COMPLETE_PARENT_V2_AWAITING_XHIGH_REVIEW
+current prospective corpus protocol hash
+  = 488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d
 failed predecessor prospective protocol hashes
   = aaa05c7288971ecb60e331c750fa728db13a3f2046cd597ffe4957a2f3d37326
   = 0d4f14370c2d17359fa3e5d36ce545f00e00da1a360a66ad3151a37d0cf45a9e
@@ -288,8 +371,10 @@ POSTP1-002R4 review result
   = FAIL — CORRECTED PROSPECTIVE PROTOCOL INVALID
 POSTP1-002R5 sixth review
   = PASS
+POSTP1-001V2 review
+  = NOT YET REVIEWED
 prospective execution classification
-  = PROSPECTIVE_PROTOCOL_CERTIFIED_FOR_SUFFICIENCY_GOVERNANCE
+  = PROSPECTIVE_INTEGRATION_CORPUS_V2_READY_FOR_XHIGH_REVIEW
 prospective collection = NOT AUTHORIZED
 ```
 
@@ -932,8 +1017,17 @@ evaluation epoch. POSTP1-003R2 closes those bounded findings at
 `0c0c0f96...5863c64e`: stop units use the root control-position lifecycle,
 blind facts come only from transitive certified-parent replay, evaluation
 contracts have an exact scientific identity schema, and cutoff/result state is
-fully derived and terminally revalidated. Its final independent exact-hash
-xHigh review is still required.
+fully derived and terminally revalidated. That final review failed, because
+governance-authored input/warmup/metric records remained scientific authorities
+and material executable replay behaviour was not hash-bound. POSTP1-003R3's
+mandatory parent-completeness audit then found the immutable parent itself
+lacks a complete content-addressed owner-history manifest and a cross-bound
+portfolio state/transition graph, and returned
+`SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE` without issuing a
+governance hash. POSTP1-001V2 supplies that certified-corpus change by freezing
+`PROSPECTIVE_INTEGRATION_CORPUS_V2` at `488251df...0ec0b6d` beside an unmoved
+V1; its own independent exact-hash xHigh review has not yet run, so
+POSTP1-003R3 remains blocked.
 Collection is not authorized; no
 qualifying observation was collected, no real Stage-B outcome was evaluated,
 EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
@@ -959,8 +1053,20 @@ unopened with no automatic dependency that would ever open it.
   an unverified cutoff and terminal result, and evaluation-contract structure is
   not validated. POSTP1-003R2 corrects those exact findings at
   `0c0c0f96...5863c64e` while retaining the defended science and both failed
-  hashes as non-authoritative. Its final independent exact-hash review must pass
-  before POSTP1-004. No prospective collection is authorized.
+  hashes as non-authoritative. That final review failed, and POSTP1-003R3's
+  mandatory parent-completeness audit then found the immutable certified parent
+  itself insufficient for genuine transitive replay, returning
+  `SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE`. POSTP1-001V2
+  supplies that change: `PROSPECTIVE_INTEGRATION_CORPUS_V2`, frozen at
+  `488251df...0ec0b6d` with 21 parent-bound children, adds owner-history and
+  slot evidence manifests, a content-addressed acyclic portfolio
+  state/transition graph, replayable root-lifecycle and active-stop membership,
+  a re-runnable paired sizing opportunity and 8/8 plus 33/33 replay-closure
+  matrices, while `semantic_diff_v1_to_v2` recomputes every change family to
+  zero and V1 stays byte-identical. What is outstanding is now the independent
+  exact-hash xHigh review of the V2 hash; only after it passes may POSTP1-003R3
+  be reissued against the V2 parent, and only after that review may POSTP1-004
+  begin. No prospective collection is authorized.
 - Production canonical BTC reference selection remains unresolved under
   BTC-019, but the research branch that was blocking it has now converged. The
   calendar-contiguity contract, the re-measurement of the already-inspected

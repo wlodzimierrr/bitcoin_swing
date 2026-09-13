@@ -1456,6 +1456,198 @@ were untouched, Epic T was not modified, and POSTP1-004 and collection remain
 unauthorized. A new certified-corpus authority decision is required; this
 ticket does not propose POSTP1-003R4.
 
+## POSTP1-001V2 — `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE`
+
+**Status:** `IMPLEMENTATION COMPLETE / READY FOR INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependencies:** POSTP1-002R5 PASS on certified corpus hash
+`8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7`, and the
+POSTP1-003R3 parent-completeness audit result
+`SUFFICIENCY_GOVERNANCE_REQUIRES_CERTIFIED_CORPUS_CHANGE`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact successor corpus hash
+**Owner modules:** `btc_predictor/research/prospective_integration_corpus_v2.py`,
+reusing `btc_predictor/research/prospective_integration_corpus.py` and
+`btc_predictor/research/prospective_source_integrity.py` unchanged
+**Artifacts:** `prospective_evidence/prospective_integration_corpus_v2/`
+
+### Authority decision
+
+`PROSPECTIVE_INTEGRATION_CORPUS_V1` remains immutable historical **certified**
+lineage. It is not modified in place, its hash does not move, its 25 child
+hashes do not move, and it is not called invalid for anything its six reviews
+accepted. It is a new category — certified, authoritative when frozen, and
+superseded before collection — not a failed predecessor, and the five genuinely
+failed pre-data hashes above keep their own separate lineage.
+
+V1's single limitation is narrow and named:
+
+```text
+REPLAY PROVENANCE INCOMPLETE FOR THE NEW SUFFICIENCY-AUTHORITY REQUIREMENT
+```
+
+`PROSPECTIVE_INTEGRATION_CORPUS_V2` is the pre-data successor intended to become
+collection authority **after** independent certification. Until that review
+passes, V1 is not marked a replaced collection authority; after it passes,
+documentation may classify V1 as
+`SUPERSEDED_PRE_COLLECTION_BY_REPLAY_COMPLETE_V2` while retaining every
+historical certification fact.
+
+The version increments despite the frozen `CHANGE_PROCEDURE` binding a successor
+to a post-collection semantic change, because POSTP1-003R3 established that
+genuine transitive replay needs a new certified-parent **authority**, not a
+pre-data correction of the same one. Zero qualifying prospective observations
+exist under V1, so no collection epoch is disturbed and no observation is
+migrated or fabricated.
+
+### Scope and acceptance criteria
+
+V2 changes only the certified-parent evidence and provenance architecture
+required for deterministic transitive replay. The following are unchanged and
+re-verified against their own owners on every build: provider and source
+identities, CoinGecko and Kraken acquisition semantics, clock integrity, stream
+completeness, the CVD and liquidation definitions, the 33 `INITIAL_FEATURE_NAMES`
+scientific definitions, decision cadences, the PIT rule, warmup scientific
+predicates, regime/setup definitions, the stop-event taxonomy, portfolio
+economic semantics, trade-action, trade-eligibility and risk-sizing semantics,
+and every Stage-B metric definition, threshold, direction, hard role and intent.
+`semantic_diff_v1_to_v2` recomputes all nine change families from the certified
+parent's own gate authority, metric contracts, warmup rows and feature coverage
+and refuses the build on any non-zero count. BTC-019 stays terminal, its sealed
+sample stays uncollected and unopened, Epic T is not modified, and the frozen
+V3, certified V1 validator, V4 and V5 hashes are bound and unchanged.
+
+The acceptance criteria are replay closure, not description:
+
+1. every owner-specific warmup result is regenerated from exact persisted
+   history rather than a Boolean;
+2. an omitted qualifying or adverse observation cannot hide inside a
+   self-hashed manifest;
+3. every resulting portfolio state proves its exact predecessor record and the
+   transition that produced it;
+4. the root opening transition and active-stop membership are traversal
+   results, not governance surrogates;
+5. all eight Stage-B universe, comparability and denominator facts are
+   replayable from V2 parent evidence; and
+6. no trading, source, metric, threshold, risk or stop-event science moves.
+
+### POSTP1-001V2 implementation notes
+
+Implementation commit `40993038ac81cca9f2a4c2f03b971b3bc99f82c3` freezes
+`PROSPECTIVE_INTEGRATION_CORPUS_V2` at:
+
+```text
+488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d
+```
+
+- **21 material children**, mechanically enumerated from one artifact/builder
+  registry. `inherited_v1_child_bindings` binds all 25 certified V1 children by
+  hash: 14 reused unchanged, 9 extended by a new V2 child, 2 superseded for
+  replay closure with V1 retained immutable.
+- **`PROSPECTIVE_OWNER_HISTORY_MANIFEST_V2`** persists, per owner per slot, the
+  owner identity and contract hash, the slot and decision time, the series
+  identity and required cadence, the window semantics, the exact ordered
+  qualifying *and adverse* observation record SHAs, the PIT selection semantics,
+  and its own digest. A generic `input_snapshot_sha256` never established that
+  closure, which is the audit's first finding.
+- **Completeness is a second, independent derivation.** `expected_owner_evidence`
+  recomputes the expected reference set from the evidence store alone and never
+  reads the manifest it is checking, so an omitted qualifying observation, an
+  omitted adverse one, a substituted record, a wrong date, cadence or source, or
+  a future-available revision all fail the comparison and refuse.
+- **The owner census is heterogeneous by construction.** All 33 frozen features
+  land in exactly one of twelve owner classes, each class carrying its own
+  frozen predicate shape and each row carrying its own owner-derived parameters,
+  read from the owner modules on every build. No generic count rule replaces a
+  scientific predicate.
+- **Warmup is demoted.** `warmup_history_complete` leaves the V2 decision record
+  entirely and survives only as `cached_projections.warmup_history_state`, a
+  non-authoritative cache. Authoritative warmup is obtained by resolving each
+  owner's history manifest, resolving every referenced record, running that
+  owner's own evaluability predicate and combining them under the frozen
+  decision-evaluability contract. A cached value that disagrees refuses in
+  either direction.
+- **`PROSPECTIVE_SLOT_EVIDENCE_MANIFEST_V2`** binds one immutable
+  content-addressed commitment per scientific decision slot and carries
+  references only; seven conclusion field names are refused by schema. The
+  manifest is explicitly not sufficient authority: replay independently verifies
+  existence, validation, identity, cadence, window, completeness, substitution
+  and PIT before anything rests on it.
+- **The portfolio graph is content-addressed and acyclic.** A transition binds
+  its exact prior state record and its exact decision/action evidence and never
+  names its result; a resulting state binds both its `prior_state_record_sha256`
+  and its `producing_transition_record_sha256`. Identity therefore flows strictly
+  backwards to one explicit `GENESIS` per track whose predecessor and producing
+  transition are both null, and no later state may use a null for either.
+- **The replay owner re-runs the existing semantics.** `replay_portfolio_state`
+  restores the prior lifecycle through the authoritative public
+  `restore_position_lifecycle`, applies each bound event through
+  `apply_position_event`, applies each bound account operation through the
+  `PaperAccount` owner's own methods, recomputes NAV by invoking
+  `PaperAccount.nav`, and requires exact equality with the persisted state. No
+  economic meaning is authored and no private helper is called.
+- **Root lifecycle and active-stop membership are traversals.**
+  `derive_root_opening_transition` walks the verified chain back to the `ENTER`
+  that opened the current position; `derive_active_stop` returns the active stop,
+  its installing transition and the advance count; and the active-stop identity
+  is derived from the graph, so an asserted `active_stop_identity` establishes
+  nothing. A stop-event record whose control state was stamped after the observed
+  bar formed is refused.
+- **The paired sizing opportunity is proved, not asserted.** A V2 risk record
+  carries every input `INITIAL_POSITION_SIZE_V1` consumes — NAV and the risk
+  fraction included, which the certified parent's typed projection omitted — so
+  the owner is re-run rather than read back, and `trade_permitted` is a strict
+  Boolean. `prove_paired_sizing_opportunity` requires exactly one record per
+  reference role at one slot, distinct identities, distinct tracks, both
+  permitted, both complete and both notionals strictly positive.
+- **Closure is mechanical.** The metric matrix reports **8/8** Stage-B metrics
+  replayable with their universe, comparability and denominator predicates; the
+  feature matrix reports **33/33**. Both refuse the build below full coverage.
+- **The replay architecture is itself hash-bound.** Eleven executable replay
+  owners are frozen with their identity, contract hash, selection semantics,
+  required evidence schemas and `REFUSE` failure semantics, so a scientifically
+  material selection rule does not live only in code. A later
+  executable-semantic manifest may additionally bind concrete runtime code.
+- **Three boundaries are declared rather than hidden**: the ETF publication
+  calendar's unowned `market_holidays` default, the canonical-bar derivation
+  cutoff that makes a daily or weekly bar's very existence PIT evidence, and
+  same-timestamp revision resolution, which only the ETF owner performs today.
+- **Four certified-parent feature-owner labels do not resolve to a real symbol.**
+  V2 records both the parent's label and the resolving symbol — which is the
+  parent's own evaluability owner in every case, so the predicate measured does
+  not move — and verifies the latter imports. The correction lives in a new V2
+  child; the certified V1 child is untouched.
+- **Numerical context is pinned.** None of the owners V2 invokes pins a Decimal
+  context, so a persisted tranche quantity, average entry, available cash or
+  position notional follows `getcontext().prec`. V2 runs every owner invocation
+  inside the interpreter default those owners already run under, which moves no
+  byte any existing caller produces and makes persisted V2 evidence invariant to
+  the ambient context.
+- **The acceptance demonstration is a construction.** A synthetic graph of 767
+  records and 33 owner-history manifests derives every required blind fact from
+  parent evidence alone, inventing no `quality_state`, warmup, universe or
+  comparability Boolean, no control root SHA, no active-stop membership and no
+  sizing-opportunity Boolean.
+
+### POSTP1-001V2 frozen dependency order
+
+```text
+PROSPECTIVE_INTEGRATION_CORPUS_V2 frozen
+  -> INDEPENDENT EXACT-HASH xHIGH REVIEW OF THE V2 HASH
+  -> SUFFICIENCY GOVERNANCE REISSUED AGAINST THE V2 PARENT (POSTP1-003R3)
+  -> INDEPENDENT EXACT-HASH REVIEW OF THAT GOVERNANCE
+  -> POSTP1-004 IMPLEMENTATION
+  -> INDEPENDENT REVIEW OF POSTP1-004
+  -> PROSPECTIVE COLLECTION AUTHORIZED
+```
+
+No sufficiency-governance hash is issued by this ticket and all three failed
+governance hashes remain non-authoritative. POSTP1-003R3 stays blocked until the
+V2 review passes and must then bind the V2 parent, perform true owner-level
+replay, bind executable semantics and enforce canonical candidate/control
+identity, using the accepted 381 / 93 / 0.99 rules unchanged. POSTP1-004 and
+collection remain unauthorized, BTC-019 does not reopen and Epic T remains
+closed.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1474,5 +1666,6 @@ ticket does not propose POSTP1-003R4.
 | POSTP1-003 | `PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1` | COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-003R1 | corrected/refrozen sufficiency governance `0ca7a2a8...e86c8242` | COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-003R2 | bounded authority/epoch correction `0c0c0f96...5863c64e` | COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-003R3 | certified-parent replay and executable-semantic binding audit | BLOCKED / CERTIFIED PARENT CHANGE REQUIRED |
-| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending new certified-corpus authority and valid sufficiency governance reviews |
+| POSTP1-003R3 | certified-parent replay and executable-semantic binding audit | BLOCKED / AWAITING THE POSTP1-001V2 REVIEW PASS BEFORE IT MAY BE REISSUED AGAINST THE V2 PARENT |
+| POSTP1-001V2 | `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE` | IMPLEMENTATION COMPLETE / READY FOR INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

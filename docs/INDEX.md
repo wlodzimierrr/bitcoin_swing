@@ -17,7 +17,8 @@ documents mapped below.
 
 | Namespace | Purpose | Provenance boundary |
 | --- | --- | --- |
-| [`prospective_evidence/prospective_integration_corpus_v1/`](../prospective_evidence/prospective_integration_corpus_v1/) | Hash-bound corrected `PROSPECTIVE_INTEGRATION_CORPUS_V1` protocol and child contracts | Post-Phase-1 prospective evidence only; deliberately outside the immutable V5 historical JSON census |
+| [`prospective_evidence/prospective_integration_corpus_v1/`](../prospective_evidence/prospective_integration_corpus_v1/) | Hash-bound corrected `PROSPECTIVE_INTEGRATION_CORPUS_V1` protocol and child contracts | Immutable certified lineage; collection authority remains unchanged until V2 passes review; post-Phase-1 prospective evidence only; deliberately outside the immutable V5 historical JSON census |
+| [`prospective_evidence/prospective_integration_corpus_v2/`](../prospective_evidence/prospective_integration_corpus_v2/) | Hash-bound `PROSPECTIVE_INTEGRATION_CORPUS_V2` replay-closure parent and child contracts | Frozen pre-data successor awaiting independent exact-hash xHigh review; authorizes no collection; deliberately outside the immutable V5 historical JSON census |
 
 ## Future Planning
 
