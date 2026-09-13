@@ -318,7 +318,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   and `RuntimeWarning` treated as an error on 2026-09-13. The POSTP1-001V2A
   focused synthetic authority suite is 30 passed
 - **Last relevant implementation/review commit:** POSTP1-001V2A implementation
-  commit pending. It freezes `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at
+  `596b407bd50d7754c4fcaf7b1681858582a02913`. It freezes
+  `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at
   `a1ceb66b...7db0b9` without changing the failed V2 hash. POSTP1-002V2 failed
   review of the POSTP1-001V2 candidate; this handoff records that result.
   POSTP1-001V2 froze

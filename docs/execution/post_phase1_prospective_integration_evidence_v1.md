@@ -1740,6 +1740,9 @@ semantics are changed by this ticket.
 
 ### POSTP1-001V2A implementation notes
 
+Implementation commit `596b407bd50d7754c4fcaf7b1681858582a02913` freezes
+the authority below. (The abbreviated commit printed by Git is `596b407`.)
+
 The frozen authority definition hash is:
 
 ```text
