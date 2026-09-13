@@ -1,0 +1,44 @@
+{
+  "authority_version": "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1",
+  "certification": {
+    "certified": false,
+    "required_review": "independent exact-hash xHigh calendar-authority review",
+    "state": "NOT_CERTIFIED_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW"
+  },
+  "certified_v1_predecessor_retained": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+  "child_definition_sha256": {
+    "authority_completion_semantic_diff": "b6f82f911827f3bab98e29978060828e2d2f848953333e661c9a0734074d5f95",
+    "calendar_extraction_contract": "a1fda4fef4894ca4bf61710c2812b1338211ef2b3f1069310420e36efd29153f",
+    "common_session_rule": "e731875421320560284d4727a30ab1f73e20af48fd1547b3203926464950fd8f",
+    "etf_feature_adapter_contract": "c5f1f2138e5419d53ae673286c28a6d6e6d6d89eb4765adf5b1c181a09a19733",
+    "official_source_snapshot_contract": "488b3c7616822b17b3276ad4e8dc0f9c3c02519da7e8b86ec9e73d5cd53353a7",
+    "pit_revision_rule": "41de74e8a2aad084096cfaf79dab45776ed27e91e44169dc44099e3f4cfcef62",
+    "venue_authority_registry": "74215541a9c19c280348a967668d345ac67dab51e2e69b3a0110a2e649104ccb",
+    "venue_session_record_schema": "8a0daa3774b1b42d84fe416575ceea2c6f4ef3692da069a6a822fb48c2415a85"
+  },
+  "definition_sha256": "a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9",
+  "failed_v2_candidate_retained": "488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d",
+  "final_classification": "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_XHIGH_REVIEW",
+  "material_child_count": 8,
+  "material_child_enumeration": "mechanically enumerated from one artifact/builder registry",
+  "program_ticket": "POSTP1-001V2A",
+  "safety": {
+    "btc019_reopened": false,
+    "btc019_sealed_data_accessed": false,
+    "collection_authorized": false,
+    "epic_t_modified": false,
+    "persistent_strategy_collection_started": false,
+    "postp1_003r3_authorized": false,
+    "postp1_004_authorized": false,
+    "prospective_observations_collected": 0,
+    "real_stage_b_evaluation": false,
+    "v2_certified": false,
+    "v2_corrected_hash_issued": false
+  },
+  "scientific_scope": "expected ETF publication-date eligibility only",
+  "status": "FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_XHIGH_REVIEW",
+  "workstream": {
+    "epic": "EPIC X",
+    "name": "PROSPECTIVE INTEGRATION EVIDENCE"
+  }
+}

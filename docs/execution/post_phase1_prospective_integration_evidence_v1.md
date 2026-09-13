@@ -1701,6 +1701,72 @@ created no review-fix commit. V2 is not certified, V1 remains the immutable
 certified pre-collection authority, POSTP1-003R3 remains blocked, and
 POSTP1-004 and collection remain unauthorized.
 
+## POSTP1-001V2A — `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002V2 finding 1,
+`PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact calendar-authority hash
+**Owner module:** `btc_predictor/research/etf_publication_calendar.py`
+**Artifacts:** `prospective_evidence/etf_publication_calendar_authority_v1/`
+
+### Authority decision
+
+`ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` freezes exactly one previously unowned
+scientific input: whether a U.S. equity trade date is an expected spot-Bitcoin-
+ETF publication date. The canonical common-session venue set is the immutable
+intersection of `NYSE_ARCA`, `NASDAQ` and `CBOE_BZX`; regular and early-close
+sessions count as open, a full closure at any venue makes an otherwise resolved
+date not expected, weekends are independently closed, and missing or unresolved
+conflicting official evidence fails closed.
+
+Only exact persisted snapshots from the frozen NYSE/NYSE Arca, Nasdaq Trader and
+Cboe U.S. equities official source classes may support calendar rows. Every
+snapshot binds its exact bytes and digest; the deterministic normalized schedule
+binds both the raw-source and normalized-content digests; each venue/date row
+replays from that schedule. Calendar revisions are append-only and selected at
+decision time by latest PIT-valid `available_at`; same-time incompatible latest
+states are unresolved and future notices do not leak backward.
+
+The scientific adapter derives the existing `market_holidays` input as resolved
+weekday common-session closures, then invokes the unchanged 5-day or 20-day ETF
+flow owner. An expected date with a missing fund row remains
+`ETF_FLOW_INPUT_MISSING`; a closed date is not expected; an unresolved date
+makes the feature not evaluable and the low-level owner is not invoked. The
+low-level compatibility argument remains unchanged. No flow formula, lookback,
+normalization, fund-completeness, AUM, revision-ordering or source-quality
+semantics are changed by this ticket.
+
+### POSTP1-001V2A implementation notes
+
+The frozen authority definition hash is:
+
+```text
+a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9
+```
+
+It binds **8 material children**, mechanically enumerated from the single
+artifact/builder registry: the venue authority registry, venue-session record
+schema, common-session rule, PIT/revision rule, official-source snapshot
+contract, calendar extraction contract, ETF feature adapter contract and the
+authority-completion semantic diff. Every child mutation moves the parent hash.
+
+Non-persistent source verification on 2026-09-13 confirmed that the official
+NYSE page covers NYSE Arca regular hours, full closures and scheduled early
+closes; Nasdaq Trader's official U.S. equities calendar distinguishes closed
+days from 1:00 p.m. early closes; and Cboe's official U.S. equities page covers
+BZX regular hours, closures and early closes while its official update notices
+support extraordinary revisions. No mutable web page or hard-coded 2026 sanity
+date was made scientific authority.
+
+The authority is frozen pre-data but is not certified. It produced no
+prospective observation, did not change or rehash the failed V2 candidate
+`488251df...0ec0b6d`, and did not resume POSTP1-003R3, authorize POSTP1-004 or
+collection, reopen BTC-019, access its sealed data or modify Epic T. Only an
+independent exact-hash xHigh PASS may authorize `POSTP1-001V2R1`; V2R1 itself
+must then address all seven bounded POSTP1-002V2 findings together.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1722,4 +1788,6 @@ POSTP1-004 and collection remain unauthorized.
 | POSTP1-003R3 | certified-parent replay and executable-semantic binding audit | BLOCKED / AWAITING THE POSTP1-001V2 REVIEW PASS BEFORE IT MAY BE REISSUED AGAINST THE V2 PARENT |
 | POSTP1-001V2 | `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2 | independent exact-hash xHigh review of `488251df...0ec0b6d` | COMPLETE / FAIL — V2 INVALID / MISSING EXISTING OWNER AUTHORITY |
+| POSTP1-001V2A | `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending POSTP1-001V2A exact-hash review PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

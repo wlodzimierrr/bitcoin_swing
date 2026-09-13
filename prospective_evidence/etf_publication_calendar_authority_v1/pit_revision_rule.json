@@ -1,0 +1,11 @@
+{
+  "contract_version": "ETF_CALENDAR_PIT_REVISION_RULE_V1",
+  "definition_sha256": "41de74e8a2aad084096cfaf79dab45776ed27e91e44169dc44099e3f4cfcef62",
+  "eligibility": "available_at <= decision_time",
+  "extraordinary_closure_rule": "effective only when official notice is available",
+  "future_revision_leaks_backward": false,
+  "overwrite": "FORBIDDEN_APPEND_ONLY",
+  "same_timestamp_incompatible_states": "UNRESOLVED",
+  "same_timestamp_same_state_tie_break": "greatest record_sha256",
+  "selection": "latest available_at first"
+}

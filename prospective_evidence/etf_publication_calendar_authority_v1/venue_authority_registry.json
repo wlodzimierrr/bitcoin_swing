@@ -1,0 +1,27 @@
+{
+  "canonical_venue_set": [
+    "NYSE_ARCA",
+    "NASDAQ",
+    "CBOE_BZX"
+  ],
+  "contract_version": "ETF_VENUE_AUTHORITY_REGISTRY_V1",
+  "definition_sha256": "74215541a9c19c280348a967668d345ac67dab51e2e69b3a0110a2e649104ccb",
+  "dynamic_venue_addition": "REFUSE_REQUIRES_NEW_AUTHORITY_VERSION",
+  "official_source_authorities": {
+    "CBOE_BZX": {
+      "source_authority_id": "CBOE_US_EQUITIES_HOURS_HOLIDAYS",
+      "source_class": "Cboe official U.S. Equities Hours & Holidays / schedule-update notices"
+    },
+    "NASDAQ": {
+      "source_authority_id": "NASDAQ_TRADER_US_EQUITIES_CALENDAR",
+      "source_class": "Nasdaq Trader official U.S. Equity and Options Markets Trading Calendar"
+    },
+    "NYSE_ARCA": {
+      "source_authority_id": "NYSE_ARCA_OFFICIAL_TRADING_CALENDAR",
+      "source_class": "NYSE / NYSE Arca official Holidays & Trading Hours / annual trading calendar"
+    }
+  },
+  "third_party_calendars": "DIAGNOSTICS_ONLY_NOT_SCIENTIFIC_AUTHORITY",
+  "timezone": "America/New_York",
+  "trade_date_encoding": "YYYY-MM-DD"
+}

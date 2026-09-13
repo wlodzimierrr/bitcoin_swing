@@ -1,0 +1,24 @@
+{
+  "append_only": true,
+  "contract_version": "ETF_VENUE_SESSION_CALENDAR_RECORD_V1",
+  "definition_sha256": "8a0daa3774b1b42d84fe416575ceea2c6f4ef3692da069a6a822fb48c2415a85",
+  "early_close_collapsed_into_closed": false,
+  "required_fields": [
+    "venue_id",
+    "trade_date",
+    "session_status",
+    "source_authority_id",
+    "source_document_identity",
+    "source_document_sha256",
+    "published_at",
+    "observed_at",
+    "acquired_at",
+    "available_at",
+    "record_sha256"
+  ],
+  "session_statuses": [
+    "OPEN_REGULAR",
+    "OPEN_EARLY_CLOSE",
+    "CLOSED"
+  ]
+}

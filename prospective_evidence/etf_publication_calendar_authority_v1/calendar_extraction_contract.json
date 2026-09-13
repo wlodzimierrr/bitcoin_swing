@@ -1,0 +1,12 @@
+{
+  "annual_rollover": "required venue/date range must have official evidence before evaluation",
+  "binds": [
+    "raw source digest",
+    "normalized schedule digest"
+  ],
+  "contract_version": "ETF_CALENDAR_EXTRACTION_CONTRACT_V1",
+  "definition_sha256": "a1fda4fef4894ca4bf61710c2812b1338211ef2b3f1069310420e36efd29153f",
+  "method": "SOURCE_BOUND_NORMALIZED_SCHEDULE_REPLAY_V1",
+  "missing_next_year": "UNRESOLVED",
+  "replay": "regenerate trade_date and session_status from bound normalized representation"
+}

@@ -1,0 +1,15 @@
+{
+  "authority": "exact persisted official-source snapshot + content digest + extraction result",
+  "contract_version": "ETF_OFFICIAL_SOURCE_SNAPSHOT_CONTRACT_V1",
+  "definition_sha256": "488b3c7616822b17b3276ad4e8dc0f9c3c02519da7e8b86ec9e73d5cd53353a7",
+  "external_source_change_mutates_persisted_evidence": false,
+  "manual_date_without_source_evidence_authoritative": false,
+  "minimum_bindings": [
+    "source authority",
+    "document identity",
+    "document content digest",
+    "extracted date/status",
+    "acquisition timestamp"
+  ],
+  "url_alone_sufficient": false
+}
