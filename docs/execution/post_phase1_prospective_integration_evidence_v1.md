@@ -1703,7 +1703,7 @@ POSTP1-004 and collection remain unauthorized.
 
 ## POSTP1-001V2A — `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW`
 **Dependency:** POSTP1-002V2 finding 1,
 `PROSPECTIVE_CORPUS_V2_BLOCKED_BY_MISSING_EXISTING_OWNER_AUTHORITY`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -1770,6 +1770,71 @@ collection, reopen BTC-019, access its sealed data or modify Epic T. Only an
 independent exact-hash xHigh PASS may authorize `POSTP1-001V2R1`; V2R1 itself
 must then address all seven bounded POSTP1-002V2 findings together.
 
+## POSTP1-002V2A — `INDEPENDENT_XHIGH_REVIEW_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `596b407bd50d7754c4fcaf7b1681858582a02913`
+**Reviewed authority:** `a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — ETF CALENDAR SOURCE DERIVATION INVALID`
+**Execution classification:** `ETF_PUBLICATION_CALENDAR_AUTHORITY_REQUIRES_FIX`
+
+### Exact-hash and source-scope result
+
+Independent canonical-JSON regeneration reproduced the authority hash above.
+The artifact directory contains exactly eight material JSON children; all 8/8
+child hashes reproduce, all 8/8 equal the parent bindings, and mutating one
+material field in each child moves both that child and the parent hash. The
+frozen venue set is exactly `NYSE_ARCA`, `NASDAQ`, `CBOE_BZX`. Current official
+NYSE, Nasdaq Trader and Cboe pages independently confirm that the named source
+classes apply to NYSE Arca Equities, U.S. equities and Cboe BZX U.S. Equities,
+respectively, and distinguish full closures from scheduled early closes.
+
+The existing common-session, weekend, early-close, adapter and latest-valid-
+`available_at` behavior passes its focused synthetic tests. The 5-day and
+20-day lookbacks, ETF normalization, AUM, fund completeness, FlowAccel and ETF
+flow revision semantics remain unchanged. The exact-byte source digest and
+content-addressed record linkage also recompute. Those properties do not close
+the source-derivation boundary below.
+
+### Blocking findings
+
+1. `normalized_schedule_record` accepts caller-authored `coverage_start`,
+   `coverage_end`, `default_weekday_status` and `exceptions`. Neither it nor
+   `_verify_schedule` parses the exact persisted official bytes or independently
+   validates the normalized rows against them. With one unchanged source
+   snapshot, hostile review successfully inserted a false closure and a false
+   early close, omitted a source-stated holiday and early close so both became
+   `OPEN_REGULAR`, submitted an empty exception map, and extended source-claimed
+   2026 coverage through 2028. Every forged schedule and venue row rehashed and
+   replayed successfully. The extraction child binds only raw and normalized
+   digests; it freezes no supported source format/version, deterministic parser,
+   coverage derivation or source-to-row validator. Provenance and self-hashing
+   therefore substitute for extraction, and material source-derived semantics
+   are absent from the authority hash tree.
+2. Source/venue identity is caller-relabelable. The snapshot constructor accepts
+   arbitrary nonempty bytes and document identity, then assigns the selected
+   venue's registry identity solely from caller-supplied `venue_id`.
+   `_verify_source_snapshot` recomputes bytes and checks that assigned registry
+   string, but proves neither document origin nor product scope. Exact bytes
+   labelled as an NYSE Arca document were accepted as a Nasdaq snapshot.
+3. PIT availability is not scientifically established. Any caller-chosen
+   `available_at <= acquired_at` is accepted without immutable evidence for an
+   earlier availability instant, so a snapshot acquired in 2026 was accepted
+   with `available_at` in 2020. `published_at` is persisted but has no frozen
+   validation or ordering relationship and cannot repair that backdating.
+4. Invalid future evidence leaks backward. `venue_session_status` marks any
+   matching schema-invalid row as unresolved before applying its
+   `available_at <= decision_time` eligibility test. Adding a content-addressed
+   malformed row available after the decision changed an otherwise resolved
+   earlier state to `UNRESOLVED`, contradicting the frozen no-future-leak rule.
+
+These are scientific-authority decisions, not uniquely determined mechanical
+review fixes. The review changed no implementation or authority artifact and
+created no review-fix commit. The authority remains non-certified; the failed
+V2 hash is unchanged; POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and prospective
+collection remain blocked; BTC-019 and Epic T remain untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -1791,6 +1856,7 @@ must then address all seven bounded POSTP1-002V2 findings together.
 | POSTP1-003R3 | certified-parent replay and executable-semantic binding audit | BLOCKED / AWAITING THE POSTP1-001V2 REVIEW PASS BEFORE IT MAY BE REISSUED AGAINST THE V2 PARENT |
 | POSTP1-001V2 | `DEFINE_AND_FREEZE_PROSPECTIVE_INTEGRATION_CORPUS_V2_REPLAY_CLOSURE` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2 | independent exact-hash xHigh review of `488251df...0ec0b6d` | COMPLETE / FAIL — V2 INVALID / MISSING EXISTING OWNER AUTHORITY |
-| POSTP1-001V2A | `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2A | `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2A | independent exact-hash xHigh review of `a1ceb66b...7db0b9` | COMPLETE / FAIL — ETF CALENDAR SOURCE DERIVATION INVALID |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending POSTP1-001V2A exact-hash review PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

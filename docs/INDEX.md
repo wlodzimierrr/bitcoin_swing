@@ -19,7 +19,7 @@ documents mapped below.
 | --- | --- | --- |
 | [`prospective_evidence/prospective_integration_corpus_v1/`](../prospective_evidence/prospective_integration_corpus_v1/) | Hash-bound corrected `PROSPECTIVE_INTEGRATION_CORPUS_V1` protocol and child contracts | Immutable certified lineage; collection authority remains unchanged until V2 passes review; post-Phase-1 prospective evidence only; deliberately outside the immutable V5 historical JSON census |
 | [`prospective_evidence/prospective_integration_corpus_v2/`](../prospective_evidence/prospective_integration_corpus_v2/) | Hash-bound `PROSPECTIVE_INTEGRATION_CORPUS_V2` replay-closure parent and child contracts | Frozen pre-data successor awaiting independent exact-hash xHigh review; authorizes no collection; deliberately outside the immutable V5 historical JSON census |
-| [`prospective_evidence/etf_publication_calendar_authority_v1/`](../prospective_evidence/etf_publication_calendar_authority_v1/) | Hash-bound `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` definition and material child contracts | Frozen pre-data missing-authority completion awaiting independent exact-hash xHigh review; not certified and authorizes no collection or V2 correction |
+| [`prospective_evidence/etf_publication_calendar_authority_v1/`](../prospective_evidence/etf_publication_calendar_authority_v1/) | Hash-bound `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` definition and material child contracts | Frozen pre-data missing-authority completion that failed independent exact-hash xHigh review; not certified and authorizes no collection or V2 correction |
 
 ## Future Planning
 

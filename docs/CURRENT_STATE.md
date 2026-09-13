@@ -84,7 +84,7 @@ PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
 
 ETF_PUBLICATION_CALENDAR_AUTHORITY_V1 =
-FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_XHIGH_REVIEW
+FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_FAILED_XHIGH_REVIEW
 
 ETF publication-calendar authority definition hash =
 a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9
@@ -95,6 +95,12 @@ POSTP1-001V2A result =
 ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_XHIGH_REVIEW
 
 ETF calendar authority certification = NOT CERTIFIED
+
+POSTP1-002V2A review result =
+FAIL — ETF CALENDAR SOURCE DERIVATION INVALID
+
+ETF calendar authority execution classification =
+ETF_PUBLICATION_CALENDAR_AUTHORITY_REQUIRES_FIX
 
 latest failed sufficiency-governance definition hash =
 0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
@@ -288,9 +294,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   Exact official-source bytes, normalized schedules and venue/date rows are
   content-addressed; the adapter derives the unchanged ETF owner's holiday input
   and refuses to invoke it on unresolved dates. This is an unowned-input
-  authority completion, not a formula or lookback change. The authority awaits
-  its own independent exact-hash xHigh review, so V2R1, POSTP1-003R3,
-  POSTP1-004 and collection remain unauthorized.
+  authority completion, not a formula or lookback change. POSTP1-002V2A
+  reproduced the top hash and all eight child bindings but failed the authority:
+  caller-authored exceptions and coverage are never derived from the persisted
+  source bytes; source bytes can be relabelled across venues; unsupported
+  availability backdating is accepted; and malformed future evidence can leak
+  backward into an earlier decision. The authority is not certified, so V2R1,
+  POSTP1-003R3, POSTP1-004 and collection remain unauthorized.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -303,21 +313,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** POSTP1-001V2A implementation is complete and
-  frozen at `a1ceb66b...7db0b9`; its required independent exact-hash xHigh
-  review is outstanding
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A completed with
+  `FAIL — ETF CALENDAR SOURCE DERIVATION INVALID`
 - **Current BLOCKED tickets:** POSTP1-003R3 stays blocked until a corrected V2
   parent passes exact-hash review, and must then be reissued against that
   parent. POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** independent exact-hash xHigh review of
-  `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `a1ceb66b...7db0b9`. V2R1 is not
-  authorized until that review passes; POSTP1-003R3, POSTP1-004 and collection
+- **Next dependency-satisfied ticket:** bounded correction and refreeze of the
+  ETF publication-calendar authority against all POSTP1-002V2A findings,
+  followed by a new exact-hash xHigh review. V2R1 is not authorized until a
+  corrected calendar authority passes; POSTP1-003R3, POSTP1-004 and collection
   remain blocked and BTC-019 does not reopen
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 4,941 passed, 2 skipped with Python 3.12.14
   and `RuntimeWarning` treated as an error on 2026-09-13. The POSTP1-001V2A
-  focused synthetic authority suite is 30 passed
-- **Last relevant implementation/review commit:** POSTP1-001V2A implementation
+  focused synthetic authority suite is 30 passed; the focused ETF/calendar/V2
+  regression set is 263 passed, 2 skipped
+- **Last relevant implementation/review commit:** POSTP1-002V2A failed review
+  is recorded by the current documentation handoff. POSTP1-001V2A implementation
   `596b407bd50d7754c4fcaf7b1681858582a02913`. It freezes
   `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at
   `a1ceb66b...7db0b9` without changing the failed V2 hash. POSTP1-002V2 failed
