@@ -182,8 +182,14 @@ def test_every_material_child_mutation_moves_top_hash(monkeypatch) -> None:
 
 def test_official_fixture_provenance_and_exact_bytes() -> None:
     for venue, metadata in PROVENANCE["fixtures"].items():
-        raw = fixture_bytes(venue)
+        encoded = (FIXTURE_DIR / metadata["fixture"]).read_bytes()
+        compressed = base64.b64decode(encoded)
+        raw = gzip.decompress(compressed)
+        assert hashlib.sha256(compressed).hexdigest() == metadata["compressed_fixture_sha256"]
         assert hashlib.sha256(raw).hexdigest() == metadata["response_sha256"]
+        assert metadata["covered_years"] == cal.SOURCE_AUTHORITY_REGISTRY[venue]["covered_years"]
+        assert metadata["parser_version"] == cal.SOURCE_AUTHORITY_REGISTRY[venue]["parser_version"]
+        assert metadata["source_format_version"] == cal.SOURCE_AUTHORITY_REGISTRY[venue]["source_format_version"]
         record = acquisition(venue)
         assert record["venue_id"] == venue
         assert record["source_profile_id"] == metadata["source_profile_id"]

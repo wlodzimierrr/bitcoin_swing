@@ -3,6 +3,7 @@
   "fixtures": {
     "CBOE_BZX": {
       "covered_years": [2026],
+      "compressed_fixture_sha256": "dc2a3ee3c609b85a5d7aa61aa824a5002d709fedc6f51dc8833d4d833094ca2c",
       "final_url": "https://www.cboe.com/about/hours",
       "fixture": "cboe_2026_official_html.gz.b64",
       "parser_version": "2",
@@ -14,6 +15,7 @@
     },
     "NASDAQ": {
       "covered_years": [2026],
+      "compressed_fixture_sha256": "e9b2d08382d8b039361b81a17d5dad8e9cfde82d8c6a4af597a5b09644b3953d",
       "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
       "fixture": "nasdaq_2026_official_html.gz.b64",
       "parser_version": "2",
@@ -25,6 +27,7 @@
     },
     "NYSE_ARCA": {
       "covered_years": [2026, 2027, 2028],
+      "compressed_fixture_sha256": "538f97768dea7c451e17af92c291b75e492a907739cc0e13c5364e9d22d1cab1",
       "final_url": "https://www.nyse.com/trade/hours-calendars",
       "fixture": "nyse_2026_official_html.gz.b64",
       "parser_version": "2",
