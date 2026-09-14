@@ -1951,6 +1951,8 @@ unused; no downstream work or collection was authorized.
 **Implementation commits:** `fcfeb937c0990bc87559d580c38061848fe6c579`
 (trusted collector, parsers, tests and refreeze),
 `02528bd6dc6c7512d8b114751d4b9032e7396f92` (compressed-fixture provenance completion)
+and `7668d9a93ea841ad7fd33679eb46358b74549731` (authority binding of exact
+format-reference fixture provenance)
 
 ### Final corrected authority decision
 
@@ -1960,7 +1962,7 @@ corrected authority remains `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` and is
 refrozen at:
 
 ```text
-e9092f05ba6d4142a5b8e393102c4516e70fe1ed24c0c10fc274c5ff24ebfedc
+0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855
 ```
 
 It binds **12 material children** from one mechanical registry. The trusted
@@ -2039,6 +2041,6 @@ blank line in `prompts/review_epic.md`, which this ticket did not modify.
 | POSTP1-002V2A | independent exact-hash xHigh review of `a1ceb66b...7db0b9` | COMPLETE / FAIL — ETF CALENDAR SOURCE DERIVATION INVALID |
 | POSTP1-001V2A-R1 | source-derived correction/refreeze of `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `b81c1702...b357af` | IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2A-R1 | repeat independent exact-hash review of `b81c1702...b357af` | COMPLETE / FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID |
-| POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `e9092f05...24ebfedc` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `05243343...f99c855` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending POSTP1-001V2A exact-hash review PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

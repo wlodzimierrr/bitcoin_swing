@@ -87,7 +87,7 @@ ETF_PUBLICATION_CALENDAR_AUTHORITY_V1 =
 FINAL_CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_FINAL_XHIGH_REVIEW
 
 ETF publication-calendar authority definition hash =
-e9092f05ba6d4142a5b8e393102c4516e70fe1ed24c0c10fc274c5ff24ebfedc
+0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855
 
 material child contracts bound by final corrected ETF calendar authority = 12
 
@@ -318,7 +318,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   matching admitted non-canonical aliases and redirect hops were not exact, and
   flat page-wide parsers did not prove complete annual-table or early-close
   traversal. POSTP1-001V2A-R2 preserves both failed directories and refreezes
-  the final corrected pre-data authority at `e9092f05...24ebfedc` with twelve
+  the final corrected pre-data authority at `05243343...f99c855` with twelve
   mechanically enumerated children. The production owner now performs standard
   certificate- and hostname-verified HTTPS itself from one exact profile URL,
   validates every observed redirect transition, reads and timestamps its own
@@ -343,14 +343,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-R2 implementation is
-  complete at `e9092f05...24ebfedc` and awaits final independent exact-hash
+  complete at `05243343...f99c855` and awaits final independent exact-hash
   xHigh review
 - **Current BLOCKED tickets:** POSTP1-003R3 stays blocked until a corrected V2
   parent passes exact-hash review, and must then be reissued against that
   parent. POSTP1-004 and collection remain transitively blocked
 - **Next dependency-satisfied ticket:** final independent exact-hash xHigh
   review of corrected ETF publication-calendar authority
-  `e9092f05...24ebfedc`. V2R1 is not authorized until that review passes;
+  `05243343...f99c855`. V2R1 is not authorized until that review passes;
   POSTP1-003R3, POSTP1-004 and collection remain blocked and BTC-019 does not
   reopen
 - **Other ready tickets:** None
@@ -360,8 +360,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   focused ETF/PIT/V1/V2 regression set is 463 passed, 2 skipped
 - **Last relevant implementation/review commit:** POSTP1-001V2A-R2 implementation
   `fcfeb937c0990bc87559d580c38061848fe6c579`, completed by fixture-provenance
-  commit `02528bd6dc6c7512d8b114751d4b9032e7396f92`, refreezes the final corrected
-  `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `e9092f05...24ebfedc`. The failed
+  commits `02528bd6dc6c7512d8b114751d4b9032e7396f92` and
+  `7668d9a93ea841ad7fd33679eb46358b74549731`, refreezes the final corrected
+  `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `05243343...f99c855`. The failed
   corrected implementation `ab2bce5241e7372de3bbb70c938d08357054b615`
   and authority `b81c1702...b357af`, plus the failed
   POSTP1-001V2A implementation `596b407bd50d7754c4fcaf7b1681858582a02913`
