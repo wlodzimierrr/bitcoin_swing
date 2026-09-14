@@ -190,6 +190,13 @@ def test_official_fixture_provenance_and_exact_bytes() -> None:
         assert metadata["covered_years"] == cal.SOURCE_AUTHORITY_REGISTRY[venue]["covered_years"]
         assert metadata["parser_version"] == cal.SOURCE_AUTHORITY_REGISTRY[venue]["parser_version"]
         assert metadata["source_format_version"] == cal.SOURCE_AUTHORITY_REGISTRY[venue]["source_format_version"]
+        reference = cal.SOURCE_AUTHORITY_REGISTRY[venue]["format_reference_fixture"]
+        assert reference == {
+            "captured_at": PROVENANCE["acquired_at"],
+            "fixture": metadata["fixture"],
+            "raw_sha256": metadata["response_sha256"],
+            "compressed_sha256": metadata["compressed_fixture_sha256"],
+        }
         record = acquisition(venue)
         assert record["venue_id"] == venue
         assert record["source_profile_id"] == metadata["source_profile_id"]

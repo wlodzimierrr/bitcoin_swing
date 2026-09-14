@@ -1,7 +1,7 @@
 # ETF_PUBLICATION_CALENDAR_AUTHORITY_V1
 
 - Ticket: `POSTP1-001V2A-R2`
-- Definition hash: `e9092f05ba6d4142a5b8e393102c4516e70fe1ed24c0c10fc274c5ff24ebfedc`
+- Definition hash: `0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855`
 - Status: `FINAL_CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_FINAL_XHIGH_REVIEW`
 - Classification: `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW`
 - Material children: 12
@@ -47,7 +47,7 @@ unused, and preserved in their original artifact directories.
 | `executable_semantic_manifest` | `303bc2c03827f99d3ecd541cbd170ba5046d4032003326dd16d44e75a9077c6b` |
 | `http_acquisition_schema` | `0909d05779965e9d988b1c23fbd1632186a4e9e85a9575a5b1603806d59ff1e0` |
 | `normalized_schedule_contract` | `bc84a9e73206382506bbca11b4d832a47ab573934fbdee5b3f00c4fd742fec87` |
-| `official_source_profile_registry` | `530525ecc278952a391d1793e65f95617a05b0dc939dc9433bab9558daab1742` |
+| `official_source_profile_registry` | `734555c07f8ded9af9a768bf15ffdb0f8e2a0de051a279f1277f254d0df57afd` |
 | `parser_format_census` | `d297effeb7cc647149088fd59ac17461a4764ec17f1950cdadf7df720459a498` |
 | `pit_revision_rule` | `f2f1e748c64d9f1433e4d544fe844cdfa93524eac97d30c9428eadbbbaa6330f` |
 | `source_parser_registry` | `f23f2d999c88768780ac3ea3b0d3daa1a5a15ea94715cf3d1196487ceaaee3e3` |
