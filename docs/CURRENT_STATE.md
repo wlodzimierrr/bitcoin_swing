@@ -84,7 +84,7 @@ PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
 
 ETF_PUBLICATION_CALENDAR_AUTHORITY_V1 =
-FINAL_CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_FINAL_XHIGH_REVIEW
+FINAL_CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_FAILED_FINAL_XHIGH_REVIEW
 
 ETF publication-calendar authority definition hash =
 0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855
@@ -96,7 +96,7 @@ a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9
 b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af
 
 POSTP1-001V2A-R2 result =
-ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW
+IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH XHIGH REVIEW
 
 ETF calendar authority certification = NOT CERTIFIED
 
@@ -106,8 +106,11 @@ FAIL — ETF CALENDAR SOURCE DERIVATION INVALID
 POSTP1-002V2A-R1 review result =
 FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID
 
+POSTP1-002V2A-R2 review result =
+FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
+
 ETF calendar authority execution classification =
-ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW
+ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY
 
 latest failed sufficiency-governance definition hash =
 0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
@@ -327,9 +330,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   store admission. Structural parsers select one supported table, traverse all
   rows, enforce the fixture-derived ordered semantic census and supported-year
   coverage, and require complete NYSE early-close statements. PIT,
-  common-session and ETF science remain unchanged. The new hash is not certified
-  until final exact-hash xHigh review, so every downstream authorization remains
-  blocked.
+  common-session and ETF science remain unchanged. POSTP1-002V2A-R2 reproduced
+  the new hash and all twelve child bindings, but the mandatory origin-forgery
+  probe failed: a caller can construct and hash a parser-valid acquisition with
+  every trusted-provenance field and have the public `CalendarEvidenceStore`
+  accept it without the HTTPS collector running. Creation and rehydration share
+  the same field-validating admission path, and no collector-only durable append,
+  non-forgeable envelope or separately controlled ingestion owner proves origin.
+  The authority is not certified and is blocked pending an explicit trusted-
+  persistence architecture/authority decision; every downstream authorization
+  remains blocked.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -342,23 +352,25 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-R2 implementation is
-  complete at `05243343...f99c855` and awaits final independent exact-hash
-  xHigh review
-- **Current BLOCKED tickets:** POSTP1-003R3 stays blocked until a corrected V2
-  parent passes exact-hash review, and must then be reissued against that
-  parent. POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** final independent exact-hash xHigh
-  review of corrected ETF publication-calendar authority
-  `05243343...f99c855`. V2R1 is not authorized until that review passes;
-  POSTP1-003R3, POSTP1-004 and collection remain blocked and BTC-019 does not
-  reopen
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-R2 completed with
+  `FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID`
+- **Current BLOCKED tickets:** ETF calendar authority certification is blocked
+  pending an explicit trusted-persistence architecture/authority decision.
+  POSTP1-001V2R1 therefore remains blocked; POSTP1-003R3 stays blocked until a
+  corrected V2 parent passes exact-hash review, and POSTP1-004 and collection
+  remain transitively blocked
+- **Next dependency-satisfied ticket:** None. The next action is an explicit
+  trusted-acquisition persistence architecture/authority decision; this review
+  does not authorize an automatic POSTP1-001V2A-R3. V2R1, POSTP1-003R3,
+  POSTP1-004 and collection remain blocked and BTC-019 does not reopen
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 5,022 passed, 2 skipped with Python 3.12.14
+- **Latest verified test baseline:** 5,023 passed, 2 skipped with Python 3.12.14
   and `RuntimeWarning` treated as an error on 2026-09-14. The final
-  POSTP1-001V2A-R2 trusted-origin/parser-completeness suite is 112 passed; the
-  focused ETF/PIT/V1/V2 regression set is 463 passed, 2 skipped
-- **Last relevant implementation/review commit:** POSTP1-001V2A-R2 implementation
+  POSTP1-001V2A-R2 trusted-origin/parser-completeness suite is 112 passed; an
+  expanded ETF/PIT/V1/V2 relevant regression set is 575 passed, 2 skipped
+- **Last relevant implementation/review commit:** POSTP1-002V2A-R2 failed final
+  review is recorded by the current documentation handoff. Reviewed HEAD was
+  `8bebcc7c3349e22859c43743b6182a5659724dbd`. POSTP1-001V2A-R2 implementation
   `fcfeb937c0990bc87559d580c38061848fe6c579`, completed by fixture-provenance
   commits `02528bd6dc6c7512d8b114751d4b9032e7396f92` and
   `7668d9a93ea841ad7fd33679eb46358b74549731`, refreezes the final corrected

@@ -2017,6 +2017,70 @@ tests with 2 skips. The full suite passed 5,022 tests with 2 skips under
 `git diff --check` continues to report only the pre-existing unrelated trailing
 blank line in `prompts/review_epic.md`, which this ticket did not modify.
 
+## POSTP1-002V2A-R2 — `FINAL_XHIGH_REVIEW_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `fcfeb937c0990bc87559d580c38061848fe6c579`,
+`02528bd6dc6c7512d8b114751d4b9032e7396f92`,
+`7668d9a93ea841ad7fd33679eb46358b74549731`, and
+`38ee8e14e786d74c5894a51699cf13f39c2e178d`
+**Review HEAD:** `8bebcc7c3349e22859c43743b6182a5659724dbd`
+**Reviewed authority:** `0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID`
+**Execution classification:** `ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY`
+
+### Exact-hash and preserved-science result
+
+Independent canonical-JSON regeneration reproduced the authority hash above.
+All 12/12 material child hashes reproduce and equal their parent bindings. The
+failed `a1ceb66b...7db0b9` and `b81c1702...b357af` directories remain unchanged,
+non-authoritative, non-certified and unused with zero observations. Certified V1
+`8915d991...fbfac7d7` and its 25 children and failed V2
+`488251df...0ec0b6d` and its 21 children also reproduce unchanged.
+
+The collector itself constructs its exact request, owns a certificate- and
+hostname-verifying HTTPS context, forbids HTTP downgrade and caller transport
+parameters, observes every exact redirect transition, reads the response and
+then timestamps receipt. Exact raw URL matching, complete structured parser
+traversal, fixture bindings, source-derived schedule replay, PIT filtering,
+same-time conflict handling, the common-session reducer and the ETF adapter
+passed review. The venue set, weekend/early-close rules and all ETF, Stage-B,
+risk, stop and threshold science are unchanged.
+
+### Blocking finding
+
+One P1 trusted-origin defect remains. `CalendarEvidenceStore.put` publicly
+admits any self-hashed acquisition mapping for which `_verify_source_snapshot`
+can recompute fields and parser output. A hostile review constructed a complete
+Nasdaq acquisition mapping from parser-valid official-looking fixture bytes,
+the exact canonical URL, all required trusted collector/TLS/executable identity
+fields and equal valid timestamps, computed its record SHA independently, and
+successfully inserted it without executing the network collector. Rewriting a
+fixture into that shape succeeds for the same reason. The store constructor also
+rehydrates records through this identical route, so no immutable evidence
+distinguishes trusted creation from caller-authored replay input. There is no
+collector-only durable append path, non-forgeable persistence envelope or
+separately frozen ingestion boundary inaccessible to scientific callers.
+
+The required correction is an explicit architecture/authority decision that
+creates an enforceable trusted persistence boundary and separately defines
+rehydration evidence. Adding or checking another caller-computable JSON field or
+self-hash is insufficient. This is not a uniquely mechanical review fix, so the
+review changed no implementation or frozen artifact and created no review-fix
+commit. The authority is not certified; POSTP1-001V2R1, POSTP1-003R3,
+POSTP1-004 and collection remain blocked; BTC-019 and Epic T remain untouched.
+
+Validation used Python 3.12.14. The focused calendar suite passed 112 tests; an
+expanded ETF/PIT/V1/V2 relevant set passed 575 tests with 2 skips; and the full
+suite passed 5,023 tests with 2 skips under `-W error::RuntimeWarning`. The two
+skips are V2 composite owner-class cases that inherit component missing-history
+behavior and do not cover this calendar authority. Artifact restoration,
+independent fixture/census, URL/redirect, 64-state common-reducer and seven named
+hash-movement probes, and `python -m compileall btc_predictor` passed.
+Repository-wide `git diff --check` reports only the pre-existing user-owned
+trailing blank line in `prompts/review_epic.md`, which this review left untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2042,6 +2106,7 @@ blank line in `prompts/review_epic.md`, which this ticket did not modify.
 | POSTP1-002V2A | independent exact-hash xHigh review of `a1ceb66b...7db0b9` | COMPLETE / FAIL — ETF CALENDAR SOURCE DERIVATION INVALID |
 | POSTP1-001V2A-R1 | source-derived correction/refreeze of `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `b81c1702...b357af` | IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2A-R1 | repeat independent exact-hash review of `b81c1702...b357af` | COMPLETE / FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID |
-| POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `05243343...f99c855` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
-| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending POSTP1-001V2A exact-hash review PASS |
+| POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `05243343...f99c855` | IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2A-R2 | final independent exact-hash review of `05243343...f99c855` | COMPLETE / FAIL — TRUSTED ORIGIN BOUNDARY INVALID; EXPLICIT ARCHITECTURE/AUTHORITY DECISION REQUIRED |
+| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
