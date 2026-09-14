@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import gzip
 import hashlib
 import inspect
@@ -178,6 +179,42 @@ def test_every_material_child_mutation_moves_top_hash(monkeypatch) -> None:
         with monkeypatch.context() as context:
             context.setattr(cal, builder_name, mutated)
             assert cal.authority_definition()["definition_sha256"] != baseline
+
+
+def test_each_named_material_rule_mutation_moves_relevant_child_and_top(monkeypatch) -> None:
+    baseline_children = {
+        name: payload["definition_sha256"] for name, payload in cal._children().items()
+    }
+    baseline_top = cal.authority_definition()["definition_sha256"]
+
+    def assert_moves(child: str) -> None:
+        assert cal._children()[child]["definition_sha256"] != baseline_children[child]
+        assert cal.authority_definition()["definition_sha256"] != baseline_top
+
+    with monkeypatch.context() as context:
+        context.setattr(cal, "TLS_POLICY_ID", "MUTATED_TLS_POLICY")
+        assert_moves("trusted_https_collector_contract")
+    with monkeypatch.context() as context:
+        registry = copy.deepcopy(cal.SOURCE_AUTHORITY_REGISTRY)
+        registry["NASDAQ"]["canonical_request_urls"] = ["https://www.nasdaqtrader.com/MUTATED"]
+        context.setattr(cal, "SOURCE_AUTHORITY_REGISTRY", registry)
+        assert_moves("official_source_profile_registry")
+    with monkeypatch.context() as context:
+        registry = copy.deepcopy(cal.SOURCE_AUTHORITY_REGISTRY)
+        registry["NYSE_ARCA"]["allowed_redirect_transitions"] = [["a", "b"]]
+        context.setattr(cal, "SOURCE_AUTHORITY_REGISTRY", registry)
+        assert_moves("official_source_profile_registry")
+    with monkeypatch.context() as context:
+        context.setattr(cal, "TRUSTED_ACQUISITION_PROVENANCE", "MUTATED_PROVENANCE")
+        assert_moves("http_acquisition_schema")
+    for attribute, child in (
+        ("_NYSE_LABELS", "parser_format_census"),
+        ("_NASDAQ_ROW_CENSUS", "parser_format_census"),
+        ("_CBOE_LABELS", "parser_format_census"),
+    ):
+        with monkeypatch.context() as context:
+            context.setattr(semantics, attribute, (*getattr(semantics, attribute), ("MUTATED",)))
+            assert_moves(child)
 
 
 def test_official_fixture_provenance_and_exact_bytes() -> None:
