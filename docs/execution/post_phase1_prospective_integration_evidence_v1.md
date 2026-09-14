@@ -1952,7 +1952,8 @@ unused; no downstream work or collection was authorized.
 (trusted collector, parsers, tests and refreeze),
 `02528bd6dc6c7512d8b114751d4b9032e7396f92` (compressed-fixture provenance completion)
 and `7668d9a93ea841ad7fd33679eb46358b74549731` (authority binding of exact
-format-reference fixture provenance)
+format-reference fixture provenance), plus
+`38ee8e14e786d74c5894a51699cf13f39c2e178d` (named material-rule hash-movement tests)
 
 ### Final corrected authority decision
 
@@ -2009,7 +2010,7 @@ collected, no real Stage-B evaluation ran, BTC-019 sealed data was untouched and
 Epic T was unchanged.
 
 Validation used Python 3.12.14. The final trusted-origin/parser-completeness
-suite passed 111 tests. The focused ETF/PIT/V1/V2 regression set passed 463
+suite passed 112 tests. The focused ETF/PIT/V1/V2 regression set passed 463
 tests with 2 skips. The full suite passed 5,022 tests with 2 skips under
 `-W error::RuntimeWarning`. Artifact restore/regeneration and
 `python -m compileall btc_predictor` passed. Repository-wide

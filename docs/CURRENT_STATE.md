@@ -356,7 +356,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,022 passed, 2 skipped with Python 3.12.14
   and `RuntimeWarning` treated as an error on 2026-09-14. The final
-  POSTP1-001V2A-R2 trusted-origin/parser-completeness suite is 111 passed; the
+  POSTP1-001V2A-R2 trusted-origin/parser-completeness suite is 112 passed; the
   focused ETF/PIT/V1/V2 regression set is 463 passed, 2 skipped
 - **Last relevant implementation/review commit:** POSTP1-001V2A-R2 implementation
   `fcfeb937c0990bc87559d580c38061848fe6c579`, completed by fixture-provenance
