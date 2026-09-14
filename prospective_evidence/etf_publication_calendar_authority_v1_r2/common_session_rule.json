@@ -1,0 +1,17 @@
+{
+  "common_open": "NYSE_ARCA_OPEN AND NASDAQ_OPEN AND CBOE_BZX_OPEN",
+  "contract_version": "ETF_COMMON_SESSION_RULE_V1",
+  "definition_sha256": "e731875421320560284d4727a30ab1f73e20af48fd1547b3203926464950fd8f",
+  "expected_etf_publication_date": "COMMON_OPEN",
+  "open_states": [
+    "OPEN_EARLY_CLOSE",
+    "OPEN_REGULAR"
+  ],
+  "publication_date_meaning": "the U.S. equity trade date on which the common listing-venue calendar contains an equity trading session",
+  "unknown_rule": "ANY_UNRESOLVED_MEANS_UNRESOLVED",
+  "venue_disagreement": "ANY_CLOSED_MEANS_NOT_EXPECTED_WHEN_ALL_RESOLVED",
+  "weekend_rule": {
+    "SATURDAY": "CLOSED",
+    "SUNDAY": "CLOSED"
+  }
+}

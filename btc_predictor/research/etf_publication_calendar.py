@@ -13,12 +13,15 @@ import ast
 import hashlib
 import inspect
 import json
+import ssl
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
+from urllib.error import HTTPError, URLError
+from urllib.parse import urljoin, urlsplit
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 
 from btc_predictor.data import EtfFlow, require_utc_datetime
 from btc_predictor.features import flow as _flow
@@ -26,13 +29,13 @@ from btc_predictor.research import etf_calendar_semantics as _semantics
 
 
 AUTHORITY_VERSION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1"
-PROGRAM_TICKET = "POSTP1-001V2A-R1"
+PROGRAM_TICKET = "POSTP1-001V2A-R2"
 WORKSTREAM = "EPIC X"
 WORKSTREAM_NAME = "PROSPECTIVE INTEGRATION EVIDENCE"
-AUTHORITY_STATUS = "CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_REPEAT_XHIGH_REVIEW"
-FINAL_CLASSIFICATION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW"
-CERTIFICATION_STATE = "NOT_CERTIFIED_AWAITING_REPEAT_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW"
-OUTPUT_NAMESPACE = "prospective_evidence/etf_publication_calendar_authority_v1_r1"
+AUTHORITY_STATUS = "FINAL_CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_FINAL_XHIGH_REVIEW"
+FINAL_CLASSIFICATION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW"
+CERTIFICATION_STATE = "NOT_CERTIFIED_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW"
+OUTPUT_NAMESPACE = "prospective_evidence/etf_publication_calendar_authority_v1_r2"
 PROTOCOL_FILENAME = "authority_definition.json"
 REPORT_FILENAME = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_REPORT.md"
 
@@ -46,47 +49,59 @@ UNRESOLVED = "UNRESOLVED"
 RESOLVED = "RESOLVED"
 
 FAILED_AUTHORITY_SHA256 = "a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9"
+FAILED_CORRECTED_AUTHORITY_SHA256 = "b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af"
+TRUSTED_ACQUISITION_PROVENANCE = "TRUSTED_HTTPS_COLLECTOR_V1"
+FIXTURE_ACQUISITION_PROVENANCE = "TEST_FIXTURE_NON_AUTHORITATIVE"
+TRUSTED_COLLECTOR_ID = "TRUSTED_ETF_CALENDAR_HTTPS_COLLECTOR_V1"
+TLS_POLICY_ID = "STANDARD_VERIFIED_HTTPS_TLS_V1"
+HTTP_TIMEOUT_SECONDS = 45
 
 SOURCE_AUTHORITY_REGISTRY: dict[str, dict[str, Any]] = {
     "NYSE_ARCA": {
+        "source_profile_id": "NYSE_ARCA_OFFICIAL_SOURCE_PROFILE_V1",
         "source_authority_id": "NYSE_ARCA_OFFICIAL_TRADING_CALENDAR",
         "source_class": "NYSE / NYSE Arca official Holidays & Trading Hours / annual trading calendar",
-        "allowed_https_hostnames": ["www.nyse.com"],
-        "allowed_paths": ["/trade/hours-calendars", "/markets/hours-calendars"],
-        "allowed_query": {},
-        "allowed_redirect_targets": ["https://www.nyse.com/trade/hours-calendars"],
+        "canonical_request_urls": ["https://www.nyse.com/trade/hours-calendars"],
+        "canonical_final_urls": ["https://www.nyse.com/trade/hours-calendars"],
+        "allowed_redirect_transitions": [],
         "document_types": ["text/html"],
         "product_scope": "NYSE Arca Equities annual trading calendar",
         "parser_id": "NYSE_HOLIDAYS_TRADING_HOURS_HTML",
-        "parser_version": "1",
+        "parser_version": "2",
+        "source_format_version": "NYSE_2026_2028_HTML_V1",
+        "covered_years": [2026, 2027, 2028],
         "required_content_markers": ["Holidays & Trading Hours", "NYSE Arca Equities"],
         "coverage_semantics": "each explicit year column covers exactly that civil year",
     },
     "NASDAQ": {
+        "source_profile_id": "NASDAQ_OFFICIAL_SOURCE_PROFILE_V1",
         "source_authority_id": "NASDAQ_TRADER_US_EQUITIES_CALENDAR",
         "source_class": "Nasdaq Trader official U.S. Equity and Options Markets Trading Calendar",
-        "allowed_https_hostnames": ["www.nasdaqtrader.com"],
-        "allowed_paths": ["/Trader.aspx"],
-        "allowed_query": {"id": ["calendar"]},
-        "allowed_redirect_targets": [],
+        "canonical_request_urls": ["https://www.nasdaqtrader.com/Trader.aspx?id=calendar"],
+        "canonical_final_urls": ["https://www.nasdaqtrader.com/Trader.aspx?id=calendar"],
+        "allowed_redirect_transitions": [],
         "document_types": ["text/html"],
         "product_scope": "Nasdaq U.S. Equity and Options Markets annual calendar",
         "parser_id": "NASDAQ_TRADER_US_EQUITIES_HTML",
-        "parser_version": "1",
+        "parser_version": "2",
+        "source_format_version": "NASDAQ_US_EQUITIES_2026_HTML_V1",
+        "covered_years": [2026],
         "required_content_markers": ["U.S. Equity and Options Markets Holiday Schedule", "NasdaqTrader.com"],
         "coverage_semantics": "the single explicit heading year covers exactly that civil year",
     },
     "CBOE_BZX": {
+        "source_profile_id": "CBOE_BZX_OFFICIAL_SOURCE_PROFILE_V1",
         "source_authority_id": "CBOE_US_EQUITIES_HOURS_HOLIDAYS",
         "source_class": "Cboe official U.S. Equities Hours & Holidays / schedule-update notices",
-        "allowed_https_hostnames": ["www.cboe.com"],
-        "allowed_paths": ["/about/hours", "/about/hours/", "/en/about/hours/"],
-        "allowed_query": {},
-        "allowed_redirect_targets": ["https://www.cboe.com/en/about/hours/"],
+        "canonical_request_urls": ["https://www.cboe.com/about/hours"],
+        "canonical_final_urls": ["https://www.cboe.com/about/hours"],
+        "allowed_redirect_transitions": [],
         "document_types": ["text/html"],
         "product_scope": "Cboe BZX U.S. Equities annual calendar",
         "parser_id": "CBOE_BZX_US_EQUITIES_NEXTJS_HTML",
-        "parser_version": "1",
+        "parser_version": "2",
+        "source_format_version": "CBOE_BZX_EQUITIES_2026_HTML_V1",
+        "covered_years": [2026],
         "required_content_markers": ["Cboe BZX and EDGX Equities Trading Hours", "Equities Holiday Schedule"],
         "coverage_semantics": "the single explicit equities schedule year covers exactly that civil year",
     },
@@ -217,21 +232,23 @@ class CalendarEvidenceStore:
 
 
 def _profile_for_url(url: str) -> tuple[str, dict[str, Any]]:
+    if not isinstance(url, str):
+        raise EtfCalendarAuthorityError("official acquisition URL must be a string")
     parsed = urlsplit(url)
-    if parsed.scheme != "https" or parsed.username or parsed.password or parsed.fragment:
+    if (
+        parsed.scheme != "https"
+        or parsed.username
+        or parsed.password
+        or parsed.fragment
+        or not parsed.hostname
+        or parsed.netloc != parsed.hostname
+    ):
         raise EtfCalendarAuthorityError("official acquisition URLs must be uncredentialed HTTPS")
-    hostname = (parsed.hostname or "").lower()
-    query = {key.lower(): [item.lower() for item in values] for key, values in parse_qs(parsed.query).items()}
     matches: list[tuple[str, dict[str, Any]]] = []
     for venue, profile in SOURCE_AUTHORITY_REGISTRY.items():
-        if hostname not in profile["allowed_https_hostnames"]:
-            continue
-        if parsed.path not in profile["allowed_paths"]:
-            continue
-        expected_query = profile["allowed_query"]
-        if query != expected_query:
-            continue
-        matches.append((venue, profile))
+        approved = profile["canonical_request_urls"] + profile["canonical_final_urls"]
+        if url in approved:
+            matches.append((venue, profile))
     if len(matches) != 1:
         raise EtfCalendarAuthorityError("URL must resolve to exactly one frozen source profile")
     return matches[0]
@@ -240,25 +257,83 @@ def _profile_for_url(url: str) -> tuple[str, dict[str, Any]]:
 def _validate_profile_urls(
     request_url: str, final_url: str, redirect_chain: Sequence[str]
 ) -> tuple[str, dict[str, Any]]:
-    venue, profile = _profile_for_url(final_url)
     request_venue, request_profile = _profile_for_url(request_url)
-    if request_venue != venue:
+    if request_url not in request_profile["canonical_request_urls"]:
+        raise EtfCalendarAuthorityError("request URL is not an exact canonical endpoint")
+    if not isinstance(redirect_chain, (list, tuple)) or any(not isinstance(url, str) for url in redirect_chain):
+        raise EtfCalendarAuthorityError("redirect chain must be an ordered URL sequence")
+    hops = [request_url, *redirect_chain]
+    if hops[-1] != final_url:
+        raise EtfCalendarAuthorityError("observed redirect chain does not terminate at final URL")
+    allowed = {tuple(transition) for transition in request_profile["allowed_redirect_transitions"]}
+    for transition in zip(hops, hops[1:]):
+        if transition not in allowed:
+            raise EtfCalendarAuthorityError("redirect transition is not exactly frozen")
+    venue, final_profile = _profile_for_url(final_url)
+    if venue != request_venue or final_profile is not request_profile:
         raise EtfCalendarAuthorityError("redirect crosses frozen source-profile scope")
-    if not isinstance(redirect_chain, (list, tuple)) or any(
-        not isinstance(url, str) or urlsplit(url).scheme != "https"
-        for url in redirect_chain
-    ):
-        raise EtfCalendarAuthorityError("redirect chain must contain only HTTPS URLs")
-    if request_url == final_url:
-        if redirect_chain:
-            raise EtfCalendarAuthorityError("redirect chain supplied without a redirect")
-    elif (
-        not redirect_chain
-        or redirect_chain[-1] != final_url
-        or final_url not in request_profile["allowed_redirect_targets"]
-    ):
-        raise EtfCalendarAuthorityError("redirect target is not frozen for the source profile")
-    return venue, profile
+    if final_url not in request_profile["canonical_final_urls"]:
+        raise EtfCalendarAuthorityError("final URL is not an exact approved endpoint")
+    return request_venue, request_profile
+
+
+def _profile_for_id(profile_id: str) -> tuple[str, dict[str, Any]]:
+    matches = [
+        (venue, profile)
+        for venue, profile in SOURCE_AUTHORITY_REGISTRY.items()
+        if profile["source_profile_id"] == profile_id
+    ]
+    if len(matches) != 1:
+        raise EtfCalendarAuthorityError("unknown frozen official source profile")
+    return matches[0]
+
+
+class _ExactRedirectHandler(HTTPRedirectHandler):
+    def __init__(self, profile: Mapping[str, Any]) -> None:
+        super().__init__()
+        self._allowed = {tuple(item) for item in profile["allowed_redirect_transitions"]}
+        self.observed_targets: list[str] = []
+
+    def redirect_request(
+        self, req: Request, fp: Any, code: int, msg: str,
+        headers: Mapping[str, str], newurl: str,
+    ) -> Request | None:
+        target = urljoin(req.full_url, newurl)
+        if (req.full_url, target) not in self._allowed:
+            raise EtfCalendarAuthorityError("redirect transition is not exactly frozen")
+        self.observed_targets.append(target)
+        return super().redirect_request(req, fp, code, msg, headers, target)
+
+
+def _perform_verified_https_get(profile: Mapping[str, Any]) -> dict[str, Any]:
+    """Own the verified HTTPS transaction; no caller transport enters here."""
+
+    request_url = profile["canonical_request_urls"][0]
+    context = ssl.create_default_context()
+    if not context.check_hostname or context.verify_mode != ssl.CERT_REQUIRED:
+        raise EtfCalendarAuthorityError("verified TLS context is required")
+    redirects = _ExactRedirectHandler(profile)
+    opener = build_opener(HTTPSHandler(context=context), redirects)
+    request = Request(request_url, method="GET", headers={"User-Agent": "bitcoin-swing-scientific-calendar/1"})
+    try:
+        with opener.open(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+            body = response.read()
+            final_url = response.geturl()
+            status = response.status
+            headers = {str(key): str(value) for key, value in response.headers.items()}
+    except EtfCalendarAuthorityError:
+        raise
+    except (HTTPError, URLError, OSError) as error:
+        raise EtfCalendarAuthorityError("trusted official-calendar HTTPS acquisition failed") from error
+    _validate_profile_urls(request_url, final_url, redirects.observed_targets)
+    return {
+        "request_url": request_url,
+        "final_url": final_url,
+        "redirect_chain": tuple(redirects.observed_targets),
+        "http_status": status,
+        "response_headers": headers,
+        "response_bytes": body,
+    }
 
 
 def _semantic_ast_sha256() -> str:
@@ -273,8 +348,12 @@ def _semantic_ast_sha256() -> str:
         "CalendarEvidenceStore",
         "_profile_for_url",
         "_validate_profile_urls",
+        "_profile_for_id",
+        "_ExactRedirectHandler",
+        "_perform_verified_https_get",
         "_response_bytes",
-        "official_calendar_http_acquisition_record",
+        "collect_official_calendar",
+        "load_calendar_parser_fixture",
         "_verify_source_snapshot",
         "_derive_source_semantic",
         "_verify_schedule_record",
@@ -313,40 +392,40 @@ def _response_bytes(row: Mapping[str, Any]) -> bytes:
     return raw
 
 
-def official_calendar_http_acquisition_record(
-    *,
-    request_url: str,
-    final_url: str,
-    response_bytes: bytes,
-    response_received_at: datetime,
-    acquired_at: datetime,
-    redirect_chain: Sequence[str] = (),
-    http_method: str = "GET",
-    http_status: int = 200,
-    response_content_type: str = "text/html; charset=utf-8",
-    response_headers: Mapping[str, str] | None = None,
-    published_at: datetime | None = None,
-) -> dict[str, Any]:
-    """Create validated HTTP evidence; venue identity is never caller supplied."""
+def collect_official_calendar(profile_id: str, receipt_clock: Any) -> dict[str, Any]:
+    """Perform the frozen HTTPS acquisition and construct its evidence directly."""
 
-    if http_method != "GET" or type(http_status) is not int or http_status != 200:
+    venue_id, selected_profile = _profile_for_id(profile_id)
+    if not callable(receipt_clock):
+        raise EtfCalendarAuthorityError("receipt_clock must be the trusted scientific UTC clock")
+    observation = _perform_verified_https_get(selected_profile)
+    request_url = observation.get("request_url")
+    final_url = observation.get("final_url")
+    chain = list(observation.get("redirect_chain", ()))
+    derived_venue, profile = _validate_profile_urls(request_url, final_url, chain)
+    if derived_venue != venue_id or profile is not selected_profile:
+        raise EtfCalendarAuthorityError("collector response escaped selected source profile")
+    http_status = observation.get("http_status")
+    if type(http_status) is not int or http_status != 200:
         raise EtfCalendarAuthorityError("only successful official HTTPS GET responses are supported")
-    chain = list(redirect_chain)
-    venue_id, profile = _validate_profile_urls(request_url, final_url, chain)
+    response_headers = observation.get("response_headers")
+    if not isinstance(response_headers, Mapping):
+        raise EtfCalendarAuthorityError("collector did not observe response headers")
+    response_content_type = next(
+        (value for key, value in response_headers.items() if str(key).lower() == "content-type"),
+        "",
+    )
+    if not isinstance(response_content_type, str):
+        raise EtfCalendarAuthorityError("collector observed invalid content type")
     media_type = response_content_type.split(";", 1)[0].strip().lower()
     if media_type not in profile["document_types"]:
         raise EtfCalendarAuthorityError("unsupported official response content type")
+    response_bytes = observation.get("response_bytes")
     if not isinstance(response_bytes, bytes) or not response_bytes:
         raise EtfCalendarAuthorityError("exact nonempty response bytes are required")
-    received = _parse_utc(response_received_at, "response_received_at")
-    acquired = _parse_utc(acquired_at, "acquired_at")
-    if acquired != received:
-        raise EtfCalendarAuthorityError("acquired_at must equal response_received_at")
-    published = _parse_utc(published_at, "published_at") if published_at is not None else None
-    if published is not None and published > acquired:
-        raise EtfCalendarAuthorityError("published_at may not exceed acquired_at")
+    received = _parse_utc(receipt_clock(), "response_received_at")
     normalized_headers: dict[str, str] = {}
-    for key, value in (response_headers or {}).items():
+    for key, value in response_headers.items():
         if not isinstance(key, str) or not isinstance(value, str):
             raise EtfCalendarAuthorityError("response headers must be strings")
         if key.lower() in {"content-length", "etag"}:
@@ -358,21 +437,26 @@ def official_calendar_http_acquisition_record(
         "request_url": request_url,
         "final_url": final_url,
         "redirect_chain": chain,
-        "http_method": http_method,
+        "http_method": "GET",
         "http_status": http_status,
         "response_content_type": response_content_type,
         "response_headers": dict(sorted(normalized_headers.items())),
         "response_body_base64": base64.b64encode(response_bytes).decode("ascii"),
         "response_sha256": hashlib.sha256(response_bytes).hexdigest(),
-        "source_profile_id": f"{venue_id}_OFFICIAL_SOURCE_PROFILE_V1",
+        "source_profile_id": profile["source_profile_id"],
         "venue_id": venue_id,
         "source_authority_id": profile["source_authority_id"],
         "parser_id": profile["parser_id"],
         "parser_version": profile["parser_version"],
-        "published_at": published.isoformat() if published is not None else None,
+        "source_format_version": profile["source_format_version"],
+        "acquisition_provenance": TRUSTED_ACQUISITION_PROVENANCE,
+        "trusted_collector_id": TRUSTED_COLLECTOR_ID,
+        "tls_policy_id": TLS_POLICY_ID,
+        "collector_semantic_sha256": executable_sha,
+        "published_at": None,
         "response_received_at": received.isoformat(),
-        "acquired_at": acquired.isoformat(),
-        "available_at": acquired.isoformat(),
+        "acquired_at": received.isoformat(),
+        "available_at": received.isoformat(),
         "executable_semantic_sha256": executable_sha,
     }
     provisional = _record(payload)
@@ -387,12 +471,49 @@ def official_calendar_http_acquisition_record(
     return provisional
 
 
-# The failed naked-byte constructor remains unavailable to scientific callers.
+# The failed caller-evidence constructors remain unavailable.
+def official_calendar_http_acquisition_record(**kwargs: Any) -> dict[str, Any]:
+    del kwargs
+    raise EtfCalendarAuthorityError(
+        "caller HTTP evidence is non-authoritative; use trusted HTTPS collection"
+    )
+
+
 def official_source_snapshot_record(**kwargs: Any) -> dict[str, Any]:
     del kwargs
     raise EtfCalendarAuthorityError(
-        "naked-byte source snapshots are non-authoritative; use validated HTTP acquisition"
+        "naked-byte source snapshots are non-authoritative; use trusted HTTPS collection"
     )
+
+
+def load_calendar_parser_fixture(
+    profile_id: str, response_bytes: bytes,
+) -> dict[str, Any]:
+    """Exercise the production parser without creating admissible evidence."""
+
+    venue, profile = _profile_for_id(profile_id)
+    if not isinstance(response_bytes, bytes) or not response_bytes:
+        raise EtfCalendarAuthorityError("fixture requires exact nonempty bytes")
+    fixture = _record(
+        {
+            "record_kind": "ETF_CALENDAR_PARSER_FIXTURE_V1",
+            "schema_version": 1,
+            "acquisition_provenance": FIXTURE_ACQUISITION_PROVENANCE,
+            "source_profile_id": profile_id,
+            "venue_id": venue,
+            "parser_id": profile["parser_id"],
+            "parser_version": profile["parser_version"],
+            "response_body_base64": base64.b64encode(response_bytes).decode("ascii"),
+            "response_sha256": hashlib.sha256(response_bytes).hexdigest(),
+        }
+    )
+    try:
+        semantic = _semantics.derive_schedule(
+            profile["parser_id"], response_bytes, fixture[RECORD_DIGEST_FIELD]
+        )
+    except _semantics.CalendarSourceFormatError as error:
+        raise EtfCalendarAuthorityError(str(error)) from error
+    return {"fixture_record": fixture, "normalized_schedule": semantic}
 
 
 def derive_normalized_schedule_from_official_source(
@@ -477,7 +598,9 @@ def _verify_source_snapshot(record: Mapping[str, Any]) -> dict[str, Any]:
         "response_body_base64", "response_sha256", "source_profile_id", "venue_id",
         "source_authority_id", "parser_id", "parser_version", "published_at",
         "response_received_at", "acquired_at", "available_at",
-        "executable_semantic_sha256", RECORD_DIGEST_FIELD,
+        "source_format_version", "acquisition_provenance", "trusted_collector_id",
+        "tls_policy_id", "collector_semantic_sha256", "executable_semantic_sha256",
+        RECORD_DIGEST_FIELD,
     }
     if (
         set(row) != required
@@ -490,12 +613,20 @@ def _verify_source_snapshot(record: Mapping[str, Any]) -> dict[str, Any]:
     )
     if row.get("venue_id") != venue:
         raise EtfCalendarAuthorityError("source venue does not derive from its URL profile")
-    if row.get("source_profile_id") != f"{venue}_OFFICIAL_SOURCE_PROFILE_V1":
+    if row.get("source_profile_id") != expected["source_profile_id"]:
         raise EtfCalendarAuthorityError("wrong source profile identity")
     if row.get("source_authority_id") != expected["source_authority_id"]:
         raise EtfCalendarAuthorityError("wrong source authority for venue")
     if row.get("parser_id") != expected["parser_id"] or row.get("parser_version") != expected["parser_version"]:
         raise EtfCalendarAuthorityError("wrong frozen parser identity")
+    if row.get("source_format_version") != expected["source_format_version"]:
+        raise EtfCalendarAuthorityError("wrong frozen source-format identity")
+    if (
+        row.get("acquisition_provenance") != TRUSTED_ACQUISITION_PROVENANCE
+        or row.get("trusted_collector_id") != TRUSTED_COLLECTOR_ID
+        or row.get("tls_policy_id") != TLS_POLICY_ID
+    ):
+        raise EtfCalendarAuthorityError("acquisition lacks trusted collector provenance")
     if row.get("http_method") != "GET" or row.get("http_status") != 200:
         raise EtfCalendarAuthorityError("unsupported HTTP acquisition")
     headers = row.get("response_headers")
@@ -516,7 +647,10 @@ def _verify_source_snapshot(record: Mapping[str, Any]) -> dict[str, Any]:
     published = row.get("published_at")
     if published is not None and _parse_utc(published, "published_at") > acquired:
         raise EtfCalendarAuthorityError("published_at may not exceed acquired_at")
-    if row.get("executable_semantic_sha256") != _semantic_ast_sha256():
+    if (
+        row.get("collector_semantic_sha256") != _semantic_ast_sha256()
+        or row.get("executable_semantic_sha256") != _semantic_ast_sha256()
+    ):
         raise EtfCalendarAuthorityError("runtime executable semantic attestation mismatch")
     semantic = _derive_source_semantic(row, raw=raw)
     if semantic["venue_id"] != venue:
@@ -849,7 +983,9 @@ def venue_authority_registry_contract() -> dict[str, Any]:
             "canonical_venue_set": list(CANONICAL_VENUES),
             "dynamic_venue_addition": "REFUSE_REQUIRES_NEW_AUTHORITY_VERSION",
             "source_profiles": SOURCE_AUTHORITY_REGISTRY,
-            "profile_resolution": "request/final HTTPS URL resolves exactly one profile; venue and authority derive from it",
+            "profile_resolution": "raw URL equals one exact canonical endpoint string; no normalization or aliases",
+            "explicit_port": "FORBIDDEN_INCLUDING_443",
+            "query_path_and_redirects": "exact raw profile registry identity only",
             "venue_supplied_by_caller": False,
             "dynamic_source_discovery": False,
             "third_party_calendars": "DIAGNOSTICS_ONLY_NOT_SCIENTIFIC_AUTHORITY",
@@ -919,12 +1055,17 @@ def official_source_snapshot_contract() -> dict[str, Any]:
     return _definition(
         {
             "contract_version": SOURCE_SNAPSHOT_KIND,
-            "authority": "validated HTTPS acquisition envelope + exact response bytes + frozen profile/parser",
+            "authority": "trusted collector-observed HTTPS transaction + exact response bytes + frozen profile/parser",
             "method": "GET",
             "successful_statuses": [200],
             "https_only": True,
+            "acquisition_provenance": TRUSTED_ACQUISITION_PROVENANCE,
             "url_alone_sufficient": False,
+            "caller_response_bytes_authoritative": False,
+            "caller_http_metadata_authoritative": False,
             "naked_bytes_constructor_authoritative": False,
+            "fixture_provenance": FIXTURE_ACQUISITION_PROVENANCE,
+            "fixture_store_admission": "REFUSE",
             "scientific_available_at": "response_received_at == acquired_at == available_at",
             "published_at": "informational only; null unless reliable; when present <= acquired_at",
             "clock_integrity": (
@@ -943,6 +1084,35 @@ def official_source_snapshot_contract() -> dict[str, Any]:
     )
 
 
+def trusted_https_collector_contract() -> dict[str, Any]:
+    return _definition(
+        {
+            "contract_version": TRUSTED_COLLECTOR_ID,
+            "api": "collect_official_calendar(profile_id, receipt_clock)",
+            "request_construction": "collector selects the profile's exact canonical request URL",
+            "transport_owner": "stdlib HTTPSHandler under collector-owned default SSLContext",
+            "tls_policy_id": TLS_POLICY_ID,
+            "https_only": True,
+            "certificate_verification": "REQUIRED",
+            "hostname_verification": "REQUIRED",
+            "caller_custom_ca": "FORBIDDEN",
+            "caller_verify_false": "FORBIDDEN",
+            "http_downgrade": "FORBIDDEN",
+            "timeout_seconds": HTTP_TIMEOUT_SECONDS,
+            "redirect_policy": "every observed transition must equal one frozen profile transition",
+            "response_reading": "collector observes status, final URL, headers and exact bytes",
+            "receipt_time": "receipt_clock sampled after exact response bytes are read",
+            "production_transport_injectable": False,
+            "trusted_process_assumption": (
+                "Network-origin authority is established by the certified collector executing "
+                "the frozen HTTPS/TLS policy inside the trusted scientific process. The authority "
+                "does not claim a cryptographic offline proof that detached arbitrary bytes "
+                "originated from the server."
+            ),
+        }
+    )
+
+
 def source_parser_registry_contract() -> dict[str, Any]:
     return _definition(
         {
@@ -951,16 +1121,46 @@ def source_parser_registry_contract() -> dict[str, Any]:
                 venue: {
                     "parser_id": profile["parser_id"],
                     "parser_version": profile["parser_version"],
+                    "source_format_version": profile["source_format_version"],
+                    "covered_years": profile["covered_years"],
                     "recognition": profile["required_content_markers"],
                     "product_scope": profile["product_scope"],
                     "coverage_derivation": profile["coverage_semantics"],
                     "closure_extraction": "explicit Closed/holiday table rows",
                     "early_close_extraction": "explicit early-close rows/notices only",
                     "regular_default": "remaining weekdays only inside explicit annual coverage",
+                    "table_rule": "exactly one structurally identified table; every body row consumed",
                     "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE",
                 }
                 for venue, profile in SOURCE_AUTHORITY_REGISTRY.items()
             },
+        }
+    )
+
+
+def parser_format_census_contract() -> dict[str, Any]:
+    return _definition(
+        {
+            "contract_version": "ETF_CALENDAR_PARSER_FORMAT_CENSUS_V1",
+            "future_year_rule": "UNSUPPORTED_SOURCE_FORMAT until a prospectively reviewed format is added",
+            "fixture_role": "parser-format reference only; never network-origin authority",
+            "formats": {
+                "NYSE_ARCA": {
+                    "header": list(_semantics._NYSE_HEADER),
+                    "ordered_row_labels": list(_semantics._NYSE_LABELS),
+                    "early_close_statement_classes": _semantics._NYSE_EARLY_NOTICE_DATE_COUNTS,
+                },
+                "NASDAQ": {
+                    "header": list(_semantics._NASDAQ_HEADER),
+                    "ordered_label_status_rows": [list(row) for row in _semantics._NASDAQ_ROW_CENSUS],
+                },
+                "CBOE_BZX": {
+                    "header": list(_semantics._CBOE_HEADER),
+                    "ordered_row_labels": list(_semantics._CBOE_LABELS),
+                },
+            },
+            "partial_or_extra_supported_calendar_table": "REFUSE",
+            "unknown_duplicate_or_malformed_row": "REFUSE",
         }
     )
 
@@ -992,7 +1192,10 @@ def executable_semantic_manifest_contract() -> dict[str, Any]:
             "semantic_module": "btc_predictor.research.etf_calendar_semantics",
             "normalized_ast_sha256": _semantic_ast_sha256(),
             "owners": [
-                "source profile resolver", "NYSE parser", "Nasdaq parser", "Cboe parser",
+                "exact request construction", "TLS/HTTPS transport owner", "redirect validator",
+                "response reader", "receipt-time acquisition", "source-profile resolver",
+                "acquisition-record constructor", "NYSE complete-table parser",
+                "Nasdaq complete-table parser", "Cboe complete-table parser",
                 "normalized schedule validator", "venue-row derivation", "PIT revision selector",
                 "common-session reducer", "ETF adapter",
             ],
@@ -1055,8 +1258,10 @@ def _definition(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 _CHILD_ARTIFACTS: tuple[tuple[str, str], ...] = (
     ("official_source_profile_registry.json", "venue_authority_registry_contract"),
+    ("trusted_https_collector_contract.json", "trusted_https_collector_contract"),
     ("http_acquisition_schema.json", "official_source_snapshot_contract"),
     ("source_parser_registry.json", "source_parser_registry_contract"),
+    ("parser_format_census.json", "parser_format_census_contract"),
     ("normalized_schedule_contract.json", "normalized_schedule_contract"),
     ("venue_session_record_schema.json", "venue_session_record_schema_contract"),
     ("pit_revision_rule.json", "pit_revision_rule_contract"),
@@ -1093,14 +1298,24 @@ def authority_definition() -> dict[str, Any]:
             name: child["definition_sha256"] for name, child in children.items()
         },
         "scientific_scope": "expected ETF publication-date eligibility only",
-        "failed_authority_lineage": {
-            "definition_sha256": FAILED_AUTHORITY_SHA256,
-            "authoritative": False,
-            "certified": False,
-            "prospective_observations": 0,
-            "superseded_before_use": True,
-            "review_result": "FAIL — ETF CALENDAR SOURCE DERIVATION INVALID",
-        },
+        "failed_authority_lineage": [
+            {
+                "definition_sha256": FAILED_AUTHORITY_SHA256,
+                "authoritative": False,
+                "certified": False,
+                "prospective_observations": 0,
+                "superseded_before_use": True,
+                "review_result": "FAIL — ETF CALENDAR SOURCE DERIVATION INVALID",
+            },
+            {
+                "definition_sha256": FAILED_CORRECTED_AUTHORITY_SHA256,
+                "authoritative": False,
+                "certified": False,
+                "prospective_observations": 0,
+                "superseded_before_use": True,
+                "review_result": "FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID",
+            },
+        ],
         "safety": {
             "prospective_observations_collected": 0,
             "persistent_strategy_collection_started": COLLECTION_AUTHORIZED,
@@ -1144,10 +1359,11 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "and Cboe BZX U.S. equity session calendars. Regular and early-close sessions",
         "are expected; full closures are not. Weekends are closed independently. Any",
         "missing, invalid, or unresolved conflicting official evidence fails closed.", "",
-        "Calendar evidence is append-only. A validated HTTPS acquisition binds request/final",
-        "URLs, exact response bytes, receipt/acquisition time and a uniquely resolved frozen",
-        "source profile. Venue, product scope, coverage, closures and early closes are then",
-        "derived by the frozen source-specific parser; caller-authored schedules are refused.", "",
+        "Calendar evidence is append-only. The trusted collector constructs the exact request,",
+        "performs verified HTTPS, validates every redirect hop, reads the response and timestamps",
+        "receipt itself. Caller bytes or HTTP metadata and parser fixtures are never authoritative.",
+        "Exact endpoint identity, full structural table traversal, semantic row census and complete",
+        "NYSE early-close prose are frozen and hash-bound; incomplete annual documents refuse.", "",
         "Scientific `available_at` equals response receipt and acquisition time. PIT filtering",
         "precedes revision replay, so future evidence cannot affect an earlier decision.",
         "The normalized AST of every parser/reducer/adapter owner is hash-bound and runtime",
@@ -1158,8 +1374,9 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "`btc_predictor/tests/fixtures/etf_calendar/`. Their response SHA-256 values are",
         "validated before parser extraction. No fixture is a prospective strategy observation.", "",
         "## Failed lineage", "",
-        f"The failed authority `{FAILED_AUTHORITY_SHA256}` remains non-authoritative,",
-        "non-certified, unused, and preserved in its original artifact directory.", "",
+        f"The failed authorities `{FAILED_AUTHORITY_SHA256}` and",
+        f"`{FAILED_CORRECTED_AUTHORITY_SHA256}` remain non-authoritative, non-certified,",
+        "unused, and preserved in their original artifact directories.", "",
         "## Material child hashes", "", "| child | definition hash |", "| --- | --- |",
     ]
     for child, sha256 in sorted(protocol["child_definition_sha256"].items()):
