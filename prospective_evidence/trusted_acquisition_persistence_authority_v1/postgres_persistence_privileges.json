@@ -1,0 +1,25 @@
+{
+  "atomicity": "VERIFY_COMPLETE_SIGNED_ENVELOPE_THEN_SINGLE_INSERT_IN_CALLER_TRANSACTION",
+  "authoritative_table": "research.etf_calendar_trusted_acquisitions",
+  "collector_privileges": [
+    "SELECT",
+    "INSERT"
+  ],
+  "collector_role": "btc_calendar_collector_writer",
+  "contract_version": "TRUSTED_ACQUISITION_POSTGRES_PERSISTENCE_V1",
+  "corrections": "NEW_SIGNED_ROWS_ONLY",
+  "database": "PostgreSQL",
+  "definition_sha256": "73abce685f072ce62589ef49974aaabac759fa1b4cafb474fbfc5d6466088c72",
+  "duplicate": "EXACT_ENVELOPE_IDEMPOTENT_BY_PRIMARY_KEY",
+  "forbidden_normal_workflow_privileges": [
+    "UPDATE",
+    "DELETE"
+  ],
+  "public_privileges": [],
+  "scientific_reader_privileges": [
+    "SELECT"
+  ],
+  "scientific_reader_role": "btc_predictor_scientific_reader",
+  "signature_remains_mandatory_despite_database_privileges": true,
+  "unsigned_authoritative_row": "IMPOSSIBLE_BY_SCHEMA_AND_WRITER_API"
+}

@@ -26,6 +26,7 @@ from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_ope
 from btc_predictor.data import EtfFlow, require_utc_datetime
 from btc_predictor.features import flow as _flow
 from btc_predictor.research import etf_calendar_semantics as _semantics
+from btc_predictor.research import trusted_acquisition as _trusted
 
 
 AUTHORITY_VERSION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1"
@@ -209,21 +210,49 @@ def _verify_record(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 class CalendarEvidenceStore:
-    """Append-only store admitting only fully validated scientific records."""
+    """Replay cache admitting acquisitions only through verified envelopes."""
 
-    def __init__(self, records: Iterable[Mapping[str, Any]] = ()) -> None:
+    def __init__(
+        self,
+        records: Iterable[Mapping[str, Any]] = (),
+        *,
+        key_registry: Mapping[str, _trusted.VerificationKey] = _trusted.PRODUCTION_KEY_REGISTRY,
+    ) -> None:
         self._records: dict[str, dict[str, Any]] = {}
+        self._envelopes: dict[str, dict[str, Any]] = {}
+        self._key_registry = key_registry
         for record in records:
             self.put(record)
 
     def put(self, record: Mapping[str, Any]) -> str:
         payload = dict(record)
+        if payload.get("record_kind") == _trusted.ENVELOPE_KIND:
+            try:
+                signed_payload = _trusted.verify_envelope(
+                    payload, registry=self._key_registry
+                )
+            except _trusted.TrustedAcquisitionError as error:
+                raise EtfCalendarAuthorityError(str(error)) from error
+            source = _verify_source_snapshot(signed_payload)
+            envelope_identity = payload["envelope_sha256"]
+            prior_envelope = self._envelopes.get(envelope_identity)
+            if prior_envelope is not None and prior_envelope != payload:
+                raise EtfCalendarAuthorityError("envelope content identity collision")
+            identity = source[RECORD_DIGEST_FIELD]
+            prior = self._records.get(identity)
+            if prior is not None and prior != source:
+                raise EtfCalendarAuthorityError("content identity collision")
+            self._envelopes[envelope_identity] = payload
+            self._records[identity] = source
+            return identity
         if RECORD_DIGEST_FIELD not in payload:
             raise EtfCalendarAuthorityError("scientific records require a declared digest")
         _verify_record(payload)
         kind = payload.get("record_kind")
         if kind == SOURCE_SNAPSHOT_KIND:
-            _verify_source_snapshot(payload)
+            raise EtfCalendarAuthorityError(
+                "unsigned acquisition refused; rehydrate a verified signed envelope"
+            )
         elif kind == NORMALIZED_SCHEDULE_KIND:
             _verify_schedule_record(self, payload)
         elif kind == VENUE_SESSION_RECORD_KIND:
@@ -236,6 +265,14 @@ class CalendarEvidenceStore:
             raise EtfCalendarAuthorityError("content identity collision")
         self._records[identity] = payload
         return identity
+
+    def envelopes(self) -> tuple[dict[str, Any], ...]:
+        return tuple(
+            dict(row)
+            for row in sorted(
+                self._envelopes.values(), key=lambda row: row["envelope_sha256"]
+            )
+        )
 
     def get(self, record_sha256: str) -> dict[str, Any]:
         if not _is_sha256(record_sha256) or record_sha256 not in self._records:
@@ -410,8 +447,14 @@ def _response_bytes(row: Mapping[str, Any]) -> bytes:
     return raw
 
 
-def collect_official_calendar(profile_id: str, receipt_clock: Any) -> dict[str, Any]:
-    """Perform the frozen HTTPS acquisition and construct its evidence directly."""
+def collect_official_calendar(
+    profile_id: str,
+    receipt_clock: Any,
+    *,
+    signer: _trusted.AcquisitionSigner,
+    appender: _trusted.AcquisitionAppender,
+) -> dict[str, Any]:
+    """Collect, validate, sign, and durably append one acquisition envelope."""
 
     venue_id, selected_profile = _profile_for_id(profile_id)
     if not callable(receipt_clock):
@@ -486,7 +529,15 @@ def collect_official_calendar(profile_id: str, receipt_clock: Any) -> dict[str, 
         raise EtfCalendarAuthorityError(str(error)) from error
     if semantic["venue_id"] != venue_id:
         raise EtfCalendarAuthorityError("source content product scope conflicts with URL profile")
-    return provisional
+    _verify_source_snapshot(provisional)
+    try:
+        envelope = signer.sign_payload(provisional)
+        appended = appender.append(envelope)
+    except _trusted.TrustedAcquisitionError as error:
+        raise EtfCalendarAuthorityError(str(error)) from error
+    if appended != envelope["envelope_sha256"]:
+        raise EtfCalendarAuthorityError("durable append did not confirm envelope identity")
+    return envelope
 
 
 # The failed caller-evidence constructors remain unavailable.

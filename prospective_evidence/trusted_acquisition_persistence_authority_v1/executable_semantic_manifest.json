@@ -1,0 +1,18 @@
+{
+  "contract_version": "TRUSTED_ACQUISITION_EXECUTABLE_SEMANTIC_MANIFEST_V1",
+  "cryptography_dependency": "cryptography==50.0.1",
+  "definition_sha256": "70fc50f85aeaf2550c99272b1151ae1328b0a1bce854960ef3a1783442ef818a",
+  "identity_method": "SHA-256 of normalized Python AST; locations excluded",
+  "normalized_ast_sha256": "432d6889378139666b8d6a0db42033bc7a1943996c2c2d037ea835728db65f56",
+  "owners": [
+    "canonical_signed_message_builder",
+    "payload_digest_builder",
+    "postgres_append_owner",
+    "postgres_rehydration_owner",
+    "rehydration_store_owner",
+    "signature_verifier",
+    "trusted_collector_creation_owner",
+    "trusted_collector_signing_owner"
+  ],
+  "runtime_change": "MOVES_MATERIAL_CHILD_AND_TOP_AUTHORITY_HASH"
+}

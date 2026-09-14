@@ -66,6 +66,11 @@ from btc_predictor.db.raw import (
     open_interest,
     perp_volume,
 )
+from btc_predictor.db.research import (
+    TRUSTED_ACQUISITION_PRIMARY_KEY,
+    etf_calendar_trusted_acquisitions,
+    research_metadata,
+)
 from btc_predictor.db.signals import (
     PREDICTOR_RUNS_PRIMARY_KEY,
     RECOMMENDATIONS_PRIMARY_KEY,
@@ -116,6 +121,7 @@ __all__ = [
     "RUNTIME_SCHEMAS",
     "STOPS_PRIMARY_KEY",
     "TRANCHES_PRIMARY_KEY",
+    "TRUSTED_ACQUISITION_PRIMARY_KEY",
     "alembic_config",
     "current_database_revision",
     "downgrade_database",
@@ -128,6 +134,7 @@ __all__ = [
     "build_reference_composite_insert_ignore",
     "derived_metadata",
     "etf_flows",
+    "etf_calendar_trusted_acquisitions",
     "funding_rates",
     "futures_basis",
     "generic_series",
@@ -145,6 +152,7 @@ __all__ = [
     "recommendation_decisions",
     "recommendation_reason_codes",
     "recommendations",
+    "research_metadata",
     "schema_fingerprint",
     "signals_metadata",
     "stops",

@@ -1,0 +1,52 @@
+{
+  "any_failure": "REFUSE",
+  "contract_version": "TRUSTED_ACQUISITION_ENVELOPE_V1",
+  "definition_sha256": "dc49e64e035c93c81b118f8a65bb8e9eafbf538b07dd11504fa68cf0dfbe2ce5",
+  "envelope_fields": [
+    "record_kind",
+    "schema_version",
+    "authority_identity",
+    "signed_payload",
+    "signed_payload_sha256",
+    "signing_key_id",
+    "signature_algorithm",
+    "signature",
+    "envelope_sha256"
+  ],
+  "outer_hash": "SHA256_CANONICAL_ENVELOPE_EXCLUDING_ENVELOPE_SHA256",
+  "signed_payload_required_origin_fields": [
+    "record_kind",
+    "schema_version",
+    "source_profile_id",
+    "source_authority_id",
+    "venue_id",
+    "request_url",
+    "final_url",
+    "redirect_chain",
+    "http_method",
+    "http_status",
+    "response_content_type",
+    "response_headers",
+    "response_body_base64",
+    "response_sha256",
+    "trusted_collector_id",
+    "tls_policy_id",
+    "collector_semantic_sha256",
+    "response_received_at",
+    "acquired_at",
+    "available_at",
+    "parser_id",
+    "parser_version",
+    "source_format_version",
+    "executable_semantic_sha256"
+  ],
+  "verification": [
+    "STRICT_SCHEMA",
+    "VALID_ENVELOPE_HASH",
+    "KNOWN_ACTIVE_FROZEN_KEY",
+    "ED25519_ONLY",
+    "RECOMPUTED_PAYLOAD_DIGEST",
+    "DOMAIN_SEPARATED_SIGNATURE",
+    "CORRECT_AUTHORITY_IDENTITY"
+  ]
+}

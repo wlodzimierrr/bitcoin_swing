@@ -1,0 +1,18 @@
+{
+  "contract_version": "TRUSTED_ACQUISITION_SIGNING_KEY_REGISTRY_V1",
+  "definition_sha256": "398d289d1b61314a249ba28193384897406790dee0a90d1d41e0d7e7772bcbd3",
+  "dynamic_rotation": "FORBIDDEN",
+  "keys": [
+    {
+      "algorithm": "Ed25519",
+      "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+      "key_id": "BTC_ETF_CALENDAR_COLLECTOR_ED25519_V1",
+      "public_key_base64": "w71Gv0UzPRK1gmZH0p9wWYqRh6uColYpk3kK2FPUv88=",
+      "public_key_sha256": "8540303bf79b540bac83ef4dbf7315007c8ab7840fe017ee0b748177063443b9",
+      "status": "ACTIVE"
+    }
+  ],
+  "production_key_count": 1,
+  "replacement": "NEW_REVIEWED_TRUSTED_ACQUISITION_AUTHORITY_VERSION",
+  "test_key_in_production_registry": false
+}

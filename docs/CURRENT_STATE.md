@@ -112,6 +112,19 @@ FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 ETF calendar authority execution classification =
 ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY
 
+TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
+FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+
+trusted-acquisition persistence authority definition hash =
+c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554
+
+material child contracts bound by trusted-acquisition authority = 8
+
+POSTP1-001V2B result =
+TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_XHIGH_REVIEW
+
+trusted-persistence certification = NOT CERTIFIED
+
 latest failed sufficiency-governance definition hash =
 0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
 
@@ -338,7 +351,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the same field-validating admission path, and no collector-only durable append,
   non-forgeable envelope or separately controlled ingestion owner proves origin.
   The authority is not certified and is blocked pending an explicit trusted-
-  persistence architecture/authority decision; every downstream authorization
+  persistence architecture/authority decision. POSTP1-001V2B now freezes that
+  separate decision at `c3619b7a...223554`: verified collector execution creates
+  a canonical acquisition payload, the collector-only Ed25519 key signs a
+  domain-separated message, and only the collector database role may append the
+  immutable envelope to PostgreSQL. Replay reads and verifies with one frozen
+  public key; unsigned self-hashed mappings and test-key signatures cannot enter
+  the production authority. `CalendarEvidenceStore` is only a verified replay
+  cache. This authority awaits independent exact-hash xHigh review and does not
+  itself refreeze or certify the calendar, so every downstream authorization
   remains blocked.
   Historically,
   BTC-019 stopped because ten Stage-A
@@ -352,22 +373,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-R2 completed with
-  `FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID`
-- **Current BLOCKED tickets:** ETF calendar authority certification is blocked
-  pending an explicit trusted-persistence architecture/authority decision.
-  POSTP1-001V2R1 therefore remains blocked; POSTP1-003R3 stays blocked until a
-  corrected V2 parent passes exact-hash review, and POSTP1-004 and collection
-  remain transitively blocked
-- **Next dependency-satisfied ticket:** None. The next action is an explicit
-  trusted-acquisition persistence architecture/authority decision; this review
-  does not authorize an automatic POSTP1-001V2A-R3. V2R1, POSTP1-003R3,
-  POSTP1-004 and collection remain blocked and BTC-019 does not reopen
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2B implementation is complete
+  at `c3619b7a...223554` and awaits independent exact-hash xHigh review
+- **Current BLOCKED tickets:** ETF calendar authority certification remains
+  blocked until the trusted-persistence review passes and one bounded calendar
+  integration/refreeze then passes its own closure review. POSTP1-001V2R1,
+  POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
+- **Next dependency-satisfied ticket:** independent exact-hash xHigh review of
+  `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1` at
+  `c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554`.
+  No calendar R3, V2 correction, POSTP1-004 work or collection is authorized
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 5,023 passed, 2 skipped with Python 3.12.14
-  and `RuntimeWarning` treated as an error on 2026-09-14. The final
-  POSTP1-001V2A-R2 trusted-origin/parser-completeness suite is 112 passed; an
-  expanded ETF/PIT/V1/V2 relevant regression set is 575 passed, 2 skipped
+- **Latest verified test baseline:** 5,046 passed, 2 skipped with Python 3.12.14
+  and `RuntimeWarning` treated as an error on 2026-09-14. The POSTP1-001V2B
+  hostile cryptographic/persistence suite is 23 passed; the combined calendar,
+  cryptography and migration suite is 159 passed; and the expanded calendar,
+  PIT, artifact, V1 and failed-V2 regression set is 640 passed, 2 skipped
 - **Last relevant implementation/review commit:** POSTP1-002V2A-R2 failed final
   review is recorded by the current documentation handoff. Reviewed HEAD was
   `8bebcc7c3349e22859c43743b6182a5659724dbd`. POSTP1-001V2A-R2 implementation

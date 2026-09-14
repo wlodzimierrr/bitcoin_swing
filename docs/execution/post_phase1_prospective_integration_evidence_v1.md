@@ -2081,6 +2081,106 @@ hash-movement probes, and `python -m compileall btc_predictor` passed.
 Repository-wide `git diff --check` reports only the pre-existing user-owned
 trailing blank line in `prompts/review_epic.md`, which this review left untouched.
 
+## POSTP1-001V2B — `DEFINE_AND_FREEZE_TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002V2A-R2 failure,
+`ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** independent xHigh review of the exact trusted-acquisition authority hash
+**Owner modules:** `btc_predictor/research/trusted_acquisition.py`,
+`btc_predictor/research/trusted_acquisition_persistence.py`, and the bounded
+integration points in `btc_predictor/research/etf_publication_calendar.py`
+**Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1/`
+
+### Authority decision
+
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1` freezes exactly one architecture
+decision: scientific acquisition creation is verified collector execution plus
+possession of the collector-only Ed25519 private key plus collector-only durable
+PostgreSQL append; rehydration is authoritative-table read plus offline envelope
+verification against the frozen public key. A self-hash, provenance string,
+copied executable identity, official-looking response, or in-memory insertion
+cannot prove creation origin.
+
+The collector completes exact source-profile selection, verified HTTPS,
+endpoint/redirect/HTTP validation, receipt timestamping and complete parser/
+product-scope validation before building and signing the canonical acquisition
+payload. The domain-separated canonical signed message binds the payload digest,
+envelope schema, trusted-acquisition authority and signing-key ID. The immutable
+envelope binds the signed payload, payload digest, key ID, Ed25519 signature and
+outer content hash. Strict schema, digest, authority, algorithm, key-registry and
+signature failure all refuse.
+
+V1 freezes one active production verification key and its SHA-256 fingerprint.
+Its matching private key is not in the repository or artifacts, has no default
+or fallback, is loaded only by the collector from an explicitly configured
+owner-protected external secret file, and must match the frozen public registry.
+Tests use a distinct injected test-only key and registry; test signatures fail
+production verification.
+
+The production origin store is
+`research.etf_calendar_trusted_acquisitions`. Migration 0025 revokes public
+table privileges, gives `btc_calendar_collector_writer` only SELECT/INSERT and
+gives `btc_predictor_scientific_reader` only SELECT; UPDATE/DELETE are explicitly
+revoked. The writer API verifies a complete envelope then executes one
+idempotent PostgreSQL INSERT in the caller transaction. Corrections are new
+signed rows. `CalendarEvidenceStore` remains only a replay/test cache and admits
+source acquisitions solely by verified signed envelope.
+
+### Implementation notes and verification boundary
+
+The frozen authority definition hash is:
+
+```text
+c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554
+```
+
+It binds **8 material children** from one mechanical registry: the production
+public-key registry, canonical signed-message contract, payload/envelope schema,
+collector creation and secret-provisioning contract, PostgreSQL persistence and
+privilege contract, creation/rehydration/failure contract, threat/security
+boundary and normalized-AST executable-semantic manifest. The manifest binds
+the message/digest/signature owners, collector signing and creation, replay-store
+admission, PostgreSQL append and database rehydration. `cryptography==50.0.1`
+is pinned and a deterministic test-only compatibility vector is frozen.
+
+Hostile tests construct parser-valid official-looking source mappings with all
+trusted strings, the current semantic identity and recomputed content hashes;
+unsigned admission refuses. Random and test-key production signatures refuse.
+Changing response bytes/digest, URL, redirects, venue/profile, `available_at`,
+collector semantic identity or parser identity while recomputing all ordinary
+hashes refuses. Signature and key substitutions refuse. A legitimate signed
+envelope reloads in a fresh process, reproduces payload identity and supports
+calendar source replay.
+
+Ed25519 proves possession of the trusted collector key for the exact payload.
+Together with the frozen verified-HTTPS collector and exclusive key/persistence
+privileges this establishes the project's origin boundary; it does not claim an
+independent third-party cryptographic TLS transcript. Collector-host or private-
+key compromise remains outside this boundary and requires collection stop plus
+a new reviewed authority/key-registry version.
+
+Classification is
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_XHIGH_REVIEW`.
+This certifies nothing by itself. The required order remains: independent review
+of this exact hash; only after PASS, one bounded calendar integration/refreeze;
+then independent calendar closure review; then POSTP1-001V2R1. No observations
+were collected and no Stage-B evaluation ran. Calendar certification, V2R1,
+POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019 and Epic T are
+unchanged.
+
+Validation used Python 3.12.14. The hostile cryptographic/persistence suite
+passed 23 tests; the focused calendar/cryptography/migration suite passed 159;
+the expanded calendar, PIT, artifact, V1 and failed-V2 regression set passed
+640 tests with 2 inherited composite skips; and the full suite passed 5,046
+tests with those same 2 skips under `-W error::RuntimeWarning`. Artifact
+regeneration/restoration, the production-public-key match check,
+`python -m compileall btc_predictor`, and scoped diff checking passed. The
+repository-wide diff check continues to report only the pre-existing unrelated
+trailing blank line in `prompts/review_epic.md`, which this ticket did not
+modify.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2108,5 +2208,6 @@ trailing blank line in `prompts/review_epic.md`, which this review left untouche
 | POSTP1-002V2A-R1 | repeat independent exact-hash review of `b81c1702...b357af` | COMPLETE / FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID |
 | POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `05243343...f99c855` | IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2A-R2 | final independent exact-hash review of `05243343...f99c855` | COMPLETE / FAIL — TRUSTED ORIGIN BOUNDARY INVALID; EXPLICIT ARCHITECTURE/AUTHORITY DECISION REQUIRED |
+| POSTP1-001V2B | freeze Ed25519 signed-envelope and collector-only PostgreSQL persistence authority at `c3619b7a...223554` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

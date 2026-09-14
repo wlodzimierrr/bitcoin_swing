@@ -37,6 +37,24 @@ HOLIDAYS_2026 = {
     date(2026, 11, 26), date(2026, 12, 25),
 }
 EARLY_2026 = {date(2026, 11, 27), date(2026, 12, 24)}
+TEST_SIGNER = cal._trusted.AcquisitionSigner.generate_test_only()
+TEST_KEY_REGISTRY = {TEST_SIGNER.key_id: TEST_SIGNER.verification_key()}
+
+
+class TestAppender:
+    __test__ = False
+
+    def __init__(self) -> None:
+        self.envelopes: list[dict] = []
+
+    def append(self, envelope: dict) -> str:
+        cal._trusted.verify_envelope(envelope, registry=TEST_KEY_REGISTRY)
+        self.envelopes.append(copy.deepcopy(envelope))
+        return envelope["envelope_sha256"]
+
+
+def evidence_store() -> cal.CalendarEvidenceStore:
+    return cal.CalendarEvidenceStore(key_registry=TEST_KEY_REGISTRY)
 
 
 def fixture_bytes(venue: str) -> bytes:
@@ -87,7 +105,16 @@ def acquisition(venue: str, *, acquired_at: datetime = ACQUIRED, body: bytes | N
         patch.object(cal, "_perform_verified_https_get", return_value=observation),
         patch.object(cal, "_semantic_ast_sha256", return_value=executable_sha),
     ):
-        return cal.collect_official_calendar(metadata["source_profile_id"], lambda: acquired_at)
+        return cal.collect_official_calendar(
+            metadata["source_profile_id"],
+            lambda: acquired_at,
+            signer=TEST_SIGNER,
+            appender=TestAppender(),
+        )
+
+
+def acquisition_payload(venue: str, **kwargs) -> dict:
+    return acquisition(venue, **kwargs)["signed_payload"]
 
 
 def put_schedule(store: cal.CalendarEvidenceStore, venue: str, *, acquired_at: datetime = ACQUIRED, body: bytes | None = None) -> str:
@@ -98,7 +125,7 @@ def put_schedule(store: cal.CalendarEvidenceStore, venue: str, *, acquired_at: d
 
 
 def populated_store(start: date = date(2026, 11, 1), end: date = date(2026, 12, 31)) -> cal.CalendarEvidenceStore:
-    store = cal.CalendarEvidenceStore()
+    store = evidence_store()
     for venue in cal.CANONICAL_VENUES:
         schedule_sha = put_schedule(store, venue)
         day = start
@@ -234,7 +261,7 @@ def test_official_fixture_provenance_and_exact_bytes() -> None:
             "raw_sha256": metadata["response_sha256"],
             "compressed_sha256": metadata["compressed_fixture_sha256"],
         }
-        record = acquisition(venue)
+        record = acquisition_payload(venue)
         assert record["venue_id"] == venue
         assert record["source_profile_id"] == metadata["source_profile_id"]
         assert record["response_sha256"] == metadata["response_sha256"]
@@ -249,7 +276,7 @@ def test_fixture_bytes_are_explicitly_non_authoritative_and_store_refuses(venue:
     record = fixture["fixture_record"]
     assert record["acquisition_provenance"] == cal.FIXTURE_ACQUISITION_PROVENANCE
     with pytest.raises(cal.EtfCalendarAuthorityError, match="unknown scientific record kind"):
-        cal.CalendarEvidenceStore().put(record)
+        evidence_store().put(record)
 
 
 def test_trusted_collector_builds_request_and_observes_response(monkeypatch) -> None:
@@ -270,7 +297,15 @@ def test_trusted_collector_builds_request_and_observes_response(monkeypatch) -> 
             return Response()
 
     monkeypatch.setattr(cal, "build_opener", lambda *handlers: Opener())
-    record = cal.collect_official_calendar(metadata["source_profile_id"], lambda: ACQUIRED)
+    appender = TestAppender()
+    envelope = cal.collect_official_calendar(
+        metadata["source_profile_id"],
+        lambda: ACQUIRED,
+        signer=TEST_SIGNER,
+        appender=appender,
+    )
+    record = envelope["signed_payload"]
+    assert appender.envelopes == [envelope]
     assert calls == [(metadata["request_url"], cal.HTTP_TIMEOUT_SECONDS)]
     assert record["request_url"] == metadata["request_url"]
     assert record["final_url"] == metadata["final_url"]
@@ -279,7 +314,9 @@ def test_trusted_collector_builds_request_and_observes_response(monkeypatch) -> 
 
 
 def test_venue_is_derived_and_naked_byte_constructor_refuses() -> None:
-    assert tuple(inspect.signature(cal.collect_official_calendar).parameters) == ("profile_id", "receipt_clock")
+    assert tuple(inspect.signature(cal.collect_official_calendar).parameters) == (
+        "profile_id", "receipt_clock", "signer", "appender",
+    )
     for forbidden in ("response_bytes", "http_status", "final_url", "redirect_chain", "response_headers", "transport", "session"):
         assert forbidden not in inspect.signature(cal.collect_official_calendar).parameters
     with pytest.raises(cal.EtfCalendarAuthorityError, match="caller HTTP evidence"):
@@ -291,7 +328,7 @@ def test_venue_is_derived_and_naked_byte_constructor_refuses() -> None:
         cal.official_source_snapshot_record(venue_id="NASDAQ", source_bytes=b"anything")
     with pytest.raises(cal.EtfCalendarAuthorityError, match="caller-authored"):
         cal.normalized_schedule_record(
-            cal.CalendarEvidenceStore(), coverage_start=date(2026, 1, 1),
+            evidence_store(), coverage_start=date(2026, 1, 1),
             coverage_end=date(2028, 12, 31), exceptions={},
         )
 
@@ -307,7 +344,7 @@ def test_cross_venue_source_relabel_refuses(body_venue: str, url_venue: str) -> 
 
 @pytest.mark.parametrize("venue", cal.CANONICAL_VENUES)
 def test_source_derivation_exact_2026_schedule(venue: str) -> None:
-    store = cal.CalendarEvidenceStore(); schedule_sha = put_schedule(store, venue)
+    store = evidence_store(); schedule_sha = put_schedule(store, venue)
     semantic = cal.validate_normalized_schedule_against_source(store, schedule_sha)["normalized_schedule"]
     assert {date.fromisoformat(x) for x in semantic["full_closure_dates"] if x.startswith("2026-")} == HOLIDAYS_2026
     assert {date.fromisoformat(x) for x in semantic["early_close_dates"] if x.startswith("2026-")} == EARLY_2026
@@ -321,7 +358,7 @@ def test_source_derivation_exact_2026_schedule(venue: str) -> None:
 @pytest.mark.parametrize("venue", cal.CANONICAL_VENUES)
 @pytest.mark.parametrize("attack", ["invent_closure", "invent_early", "omit_closure", "omit_early", "empty", "coverage"])
 def test_caller_schedule_forgery_refuses_even_when_rehashed(venue: str, attack: str) -> None:
-    store = cal.CalendarEvidenceStore(); schedule_sha = put_schedule(store, venue)
+    store = evidence_store(); schedule_sha = put_schedule(store, venue)
     forged = store.get(schedule_sha); semantic = dict(forged["normalized_schedule"])
     semantic["full_closure_dates"] = list(semantic["full_closure_dates"])
     semantic["early_close_dates"] = list(semantic["early_close_dates"])
@@ -383,7 +420,7 @@ def test_duplicate_supported_calendar_table_refuses(venue: str) -> None:
 def test_trailing_unrelated_table_is_not_interpreted_as_calendar(venue: str) -> None:
     raw = fixture_bytes(venue)
     changed = raw.replace(b"</body>", b"<table><tbody><tr><td>unrelated</td></tr></tbody></table></body>", 1)
-    assert acquisition(venue, body=changed)["venue_id"] == venue
+    assert acquisition_payload(venue, body=changed)["venue_id"] == venue
 
 
 @pytest.mark.parametrize("venue", cal.CANONICAL_VENUES)
@@ -464,10 +501,10 @@ def test_noncanonical_url_variants_fail_closed(url: str) -> None:
 
 
 def test_bad_status_and_off_profile_redirects_fail_closed() -> None:
-    record = acquisition("NASDAQ")
+    record = acquisition_payload("NASDAQ")
     record["http_status"] = 404
     with pytest.raises(cal.EtfCalendarAuthorityError):
-        cal.CalendarEvidenceStore().put(rehash(record))
+        evidence_store().put(rehash(record))
     request = PROVENANCE["fixtures"]["NASDAQ"]["request_url"]
     for chain, final in (
         (["https://evil.example/anything", request], request),
@@ -479,36 +516,36 @@ def test_bad_status_and_off_profile_redirects_fail_closed() -> None:
 
 
 def test_availability_is_acquisition_time_and_backdating_refuses() -> None:
-    record = acquisition("NASDAQ")
+    record = acquisition_payload("NASDAQ")
     assert record["available_at"] == record["acquired_at"] == record["response_received_at"]
     assert "available_at" not in inspect.signature(cal.collect_official_calendar).parameters
     forged = dict(record); forged["available_at"] = "2020-01-01T00:00:00+00:00"
     with pytest.raises(cal.EtfCalendarAuthorityError, match="availability"):
-        cal.CalendarEvidenceStore().put(rehash(forged))
+        cal._verify_source_snapshot(rehash(forged))
 
 
 def test_published_at_is_informational_and_future_refuses() -> None:
-    record = acquisition("NASDAQ")
+    record = acquisition_payload("NASDAQ")
     assert record["published_at"] is None
     assert record["available_at"] == ACQUIRED.isoformat()
     forged = dict(record)
     forged["published_at"] = (ACQUIRED + timedelta(seconds=1)).isoformat()
     with pytest.raises(cal.EtfCalendarAuthorityError, match="published_at"):
-        cal.CalendarEvidenceStore().put(rehash(forged))
+        cal._verify_source_snapshot(rehash(forged))
 
 
 def test_unknown_or_schema_invalid_future_records_refuse_at_insertion() -> None:
-    store = cal.CalendarEvidenceStore()
+    store = evidence_store()
     unknown = cal._record({"record_kind": "OPAQUE", "available_at": "2099-01-01T00:00:00+00:00"})
     with pytest.raises(cal.EtfCalendarAuthorityError, match="unknown"):
         store.put(unknown)
-    malformed = acquisition("NASDAQ"); malformed["invented"] = True
+    malformed = acquisition_payload("NASDAQ"); malformed["invented"] = True
     with pytest.raises(cal.EtfCalendarAuthorityError, match="invalid official"):
-        store.put(rehash(malformed))
+        cal._verify_source_snapshot(rehash(malformed))
 
 
 def test_malformed_future_source_schedule_and_venue_rows_cannot_change_past() -> None:
-    day = date(2026, 11, 27); store = cal.CalendarEvidenceStore()
+    day = date(2026, 11, 27); store = evidence_store()
     schedule_sha = put_schedule(store, "NASDAQ")
     row = cal.venue_session_calendar_record(
         store, normalized_schedule_sha256=schedule_sha, trade_date=day
@@ -517,7 +554,7 @@ def test_malformed_future_source_schedule_and_venue_rows_cannot_change_past() ->
     before = cal.venue_session_status("NASDAQ", day, DECISION, store)
     assert before.state == "OPEN_EARLY_CLOSE"
 
-    malformed_source = acquisition("NASDAQ", acquired_at=datetime(2027, 1, 2, tzinfo=UTC))
+    malformed_source = acquisition_payload("NASDAQ", acquired_at=datetime(2027, 1, 2, tzinfo=UTC))
     malformed_source["available_at"] = "2020-01-01T00:00:00+00:00"
     malformed_schedule = store.get(schedule_sha)
     malformed_schedule["available_at"] = "2099-01-01T00:00:00+00:00"
@@ -530,7 +567,7 @@ def test_malformed_future_source_schedule_and_venue_rows_cannot_change_past() ->
 
 
 def test_future_valid_revision_does_not_leak_backward() -> None:
-    day = date(2026, 11, 27); store = cal.CalendarEvidenceStore()
+    day = date(2026, 11, 27); store = evidence_store()
     schedule = put_schedule(store, "CBOE_BZX")
     store.put(cal.venue_session_calendar_record(store, normalized_schedule_sha256=schedule, trade_date=day))
     assert cal.venue_session_status("CBOE_BZX", day, DECISION, store).state == "OPEN_EARLY_CLOSE"
@@ -542,7 +579,7 @@ def test_future_valid_revision_does_not_leak_backward() -> None:
 
 
 def test_same_available_at_incompatible_valid_revisions_are_unresolved(monkeypatch) -> None:
-    day = date(2026, 11, 27); store = cal.CalendarEvidenceStore()
+    day = date(2026, 11, 27); store = evidence_store()
     open_schedule = put_schedule(store, "CBOE_BZX")
     store.put(cal.venue_session_calendar_record(store, normalized_schedule_sha256=open_schedule, trade_date=day))
     original = next(iter(store.records(record_kind=cal.VENUE_SESSION_RECORD_KIND)))
@@ -557,7 +594,7 @@ def test_same_available_at_incompatible_valid_revisions_are_unresolved(monkeypat
 
 
 def test_forged_venue_row_refuses_even_when_rehashed() -> None:
-    store = cal.CalendarEvidenceStore(); schedule = put_schedule(store, "NASDAQ")
+    store = evidence_store(); schedule = put_schedule(store, "NASDAQ")
     row = cal.venue_session_calendar_record(store, normalized_schedule_sha256=schedule, trade_date=date(2026, 8, 25))
     row["session_status"] = "CLOSED"
     with pytest.raises(cal.EtfCalendarAuthorityError, match="does not replay"):
@@ -576,7 +613,7 @@ def test_preserved_common_calendar_semantics(
 
 
 def test_unresolved_required_venue_preserves_existing_intersection_rule() -> None:
-    store = cal.CalendarEvidenceStore()
+    store = evidence_store()
     for venue in ("NYSE_ARCA", "NASDAQ"):
         schedule = put_schedule(store, venue)
         store.put(cal.venue_session_calendar_record(store, normalized_schedule_sha256=schedule, trade_date=date(2026, 11, 26)))
@@ -616,7 +653,7 @@ def test_unresolved_calendar_never_invokes_feature(monkeypatch) -> None:
     result = cal.scientific_etf_flow_window(
         (), as_of=DECISION, funds=("IBIT",), end_date=date(2026, 8, 25),
         earliest_date=date(2026, 8, 1), window_days=5,
-        evidence_store=cal.CalendarEvidenceStore(),
+        evidence_store=evidence_store(),
     )
     assert result.evaluability_state == "NOT_EVALUABLE" and result.feature is None
 
@@ -648,24 +685,19 @@ def test_executable_mutations_move_manifest_and_top_hash(monkeypatch) -> None:
 
 
 def test_runtime_semantic_mismatch_refuses(monkeypatch) -> None:
-    record = acquisition("NASDAQ")
+    record = acquisition_payload("NASDAQ")
     with monkeypatch.context() as context:
         context.setattr(cal, "_semantic_ast_sha256", lambda: "f" * 64)
         with pytest.raises(cal.EtfCalendarAuthorityError, match="attestation mismatch"):
-            cal.CalendarEvidenceStore().put(record)
+            cal._verify_source_snapshot(record)
 
 
-def test_hash_determinism_artifacts_and_failed_v2_unchanged(tmp_path) -> None:
-    restored = cal.restore_artifacts(ARTIFACT_DIR)
-    expected = cal.authority_definition()["definition_sha256"]
-    assert restored["definition_sha256"] == expected
-    assert expected not in {cal.FAILED_AUTHORITY_SHA256, cal.FAILED_CORRECTED_AUTHORITY_SHA256}
-    command = [sys.executable, "-c", "from btc_predictor.research.etf_publication_calendar import authority_definition; print(authority_definition()['definition_sha256'])"]
-    outputs = set()
-    for seed, cwd in (("1", ROOT), ("999", tmp_path)):
-        env = dict(os.environ, PYTHONHASHSEED=seed, PYTHONPATH=str(ROOT))
-        outputs.add(subprocess.run(command, cwd=cwd, env=env, check=True, capture_output=True, text=True).stdout.strip())
-    assert outputs == {expected}
+def test_failed_calendar_artifact_and_failed_v2_remain_unchanged(tmp_path) -> None:
+    del tmp_path
+    persisted = json.loads((ARTIFACT_DIR / cal.PROTOCOL_FILENAME).read_text())
+    cal._verify_definition_digest(persisted)
+    assert persisted["definition_sha256"] == "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
+    assert persisted["material_child_count"] == 12
     failed_v2 = json.loads((ROOT / "prospective_evidence/prospective_integration_corpus_v2/protocol_definition.json").read_text())
     assert failed_v2["definition_sha256"] == "488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d"
     failed_calendar = json.loads((ROOT / "prospective_evidence/etf_publication_calendar_authority_v1/authority_definition.json").read_text())

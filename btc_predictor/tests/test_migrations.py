@@ -15,7 +15,7 @@ from btc_predictor.db import (
 from btc_predictor.db.alembic import alembic_config
 
 
-HEAD_REVISION = "0024_actual_trade_entry"
+HEAD_REVISION = "0025_trusted_acquisition"
 
 
 def test_revision_ids_fit_alembic_version_table() -> None:
