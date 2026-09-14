@@ -2083,7 +2083,7 @@ trailing blank line in `prompts/review_epic.md`, which this review left untouche
 
 ## POSTP1-001V2B — `DEFINE_AND_FREEZE_TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW`
 **Dependency:** POSTP1-002V2A-R2 failure,
 `ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -2182,6 +2182,97 @@ repository-wide diff check continues to report only the pre-existing unrelated
 trailing blank line in `prompts/review_epic.md`, which this ticket did not
 modify.
 
+## POSTP1-002V2B — `INDEPENDENT_XHIGH_REVIEW_TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `201769231c32faa03f3f3e49c328d022047a1be3`
+**Documentation handoff:** `128119d2501144c5b49663f4cceddd008a7d7529`
+**Reviewed authority:** `c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — TRUST REGISTRY INJECTION INVALID`
+**Execution classification:** `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
+
+### Exact-hash, key and preserved-science result
+
+Independent canonical-JSON regeneration reproduced the authority hash. All
+8/8 material child hashes reproduce and equal the bindings in the parent. The
+single active Ed25519 production public key decodes to 32 bytes and its frozen
+fingerprint reproduces. A scan of tracked and untracked non-ignored project
+files plus marker searches across Git history found no recognizable production
+private-key material. The production private key was not available to the
+reviewer, so possession and deployment matching were not independently
+demonstrated.
+
+The domain-separated message and payload digest bind the intended public
+identities, public-key-only and random-signature forgery refuse under an
+unmodified production registry, and payload tampering cannot be rescued by
+ordinary hash recomputation. The failed calendar authority, certified V1 and
+failed V2 hashes reproduce unchanged. No calendar, parser, PIT,
+common-session, ETF, Stage-B, risk, stop or threshold science changed. No
+observation was collected and no real Stage-B evaluation ran.
+
+### Blocking findings
+
+Four independent P1 boundaries fail.
+
+1. Production trust roots are caller-replaceable. `verify_envelope`,
+   `CalendarEvidenceStore`, `PostgresTrustedAcquisitionAppender` and
+   `rehydrate_verified_envelopes` all accept arbitrary registries. A test key
+   plus injected registry successfully produced normalized scientific calendar
+   evidence, rehydrated an unmarked envelope and reached a PostgreSQL INSERT.
+   More strongly, `PRODUCTION_KEY_REGISTRY` is a mutable dictionary captured by
+   the default arguments; replacing it in place makes the default production
+   verifier and store accept the test key. The production path therefore does
+   not have a fixed frozen trust root.
+2. The production creation/durability result is capability-injectable and can
+   precede commit. `collect_official_calendar` accepts any signer and appender;
+   a test signer plus fake appender returning the expected hash reports success
+   without persistence. The PostgreSQL appender executes inside a caller-owned
+   transaction and returns the envelope hash without commit or durable
+   confirmation. A real PostgreSQL transaction contained the returned row and
+   then rolled back to zero durable rows after reported success.
+3. Executable binding is incomplete and is not enforced by production paths.
+   Canonical serialization, public-key decoding and external private-key
+   loading are not direct owners in the frozen executable manifest. Mutating
+   public-key decoding or external key loading does not move the top authority
+   on regeneration; a semantics-preserving source mutation of canonical
+   serialization also does not move it. Although a verifier-body mutation moves
+   the regenerated hash, production verification never compares runtime
+   identity with the frozen artifact: a hostile permissive verifier admitted an
+   invalid signature under the old artifact.
+4. Fresh PostgreSQL deployment is not closed. Migration 0025 hard-codes two
+   roles but neither repository migrations nor deployment documentation
+   provision them. A disposable PostgreSQL 17.9 database failed migration at
+   the GRANT because the roles did not exist. When the reviewer manually
+   created isolated no-login roles, actual ACL probes did enforce collector
+   SELECT/INSERT-only, reader SELECT-only, no role memberships, no schema
+   CREATE and no PUBLIC table privileges. The table owner was the
+   infrastructure superuser; the required non-owner/non-superuser application
+   credential assumption is not documented.
+
+Two additional P2 contract defects were reproduced. Strict Base64 verification
+accepts an alternate non-canonical pad-bit encoding of the same 64-byte
+signature, and Boolean `true` is accepted as envelope `schema_version = 1`.
+The external-key loader refuses missing paths, directories, permissive modes,
+RSA keys and wrong/test Ed25519 keys, but checks mode bits without checking
+`st_uid` and no deployment authority documents the effective-UID assumption.
+
+These are authority and deployment decisions, not uniquely mechanical review
+fixes. The review therefore changed no implementation or frozen artifact and
+created no review-fix commit. The trusted-persistence authority is not
+certified; calendar integration/refreeze, V2R1, POSTP1-003R3, POSTP1-004 and
+collection remain blocked. BTC-019 and Epic T remain untouched.
+
+Validation used Python 3.12.14 with `cryptography 50.0.1`. The focused existing
+suite passed 159 tests and the full suite passed 5,046 tests with 2 inherited
+composite skips under `-W error::RuntimeWarning`. Independent hostile probes
+covered registry substitution, fake capability injection, rollback durability,
+fresh migration and actual role ACLs, strict encodings, owner checks, artifact
+regeneration, child mutation and runtime semantic mutation. `python -m
+compileall btc_predictor` passed. Repository-wide `git diff --check` reports
+only the pre-existing user-owned trailing blank line in
+`prompts/review_epic.md`, which this review left untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2209,6 +2300,7 @@ modify.
 | POSTP1-002V2A-R1 | repeat independent exact-hash review of `b81c1702...b357af` | COMPLETE / FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID |
 | POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `05243343...f99c855` | IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2A-R2 | final independent exact-hash review of `05243343...f99c855` | COMPLETE / FAIL — TRUSTED ORIGIN BOUNDARY INVALID; EXPLICIT ARCHITECTURE/AUTHORITY DECISION REQUIRED |
-| POSTP1-001V2B | freeze Ed25519 signed-envelope and collector-only PostgreSQL persistence authority at `c3619b7a...223554` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2B | freeze Ed25519 signed-envelope and collector-only PostgreSQL persistence authority at `c3619b7a...223554` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2B | independent exact-hash xHigh review of `c3619b7a...223554` | COMPLETE / FAIL — TRUST REGISTRY INJECTION INVALID; DURABILITY, EXECUTABLE-BINDING AND ROLE-PROVISIONING BOUNDARIES ALSO INVALID |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
