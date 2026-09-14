@@ -1837,7 +1837,7 @@ collection remain blocked; BTC-019 and Epic T remain untouched.
 
 ## POSTP1-001V2A-R1 — `CORRECT_AND_REFREEZE_ETF_PUBLICATION_CALENDAR_SOURCE_DERIVATION_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW`
 **Dependency:** POSTP1-002V2A review failure and its four bounded P1 findings
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** independent xHigh review of the exact corrected calendar-authority hash
@@ -1901,7 +1901,7 @@ failed V2 remains exactly `488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4
 No prospective observation was collected, no real Stage-B evaluation ran,
 BTC-019 sealed data was untouched, and Epic T was unchanged.
 
-### Authorization boundary
+### Authorization boundary at implementation
 
 The implementation classification is
 `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW`. It
@@ -1916,6 +1916,101 @@ skips; and the full suite passed 4,973 tests with 2 skips under
 `git diff --check` passed. The repository-wide diff check reports only the
 pre-existing unrelated trailing blank line in `prompts/review_epic.md`, which
 this ticket did not modify.
+
+## POSTP1-002V2A-R1 — `REPEAT_INDEPENDENT_XHIGH_REVIEW_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `ab2bce5241e7372de3bbb70c938d08357054b615`
+**Reviewed authority:** `b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af`
+**Review result:** `FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID`
+**Execution classification:** `ETF_PUBLICATION_CALENDAR_AUTHORITY_REQUIRES_FIX`
+
+### Bounded blocking findings
+
+The corrected parser-derived schedule, PIT ordering, common-session rule and ETF
+adapter passed review. Three source-authority defects remained. First, the
+scientific acquisition constructor still accepted caller-supplied bytes, HTTP
+status, final URL, redirect chain, headers and timestamps, so an approved URL
+could label arbitrary look-alike bytes as official evidence. Second, the annual
+parsers flattened page-wide cells and accepted plausible prefixes or generic
+minimum row counts rather than proving complete traversal of one supported
+calendar table and every early-close statement. Third, host/path/query matching
+normalized non-canonical aliases, permitted explicit ports and did not validate
+every redirect transition exactly. The authority remained non-certified and
+unused; no downstream work or collection was authorized.
+
+## POSTP1-001V2A-R2 — `CLOSE_ETF_CALENDAR_TRUSTED_ORIGIN_AND_PARSER_COMPLETENESS_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002V2A-R1 failure and its three bounded P1 findings
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** final independent xHigh review of the exact corrected calendar-authority hash
+**Owner modules:** `btc_predictor/research/etf_publication_calendar.py`,
+`btc_predictor/research/etf_calendar_semantics.py`
+**Artifacts:** `prospective_evidence/etf_publication_calendar_authority_v1_r2/`
+**Implementation commit:** `fcfeb937c0990bc87559d580c38061848fe6c579`
+
+### Final corrected authority decision
+
+Both failed authorities remain byte-preserved, non-authoritative, non-certified,
+unused pre-data lineage: `a1ceb66b...7db0b9` and `b81c1702...b357af`. The final
+corrected authority remains `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` and is
+refrozen at:
+
+```text
+e9092f05ba6d4142a5b8e393102c4516e70fe1ed24c0c10fc274c5ff24ebfedc
+```
+
+It binds **12 material children** from one mechanical registry. The trusted
+collector now selects an exact canonical profile URL, creates a standard
+certificate- and hostname-verifying SSL context, performs and reads the HTTPS
+GET itself, validates each observed redirect against an exact transition
+registry, samples receipt time after reading the response, and directly creates
+the acquisition record. Its production API accepts only a source-profile ID and
+trusted receipt clock; no caller bytes, HTTP metadata, transport, session or
+response object enter that API. Trusted acquisitions carry
+`TRUSTED_HTTPS_COLLECTOR_V1`; parser fixtures carry
+`TEST_FIXTURE_NON_AUTHORITATIVE` and fail scientific-store admission. This is a
+trusted-process HTTPS boundary, not an offline cryptographic proof for detached
+bytes.
+
+Source identity uses exact raw canonical URL equality. Explicit ports,
+credentials, fragments, path aliases, query aliases and any non-frozen redirect
+hop refuse. The three source parsers capture table, section, row and cell
+boundaries; select exactly one supported annual calendar table; traverse every
+body row; enforce exact headers and the complete ordered semantic row census of
+the retained source format; reject duplicate, missing, malformed or unknown
+rows; and bind coverage only to the demonstrated years. NYSE additionally
+requires every frozen early-close statement class and completely parses its
+source-stated dates. A new year or changed census is unsupported until a
+prospectively reviewed parser/source-format version is added.
+
+The normalized-AST identity binds request construction, TLS transport,
+redirects, response reading, receipt timing, acquisition construction and every
+parser-completeness owner. Store admission replays trusted provenance, exact
+profile identity, record digest, receipt timestamps, source parser and product
+scope. The accepted PIT equality and future filtering, same-time conflict rule,
+venue set, weekend/early-close/common-session rules and all ETF formula,
+lookback, normalization, AUM, fund-completeness and revision semantics remain
+unchanged.
+
+### Authorization boundary
+
+Classification is
+`ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW`. This is the
+final planned calendar-authority correction and authorizes only final independent
+exact-hash xHigh review. It does not authorize POSTP1-001V2R1,
+POSTP1-003R3, POSTP1-004 or collection. No prospective observation was
+collected, no real Stage-B evaluation ran, BTC-019 sealed data was untouched and
+Epic T was unchanged.
+
+Validation used Python 3.12.14. The final trusted-origin/parser-completeness
+suite passed 111 tests. The focused ETF/PIT/V1/V2 regression set passed 463
+tests with 2 skips. The full suite passed 5,022 tests with 2 skips under
+`-W error::RuntimeWarning`. Artifact restore/regeneration and
+`python -m compileall btc_predictor` passed. Repository-wide
+`git diff --check` continues to report only the pre-existing unrelated trailing
+blank line in `prompts/review_epic.md`, which this ticket did not modify.
 
 ## Next EPIC X tasks
 
@@ -1940,6 +2035,8 @@ this ticket did not modify.
 | POSTP1-002V2 | independent exact-hash xHigh review of `488251df...0ec0b6d` | COMPLETE / FAIL — V2 INVALID / MISSING EXISTING OWNER AUTHORITY |
 | POSTP1-001V2A | `DEFINE_AND_FREEZE_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2A | independent exact-hash xHigh review of `a1ceb66b...7db0b9` | COMPLETE / FAIL — ETF CALENDAR SOURCE DERIVATION INVALID |
-| POSTP1-001V2A-R1 | source-derived correction/refreeze of `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `b81c1702...b357af` | IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2A-R1 | source-derived correction/refreeze of `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `b81c1702...b357af` | IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2A-R1 | repeat independent exact-hash review of `b81c1702...b357af` | COMPLETE / FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID |
+| POSTP1-001V2A-R2 | final trusted-origin/parser-completeness correction at `e9092f05...24ebfedc` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending POSTP1-001V2A exact-hash review PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
