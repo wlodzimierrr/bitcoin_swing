@@ -1948,7 +1948,9 @@ unused; no downstream work or collection was authorized.
 **Owner modules:** `btc_predictor/research/etf_publication_calendar.py`,
 `btc_predictor/research/etf_calendar_semantics.py`
 **Artifacts:** `prospective_evidence/etf_publication_calendar_authority_v1_r2/`
-**Implementation commit:** `fcfeb937c0990bc87559d580c38061848fe6c579`
+**Implementation commits:** `fcfeb937c0990bc87559d580c38061848fe6c579`
+(trusted collector, parsers, tests and refreeze),
+`02528bd6dc6c7512d8b114751d4b9032e7396f92` (compressed-fixture provenance completion)
 
 ### Final corrected authority decision
 

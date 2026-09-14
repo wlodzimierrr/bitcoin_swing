@@ -359,7 +359,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   POSTP1-001V2A-R2 trusted-origin/parser-completeness suite is 111 passed; the
   focused ETF/PIT/V1/V2 regression set is 463 passed, 2 skipped
 - **Last relevant implementation/review commit:** POSTP1-001V2A-R2 implementation
-  `fcfeb937c0990bc87559d580c38061848fe6c579` refreezes the final corrected
+  `fcfeb937c0990bc87559d580c38061848fe6c579`, completed by fixture-provenance
+  commit `02528bd6dc6c7512d8b114751d4b9032e7396f92`, refreezes the final corrected
   `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` at `e9092f05...24ebfedc`. The failed
   corrected implementation `ab2bce5241e7372de3bbb70c938d08357054b615`
   and authority `b81c1702...b357af`, plus the failed
