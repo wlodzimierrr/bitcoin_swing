@@ -2092,6 +2092,7 @@ trailing blank line in `prompts/review_epic.md`, which this review left untouche
 `btc_predictor/research/trusted_acquisition_persistence.py`, and the bounded
 integration points in `btc_predictor/research/etf_publication_calendar.py`
 **Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1/`
+**Implementation commit:** `201769231c32faa03f3f3e49c328d022047a1be3`
 
 ### Authority decision
 

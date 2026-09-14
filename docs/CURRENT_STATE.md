@@ -389,8 +389,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   hostile cryptographic/persistence suite is 23 passed; the combined calendar,
   cryptography and migration suite is 159 passed; and the expanded calendar,
   PIT, artifact, V1 and failed-V2 regression set is 640 passed, 2 skipped
-- **Last relevant implementation/review commit:** POSTP1-002V2A-R2 failed final
-  review is recorded by the current documentation handoff. Reviewed HEAD was
+- **Last relevant implementation/review commit:** POSTP1-001V2B implementation
+  `201769231c32faa03f3f3e49c328d022047a1be3` freezes trusted acquisition
+  persistence authority `c3619b7a...223554`; independent review is outstanding.
+  POSTP1-002V2A-R2 failed final review is recorded by the preceding handoff.
+  Reviewed HEAD was
   `8bebcc7c3349e22859c43743b6182a5659724dbd`. POSTP1-001V2A-R2 implementation
   `fcfeb937c0990bc87559d580c38061848fe6c579`, completed by fixture-provenance
   commits `02528bd6dc6c7512d8b114751d4b9032e7396f92` and
