@@ -48,13 +48,42 @@ class TestAppender:
         self.envelopes: list[dict] = []
 
     def append(self, envelope: dict) -> str:
-        cal._trusted.verify_envelope(envelope, registry=TEST_KEY_REGISTRY)
+        cal._trusted.verify_test_envelope_non_authoritative_test_only(
+            envelope, TEST_SIGNER.verification_key()
+        )
         self.envelopes.append(copy.deepcopy(envelope))
         return envelope["envelope_sha256"]
 
 
-def evidence_store() -> cal.CalendarEvidenceStore:
-    return cal.CalendarEvidenceStore(key_registry=TEST_KEY_REGISTRY)
+class NonAuthoritativeTestStore:
+    """Test-local adapter; never a production scientific owner."""
+
+    def __init__(self, records=()) -> None:
+        self.store = cal.CalendarEvidenceStore()
+        self._records = self.store._records
+        self._envelopes = self.store._envelopes
+        for record in records:
+            self.put(record)
+
+    def put(self, record):
+        if record.get("record_kind") != cal._trusted.ENVELOPE_KIND:
+            return self.store.put(record)
+        payload = cal._trusted.verify_test_envelope_non_authoritative_test_only(
+            record, TEST_SIGNER.verification_key()
+        )
+        source = cal._verify_source_snapshot(payload)
+        identity = source[cal.RECORD_DIGEST_FIELD]
+        self.store._envelopes[record["envelope_sha256"]] = copy.deepcopy(record)
+        self.store._records[identity] = source
+        return identity
+
+    def get(self, identity): return self.store.get(identity)
+    def records(self, **kwargs): return self.store.records(**kwargs)
+    def envelopes(self): return self.store.envelopes()
+
+
+def evidence_store() -> NonAuthoritativeTestStore:
+    return NonAuthoritativeTestStore()
 
 
 def fixture_bytes(venue: str) -> bytes:
@@ -105,7 +134,7 @@ def acquisition(venue: str, *, acquired_at: datetime = ACQUIRED, body: bytes | N
         patch.object(cal, "_perform_verified_https_get", return_value=observation),
         patch.object(cal, "_semantic_ast_sha256", return_value=executable_sha),
     ):
-        return cal.collect_official_calendar(
+        return cal._collect_official_calendar_non_authoritative_test_only(
             metadata["source_profile_id"],
             lambda: acquired_at,
             signer=TEST_SIGNER,
@@ -298,7 +327,7 @@ def test_trusted_collector_builds_request_and_observes_response(monkeypatch) -> 
 
     monkeypatch.setattr(cal, "build_opener", lambda *handlers: Opener())
     appender = TestAppender()
-    envelope = cal.collect_official_calendar(
+    envelope = cal._collect_official_calendar_non_authoritative_test_only(
         metadata["source_profile_id"],
         lambda: ACQUIRED,
         signer=TEST_SIGNER,
@@ -315,8 +344,11 @@ def test_trusted_collector_builds_request_and_observes_response(monkeypatch) -> 
 
 def test_venue_is_derived_and_naked_byte_constructor_refuses() -> None:
     assert tuple(inspect.signature(cal.collect_official_calendar).parameters) == (
-        "profile_id", "receipt_clock", "signer", "appender",
+        "profile_id", "receipt_clock",
     )
+    assert tuple(
+        inspect.signature(cal._collect_official_calendar_non_authoritative_test_only).parameters
+    ) == ("profile_id", "receipt_clock", "signer", "appender")
     for forbidden in ("response_bytes", "http_status", "final_url", "redirect_chain", "response_headers", "transport", "session"):
         assert forbidden not in inspect.signature(cal.collect_official_calendar).parameters
     with pytest.raises(cal.EtfCalendarAuthorityError, match="caller HTTP evidence"):

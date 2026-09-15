@@ -15,12 +15,14 @@ from btc_predictor.research import trusted_acquisition as _trusted
 from btc_predictor.research import trusted_acquisition_persistence as _persistence
 
 
-PROGRAM_TICKET = "POSTP1-001V2B"
-OUTPUT_NAMESPACE = "prospective_evidence/trusted_acquisition_persistence_authority_v1"
+PROGRAM_TICKET = "POSTP1-001V2B-R1"
+OUTPUT_NAMESPACE = "prospective_evidence/trusted_acquisition_persistence_authority_v1_r1"
 PROTOCOL_FILENAME = "authority_definition.json"
 REPORT_FILENAME = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_REPORT.md"
 FAILED_CALENDAR_AUTHORITY_SHA256 = "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
-FINAL_CLASSIFICATION = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_XHIGH_REVIEW"
+FAILED_AUTHORITY_SHA256 = "c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554"
+FINAL_CLASSIFICATION = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW"
+FROZEN_AUTHORITY_DEFINITION_SHA256 = "c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b"
 
 
 class AuthorityArtifactError(ValueError):
@@ -52,6 +54,8 @@ def signing_key_registry_contract() -> dict[str, Any]:
             "dynamic_rotation": "FORBIDDEN",
             "replacement": "NEW_REVIEWED_TRUSTED_ACQUISITION_AUTHORITY_VERSION",
             "test_key_in_production_registry": False,
+            "runtime_registry_representation": "FROZEN_VERIFICATION_KEY_PLUS_MAPPING_PROXY",
+            "caller_trust_root_replacement": "FORBIDDEN",
         }
     )
 
@@ -121,6 +125,8 @@ def signed_payload_and_envelope_contract() -> dict[str, Any]:
             "outer_hash": "SHA256_CANONICAL_ENVELOPE_EXCLUDING_ENVELOPE_SHA256",
             "verification": [
                 "STRICT_SCHEMA",
+                "INTEGER_SCHEMA_VERSION_EXCLUDING_BOOLEAN_AND_FLOAT",
+                "CANONICAL_BASE64_REENCODE_EQUALITY",
                 "VALID_ENVELOPE_HASH",
                 "KNOWN_ACTIVE_FROZEN_KEY",
                 "ED25519_ONLY",
@@ -152,7 +158,8 @@ def collector_creation_contract() -> dict[str, Any]:
             "private_key_owner": "TRUSTED_COLLECTOR_PROCESS_ONLY",
             "private_key_provisioning": (
                 "external secret storage or OS-protected deployment secret; explicit environment "
-                "path; owner-only permissions"
+                "path; single-open O_NOFOLLOW/fstat; regular file; effective-UID ownership; "
+                "owner-only permissions; POSIX required"
             ),
             "repository_private_key": "FORBIDDEN",
             "default_development_key": "FORBIDDEN",
@@ -177,9 +184,58 @@ def persistence_and_privilege_contract() -> dict[str, Any]:
             "public_privileges": [],
             "corrections": "NEW_SIGNED_ROWS_ONLY",
             "duplicate": "EXACT_ENVELOPE_IDEMPOTENT_BY_PRIMARY_KEY",
-            "atomicity": "VERIFY_COMPLETE_SIGNED_ENVELOPE_THEN_SINGLE_INSERT_IN_CALLER_TRANSACTION",
+            "atomicity": (
+                "VERIFY_PRODUCTION_SIGNATURE_THEN_OWNER_TRANSACTION_INSERT_COMMIT_THEN_NEW_"
+                "CONNECTION_EXACT_ENVELOPE_READBACK"
+            ),
+            "authoritative_success": (
+                "VALID_PRODUCTION_SIGNATURE_AND_COMMIT_ACKNOWLEDGED_AND_EXACT_POST_COMMIT_"
+                "ENVELOPE_CONFIRMED"
+            ),
+            "caller_connection_as_durability_authority": False,
+            "conflict_success": "ONLY_IF_EXISTING_EXACT_ENVELOPE_EQUALS_INTENDED",
+            "commit_or_confirmation_ambiguity": "TRUSTED_ACQUISITION_COMMIT_UNCONFIRMED",
+            "denormalized_columns": "QUERY_PROJECTIONS_CROSS_CHECKED_AGAINST_SIGNED_PAYLOAD",
             "unsigned_authoritative_row": "IMPOSSIBLE_BY_SCHEMA_AND_WRITER_API",
             "signature_remains_mandatory_despite_database_privileges": True,
+        }
+    )
+
+
+def database_deployment_contract() -> dict[str, Any]:
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "db/migrations/versions/0025_create_trusted_acquisition_persistence.py"
+    )
+    migration_ast = ast.dump(
+        ast.parse(migration_path.read_text(encoding="utf-8")),
+        annotate_fields=True,
+        include_attributes=False,
+    )
+    return _definition(
+        {
+            "contract_version": "TRUSTED_ACQUISITION_POSTGRES_ROLE_BOOTSTRAP_V1",
+            "bootstrap_owner": "ALEMBIC_MIGRATION_0025_BEFORE_GRANTS",
+            "roles": {
+                "btc_calendar_collector_writer": [
+                    "NOLOGIN", "NOSUPERUSER", "NOCREATEDB", "NOCREATEROLE",
+                    "NOREPLICATION", "NOBYPASSRLS",
+                ],
+                "btc_predictor_scientific_reader": [
+                    "NOLOGIN", "NOSUPERUSER", "NOCREATEDB", "NOCREATEROLE",
+                    "NOREPLICATION", "NOBYPASSRLS",
+                ],
+            },
+            "existing_incompatible_role": "FAIL_CLOSED",
+            "authority_role_membership_in_another_role": "FAIL_CLOSED",
+            "public_schema_create": False,
+            "collector_schema_create": False,
+            "reader_schema_create": False,
+            "application_login_membership": "DEPLOYMENT_SPECIFIC_OUTSIDE_SCIENTIFIC_EVIDENCE",
+            "infrastructure_trust_authorities": ["DATABASE_TABLE_OWNER", "CLUSTER_SUPERUSER"],
+            "normal_credentials": "NEITHER_SUPERUSER_NOR_TABLE_OWNER",
+            "dba_compromise_defended": False,
+            "migration_normalized_ast_sha256": _trusted.sha256_json(migration_ast),
         }
     )
 
@@ -188,8 +244,11 @@ def creation_rehydration_and_failure_contract() -> dict[str, Any]:
     return _definition(
         {
             "contract_version": "TRUSTED_ACQUISITION_CREATION_REHYDRATION_V1",
-            "creation": "VERIFIED_HTTPS_PLUS_COLLECTOR_SIGNATURE_PLUS_COLLECTOR_ONLY_DB_INSERT",
-            "rehydration": "DB_SELECT_PLUS_OFFLINE_SIGNATURE_AND_PAYLOAD_VERIFICATION",
+            "creation": (
+                "VERIFIED_HTTPS_PLUS_INTERNAL_PRODUCTION_SIGNER_PLUS_INTERNALLY_OWNED_"
+                "COMMIT_CONFIRMED_POSTGRES_APPEND"
+            ),
+            "rehydration": "DB_SELECT_PLUS_FIXED_PRODUCTION_KEY_SIGNATURE_AND_PROJECTION_VERIFICATION",
             "rehydration_private_key_required": False,
             "in_memory_store": "TEST_OR_REPLAY_CACHE_NOT_PRODUCTION_ORIGIN_BOUNDARY",
             "in_memory_source_admission": "SIGNED_ENVELOPE_ONLY_AFTER_VERIFICATION",
@@ -205,6 +264,9 @@ def creation_rehydration_and_failure_contract() -> dict[str, Any]:
             ],
             "key_compromise_or_rotation": "STOP_COLLECTION_AND_ISSUE_NEW_REVIEWED_AUTHORITY_VERSION",
             "historical_signature_rule": "REPLAY_UNDER_FROZEN_KEY_AUTHORITY_UNLESS_FUTURE_GOVERNANCE_REVOKES",
+            "production_signer_injection": "FORBIDDEN",
+            "production_appender_injection": "FORBIDDEN",
+            "production_registry_injection": "FORBIDDEN",
         }
     )
 
@@ -233,17 +295,37 @@ def threat_and_security_boundary_contract() -> dict[str, Any]:
     )
 
 
-def executable_semantic_manifest_contract() -> dict[str, Any]:
-    owners = {
-        "canonical_signed_message_builder": _trusted.canonical_signed_message,
-        "payload_digest_builder": _trusted.sha256_json,
-        "signature_verifier": _trusted.verify_envelope,
-        "trusted_collector_signing_owner": _trusted.AcquisitionSigner.sign_payload,
-        "trusted_collector_creation_owner": _calendar.collect_official_calendar,
-        "rehydration_store_owner": _calendar.CalendarEvidenceStore.put,
-        "postgres_append_owner": _persistence.PostgresTrustedAcquisitionAppender.append,
-        "postgres_rehydration_owner": _persistence.rehydrate_verified_envelopes,
+def _executable_semantic_owners() -> dict[str, Any]:
+    return {
+        "canonical_json_bytes": _trusted.canonical_json_bytes,
+        "sha256_json": _trusted.sha256_json,
+        "canonical_signed_message": _trusted.canonical_signed_message,
+        "sha256_identity_validator": _trusted._is_sha256,
+        "public_key_decoder": _trusted._decode_public_key,
+        "external_private_key_loader": _trusted.AcquisitionSigner.from_external_secret,
+        "sign_payload": _trusted.AcquisitionSigner.sign_payload,
+        "private_public_registry_match": _trusted.AcquisitionSigner._assert_registry_match,
+        "generic_test_only_verifier": _trusted._verify_envelope_against_key_non_authoritative_test_only,
+        "production_envelope_verifier": _trusted.verify_production_envelope,
+        "runtime_attestation_owner": _trusted._assert_runtime_semantics,
+        "frozen_runtime_attestation": assert_frozen_runtime_semantics,
+        "production_store_admission": _calendar.CalendarEvidenceStore.put,
+        "production_store_sealing": _calendar.CalendarEvidenceStore.__init_subclass__,
+        "production_collection_orchestration": _calendar.collect_official_calendar,
+        "collection_logic_closure": _calendar._collect_official_calendar_non_authoritative_test_only,
+        "production_persistence_facade": _persistence.PostgresTrustedAcquisitionAppender.append,
+        "production_committed_persistence": _persistence.append_production_envelope_committed,
+        "transaction_commit_confirmation": _persistence._append_with_owned_engine_non_authoritative_test_only,
+        "persistence_value_projection": _persistence._persistence_values,
+        "authoritative_envelope_query": _persistence.authoritative_envelope_query,
+        "production_rehydration": _persistence.rehydrate_verified_envelopes,
+        "denormalized_projection_check": _persistence._assert_projection_equality,
+        "persistence_utc_validator": _persistence._utc,
     }
+
+
+def current_executable_semantic_sha256() -> str:
+    owners = _executable_semantic_owners()
     normalized = [
         {
             "owner": name,
@@ -255,13 +337,28 @@ def executable_semantic_manifest_contract() -> dict[str, Any]:
         }
         for name, owner in sorted(owners.items())
     ]
+    normalized.append(
+        {
+            "owner": "calendar_collection_material_helper_closure",
+            "semantic_sha256": _calendar._semantic_ast_sha256(),
+        }
+    )
+    return _trusted.sha256_json(normalized)
+
+
+def executable_semantic_manifest_contract() -> dict[str, Any]:
+    owners = _executable_semantic_owners()
     return _definition(
         {
             "contract_version": "TRUSTED_ACQUISITION_EXECUTABLE_SEMANTIC_MANIFEST_V1",
             "identity_method": "SHA-256 of normalized Python AST; locations excluded",
-            "normalized_ast_sha256": _trusted.sha256_json(normalized),
+            "normalized_ast_sha256": current_executable_semantic_sha256(),
             "owners": list(sorted(owners)),
-            "runtime_change": "MOVES_MATERIAL_CHILD_AND_TOP_AUTHORITY_HASH",
+            "material_helper_closures": ["ETF_CALENDAR_EXECUTABLE_SEMANTIC_MANIFEST_V1"],
+            "runtime_change": "MOVES_MATERIAL_CHILD_AND_TOP_AUTHORITY_HASH_AND_REFUSES_OLD_ARTIFACT",
+            "runtime_expected_identity_source": (
+                "PERSISTED_PARENT_BOUND_EXECUTABLE_SEMANTIC_MANIFEST_NOT_DYNAMIC_RUNTIME"
+            ),
             "cryptography_dependency": f"cryptography=={_trusted.CRYPTOGRAPHY_VERSION}",
         }
     )
@@ -273,6 +370,7 @@ _CHILD_ARTIFACTS: tuple[tuple[str, str], ...] = (
     ("signed_payload_envelope_schema.json", "signed_payload_and_envelope_contract"),
     ("collector_creation_contract.json", "collector_creation_contract"),
     ("postgres_persistence_privileges.json", "persistence_and_privilege_contract"),
+    ("postgres_role_bootstrap.json", "database_deployment_contract"),
     ("creation_rehydration_failure_contract.json", "creation_rehydration_and_failure_contract"),
     ("threat_security_boundary.json", "threat_and_security_boundary_contract"),
     ("executable_semantic_manifest.json", "executable_semantic_manifest_contract"),
@@ -302,6 +400,9 @@ def authority_definition() -> dict[str, Any]:
                 name: child["definition_sha256"] for name, child in children.items()
             },
             "blocked_calendar_authority": FAILED_CALENDAR_AUTHORITY_SHA256,
+            "failed_authority_retained_non_authoritative": FAILED_AUTHORITY_SHA256,
+            "failed_authority_observations": 0,
+            "failed_authority_superseded_before_use": True,
             "clock_semantics": "response_received_at == acquired_at == available_at",
             "https_semantics_changed": False,
             "parser_semantics_changed": False,
@@ -328,6 +429,43 @@ def verify_authority_definition(persisted: Mapping[str, Any]) -> None:
     _verify_digest(persisted)
 
 
+def assert_frozen_runtime_semantics() -> None:
+    """Compare current material runtime owners with the parent-bound frozen identity."""
+
+    root = Path(__file__).resolve().parents[2] / OUTPUT_NAMESPACE
+    try:
+        parent = json.loads((root / PROTOCOL_FILENAME).read_text(encoding="ascii"))
+        manifest = json.loads(
+            (root / "executable_semantic_manifest.json").read_text(encoding="ascii")
+        )
+    except (OSError, json.JSONDecodeError) as error:
+        raise _trusted.TrustedAcquisitionError(
+            "frozen executable semantic authority is unavailable"
+        ) from error
+    try:
+        _verify_digest(parent)
+        _verify_digest(manifest)
+    except AuthorityArtifactError as error:
+        raise _trusted.TrustedAcquisitionError(
+            "frozen executable semantic authority is invalid"
+        ) from error
+    if parent.get("definition_sha256") != FROZEN_AUTHORITY_DEFINITION_SHA256:
+        raise _trusted.TrustedAcquisitionError(
+            "trusted-acquisition authority identity is not the frozen expected identity"
+        )
+    expected_child = parent.get("child_definition_sha256", {}).get(
+        "executable_semantic_manifest"
+    )
+    if expected_child != manifest.get("definition_sha256"):
+        raise _trusted.TrustedAcquisitionError(
+            "executable semantic manifest is not parent-bound"
+        )
+    if manifest.get("normalized_ast_sha256") != current_executable_semantic_sha256():
+        raise _trusted.TrustedAcquisitionError(
+            "runtime executable semantic identity differs from frozen authority"
+        )
+
+
 def _verify_digest(payload: Mapping[str, Any]) -> None:
     row = dict(payload)
     declared = row.pop("definition_sha256", None)
@@ -344,9 +482,11 @@ def _report(protocol: Mapping[str, Any]) -> str:
         f"- Classification: `{FINAL_CLASSIFICATION}`",
         f"- Material children: {protocol['material_child_count']}",
         "",
-        "Verified collector execution now produces a canonical acquisition payload, an",
-        "Ed25519 signature, and a collector-only PostgreSQL append. Replay loads the",
-        "immutable envelope and verifies it offline against one frozen production public key.",
+        "Verified collector execution now produces a canonical acquisition payload and an",
+        "Ed25519 signature. The production persistence owner reports success only after its",
+        "PostgreSQL commit and independent exact-envelope readback. Replay verifies the",
+        "immutable envelope against one frozen production public key and cross-checks every",
+        "denormalized projection.",
         "Self-hashes and provenance strings are descriptive and cannot establish origin.",
         "",
         "The signature proves possession of the collector key for the exact payload; this",

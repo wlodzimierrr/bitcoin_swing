@@ -1,0 +1,38 @@
+{
+  "contract_version": "TRUSTED_ACQUISITION_EXECUTABLE_SEMANTIC_MANIFEST_V1",
+  "cryptography_dependency": "cryptography==50.0.1",
+  "definition_sha256": "fd997cd70c2b2ec73b114a4c5f8c25326ae750292652fb0f9a1fbec8a3e56cbf",
+  "identity_method": "SHA-256 of normalized Python AST; locations excluded",
+  "material_helper_closures": [
+    "ETF_CALENDAR_EXECUTABLE_SEMANTIC_MANIFEST_V1"
+  ],
+  "normalized_ast_sha256": "7d0d3f43d3413cccf212623e2fc55c2ca705df65acc1ef4d350967ede40b9fdb",
+  "owners": [
+    "authoritative_envelope_query",
+    "canonical_json_bytes",
+    "canonical_signed_message",
+    "collection_logic_closure",
+    "denormalized_projection_check",
+    "external_private_key_loader",
+    "frozen_runtime_attestation",
+    "generic_test_only_verifier",
+    "persistence_utc_validator",
+    "persistence_value_projection",
+    "private_public_registry_match",
+    "production_collection_orchestration",
+    "production_committed_persistence",
+    "production_envelope_verifier",
+    "production_persistence_facade",
+    "production_rehydration",
+    "production_store_admission",
+    "production_store_sealing",
+    "public_key_decoder",
+    "runtime_attestation_owner",
+    "sha256_identity_validator",
+    "sha256_json",
+    "sign_payload",
+    "transaction_commit_confirmation"
+  ],
+  "runtime_change": "MOVES_MATERIAL_CHILD_AND_TOP_AUTHORITY_HASH_AND_REFUSES_OLD_ARTIFACT",
+  "runtime_expected_identity_source": "PERSISTED_PARENT_BOUND_EXECUTABLE_SEMANTIC_MANIFEST_NOT_DYNAMIC_RUNTIME"
+}

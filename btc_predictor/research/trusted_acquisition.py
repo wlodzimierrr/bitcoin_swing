@@ -17,7 +17,7 @@ import stat
 import textwrap
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Protocol
 
 from cryptography.exceptions import InvalidSignature
@@ -57,8 +57,7 @@ class VerificationKey:
     status: str
 
 
-PRODUCTION_KEY_REGISTRY: Mapping[str, VerificationKey] = {
-    PRODUCTION_KEY_ID: VerificationKey(
+_PRODUCTION_VERIFICATION_KEY = VerificationKey(
         key_id=PRODUCTION_KEY_ID,
         algorithm=SIGNATURE_ALGORITHM,
         public_key_base64=PRODUCTION_PUBLIC_KEY_BASE64,
@@ -66,7 +65,9 @@ PRODUCTION_KEY_REGISTRY: Mapping[str, VerificationKey] = {
         authority_version=AUTHORITY_VERSION,
         status="ACTIVE",
     )
-}
+PRODUCTION_KEY_REGISTRY: Mapping[str, VerificationKey] = MappingProxyType(
+    {PRODUCTION_KEY_ID: _PRODUCTION_VERIFICATION_KEY}
+)
 
 
 def canonical_json_bytes(payload: Any) -> bytes:
@@ -127,6 +128,8 @@ def _decode_public_key(entry: VerificationKey) -> Ed25519PublicKey:
         raw = base64.b64decode(entry.public_key_base64, validate=True)
     except Exception as error:
         raise TrustedAcquisitionError("verification public key encoding is invalid") from error
+    if base64.b64encode(raw).decode("ascii") != entry.public_key_base64:
+        raise TrustedAcquisitionError("verification public key encoding is noncanonical")
     if len(raw) != 32 or hashlib.sha256(raw).hexdigest() != entry.public_key_sha256:
         raise TrustedAcquisitionError("verification public-key fingerprint mismatch")
     try:
@@ -151,30 +154,47 @@ class AcquisitionSigner:
     @classmethod
     def from_external_secret(
         cls,
-        *,
-        key_id: str = PRODUCTION_KEY_ID,
-        environ: Mapping[str, str] | None = None,
-        registry: Mapping[str, VerificationKey] = PRODUCTION_KEY_REGISTRY,
+        *, environ: Mapping[str, str] | None = None,
     ) -> AcquisitionSigner:
-        """Load the production key only from an explicitly provisioned protected file."""
+        """Load the production key from one POSIX owner-protected file descriptor."""
+
+        _assert_runtime_semantics()
+        if not hasattr(os, "geteuid"):
+            raise TrustedAcquisitionError("production private-key loading requires POSIX ownership")
 
         source = os.environ if environ is None else environ
         configured = source.get(PRIVATE_KEY_FILE_ENV_VAR)
         if not configured:
             raise TrustedAcquisitionError("production collector private key is unavailable")
-        path = Path(configured)
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
         try:
-            mode = path.stat().st_mode
+            descriptor = os.open(configured, flags)
         except OSError as error:
             raise TrustedAcquisitionError("production collector private key is unavailable") from error
-        if not stat.S_ISREG(mode) or mode & (stat.S_IRWXG | stat.S_IRWXO):
-            raise TrustedAcquisitionError("collector private-key file permissions are not owner-only")
         try:
-            loaded = load_pem_private_key(path.read_bytes(), password=None)
-        except (OSError, TypeError, ValueError) as error:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode):
+                raise TrustedAcquisitionError("collector private-key path is not a regular file")
+            if metadata.st_uid != os.geteuid():
+                raise TrustedAcquisitionError("collector private-key file owner is not the effective user")
+            if metadata.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
+                raise TrustedAcquisitionError("collector private-key file permissions are not owner-only")
+            with os.fdopen(descriptor, "rb", closefd=True) as stream:
+                descriptor = -1
+                key_bytes = stream.read()
+        except OSError as error:
+            raise TrustedAcquisitionError("collector private key could not be read") from error
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+        try:
+            loaded = load_pem_private_key(key_bytes, password=None)
+        except (TypeError, ValueError) as error:
             raise TrustedAcquisitionError("collector private key could not be loaded") from error
-        signer = cls(loaded, key_id)
-        signer._assert_registry_match(registry)
+        signer = cls(loaded, PRODUCTION_KEY_ID)
+        signer._assert_registry_match(PRODUCTION_KEY_REGISTRY)
         return signer
 
     @classmethod
@@ -228,12 +248,12 @@ class AcquisitionAppender(Protocol):
     def append(self, envelope: Mapping[str, Any]) -> str: ...
 
 
-def verify_envelope(
+def _verify_envelope_against_key_non_authoritative_test_only(
     envelope: Mapping[str, Any],
     *,
-    registry: Mapping[str, VerificationKey] = PRODUCTION_KEY_REGISTRY,
+    verification_key: VerificationKey,
 ) -> dict[str, Any]:
-    """Strictly verify and return the signed acquisition payload for replay."""
+    """Generic cryptographic plumbing; never a production authority boundary."""
 
     row = dict(envelope)
     required = {
@@ -249,7 +269,9 @@ def verify_envelope(
     }
     if set(row) != required or row.get("record_kind") != ENVELOPE_KIND:
         raise TrustedAcquisitionError("invalid trusted-acquisition envelope schema")
-    if row.get("schema_version") != 1 or row.get("authority_identity") != AUTHORITY_VERSION:
+    if type(row.get("schema_version")) is not int or row.get("schema_version") != 1:
+        raise TrustedAcquisitionError("trusted-acquisition schema version must be integer 1")
+    if row.get("authority_identity") != AUTHORITY_VERSION:
         raise TrustedAcquisitionError("wrong trusted-acquisition authority identity")
     declared_envelope_sha = row.pop("envelope_sha256", None)
     if not _is_sha256(declared_envelope_sha) or sha256_json(row) != declared_envelope_sha:
@@ -261,17 +283,22 @@ def verify_envelope(
     if not _is_sha256(payload_digest) or sha256_json(dict(payload)) != payload_digest:
         raise TrustedAcquisitionError("signed payload SHA-256 does not recompute")
     key_id = row.get("signing_key_id")
-    entry = registry.get(key_id) if isinstance(key_id, str) else None
-    if entry is None or entry.key_id != key_id:
+    entry = verification_key
+    if not isinstance(key_id, str) or entry.key_id != key_id:
         raise TrustedAcquisitionError("signing key ID is not frozen by this registry")
     if row.get("signature_algorithm") != SIGNATURE_ALGORITHM:
         raise TrustedAcquisitionError("signature algorithm must be Ed25519")
     try:
-        signature = base64.b64decode(row.get("signature"), validate=True)
+        encoded_signature = row.get("signature")
+        if not isinstance(encoded_signature, str):
+            raise ValueError
+        signature = base64.b64decode(encoded_signature, validate=True)
     except Exception as error:
         raise TrustedAcquisitionError("signature encoding is invalid") from error
     if len(signature) != 64:
         raise TrustedAcquisitionError("Ed25519 signature length is invalid")
+    if base64.b64encode(signature).decode("ascii") != encoded_signature:
+        raise TrustedAcquisitionError("signature encoding is noncanonical")
     try:
         _decode_public_key(entry).verify(
             signature,
@@ -285,15 +312,38 @@ def verify_envelope(
     return dict(payload)
 
 
+def verify_production_envelope(envelope: Mapping[str, Any]) -> dict[str, Any]:
+    """Verify authoritative evidence against the one frozen production key."""
+
+    _assert_runtime_semantics()
+    return _verify_envelope_against_key_non_authoritative_test_only(
+        envelope, verification_key=_PRODUCTION_VERIFICATION_KEY
+    )
+
+
+def verify_test_envelope_non_authoritative_test_only(
+    envelope: Mapping[str, Any], verification_key: VerificationKey
+) -> dict[str, Any]:
+    """Verify test material without making it admissible to production owners."""
+
+    if not verification_key.key_id.startswith("TEST_ONLY_"):
+        raise TrustedAcquisitionError("test verifier requires a test-only key")
+    return _verify_envelope_against_key_non_authoritative_test_only(
+        envelope, verification_key=verification_key
+    )
+
+
 def executable_semantic_sha256() -> str:
     owners = (
         canonical_json_bytes,
         sha256_json,
         canonical_signed_message,
         _decode_public_key,
+        _verify_envelope_against_key_non_authoritative_test_only,
+        verify_production_envelope,
         AcquisitionSigner.sign_payload,
         AcquisitionSigner.from_external_secret,
-        verify_envelope,
+        _assert_runtime_semantics,
     )
     normalized = [
         ast.dump(
@@ -304,3 +354,13 @@ def executable_semantic_sha256() -> str:
         for owner in owners
     ]
     return sha256_json(normalized)
+
+
+def _assert_runtime_semantics() -> None:
+    """Refuse authoritative work when runtime code differs from the frozen artifact."""
+
+    from btc_predictor.research.trusted_acquisition_authority import (
+        assert_frozen_runtime_semantics,
+    )
+
+    assert_frozen_runtime_semantics()

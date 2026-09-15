@@ -1,0 +1,24 @@
+{
+  "contract_version": "TRUSTED_ACQUISITION_CREATION_REHYDRATION_V1",
+  "creation": "VERIFIED_HTTPS_PLUS_INTERNAL_PRODUCTION_SIGNER_PLUS_INTERNALLY_OWNED_COMMIT_CONFIRMED_POSTGRES_APPEND",
+  "definition_sha256": "8a6cd8e689f597b6ca57ff21f65bef041d7497a1bbd532551ef415f44860dde5",
+  "failures_producing_no_authoritative_acquisition": [
+    "HTTPS_FAILURE",
+    "PARSER_FAILURE",
+    "RECEIPT_CLOCK_FAILURE",
+    "PRIVATE_KEY_UNAVAILABLE",
+    "SIGNATURE_FAILURE",
+    "DATABASE_APPEND_FAILURE",
+    "SIGNATURE_VERIFICATION_FAILURE"
+  ],
+  "historical_signature_rule": "REPLAY_UNDER_FROZEN_KEY_AUTHORITY_UNLESS_FUTURE_GOVERNANCE_REVOKES",
+  "in_memory_source_admission": "SIGNED_ENVELOPE_ONLY_AFTER_VERIFICATION",
+  "in_memory_store": "TEST_OR_REPLAY_CACHE_NOT_PRODUCTION_ORIGIN_BOUNDARY",
+  "key_compromise_or_rotation": "STOP_COLLECTION_AND_ISSUE_NEW_REVIEWED_AUTHORITY_VERSION",
+  "production_appender_injection": "FORBIDDEN",
+  "production_registry_injection": "FORBIDDEN",
+  "production_signer_injection": "FORBIDDEN",
+  "rehydration": "DB_SELECT_PLUS_FIXED_PRODUCTION_KEY_SIGNATURE_AND_PROJECTION_VERIFICATION",
+  "rehydration_private_key_required": false,
+  "unsigned_mapping": "REFUSE"
+}

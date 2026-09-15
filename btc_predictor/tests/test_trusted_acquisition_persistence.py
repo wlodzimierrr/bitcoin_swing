@@ -10,6 +10,7 @@ import json
 import os
 import subprocess
 import sys
+import inspect
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,13 +18,20 @@ from unittest.mock import patch
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+)
 
 from btc_predictor.db import render_upgrade_sql
 from btc_predictor.research import etf_publication_calendar as calendar
 from btc_predictor.research import trusted_acquisition as trusted
 from btc_predictor.research import trusted_acquisition_authority as authority
+from btc_predictor.research import trusted_acquisition_persistence as persistence
 from btc_predictor.research.trusted_acquisition_persistence import (
     PostgresTrustedAcquisitionAppender,
+    append_production_envelope_committed,
     rehydrate_verified_envelopes,
 )
 
@@ -54,7 +62,9 @@ class MemoryAppender:
     def append(self, envelope: dict) -> str:
         if self.fail:
             raise trusted.TrustedAcquisitionError("database append failed")
-        trusted.verify_envelope(envelope, registry=TEST_REGISTRY)
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            envelope, TEST_SIGNER.verification_key()
+        )
         self.envelopes.append(copy.deepcopy(envelope))
         return envelope["envelope_sha256"]
 
@@ -74,7 +84,7 @@ def signed_envelope(*, appender: MemoryAppender | None = None) -> dict:
         patch.object(calendar, "_perform_verified_https_get", return_value=observation),
         patch.object(calendar, "_semantic_ast_sha256", return_value=executable_sha),
     ):
-        return calendar.collect_official_calendar(
+        return calendar._collect_official_calendar_non_authoritative_test_only(
             metadata["source_profile_id"],
             lambda: ACQUIRED,
             signer=TEST_SIGNER,
@@ -93,6 +103,17 @@ def recompute_unsigned_hashes(envelope: dict) -> dict:
     return changed
 
 
+def non_authoritative_test_store(envelope: dict) -> calendar.CalendarEvidenceStore:
+    payload = trusted.verify_test_envelope_non_authoritative_test_only(
+        envelope, TEST_SIGNER.verification_key()
+    )
+    source = calendar._verify_source_snapshot(payload)
+    store = calendar.CalendarEvidenceStore()
+    store._envelopes[envelope["envelope_sha256"]] = copy.deepcopy(envelope)
+    store._records[source[calendar.RECORD_DIGEST_FIELD]] = source
+    return store
+
+
 def test_production_registry_is_one_frozen_ed25519_public_key() -> None:
     assert list(trusted.PRODUCTION_KEY_REGISTRY) == [trusted.PRODUCTION_KEY_ID]
     entry = trusted.PRODUCTION_KEY_REGISTRY[trusted.PRODUCTION_KEY_ID]
@@ -102,11 +123,60 @@ def test_production_registry_is_one_frozen_ed25519_public_key() -> None:
     assert hashlib.sha256(public).hexdigest() == entry.public_key_sha256
     assert TEST_SIGNER.key_id not in trusted.PRODUCTION_KEY_REGISTRY
     assert TEST_SIGNER.verification_key().public_key_base64 != entry.public_key_base64
+    with pytest.raises(TypeError):
+        trusted.PRODUCTION_KEY_REGISTRY[TEST_SIGNER.key_id] = TEST_SIGNER.verification_key()
+    assert not hasattr(trusted.PRODUCTION_KEY_REGISTRY, "update")
+    with pytest.raises(trusted.TrustedAcquisitionError, match="not frozen"):
+        trusted.verify_production_envelope(signed_envelope())
 
 
 def test_missing_production_private_key_has_no_default_or_fallback() -> None:
     with pytest.raises(trusted.TrustedAcquisitionError, match="unavailable"):
         trusted.AcquisitionSigner.from_external_secret(environ={})
+
+
+def test_private_key_loader_uses_same_owner_protected_descriptor(tmp_path: Path) -> None:
+    key_path = tmp_path / "collector.pem"
+    key_path.write_bytes(
+        Ed25519PrivateKey.generate().private_bytes(
+            Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()
+        )
+    )
+    key_path.chmod(0o600)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="does not match"):
+        trusted.AcquisitionSigner.from_external_secret(
+            environ={trusted.PRIVATE_KEY_FILE_ENV_VAR: str(key_path)}
+        )
+    key_path.chmod(0o640)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="owner-only"):
+        trusted.AcquisitionSigner.from_external_secret(
+            environ={trusted.PRIVATE_KEY_FILE_ENV_VAR: str(key_path)}
+        )
+    symlink = tmp_path / "collector-link.pem"
+    symlink.symlink_to(key_path)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="unavailable"):
+        trusted.AcquisitionSigner.from_external_secret(
+            environ={trusted.PRIVATE_KEY_FILE_ENV_VAR: str(symlink)}
+        )
+
+
+def test_private_key_loader_refuses_wrong_effective_owner(tmp_path: Path) -> None:
+    key_path = tmp_path / "collector.pem"
+    key_path.write_bytes(b"not reached")
+    key_path.chmod(0o600)
+    real_fstat = os.fstat
+
+    def wrong_owner(descriptor: int):
+        metadata = real_fstat(descriptor)
+        return SimpleNamespace(st_mode=metadata.st_mode, st_uid=os.geteuid() + 1)
+
+    with (
+        patch.object(os, "fstat", side_effect=wrong_owner),
+        pytest.raises(trusted.TrustedAcquisitionError, match="effective user"),
+    ):
+        trusted.AcquisitionSigner.from_external_secret(
+            environ={trusted.PRIVATE_KEY_FILE_ENV_VAR: str(key_path)}
+        )
 
 
 def test_deterministic_ed25519_compatibility_vector() -> None:
@@ -117,10 +187,54 @@ def test_deterministic_ed25519_compatibility_vector() -> None:
         "VmFs58MvkGMOlgBeJqS3PPEKE4pjVqxid4hmL1MrWJM8fYVIlnCvnATJ11GQK76ZlAv2B/"
         "n9F14ZAE7gkCh9BQ=="
     )
-    assert trusted.verify_envelope(first, registry=TEST_REGISTRY) == {
+    assert trusted.verify_test_envelope_non_authoritative_test_only(
+        first, TEST_SIGNER.verification_key()
+    ) == {
         "n": 1,
         "vector": "POSTP1-001V2B",
     }
+
+
+@pytest.mark.parametrize("schema_version", [True, False, 1.0, "1"])
+def test_schema_version_is_type_strict(schema_version) -> None:
+    envelope = TEST_SIGNER.sign_payload({"strict": True})
+    envelope["schema_version"] = schema_version
+    envelope["envelope_sha256"] = trusted.sha256_json(
+        {key: value for key, value in envelope.items() if key != "envelope_sha256"}
+    )
+    with pytest.raises(trusted.TrustedAcquisitionError, match="schema version"):
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            envelope, TEST_SIGNER.verification_key()
+        )
+
+
+def test_noncanonical_signature_base64_is_refused() -> None:
+    envelope = TEST_SIGNER.sign_payload({"strict": True})
+    canonical = envelope["signature"]
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    index = alphabet.index(canonical[-3])
+    envelope["signature"] = canonical[:-3] + alphabet[index ^ 1] + "=="
+    envelope["envelope_sha256"] = trusted.sha256_json(
+        {key: value for key, value in envelope.items() if key != "envelope_sha256"}
+    )
+    assert base64.b64decode(envelope["signature"]) == base64.b64decode(canonical)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="noncanonical"):
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            envelope, TEST_SIGNER.verification_key()
+        )
+
+
+def test_noncanonical_public_key_base64_is_refused() -> None:
+    entry = TEST_SIGNER.verification_key()
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    index = alphabet.index(entry.public_key_base64[-2])
+    noncanonical = entry.public_key_base64[:-2] + alphabet[index ^ 1] + "="
+    assert base64.b64decode(noncanonical) == base64.b64decode(entry.public_key_base64)
+    changed = trusted.VerificationKey(
+        **{**entry.__dict__, "public_key_base64": noncanonical}
+    )
+    with pytest.raises(trusted.TrustedAcquisitionError, match="noncanonical"):
+        trusted._decode_public_key(changed)
 
 
 def test_self_hashed_unsigned_forgery_and_copied_trust_fields_refused() -> None:
@@ -134,13 +248,15 @@ def test_self_hashed_unsigned_forgery_and_copied_trust_fields_refused() -> None:
 def test_test_key_and_random_signature_are_refused_by_production_registry() -> None:
     envelope = signed_envelope()
     with pytest.raises(trusted.TrustedAcquisitionError, match="not frozen"):
-        trusted.verify_envelope(envelope)
+        trusted.verify_production_envelope(envelope)
     random_signature = copy.deepcopy(envelope)
     random_signature["signature"] = base64.b64encode(bytes(64)).decode("ascii")
     random_signature.pop("envelope_sha256")
     random_signature["envelope_sha256"] = trusted.sha256_json(random_signature)
     with pytest.raises(trusted.TrustedAcquisitionError, match="signature is invalid"):
-        trusted.verify_envelope(random_signature, registry=TEST_REGISTRY)
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            random_signature, TEST_SIGNER.verification_key()
+        )
 
 
 @pytest.mark.parametrize(
@@ -173,8 +289,10 @@ def test_payload_tampering_with_all_self_hashes_recomputed_still_refuses(field: 
     else:
         payload[field] = f"FORGED_{payload[field]}"
     forged = recompute_unsigned_hashes(envelope)
-    with pytest.raises(calendar.EtfCalendarAuthorityError, match="signature is invalid"):
-        calendar.CalendarEvidenceStore(key_registry=TEST_REGISTRY).put(forged)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="signature is invalid"):
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            forged, TEST_SIGNER.verification_key()
+        )
 
 
 def test_signature_substitution_and_key_id_substitution_refuse() -> None:
@@ -186,17 +304,21 @@ def test_signature_substitution_and_key_id_substitution_refuse() -> None:
     second.pop("envelope_sha256")
     second["envelope_sha256"] = trusted.sha256_json(second)
     with pytest.raises(trusted.TrustedAcquisitionError, match="signature is invalid"):
-        trusted.verify_envelope(second, registry=TEST_REGISTRY)
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            second, TEST_SIGNER.verification_key()
+        )
 
     substituted = copy.deepcopy(first)
     substituted["signing_key_id"] = "TEST_ONLY_OTHER_KEY"
     substituted.pop("envelope_sha256")
     substituted["envelope_sha256"] = trusted.sha256_json(substituted)
     with pytest.raises(trusted.TrustedAcquisitionError, match="not frozen"):
-        trusted.verify_envelope(substituted, registry=TEST_REGISTRY)
+        trusted.verify_test_envelope_non_authoritative_test_only(
+            substituted, TEST_SIGNER.verification_key()
+        )
 
 
-def test_valid_signed_envelope_rehydrates_and_calendar_replay_succeeds() -> None:
+def test_test_signed_envelope_replays_only_in_non_authoritative_test_store() -> None:
     envelope = signed_envelope()
     rows = [
         {
@@ -208,8 +330,9 @@ def test_valid_signed_envelope_rehydrates_and_calendar_replay_succeeds() -> None
             "signature": envelope["signature"],
         }
     ]
-    rehydrated = rehydrate_verified_envelopes(rows, registry=TEST_REGISTRY)
-    store = calendar.CalendarEvidenceStore(rehydrated, key_registry=TEST_REGISTRY)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="not frozen"):
+        rehydrate_verified_envelopes(rows)
+    store = non_authoritative_test_store(envelope)
     source_id = envelope["signed_payload"][calendar.RECORD_DIGEST_FIELD]
     assert store.get(source_id) == envelope["signed_payload"]
     schedule = calendar.derive_normalized_schedule_from_official_source(
@@ -226,10 +349,10 @@ def test_fresh_process_offline_signature_verification(tmp_path: Path) -> None:
     script = """
 import json, sys
 from pathlib import Path
-from btc_predictor.research.trusted_acquisition import VerificationKey, verify_envelope
+from btc_predictor.research.trusted_acquisition import VerificationKey, verify_test_envelope_non_authoritative_test_only
 row=json.loads(Path(sys.argv[1]).read_text())
 key=VerificationKey(**json.loads(sys.argv[2]))
-payload=verify_envelope(row, registry={key.key_id:key})
+payload=verify_test_envelope_non_authoritative_test_only(row, key)
 print(payload['response_sha256'])
 """
     encoded_entry = json.dumps(entry.__dict__)
@@ -249,28 +372,75 @@ def test_collector_append_failure_creates_no_returned_authority() -> None:
         signed_envelope(appender=MemoryAppender(fail=True))
 
 
-def test_postgres_appender_verifies_then_emits_one_insert() -> None:
+def test_production_persistence_has_no_connection_or_registry_injection() -> None:
+    assert tuple(inspect.signature(PostgresTrustedAcquisitionAppender).parameters) == ()
+    assert tuple(inspect.signature(rehydrate_verified_envelopes).parameters) == ("rows",)
+    assert tuple(inspect.signature(append_production_envelope_committed).parameters) == (
+        "envelope",
+    )
+    with pytest.raises(TypeError):
+        PostgresTrustedAcquisitionAppender(SimpleNamespace(), registry=TEST_REGISTRY)
+    with pytest.raises(TypeError):
+        calendar.collect_official_calendar(
+            "NASDAQ_ETF_CALENDAR_OFFICIAL_V1",
+            lambda: ACQUIRED,
+            signer=TEST_SIGNER,
+            appender=MemoryAppender(),
+        )
+
+
+def test_transaction_owner_requires_commit_and_independent_confirmation(monkeypatch) -> None:
     envelope = signed_envelope()
+    payload = envelope["signed_payload"]
+    row = {
+        **persistence._persistence_values(envelope, payload),
+        "envelope_sha256": envelope["envelope_sha256"],
+    }
 
-    class FakeConnection:
+    class Result:
+        def mappings(self): return self
+        def one_or_none(self): return row
+
+    class Connection:
+        def __init__(self, *, confirm=False): self.confirm = confirm
+        def execute(self, statement): return Result() if self.confirm else None
+
+    class Context:
+        def __init__(self, connection, fail=False): self.connection, self.fail = connection, fail
+        def __enter__(self): return self.connection
+        def __exit__(self, exc_type, exc, traceback):
+            if self.fail and exc_type is None:
+                raise RuntimeError("commit failed")
+
+    class Engine:
         dialect = SimpleNamespace(name="postgresql")
+        def __init__(self, *, fail_commit=False, fail_confirmation=False):
+            self.fail_commit, self.fail_confirmation = fail_commit, fail_confirmation
+        def begin(self): return Context(Connection(), self.fail_commit)
+        def dispose(self): pass
+        def connect(self):
+            if self.fail_confirmation:
+                raise RuntimeError("confirmation unavailable")
+            return Context(Connection(confirm=True))
 
-        def __init__(self) -> None:
-            self.statements = []
+    monkeypatch.setattr(
+        persistence, "rehydrate_verified_envelopes", lambda rows: (copy.deepcopy(envelope),)
+    )
+    assert persistence._append_with_owned_engine_non_authoritative_test_only(
+        Engine(), envelope=envelope, payload=payload
+    ) == envelope["envelope_sha256"]
+    for engine in (Engine(fail_commit=True), Engine(fail_confirmation=True)):
+        with pytest.raises(trusted.TrustedAcquisitionError, match=persistence.COMMIT_UNCONFIRMED):
+            persistence._append_with_owned_engine_non_authoritative_test_only(
+                engine, envelope=envelope, payload=payload
+            )
 
-        def execute(self, statement) -> None:
-            self.statements.append(statement)
 
-    connection = FakeConnection()
-    appender = PostgresTrustedAcquisitionAppender(connection, registry=TEST_REGISTRY)
-    assert appender.append(envelope) == envelope["envelope_sha256"]
-    assert len(connection.statements) == 1
-    sql = str(connection.statements[0].compile(dialect=__import__(
-        "sqlalchemy.dialects.postgresql", fromlist=["dialect"]
-    ).dialect()))
-    assert "INSERT INTO research.etf_calendar_trusted_acquisitions" in sql
-    assert "ON CONFLICT (envelope_sha256) DO NOTHING" in sql
-    assert "UPDATE" not in sql and "DELETE" not in sql
+def test_denormalized_projection_tampering_refuses() -> None:
+    payload = signed_envelope()["signed_payload"]
+    row = {"response_sha256": "0" * 64}
+    with pytest.raises(trusted.TrustedAcquisitionError, match="projection mismatch"):
+        persistence._assert_projection_equality(row, payload)
 
 
 def test_postgresql_schema_and_privileges_are_frozen() -> None:
@@ -285,12 +455,17 @@ def test_postgresql_schema_and_privileges_are_frozen() -> None:
     assert "GRANT SELECT ON TABLE research.etf_calendar_trusted_acquisitions TO btc_predictor_scientific_reader" in sql
     assert "GRANT USAGE ON SCHEMA research TO btc_predictor_scientific_reader" in sql
     assert "REVOKE INSERT, UPDATE, DELETE ON TABLE research.etf_calendar_trusted_acquisitions FROM btc_predictor_scientific_reader" in sql
+    assert "CREATE ROLE btc_calendar_collector_writer NOLOGIN NOSUPERUSER" in sql
+    assert "CREATE ROLE btc_predictor_scientific_reader NOLOGIN NOSUPERUSER" in sql
+    assert "REVOKE CREATE ON SCHEMA research FROM PUBLIC" in sql
+    assert "REVOKE CREATE ON SCHEMA research FROM btc_calendar_collector_writer" in sql
+    assert "REVOKE CREATE ON SCHEMA research FROM btc_predictor_scientific_reader" in sql
 
 
 def test_authority_artifacts_reproduce_and_bind_every_material_child(tmp_path: Path) -> None:
     protocol = authority.authority_definition()
     assert protocol["final_classification"] == authority.FINAL_CLASSIFICATION
-    assert protocol["material_child_count"] == len(authority._CHILD_ARTIFACTS) == 8
+    assert protocol["material_child_count"] == len(authority._CHILD_ARTIFACTS) == 9
     generated = authority.write_artifacts(tmp_path)
     assert generated == protocol
     assert authority.restore_artifacts(tmp_path) == protocol
@@ -312,6 +487,30 @@ def test_every_authority_material_child_mutation_moves_top_hash(monkeypatch) -> 
         with monkeypatch.context() as context:
             context.setattr(authority, builder_name, mutated)
             assert authority.authority_definition()["definition_sha256"] != baseline
+
+
+def test_runtime_semantic_mutation_refuses_old_frozen_artifact(monkeypatch) -> None:
+    authority.assert_frozen_runtime_semantics()
+    monkeypatch.setattr(trusted, "_decode_public_key", lambda entry: Ed25519PrivateKey.generate().public_key())
+    with pytest.raises(trusted.TrustedAcquisitionError, match="differs from frozen"):
+        authority.assert_frozen_runtime_semantics()
+
+
+def test_production_surfaces_have_no_capability_or_trust_root_parameters() -> None:
+    production = (
+        trusted.verify_production_envelope,
+        calendar.CalendarEvidenceStore,
+        PostgresTrustedAcquisitionAppender,
+        rehydrate_verified_envelopes,
+        calendar.collect_official_calendar,
+        append_production_envelope_committed,
+    )
+    forbidden = {"registry", "key_registry", "verification_keys", "signer", "appender"}
+    for owner in production:
+        assert forbidden.isdisjoint(inspect.signature(owner).parameters)
+    with pytest.raises(TypeError, match="cannot be subclassed"):
+        class ForgedStore(calendar.CalendarEvidenceStore):
+            pass
 
 
 def test_repository_contains_no_pem_private_key_material() -> None:

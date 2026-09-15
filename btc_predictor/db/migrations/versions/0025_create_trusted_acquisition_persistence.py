@@ -24,6 +24,33 @@ def upgrade() -> None:
     if op.get_context().dialect.name != "postgresql":
         return
 
+    for role in (COLLECTOR_ROLE, READER_ROLE):
+        op.execute(
+            f"""
+DO $role_bootstrap$
+DECLARE
+    role_is_unsafe boolean;
+BEGIN
+    SELECT rolcanlogin OR rolsuper OR rolcreatedb OR rolcreaterole
+           OR rolreplication OR rolbypassrls
+           OR EXISTS (
+               SELECT 1 FROM pg_catalog.pg_auth_members
+                WHERE member = pg_catalog.pg_roles.oid
+           )
+      INTO role_is_unsafe
+      FROM pg_catalog.pg_roles
+     WHERE rolname = '{role}';
+    IF NOT FOUND THEN
+        EXECUTE 'CREATE ROLE {role} NOLOGIN NOSUPERUSER NOCREATEDB '
+                'NOCREATEROLE NOREPLICATION NOBYPASSRLS';
+    ELSIF role_is_unsafe THEN
+        RAISE EXCEPTION 'trusted-acquisition role {role} has unsafe attributes';
+    END IF;
+END
+$role_bootstrap$;
+"""
+        )
+
     op.create_table(
         "etf_calendar_trusted_acquisitions",
         sa.Column("envelope_sha256", sa.String(length=64), nullable=False),
@@ -61,6 +88,9 @@ def upgrade() -> None:
         comment="Append-only Ed25519-signed ETF-calendar HTTPS acquisitions.",
     )
     table = "research.etf_calendar_trusted_acquisitions"
+    op.execute("REVOKE CREATE ON SCHEMA research FROM PUBLIC")
+    op.execute(f"REVOKE CREATE ON SCHEMA research FROM {COLLECTOR_ROLE}")
+    op.execute(f"REVOKE CREATE ON SCHEMA research FROM {READER_ROLE}")
     op.execute(f"REVOKE ALL ON TABLE {table} FROM PUBLIC")
     op.execute(f"GRANT USAGE ON SCHEMA research TO {COLLECTOR_ROLE}")
     op.execute(f"GRANT SELECT, INSERT ON TABLE {table} TO {COLLECTOR_ROLE}")

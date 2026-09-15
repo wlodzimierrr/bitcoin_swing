@@ -1,0 +1,36 @@
+{
+  "application_login_membership": "DEPLOYMENT_SPECIFIC_OUTSIDE_SCIENTIFIC_EVIDENCE",
+  "authority_role_membership_in_another_role": "FAIL_CLOSED",
+  "bootstrap_owner": "ALEMBIC_MIGRATION_0025_BEFORE_GRANTS",
+  "collector_schema_create": false,
+  "contract_version": "TRUSTED_ACQUISITION_POSTGRES_ROLE_BOOTSTRAP_V1",
+  "dba_compromise_defended": false,
+  "definition_sha256": "66e2edfbfaae4f6f2d96333af53d95365e1c5ffc4abfd176db79baff913915e9",
+  "existing_incompatible_role": "FAIL_CLOSED",
+  "infrastructure_trust_authorities": [
+    "DATABASE_TABLE_OWNER",
+    "CLUSTER_SUPERUSER"
+  ],
+  "migration_normalized_ast_sha256": "13a552ba5d63cc0bd9174353312c54360cc7d552336e3f718ae2987cbc316bc3",
+  "normal_credentials": "NEITHER_SUPERUSER_NOR_TABLE_OWNER",
+  "public_schema_create": false,
+  "reader_schema_create": false,
+  "roles": {
+    "btc_calendar_collector_writer": [
+      "NOLOGIN",
+      "NOSUPERUSER",
+      "NOCREATEDB",
+      "NOCREATEROLE",
+      "NOREPLICATION",
+      "NOBYPASSRLS"
+    ],
+    "btc_predictor_scientific_reader": [
+      "NOLOGIN",
+      "NOSUPERUSER",
+      "NOCREATEDB",
+      "NOCREATEROLE",
+      "NOREPLICATION",
+      "NOBYPASSRLS"
+    ]
+  }
+}

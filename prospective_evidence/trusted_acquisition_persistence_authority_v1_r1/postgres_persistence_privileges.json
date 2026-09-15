@@ -1,0 +1,30 @@
+{
+  "atomicity": "VERIFY_PRODUCTION_SIGNATURE_THEN_OWNER_TRANSACTION_INSERT_COMMIT_THEN_NEW_CONNECTION_EXACT_ENVELOPE_READBACK",
+  "authoritative_success": "VALID_PRODUCTION_SIGNATURE_AND_COMMIT_ACKNOWLEDGED_AND_EXACT_POST_COMMIT_ENVELOPE_CONFIRMED",
+  "authoritative_table": "research.etf_calendar_trusted_acquisitions",
+  "caller_connection_as_durability_authority": false,
+  "collector_privileges": [
+    "SELECT",
+    "INSERT"
+  ],
+  "collector_role": "btc_calendar_collector_writer",
+  "commit_or_confirmation_ambiguity": "TRUSTED_ACQUISITION_COMMIT_UNCONFIRMED",
+  "conflict_success": "ONLY_IF_EXISTING_EXACT_ENVELOPE_EQUALS_INTENDED",
+  "contract_version": "TRUSTED_ACQUISITION_POSTGRES_PERSISTENCE_V1",
+  "corrections": "NEW_SIGNED_ROWS_ONLY",
+  "database": "PostgreSQL",
+  "definition_sha256": "21dae015269524c42bcb64f4d8cacb795dcc5afa95deaf1446ef824f322e3a81",
+  "denormalized_columns": "QUERY_PROJECTIONS_CROSS_CHECKED_AGAINST_SIGNED_PAYLOAD",
+  "duplicate": "EXACT_ENVELOPE_IDEMPOTENT_BY_PRIMARY_KEY",
+  "forbidden_normal_workflow_privileges": [
+    "UPDATE",
+    "DELETE"
+  ],
+  "public_privileges": [],
+  "scientific_reader_privileges": [
+    "SELECT"
+  ],
+  "scientific_reader_role": "btc_predictor_scientific_reader",
+  "signature_remains_mandatory_despite_database_privileges": true,
+  "unsigned_authoritative_row": "IMPOSSIBLE_BY_SCHEMA_AND_WRITER_API"
+}

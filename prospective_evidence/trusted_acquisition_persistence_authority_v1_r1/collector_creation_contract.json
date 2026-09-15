@@ -1,0 +1,23 @@
+{
+  "contract_version": "TRUSTED_ACQUISITION_COLLECTOR_CREATION_V1",
+  "default_development_key": "FORBIDDEN",
+  "definition_sha256": "55b51df63ba11ff9f76a9fd9002130e21a7c1be8fd53977b2b437b242f574ed9",
+  "fallback_key": "FORBIDDEN",
+  "metadata_provenance_string_is_authority": false,
+  "missing_or_mismatched_key": "REFUSE_NO_AUTHORITATIVE_ACQUISITION",
+  "private_key_owner": "TRUSTED_COLLECTOR_PROCESS_ONLY",
+  "private_key_provisioning": "external secret storage or OS-protected deployment secret; explicit environment path; single-open O_NOFOLLOW/fstat; regular file; effective-UID ownership; owner-only permissions; POSIX required",
+  "repository_private_key": "FORBIDDEN",
+  "sequence": [
+    "choose exact frozen source profile",
+    "execute verified HTTPS collection",
+    "validate endpoint redirects and HTTP response",
+    "timestamp receipt",
+    "validate parser and product scope",
+    "build canonical acquisition payload",
+    "compute payload digest",
+    "sign domain-separated payload",
+    "create signed envelope",
+    "append signed envelope durably"
+  ]
+}

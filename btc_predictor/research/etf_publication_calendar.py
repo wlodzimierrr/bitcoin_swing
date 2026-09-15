@@ -212,15 +212,18 @@ def _verify_record(record: Mapping[str, Any]) -> dict[str, Any]:
 class CalendarEvidenceStore:
     """Replay cache admitting acquisitions only through verified envelopes."""
 
+    __slots__ = ("_records", "_envelopes")
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        del cls, kwargs
+        raise TypeError("production CalendarEvidenceStore cannot be subclassed")
+
     def __init__(
         self,
         records: Iterable[Mapping[str, Any]] = (),
-        *,
-        key_registry: Mapping[str, _trusted.VerificationKey] = _trusted.PRODUCTION_KEY_REGISTRY,
     ) -> None:
         self._records: dict[str, dict[str, Any]] = {}
         self._envelopes: dict[str, dict[str, Any]] = {}
-        self._key_registry = key_registry
         for record in records:
             self.put(record)
 
@@ -228,9 +231,7 @@ class CalendarEvidenceStore:
         payload = dict(record)
         if payload.get("record_kind") == _trusted.ENVELOPE_KIND:
             try:
-                signed_payload = _trusted.verify_envelope(
-                    payload, registry=self._key_registry
-                )
+                signed_payload = _trusted.verify_production_envelope(payload)
             except _trusted.TrustedAcquisitionError as error:
                 raise EtfCalendarAuthorityError(str(error)) from error
             source = _verify_source_snapshot(signed_payload)
@@ -408,6 +409,7 @@ def _semantic_ast_sha256() -> str:
         "_perform_verified_https_get",
         "_response_bytes",
         "collect_official_calendar",
+        "_collect_official_calendar_non_authoritative_test_only",
         "load_calendar_parser_fixture",
         "_verify_source_snapshot",
         "_derive_source_semantic",
@@ -450,11 +452,30 @@ def _response_bytes(row: Mapping[str, Any]) -> bytes:
 def collect_official_calendar(
     profile_id: str,
     receipt_clock: Any,
+) -> dict[str, Any]:
+    """Production collection with internally owned signing and committed persistence."""
+
+    from btc_predictor.research.trusted_acquisition_persistence import (
+        PostgresTrustedAcquisitionAppender,
+    )
+
+    _trusted._assert_runtime_semantics()
+    return _collect_official_calendar_non_authoritative_test_only(
+        profile_id,
+        receipt_clock,
+        signer=_trusted.AcquisitionSigner.from_external_secret(),
+        appender=PostgresTrustedAcquisitionAppender(),
+    )
+
+
+def _collect_official_calendar_non_authoritative_test_only(
+    profile_id: str,
+    receipt_clock: Any,
     *,
     signer: _trusted.AcquisitionSigner,
     appender: _trusted.AcquisitionAppender,
 ) -> dict[str, Any]:
-    """Collect, validate, sign, and durably append one acquisition envelope."""
+    """Exercise collection logic with test capabilities; creates no production authority."""
 
     venue_id, selected_profile = _profile_for_id(profile_id)
     if not callable(receipt_clock):
