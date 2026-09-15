@@ -113,7 +113,7 @@ ETF calendar authority execution classification =
 ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
-CORRECTED_FROZEN_PRE_DATA_AWAITING_REPEAT_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+CORRECTED_FROZEN_PRE_DATA_FAILED_REPEAT_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
 
 trusted-acquisition persistence authority definition hash =
 240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0
@@ -129,8 +129,11 @@ IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH REVIEW
 POSTP1-002V2B review result =
 FAIL — TRUST REGISTRY INJECTION INVALID
 
+POSTP1-002V2B-R1 review result =
+FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID
+
 trusted-persistence execution classification =
-TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW
+TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX
 
 trusted-persistence certification = NOT CERTIFIED
 
@@ -378,7 +381,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   owners attest the parent-bound executable identity, canonical encodings and
   schema types fail closed, the POSIX key loader validates the opened file's
   type/mode/effective UID, and migration 0025 deterministically provisions or
-  rejects unsafe NOLOGIN roles before grants. Repeat review remains required.
+  rejects unsafe NOLOGIN roles before grants. POSTP1-002V2B-R1 independently
+  reproduced the corrected parent and all nine children, but failed the repeat
+  review: executable attestation hashes function ASTs without comparing the
+  effective production verification-key value to the parent-bound registry, so
+  an isolated replacement key remains attested and is accepted by the production
+  verifier. Production persistence also accepts the configured database URL
+  without validating that the connected identity is a normal non-owner,
+  non-superuser credential governed by the collector-writer role. No local
+  PostgreSQL server was available for fresh-chain and ACL validation. The
+  authority remains uncertified and every downstream authorization stays
+  blocked.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -391,16 +404,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2B-R1 implementation is
-  complete at corrected authority `240985bf...e7bd0` and awaits repeat
-  independent exact-hash xHigh review
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2B-R1 repeat independent
+  exact-hash xHigh review is complete and failed
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
   blocked until the trusted-persistence review passes and one bounded calendar
   integration/refreeze then passes its own closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** repeat independent exact-hash xHigh
-  review of corrected trusted-persistence authority `240985bf...e7bd0`. No
-  calendar integration/refreeze, V2 correction, POSTP1-004 work or collection
+- **Next dependency-satisfied ticket:** None. The trusted-persistence authority
+  requires a bounded correction/refreeze for runtime material-value attestation
+  and connected-database identity enforcement before another exact-hash review.
+  No calendar integration/refreeze, V2 correction, POSTP1-004 work or collection
   is authorized before PASS
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,058 passed, 2 skipped under
@@ -409,7 +422,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   passed; the focused calendar/migration/trust set is 171 passed. Local
   PostgreSQL is not running, so real role/ACL and durable-visibility integration
   evidence remains for repeat review
-- **Last relevant implementation/review commit:** POSTP1-001V2B-R1 implementation
+- **Last relevant implementation/review commit:** POSTP1-002V2B-R1 reviewed
+  HEAD `ed96eee973b1185f5fc9c50f47264575e9aa150d` and failed with no review-fix
+  commit. POSTP1-001V2B-R1 implementation
   `97927f2702aa524f1551b6f1b0c8f76d61efad12`, finalized by mandatory-
   `O_NOFOLLOW` refreeze commit `f6240a3d2044311e4124fdad06ffcacafdb47eba`,
   freezes corrected trusted acquisition persistence authority

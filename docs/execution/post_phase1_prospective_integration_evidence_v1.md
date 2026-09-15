@@ -2275,7 +2275,7 @@ only the pre-existing user-owned trailing blank line in
 
 ## POSTP1-001V2B-R1 — `CLOSE_TRUSTED_ACQUISITION_PRODUCTION_BOUNDARIES_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW`
 **Dependency:** POSTP1-002V2B failure,
 `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -2344,6 +2344,53 @@ hash checks and the scoped diff check passed. The repository-wide diff check
 reports only the pre-existing user-owned trailing blank line in
 `prompts/review_epic.md`, which this ticket left untouched.
 
+## POSTP1-002V2B-R1 — `REPEAT_XHIGH_REVIEW_CORRECTED_TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `97927f2702aa524f1551b6f1b0c8f76d61efad12`,
+`f6240a3d2044311e4124fdad06ffcacafdb47eba`
+**Reviewed HEAD:** `ed96eee973b1185f5fc9c50f47264575e9aa150d`
+**Reviewed authority:** `240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID`
+**Execution classification:** `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
+
+Independent canonical-JSON regeneration reproduced the corrected parent and all
+9/9 material child hashes; every child equals its parent binding. The Ed25519
+production public-key fingerprint reproduced as
+`8540303bf79b540bac83ef4dbf7315007c8ab7840fe017ee0b748177063443b9`.
+The immutable supported registry API, fixed production signatures, strict schema
+and Base64, single-descriptor POSIX key loading, sealed store, owned commit,
+independent exact-envelope readback, projection checks, deterministic role SQL,
+and preserved scientific lineage passed their focused checks.
+
+Two P1 boundaries remain open. First, runtime attestation compares normalized
+function ASTs with the persisted executable manifest but never compares the
+effective `_PRODUCTION_VERIFICATION_KEY` or the other production-critical
+runtime values with the parent-bound signing-key and signed-message contracts.
+An isolated replacement of that effective key leaves attestation passing and
+makes `verify_production_envelope` accept an envelope from the replacement key.
+Second, production persistence opens `BTC_PREDICTOR_DATABASE_URL` and begins the
+write without validating the connected identity's collector-writer membership,
+non-owner status, or non-superuser status. It can therefore claim the frozen ACL
+boundary while operating through an infrastructure-authority credential.
+
+No PostgreSQL URL was configured and the local server did not respond, so fresh
+migration, live role/ACL, and durable-visibility validation were not run:
+`POSTGRES_RUNTIME_VALIDATION_ENVIRONMENT_UNAVAILABLE`. This absence does not
+prevent the present fail verdict because both blocking defects reproduce from
+the production code, but live PostgreSQL validation remains required after
+correction before certification. The focused calendar/migration/trust suite
+passed 171 tests. The full suite passed 5,058 tests with two inherited V2
+composite-owner skips under `-W error::RuntimeWarning` using Python 3.12.14 and
+`cryptography 50.0.1`; those skips do not exercise this authority. Compileall
+passed. Repository-wide `git diff --check` reports only the pre-existing
+user-owned trailing blank line in `prompts/review_epic.md`, which remained
+untouched. No authority artifacts or implementation were changed and there is
+no review-fix commit. Calendar integration/refreeze, V2R1, POSTP1-003R3,
+POSTP1-004 and prospective collection remain blocked; BTC-019 and Epic T remain
+untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2373,6 +2420,7 @@ reports only the pre-existing user-owned trailing blank line in
 | POSTP1-002V2A-R2 | final independent exact-hash review of `05243343...f99c855` | COMPLETE / FAIL — TRUSTED ORIGIN BOUNDARY INVALID; EXPLICIT ARCHITECTURE/AUTHORITY DECISION REQUIRED |
 | POSTP1-001V2B | freeze Ed25519 signed-envelope and collector-only PostgreSQL persistence authority at `c3619b7a...223554` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B | independent exact-hash xHigh review of `c3619b7a...223554` | COMPLETE / FAIL — TRUST REGISTRY INJECTION INVALID; DURABILITY, EXECUTABLE-BINDING AND ROLE-PROVISIONING BOUNDARIES ALSO INVALID |
-| POSTP1-001V2B-R1 | bounded correction/refreeze at `240985bf...e7bd0` | IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2B-R1 | bounded correction/refreeze at `240985bf...e7bd0` | IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2B-R1 | repeat independent exact-hash xHigh review of `240985bf...e7bd0` | COMPLETE / FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID; DATABASE IDENTITY BOUNDARY ALSO INVALID |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
