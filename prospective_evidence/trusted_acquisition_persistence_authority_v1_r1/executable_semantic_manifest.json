@@ -1,12 +1,12 @@
 {
   "contract_version": "TRUSTED_ACQUISITION_EXECUTABLE_SEMANTIC_MANIFEST_V1",
   "cryptography_dependency": "cryptography==50.0.1",
-  "definition_sha256": "fd997cd70c2b2ec73b114a4c5f8c25326ae750292652fb0f9a1fbec8a3e56cbf",
+  "definition_sha256": "74eb3e8b576f91e7c2fd71e5b0979e1b5445b9357b7b22c3e4e7aa9a22ee7eda",
   "identity_method": "SHA-256 of normalized Python AST; locations excluded",
   "material_helper_closures": [
     "ETF_CALENDAR_EXECUTABLE_SEMANTIC_MANIFEST_V1"
   ],
-  "normalized_ast_sha256": "7d0d3f43d3413cccf212623e2fc55c2ca705df65acc1ef4d350967ede40b9fdb",
+  "normalized_ast_sha256": "a68f7ad6ef50619f576a417bb056358370cba4f7c73068eda2a46918be0fe38a",
   "owners": [
     "authoritative_envelope_query",
     "canonical_json_bytes",

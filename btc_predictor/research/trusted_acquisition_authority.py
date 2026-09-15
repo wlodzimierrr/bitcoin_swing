@@ -22,7 +22,7 @@ REPORT_FILENAME = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_REPORT.md"
 FAILED_CALENDAR_AUTHORITY_SHA256 = "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
 FAILED_AUTHORITY_SHA256 = "c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554"
 FINAL_CLASSIFICATION = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW"
-FROZEN_AUTHORITY_DEFINITION_SHA256 = "c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b"
+FROZEN_AUTHORITY_DEFINITION_SHA256 = "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0"
 
 
 class AuthorityArtifactError(ValueError):
@@ -158,8 +158,8 @@ def collector_creation_contract() -> dict[str, Any]:
             "private_key_owner": "TRUSTED_COLLECTOR_PROCESS_ONLY",
             "private_key_provisioning": (
                 "external secret storage or OS-protected deployment secret; explicit environment "
-                "path; single-open O_NOFOLLOW/fstat; regular file; effective-UID ownership; "
-                "owner-only permissions; POSIX required"
+                "path; required O_NOFOLLOW single-open/fstat; regular file; effective-UID "
+                "ownership; owner-only permissions; POSIX-with-O_NOFOLLOW required"
             ),
             "repository_private_key": "FORBIDDEN",
             "default_development_key": "FORBIDDEN",

@@ -159,16 +159,16 @@ class AcquisitionSigner:
         """Load the production key from one POSIX owner-protected file descriptor."""
 
         _assert_runtime_semantics()
-        if not hasattr(os, "geteuid"):
-            raise TrustedAcquisitionError("production private-key loading requires POSIX ownership")
+        if not hasattr(os, "geteuid") or not hasattr(os, "O_NOFOLLOW"):
+            raise TrustedAcquisitionError(
+                "production private-key loading requires POSIX ownership and O_NOFOLLOW"
+            )
 
         source = os.environ if environ is None else environ
         configured = source.get(PRIVATE_KEY_FILE_ENV_VAR)
         if not configured:
             raise TrustedAcquisitionError("production collector private key is unavailable")
-        flags = os.O_RDONLY
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
+        flags = os.O_RDONLY | os.O_NOFOLLOW
         try:
             descriptor = os.open(configured, flags)
         except OSError as error:

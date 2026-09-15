@@ -1,7 +1,7 @@
 # TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1
 
 - Ticket: `POSTP1-001V2B-R1`
-- Definition hash: `c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b`
+- Definition hash: `240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0`
 - Classification: `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW`
 - Material children: 9
 
@@ -19,9 +19,9 @@ does not claim an independent third-party cryptographic TLS transcript.
 
 | child | definition hash |
 | --- | --- |
-| `collector_creation_contract` | `55b51df63ba11ff9f76a9fd9002130e21a7c1be8fd53977b2b437b242f574ed9` |
+| `collector_creation_contract` | `c5ab6dda5848b96cd6e5a67b00b8a02c1ab7f422e89b678b34fd47cc90c3e228` |
 | `creation_rehydration_failure_contract` | `8a6cd8e689f597b6ca57ff21f65bef041d7497a1bbd532551ef415f44860dde5` |
-| `executable_semantic_manifest` | `fd997cd70c2b2ec73b114a4c5f8c25326ae750292652fb0f9a1fbec8a3e56cbf` |
+| `executable_semantic_manifest` | `74eb3e8b576f91e7c2fd71e5b0979e1b5445b9357b7b22c3e4e7aa9a22ee7eda` |
 | `postgres_persistence_privileges` | `21dae015269524c42bcb64f4d8cacb795dcc5afa95deaf1446ef824f322e3a81` |
 | `postgres_role_bootstrap` | `66e2edfbfaae4f6f2d96333af53d95365e1c5ffc4abfd176db79baff913915e9` |
 | `signed_message_contract` | `b324126346c2aebfbc0bf3cb29eae99ecf0d18b0c5fa07c3a588e3563020c96a` |
