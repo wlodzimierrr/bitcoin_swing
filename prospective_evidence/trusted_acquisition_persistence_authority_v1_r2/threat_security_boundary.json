@@ -1,0 +1,18 @@
+{
+  "claim": "Ed25519 proves possession of the trusted collector signing key for the exact persisted payload. Combined with frozen verified-HTTPS collector code and exclusive key availability, it establishes the project source-origin boundary.",
+  "contract_version": "TRUSTED_ACQUISITION_THREAT_MODEL_V1",
+  "defends_against": [
+    "APPLICATION_OR_REPLAY_MANUFACTURE",
+    "FIXTURE_MANUFACTURE",
+    "MANUAL_JSON_EDITING",
+    "SELF_HASH_RECOMPUTATION",
+    "PROVENANCE_STRING_COPYING",
+    "SEMANTIC_HASH_COPYING",
+    "DATABASE_READER_FABRICATION"
+  ],
+  "definition_sha256": "515f81f8bb7905f8a5c1020580ca069764b19322119dc22bfc7254b652cfb35e",
+  "excluded": [
+    "TRUSTED_COLLECTOR_HOST_OR_PRIVATE_KEY_COMPROMISE"
+  ],
+  "independent_third_party_tls_transcript_claimed": false
+}

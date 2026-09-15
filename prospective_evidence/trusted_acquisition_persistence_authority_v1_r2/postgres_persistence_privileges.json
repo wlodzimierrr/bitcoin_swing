@@ -1,0 +1,50 @@
+{
+  "atomicity": "VERIFY_PRODUCTION_SIGNATURE_THEN_OWNER_TRANSACTION_INSERT_COMMIT_THEN_NEW_CONNECTION_EXACT_ENVELOPE_READBACK",
+  "authoritative_success": "VALID_PRODUCTION_SIGNATURE_AND_COMMIT_ACKNOWLEDGED_AND_EXACT_POST_COMMIT_ENVELOPE_CONFIRMED",
+  "authoritative_table": "research.etf_calendar_trusted_acquisitions",
+  "caller_connection_as_durability_authority": false,
+  "collector_privileges": [
+    "SELECT",
+    "INSERT"
+  ],
+  "collector_role": "btc_calendar_collector_writer",
+  "collector_schema_privileges": [
+    "USAGE"
+  ],
+  "commit_or_confirmation_ambiguity": "TRUSTED_ACQUISITION_COMMIT_UNCONFIRMED",
+  "confirmation_connection": "SAME_CONFIGURED_COLLECTOR_LOGIN_REVALIDATED",
+  "conflict_success": "ONLY_IF_EXISTING_EXACT_ENVELOPE_EQUALS_INTENDED",
+  "connected_identity_membership": "PG_HAS_ROLE_SESSION_USER_OR_CURRENT_USER_COLLECTOR_MEMBER",
+  "contract_version": "TRUSTED_ACQUISITION_POSTGRES_PERSISTENCE_V1",
+  "corrections": "NEW_SIGNED_ROWS_ONLY",
+  "current_user_database_owner": false,
+  "current_user_persisted_and_checked": true,
+  "current_user_schema_owner": false,
+  "current_user_superuser": false,
+  "current_user_table_owner": false,
+  "database": "PostgreSQL",
+  "definition_sha256": "75f19e3ba7ce60ff7132c96b7abbb7a4f6d097e28e0a7f4ba02275b4caa378ea",
+  "denormalized_columns": "QUERY_PROJECTIONS_CROSS_CHECKED_AGAINST_SIGNED_PAYLOAD",
+  "duplicate": "EXACT_ENVELOPE_IDEMPOTENT_BY_PRIMARY_KEY",
+  "forbidden_normal_workflow_privileges": [
+    "UPDATE",
+    "DELETE"
+  ],
+  "forbidden_normal_workflow_schema_privileges": [
+    "CREATE"
+  ],
+  "identity_failure": "TRUSTED_ACQUISITION_DATABASE_IDENTITY_INVALID",
+  "identity_validation_connection": "ACTUAL_TRANSACTION_CONNECTION_BEFORE_INSERT",
+  "public_privileges": [],
+  "scientific_reader_privileges": [
+    "SELECT"
+  ],
+  "scientific_reader_role": "btc_predictor_scientific_reader",
+  "session_user_database_owner": false,
+  "session_user_persisted_and_checked": true,
+  "session_user_schema_owner": false,
+  "session_user_superuser": false,
+  "session_user_table_owner": false,
+  "signature_remains_mandatory_despite_database_privileges": true,
+  "unsigned_authoritative_row": "IMPOSSIBLE_BY_SCHEMA_AND_WRITER_API"
+}

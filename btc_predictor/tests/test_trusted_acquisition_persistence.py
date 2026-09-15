@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import inspect
@@ -426,14 +427,53 @@ def test_transaction_owner_requires_commit_and_independent_confirmation(monkeypa
     monkeypatch.setattr(
         persistence, "rehydrate_verified_envelopes", lambda rows: (copy.deepcopy(envelope),)
     )
+    identity_connections = []
+    monkeypatch.setattr(
+        persistence,
+        "assert_authorized_collector_database_identity",
+        lambda connection: identity_connections.append(connection),
+    )
     assert persistence._append_with_owned_engine_non_authoritative_test_only(
         Engine(), envelope=envelope, payload=payload
     ) == envelope["envelope_sha256"]
+    assert len(identity_connections) == 2
     for engine in (Engine(fail_commit=True), Engine(fail_confirmation=True)):
         with pytest.raises(trusted.TrustedAcquisitionError, match=persistence.COMMIT_UNCONFIRMED):
             persistence._append_with_owned_engine_non_authoritative_test_only(
                 engine, envelope=envelope, payload=payload
             )
+
+
+def test_database_identity_failure_refuses_before_insert(monkeypatch) -> None:
+    envelope = signed_envelope()
+
+    class Connection:
+        inserted = False
+        def execute(self, statement):
+            self.inserted = True
+
+    connection = Connection()
+
+    class Context:
+        def __enter__(self): return connection
+        def __exit__(self, exc_type, exc, traceback): return False
+
+    class Engine:
+        dialect = SimpleNamespace(name="postgresql")
+        def begin(self): return Context()
+        def dispose(self): pass
+
+    def refuse(connection):
+        raise trusted.TrustedAcquisitionError(persistence.DATABASE_IDENTITY_INVALID)
+
+    monkeypatch.setattr(persistence, "assert_authorized_collector_database_identity", refuse)
+    with pytest.raises(
+        trusted.TrustedAcquisitionError, match=persistence.DATABASE_IDENTITY_INVALID
+    ):
+        persistence._append_with_owned_engine_non_authoritative_test_only(
+            Engine(), envelope=envelope, payload=envelope["signed_payload"]
+        )
+    assert connection.inserted is False
 
 
 def test_denormalized_projection_tampering_refuses() -> None:
@@ -494,6 +534,254 @@ def test_runtime_semantic_mutation_refuses_old_frozen_artifact(monkeypatch) -> N
     monkeypatch.setattr(trusted, "_decode_public_key", lambda entry: Ed25519PrivateKey.generate().public_key())
     with pytest.raises(trusted.TrustedAcquisitionError, match="differs from frozen"):
         authority.assert_frozen_runtime_semantics()
+
+
+def test_runtime_production_key_replacement_refuses_in_isolated_process() -> None:
+    script = """
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from btc_predictor.research import trusted_acquisition as trusted
+from btc_predictor.research import trusted_acquisition_authority as authority
+replacement_signer = trusted.AcquisitionSigner(
+    Ed25519PrivateKey.generate(), trusted.PRODUCTION_KEY_ID
+)
+trusted._PRODUCTION_VERIFICATION_KEY = replacement_signer.verification_key()
+try:
+    trusted.verify_production_envelope(replacement_signer.sign_payload({'forged': True}))
+except trusted.TrustedAcquisitionError as error:
+    print(str(error))
+else:
+    raise SystemExit('replacement key remained authoritative')
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=ROOT.parent,
+        env=dict(os.environ, PYTHONPATH=str(ROOT)),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "material values differ" in completed.stdout
+
+
+@pytest.mark.parametrize(
+    ("target", "replacement"),
+    [
+        ("AUTHORITY_VERSION", "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V999"),
+        ("ENVELOPE_KIND", "TRUSTED_ACQUISITION_ENVELOPE_V999"),
+        ("DOMAIN_SEPARATOR", "FORGED_DOMAIN_SEPARATOR"),
+        ("SIGNATURE_ALGORITHM", "FORGED_ED25519"),
+        ("PRODUCTION_KEY_ID", "FORGED_PRODUCTION_KEY"),
+    ],
+)
+def test_runtime_authority_material_scalar_replacement_refuses(
+    monkeypatch, target: str, replacement: str
+) -> None:
+    monkeypatch.setattr(trusted, target, replacement)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_material_values()
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "key_id",
+        "algorithm",
+        "public_key_base64",
+        "public_key_sha256",
+        "authority_version",
+        "status",
+    ],
+)
+def test_effective_production_verification_key_material_replacement_refuses(
+    monkeypatch, field: str
+) -> None:
+    values = trusted._PRODUCTION_VERIFICATION_KEY.__dict__.copy()
+    values[field] = f"FORGED_{values[field]}"
+    monkeypatch.setattr(trusted, "_PRODUCTION_VERIFICATION_KEY", trusted.VerificationKey(**values))
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_material_values()
+
+
+def test_runtime_registry_content_replacement_refuses(monkeypatch) -> None:
+    replacement = trusted.AcquisitionSigner(
+        Ed25519PrivateKey.generate(), trusted.PRODUCTION_KEY_ID
+    ).verification_key()
+    monkeypatch.setattr(trusted, "PRODUCTION_KEY_REGISTRY", {trusted.PRODUCTION_KEY_ID: replacement})
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_material_values()
+
+
+def test_runtime_registry_mapping_key_replacement_refuses(monkeypatch) -> None:
+    monkeypatch.setattr(
+        trusted,
+        "PRODUCTION_KEY_REGISTRY",
+        {"FORGED_REGISTRY_KEY": trusted._PRODUCTION_VERIFICATION_KEY},
+    )
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_material_values()
+
+
+def test_material_attestation_refuses_missing_or_unbound_persisted_child(
+    monkeypatch, tmp_path: Path
+) -> None:
+    missing = tmp_path / "missing"
+    monkeypatch.setattr(authority, "OUTPUT_NAMESPACE", str(missing))
+    with pytest.raises(trusted.TrustedAcquisitionError, match="unavailable"):
+        authority.assert_frozen_production_material_values()
+
+    copied = tmp_path / "copied"
+    shutil.copytree(ROOT / "prospective_evidence/trusted_acquisition_persistence_authority_v1_r2", copied)
+    child_path = copied / "signing_key_registry.json"
+    child = json.loads(child_path.read_text(encoding="ascii"))
+    child["keys"][0]["status"] = "FORGED"
+    child_path.write_text(json.dumps(child), encoding="ascii")
+    monkeypatch.setattr(authority, "OUTPUT_NAMESPACE", str(copied))
+    with pytest.raises(trusted.TrustedAcquisitionError, match="digest is invalid"):
+        authority.assert_frozen_production_material_values()
+
+    child.pop("definition_sha256", None)
+    child["definition_sha256"] = trusted.sha256_json(child)
+    child_path.write_text(json.dumps(child), encoding="ascii")
+    parent_path = copied / authority.PROTOCOL_FILENAME
+    parent = json.loads(parent_path.read_text(encoding="ascii"))
+    parent["child_definition_sha256"]["signing_key_registry"] = child["definition_sha256"]
+    parent.pop("definition_sha256", None)
+    parent["definition_sha256"] = trusted.sha256_json(parent)
+    parent_path.write_text(json.dumps(parent), encoding="ascii")
+    with pytest.raises(trusted.TrustedAcquisitionError, match="frozen expected identity"):
+        authority.assert_frozen_production_material_values()
+
+
+def test_authority_hash_and_artifacts_are_process_cwd_and_hashseed_deterministic(
+    tmp_path: Path,
+) -> None:
+    hashes = []
+    for seed, cwd in (("1", ROOT), ("8675309", tmp_path)):
+        output = tmp_path / f"generated-{seed}"
+        script = """
+import sys
+from pathlib import Path
+from btc_predictor.research import trusted_acquisition_authority as authority
+print(authority.write_artifacts(Path(sys.argv[1]))['definition_sha256'])
+"""
+        completed = subprocess.run(
+            [sys.executable, "-c", script, str(output)],
+            cwd=cwd,
+            env=dict(os.environ, PYTHONHASHSEED=seed, PYTHONPATH=str(ROOT)),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        hashes.append(completed.stdout.strip())
+    assert hashes == [authority.FROZEN_AUTHORITY_DEFINITION_SHA256] * 2
+    first = tmp_path / "generated-1"
+    second = tmp_path / "generated-8675309"
+    assert {
+        path.name: path.read_bytes() for path in first.iterdir()
+    } == {
+        path.name: path.read_bytes() for path in second.iterdir()
+    }
+
+
+def _valid_database_identity() -> dict:
+    return {
+        "session_user": "collector_login",
+        "current_user": "collector_login",
+        "database_name": "disposable",
+        "session_or_current_is_collector_member": True,
+        "collector_role_exists": True,
+        "collector_role_nologin": True,
+        "collector_role_safe": True,
+        "collector_role_has_no_membership": True,
+        "session_user_superuser": False,
+        "current_user_superuser": False,
+        "session_user_database_owner": False,
+        "current_user_database_owner": False,
+        "session_user_schema_owner": False,
+        "current_user_schema_owner": False,
+        "session_user_table_owner": False,
+        "current_user_table_owner": False,
+        "table_select": True,
+        "table_insert": True,
+        "table_update": False,
+        "table_delete": False,
+        "schema_usage": True,
+        "schema_create": False,
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "unsafe"),
+    [
+        ("session_or_current_is_collector_member", False),
+        ("collector_role_nologin", False),
+        ("collector_role_safe", False),
+        ("collector_role_has_no_membership", False),
+        ("session_user_superuser", True),
+        ("current_user_superuser", True),
+        ("session_user_database_owner", True),
+        ("current_user_database_owner", True),
+        ("session_user_schema_owner", True),
+        ("current_user_schema_owner", True),
+        ("session_user_table_owner", True),
+        ("current_user_table_owner", True),
+        ("table_select", False),
+        ("table_insert", False),
+        ("table_update", True),
+        ("table_delete", True),
+        ("schema_usage", False),
+        ("schema_create", True),
+    ],
+)
+def test_database_identity_and_privilege_mismatch_refuses(
+    monkeypatch, field: str, unsafe: bool
+) -> None:
+    snapshot = _valid_database_identity()
+    snapshot[field] = unsafe
+    monkeypatch.setattr(persistence, "_database_identity_snapshot", lambda connection: snapshot)
+    with pytest.raises(
+        trusted.TrustedAcquisitionError, match=persistence.DATABASE_IDENTITY_INVALID
+    ):
+        persistence.assert_authorized_collector_database_identity(SimpleNamespace())
+
+
+def test_database_identity_pass_returns_session_and_current_user(monkeypatch) -> None:
+    snapshot = _valid_database_identity()
+    monkeypatch.setattr(persistence, "_database_identity_snapshot", lambda connection: snapshot)
+    assert persistence.assert_authorized_collector_database_identity(SimpleNamespace()) == snapshot
+
+
+def test_database_identity_snapshot_queries_actual_postgresql_session() -> None:
+    snapshot = _valid_database_identity()
+
+    class Result:
+        def mappings(self): return self
+        def one(self): return snapshot
+
+    class Connection:
+        def execute(self, statement, parameters):
+            sql = str(statement)
+            for required in (
+                "session_user::text",
+                "current_user::text",
+                "pg_has_role",
+                "pg_catalog.pg_roles",
+                "pg_catalog.pg_database",
+                "pg_catalog.pg_namespace",
+                "pg_catalog.pg_class",
+                "has_table_privilege",
+                "has_schema_privilege",
+            ):
+                assert required in sql
+            assert parameters == {
+                "collector_role": persistence.COLLECTOR_ROLE,
+                "schema_name": persistence.AUTHORITATIVE_SCHEMA,
+                "table_name": persistence.AUTHORITATIVE_TABLE,
+                "table_short_name": "etf_calendar_trusted_acquisitions",
+            }
+            return Result()
+
+    assert persistence._database_identity_snapshot(Connection()) == snapshot
 
 
 def test_production_surfaces_have_no_capability_or_trust_root_parameters() -> None:

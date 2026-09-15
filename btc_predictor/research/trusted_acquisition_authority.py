@@ -15,14 +15,18 @@ from btc_predictor.research import trusted_acquisition as _trusted
 from btc_predictor.research import trusted_acquisition_persistence as _persistence
 
 
-PROGRAM_TICKET = "POSTP1-001V2B-R1"
-OUTPUT_NAMESPACE = "prospective_evidence/trusted_acquisition_persistence_authority_v1_r1"
+PROGRAM_TICKET = "POSTP1-001V2B-R2"
+OUTPUT_NAMESPACE = "prospective_evidence/trusted_acquisition_persistence_authority_v1_r2"
 PROTOCOL_FILENAME = "authority_definition.json"
 REPORT_FILENAME = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_REPORT.md"
 FAILED_CALENDAR_AUTHORITY_SHA256 = "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
-FAILED_AUTHORITY_SHA256 = "c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554"
-FINAL_CLASSIFICATION = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW"
-FROZEN_AUTHORITY_DEFINITION_SHA256 = "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0"
+FAILED_AUTHORITY_SHA256 = "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0"
+FINAL_CLASSIFICATION = (
+    "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW"
+)
+# Filled with the exact regenerated R2 parent after the bounded implementation
+# is complete. Runtime operation refuses every other persisted parent identity.
+FROZEN_AUTHORITY_DEFINITION_SHA256 = "bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc"
 
 
 class AuthorityArtifactError(ValueError):
@@ -177,10 +181,25 @@ def persistence_and_privilege_contract() -> dict[str, Any]:
             "authoritative_table": "research.etf_calendar_trusted_acquisitions",
             "database": "PostgreSQL",
             "collector_role": "btc_calendar_collector_writer",
+            "connected_identity_membership": (
+                "PG_HAS_ROLE_SESSION_USER_OR_CURRENT_USER_COLLECTOR_MEMBER"
+            ),
+            "session_user_persisted_and_checked": True,
+            "current_user_persisted_and_checked": True,
+            "session_user_superuser": False,
+            "current_user_superuser": False,
+            "session_user_table_owner": False,
+            "current_user_table_owner": False,
+            "session_user_schema_owner": False,
+            "current_user_schema_owner": False,
+            "session_user_database_owner": False,
+            "current_user_database_owner": False,
             "collector_privileges": ["SELECT", "INSERT"],
+            "collector_schema_privileges": ["USAGE"],
             "scientific_reader_role": "btc_predictor_scientific_reader",
             "scientific_reader_privileges": ["SELECT"],
             "forbidden_normal_workflow_privileges": ["UPDATE", "DELETE"],
+            "forbidden_normal_workflow_schema_privileges": ["CREATE"],
             "public_privileges": [],
             "corrections": "NEW_SIGNED_ROWS_ONLY",
             "duplicate": "EXACT_ENVELOPE_IDEMPOTENT_BY_PRIMARY_KEY",
@@ -198,6 +217,9 @@ def persistence_and_privilege_contract() -> dict[str, Any]:
             "denormalized_columns": "QUERY_PROJECTIONS_CROSS_CHECKED_AGAINST_SIGNED_PAYLOAD",
             "unsigned_authoritative_row": "IMPOSSIBLE_BY_SCHEMA_AND_WRITER_API",
             "signature_remains_mandatory_despite_database_privileges": True,
+            "identity_validation_connection": "ACTUAL_TRANSACTION_CONNECTION_BEFORE_INSERT",
+            "confirmation_connection": "SAME_CONFIGURED_COLLECTOR_LOGIN_REVALIDATED",
+            "identity_failure": _persistence.DATABASE_IDENTITY_INVALID,
         }
     )
 
@@ -231,7 +253,10 @@ def database_deployment_contract() -> dict[str, Any]:
             "public_schema_create": False,
             "collector_schema_create": False,
             "reader_schema_create": False,
-            "application_login_membership": "DEPLOYMENT_SPECIFIC_OUTSIDE_SCIENTIFIC_EVIDENCE",
+            "application_login_identity": "DEPLOYMENT_SPECIFIC",
+            "application_login_membership": (
+                "REQUIRED_THROUGH_BTC_CALENDAR_COLLECTOR_WRITER_BY_SESSION_OR_CURRENT_USER"
+            ),
             "infrastructure_trust_authorities": ["DATABASE_TABLE_OWNER", "CLUSTER_SUPERUSER"],
             "normal_credentials": "NEITHER_SUPERUSER_NOR_TABLE_OWNER",
             "dba_compromise_defended": False,
@@ -259,6 +284,7 @@ def creation_rehydration_and_failure_contract() -> dict[str, Any]:
                 "RECEIPT_CLOCK_FAILURE",
                 "PRIVATE_KEY_UNAVAILABLE",
                 "SIGNATURE_FAILURE",
+                "DATABASE_IDENTITY_FAILURE",
                 "DATABASE_APPEND_FAILURE",
                 "SIGNATURE_VERIFICATION_FAILURE",
             ],
@@ -309,6 +335,11 @@ def _executable_semantic_owners() -> dict[str, Any]:
         "production_envelope_verifier": _trusted.verify_production_envelope,
         "runtime_attestation_owner": _trusted._assert_runtime_semantics,
         "frozen_runtime_attestation": assert_frozen_runtime_semantics,
+        "frozen_material_value_attestation": assert_frozen_production_material_values,
+        "central_production_authority_attestation": assert_frozen_production_authority,
+        "parent_bound_artifact_loader": _load_parent_bound_child,
+        "authority_digest_verifier": _verify_digest,
+        "live_production_material_snapshot": _live_production_material_values,
         "production_store_admission": _calendar.CalendarEvidenceStore.put,
         "production_store_sealing": _calendar.CalendarEvidenceStore.__init_subclass__,
         "production_collection_orchestration": _calendar.collect_official_calendar,
@@ -316,6 +347,9 @@ def _executable_semantic_owners() -> dict[str, Any]:
         "production_persistence_facade": _persistence.PostgresTrustedAcquisitionAppender.append,
         "production_committed_persistence": _persistence.append_production_envelope_committed,
         "transaction_commit_confirmation": _persistence._append_with_owned_engine_non_authoritative_test_only,
+        "database_identity_assertion": _persistence.assert_authorized_collector_database_identity,
+        "database_identity_snapshot": _persistence._database_identity_snapshot,
+        "database_privilege_assertion": _persistence._assert_database_privileges,
         "persistence_value_projection": _persistence._persistence_values,
         "authoritative_envelope_query": _persistence.authoritative_envelope_query,
         "production_rehydration": _persistence.rehydrate_verified_envelopes,
@@ -391,7 +425,7 @@ def authority_definition() -> dict[str, Any]:
             "authority_version": _trusted.AUTHORITY_VERSION,
             "program_ticket": PROGRAM_TICKET,
             "workstream": "EPIC X — PROSPECTIVE INTEGRATION EVIDENCE",
-            "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+            "status": "FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
             "final_classification": FINAL_CLASSIFICATION,
             "certified": False,
             "required_review": "INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
@@ -432,38 +466,124 @@ def verify_authority_definition(persisted: Mapping[str, Any]) -> None:
 def assert_frozen_runtime_semantics() -> None:
     """Compare current material runtime owners with the parent-bound frozen identity."""
 
+    try:
+        _, manifest = _load_parent_bound_child(
+            "executable_semantic_manifest.json", "executable_semantic_manifest"
+        )
+    except _trusted.TrustedAcquisitionError as error:
+        raise _trusted.TrustedAcquisitionError(
+            "frozen executable semantic authority is invalid"
+        ) from error
+    if manifest.get("normalized_ast_sha256") != current_executable_semantic_sha256():
+        raise _trusted.TrustedAcquisitionError(
+            "runtime executable semantic identity differs from frozen authority"
+        )
+
+
+def _load_parent_bound_child(
+    filename: str, child_name: str
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Load one persisted child only after its digest and exact parent binding verify."""
+
     root = Path(__file__).resolve().parents[2] / OUTPUT_NAMESPACE
     try:
         parent = json.loads((root / PROTOCOL_FILENAME).read_text(encoding="ascii"))
-        manifest = json.loads(
-            (root / "executable_semantic_manifest.json").read_text(encoding="ascii")
-        )
+        child = json.loads((root / filename).read_text(encoding="ascii"))
     except (OSError, json.JSONDecodeError) as error:
         raise _trusted.TrustedAcquisitionError(
-            "frozen executable semantic authority is unavailable"
+            "frozen trusted-acquisition material is unavailable"
         ) from error
     try:
+        _verify_digest(child)
         _verify_digest(parent)
-        _verify_digest(manifest)
     except AuthorityArtifactError as error:
         raise _trusted.TrustedAcquisitionError(
-            "frozen executable semantic authority is invalid"
+            "frozen trusted-acquisition material digest is invalid"
         ) from error
     if parent.get("definition_sha256") != FROZEN_AUTHORITY_DEFINITION_SHA256:
         raise _trusted.TrustedAcquisitionError(
             "trusted-acquisition authority identity is not the frozen expected identity"
         )
-    expected_child = parent.get("child_definition_sha256", {}).get(
-        "executable_semantic_manifest"
+    if (
+        parent.get("child_definition_sha256", {}).get(child_name)
+        != child.get("definition_sha256")
+    ):
+        raise _trusted.TrustedAcquisitionError(
+            "trusted-acquisition material child is not parent-bound"
+        )
+    return parent, child
+
+
+def _live_production_material_values() -> dict[str, Any]:
+    key = _trusted._PRODUCTION_VERIFICATION_KEY
+    registry = _trusted.PRODUCTION_KEY_REGISTRY
+    return {
+        "authority_identity": _trusted.AUTHORITY_VERSION,
+        "schema_identity": _trusted.ENVELOPE_KIND,
+        "domain_separator": _trusted.DOMAIN_SEPARATOR,
+        "signature_algorithm": _trusted.SIGNATURE_ALGORITHM,
+        "production_key_id": _trusted.PRODUCTION_KEY_ID,
+        "effective_verification_key": {
+            "key_id": key.key_id,
+            "algorithm": key.algorithm,
+            "public_key_base64": key.public_key_base64,
+            "public_key_sha256": key.public_key_sha256,
+            "authority_version": key.authority_version,
+            "status": key.status,
+        },
+        "production_key_count": len(registry),
+        "production_registry": [
+            {
+                "registry_key_id": registry_key_id,
+                "key_id": entry.key_id,
+                "algorithm": entry.algorithm,
+                "public_key_base64": entry.public_key_base64,
+                "public_key_sha256": entry.public_key_sha256,
+                "authority_version": entry.authority_version,
+                "status": entry.status,
+            }
+            for registry_key_id, entry in sorted(registry.items())
+        ],
+    }
+
+
+def assert_frozen_production_material_values() -> None:
+    """Compare live production authority values with persisted parent-bound children."""
+
+    _, key_contract = _load_parent_bound_child(
+        "signing_key_registry.json", "signing_key_registry"
     )
-    if expected_child != manifest.get("definition_sha256"):
+    _, message_contract = _load_parent_bound_child(
+        "signed_message_contract.json", "signed_message_contract"
+    )
+    keys = key_contract.get("keys")
+    if not isinstance(keys, list) or len(keys) != 1:
         raise _trusted.TrustedAcquisitionError(
-            "executable semantic manifest is not parent-bound"
+            "frozen production material-value authority is invalid"
         )
-    if manifest.get("normalized_ast_sha256") != current_executable_semantic_sha256():
+    expected = {
+        "authority_identity": message_contract.get("authority_identity"),
+        "schema_identity": message_contract.get("schema_identity"),
+        "domain_separator": message_contract.get("domain_separator"),
+        "signature_algorithm": message_contract.get("signature_algorithm"),
+        "production_key_id": keys[0].get("key_id"),
+        "effective_verification_key": keys[0],
+        "production_key_count": key_contract.get("production_key_count"),
+        "production_registry": [
+            {"registry_key_id": key["key_id"], **key} for key in keys
+        ],
+    }
+    if _live_production_material_values() != expected:
         raise _trusted.TrustedAcquisitionError(
-            "runtime executable semantic identity differs from frozen authority"
+            "runtime production material values differ from frozen authority"
         )
+
+
+def assert_frozen_production_authority() -> None:
+    """Require both executable identity and effective frozen material identity."""
+
+    assert_frozen_runtime_semantics()
+    assert_frozen_production_material_values()
 
 
 def _verify_digest(payload: Mapping[str, Any]) -> None:
@@ -487,6 +607,10 @@ def _report(protocol: Mapping[str, Any]) -> str:
         "PostgreSQL commit and independent exact-envelope readback. Replay verifies the",
         "immutable envelope against one frozen production public key and cross-checks every",
         "denormalized projection.",
+        "The central runtime assertion also compares every effective production key/message",
+        "value with persisted parent-bound child artifacts. Both the write and confirmation",
+        "connections prove their actual session/current users, collector membership,",
+        "non-owner/non-superuser state, and exact effective table/schema privileges.",
         "Self-hashes and provenance strings are descriptive and cannot establish origin.",
         "",
         "The signature proves possession of the collector key for the exact payload; this",
@@ -505,7 +629,8 @@ def _report(protocol: Mapping[str, Any]) -> str:
         "",
         "No prospective observations were collected. Calendar certification, V2R1,",
         "POSTP1-003R3, POSTP1-004, and collection remain blocked pending review and the",
-        "explicit downstream sequence. BTC-019 and Epic T are unchanged.",
+        "explicit downstream sequence. Disposable PostgreSQL 17 runtime validation passed;",
+        "this candidate is ready only for final xHigh review. BTC-019 and Epic T are unchanged.",
         "",
     ]
     return "\n".join(lines)

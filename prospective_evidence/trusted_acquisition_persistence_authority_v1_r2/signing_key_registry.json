@@ -1,0 +1,20 @@
+{
+  "caller_trust_root_replacement": "FORBIDDEN",
+  "contract_version": "TRUSTED_ACQUISITION_SIGNING_KEY_REGISTRY_V1",
+  "definition_sha256": "dc7d09644b0503bb1c7e78c9e3cf43d66561032cbc35aacafa4caa7b5e55d189",
+  "dynamic_rotation": "FORBIDDEN",
+  "keys": [
+    {
+      "algorithm": "Ed25519",
+      "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+      "key_id": "BTC_ETF_CALENDAR_COLLECTOR_ED25519_V1",
+      "public_key_base64": "w71Gv0UzPRK1gmZH0p9wWYqRh6uColYpk3kK2FPUv88=",
+      "public_key_sha256": "8540303bf79b540bac83ef4dbf7315007c8ab7840fe017ee0b748177063443b9",
+      "status": "ACTIVE"
+    }
+  ],
+  "production_key_count": 1,
+  "replacement": "NEW_REVIEWED_TRUSTED_ACQUISITION_AUTHORITY_VERSION",
+  "runtime_registry_representation": "FROZEN_VERIFICATION_KEY_PLUS_MAPPING_PROXY",
+  "test_key_in_production_registry": false
+}

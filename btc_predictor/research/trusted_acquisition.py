@@ -357,10 +357,10 @@ def executable_semantic_sha256() -> str:
 
 
 def _assert_runtime_semantics() -> None:
-    """Refuse authoritative work when runtime code differs from the frozen artifact."""
+    """Refuse unless runtime code and effective production values are both frozen."""
 
     from btc_predictor.research.trusted_acquisition_authority import (
-        assert_frozen_runtime_semantics,
+        assert_frozen_production_authority,
     )
 
-    assert_frozen_runtime_semantics()
+    assert_frozen_production_authority()

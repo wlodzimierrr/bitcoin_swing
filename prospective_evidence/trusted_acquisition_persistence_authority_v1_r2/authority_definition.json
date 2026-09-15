@@ -1,0 +1,42 @@
+{
+  "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+  "blocked_calendar_authority": "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855",
+  "certified": false,
+  "child_definition_sha256": {
+    "collector_creation_contract": "c5ab6dda5848b96cd6e5a67b00b8a02c1ab7f422e89b678b34fd47cc90c3e228",
+    "creation_rehydration_failure_contract": "cb7873976cc6450fd95c8d6c02e3352fca2088871ed675940f9b623f614064ea",
+    "executable_semantic_manifest": "720f36ef254f0f803210763c6ba18b9a0c6de03fd17449d068ad81bc19cbce2e",
+    "postgres_persistence_privileges": "75f19e3ba7ce60ff7132c96b7abbb7a4f6d097e28e0a7f4ba02275b4caa378ea",
+    "postgres_role_bootstrap": "abb2c96fe279a9c7b83a8787fb01e6200897a94bfca2cd4dae860b88a2921ec9",
+    "signed_message_contract": "b324126346c2aebfbc0bf3cb29eae99ecf0d18b0c5fa07c3a588e3563020c96a",
+    "signed_payload_envelope_schema": "86c44364d3d71638e5edb0fb46a2a4c321f098c4d30367306463ea24338a7371",
+    "signing_key_registry": "dc7d09644b0503bb1c7e78c9e3cf43d66561032cbc35aacafa4caa7b5e55d189",
+    "threat_security_boundary": "515f81f8bb7905f8a5c1020580ca069764b19322119dc22bfc7254b652cfb35e"
+  },
+  "clock_semantics": "response_received_at == acquired_at == available_at",
+  "common_session_semantics_changed": false,
+  "definition_sha256": "bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc",
+  "etf_science_changed": false,
+  "failed_authority_observations": 0,
+  "failed_authority_retained_non_authoritative": "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0",
+  "failed_authority_superseded_before_use": true,
+  "final_classification": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW",
+  "https_semantics_changed": false,
+  "material_child_count": 9,
+  "parser_semantics_changed": false,
+  "program_ticket": "POSTP1-001V2B-R2",
+  "required_review": "INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+  "safety": {
+    "btc019_untouched": true,
+    "collection_authorized": false,
+    "epic_t_unchanged": true,
+    "etf_calendar_authority_certified": false,
+    "postp1_001v2r1_blocked": true,
+    "postp1_003r3_blocked": true,
+    "postp1_004_blocked": true,
+    "prospective_observations": 0,
+    "real_stage_b_evaluation": false
+  },
+  "status": "FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}
