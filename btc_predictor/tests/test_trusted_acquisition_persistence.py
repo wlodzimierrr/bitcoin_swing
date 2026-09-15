@@ -683,6 +683,16 @@ print(authority.write_artifacts(Path(sys.argv[1]))['definition_sha256'])
     }
 
 
+def test_authority_hash_is_independent_of_material_child_input_order(
+    monkeypatch, tmp_path: Path
+) -> None:
+    baseline = authority.authority_definition()
+    monkeypatch.setattr(authority, "_CHILD_ARTIFACTS", tuple(reversed(authority._CHILD_ARTIFACTS)))
+    assert authority.authority_definition() == baseline
+    generated = authority.write_artifacts(tmp_path)
+    assert generated["definition_sha256"] == authority.FROZEN_AUTHORITY_DEFINITION_SHA256
+
+
 def _valid_database_identity() -> dict:
     return {
         "session_user": "collector_login",
