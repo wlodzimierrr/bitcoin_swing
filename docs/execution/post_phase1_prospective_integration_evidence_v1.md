@@ -2400,6 +2400,7 @@ untouched.
 **Review model:** final independent xHigh review of the exact corrected authority hash
 **Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r2/`
 **Implementation commit:** `c1edd56b5ec7a607a078d977fef2a33680ccf17a`
+**Determinism regression commit:** `180ad8c1924d2d379b5de90f76414dd2d48db7b9`
 
 ### Final bounded correction and frozen result
 
@@ -2440,7 +2441,7 @@ independent connection is revalidated before SELECT.
 
 ### Verification evidence and safety
 
-The hostile cryptographic/persistence suite passes 72 tests. A disposable
+The hostile cryptographic/persistence suite passes 73 tests. A disposable
 PostgreSQL 17 server passed a fresh complete migration chain through 0025 with
 no role pre-creation, a safe-role idempotence migration, both group roles across
 LOGIN/SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS/foreign-membership
@@ -2452,10 +2453,10 @@ uniqueness, constraint failure and post-commit confirmation failure also pass
 through the deterministic non-production signing boundary. Disposable
 databases and roles were removed after validation.
 
-The focused calendar/migration/trust regression set passes 208 tests with the
-opt-in live test skipped, and the full Python 3.12 suite passes 5,095 tests with
-three skips under `-W error::RuntimeWarning`; the additional third skip is that
-same opt-in PostgreSQL test already exercised separately above.
+The focused calendar/migration/trust regression set passes 209 tests with the
+opt-in live test skipped. The final-tree full Python 3.12 suite passes 5,096
+tests with three skips under `-W error::RuntimeWarning`; the additional third
+skip is that same opt-in PostgreSQL test already exercised separately above.
 
 The artifact regenerates byte-identically across input ordering, two
 `PYTHONHASHSEED` values, alternate cwd, fresh processes and fresh artifact

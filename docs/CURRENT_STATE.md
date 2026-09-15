@@ -427,15 +427,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   refreeze, V2 correction, POSTP1-004 work or collection is authorized before
   PASS
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 5,095 passed, 3 skipped under
+- **Latest verified test baseline:** 5,096 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed. The R2 hostile
-  cryptographic/persistence suite is 72 passed and the focused calendar/
-  migration/trust set is 208 passed with that opt-in test skipped. Python
+  cryptographic/persistence suite is 73 passed and the focused calendar/
+  migration/trust set is 209 passed with that opt-in test skipped. Python
   3.12.14 and `cryptography 50.0.1` were used on 2026-09-15
 - **Last relevant implementation/review commit:** POSTP1-001V2B-R2 implementation
   `c1edd56b5ec7a607a078d977fef2a33680ccf17a` refreezes final corrected trusted-
-  acquisition persistence authority `bd55a3c0...02c4fc`. POSTP1-002V2B-R1 reviewed
+  acquisition persistence authority `bd55a3c0...02c4fc`; determinism regression
+  commit `180ad8c1924d2d379b5de90f76414dd2d48db7b9` adds no runtime or
+  artifact change. POSTP1-002V2B-R1 reviewed
   HEAD `ed96eee973b1185f5fc9c50f47264575e9aa150d` and failed with no review-fix
   commit. POSTP1-001V2B-R1 implementation
   `97927f2702aa524f1551b6f1b0c8f76d61efad12`, finalized by mandatory-
