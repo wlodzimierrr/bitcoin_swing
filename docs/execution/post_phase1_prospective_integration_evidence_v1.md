@@ -2391,6 +2391,83 @@ no review-fix commit. Calendar integration/refreeze, V2R1, POSTP1-003R3,
 POSTP1-004 and prospective collection remain blocked; BTC-019 and Epic T remain
 untouched.
 
+## POSTP1-001V2B-R2 — `CLOSE_TRUSTED_ACQUISITION_RUNTIME_MATERIAL_AND_DATABASE_IDENTITY_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002V2B-R1 failure,
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** final independent xHigh review of the exact corrected authority hash
+**Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r2/`
+**Implementation commit:** `c1edd56b5ec7a607a078d977fef2a33680ccf17a`
+
+### Final bounded correction and frozen result
+
+The failed `240985bf...e7bd0` R1 directory remains immutable,
+non-authoritative, uncertified, unused, and superseded before any observation.
+R2 preserves Ed25519, key ID
+`BTC_ETF_CALENDAR_COLLECTOR_ED25519_V1`, public-key fingerprint
+`8540303b...3443b9`, and domain separator
+`BTC_PREDICTOR_TRUSTED_ACQUISITION_ENVELOPE_V1` exactly. It refreezes the final
+pre-data candidate at:
+
+```text
+bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc
+```
+
+The nine-child mechanical census now binds two final corrections. First, every
+production boundary uses one composed assertion requiring both the normalized-
+AST executable identity and exact effective material values. Expected values
+are read only from persisted signing-key and signed-message children after
+their child digests, parent digest, child bindings, and exact frozen parent hash
+verify. The live constants, effective `_PRODUCTION_VERIFICATION_KEY`, registry
+keys/values and count must equal those artifacts exactly. Replacement of the
+effective key with another valid Ed25519 key, registry replacement, or drift in
+authority, envelope, domain, algorithm, key ID, key bytes, fingerprint,
+authority version or status refuses before production evidence can verify.
+Artifact resolution is package/repository-relative and independent of cwd.
+
+Second, authoritative INSERT and independent confirmation each query their
+actual PostgreSQL connection. The fixed NOLOGIN collector group must retain all
+six non-privileged role attributes and no parent-role membership. `session_user`
+or `current_user` must be its member; both must be non-superusers and non-owners
+of the connected database, `research` schema and trusted table. Effective
+`current_user` must have table SELECT/INSERT and schema USAGE, and must not have
+UPDATE, DELETE or schema CREATE. Failure is distinct as
+`TRUSTED_ACQUISITION_DATABASE_IDENTITY_INVALID` and occurs before INSERT. The
+same configured collector login is intentionally used for confirmation, whose
+independent connection is revalidated before SELECT.
+
+### Verification evidence and safety
+
+The hostile cryptographic/persistence suite passes 72 tests. A disposable
+PostgreSQL 17 server passed a fresh complete migration chain through 0025 with
+no role pre-creation, a safe-role idempotence migration, both group roles across
+LOGIN/SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS/foreign-membership
+refusals, exact collector/reader/PUBLIC ACL checks, and real connected-identity
+checks for normal collector, reader, unrelated, database owner, table owner,
+schema owner, superuser, extra UPDATE, extra DELETE and schema CREATE logins.
+Real commit plus independent readback, exact retry idempotence, conflicting
+uniqueness, constraint failure and post-commit confirmation failure also pass
+through the deterministic non-production signing boundary. Disposable
+databases and roles were removed after validation.
+
+The focused calendar/migration/trust regression set passes 208 tests with the
+opt-in live test skipped, and the full Python 3.12 suite passes 5,095 tests with
+three skips under `-W error::RuntimeWarning`; the additional third skip is that
+same opt-in PostgreSQL test already exercised separately above.
+
+The artifact regenerates byte-identically across input ordering, two
+`PYTHONHASHSEED` values, alternate cwd, fresh processes and fresh artifact
+directories. V1 `8915d991...fbfac7d7`, failed V2
+`488251df...0ec0b6d`, failed calendar `05243343...f99c855`, and both failed
+trusted-persistence directories remain unchanged. No calendar/parser/PIT,
+common-session, ETF, Stage-B, risk, stop or threshold semantics changed. No
+observation was collected and no Stage-B evaluation ran. The authority is not
+certified; calendar integration/refreeze, V2R1, POSTP1-003R3, POSTP1-004 and
+collection remain blocked. Classification is
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW`.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2422,5 +2499,6 @@ untouched.
 | POSTP1-002V2B | independent exact-hash xHigh review of `c3619b7a...223554` | COMPLETE / FAIL — TRUST REGISTRY INJECTION INVALID; DURABILITY, EXECUTABLE-BINDING AND ROLE-PROVISIONING BOUNDARIES ALSO INVALID |
 | POSTP1-001V2B-R1 | bounded correction/refreeze at `240985bf...e7bd0` | IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B-R1 | repeat independent exact-hash xHigh review of `240985bf...e7bd0` | COMPLETE / FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID; DATABASE IDENTITY BOUNDARY ALSO INVALID |
+| POSTP1-001V2B-R2 | final bounded runtime-material/database-identity correction at `bd55a3c0...02c4fc` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

@@ -113,15 +113,16 @@ ETF calendar authority execution classification =
 ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
-CORRECTED_FROZEN_PRE_DATA_FAILED_REPEAT_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+FINAL_CORRECTED_FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
 
 trusted-acquisition persistence authority definition hash =
-240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0
+bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc
 
 material child contracts bound by corrected trusted-acquisition authority = 9
 
 failed trusted-acquisition authority hash retained as non-authoritative =
 c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554
+240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0
 
 POSTP1-001V2B result =
 IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH REVIEW
@@ -132,8 +133,11 @@ FAIL — TRUST REGISTRY INJECTION INVALID
 POSTP1-002V2B-R1 review result =
 FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID
 
+POSTP1-001V2B-R2 result =
+IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH XHIGH REVIEW
+
 trusted-persistence execution classification =
-TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX
+TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW
 
 trusted-persistence certification = NOT CERTIFIED
 
@@ -391,7 +395,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   non-superuser credential governed by the collector-writer role. No local
   PostgreSQL server was available for fresh-chain and ACL validation. The
   authority remains uncertified and every downstream authorization stays
-  blocked.
+  blocked. POSTP1-001V2B-R2 preserves that failed R1 directory and the accepted
+  Ed25519 key exactly, adds parent-bound live material-value attestation and
+  actual PostgreSQL session/privilege enforcement, and refreezes the final
+  pre-data candidate at `bd55a3c0...02c4fc` with the same nine-child mechanical
+  census. Disposable PostgreSQL 17 validation passes the fresh 0025 chain,
+  safe and unsafe role cases, real ACL and identity matrices, commit/readback,
+  idempotence, conflict, transaction-failure and confirmation-failure checks.
+  The candidate remains uncertified and authorizes only final exact-hash review.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -404,25 +415,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002V2B-R1 repeat independent
-  exact-hash xHigh review is complete and failed
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2B-R2 implementation is
+  complete at `bd55a3c0...02c4fc` and awaits final independent exact-hash xHigh
+  review
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
   blocked until the trusted-persistence review passes and one bounded calendar
   integration/refreeze then passes its own closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** None. The trusted-persistence authority
-  requires a bounded correction/refreeze for runtime material-value attestation
-  and connected-database identity enforcement before another exact-hash review.
-  No calendar integration/refreeze, V2 correction, POSTP1-004 work or collection
-  is authorized before PASS
+- **Next dependency-satisfied ticket:** final independent exact-hash xHigh review
+  of trusted-persistence authority `bd55a3c0...02c4fc`. No calendar integration/
+  refreeze, V2 correction, POSTP1-004 work or collection is authorized before
+  PASS
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 5,058 passed, 2 skipped under
-  `-W error::RuntimeWarning` with Python 3.12.14 and `cryptography 50.0.1` on
-  2026-09-15. The corrected hostile cryptographic/persistence suite is 35
-  passed; the focused calendar/migration/trust set is 171 passed. Local
-  PostgreSQL is not running, so real role/ACL and durable-visibility integration
-  evidence remains for repeat review
-- **Last relevant implementation/review commit:** POSTP1-002V2B-R1 reviewed
+- **Latest verified test baseline:** 5,095 passed, 3 skipped under
+  `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
+  separate explicit disposable PostgreSQL 17 run passed. The R2 hostile
+  cryptographic/persistence suite is 72 passed and the focused calendar/
+  migration/trust set is 208 passed with that opt-in test skipped. Python
+  3.12.14 and `cryptography 50.0.1` were used on 2026-09-15
+- **Last relevant implementation/review commit:** POSTP1-001V2B-R2 implementation
+  `c1edd56b5ec7a607a078d977fef2a33680ccf17a` refreezes final corrected trusted-
+  acquisition persistence authority `bd55a3c0...02c4fc`. POSTP1-002V2B-R1 reviewed
   HEAD `ed96eee973b1185f5fc9c50f47264575e9aa150d` and failed with no review-fix
   commit. POSTP1-001V2B-R1 implementation
   `97927f2702aa524f1551b6f1b0c8f76d61efad12`, finalized by mandatory-
