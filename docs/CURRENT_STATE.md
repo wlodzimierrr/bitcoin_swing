@@ -113,12 +113,15 @@ ETF calendar authority execution classification =
 ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
-FROZEN_PRE_DATA_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+CORRECTED_FROZEN_PRE_DATA_AWAITING_REPEAT_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
 
 trusted-acquisition persistence authority definition hash =
-c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554
+c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b
 
-material child contracts bound by trusted-acquisition authority = 8
+material child contracts bound by corrected trusted-acquisition authority = 9
+
+failed trusted-acquisition authority hash retained as non-authoritative =
+c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554
 
 POSTP1-001V2B result =
 IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH REVIEW
@@ -127,7 +130,7 @@ POSTP1-002V2B review result =
 FAIL — TRUST REGISTRY INJECTION INVALID
 
 trusted-persistence execution classification =
-TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX
+TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW
 
 trusted-persistence certification = NOT CERTIFIED
 
@@ -223,7 +226,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-14
+- **Last updated:** 2026-09-15
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -367,7 +370,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   commit, runtime executable identity is not enforced, and fresh deployment
   does not provision the hard-coded database roles. The authority failed review
   and does not refreeze or certify the calendar, so every downstream
-  authorization remains blocked.
+  authorization remains blocked. POSTP1-001V2B-R1 retains that failed lineage
+  unused and refreezes the corrected authority at `c412c1b8...e6857b` with nine
+  mechanically enumerated children. Production verification/store/persistence/
+  rehydration expose no caller trust root, signer, appender or connection;
+  persistence owns commit and independent exact-envelope readback. Runtime
+  owners attest the parent-bound executable identity, canonical encodings and
+  schema types fail closed, the POSIX key loader validates the opened file's
+  type/mode/effective UID, and migration 0025 deterministically provisions or
+  rejects unsafe NOLOGIN roles before grants. Repeat review remains required.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -380,25 +391,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2B implementation is complete
-  at `c3619b7a...223554` but failed POSTP1-002V2B independent exact-hash xHigh
-  review
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2B-R1 implementation is
+  complete at corrected authority `c412c1b8...e6857b` and awaits repeat
+  independent exact-hash xHigh review
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
   blocked until the trusted-persistence review passes and one bounded calendar
   integration/refreeze then passes its own closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** one bounded trusted-persistence
-  authority correction must resolve POSTP1-002V2B's trust-root, durability,
-  executable-binding and role-provisioning findings before another exact-hash
-  review. No calendar integration/refreeze, V2 correction, POSTP1-004 work or
-  collection is authorized
+- **Next dependency-satisfied ticket:** repeat independent exact-hash xHigh
+  review of corrected trusted-persistence authority `c412c1b8...e6857b`. No
+  calendar integration/refreeze, V2 correction, POSTP1-004 work or collection
+  is authorized before PASS
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 5,046 passed, 2 skipped with Python 3.12.14
-  and `RuntimeWarning` treated as an error on 2026-09-14. The POSTP1-001V2B
-  hostile cryptographic/persistence suite is 23 passed; the combined calendar,
-  cryptography and migration suite is 159 passed; and the expanded calendar,
-  PIT, artifact, V1 and failed-V2 regression set is 640 passed, 2 skipped
-- **Last relevant implementation/review commit:** POSTP1-001V2B implementation
+- **Latest verified test baseline:** 5,058 passed, 2 skipped under
+  `-W error::RuntimeWarning` with Python 3.12.14 and `cryptography 50.0.1` on
+  2026-09-15. The corrected hostile cryptographic/persistence suite is 35
+  passed; the focused calendar/migration/trust set is 171 passed. Local
+  PostgreSQL is not running, so real role/ACL and durable-visibility integration
+  evidence remains for repeat review
+- **Last relevant implementation/review commit:** POSTP1-001V2B-R1 implementation
+  `97927f2702aa524f1551b6f1b0c8f76d61efad12` refreezes corrected trusted
+  acquisition persistence authority `c412c1b8...e6857b`. POSTP1-001V2B implementation
   `201769231c32faa03f3f3e49c328d022047a1be3` freezes trusted acquisition
   persistence authority `c3619b7a...223554`; POSTP1-002V2B independently
   reproduced it but failed its replaceable trust root, pre-commit success,

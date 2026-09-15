@@ -2273,6 +2273,76 @@ compileall btc_predictor` passed. Repository-wide `git diff --check` reports
 only the pre-existing user-owned trailing blank line in
 `prompts/review_epic.md`, which this review left untouched.
 
+## POSTP1-001V2B-R1 — `CLOSE_TRUSTED_ACQUISITION_PRODUCTION_BOUNDARIES_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Dependency:** POSTP1-002V2B failure,
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** repeat independent xHigh review of the exact corrected authority hash
+**Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r1/`
+**Implementation commit:** `97927f2702aa524f1551b6f1b0c8f76d61efad12`
+
+### Bounded correction and frozen result
+
+The failed `c3619b7a...223554` directory remains immutable, non-authoritative,
+uncertified, unused, and superseded before any observation. R1 preserves the
+Ed25519 algorithm, production key ID, public-key fingerprint and domain
+separator, and refreezes `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1` at:
+
+```text
+c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b
+```
+
+Nine mechanically enumerated material children bind the immutable production
+key authority; canonical signed-envelope encoding; production signing and
+POSIX single-descriptor private-key loading; fixed-key verification and
+rehydration; internally owned production collection; commit-confirmed
+PostgreSQL persistence; deterministic role/bootstrap privileges; creation
+versus replay; the threat boundary; and the normalized-AST runtime semantic
+closure.
+
+Production verification, `CalendarEvidenceStore`, persistence, rehydration and
+collection accept no caller registry, alternate key, signer, appender or
+connection. Test keys are confined to explicitly non-authoritative helpers and
+fail every production admission path. The public registry is an immutable
+mapping proxy over an unexposed frozen key. Authoritative persistence verifies
+the production signature, owns INSERT and COMMIT, opens a distinct connection,
+reconstructs and verifies the exact envelope, cross-checks denormalized
+projections and returns only after equality. Commit or confirmation ambiguity
+fails as `TRUSTED_ACQUISITION_COMMIT_UNCONFIRMED`; conflicts succeed only when
+the already-persisted envelope is identical.
+
+Every production boundary attests material runtime identity against the
+persisted executable manifest, its parent binding and the frozen top identity.
+Schema version is exact integer `1`; signature and public-key Base64 strictly
+decode and canonically re-encode. The key loader requires POSIX, opens once with
+`O_NOFOLLOW` where available, validates a regular owner-only file owned by
+`geteuid()`, and derives the frozen public key. Migration 0025 provisions
+idempotent NOLOGIN, non-privileged group roles before GRANT, refuses unsafe
+existing roles, revokes schema CREATE, and documents infrastructure ownership.
+
+No calendar source/parser, PIT, common-session, ETF, Stage-B, risk, stop or
+threshold science changed. No observation was collected and no Stage-B
+evaluation ran. The failed calendar authority and failed V2 remain unchanged.
+Calendar integration/refreeze, V2R1, POSTP1-003R3, POSTP1-004 and collection
+remain blocked. Classification is
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_REPEAT_XHIGH_REVIEW`.
+
+Focused correction validation passed 35 tests. The combined migration,
+calendar, V1/V2 integrity, governance and trust regression set passed 412 tests
+with 2 inherited composite skips using Python 3.12.14 and
+`cryptography==50.0.1`. Artifact regeneration/restoration and runtime
+attestation passed. Local PostgreSQL was not running and no database URL was
+configured, so actual fresh-cluster ACL and committed-row visibility evidence
+is deferred to repeat review; deterministic SQL and transaction fixtures pass.
+Full-suite validation, compileall and diff checks are recorded in the final
+implementation handoff: 5,058 tests passed with 2 inherited composite skips
+under `-W error::RuntimeWarning`; compileall, artifact restoration, preserved-
+hash checks and the scoped diff check passed. The repository-wide diff check
+reports only the pre-existing user-owned trailing blank line in
+`prompts/review_epic.md`, which this ticket left untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2302,5 +2372,6 @@ only the pre-existing user-owned trailing blank line in
 | POSTP1-002V2A-R2 | final independent exact-hash review of `05243343...f99c855` | COMPLETE / FAIL — TRUSTED ORIGIN BOUNDARY INVALID; EXPLICIT ARCHITECTURE/AUTHORITY DECISION REQUIRED |
 | POSTP1-001V2B | freeze Ed25519 signed-envelope and collector-only PostgreSQL persistence authority at `c3619b7a...223554` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B | independent exact-hash xHigh review of `c3619b7a...223554` | COMPLETE / FAIL — TRUST REGISTRY INJECTION INVALID; DURABILITY, EXECUTABLE-BINDING AND ROLE-PROVISIONING BOUNDARIES ALSO INVALID |
+| POSTP1-001V2B-R1 | bounded correction/refreeze at `c412c1b8...e6857b` | IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
