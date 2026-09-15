@@ -116,7 +116,7 @@ TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CORRECTED_FROZEN_PRE_DATA_AWAITING_REPEAT_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
 
 trusted-acquisition persistence authority definition hash =
-c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b
+240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0
 
 material child contracts bound by corrected trusted-acquisition authority = 9
 
@@ -371,7 +371,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   does not provision the hard-coded database roles. The authority failed review
   and does not refreeze or certify the calendar, so every downstream
   authorization remains blocked. POSTP1-001V2B-R1 retains that failed lineage
-  unused and refreezes the corrected authority at `c412c1b8...e6857b` with nine
+  unused and refreezes the corrected authority at `240985bf...e7bd0` with nine
   mechanically enumerated children. Production verification/store/persistence/
   rehydration expose no caller trust root, signer, appender or connection;
   persistence owns commit and independent exact-envelope readback. Runtime
@@ -392,14 +392,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. POSTP1-001V2B-R1 implementation is
-  complete at corrected authority `c412c1b8...e6857b` and awaits repeat
+  complete at corrected authority `240985bf...e7bd0` and awaits repeat
   independent exact-hash xHigh review
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
   blocked until the trusted-persistence review passes and one bounded calendar
   integration/refreeze then passes its own closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
 - **Next dependency-satisfied ticket:** repeat independent exact-hash xHigh
-  review of corrected trusted-persistence authority `c412c1b8...e6857b`. No
+  review of corrected trusted-persistence authority `240985bf...e7bd0`. No
   calendar integration/refreeze, V2 correction, POSTP1-004 work or collection
   is authorized before PASS
 - **Other ready tickets:** None
@@ -410,8 +410,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   PostgreSQL is not running, so real role/ACL and durable-visibility integration
   evidence remains for repeat review
 - **Last relevant implementation/review commit:** POSTP1-001V2B-R1 implementation
-  `97927f2702aa524f1551b6f1b0c8f76d61efad12` refreezes corrected trusted
-  acquisition persistence authority `c412c1b8...e6857b`. POSTP1-001V2B implementation
+  `97927f2702aa524f1551b6f1b0c8f76d61efad12`, finalized by mandatory-
+  `O_NOFOLLOW` refreeze commit `f6240a3d2044311e4124fdad06ffcacafdb47eba`,
+  freezes corrected trusted acquisition persistence authority
+  `240985bf...e7bd0`. POSTP1-001V2B implementation
   `201769231c32faa03f3f3e49c328d022047a1be3` freezes trusted acquisition
   persistence authority `c3619b7a...223554`; POSTP1-002V2B independently
   reproduced it but failed its replaceable trust root, pre-commit success,

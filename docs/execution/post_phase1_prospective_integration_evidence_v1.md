@@ -2281,7 +2281,8 @@ only the pre-existing user-owned trailing blank line in
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** repeat independent xHigh review of the exact corrected authority hash
 **Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r1/`
-**Implementation commit:** `97927f2702aa524f1551b6f1b0c8f76d61efad12`
+**Implementation commits:** `97927f2702aa524f1551b6f1b0c8f76d61efad12`,
+final key-loader/refreeze hardening `f6240a3d2044311e4124fdad06ffcacafdb47eba`
 
 ### Bounded correction and frozen result
 
@@ -2291,7 +2292,7 @@ Ed25519 algorithm, production key ID, public-key fingerprint and domain
 separator, and refreezes `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1` at:
 
 ```text
-c412c1b80cef220220cdccd3c031e6694aa53451ef7ab63ac7ab9180e3e6857b
+240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0
 ```
 
 Nine mechanically enumerated material children bind the immutable production
@@ -2317,7 +2318,7 @@ Every production boundary attests material runtime identity against the
 persisted executable manifest, its parent binding and the frozen top identity.
 Schema version is exact integer `1`; signature and public-key Base64 strictly
 decode and canonically re-encode. The key loader requires POSIX, opens once with
-`O_NOFOLLOW` where available, validates a regular owner-only file owned by
+required `O_NOFOLLOW`, validates a regular owner-only file owned by
 `geteuid()`, and derives the frozen public key. Migration 0025 provisions
 idempotent NOLOGIN, non-privileged group roles before GRANT, refuses unsafe
 existing roles, revokes schema CREATE, and documents infrastructure ownership.
@@ -2372,6 +2373,6 @@ reports only the pre-existing user-owned trailing blank line in
 | POSTP1-002V2A-R2 | final independent exact-hash review of `05243343...f99c855` | COMPLETE / FAIL — TRUSTED ORIGIN BOUNDARY INVALID; EXPLICIT ARCHITECTURE/AUTHORITY DECISION REQUIRED |
 | POSTP1-001V2B | freeze Ed25519 signed-envelope and collector-only PostgreSQL persistence authority at `c3619b7a...223554` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B | independent exact-hash xHigh review of `c3619b7a...223554` | COMPLETE / FAIL — TRUST REGISTRY INJECTION INVALID; DURABILITY, EXECUTABLE-BINDING AND ROLE-PROVISIONING BOUNDARIES ALSO INVALID |
-| POSTP1-001V2B-R1 | bounded correction/refreeze at `c412c1b8...e6857b` | IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2B-R1 | bounded correction/refreeze at `240985bf...e7bd0` | IMPLEMENTATION COMPLETE / AWAITING REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
