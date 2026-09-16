@@ -1,0 +1,17 @@
+{
+  "authority_identity": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+  "canonical_serialization": "RFC8259_SUBSET_SORTED_KEYS_COMPACT_ASCII_NO_NAN",
+  "contract_version": "TRUSTED_ACQUISITION_SIGNED_MESSAGE_V1",
+  "definition_sha256": "b324126346c2aebfbc0bf3cb29eae99ecf0d18b0c5fa07c3a588e3563020c96a",
+  "domain_separator": "BTC_PREDICTOR_TRUSTED_ACQUISITION_ENVELOPE_V1",
+  "message_fields": [
+    "authority_identity",
+    "domain_separator",
+    "schema_identity",
+    "signed_payload_sha256",
+    "signing_key_id"
+  ],
+  "schema_identity": "TRUSTED_ACQUISITION_ENVELOPE_V1",
+  "signature_algorithm": "Ed25519",
+  "signature_excluded_from_payload_digest": true
+}

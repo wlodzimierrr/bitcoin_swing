@@ -128,12 +128,13 @@ def test_real_postgresql_migration_acl_identity_and_durability(monkeypatch) -> N
     safe_database = f"btc_ta_r2_safe_{nonce}"
     unsafe_database = f"btc_ta_r2_unsafe_{nonce}"
     password = secrets.token_urlsafe(24)
+    alternate_group = f"btc_ta_r3_alternate_safe_group_{nonce}"
     roles = {
         name: f"btc_ta_r2_{name}_{nonce}"
         for name in (
             "collector", "reader", "unrelated", "owner", "table_owner",
                 "schema_owner", "superuser", "extra_update", "extra_delete",
-                "schema_create", "parent",
+                "schema_create", "alternate_login", "parent",
         )
     }
     databases = [database, safe_database, unsafe_database]
@@ -182,6 +183,13 @@ def test_real_postgresql_migration_acl_identity_and_durability(monkeypatch) -> N
             _execute(admin, "GRANT {} TO {}", COLLECTOR, roles["extra_update"])
             _execute(admin, "GRANT {} TO {}", COLLECTOR, roles["extra_delete"])
             _execute(admin, "GRANT {} TO {}", COLLECTOR, roles["schema_create"])
+            _execute(
+                admin,
+                "CREATE ROLE {} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+                "NOREPLICATION NOBYPASSRLS",
+                alternate_group,
+            )
+            _execute(admin, "GRANT {} TO {}", alternate_group, roles["alternate_login"])
 
             db_url = _url(values, database, values["POSTGRES_USER"], values["POSTGRES_PASSWORD"])
             admin_engine = create_engine(db_url)
@@ -223,9 +231,37 @@ def test_real_postgresql_migration_acl_identity_and_durability(monkeypatch) -> N
                     assert snapshot["current_user"] == roles["collector"]
             finally:
                 collector_engine.dispose()
+
+            # An independently safe alternate group and a login authorized only
+            # through it cannot replace the exact parent-bound collector role.
+            alternate_engine = create_engine(
+                _url(values, database, roles["alternate_login"], password)
+            )
+            alternate_connects = 0
+
+            @event.listens_for(alternate_engine, "connect")
+            def count_alternate_connect(dbapi_connection, connection_record):
+                nonlocal alternate_connects
+                alternate_connects += 1
+
+            alternate_envelope, _ = _test_envelope(response_digit="9")
+            try:
+                with monkeypatch.context() as context:
+                    context.setattr(persistence, "COLLECTOR_ROLE", alternate_group)
+                    with pytest.raises(
+                        trusted.TrustedAcquisitionError, match="material values differ"
+                    ):
+                        persistence._append_with_owned_engine_non_authoritative_test_only(
+                            alternate_engine,
+                            envelope=alternate_envelope,
+                            payload=alternate_envelope["signed_payload"],
+                        )
+                assert alternate_connects == 0
+            finally:
+                alternate_engine.dispose()
             for name in (
-                "reader", "unrelated", "superuser", "extra_update", "extra_delete",
-                "schema_create",
+                "reader", "unrelated", "alternate_login", "superuser", "extra_update",
+                "extra_delete", "schema_create",
             ):
                 _assert_refuses(_url(values, database, roles[name], password))
 
@@ -376,7 +412,7 @@ def test_real_postgresql_migration_acl_identity_and_durability(monkeypatch) -> N
             existing = {
                 row[0] for row in admin.execute(
                     "SELECT rolname FROM pg_roles WHERE rolname = ANY(%s)",
-                    ([*roles.values(), COLLECTOR, READER],),
+                    ([*roles.values(), alternate_group, COLLECTOR, READER],),
                 ).fetchall()
             }
             for group, member in (
@@ -386,10 +422,11 @@ def test_real_postgresql_migration_acl_identity_and_durability(monkeypatch) -> N
                 (COLLECTOR, roles["owner"]), (COLLECTOR, roles["table_owner"]),
                 (COLLECTOR, roles["schema_owner"]), (roles["parent"], COLLECTOR),
                 (roles["parent"], READER),
+                (alternate_group, roles["alternate_login"]),
             ):
                 if group in existing and member in existing:
                     admin.execute(sql.SQL("REVOKE {} FROM {}").format(
                         sql.Identifier(group), sql.Identifier(member)
                     ))
-            for role in [*roles.values(), COLLECTOR, READER]:
+            for role in [*roles.values(), COLLECTOR, READER, alternate_group]:
                 admin.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(role)))

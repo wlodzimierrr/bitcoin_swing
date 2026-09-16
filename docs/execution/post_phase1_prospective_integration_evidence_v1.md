@@ -2515,6 +2515,65 @@ authority remains uncertified; calendar integration/refreeze, V2R1,
 POSTP1-003R3, POSTP1-004 and prospective collection remain blocked. BTC-019 and
 Epic T remain untouched.
 
+## POSTP1-001V2B-R3 — `BIND_TRUSTED_ACQUISITION_DATABASE_AUTHORITY_RUNTIME_IDENTIFIERS_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW`
+**Dependency:** POSTP1-002V2B-R2 failure,
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review model:** final independent xHigh closure review of the exact corrected authority hash
+**Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r3/`
+**Implementation commit:** recorded in the final implementation handoff
+
+### Final micro-correction and frozen result
+
+The failed R2 authority `bd55a3c0...02c4fc` remains immutable,
+non-authoritative, uncertified, unused, and superseded before any observation.
+R3 preserves all accepted cryptographic, PostgreSQL identity, ACL, transaction,
+commit/readback, projection and production-isolation behavior and refreezes the
+nine-child authority at:
+
+```text
+02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772
+```
+
+The existing parent-bound PostgreSQL persistence child now freezes the exact
+runtime collector role, authoritative schema, qualified table, SQLAlchemy table
+schema/name/fullname, and deployment database-URL environment-key name. The URL
+secret/value remains external and is not bound. The live material snapshot
+compares these identifiers together with the accepted cryptographic/protocol
+material after exact parent, child digest and parent-binding verification. The
+identity query's short table name derives from the attested SQLAlchemy table
+object instead of an independent literal. Runtime replacement of the role,
+schema, qualified table, table object, or environment-key name refuses before
+database use; write and independent confirmation recheck frozen material.
+
+Deterministic regressions cover each database contract field, runtime scalar
+and table-object replacement, child/top-hash movement, non-execution of the
+identity query on central-attestation failure, and regeneration across child
+ordering, hash seeds, cwd, processes and output directories. Disposable
+PostgreSQL validation includes an independently safe alternate NOLOGIN group
+and a login authorized only through it; replacing the runtime collector role
+refuses on frozen material before opening a connection. The complete accepted
+R2 migration, unsafe-role, ACL, identity, durability, failure, idempotence,
+conflict and cleanup matrix remains covered.
+
+Validation used Python 3.12.14 and `cryptography==50.0.1`. The focused hostile
+cryptographic/persistence suite passed 91 tests; the broader calendar,
+migration, trusted-persistence and V1/V2 integrity set passed 603 tests with
+three explained skips; the opt-in disposable PostgreSQL 17 test separately
+passed; and the full suite passed 5,114 tests with those same three skips under
+`-W error::RuntimeWarning`. Artifact restoration, multi-process/hash-seed/cwd/
+fresh-directory determinism, preserved-lineage checks, compileall and scoped
+diff checking passed.
+
+No calendar source/parser/PIT, common-session, ETF, Stage-B, risk, stop or
+threshold semantics changed. No observation was collected and no real Stage-B
+evaluation ran. The authority is not certified; calendar integration/refreeze,
+V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked. Classification is
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_CLOSURE_XHIGH_REVIEW`.
+No POSTP1-001V2B-R4 may be created.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2548,5 +2607,7 @@ Epic T remain untouched.
 | POSTP1-002V2B-R1 | repeat independent exact-hash xHigh review of `240985bf...e7bd0` | COMPLETE / FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID; DATABASE IDENTITY BOUNDARY ALSO INVALID |
 | POSTP1-001V2B-R2 | final bounded runtime-material/database-identity correction at `bd55a3c0...02c4fc` | IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B-R2 | final independent exact-hash xHigh review of `bd55a3c0...02c4fc` | COMPLETE / FAIL — DATABASE IDENTITY AUTHORITY INVALID |
+| POSTP1-001V2B-R3 | final database-authority runtime-identifier binding at `02f96203...1a12772` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW |
+| POSTP1-002V2B-R3 | final independent exact-hash xHigh closure review of `02f96203...1a12772` | NEXT / REQUIRED BEFORE ANY DOWNSTREAM WORK |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

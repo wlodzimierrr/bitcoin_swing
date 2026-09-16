@@ -24,6 +24,7 @@ from cryptography.hazmat.primitives.serialization import (
     NoEncryption,
     PrivateFormat,
 )
+from sqlalchemy import MetaData
 
 from btc_predictor.db import render_upgrade_sql
 from btc_predictor.research import etf_publication_calendar as calendar
@@ -513,6 +514,76 @@ def test_authority_artifacts_reproduce_and_bind_every_material_child(tmp_path: P
     assert persisted == protocol
 
 
+def test_database_authority_material_is_frozen_in_parent_bound_child() -> None:
+    contract = authority.persistence_and_privilege_contract()
+    assert contract["collector_role"] == "btc_calendar_collector_writer"
+    assert contract["authoritative_schema"] == "research"
+    assert contract["authoritative_table"] == (
+        "research.etf_calendar_trusted_acquisitions"
+    )
+    assert contract["table_object_identity"] == {
+        "schema": "research",
+        "name": "etf_calendar_trusted_acquisitions",
+        "fullname": "research.etf_calendar_trusted_acquisitions",
+    }
+    assert contract["table_short_name_source"] == (
+        "BOUND_SQLALCHEMY_TABLE_OBJECT_NAME"
+    )
+    assert contract["database_url_environment_name"] == (
+        "BTC_PREDICTOR_DATABASE_URL"
+    )
+    assert contract["database_url_secret_value_bound"] is False
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("collector_role", "forged_collector"),
+        ("authoritative_schema", "forged_schema"),
+        ("authoritative_table", "forged_schema.forged_table"),
+        ("connected_identity_membership", "FORGED_MEMBERSHIP"),
+        ("session_user_table_owner", True),
+        ("collector_privileges", ["SELECT"]),
+        ("forbidden_normal_workflow_privileges", ["DELETE"]),
+    ],
+)
+def test_database_authority_definition_mutation_moves_child_and_parent_hash(
+    monkeypatch, field: str, replacement: object
+) -> None:
+    baseline_child = authority.persistence_and_privilege_contract()["definition_sha256"]
+    baseline_parent = authority.authority_definition()["definition_sha256"]
+    original = authority.persistence_and_privilege_contract
+
+    def mutated() -> dict:
+        payload = original()
+        payload.pop("definition_sha256")
+        payload[field] = replacement
+        return authority._definition(payload)
+
+    monkeypatch.setattr(authority, "persistence_and_privilege_contract", mutated)
+    assert authority.persistence_and_privilege_contract()["definition_sha256"] != baseline_child
+    assert authority.authority_definition()["definition_sha256"] != baseline_parent
+
+
+@pytest.mark.parametrize("field", ["schema", "name", "fullname"])
+def test_table_object_identity_mutation_moves_child_and_parent_hash(
+    monkeypatch, field: str
+) -> None:
+    baseline_child = authority.persistence_and_privilege_contract()["definition_sha256"]
+    baseline_parent = authority.authority_definition()["definition_sha256"]
+    original = authority.persistence_and_privilege_contract
+
+    def mutated() -> dict:
+        payload = original()
+        payload.pop("definition_sha256")
+        payload["table_object_identity"][field] = f"forged_{field}"
+        return authority._definition(payload)
+
+    monkeypatch.setattr(authority, "persistence_and_privilege_contract", mutated)
+    assert authority.persistence_and_privilege_contract()["definition_sha256"] != baseline_child
+    assert authority.authority_definition()["definition_sha256"] != baseline_parent
+
+
 def test_every_authority_material_child_mutation_moves_top_hash(monkeypatch) -> None:
     baseline = authority.authority_definition()["definition_sha256"]
     for _, builder_name in authority._CHILD_ARTIFACTS:
@@ -621,16 +692,73 @@ def test_runtime_registry_mapping_key_replacement_refuses(monkeypatch) -> None:
         authority.assert_frozen_production_material_values()
 
 
+@pytest.mark.parametrize(
+    ("target", "replacement"),
+    [
+        ("COLLECTOR_ROLE", "attacker_controlled_safe_group"),
+        ("AUTHORITATIVE_SCHEMA", "some_other_safe_schema"),
+        ("AUTHORITATIVE_TABLE", "research.some_other_table"),
+        ("DATABASE_URL_ENV_VAR", "ATTACKER_DATABASE_URL"),
+    ],
+)
+def test_runtime_database_authority_scalar_replacement_refuses(
+    monkeypatch, target: str, replacement: str
+) -> None:
+    monkeypatch.setattr(persistence, target, replacement)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_authority()
+
+
+def test_runtime_collector_role_replacement_refuses_in_isolated_process() -> None:
+    script = """
+from btc_predictor.research import trusted_acquisition as trusted
+from btc_predictor.research import trusted_acquisition_authority as authority
+from btc_predictor.research import trusted_acquisition_persistence as persistence
+persistence.COLLECTOR_ROLE = 'attacker_controlled_safe_group'
+try:
+    authority.assert_frozen_production_authority()
+except trusted.TrustedAcquisitionError as error:
+    print(str(error))
+else:
+    raise SystemExit('replacement collector role remained authoritative')
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=ROOT.parent,
+        env=dict(os.environ, PYTHONPATH=str(ROOT)),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "material values differ" in completed.stdout
+
+
+def test_runtime_sqlalchemy_table_object_replacement_refuses(monkeypatch) -> None:
+    replacement = persistence.etf_calendar_trusted_acquisitions.to_metadata(
+        MetaData(), name="some_other_table", schema="some_other_safe_schema"
+    )
+    monkeypatch.setattr(persistence, "etf_calendar_trusted_acquisitions", replacement)
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_authority()
+
+
+def test_database_material_mismatch_refuses_before_identity_query(monkeypatch) -> None:
+    monkeypatch.setattr(persistence, "COLLECTOR_ROLE", "attacker_controlled_safe_group")
+    with pytest.raises(trusted.TrustedAcquisitionError, match="material values differ"):
+        authority.assert_frozen_production_authority()
+
+
 def test_material_attestation_refuses_missing_or_unbound_persisted_child(
     monkeypatch, tmp_path: Path
 ) -> None:
+    frozen_artifacts = ROOT / authority.OUTPUT_NAMESPACE
     missing = tmp_path / "missing"
     monkeypatch.setattr(authority, "OUTPUT_NAMESPACE", str(missing))
     with pytest.raises(trusted.TrustedAcquisitionError, match="unavailable"):
         authority.assert_frozen_production_material_values()
 
     copied = tmp_path / "copied"
-    shutil.copytree(ROOT / "prospective_evidence/trusted_acquisition_persistence_authority_v1_r2", copied)
+    shutil.copytree(frozen_artifacts, copied)
     child_path = copied / "signing_key_registry.json"
     child = json.loads(child_path.read_text(encoding="ascii"))
     child["keys"][0]["status"] = "FORGED"
@@ -787,7 +915,7 @@ def test_database_identity_snapshot_queries_actual_postgresql_session() -> None:
                 "collector_role": persistence.COLLECTOR_ROLE,
                 "schema_name": persistence.AUTHORITATIVE_SCHEMA,
                 "table_name": persistence.AUTHORITATIVE_TABLE,
-                "table_short_name": "etf_calendar_trusted_acquisitions",
+                "table_short_name": persistence.etf_calendar_trusted_acquisitions.name,
             }
             return Result()
 

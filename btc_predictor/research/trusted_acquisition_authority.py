@@ -15,18 +15,18 @@ from btc_predictor.research import trusted_acquisition as _trusted
 from btc_predictor.research import trusted_acquisition_persistence as _persistence
 
 
-PROGRAM_TICKET = "POSTP1-001V2B-R2"
-OUTPUT_NAMESPACE = "prospective_evidence/trusted_acquisition_persistence_authority_v1_r2"
+PROGRAM_TICKET = "POSTP1-001V2B-R3"
+OUTPUT_NAMESPACE = "prospective_evidence/trusted_acquisition_persistence_authority_v1_r3"
 PROTOCOL_FILENAME = "authority_definition.json"
 REPORT_FILENAME = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_REPORT.md"
 FAILED_CALENDAR_AUTHORITY_SHA256 = "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
-FAILED_AUTHORITY_SHA256 = "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0"
+FAILED_AUTHORITY_SHA256 = "bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc"
 FINAL_CLASSIFICATION = (
-    "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW"
+    "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_CLOSURE_XHIGH_REVIEW"
 )
-# Filled with the exact regenerated R2 parent after the bounded implementation
+# Filled with the exact regenerated R3 parent after the bounded implementation
 # is complete. Runtime operation refuses every other persisted parent identity.
-FROZEN_AUTHORITY_DEFINITION_SHA256 = "bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc"
+FROZEN_AUTHORITY_DEFINITION_SHA256 = "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772"
 
 
 class AuthorityArtifactError(ValueError):
@@ -175,12 +175,24 @@ def collector_creation_contract() -> dict[str, Any]:
 
 
 def persistence_and_privilege_contract() -> dict[str, Any]:
+    database_material = _persistence._database_authority_material()
     return _definition(
         {
             "contract_version": "TRUSTED_ACQUISITION_POSTGRES_PERSISTENCE_V1",
-            "authoritative_table": "research.etf_calendar_trusted_acquisitions",
+            "authoritative_schema": database_material["authoritative_schema"],
+            "authoritative_table": database_material["authoritative_table"],
+            "table_object_identity": {
+                "schema": database_material["table_schema"],
+                "name": database_material["table_name"],
+                "fullname": database_material["table_fullname"],
+            },
+            "table_short_name_source": "BOUND_SQLALCHEMY_TABLE_OBJECT_NAME",
+            "database_url_environment_name": database_material[
+                "database_url_environment_name"
+            ],
+            "database_url_secret_value_bound": False,
             "database": "PostgreSQL",
-            "collector_role": "btc_calendar_collector_writer",
+            "collector_role": database_material["collector_role"],
             "connected_identity_membership": (
                 "PG_HAS_ROLE_SESSION_USER_OR_CURRENT_USER_COLLECTOR_MEMBER"
             ),
@@ -340,6 +352,7 @@ def _executable_semantic_owners() -> dict[str, Any]:
         "parent_bound_artifact_loader": _load_parent_bound_child,
         "authority_digest_verifier": _verify_digest,
         "live_production_material_snapshot": _live_production_material_values,
+        "live_database_authority_snapshot": _persistence._database_authority_material,
         "production_store_admission": _calendar.CalendarEvidenceStore.put,
         "production_store_sealing": _calendar.CalendarEvidenceStore.__init_subclass__,
         "production_collection_orchestration": _calendar.collect_official_calendar,
@@ -425,16 +438,24 @@ def authority_definition() -> dict[str, Any]:
             "authority_version": _trusted.AUTHORITY_VERSION,
             "program_ticket": PROGRAM_TICKET,
             "workstream": "EPIC X — PROSPECTIVE INTEGRATION EVIDENCE",
-            "status": "FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+            "status": (
+                "FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_"
+                "CLOSURE_REVIEW"
+            ),
             "final_classification": FINAL_CLASSIFICATION,
             "certified": False,
-            "required_review": "INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+            "required_review": "FINAL_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW",
             "material_child_count": len(children),
             "child_definition_sha256": {
                 name: child["definition_sha256"] for name, child in children.items()
             },
             "blocked_calendar_authority": FAILED_CALENDAR_AUTHORITY_SHA256,
             "failed_authority_retained_non_authoritative": FAILED_AUTHORITY_SHA256,
+            "failed_authority_lineage_retained_non_authoritative": [
+                "c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554",
+                "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0",
+                FAILED_AUTHORITY_SHA256,
+            ],
             "failed_authority_observations": 0,
             "failed_authority_superseded_before_use": True,
             "clock_semantics": "response_received_at == acquired_at == available_at",
@@ -544,6 +565,7 @@ def _live_production_material_values() -> dict[str, Any]:
             }
             for registry_key_id, entry in sorted(registry.items())
         ],
+        "database_authority": _persistence._database_authority_material(),
     }
 
 
@@ -555,6 +577,9 @@ def assert_frozen_production_material_values() -> None:
     )
     _, message_contract = _load_parent_bound_child(
         "signed_message_contract.json", "signed_message_contract"
+    )
+    _, persistence_contract = _load_parent_bound_child(
+        "postgres_persistence_privileges.json", "postgres_persistence_privileges"
     )
     keys = key_contract.get("keys")
     if not isinstance(keys, list) or len(keys) != 1:
@@ -572,6 +597,23 @@ def assert_frozen_production_material_values() -> None:
         "production_registry": [
             {"registry_key_id": key["key_id"], **key} for key in keys
         ],
+        "database_authority": {
+            "collector_role": persistence_contract.get("collector_role"),
+            "authoritative_schema": persistence_contract.get("authoritative_schema"),
+            "authoritative_table": persistence_contract.get("authoritative_table"),
+            "table_schema": persistence_contract.get("table_object_identity", {}).get(
+                "schema"
+            ),
+            "table_name": persistence_contract.get("table_object_identity", {}).get(
+                "name"
+            ),
+            "table_fullname": persistence_contract.get("table_object_identity", {}).get(
+                "fullname"
+            ),
+            "database_url_environment_name": persistence_contract.get(
+                "database_url_environment_name"
+            ),
+        },
     }
     if _live_production_material_values() != expected:
         raise _trusted.TrustedAcquisitionError(
@@ -608,7 +650,8 @@ def _report(protocol: Mapping[str, Any]) -> str:
         "immutable envelope against one frozen production public key and cross-checks every",
         "denormalized projection.",
         "The central runtime assertion also compares every effective production key/message",
-        "value with persisted parent-bound child artifacts. Both the write and confirmation",
+        "value and every database authority identifier with persisted parent-bound child",
+        "artifacts. Both the write and confirmation",
         "connections prove their actual session/current users, collector membership,",
         "non-owner/non-superuser state, and exact effective table/schema privileges.",
         "Self-hashes and provenance strings are descriptive and cannot establish origin.",
@@ -630,7 +673,7 @@ def _report(protocol: Mapping[str, Any]) -> str:
         "No prospective observations were collected. Calendar certification, V2R1,",
         "POSTP1-003R3, POSTP1-004, and collection remain blocked pending review and the",
         "explicit downstream sequence. Disposable PostgreSQL 17 runtime validation passed;",
-        "this candidate is ready only for final xHigh review. BTC-019 and Epic T are unchanged.",
+        "this candidate is ready only for final closure xHigh review. BTC-019 and Epic T are unchanged.",
         "",
     ]
     return "\n".join(lines)

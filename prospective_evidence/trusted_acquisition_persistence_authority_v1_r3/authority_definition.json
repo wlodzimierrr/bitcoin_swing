@@ -1,0 +1,47 @@
+{
+  "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+  "blocked_calendar_authority": "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855",
+  "certified": false,
+  "child_definition_sha256": {
+    "collector_creation_contract": "c5ab6dda5848b96cd6e5a67b00b8a02c1ab7f422e89b678b34fd47cc90c3e228",
+    "creation_rehydration_failure_contract": "cb7873976cc6450fd95c8d6c02e3352fca2088871ed675940f9b623f614064ea",
+    "executable_semantic_manifest": "a56f05cc89da8703adfacb02779da6fcae5a572c6f29c4d97b03e9fccf6d8893",
+    "postgres_persistence_privileges": "62bafcead959aaba97dad9610eea1bdf4a28ada0b73ac94bf364ae14e250e413",
+    "postgres_role_bootstrap": "abb2c96fe279a9c7b83a8787fb01e6200897a94bfca2cd4dae860b88a2921ec9",
+    "signed_message_contract": "b324126346c2aebfbc0bf3cb29eae99ecf0d18b0c5fa07c3a588e3563020c96a",
+    "signed_payload_envelope_schema": "86c44364d3d71638e5edb0fb46a2a4c321f098c4d30367306463ea24338a7371",
+    "signing_key_registry": "dc7d09644b0503bb1c7e78c9e3cf43d66561032cbc35aacafa4caa7b5e55d189",
+    "threat_security_boundary": "515f81f8bb7905f8a5c1020580ca069764b19322119dc22bfc7254b652cfb35e"
+  },
+  "clock_semantics": "response_received_at == acquired_at == available_at",
+  "common_session_semantics_changed": false,
+  "definition_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "etf_science_changed": false,
+  "failed_authority_lineage_retained_non_authoritative": [
+    "c3619b7a72d2ee04247139f47130b995e8ef00514c6e2a736435ba4f2a223554",
+    "240985bf042bc6b9910e39f6c5e170dc22a0385d93ef2f17fecc21c0adee7bd0",
+    "bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc"
+  ],
+  "failed_authority_observations": 0,
+  "failed_authority_retained_non_authoritative": "bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc",
+  "failed_authority_superseded_before_use": true,
+  "final_classification": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_CLOSURE_XHIGH_REVIEW",
+  "https_semantics_changed": false,
+  "material_child_count": 9,
+  "parser_semantics_changed": false,
+  "program_ticket": "POSTP1-001V2B-R3",
+  "required_review": "FINAL_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW",
+  "safety": {
+    "btc019_untouched": true,
+    "collection_authorized": false,
+    "epic_t_unchanged": true,
+    "etf_calendar_authority_certified": false,
+    "postp1_001v2r1_blocked": true,
+    "postp1_003r3_blocked": true,
+    "postp1_004_blocked": true,
+    "prospective_observations": 0,
+    "real_stage_b_evaluation": false
+  },
+  "status": "FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}

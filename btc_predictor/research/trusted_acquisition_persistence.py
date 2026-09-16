@@ -35,6 +35,20 @@ class PostgresTrustedAcquisitionAppender:
         return append_production_envelope_committed(envelope)
 
 
+def _database_authority_material() -> dict[str, str | None]:
+    """Return every effective identifier used to select or authorize persistence."""
+
+    return {
+        "collector_role": COLLECTOR_ROLE,
+        "authoritative_schema": AUTHORITATIVE_SCHEMA,
+        "authoritative_table": AUTHORITATIVE_TABLE,
+        "table_schema": etf_calendar_trusted_acquisitions.schema,
+        "table_name": etf_calendar_trusted_acquisitions.name,
+        "table_fullname": etf_calendar_trusted_acquisitions.fullname,
+        "database_url_environment_name": DATABASE_URL_ENV_VAR,
+    }
+
+
 def append_production_envelope_committed(envelope: Mapping[str, Any]) -> str:
     """Return identity only after owned commit and independent exact readback."""
 
@@ -57,6 +71,13 @@ def _append_with_owned_engine_non_authoritative_test_only(
 ) -> str:
     """Transaction primitive exposed only for deterministic infrastructure tests."""
 
+    # The test-only engine injection does not relax frozen database material:
+    # every identifier used below must match before the engine is used.
+    from btc_predictor.research.trusted_acquisition_authority import (
+        assert_frozen_production_material_values,
+    )
+
+    assert_frozen_production_material_values()
     if engine.dialect.name != "postgresql":
         raise TrustedAcquisitionError("authoritative acquisition append requires PostgreSQL")
     intended = dict(envelope)
@@ -74,6 +95,7 @@ def _append_with_owned_engine_non_authoritative_test_only(
     # Drop the committed transaction's pool so confirmation cannot reuse its
     # physical DBAPI connection.
     engine.dispose()
+    assert_frozen_production_material_values()
     try:
         with engine.connect() as confirmation:
             # Production deliberately uses the same configured collector URL for
@@ -197,7 +219,7 @@ SELECT
             "collector_role": COLLECTOR_ROLE,
             "schema_name": AUTHORITATIVE_SCHEMA,
             "table_name": AUTHORITATIVE_TABLE,
-            "table_short_name": "etf_calendar_trusted_acquisitions",
+            "table_short_name": etf_calendar_trusted_acquisitions.name,
         },
     ).mappings().one()
     return dict(row)
