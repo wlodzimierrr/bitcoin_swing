@@ -2475,6 +2475,7 @@ collection remain blocked. Classification is
 **Reviewed implementation:** `c1edd5686516bae0634a561bd69c251359c36d98`
 **Determinism regression:** `180ad8c1f14b165eedae60c32bf3270066ac8930`
 **Reviewed HEAD:** `8827aea0e3a1255c8a4ee9090392cb3848dfdde7`
+**Documentation handoff:** `7be253e1e62353e085c80e38b889ba1e98e1ce13`
 **Reviewed authority:** `bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc`
 **Review model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review result:** `FAIL — DATABASE IDENTITY AUTHORITY INVALID`
@@ -2523,7 +2524,7 @@ Epic T remain untouched.
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** final independent xHigh closure review of the exact corrected authority hash
 **Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r3/`
-**Implementation commit:** recorded in the final implementation handoff
+**Implementation commit:** `c9c7771be532e5efbec1b79c776807d6ae3d0fa9`
 
 ### Final micro-correction and frozen result
 

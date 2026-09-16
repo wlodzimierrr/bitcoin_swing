@@ -458,13 +458,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   disposable PostgreSQL run passed again and direct cleanup probes found zero
   leftover test databases or roles
 - **Last relevant implementation/review commit:** POSTP1-001V2B-R3 implementation
-  commit is recorded in the final handoff and refreezes the final micro-corrected
-  trusted-acquisition persistence authority at `02f96203...1a12772`.
+  commit `c9c7771be532e5efbec1b79c776807d6ae3d0fa9` refreezes the final
+  micro-corrected trusted-acquisition persistence authority at
+  `02f96203...1a12772`.
   POSTP1-001V2B-R2 implementation
   `c1edd5686516bae0634a561bd69c251359c36d98` refreezes final corrected trusted-
   acquisition persistence authority `bd55a3c0...02c4fc`; determinism regression
   commit `180ad8c1f14b165eedae60c32bf3270066ac8930` adds no runtime or
-  artifact change. POSTP1-002V2B-R1 reviewed
+  artifact change. Its failed R2 review documentation commit is
+  `7be253e1e62353e085c80e38b889ba1e98e1ce13`. POSTP1-002V2B-R1 reviewed
   HEAD `ed96eee973b1185f5fc9c50f47264575e9aa150d` and failed with no review-fix
   commit. POSTP1-001V2B-R1 implementation
   `97927f2702aa524f1551b6f1b0c8f76d61efad12`, finalized by mandatory-
