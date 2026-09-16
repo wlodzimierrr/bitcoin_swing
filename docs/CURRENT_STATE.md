@@ -463,7 +463,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   disposable PostgreSQL run passed again and direct cleanup probes found zero
   leftover test databases or roles
 - **Last relevant implementation/review commit:** POSTP1-002V2B-R3 passed final
-  independent exact-hash xHigh closure review with no review-fix commit.
+  independent exact-hash xHigh closure review with no review-fix commit; closure
+  is recorded by `3522c89ad0807be942198b82e5d71248042e221a`.
   POSTP1-001V2B-R3 implementation
   commit `c9c7771be532e5efbec1b79c776807d6ae3d0fa9` refreezes the final
   micro-corrected trusted-acquisition persistence authority at
