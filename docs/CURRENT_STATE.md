@@ -113,7 +113,7 @@ ETF calendar authority execution classification =
 ETF_PUBLICATION_CALENDAR_AUTHORITY_BLOCKED_BY_TRUSTED_ACQUISITION_BOUNDARY
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
-FINAL_MICRO_CORRECTED_FROZEN_PRE_DATA_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
+CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
 
 trusted-acquisition persistence authority definition hash =
 02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772
@@ -141,12 +141,15 @@ POSTP1-002V2B-R2 review result =
 FAIL — DATABASE IDENTITY AUTHORITY INVALID
 
 POSTP1-001V2B-R3 result =
-IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH XHIGH CLOSURE REVIEW
+IMPLEMENTATION COMPLETE / PASSED FINAL INDEPENDENT EXACT-HASH XHIGH CLOSURE REVIEW
+
+POSTP1-002V2B-R3 review result =
+PASS
 
 trusted-persistence execution classification =
-TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_CLOSURE_XHIGH_REVIEW
+TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_CERTIFIED_FOR_CALENDAR_INTEGRATION
 
-trusted-persistence certification = NOT CERTIFIED
+trusted-persistence certification = CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
 
 latest failed sufficiency-governance definition hash =
 0c0c0f96bc68afee0cbecc285546e0721e6fc621b09354af079adffd5863c64e
@@ -422,8 +425,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   SQLAlchemy table schema/name/fullname, and database-URL environment-key name.
   Runtime identifier replacement refuses before database use, including a live
   PostgreSQL login authorized only through an alternate structurally safe
-  group. R3 awaits final independent exact-hash xHigh closure review, so all
-  downstream work stays blocked.
+  group. POSTP1-002V2B-R3 independently reproduced the parent and all 9/9
+  parent-bound children, passed the hostile material-substitution and disposable
+  PostgreSQL 17.9 regressions, and closed the authority. This PASS authorizes
+  only bounded ETF-calendar integration/refreeze against the exact certified
+  hash; V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -436,17 +442,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2B-R3 implementation is
-  complete at `02f96203...1a12772` and awaits final independent exact-hash
-  xHigh closure review
+- **Current IN_PROGRESS ticket:** None. Trusted-persistence authority V1 is
+  closed at certified hash `02f96203...1a12772`
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
-  blocked until the trusted-persistence review passes and one bounded calendar
-  integration/refreeze then passes its own closure review. POSTP1-001V2R1,
+  blocked until one bounded calendar integration/refreeze passes its own
+  closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** POSTP1-002V2B-R3, the final independent
-  exact-hash xHigh closure review of `02f96203...1a12772`. No calendar
-  integration/refreeze, V2 correction, POSTP1-004 work or collection is
-  authorized before that PASS
+- **Next dependency-satisfied ticket:** bounded ETF calendar integration/refreeze
+  against certified trusted-persistence authority
+  `02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772`.
+  This does not authorize V2 correction, POSTP1-003R3, POSTP1-004 or collection
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,114 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
@@ -457,7 +462,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   3.12.14 and `cryptography 50.0.1` were used on 2026-09-16. The explicit
   disposable PostgreSQL run passed again and direct cleanup probes found zero
   leftover test databases or roles
-- **Last relevant implementation/review commit:** POSTP1-001V2B-R3 implementation
+- **Last relevant implementation/review commit:** POSTP1-002V2B-R3 passed final
+  independent exact-hash xHigh closure review with no review-fix commit.
+  POSTP1-001V2B-R3 implementation
   commit `c9c7771be532e5efbec1b79c776807d6ae3d0fa9` refreezes the final
   micro-corrected trusted-acquisition persistence authority at
   `02f96203...1a12772`.

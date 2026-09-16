@@ -2518,7 +2518,7 @@ Epic T remain untouched.
 
 ## POSTP1-001V2B-R3 — `BIND_TRUSTED_ACQUISITION_DATABASE_AUTHORITY_RUNTIME_IDENTIFIERS_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW`
+**Status:** `DONE / PASSED FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW`
 **Dependency:** POSTP1-002V2B-R2 failure,
 `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -2575,6 +2575,63 @@ V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked. Classification is
 `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_CLOSURE_XHIGH_REVIEW`.
 No POSTP1-001V2B-R4 may be created.
 
+## POSTP1-002V2B-R3 — `FINAL_CLOSURE_XHIGH_REVIEW_TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1`
+
+**Status:** `COMPLETE / PASS`
+**Reviewed implementation:** `c9c7771be532e5efbec1b79c776807d6ae3d0fa9`
+**Documentation handoff reviewed:** `2a1761408812daffabb73cc19ab093ab3589350f`
+**Reviewed authority:** `02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `PASS`
+**Execution classification:** `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_CERTIFIED_FOR_CALENDAR_INTEGRATION`
+
+Independent canonical-JSON regeneration reproduced the exact R3 parent and all
+9/9 mechanically enumerated material children; all 9/9 child digests reproduce
+and equal their parent bindings. The persisted R3 parent independently retains
+the exact three failed predecessors `c3619b7a...223554`,
+`240985bf...e7bd0`, and `bd55a3c0...02c4fc` as non-authoritative,
+non-certified, zero-observation candidates superseded before use. Those
+directories, the failed ETF calendar authority `05243343...f99c855`, certified
+V1 `8915d991...fbfac7d7`, and failed V2 `488251df...0ec0b6d` are unchanged.
+
+The parent-bound PostgreSQL child freezes the effective collector role, schema,
+qualified table, SQLAlchemy table schema/name/fullname, and database-URL
+environment-key name. Expected values come only through persisted exact-parent,
+child-digest and parent-child-binding verification. Independent runtime
+substitution of each scalar or table-object identity refuses at the composed
+executable/material authority assertion before database identity evaluation or
+connection use. Both write and independent confirmation recheck frozen material;
+the actual identity query derives its short name from the attested table object.
+Representative role, schema, table, table-object, membership, ownership,
+required/forbidden privilege and configuration-key mutations move both the
+owning child hash and top authority hash.
+
+The preserved key/protocol, production-API isolation, strict encoding,
+private-key file, durability, ACL, projection and executable-semantic boundaries
+all pass. Disposable PostgreSQL 17.9 independently passed the alternate-safe-
+group exact-authority refusal, fresh/idempotent migrations, unsafe-role, ACL,
+connected-identity, commit/readback, transaction and confirmation failure,
+idempotence, conflict and cleanup cases; cleanup probes found no leftover test
+databases or roles.
+
+The focused persistence suite passed 91 tests. The broader calendar, migration,
+trusted-persistence and V1/V2 set passed 603 tests with three explained skips:
+two composite cases inherit component behavior and the PostgreSQL case is
+explicitly opt-in and was run separately. The full Python 3.12.14 suite passed
+5,114 tests with the same three skips under `-W error::RuntimeWarning` using
+`cryptography==50.0.1`; compileall and the reviewed-range diff check passed. The
+repository-wide diff check reports only the pre-existing user-owned trailing
+blank line in `prompts/review_epic.md`, which this review left untouched.
+
+No finding exists and no review-fix commit was created. No calendar, PIT,
+common-session, ETF, Stage-B, risk, stop or threshold science changed; no
+prospective observation was collected and no real Stage-B evaluation ran.
+`TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1` is closed absent a concrete later
+integration defect. This PASS authorizes only bounded ETF-calendar
+integration/refreeze against the exact certified hash. V2R1, POSTP1-003R3,
+POSTP1-004 and prospective collection remain blocked; BTC-019 and Epic T remain
+untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2608,7 +2665,8 @@ No POSTP1-001V2B-R4 may be created.
 | POSTP1-002V2B-R1 | repeat independent exact-hash xHigh review of `240985bf...e7bd0` | COMPLETE / FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID; DATABASE IDENTITY BOUNDARY ALSO INVALID |
 | POSTP1-001V2B-R2 | final bounded runtime-material/database-identity correction at `bd55a3c0...02c4fc` | IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B-R2 | final independent exact-hash xHigh review of `bd55a3c0...02c4fc` | COMPLETE / FAIL — DATABASE IDENTITY AUTHORITY INVALID |
-| POSTP1-001V2B-R3 | final database-authority runtime-identifier binding at `02f96203...1a12772` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW |
-| POSTP1-002V2B-R3 | final independent exact-hash xHigh closure review of `02f96203...1a12772` | NEXT / REQUIRED BEFORE ANY DOWNSTREAM WORK |
+| POSTP1-001V2B-R3 | final database-authority runtime-identifier binding at `02f96203...1a12772` | DONE / PASSED FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW |
+| POSTP1-002V2B-R3 | final independent exact-hash xHigh closure review of `02f96203...1a12772` | COMPLETE / PASS |
+| bounded ETF calendar integration/refreeze | bind the failed calendar authority correction to certified trusted-persistence hash `02f96203...1a12772` | NEXT / ONLY DEPENDENCY-SATISFIED WORK |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
