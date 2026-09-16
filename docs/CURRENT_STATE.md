@@ -84,7 +84,7 @@ PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
 
 ETF_PUBLICATION_CALENDAR_AUTHORITY_V1 =
-INTEGRATED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
+INTEGRATED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
 
 ETF publication-calendar authority definition hash =
 b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076
@@ -102,7 +102,10 @@ IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH XHIGH REVIEW
 ETF calendar authority certification = NOT CERTIFIED
 
 POSTP1-001V2A-I1 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH INTEGRATION CLOSURE REVIEW
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH INTEGRATION CLOSURE REVIEW
+
+POSTP1-002V2A-I1 review result =
+FAIL — CALENDAR DEPENDENCY CALL-SITE CLOSURE INVALID
 
 ETF calendar trusted-persistence dependency =
 02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772
@@ -117,7 +120,7 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVIEW
+ETF_PUBLICATION_CALENDAR_AUTHORITY_REQUIRES_FIX
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -449,17 +452,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-I1 implementation is
-  complete at calendar hash `b499c6a4...e584e076`; independent exact-hash xHigh
-  integration closure review remains outstanding. Trusted-persistence authority
-  V1 stays closed at certified hash `02f96203...1a12772`
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-I1 failed exact-hash xHigh
+  integration closure review of calendar hash `b499c6a4...e584e076` because
+  authoritative `CalendarEvidenceStore.put()` verifies the currently installed
+  persistence authority but does not execute the calendar's exact frozen-
+  dependency assertion. Trusted-persistence authority V1 stays closed at
+  certified hash `02f96203...1a12772`
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
   blocked until one bounded calendar integration/refreeze passes its own
   closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-I1 independent exact-hash
-  xHigh calendar integration closure review of `b499c6a4...e584e076`. This does
-  not authorize V2 correction, POSTP1-003R3, POSTP1-004 or collection
+- **Next dependency-satisfied ticket:** A bounded mechanical calendar-integration
+  correction/refreeze must make every authoritative acquisition/replay admission
+  execute the exact calendar dependency assertion before scientific evidence is
+  admitted, add hostile mismatch regressions, and receive a new independent
+  exact-hash review. This does not authorize V2 correction, POSTP1-003R3,
+  POSTP1-004 or collection
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,120 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
@@ -472,8 +480,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   recorded by POSTP1-002V2B-R3
 - **Last relevant implementation/review commit:** POSTP1-001V2A-I1 implementation
   commit `c040d2027abe8a7adb64be64a6450b6434bc6543` refreezes the calendar at
-  `b499c6a4...e584e076`; its independent exact-hash xHigh integration closure
-  review is outstanding. POSTP1-002V2B-R3 passed final
+  `b499c6a4...e584e076`; POSTP1-002V2A-I1 failed its independent exact-hash
+  xHigh integration closure review with no review-fix commit. POSTP1-002V2B-R3
+  passed final
   independent exact-hash xHigh closure review with no review-fix commit; closure
   is recorded by `3522c89ad0807be942198b82e5d71248042e221a`.
   POSTP1-001V2B-R3 implementation

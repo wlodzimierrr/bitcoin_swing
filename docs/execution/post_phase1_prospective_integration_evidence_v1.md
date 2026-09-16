@@ -2695,6 +2695,67 @@ only POSTP1-002V2A-I1. POSTP1-001V2R1, POSTP1-003R3, POSTP1-004, collection,
 BTC-019 and Epic T remain blocked or untouched as applicable. Classification
 is `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVIEW`.
 
+## POSTP1-002V2A-I1 — `FINAL_INTEGRATION_XHIGH_REVIEW_ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `c040d2027abe8a7adb64be64a6450b6434bc6543`
+**Documentation handoff reviewed:** `bd103553a891db70eb648372e556bc21338bd3b4`
+**Reviewed authority:** `b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — CALENDAR DEPENDENCY CALL-SITE CLOSURE INVALID`
+**Execution classification:** `ETF_PUBLICATION_CALENDAR_AUTHORITY_REQUIRES_FIX`
+
+Independent canonical-JSON regeneration reproduced the exact parent and all
+13/13 mechanically enumerated material children; every child digest reproduces
+and equals its parent binding. The certified trusted-persistence authority
+`02f96203...1a12772` independently reproduces with all 9/9 children and remains
+closed and unchanged. The calendar dependency child contains the required exact
+authority identity, certification status, signed-envelope requirement, replay
+handoff and failure semantics. Each requested dependency-field mutation moves
+both the child and parent hashes. Eleven of the twelve shared R2 children are
+identical; only the integration-aware executable manifest moved, and the new
+dependency child was added. Failed calendar lineage, certified V1 and failed V2
+reproduce unchanged.
+
+One P1 integration defect blocks certification. The standalone
+`assert_trusted_persistence_dependency()` correctly rejects calendar parent,
+dependency child, expected dependency version/hash, live dependency identity
+and central frozen-authority mismatches, but no authoritative admission path
+calls it. `CalendarEvidenceStore.put()` calls only
+`verify_production_envelope()`. Consequently, when that verifier successfully
+validates evidence under the installed persistence authority, calendar runtime
+expected-hash/version replacement, persisted calendar-parent replacement, or
+persisted dependency-child replacement is not inspected and the evidence is
+admitted. A hypothetical later otherwise-valid persistence authority would be
+accepted without first detecting that it differs from the exact dependency
+frozen by this calendar. The executable manifest hashes both functions but does
+not make the missing call edge true. The required correction is mechanical:
+every authoritative calendar acquisition/replay admission must execute the
+exact calendar dependency assertion before source evidence becomes scientific
+calendar evidence, with regressions for every mismatch class. Any correction
+changes the integration executable manifest and parent hash and therefore needs
+a new independent exact-hash review; this review did not alter or refreeze the
+candidate.
+
+All preserved source-profile, parser/census, PIT, common-session and ETF-science
+children are hash-identical to R2, and their regressions pass. Unsigned,
+self-hashed and non-production evidence remains refused; test-only replay stays
+explicitly non-authoritative. The focused calendar/trusted-persistence suite
+passed 209 tests. The independently reconstructed broader calendar, migration,
+trusted-persistence, ETF and V1/V2 set passed 619 tests with three explained
+skips: two V2 composites inherit component behavior and the disposable
+PostgreSQL test is explicitly opt-in. The full suite passed 5,120 tests with
+the same three skips under Python 3.12.14 and `-W error::RuntimeWarning`;
+compileall passed. Repository-wide `git diff --check` reports only the
+pre-existing user-owned trailing blank line in `prompts/review_epic.md`, which
+this review left untouched.
+
+No prospective observation was collected and no real Stage-B evaluation ran.
+The calendar remains uncertified. POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and
+collection remain blocked; BTC-019 and Epic T remain untouched. The certified
+trusted-persistence authority is not reopened because the defect is solely in
+the calendar's admission call-site composition.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2730,7 +2791,7 @@ is `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVI
 | POSTP1-002V2B-R2 | final independent exact-hash xHigh review of `bd55a3c0...02c4fc` | COMPLETE / FAIL — DATABASE IDENTITY AUTHORITY INVALID |
 | POSTP1-001V2B-R3 | final database-authority runtime-identifier binding at `02f96203...1a12772` | DONE / PASSED FINAL INDEPENDENT EXACT-HASH xHIGH CLOSURE REVIEW |
 | POSTP1-002V2B-R3 | final independent exact-hash xHigh closure review of `02f96203...1a12772` | COMPLETE / PASS |
-| POSTP1-001V2A-I1 | bind the calendar authority to certified trusted-persistence hash `02f96203...1a12772` and refreeze at `b499c6a4...e584e076` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH INTEGRATION CLOSURE REVIEW |
-| POSTP1-002V2A-I1 | independent exact-hash xHigh integration closure review of `b499c6a4...e584e076` | NEXT / ONLY DEPENDENCY-SATISFIED WORK |
+| POSTP1-001V2A-I1 | bind the calendar authority to certified trusted-persistence hash `02f96203...1a12772` and refreeze at `b499c6a4...e584e076` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH INTEGRATION CLOSURE REVIEW |
+| POSTP1-002V2A-I1 | independent exact-hash xHigh integration closure review of `b499c6a4...e584e076` | COMPLETE / FAIL — CALENDAR DEPENDENCY CALL-SITE CLOSURE INVALID |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
