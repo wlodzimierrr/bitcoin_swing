@@ -2393,14 +2393,14 @@ untouched.
 
 ## POSTP1-001V2B-R2 — `CLOSE_TRUSTED_ACQUISITION_RUNTIME_MATERIAL_AND_DATABASE_IDENTITY_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW`
 **Dependency:** POSTP1-002V2B-R1 failure,
 `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
 **Review model:** final independent xHigh review of the exact corrected authority hash
 **Artifacts:** `prospective_evidence/trusted_acquisition_persistence_authority_v1_r2/`
-**Implementation commit:** `c1edd56b5ec7a607a078d977fef2a33680ccf17a`
-**Determinism regression commit:** `180ad8c1924d2d379b5de90f76414dd2d48db7b9`
+**Implementation commit:** `c1edd5686516bae0634a561bd69c251359c36d98`
+**Determinism regression commit:** `180ad8c1f14b165eedae60c32bf3270066ac8930`
 
 ### Final bounded correction and frozen result
 
@@ -2469,6 +2469,52 @@ certified; calendar integration/refreeze, V2R1, POSTP1-003R3, POSTP1-004 and
 collection remain blocked. Classification is
 `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW`.
 
+## POSTP1-002V2B-R2 — `FINAL_XHIGH_REVIEW_TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed implementation:** `c1edd5686516bae0634a561bd69c251359c36d98`
+**Determinism regression:** `180ad8c1f14b165eedae60c32bf3270066ac8930`
+**Reviewed HEAD:** `8827aea0e3a1255c8a4ee9090392cb3848dfdde7`
+**Reviewed authority:** `bd55a3c0043c636f9e60db54e8f0d9fc72effd4e795b4518cad518608702c4fc`
+**Review model:** GPT-5.6 Sol — Extra High (xHigh)
+**Review result:** `FAIL — DATABASE IDENTITY AUTHORITY INVALID`
+**Execution classification:** `TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_REQUIRES_FIX`
+
+Independent canonical-JSON regeneration reproduced the R2 parent and all 9/9
+material child hashes; all 9/9 children equal their parent bindings. The
+production signing key and protocol values are loaded from independently
+persisted, digest-verified, exact-parent-bound children, and replacement key,
+registry and protocol values refuse. The real disposable PostgreSQL 17 test
+passed independently, including fresh and safe-role migrations, all 14 unsafe
+role cases, ACL and connected-identity matrices, commit/readback, transaction
+and confirmation failures, idempotence, conflicts and cleanup.
+
+One P1 boundary remains open. The executable manifest hashes the AST of the
+database identity functions, but it does not bind the effective module-level
+`COLLECTOR_ROLE` value (or the associated effective database authority
+identifiers) as frozen runtime material. The material-value assertion covers
+only signing-key and signed-message values. In an isolated regression,
+replacing `COLLECTOR_ROLE` with `attacker_controlled_safe_group` left
+`assert_frozen_production_authority()` passing, and the actual identity snapshot
+then queried membership in that replacement role. A connection authorized by
+an alternate safe group can therefore satisfy the production identity check
+without authorization through the frozen `btc_calendar_collector_writer`
+group. The correction must parent-bind the effective database authority values
+and refuse such replacement before identity validation or INSERT. No automatic
+R3 is created by this review.
+
+The stale nonexistent implementation and determinism SHAs in the R2 handoff
+were mechanically corrected to the actual commits above. This documentation-
+only provenance repair did not move the scientific authority hash. The hostile
+persistence/cryptographic suite passed 73 tests; the focused calendar,
+migration and trust set passed 209 tests with the explicitly opt-in PostgreSQL
+test skipped; that test separately passed against PostgreSQL 17; and the full
+suite passed 5,096 tests with three explained skips under Python 3.12.14,
+`cryptography 50.0.1` and `-W error::RuntimeWarning`. Compileall passed. The
+authority remains uncertified; calendar integration/refreeze, V2R1,
+POSTP1-003R3, POSTP1-004 and prospective collection remain blocked. BTC-019 and
+Epic T remain untouched.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2500,6 +2546,7 @@ collection remain blocked. Classification is
 | POSTP1-002V2B | independent exact-hash xHigh review of `c3619b7a...223554` | COMPLETE / FAIL — TRUST REGISTRY INJECTION INVALID; DURABILITY, EXECUTABLE-BINDING AND ROLE-PROVISIONING BOUNDARIES ALSO INVALID |
 | POSTP1-001V2B-R1 | bounded correction/refreeze at `240985bf...e7bd0` | IMPLEMENTATION COMPLETE / FAILED REPEAT INDEPENDENT EXACT-HASH xHIGH REVIEW |
 | POSTP1-002V2B-R1 | repeat independent exact-hash xHigh review of `240985bf...e7bd0` | COMPLETE / FAIL — PRODUCTION VERIFICATION AUTHORITY INVALID; DATABASE IDENTITY BOUNDARY ALSO INVALID |
-| POSTP1-001V2B-R2 | final bounded runtime-material/database-identity correction at `bd55a3c0...02c4fc` | IMPLEMENTATION COMPLETE / AWAITING FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-001V2B-R2 | final bounded runtime-material/database-identity correction at `bd55a3c0...02c4fc` | IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH xHIGH REVIEW |
+| POSTP1-002V2B-R2 | final independent exact-hash xHigh review of `bd55a3c0...02c4fc` | COMPLETE / FAIL — DATABASE IDENTITY AUTHORITY INVALID |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
