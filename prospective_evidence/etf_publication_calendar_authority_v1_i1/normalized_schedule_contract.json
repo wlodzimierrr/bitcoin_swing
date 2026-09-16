@@ -1,0 +1,21 @@
+{
+  "caller_coverage": "PROHIBITED",
+  "caller_exceptions": "PROHIBITED",
+  "contract_version": "ETF_NORMALIZED_VENUE_SCHEDULE_V1",
+  "definition_sha256": "bc84a9e73206382506bbca11b4d832a47ab573934fbdee5b3f00c4fd742fec87",
+  "inputs": [
+    "validated acquisition record SHA-256"
+  ],
+  "method": "FROZEN_SOURCE_PROFILE_PARSER_REPLAY_V1",
+  "missing_or_unsupported_coverage": "UNRESOLVED",
+  "outputs": [
+    "venue",
+    "acquisition SHA",
+    "supported coverage intervals",
+    "full closures",
+    "early closes",
+    "source-supported weekday default",
+    "parser ID/version"
+  ],
+  "validator": "rerun acquisition validation and parser; exact semantic object/digest equality"
+}

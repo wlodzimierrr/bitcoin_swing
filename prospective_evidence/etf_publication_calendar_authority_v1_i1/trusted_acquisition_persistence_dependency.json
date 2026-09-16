@@ -1,0 +1,32 @@
+{
+  "authority_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+  "calendar_acquisition_admission_rule": "EXACT_CERTIFIED_TRUSTED_PERSISTENCE_AUTHORITY_PLUS_PRODUCTION_ENVELOPE_VERIFICATION_REQUIRED",
+  "calendar_dependency_assertion": "assert_trusted_persistence_dependency",
+  "calendar_trusted_origin_owner": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+  "central_frozen_authority_assertion": "trusted_acquisition_authority.assert_frozen_production_authority",
+  "contract_version": "ETF_CALENDAR_TRUSTED_PERSISTENCE_INTEGRATION_V1",
+  "definition_sha256": "38050555c36790839a021a926602a15de02cff2e7f0f9ef6e0df6e2d1e14f8af",
+  "delegated_not_duplicated": [
+    "Ed25519 public key",
+    "database collector role",
+    "database schema and table",
+    "database privilege matrix",
+    "private-key loading rules",
+    "transaction durability rules"
+  ],
+  "failure_semantics": "ANY_DEPENDENCY_OR_ENVELOPE_MISMATCH_REFUSES",
+  "governance_provenance": {
+    "closure_commit": "3522c89ad0807be942198b82e5d71248042e221a",
+    "closure_provenance": "4815a014f9394c1b80d1addb42c9717dc04454f9",
+    "closure_review": "POSTP1-002V2B-R3",
+    "scientific_dependency_is_authority_sha256_not_commit": true
+  },
+  "non_production_envelope_authoritative": false,
+  "production_signed_envelope_required": true,
+  "production_verifier": "trusted_acquisition.verify_production_envelope",
+  "rehydration_replay_handoff": "rehydrate_verified_envelopes -> CalendarEvidenceStore -> source snapshot -> normalized schedule -> venue session records",
+  "required_status": "CERTIFIED_FOR_CALENDAR_INTEGRATION",
+  "self_hashed_provenance_authoritative": false,
+  "unsigned_source_snapshot_authoritative": false
+}

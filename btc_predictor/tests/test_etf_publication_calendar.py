@@ -1,4 +1,4 @@
-"""POSTP1-001V2A-R2 trusted-origin and parser-completeness tests."""
+"""POSTP1-001V2A-I1 trusted-persistence calendar-integration tests."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from btc_predictor.data import EtfFlow
 from btc_predictor.features import flow
 from btc_predictor.research import etf_calendar_semantics as semantics
 from btc_predictor.research import etf_publication_calendar as cal
+from btc_predictor.research import trusted_acquisition_authority as trusted_authority
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -191,11 +192,12 @@ def rehash(row: dict) -> dict:
 def test_authority_scope_failed_lineage_and_safety_are_frozen() -> None:
     authority = cal.authority_definition()
     assert authority["authority_version"] == "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1"
-    assert authority["program_ticket"] == "POSTP1-001V2A-R2"
-    assert authority["final_classification"] == "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW"
+    assert authority["program_ticket"] == "POSTP1-001V2A-I1"
+    assert authority["final_classification"] == "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVIEW"
     assert authority["certification"]["certified"] is False
     assert [row["definition_sha256"] for row in authority["failed_authority_lineage"]] == [
         cal.FAILED_AUTHORITY_SHA256, cal.FAILED_CORRECTED_AUTHORITY_SHA256,
+        cal.FAILED_FINAL_CORRECTED_AUTHORITY_SHA256,
     ]
     assert all(
         row["authoritative"] is False and row["certified"] is False
@@ -215,13 +217,51 @@ def test_authority_scope_failed_lineage_and_safety_are_frozen() -> None:
 
 def test_material_children_are_mechanical_bound_and_digest_valid() -> None:
     authority, children = cal.authority_definition(), cal._children()
-    assert authority["material_child_count"] == len(cal._CHILD_ARTIFACTS) == 12
+    assert authority["material_child_count"] == len(cal._CHILD_ARTIFACTS) == 13
     assert authority["child_definition_sha256"] == {
         name: payload["definition_sha256"] for name, payload in children.items()
     }
     for payload in children.values():
         cal._verify_definition_digest(payload)
     cal.verify_authority_definition(authority)
+
+
+def test_exact_certified_trusted_persistence_dependency_is_material(monkeypatch) -> None:
+    dependency = cal.trusted_acquisition_persistence_dependency_contract()
+    assert dependency["authority_version"] == cal.TRUSTED_PERSISTENCE_AUTHORITY_VERSION
+    assert dependency["authority_sha256"] == (
+        "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772"
+    )
+    assert dependency["production_signed_envelope_required"] is True
+    assert dependency["unsigned_source_snapshot_authoritative"] is False
+    assert dependency["self_hashed_provenance_authoritative"] is False
+    assert dependency["non_production_envelope_authoritative"] is False
+    baseline_child = dependency["definition_sha256"]
+    baseline_parent = cal.authority_definition()["definition_sha256"]
+    monkeypatch.setattr(cal, "TRUSTED_PERSISTENCE_AUTHORITY_SHA256", "f" * 64)
+    assert cal.trusted_acquisition_persistence_dependency_contract()["definition_sha256"] != baseline_child
+    assert cal.authority_definition()["definition_sha256"] != baseline_parent
+
+
+def test_calendar_dependency_assertion_requires_frozen_calendar_and_certified_owner(
+    monkeypatch,
+) -> None:
+    cal.assert_trusted_persistence_dependency()
+    monkeypatch.setattr(
+        trusted_authority, "FROZEN_AUTHORITY_DEFINITION_SHA256", "f" * 64
+    )
+    with pytest.raises(cal.EtfCalendarAuthorityError, match="dependency identity mismatch"):
+        cal.assert_trusted_persistence_dependency()
+
+
+def test_calendar_envelope_admission_refuses_runtime_persistence_identity_mismatch(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        trusted_authority, "FROZEN_AUTHORITY_DEFINITION_SHA256", "f" * 64
+    )
+    with pytest.raises(cal.EtfCalendarAuthorityError, match="frozen executable semantic authority is invalid"):
+        cal.CalendarEvidenceStore().put(acquisition("NASDAQ"))
 
 
 def test_every_material_child_mutation_moves_top_hash(monkeypatch) -> None:
@@ -726,7 +766,8 @@ def test_runtime_semantic_mismatch_refuses(monkeypatch) -> None:
 
 def test_failed_calendar_artifact_and_failed_v2_remain_unchanged(tmp_path) -> None:
     del tmp_path
-    persisted = json.loads((ARTIFACT_DIR / cal.PROTOCOL_FILENAME).read_text())
+    failed_r2_dir = ROOT / "prospective_evidence/etf_publication_calendar_authority_v1_r2"
+    persisted = json.loads((failed_r2_dir / cal.PROTOCOL_FILENAME).read_text())
     cal._verify_definition_digest(persisted)
     assert persisted["definition_sha256"] == "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
     assert persisted["material_child_count"] == 12
@@ -736,3 +777,82 @@ def test_failed_calendar_artifact_and_failed_v2_remain_unchanged(tmp_path) -> No
     failed_corrected = json.loads((ROOT / "prospective_evidence/etf_publication_calendar_authority_v1_r1/authority_definition.json").read_text())
     assert failed_calendar["definition_sha256"] == cal.FAILED_AUTHORITY_SHA256
     assert failed_corrected["definition_sha256"] == cal.FAILED_CORRECTED_AUTHORITY_SHA256
+
+
+def test_integrated_calendar_artifacts_restore_exact_frozen_identity() -> None:
+    restored = cal.restore_artifacts(ARTIFACT_DIR)
+    assert restored["definition_sha256"] == cal.FROZEN_AUTHORITY_DEFINITION_SHA256
+    assert restored["material_child_count"] == 13
+    assert restored["trusted_acquisition_persistence_dependency"]["authority_sha256"] == (
+        cal.TRUSTED_PERSISTENCE_AUTHORITY_SHA256
+    )
+
+
+def test_calendar_artifact_regeneration_is_order_hashseed_cwd_and_process_stable(
+    monkeypatch, tmp_path: Path
+) -> None:
+    baseline = cal.authority_definition()
+    monkeypatch.setattr(cal, "_CHILD_ARTIFACTS", tuple(reversed(cal._CHILD_ARTIFACTS)))
+    assert cal.authority_definition() == baseline
+    hashes = []
+    directories = []
+    for seed, cwd in (("1", ROOT), ("8675309", tmp_path)):
+        output = tmp_path / f"generated-{seed}"
+        script = """
+import sys
+from pathlib import Path
+from btc_predictor.research import etf_publication_calendar as cal
+print(cal.write_artifacts(Path(sys.argv[1]))['definition_sha256'])
+"""
+        completed = subprocess.run(
+            [sys.executable, "-c", script, str(output)],
+            cwd=cwd,
+            env=dict(os.environ, PYTHONHASHSEED=seed, PYTHONPATH=str(ROOT)),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        hashes.append(completed.stdout.strip())
+        directories.append(output)
+    assert hashes == [cal.FROZEN_AUTHORITY_DEFINITION_SHA256] * 2
+    assert {path.name: path.read_bytes() for path in directories[0].iterdir()} == {
+        path.name: path.read_bytes() for path in directories[1].iterdir()
+    }
+
+
+def test_fresh_process_test_boundary_replays_without_signing_private_key(
+    tmp_path: Path,
+) -> None:
+    envelope = acquisition("NASDAQ")
+    envelope_path = tmp_path / "envelope.json"
+    envelope_path.write_text(json.dumps(envelope), encoding="ascii")
+    verification_key = json.dumps(TEST_SIGNER.verification_key().__dict__)
+    script = """
+import json, sys
+from datetime import date
+from pathlib import Path
+from btc_predictor.research import etf_publication_calendar as cal
+from btc_predictor.research.trusted_acquisition import VerificationKey, verify_test_envelope_non_authoritative_test_only
+envelope = json.loads(Path(sys.argv[1]).read_text())
+key = VerificationKey(**json.loads(sys.argv[2]))
+source = verify_test_envelope_non_authoritative_test_only(envelope, key)
+source = cal._verify_source_snapshot(source)
+store = cal.CalendarEvidenceStore()
+store._envelopes[envelope['envelope_sha256']] = envelope
+store._records[source[cal.RECORD_DIGEST_FIELD]] = source
+schedule = cal.derive_normalized_schedule_from_official_source(store, acquisition_record_sha256=source[cal.RECORD_DIGEST_FIELD])
+schedule_id = store.put(schedule)
+venue = cal.venue_session_calendar_record(store, normalized_schedule_sha256=schedule_id, trade_date=date(2026, 12, 24))
+print(venue['venue_id'], venue['session_status'])
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script, str(envelope_path), verification_key],
+        cwd=tmp_path,
+        env=dict(os.environ, PYTHONPATH=str(ROOT)),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.stdout.strip() == "NASDAQ OPEN_EARLY_CLOSE"
+    with pytest.raises(cal.EtfCalendarAuthorityError):
+        cal.CalendarEvidenceStore().put(envelope)

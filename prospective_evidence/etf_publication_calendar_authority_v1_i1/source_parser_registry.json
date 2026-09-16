@@ -1,0 +1,65 @@
+{
+  "contract_version": "ETF_CALENDAR_SOURCE_FORMAT_PARSER_REGISTRY_V1",
+  "definition_sha256": "f23f2d999c88768780ac3ea3b0d3daa1a5a15ea94715cf3d1196487ceaaee3e3",
+  "parsers": {
+    "CBOE_BZX": {
+      "closure_extraction": "explicit Closed/holiday table rows",
+      "coverage_derivation": "the single explicit equities schedule year covers exactly that civil year",
+      "covered_years": [
+        2026
+      ],
+      "early_close_extraction": "explicit early-close rows/notices only",
+      "parser_id": "CBOE_BZX_US_EQUITIES_NEXTJS_HTML",
+      "parser_version": "2",
+      "product_scope": "Cboe BZX U.S. Equities annual calendar",
+      "recognition": [
+        "Cboe BZX and EDGX Equities Trading Hours",
+        "Equities Holiday Schedule"
+      ],
+      "regular_default": "remaining weekdays only inside explicit annual coverage",
+      "source_format_version": "CBOE_BZX_EQUITIES_2026_HTML_V1",
+      "table_rule": "exactly one structurally identified table; every body row consumed",
+      "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE"
+    },
+    "NASDAQ": {
+      "closure_extraction": "explicit Closed/holiday table rows",
+      "coverage_derivation": "the single explicit heading year covers exactly that civil year",
+      "covered_years": [
+        2026
+      ],
+      "early_close_extraction": "explicit early-close rows/notices only",
+      "parser_id": "NASDAQ_TRADER_US_EQUITIES_HTML",
+      "parser_version": "2",
+      "product_scope": "Nasdaq U.S. Equity and Options Markets annual calendar",
+      "recognition": [
+        "U.S. Equity and Options Markets Holiday Schedule",
+        "NasdaqTrader.com"
+      ],
+      "regular_default": "remaining weekdays only inside explicit annual coverage",
+      "source_format_version": "NASDAQ_US_EQUITIES_2026_HTML_V1",
+      "table_rule": "exactly one structurally identified table; every body row consumed",
+      "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE"
+    },
+    "NYSE_ARCA": {
+      "closure_extraction": "explicit Closed/holiday table rows",
+      "coverage_derivation": "each explicit year column covers exactly that civil year",
+      "covered_years": [
+        2026,
+        2027,
+        2028
+      ],
+      "early_close_extraction": "explicit early-close rows/notices only",
+      "parser_id": "NYSE_HOLIDAYS_TRADING_HOURS_HTML",
+      "parser_version": "2",
+      "product_scope": "NYSE Arca Equities annual trading calendar",
+      "recognition": [
+        "Holidays & Trading Hours",
+        "NYSE Arca Equities"
+      ],
+      "regular_default": "remaining weekdays only inside explicit annual coverage",
+      "source_format_version": "NYSE_2026_2028_HTML_V1",
+      "table_rule": "exactly one structurally identified table; every body row consumed",
+      "unknown_or_ambiguous": "UNSUPPORTED_SOURCE_FORMAT_REFUSE"
+    }
+  }
+}

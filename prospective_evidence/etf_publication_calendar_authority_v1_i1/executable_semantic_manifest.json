@@ -1,0 +1,31 @@
+{
+  "contract_version": "ETF_CALENDAR_EXECUTABLE_SEMANTIC_MANIFEST_V1",
+  "definition_sha256": "a09a6d70eda9d2218929e72928962d9ea1aa8ca49e241235566838589feb08cf",
+  "identity_method": "SHA-256 of normalized Python AST; locations excluded",
+  "normalized_ast_sha256": "5972e08659eac23f3038a326ca666ebe736811e16b4ab5820f4720b0b661c150",
+  "owners": [
+    "exact request construction",
+    "TLS/HTTPS transport owner",
+    "redirect validator",
+    "response reader",
+    "receipt-time acquisition",
+    "source-profile resolver",
+    "acquisition-record constructor",
+    "NYSE complete-table parser",
+    "Nasdaq complete-table parser",
+    "Cboe complete-table parser",
+    "normalized schedule validator",
+    "venue-row derivation",
+    "PIT revision selector",
+    "common-session reducer",
+    "ETF adapter",
+    "trusted-persistence dependency assertion",
+    "production signed-envelope admission",
+    "verified envelope to source-snapshot handoff",
+    "trusted-persistence rehydration to calendar replay handoff"
+  ],
+  "runtime_mismatch": "REFUSE_SCIENTIFIC_REPLAY",
+  "semantic_module": "btc_predictor.research.etf_calendar_semantics",
+  "trusted_persistence_integration_ast_sha256": "7e3e347ac1779b118b3cc54abfa7f219688cca8cc9fc1cbea2ed305c4c43dc61",
+  "trusted_persistence_integration_owner": "assert_trusted_persistence_dependency plus the existing production chain: CalendarEvidenceStore.put -> verify_production_envelope -> trusted_acquisition_authority.assert_frozen_production_authority"
+}

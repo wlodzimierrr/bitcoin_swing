@@ -14,6 +14,7 @@ import hashlib
 import inspect
 import json
 import ssl
+import textwrap
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -30,13 +31,13 @@ from btc_predictor.research import trusted_acquisition as _trusted
 
 
 AUTHORITY_VERSION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1"
-PROGRAM_TICKET = "POSTP1-001V2A-R2"
+PROGRAM_TICKET = "POSTP1-001V2A-I1"
 WORKSTREAM = "EPIC X"
 WORKSTREAM_NAME = "PROSPECTIVE INTEGRATION EVIDENCE"
-AUTHORITY_STATUS = "FINAL_CORRECTED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_FINAL_XHIGH_REVIEW"
-FINAL_CLASSIFICATION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_XHIGH_REVIEW"
-CERTIFICATION_STATE = "NOT_CERTIFIED_AWAITING_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW"
-OUTPUT_NAMESPACE = "prospective_evidence/etf_publication_calendar_authority_v1_r2"
+AUTHORITY_STATUS = "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW"
+FINAL_CLASSIFICATION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVIEW"
+CERTIFICATION_STATE = "NOT_CERTIFIED_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW"
+OUTPUT_NAMESPACE = "prospective_evidence/etf_publication_calendar_authority_v1_i1"
 PROTOCOL_FILENAME = "authority_definition.json"
 REPORT_FILENAME = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_REPORT.md"
 
@@ -51,6 +52,15 @@ RESOLVED = "RESOLVED"
 
 FAILED_AUTHORITY_SHA256 = "a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9"
 FAILED_CORRECTED_AUTHORITY_SHA256 = "b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af"
+FAILED_FINAL_CORRECTED_AUTHORITY_SHA256 = "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
+TRUSTED_PERSISTENCE_AUTHORITY_VERSION = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1"
+TRUSTED_PERSISTENCE_AUTHORITY_SHA256 = "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772"
+TRUSTED_PERSISTENCE_CLOSURE_REVIEW = "POSTP1-002V2B-R3"
+TRUSTED_PERSISTENCE_CLOSURE_COMMIT = "3522c89ad0807be942198b82e5d71248042e221a"
+TRUSTED_PERSISTENCE_CLOSURE_PROVENANCE = "4815a014f9394c1b80d1addb42c9717dc04454f9"
+# Filled after deterministic artifact regeneration. This is deliberately the
+# calendar authority identity, not the certified dependency identity above.
+FROZEN_AUTHORITY_DEFINITION_SHA256 = "b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076"
 TRUSTED_ACQUISITION_PROVENANCE = "TRUSTED_HTTPS_COLLECTOR_V1"
 FIXTURE_ACQUISITION_PROVENANCE = "TEST_FIXTURE_NON_AUTHORITATIVE"
 TRUSTED_COLLECTOR_ID = "TRUSTED_ETF_CALENDAR_HTTPS_COLLECTOR_V1"
@@ -144,6 +154,53 @@ EPIC_T_MODIFIED = False
 
 class EtfCalendarAuthorityError(ValueError):
     """Raised when calendar evidence or a frozen artifact is invalid."""
+
+
+def assert_trusted_persistence_dependency() -> None:
+    """Delegate calendar origin authority to the exact certified owner."""
+
+    from btc_predictor.research import trusted_acquisition_authority as authority
+
+    root = Path(__file__).resolve().parents[2] / OUTPUT_NAMESPACE
+    try:
+        parent = json.loads((root / PROTOCOL_FILENAME).read_text(encoding="ascii"))
+        child = json.loads(
+            (root / "trusted_acquisition_persistence_dependency.json").read_text(
+                encoding="ascii"
+            )
+        )
+        _verify_definition_digest(parent)
+        _verify_definition_digest(child)
+    except (OSError, json.JSONDecodeError, EtfCalendarAuthorityError) as error:
+        raise EtfCalendarAuthorityError(
+            "frozen calendar trusted-persistence dependency is invalid"
+        ) from error
+    if (
+        parent.get("definition_sha256") != FROZEN_AUTHORITY_DEFINITION_SHA256
+        or parent.get("child_definition_sha256", {}).get(
+            "trusted_acquisition_persistence_dependency"
+        )
+        != child.get("definition_sha256")
+        or child.get("authority_version") != TRUSTED_PERSISTENCE_AUTHORITY_VERSION
+        or child.get("authority_sha256") != TRUSTED_PERSISTENCE_AUTHORITY_SHA256
+    ):
+        raise EtfCalendarAuthorityError(
+            "frozen calendar trusted-persistence dependency identity mismatch"
+        )
+    if (
+        _trusted.AUTHORITY_VERSION != TRUSTED_PERSISTENCE_AUTHORITY_VERSION
+        or authority.FROZEN_AUTHORITY_DEFINITION_SHA256
+        != TRUSTED_PERSISTENCE_AUTHORITY_SHA256
+    ):
+        raise EtfCalendarAuthorityError(
+            "certified trusted-persistence dependency identity mismatch"
+        )
+    try:
+        authority.assert_frozen_production_authority()
+    except _trusted.TrustedAcquisitionError as error:
+        raise EtfCalendarAuthorityError(
+            "certified trusted-persistence runtime authority mismatch"
+        ) from error
 
 
 def _canonical_json(payload: Any) -> str:
@@ -432,7 +489,11 @@ def _normalized_python_ast_sha256(sources: Mapping[str, str]) -> str:
     normalized = [
         {
             "owner": name,
-            "ast": ast.dump(ast.parse(source), annotate_fields=True, include_attributes=False),
+            "ast": ast.dump(
+                ast.parse(textwrap.dedent(source)),
+                annotate_fields=True,
+                include_attributes=False,
+            ),
         }
         for name, source in sorted(sources.items())
     ]
@@ -1288,8 +1349,76 @@ def executable_semantic_manifest_contract() -> dict[str, Any]:
                 "Nasdaq complete-table parser", "Cboe complete-table parser",
                 "normalized schedule validator", "venue-row derivation", "PIT revision selector",
                 "common-session reducer", "ETF adapter",
+                "trusted-persistence dependency assertion",
+                "production signed-envelope admission",
+                "verified envelope to source-snapshot handoff",
+                "trusted-persistence rehydration to calendar replay handoff",
             ],
+            "trusted_persistence_integration_owner": (
+                "assert_trusted_persistence_dependency plus the existing production chain: "
+                "CalendarEvidenceStore.put -> verify_production_envelope -> "
+                "trusted_acquisition_authority.assert_frozen_production_authority"
+            ),
+            "trusted_persistence_integration_ast_sha256": _normalized_python_ast_sha256(
+                {
+                    "calendar_dependency_assertion": inspect.getsource(
+                        assert_trusted_persistence_dependency
+                    ),
+                    "production_envelope_admission": inspect.getsource(
+                        CalendarEvidenceStore.put
+                    ),
+                    "production_collection_orchestration": inspect.getsource(
+                        collect_official_calendar
+                    ),
+                }
+            ),
             "runtime_mismatch": "REFUSE_SCIENTIFIC_REPLAY",
+        }
+    )
+
+
+def trusted_acquisition_persistence_dependency_contract() -> dict[str, Any]:
+    """Bind origin to the certified authority without copying its owned science."""
+
+    return _definition(
+        {
+            "contract_version": "ETF_CALENDAR_TRUSTED_PERSISTENCE_INTEGRATION_V1",
+            "authority_version": TRUSTED_PERSISTENCE_AUTHORITY_VERSION,
+            "authority_sha256": TRUSTED_PERSISTENCE_AUTHORITY_SHA256,
+            "required_status": "CERTIFIED_FOR_CALENDAR_INTEGRATION",
+            "calendar_trusted_origin_owner": TRUSTED_PERSISTENCE_AUTHORITY_VERSION,
+            "unsigned_source_snapshot_authoritative": False,
+            "self_hashed_provenance_authoritative": False,
+            "production_signed_envelope_required": True,
+            "non_production_envelope_authoritative": False,
+            "calendar_acquisition_admission_rule": (
+                "EXACT_CERTIFIED_TRUSTED_PERSISTENCE_AUTHORITY_PLUS_PRODUCTION_"
+                "ENVELOPE_VERIFICATION_REQUIRED"
+            ),
+            "rehydration_replay_handoff": (
+                "rehydrate_verified_envelopes -> CalendarEvidenceStore -> source snapshot -> "
+                "normalized schedule -> venue session records"
+            ),
+            "failure_semantics": "ANY_DEPENDENCY_OR_ENVELOPE_MISMATCH_REFUSES",
+            "production_verifier": "trusted_acquisition.verify_production_envelope",
+            "central_frozen_authority_assertion": (
+                "trusted_acquisition_authority.assert_frozen_production_authority"
+            ),
+            "calendar_dependency_assertion": "assert_trusted_persistence_dependency",
+            "delegated_not_duplicated": [
+                "Ed25519 public key",
+                "database collector role",
+                "database schema and table",
+                "database privilege matrix",
+                "private-key loading rules",
+                "transaction durability rules",
+            ],
+            "governance_provenance": {
+                "closure_review": TRUSTED_PERSISTENCE_CLOSURE_REVIEW,
+                "closure_commit": TRUSTED_PERSISTENCE_CLOSURE_COMMIT,
+                "closure_provenance": TRUSTED_PERSISTENCE_CLOSURE_PROVENANCE,
+                "scientific_dependency_is_authority_sha256_not_commit": True,
+            },
         }
     )
 
@@ -1358,6 +1487,10 @@ _CHILD_ARTIFACTS: tuple[tuple[str, str], ...] = (
     ("common_session_rule.json", "common_session_rule_contract"),
     ("etf_feature_adapter_contract.json", "etf_feature_adapter_contract"),
     ("authority_completion_semantic_diff.json", "authority_completion_semantic_diff_contract"),
+    (
+        "trusted_acquisition_persistence_dependency.json",
+        "trusted_acquisition_persistence_dependency_contract",
+    ),
     ("executable_semantic_manifest.json", "executable_semantic_manifest_contract"),
 )
 
@@ -1405,7 +1538,20 @@ def authority_definition() -> dict[str, Any]:
                 "superseded_before_use": True,
                 "review_result": "FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID",
             },
+            {
+                "definition_sha256": FAILED_FINAL_CORRECTED_AUTHORITY_SHA256,
+                "authoritative": False,
+                "certified": False,
+                "prospective_observations": 0,
+                "superseded_before_use": True,
+                "review_result": "FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID",
+            },
         ],
+        "trusted_acquisition_persistence_dependency": {
+            "authority_version": TRUSTED_PERSISTENCE_AUTHORITY_VERSION,
+            "authority_sha256": TRUSTED_PERSISTENCE_AUTHORITY_SHA256,
+            "required_status": "CERTIFIED_FOR_CALENDAR_INTEGRATION",
+        },
         "safety": {
             "prospective_observations_collected": 0,
             "persistent_strategy_collection_started": COLLECTION_AUTHORIZED,
@@ -1451,7 +1597,9 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "missing, invalid, or unresolved conflicting official evidence fails closed.", "",
         "Calendar evidence is append-only. The trusted collector constructs the exact request,",
         "performs verified HTTPS, validates every redirect hop, reads the response and timestamps",
-        "receipt itself. Caller bytes or HTTP metadata and parser fixtures are never authoritative.",
+        "receipt itself. Admission requires a production envelope verified under the certified",
+        f"trusted-persistence authority `{TRUSTED_PERSISTENCE_AUTHORITY_SHA256}`. Unsigned/self-hashed",
+        "snapshots, provenance strings, and non-production envelopes are never authoritative.",
         "Exact endpoint identity, full structural table traversal, semantic row census and complete",
         "NYSE early-close prose are frozen and hash-bound; incomplete annual documents refuse.", "",
         "Scientific `available_at` equals response receipt and acquisition time. PIT filtering",
@@ -1464,8 +1612,9 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "`btc_predictor/tests/fixtures/etf_calendar/`. Their response SHA-256 values are",
         "validated before parser extraction. No fixture is a prospective strategy observation.", "",
         "## Failed lineage", "",
-        f"The failed authorities `{FAILED_AUTHORITY_SHA256}` and",
-        f"`{FAILED_CORRECTED_AUTHORITY_SHA256}` remain non-authoritative, non-certified,",
+        f"The failed authorities `{FAILED_AUTHORITY_SHA256}`,",
+        f"`{FAILED_CORRECTED_AUTHORITY_SHA256}`, and",
+        f"`{FAILED_FINAL_CORRECTED_AUTHORITY_SHA256}` remain non-authoritative, non-certified,",
         "unused, and preserved in their original artifact directories.", "",
         "## Material child hashes", "", "| child | definition hash |", "| --- | --- |",
     ]
