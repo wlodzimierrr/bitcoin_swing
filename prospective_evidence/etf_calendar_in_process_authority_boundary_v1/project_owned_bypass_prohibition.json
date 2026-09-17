@@ -1,0 +1,20 @@
+{
+  "contract_version": "ETF_CALENDAR_PROJECT_OWNED_BYPASS_PROHIBITION_V1",
+  "definition_sha256": "cb18c7cbc7f666c43ee5a5841f4154b3124ee778e8a97abce273069a792a0c96",
+  "factoring_constraint": "A factored helper must not independently establish or return authoritative scientific behavior without an already-proven authority context.",
+  "forbidden": [
+    "__wrapped__",
+    "PUBLIC_RAW_OR_ORIGINAL_OWNER_ATTRIBUTES",
+    "UNGUARDED_CORE_METHODS_EXPOSED_FROM_PRODUCTION_MODULE",
+    "ALTERNATE_PRODUCTION_ALIASES",
+    "ALTERNATE_CONSTRUCTORS",
+    "TEST_HELPERS_ACCEPTED_AS_PRODUCTION_AUTHORITY",
+    "CALLER_SELECTED_VERIFICATION_OR_PERSISTENCE_CAPABILITIES",
+    "RUNTIME_DECORATOR_OR_WRAPPER_INSTALLATION",
+    "FUNCTOOLS_WRAPS_AUTHORITY_GUARDS",
+    "MODULE_IMPORT_TIME_GUARD_REBINDING"
+  ],
+  "priority": "CORRECTNESS_OVER_DRY_AT_PRODUCTION_AUTHORITY_BOUNDARIES",
+  "project_owned_production_bypasses_permitted": false,
+  "unguarded_core_extraction_permitted": false
+}

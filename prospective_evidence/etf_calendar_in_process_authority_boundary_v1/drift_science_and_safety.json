@@ -1,0 +1,72 @@
+{
+  "certified_dependency": {
+    "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+    "changed": false,
+    "definition_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+    "status": "CLOSED_CERTIFIED_FOR_BOUNDED_ETF_CALENDAR_INTEGRATION"
+  },
+  "contract_version": "ETF_CALENDAR_DRIFT_SCIENCE_AND_SAFETY_V1",
+  "definition_sha256": "f37c0f2190b22824408bba3a876e4a48d5d9c20b91e082f93316427a91b9b21c",
+  "failed_calendar_lineage": [
+    {
+      "authoritative": false,
+      "certified": false,
+      "definition_sha256": "a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9",
+      "prospective_observations": 0,
+      "superseded_before_use": true
+    },
+    {
+      "authoritative": false,
+      "certified": false,
+      "definition_sha256": "b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af",
+      "prospective_observations": 0,
+      "superseded_before_use": true
+    },
+    {
+      "authoritative": false,
+      "certified": false,
+      "definition_sha256": "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855",
+      "prospective_observations": 0,
+      "superseded_before_use": true
+    },
+    {
+      "authoritative": false,
+      "certified": false,
+      "definition_sha256": "b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076",
+      "prospective_observations": 0,
+      "superseded_before_use": true
+    },
+    {
+      "authoritative": false,
+      "certified": false,
+      "definition_sha256": "901f572e03781030906cd6fe72a73ec5804f9ffbdefe6a8a944c067f7fd9853f",
+      "prospective_observations": 0,
+      "superseded_before_use": true
+    }
+  ],
+  "hard_refusal": {
+    "calendar_parent_mismatch": true,
+    "dependency_child_mismatch": true,
+    "expected_dependency_hash_mismatch": true,
+    "expected_dependency_version_mismatch": true,
+    "supported_production_api_bypass": true,
+    "trusted_persistence_authority_mismatch": true
+  },
+  "preserved_science": {
+    "etf_formulas_and_revision_semantics": "UNCHANGED",
+    "pit_and_common_session_semantics": "UNCHANGED",
+    "source_profiles_urls_tls_redirects_parsers_coverage_early_closes": "UNCHANGED",
+    "stage_b_metrics_risk_stops_thresholds": "UNCHANGED"
+  },
+  "safety": {
+    "btc019": "UNTOUCHED",
+    "calendar_certified": false,
+    "collection_authorized": false,
+    "epic_t": "UNCHANGED",
+    "postp1_001v2r1": "BLOCKED",
+    "postp1_003r3": "BLOCKED",
+    "postp1_004": "BLOCKED",
+    "prospective_observations": 0,
+    "real_stage_b_evaluation": false
+  }
+}

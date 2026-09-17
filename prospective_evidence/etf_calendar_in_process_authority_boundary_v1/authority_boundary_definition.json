@@ -1,0 +1,38 @@
+{
+  "authorization": {
+    "another_calendar_implementation_may_begin": false,
+    "calendar_implementation_requires_architecture_review_pass": true,
+    "independent_architecture_xhigh_review_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "arbitrary_in_process_monkeypatch_resistance_required": false,
+    "direct_entrypoint_body_enforcement_required": true,
+    "dynamic_wrapper_installation_permitted": false,
+    "exposed_unguarded_production_owners_permitted": false,
+    "functools_wraps_authority_guards_permitted": false,
+    "process_isolation_required_if_arbitrary_same_process_mutation_enters_scope": true,
+    "project_owned_production_bypasses_permitted": false,
+    "trusted_production_python_process": true
+  },
+  "child_definition_sha256": {
+    "direct_body_enforcement": "3956b649130d5fa9a84a9738dd67cd29665c9604e71f06d10b5ccf1a0c19e812",
+    "drift_science_and_safety": "f37c0f2190b22824408bba3a876e4a48d5d9c20b91e082f93316427a91b9b21c",
+    "project_owned_bypass_prohibition": "cb18c7cbc7f666c43ee5a5841f4154b3124ee778e8a97abce273069a792a0c96",
+    "runtime_mutation_threat_model": "e59d99cb9662fc4620fb1f63f3276cf6b45406ce4a48601dbbc611dcc2724544",
+    "static_surface_audit": "b57029bf3d91dbe7d844c9e75390f7e6eeb4c91ca921fa0923920a3e8f2da588",
+    "supported_production_api": "21f77dda0019fe038bb2bd9e5e8366f330b6d789c9d95abb23bb5713b1c0e074",
+    "trusted_computing_boundary": "366c686dc65747a5d4e13aad8b471cc780ff4ad937776bb698ff9f5ea558c832"
+  },
+  "decision_version": "ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1",
+  "definition_sha256": "0c237c1b217b1fd406ec3967309774293c01d3e27574b9f4a7d1b9a0e887b55d",
+  "final_classification": "ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_XHIGH_REVIEW",
+  "material_child_count": 7,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_ARTIFACT_BUILDER_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-AD1",
+  "required_review": "INDEPENDENT_XHIGH_ARCHITECTURE_REVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_XHIGH_ARCHITECTURE_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}

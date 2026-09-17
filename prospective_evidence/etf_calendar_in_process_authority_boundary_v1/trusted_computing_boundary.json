@@ -1,0 +1,16 @@
+{
+  "arbitrary_same_process_mutation_resistance_required": false,
+  "authority_kind": "SCIENTIFIC_CORRECTNESS_NOT_HOSTILE_INTERPRETER_ISOLATION",
+  "boundary": "PRODUCTION_PYTHON_INTERPRETER_AND_PROCESS_ARE_TRUSTED",
+  "bounded_convergence_rule": "A future review must not fail the calendar solely because arbitrary trusted-process Python code could monkeypatch or privately mutate objects, when the repository ships no supported bypass, reviewed direct production bodies enforce the invariant, persisted/dependency drift refuses, and test-only APIs remain non-authoritative.",
+  "contract_version": "ETF_CALENDAR_TRUSTED_COMPUTING_BOUNDARY_V1",
+  "definition_sha256": "366c686dc65747a5d4e13aad8b471cc780ff4ad937776bb698ff9f5ea558c832",
+  "in_scope": [
+    "PROJECT_OWNED_SUPPORTED_BYPASS_PATHS",
+    "MISCONFIGURATION",
+    "PERSISTED_ARTIFACT_DRIFT",
+    "DEPENDENCY_DRIFT",
+    "UNSUPPORTED_PUBLIC_OR_TEST_APIS_ACCEPTED_AS_AUTHORITY",
+    "ORDINARY_IMPLEMENTATION_OR_REFACTOR_ERRORS"
+  ]
+}

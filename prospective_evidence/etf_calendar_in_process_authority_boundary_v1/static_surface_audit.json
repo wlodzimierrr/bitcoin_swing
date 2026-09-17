@@ -1,0 +1,22 @@
+{
+  "arbitrary_monkeypatch_generated_FUNCTIONS_PROVED_IMPOSSIBLE": false,
+  "contract_version": "ETF_CALENDAR_STATIC_PRODUCTION_SURFACE_AUDIT_V1",
+  "definition_sha256": "b57029bf3d91dbe7d844c9e75390f7e6eeb4c91ca921fa0923920a3e8f2da588",
+  "direct_call_regressions": [
+    "CalendarEvidenceStore.put",
+    "CalendarEvidenceStore.get",
+    "CalendarEvidenceStore.records",
+    "CalendarEvidenceStore.envelopes",
+    "collect_official_calendar",
+    "SCIENTIFIC_REPLAY_OWNERS"
+  ],
+  "mechanical_ast_audit_required": true,
+  "regression_expectation": "SUPPORTED_CALLS_REFUSE_EXACT_DEPENDENCY_MISMATCH",
+  "requirements": [
+    "NO_FUNCTOOLS_WRAPS_OR_DECORATOR_INSTALLATION_FOR_AUTHORITY_GUARD",
+    "NO___WRAPPED___PRODUCTION_BYPASS",
+    "NO_PRODUCTION_ALIAS_TO_UNGUARDED_OWNER",
+    "NO_EXPOSED_UNGUARDED_CORE_PERFORMING_AUTHORITATIVE_STORE_OR_COLLECTION_BEHAVIOR",
+    "ALL_DOCUMENTED_AUTHORITATIVE_ENTRYPOINT_BODIES_CONTAIN_EXACT_DEPENDENCY_ASSERTION"
+  ]
+}

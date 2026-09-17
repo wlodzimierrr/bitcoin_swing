@@ -1,0 +1,29 @@
+{
+  "authoritative_replay_rule": "EXISTING_ADMITTED_EVIDENCE_IS_NOT_SCIENTIFICALLY_USABLE_UNLESS_THE_EXACT_CALENDAR_DEPENDENCY_IS_VALID_AT_REPLAY_TIME",
+  "contract_version": "ETF_CALENDAR_DIRECT_BODY_ENFORCEMENT_V1",
+  "definition_sha256": "3956b649130d5fa9a84a9738dd67cd29665c9604e71f06d10b5ccf1a0c19e812",
+  "exact_dependency_assertion": "assert_trusted_persistence_dependency",
+  "production_collection_order": [
+    "ASSERT_EXACT_CALENDAR_DEPENDENCY",
+    "THEN_HTTPS",
+    "THEN_PRIVATE_KEY_LOADING",
+    "THEN_SIGNING",
+    "THEN_PERSISTENCE"
+  ],
+  "required_direct_bodies": [
+    "CalendarEvidenceStore.put",
+    "CalendarEvidenceStore.get",
+    "CalendarEvidenceStore.records",
+    "CalendarEvidenceStore.envelopes",
+    "collect_official_calendar"
+  ],
+  "rule": "ASSERTION_WRITTEN_DIRECTLY_IN_EACH_AUTHORITATIVE_PRODUCTION_ENTRYPOINT_BODY",
+  "startup_self_check": [
+    "CALENDAR_FROZEN_PARENT_VALID",
+    "DEPENDENCY_CHILD_VALID",
+    "EXACT_TRUSTED_PERSISTENCE_DEPENDENCY_VALID",
+    "EXECUTABLE_MANIFEST_VALID"
+  ],
+  "startup_self_check_replaces_per_entrypoint_checks": false,
+  "startup_self_check_required": true
+}

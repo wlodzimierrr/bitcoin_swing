@@ -1,0 +1,19 @@
+{
+  "authoritative_entrypoints": [
+    "CalendarEvidenceStore.put",
+    "CalendarEvidenceStore.get",
+    "CalendarEvidenceStore.records",
+    "CalendarEvidenceStore.envelopes",
+    "collect_official_calendar",
+    "SCIENTIFIC_CALENDAR_AND_REPLAY_OWNERS_CONSUMING_CalendarEvidenceStore"
+  ],
+  "contract_version": "ETF_CALENDAR_SUPPORTED_PRODUCTION_API_V1",
+  "definition_sha256": "21f77dda0019fe038bb2bd9e5e8366f330b6d789c9d95abb23bb5713b1c0e074",
+  "rule": "ONLY_DOCUMENTED_PRODUCTION_ENTRYPOINTS_ARE_AUTHORITATIVE_CALLABLE_SURFACES",
+  "test_only_and_private_helpers_authoritative": false,
+  "test_only_requirements": [
+    "UNMISTAKABLE_NON_AUTHORITATIVE_TEST_ONLY_CLASSIFICATION",
+    "NOT_ACCEPTED_BY_PRODUCTION_STORE_OR_PERSISTENCE",
+    "NOT_REFERENCED_AS_A_PRODUCTION_ALIAS"
+  ]
+}
