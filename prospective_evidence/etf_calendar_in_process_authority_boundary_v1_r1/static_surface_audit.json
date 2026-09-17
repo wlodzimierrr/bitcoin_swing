@@ -1,0 +1,26 @@
+{
+  "contract_version": "ETF_CALENDAR_STATIC_PRODUCTION_SURFACE_AUDIT_V1_R1",
+  "definition_sha256": "9afed46147f354ea80cafd3d6a2016ff81d13182bfb1b48553787cd7bb850707",
+  "entire_production_module_private_state_audit": true,
+  "non_structural_evidence_does_not_satisfy": [
+    "STRING",
+    "COMMENT",
+    "DOCSTRING",
+    "CONSTANT",
+    "DEAD_NAME",
+    "UNRELATED_CALL"
+  ],
+  "production_module": "btc_predictor.research.etf_publication_calendar",
+  "proof_form": "PYTHON_AST_STRUCTURE_NOT_TEXT_SEARCH",
+  "requirements": [
+    "NO_RUNTIME_DECORATOR_OR_WRAPPER_AUTHORITY_GUARD",
+    "NO___WRAPPED___PROJECT_OWNED_BYPASS",
+    "NO_UNGUARDED_PRODUCTION_ALIAS_OR_CORE",
+    "DIRECT_EXACT_DEPENDENCY_AST_CALL_IN_ALL_FIVE_BOUNDARY_BODIES",
+    "NO_RESERVED_PRIVATE_STATE_ACCESS_OUTSIDE_STORE_IMPLEMENTATION",
+    "FROZEN_OWNER_REGISTRY_EQUALS_MECHANICALLY_DISCOVERED_CENSUS",
+    "EVERY_REPLAY_OWNER_REACHES_ONLY_DOCUMENTED_STORE_API_OR_COMPLIANT_OWNER"
+  ],
+  "store_implementation_method_bodies_excluded_from_private_state_prohibition": true,
+  "test_code_scope": "EXCLUDED_FROM_PRODUCTION_MODULE_AUDIT"
+}

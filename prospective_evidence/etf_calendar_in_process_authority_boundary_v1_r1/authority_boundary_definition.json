@@ -1,0 +1,40 @@
+{
+  "authorization": {
+    "calendar_implementation_may_begin": false,
+    "independent_architecture_xhigh_rereview_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "arbitrary_caller_private_state_mutation_in_scope": false,
+    "direct_entrypoint_body_enforcement_required": true,
+    "dynamic_wrapper_installation_permitted": false,
+    "exposed_unguarded_production_owners_permitted": false,
+    "functools_wraps_authority_guards_permitted": false,
+    "process_isolation_required_if_hostile_same_process_mutation_enters_scope": true,
+    "project_owned_private_state_access_in_scope": true,
+    "project_owned_private_state_access_permitted": false,
+    "trusted_production_python_process": true
+  },
+  "child_definition_sha256": {
+    "direct_body_enforcement": "1fd7f7b41b3cf6fbc79a28c95b4559bf895d8e4fde9e64522a9bce54141c8bfd",
+    "drift_science_and_safety": "b7da240d2fa06a201c8f9352fa539a4931c982495f47d0a6680fac4919d1fd02",
+    "private_state_boundary": "a62e5b1070302af1d41e432bcf3a4d867bb7513bbbd43183952a1dc2d84e4d31",
+    "project_owned_bypass_prohibition": "41042c7be48f400c0386e8a7ddaabfcb49a8eabb6af245c831afc7a99e330297",
+    "replay_owner_registry": "02f81d54c39be92af31170780bb6c8fed710b83f6d538bb14e268d50136558b8",
+    "runtime_mutation_threat_model": "e67c11f9c1d7fd6a4b68d6e8cbc1cb645ee90360235db093c56ab7b9792210a1",
+    "static_surface_audit": "9afed46147f354ea80cafd3d6a2016ff81d13182bfb1b48553787cd7bb850707",
+    "transitive_replay_rule": "82d0c8ab178ad952f5b41d028a843c92999a4f288140a77f6d5bab27cbc0b177",
+    "trusted_computing_boundary": "902005137e91eed20e8fa38a89ec55df0a548a25783cc6775f4cea6564ace99e"
+  },
+  "decision_version": "ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1",
+  "definition_sha256": "a7d2b08741080494cc4ca0269bf21e28e631c7f2e70887bcb0e1beb302534dd0",
+  "final_classification": "ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_REPEAT_XHIGH_REVIEW",
+  "material_child_count": 9,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-AD1-R1",
+  "required_review": "INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_REREVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_XHIGH_ARCHITECTURE_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}

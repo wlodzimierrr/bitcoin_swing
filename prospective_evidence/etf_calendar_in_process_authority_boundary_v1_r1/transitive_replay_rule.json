@@ -1,0 +1,18 @@
+{
+  "contract_version": "ETF_CALENDAR_TRANSITIVE_REPLAY_RULE_V1",
+  "definition_sha256": "82d0c8ab178ad952f5b41d028a843c92999a4f288140a77f6d5bab27cbc0b177",
+  "direct_internal_state_access_breaks_invariant": true,
+  "forbidden_routes": [
+    "PRIVATE_STATE",
+    "TEST_ONLY_STATE",
+    "RAW_PRODUCTION_ALIAS",
+    "UNGUARDED_CORE",
+    "ALTERNATE_STORE_IMPLEMENTATION"
+  ],
+  "higher_level_owner_duplicates_dependency_assertion": false,
+  "permitted_routes": [
+    "DOCUMENTED_STORE_API",
+    "COMPLIANT_ENUMERATED_OWNER"
+  ],
+  "rule": "EVERY_AUTHORITATIVE_EVIDENCE_ROUTE_TERMINATES_IN_DOCUMENTED_STORE_READ_SURFACE_PERFORMING_EXACT_DEPENDENCY_ASSERTION"
+}

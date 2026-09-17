@@ -1,0 +1,29 @@
+{
+  "allowed_implementation_boundary": "CalendarEvidenceStore_METHOD_BODIES",
+  "arbitrarily_obfuscated_hostile_code_proved_impossible": false,
+  "authoritative_internal_state": [
+    "_records",
+    "_envelopes"
+  ],
+  "classification": "IMPLEMENTATION_PRIVATE_AUTHORITATIVE_STATE",
+  "contract_version": "ETF_CALENDAR_PRIVATE_STATE_BOUNDARY_V1",
+  "definition_sha256": "a62e5b1070302af1d41e432bcf3a4d867bb7513bbbd43183952a1dc2d84e4d31",
+  "direct_reads_outside_implementation": "FORBIDDEN",
+  "direct_writes_outside_implementation": "FORBIDDEN",
+  "documented_authoritative_store_api": [
+    "put",
+    "get",
+    "records",
+    "envelopes"
+  ],
+  "external_caller_private_state_mutation": "OUTSIDE_SCIENTIFIC_AUTHORITY_THREAT_MODEL",
+  "future_extension_rule": "ANY_NEW_FIELD_STORING_AUTHORITATIVE_SCIENTIFIC_EVIDENCE_OR_ENVELOPE_IDENTITY_REQUIRES_REGISTRY_UPDATE_REVIEW_AND_PARENT_HASH_CHANGE",
+  "ordinary_forms_mechanically_refused": [
+    "ATTRIBUTE",
+    "LITERAL_GETATTR_SETATTR",
+    "LITERAL___DICT___SUBSCRIPT",
+    "LITERAL_VARS_SUBSCRIPT"
+  ],
+  "project_owned_private_state_access": "IN_SCOPE_AND_FORBIDDEN",
+  "underscore_naming_alone_is_the_boundary": false
+}

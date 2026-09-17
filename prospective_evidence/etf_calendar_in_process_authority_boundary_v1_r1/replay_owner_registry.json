@@ -1,0 +1,26 @@
+{
+  "contract_version": "ETF_CALENDAR_REPLAY_OWNER_REGISTRY_V1",
+  "definition_sha256": "02f81d54c39be92af31170780bb6c8fed710b83f6d538bb14e268d50136558b8",
+  "discovery_rules": [
+    "TOP_LEVEL_FUNCTION_PARAMETER_ANNOTATED_CalendarEvidenceStore",
+    "DOCUMENTED_STORE_API_CALL_ON_STORE_LIKE_PARAMETER_OR_REFERENCE",
+    "RESERVED_AUTHORITATIVE_INTERNAL_ACCESS",
+    "ENUMERATED_OWNER_CALL_FORWARDING_EVIDENCE_STORE_ARGUMENT"
+  ],
+  "owners": [
+    "derive_normalized_schedule_from_official_source",
+    "venue_session_calendar_record",
+    "_verify_schedule",
+    "_verify_schedule_record",
+    "validate_normalized_schedule_against_source",
+    "_verify_venue_row",
+    "venue_session_status",
+    "common_etf_session_status",
+    "expected_etf_publication_dates",
+    "derive_etf_window_calendar",
+    "scientific_etf_flow_window"
+  ],
+  "placeholder_category_permitted": false,
+  "production_module": "btc_predictor.research.etf_publication_calendar",
+  "required_relation": "MECHANICALLY_DISCOVERED_OWNERS_EQUALS_FROZEN_REGISTRY"
+}
