@@ -2891,6 +2891,97 @@ The calendar remains uncertified. POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and
 collection remain blocked; BTC-019 and Epic T remain untouched. The certified
 trusted-persistence authority is not reopened.
 
+## POSTP1-001V2A-AD1 — `DEFINE_ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH ARCHITECTURE REVIEW`
+**Dependency:** POSTP1-002V2A-I1-R1 failure,
+`ETF_CALENDAR_AUTHORITY_REQUIRES_ARCHITECTURE_DECISION`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** one independent exact-hash xHigh architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_in_process_authority_boundary_v1/`
+**Decision commit:** `28c9d985ffd08a8f65089b6648bb7e8b03fcf5fc`
+**Decision hash:** `0c237c1b217b1fd406ec3967309774293c01d3e27574b9f4a7d1b9a0e887b55d`
+
+### Decision objective and authority
+
+This architecture-only ticket resolves the failed call-site review's threat-
+boundary ambiguity without implementing another calendar correction. The
+production Python interpreter and process are part of the trusted computing
+boundary. The calendar authority is a scientific-correctness authority, not a
+hostile-interpreter isolation mechanism. It must defend against project-owned
+supported bypasses, configuration and implementation error, persisted-artifact
+drift, dependency drift, and accidental acceptance of unsupported public or
+test APIs. It does not claim resistance to arbitrary code execution,
+monkeypatching, module-global or class-dictionary reassignment, private-state
+manipulation, debugger modification, or replacement of the assertion inside
+the already-trusted process.
+
+Only documented production entrypoints are authoritative callable surfaces.
+For the ETF calendar they include `CalendarEvidenceStore.put`, `get`,
+`records`, `envelopes`, `collect_official_calendar`, and scientific calendar or
+replay owners consuming `CalendarEvidenceStore`. Explicit private and test-only
+helpers are non-authoritative and must be unmistakably classified, rejected by
+production persistence/store boundaries, and never exposed as production
+aliases.
+
+### Required future enforcement architecture
+
+Every authoritative production entrypoint body must directly execute
+`assert_trusted_persistence_dependency()`. Runtime decorator installation,
+`functools.wraps` authority guards, exposed `__wrapped__` originals, raw or
+original owner attributes, unguarded production cores, alternate aliases or
+constructors, production-accepted test helpers, and caller-selected verification
+or persistence capabilities are forbidden. Factored helpers may not establish
+or return authoritative scientific behavior independently of an already-proven
+authority context. Small duplicated boundary assertions are preferred over an
+unguarded DRY core.
+
+Read boundaries must assert at replay time: admission-time verification alone
+does not make existing evidence scientifically usable after dependency drift.
+The production collector body must assert before HTTPS, private-key loading,
+signing, or persistence. A controlled startup self-check must validate the
+calendar parent, dependency child, exact certified dependency, and executable
+manifest, but does not replace any direct entrypoint check.
+
+A mechanical AST production-surface audit must prove that no wrapper/decorator
+guard, `__wrapped__` bypass, unguarded production alias/core, or missing direct
+entrypoint assertion exists. Direct-call regressions must cover all five named
+entrypoints and scientific replay owners. Controlled-startup repository/runtime
+identity detects ordinary reviewed code drift; it does not claim hostile
+post-load mutation resistance.
+
+If any higher authority later requires arbitrary same-process mutation
+resistance, work must stop with
+`ETF_CALENDAR_AUTHORITY_REQUIRES_PROCESS_ISOLATION_ARCHITECTURE`. A separate
+trusted process or service with narrow IPC and independently controlled state is
+then required; no decorator, metaclass, source-hash, or other wrapper-level
+workaround is acceptable.
+
+### Drift, science, lineage, and safety
+
+Calendar-parent, dependency-child, expected dependency hash/version, certified
+trusted-persistence authority, and supported-production-API bypass mismatches
+remain hard refusals. The certified dependency remains closed and unchanged at
+`02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772`.
+Source profiles, URLs, TLS, redirects, parsers, coverage, early closes, PIT,
+common-session semantics, ETF formulas/revisions, Stage-B metrics, risk, stops,
+and thresholds are unchanged.
+
+Failed calendar hashes `a1ceb66b...7db0b9`, `b81c1702...b357af`,
+`05243343...f99c855`, `b499c6a4...e584e076`, and `901f572e...fd9853f`
+remain non-authoritative, non-certified, unused, zero-observation, and
+superseded before use. The seven material child decisions and parent reproduce
+deterministically from one registry; focused integrity and tamper tests pass
+7/7. The combined architecture-decision and unchanged ETF calendar regression
+suite passes 138/138; compileall and exact persisted-artifact restoration pass.
+
+No observation was collected and no real Stage-B evaluation ran. The calendar
+is not certified. POSTP1-001V2R1, POSTP1-003R3, POSTP1-004, and collection stay
+blocked; BTC-019 is untouched and Epic T is unchanged. This ticket authorizes
+only independent xHigh architecture review. Another calendar implementation is
+forbidden until that review passes. Final classification is
+`ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_XHIGH_REVIEW`.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -2930,5 +3021,7 @@ trusted-persistence authority is not reopened.
 | POSTP1-002V2A-I1 | independent exact-hash xHigh integration closure review of `b499c6a4...e584e076` | COMPLETE / FAIL — CALENDAR DEPENDENCY CALL-SITE CLOSURE INVALID |
 | POSTP1-001V2A-I1-R1 | close every authoritative calendar exact-dependency call site and refreeze at `901f572e...fd9853f` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH CALL-SITE CLOSURE REVIEW |
 | POSTP1-002V2A-I1-R1 | independent exact-hash xHigh call-site closure review of `901f572e...fd9853f` | COMPLETE / FAIL — CALL-SITE GUARD BYPASS INVALID; EXPLICIT ARCHITECTURE DECISION REQUIRED |
+| POSTP1-001V2A-AD1 | define and freeze the trusted-process scientific authority boundary at `0c237c1b...887b55d` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH ARCHITECTURE REVIEW |
+| POSTP1-002V2A-AD1 | independent exact-hash xHigh architecture review of `0c237c1b...887b55d` | NEXT DEPENDENCY-SATISFIED TICKET |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
