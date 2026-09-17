@@ -1,0 +1,112 @@
+{
+  "contract_version": "ETF_CALENDAR_PARSER_FORMAT_CENSUS_V1",
+  "definition_sha256": "d297effeb7cc647149088fd59ac17461a4764ec17f1950cdadf7df720459a498",
+  "fixture_role": "parser-format reference only; never network-origin authority",
+  "formats": {
+    "CBOE_BZX": {
+      "header": [
+        "Holiday",
+        "Date"
+      ],
+      "ordered_row_labels": [
+        "New Year's Day",
+        "Martin Luther King, Jr. Day",
+        "Presidents' Day",
+        "Good Friday",
+        "Memorial Day",
+        "Juneteenth Holiday",
+        "Independence Day Observed",
+        "Labor Day",
+        "Thanksgiving Day",
+        "Thanksgiving Early Close",
+        "Christmas Early Close",
+        "Christmas Day"
+      ]
+    },
+    "NASDAQ": {
+      "header": [
+        "2026",
+        "Holiday",
+        "Status"
+      ],
+      "ordered_label_status_rows": [
+        [
+          "New Years Day (Observed)",
+          "Closed"
+        ],
+        [
+          "Martin Luther King, Jr. Day",
+          "Closed"
+        ],
+        [
+          "President's Day - U.S.",
+          "Closed"
+        ],
+        [
+          "Good Friday",
+          "Closed"
+        ],
+        [
+          "Memorial Day - U.S.",
+          "Closed"
+        ],
+        [
+          "Juneteenth Holiday (Observed)",
+          "Closed"
+        ],
+        [
+          "Independence Day - U.S. (Observed)",
+          "Closed"
+        ],
+        [
+          "Labor Day - U.S.",
+          "Closed"
+        ],
+        [
+          "Thanksgiving Day - U.S.",
+          "Closed"
+        ],
+        [
+          "Early Close* - U.S.",
+          "1:00 p.m."
+        ],
+        [
+          "Early Close* - U.S.",
+          "1:00 p.m."
+        ],
+        [
+          "Christmas Holiday - U.S.",
+          "Closed"
+        ]
+      ]
+    },
+    "NYSE_ARCA": {
+      "early_close_statement_classes": {
+        "**": 1,
+        "***": 3,
+        "****": 1
+      },
+      "header": [
+        "Holiday",
+        "2026",
+        "2027",
+        "2028"
+      ],
+      "ordered_row_labels": [
+        "New Year\u2019s Day",
+        "Martin Luther King, Jr. Day",
+        "Washington's Birthday",
+        "Good Friday",
+        "Memorial Day",
+        "Juneteenth National Independence Day",
+        "Independence Day",
+        "Labor Day",
+        "Thanksgiving Day",
+        "Christmas Day"
+      ]
+    }
+  },
+  "future_year_rule": "UNSUPPORTED_SOURCE_FORMAT until a prospectively reviewed format is added",
+  "partial_or_extra_supported_calendar_table": "REFUSE",
+  "unknown_duplicate_or_malformed_row": "REFUSE"
+}

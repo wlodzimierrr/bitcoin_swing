@@ -1,4 +1,4 @@
-"""POSTP1-001V2A-I1 trusted-persistence calendar-integration tests."""
+"""POSTP1-001V2A-I1-R1 exact-dependency call-site closure tests."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import inspect
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from unittest.mock import patch
@@ -192,12 +193,13 @@ def rehash(row: dict) -> dict:
 def test_authority_scope_failed_lineage_and_safety_are_frozen() -> None:
     authority = cal.authority_definition()
     assert authority["authority_version"] == "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1"
-    assert authority["program_ticket"] == "POSTP1-001V2A-I1"
-    assert authority["final_classification"] == "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVIEW"
+    assert authority["program_ticket"] == "POSTP1-001V2A-I1-R1"
+    assert authority["final_classification"] == "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_CALL_SITE_CLOSURE_XHIGH_REVIEW"
     assert authority["certification"]["certified"] is False
     assert [row["definition_sha256"] for row in authority["failed_authority_lineage"]] == [
         cal.FAILED_AUTHORITY_SHA256, cal.FAILED_CORRECTED_AUTHORITY_SHA256,
         cal.FAILED_FINAL_CORRECTED_AUTHORITY_SHA256,
+        cal.FAILED_INTEGRATED_AUTHORITY_SHA256,
     ]
     assert all(
         row["authoritative"] is False and row["certified"] is False
@@ -260,8 +262,123 @@ def test_calendar_envelope_admission_refuses_runtime_persistence_identity_mismat
     monkeypatch.setattr(
         trusted_authority, "FROZEN_AUTHORITY_DEFINITION_SHA256", "f" * 64
     )
-    with pytest.raises(cal.EtfCalendarAuthorityError, match="frozen executable semantic authority is invalid"):
+    with pytest.raises(cal.EtfCalendarAuthorityError, match="dependency identity mismatch"):
         cal.CalendarEvidenceStore().put(acquisition("NASDAQ"))
+
+
+@pytest.mark.parametrize(
+    ("attribute", "replacement"),
+    [
+        ("TRUSTED_PERSISTENCE_AUTHORITY_SHA256", "f" * 64),
+        ("TRUSTED_PERSISTENCE_AUTHORITY_VERSION", "OTHER_VALID_AUTHORITY_V1"),
+        ("FROZEN_AUTHORITY_DEFINITION_SHA256", "e" * 64),
+    ],
+)
+def test_store_admission_refuses_calendar_dependency_identity_mismatch_before_mutation(
+    monkeypatch, attribute: str, replacement: str,
+) -> None:
+    envelope = acquisition("NASDAQ")
+    store = cal.CalendarEvidenceStore()
+    monkeypatch.setattr(cal, attribute, replacement)
+    with patch.object(
+        cal._trusted,
+        "verify_production_envelope",
+        side_effect=lambda row: cal._trusted.verify_test_envelope_non_authoritative_test_only(
+            row, TEST_SIGNER.verification_key()
+        ),
+    ) as verifier:
+        with pytest.raises(cal.EtfCalendarAuthorityError, match="dependency"):
+            store.put(envelope)
+    verifier.assert_not_called()
+    assert store._records == {}
+    assert store._envelopes == {}
+
+
+def test_store_admission_refuses_rehashed_dependency_child_substitution(
+    monkeypatch, tmp_path: Path,
+) -> None:
+    artifact_dir = tmp_path / "calendar-authority"
+    shutil.copytree(ARTIFACT_DIR, artifact_dir)
+    child_path = artifact_dir / "trusted_acquisition_persistence_dependency.json"
+    child = json.loads(child_path.read_text(encoding="ascii"))
+    child.pop("definition_sha256")
+    child["failure_semantics"] = "SUBSTITUTED_OTHERWISE_WELL_FORMED_CHILD"
+    child = cal._definition(child)
+    child_path.write_text(
+        json.dumps(child, indent=2, sort_keys=True) + "\n", encoding="ascii"
+    )
+    monkeypatch.setattr(cal, "OUTPUT_NAMESPACE", str(artifact_dir))
+    store = cal.CalendarEvidenceStore()
+    with pytest.raises(cal.EtfCalendarAuthorityError, match="dependency identity mismatch"):
+        store.put(acquisition("NASDAQ"))
+    assert store._records == {}
+    assert store._envelopes == {}
+
+
+def test_authoritative_store_boundaries_execute_exact_dependency_assertion(
+    monkeypatch,
+) -> None:
+    store = cal.CalendarEvidenceStore()
+
+    def refuse() -> None:
+        raise cal.EtfCalendarAuthorityError("sentinel exact dependency refusal")
+
+    monkeypatch.setattr(cal, "assert_trusted_persistence_dependency", refuse)
+    for operation in (
+        lambda: store.put({}),
+        lambda: store.get("f" * 64),
+        store.records,
+        store.envelopes,
+        lambda: cal.collect_official_calendar("NASDAQ_OFFICIAL_SOURCE_PROFILE_V1", lambda: ACQUIRED),
+    ):
+        with pytest.raises(cal.EtfCalendarAuthorityError, match="sentinel exact dependency"):
+            operation()
+
+
+def test_existing_store_and_scientific_replay_refuse_after_dependency_mismatch(
+    monkeypatch,
+) -> None:
+    store = populated_store(date(2026, 12, 21), date(2026, 12, 24))
+    identity = next(iter(store._records))
+    monkeypatch.setattr(cal, "TRUSTED_PERSISTENCE_AUTHORITY_SHA256", "f" * 64)
+    operations = (
+        lambda: store.get(identity),
+        store.records,
+        lambda: cal.venue_session_status("NASDAQ", date(2026, 12, 24), DECISION, store),
+        lambda: cal.derive_etf_window_calendar(
+            end_date=date(2026, 12, 24), earliest_date=date(2026, 12, 21),
+            window_days=2, decision_time=DECISION, evidence_store=store,
+        ),
+        lambda: cal.scientific_etf_flow_window(
+            (), as_of=DECISION, funds=("IBIT",), end_date=date(2026, 12, 24),
+            earliest_date=date(2026, 12, 21), window_days=2,
+            evidence_store=store,
+        ),
+    )
+    for operation in operations:
+        with pytest.raises(cal.EtfCalendarAuthorityError, match="dependency"):
+            operation()
+
+
+def test_production_collection_refuses_dependency_mismatch_before_side_effects(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(cal, "TRUSTED_PERSISTENCE_AUTHORITY_SHA256", "f" * 64)
+    with (
+        patch.object(cal, "_perform_verified_https_get") as https_get,
+        patch.object(cal._trusted.AcquisitionSigner, "from_external_secret") as signer,
+        patch(
+            "btc_predictor.research.trusted_acquisition_persistence."
+            "PostgresTrustedAcquisitionAppender"
+        ) as appender,
+    ):
+        with pytest.raises(cal.EtfCalendarAuthorityError, match="dependency"):
+            cal.collect_official_calendar(
+                "NASDAQ_OFFICIAL_SOURCE_PROFILE_V1", lambda: ACQUIRED
+            )
+    https_get.assert_not_called()
+    signer.assert_not_called()
+    appender.assert_not_called()
 
 
 def test_every_material_child_mutation_moves_top_hash(monkeypatch) -> None:
@@ -660,6 +777,7 @@ def test_same_available_at_incompatible_valid_revisions_are_unresolved(monkeypat
     conflicting = rehash(conflicting)
     store._records[conflicting[cal.RECORD_DIGEST_FIELD]] = conflicting
     monkeypatch.setattr(cal, "_verify_venue_row", lambda evidence_store, row: dict(row))
+    monkeypatch.setattr(cal, "assert_trusted_persistence_dependency", lambda: None)
     result = cal.venue_session_status("CBOE_BZX", day, DECISION, store)
     assert result.state == cal.UNRESOLVED
     assert result.reason_codes == ("CONFLICTING_LATEST_CALENDAR_REVISION",)
@@ -756,6 +874,36 @@ def test_executable_mutations_move_manifest_and_top_hash(monkeypatch) -> None:
             assert cal.authority_definition()["definition_sha256"] != baseline_top
 
 
+@pytest.mark.parametrize(
+    "guard_installation",
+    [
+        "    CalendarEvidenceStore.put = _exact_dependency_guard(CalendarEvidenceStore.put)\n",
+        "    CalendarEvidenceStore.envelopes = _exact_dependency_guard(CalendarEvidenceStore.envelopes)\n",
+        "    CalendarEvidenceStore.get = _exact_dependency_guard(CalendarEvidenceStore.get)\n",
+        "    CalendarEvidenceStore.records = _exact_dependency_guard(CalendarEvidenceStore.records)\n",
+        (
+            '    globals()["collect_official_calendar"] = _exact_dependency_guard(\n'
+            "        collect_official_calendar\n"
+            "    )\n"
+        ),
+    ],
+)
+def test_dependency_call_edge_bypass_moves_executable_manifest_and_parent(
+    monkeypatch, guard_installation: str,
+) -> None:
+    baseline_manifest = cal.executable_semantic_manifest_contract()["definition_sha256"]
+    baseline_parent = cal.authority_definition()["definition_sha256"]
+    sources = cal._trusted_persistence_integration_sources()
+    owner = "exact_dependency_guard_installation"
+    assert guard_installation in sources[owner]
+    sources[owner] = sources[owner].replace(
+        guard_installation, "    pass  # dependency guard installation bypassed\n", 1
+    )
+    monkeypatch.setattr(cal, "_trusted_persistence_integration_sources", lambda: sources)
+    assert cal.executable_semantic_manifest_contract()["definition_sha256"] != baseline_manifest
+    assert cal.authority_definition()["definition_sha256"] != baseline_parent
+
+
 def test_runtime_semantic_mismatch_refuses(monkeypatch) -> None:
     record = acquisition_payload("NASDAQ")
     with monkeypatch.context() as context:
@@ -777,6 +925,25 @@ def test_failed_calendar_artifact_and_failed_v2_remain_unchanged(tmp_path) -> No
     failed_corrected = json.loads((ROOT / "prospective_evidence/etf_publication_calendar_authority_v1_r1/authority_definition.json").read_text())
     assert failed_calendar["definition_sha256"] == cal.FAILED_AUTHORITY_SHA256
     assert failed_corrected["definition_sha256"] == cal.FAILED_CORRECTED_AUTHORITY_SHA256
+
+
+def test_failed_i1_artifacts_are_immutable_and_shared_science_is_identical() -> None:
+    failed_dir = ROOT / "prospective_evidence/etf_publication_calendar_authority_v1_i1"
+    failed = json.loads((failed_dir / cal.PROTOCOL_FILENAME).read_text(encoding="ascii"))
+    corrected = json.loads((ARTIFACT_DIR / cal.PROTOCOL_FILENAME).read_text(encoding="ascii"))
+    assert failed["definition_sha256"] == cal.FAILED_INTEGRATED_AUTHORITY_SHA256
+    assert corrected["definition_sha256"] == cal.FROZEN_AUTHORITY_DEFINITION_SHA256
+    unchanged_children = {
+        filename for filename, _ in cal._CHILD_ARTIFACTS
+        if filename != "executable_semantic_manifest.json"
+    }
+    for filename in unchanged_children:
+        assert (failed_dir / filename).read_bytes() == (ARTIFACT_DIR / filename).read_bytes()
+    assert (
+        failed_dir / "executable_semantic_manifest.json"
+    ).read_bytes() != (
+        ARTIFACT_DIR / "executable_semantic_manifest.json"
+    ).read_bytes()
 
 
 def test_integrated_calendar_artifacts_restore_exact_frozen_identity() -> None:

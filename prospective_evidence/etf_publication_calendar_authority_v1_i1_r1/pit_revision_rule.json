@@ -1,0 +1,20 @@
+{
+  "available_at": "response_received_at == acquired_at; caller cannot supply it",
+  "contract_version": "ETF_CALENDAR_PIT_REVISION_RULE_V1",
+  "definition_sha256": "f2f1e748c64d9f1433e4d544fe844cdfa93524eac97d30c9428eadbbbaa6330f",
+  "eligibility": "available_at <= decision_time",
+  "extraordinary_closure_rule": "effective only when official notice is available",
+  "future_revision_leaks_backward": false,
+  "overwrite": "FORBIDDEN_APPEND_ONLY",
+  "query_order": [
+    "strict scientific records only",
+    "exact venue/date",
+    "available_at <= decision_time",
+    "latest-time conflict resolution",
+    "source/schedule replay",
+    "derive status"
+  ],
+  "same_timestamp_incompatible_states": "UNRESOLVED",
+  "same_timestamp_same_state_tie_break": "greatest record_sha256",
+  "selection": "latest available_at first"
+}

@@ -1,0 +1,20 @@
+{
+  "api": "collect_official_calendar(profile_id, receipt_clock)",
+  "caller_custom_ca": "FORBIDDEN",
+  "caller_verify_false": "FORBIDDEN",
+  "certificate_verification": "REQUIRED",
+  "contract_version": "TRUSTED_ETF_CALENDAR_HTTPS_COLLECTOR_V1",
+  "definition_sha256": "4f4b4e551aa5476c478747d0c5fa61204e386ba773cef42f82f0ee8f3dcd5e9a",
+  "hostname_verification": "REQUIRED",
+  "http_downgrade": "FORBIDDEN",
+  "https_only": true,
+  "production_transport_injectable": false,
+  "receipt_time": "receipt_clock sampled after exact response bytes are read",
+  "redirect_policy": "every observed transition must equal one frozen profile transition",
+  "request_construction": "collector selects the profile's exact canonical request URL",
+  "response_reading": "collector observes status, final URL, headers and exact bytes",
+  "timeout_seconds": 45,
+  "tls_policy_id": "STANDARD_VERIFIED_HTTPS_TLS_V1",
+  "transport_owner": "stdlib HTTPSHandler under collector-owned default SSLContext",
+  "trusted_process_assumption": "Network-origin authority is established by the certified collector executing the frozen HTTPS/TLS policy inside the trusted scientific process. The authority does not claim a cryptographic offline proof that detached arbitrary bytes originated from the server."
+}

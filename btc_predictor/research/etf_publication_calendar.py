@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import ast
+import functools
 import hashlib
 import inspect
 import json
@@ -31,13 +32,13 @@ from btc_predictor.research import trusted_acquisition as _trusted
 
 
 AUTHORITY_VERSION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1"
-PROGRAM_TICKET = "POSTP1-001V2A-I1"
+PROGRAM_TICKET = "POSTP1-001V2A-I1-R1"
 WORKSTREAM = "EPIC X"
 WORKSTREAM_NAME = "PROSPECTIVE INTEGRATION EVIDENCE"
 AUTHORITY_STATUS = "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW"
-FINAL_CLASSIFICATION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_INTEGRATION_XHIGH_REVIEW"
+FINAL_CLASSIFICATION = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_CALL_SITE_CLOSURE_XHIGH_REVIEW"
 CERTIFICATION_STATE = "NOT_CERTIFIED_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW"
-OUTPUT_NAMESPACE = "prospective_evidence/etf_publication_calendar_authority_v1_i1"
+OUTPUT_NAMESPACE = "prospective_evidence/etf_publication_calendar_authority_v1_i1_r1"
 PROTOCOL_FILENAME = "authority_definition.json"
 REPORT_FILENAME = "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_REPORT.md"
 
@@ -53,6 +54,7 @@ RESOLVED = "RESOLVED"
 FAILED_AUTHORITY_SHA256 = "a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9"
 FAILED_CORRECTED_AUTHORITY_SHA256 = "b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af"
 FAILED_FINAL_CORRECTED_AUTHORITY_SHA256 = "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855"
+FAILED_INTEGRATED_AUTHORITY_SHA256 = "b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076"
 TRUSTED_PERSISTENCE_AUTHORITY_VERSION = "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1"
 TRUSTED_PERSISTENCE_AUTHORITY_SHA256 = "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772"
 TRUSTED_PERSISTENCE_CLOSURE_REVIEW = "POSTP1-002V2B-R3"
@@ -60,7 +62,7 @@ TRUSTED_PERSISTENCE_CLOSURE_COMMIT = "3522c89ad0807be942198b82e5d71248042e221a"
 TRUSTED_PERSISTENCE_CLOSURE_PROVENANCE = "4815a014f9394c1b80d1addb42c9717dc04454f9"
 # Filled after deterministic artifact regeneration. This is deliberately the
 # calendar authority identity, not the certified dependency identity above.
-FROZEN_AUTHORITY_DEFINITION_SHA256 = "b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076"
+FROZEN_AUTHORITY_DEFINITION_SHA256 = "901f572e03781030906cd6fe72a73ec5804f9ffbdefe6a8a944c067f7fd9853f"
 TRUSTED_ACQUISITION_PROVENANCE = "TRUSTED_HTTPS_COLLECTOR_V1"
 FIXTURE_ACQUISITION_PROVENANCE = "TEST_FIXTURE_NON_AUTHORITATIVE"
 TRUSTED_COLLECTOR_ID = "TRUSTED_ETF_CALENDAR_HTTPS_COLLECTOR_V1"
@@ -620,6 +622,32 @@ def _collect_official_calendar_non_authoritative_test_only(
     if appended != envelope["envelope_sha256"]:
         raise EtfCalendarAuthorityError("durable append did not confirm envelope identity")
     return envelope
+
+
+def _exact_dependency_guard(owner: Any) -> Any:
+    """Compose the exact calendar dependency ahead of one authoritative boundary."""
+
+    @functools.wraps(owner)
+    def guarded(*args: Any, **kwargs: Any) -> Any:
+        assert_trusted_persistence_dependency()
+        return owner(*args, **kwargs)
+
+    return guarded
+
+
+def _install_exact_dependency_guards() -> None:
+    """Seal every authoritative admission/read edge; leave test collection alone."""
+
+    CalendarEvidenceStore.put = _exact_dependency_guard(CalendarEvidenceStore.put)
+    CalendarEvidenceStore.get = _exact_dependency_guard(CalendarEvidenceStore.get)
+    CalendarEvidenceStore.records = _exact_dependency_guard(CalendarEvidenceStore.records)
+    CalendarEvidenceStore.envelopes = _exact_dependency_guard(CalendarEvidenceStore.envelopes)
+    globals()["collect_official_calendar"] = _exact_dependency_guard(
+        collect_official_calendar
+    )
+
+
+_install_exact_dependency_guards()
 
 
 # The failed caller-evidence constructors remain unavailable.
@@ -1335,6 +1363,31 @@ def normalized_schedule_contract() -> dict[str, Any]:
     )
 
 
+def _trusted_persistence_integration_sources() -> dict[str, str]:
+    return {
+        "calendar_dependency_assertion": inspect.getsource(
+            assert_trusted_persistence_dependency
+        ),
+        "exact_dependency_guard": inspect.getsource(_exact_dependency_guard.__code__),
+        "exact_dependency_guard_installation": inspect.getsource(
+            _install_exact_dependency_guards.__code__
+        ),
+        "production_envelope_admission": inspect.getsource(
+            CalendarEvidenceStore.put
+        ),
+        "authoritative_envelope_replay": inspect.getsource(
+            CalendarEvidenceStore.envelopes
+        ),
+        "authoritative_record_get": inspect.getsource(CalendarEvidenceStore.get),
+        "authoritative_record_census": inspect.getsource(
+            CalendarEvidenceStore.records
+        ),
+        "production_collection_orchestration": inspect.getsource(
+            collect_official_calendar
+        ),
+    }
+
+
 def executable_semantic_manifest_contract() -> dict[str, Any]:
     return _definition(
         {
@@ -1355,22 +1408,17 @@ def executable_semantic_manifest_contract() -> dict[str, Any]:
                 "trusted-persistence rehydration to calendar replay handoff",
             ],
             "trusted_persistence_integration_owner": (
-                "assert_trusted_persistence_dependency plus the existing production chain: "
-                "CalendarEvidenceStore.put -> verify_production_envelope -> "
-                "trusted_acquisition_authority.assert_frozen_production_authority"
+                "Every production acquisition admission, every scientific store admission, "
+                "and every authoritative scientific store replay/read executes "
+                "assert_trusted_persistence_dependency before acquisition, verification, "
+                "return, or scientific-store mutation. CalendarEvidenceStore.put then calls "
+                "verify_production_envelope, which calls "
+                "trusted_acquisition_authority.assert_frozen_production_authority."
             ),
-            "trusted_persistence_integration_ast_sha256": _normalized_python_ast_sha256(
-                {
-                    "calendar_dependency_assertion": inspect.getsource(
-                        assert_trusted_persistence_dependency
-                    ),
-                    "production_envelope_admission": inspect.getsource(
-                        CalendarEvidenceStore.put
-                    ),
-                    "production_collection_orchestration": inspect.getsource(
-                        collect_official_calendar
-                    ),
-                }
+            "trusted_persistence_integration_ast_sha256": (
+                _normalized_python_ast_sha256(
+                    _trusted_persistence_integration_sources()
+                )
             ),
             "runtime_mismatch": "REFUSE_SCIENTIFIC_REPLAY",
         }
@@ -1546,6 +1594,14 @@ def authority_definition() -> dict[str, Any]:
                 "superseded_before_use": True,
                 "review_result": "FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID",
             },
+            {
+                "definition_sha256": FAILED_INTEGRATED_AUTHORITY_SHA256,
+                "authoritative": False,
+                "certified": False,
+                "prospective_observations": 0,
+                "superseded_before_use": True,
+                "review_result": "FAIL — CALENDAR DEPENDENCY CALL-SITE CLOSURE INVALID",
+            },
         ],
         "trusted_acquisition_persistence_dependency": {
             "authority_version": TRUSTED_PERSISTENCE_AUTHORITY_VERSION,
@@ -1614,7 +1670,8 @@ def _report_markdown(protocol: Mapping[str, Any]) -> str:
         "## Failed lineage", "",
         f"The failed authorities `{FAILED_AUTHORITY_SHA256}`,",
         f"`{FAILED_CORRECTED_AUTHORITY_SHA256}`, and",
-        f"`{FAILED_FINAL_CORRECTED_AUTHORITY_SHA256}` remain non-authoritative, non-certified,",
+        f"`{FAILED_FINAL_CORRECTED_AUTHORITY_SHA256}`, and",
+        f"`{FAILED_INTEGRATED_AUTHORITY_SHA256}` remain non-authoritative, non-certified,",
         "unused, and preserved in their original artifact directories.", "",
         "## Material child hashes", "", "| child | definition hash |", "| --- | --- |",
     ]
