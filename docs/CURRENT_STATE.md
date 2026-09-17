@@ -84,10 +84,10 @@ PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
 
 ETF_PUBLICATION_CALENDAR_AUTHORITY_V1 =
-INTEGRATED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
+CALL_SITE_CLOSED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
 
 ETF publication-calendar authority definition hash =
-b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076
+901f572e03781030906cd6fe72a73ec5804f9ffbdefe6a8a944c067f7fd9853f
 
 material child contracts bound by integrated ETF calendar authority = 13
 
@@ -95,6 +95,7 @@ failed ETF calendar authority hashes retained as non-authoritative =
 a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9
 b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af
 0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855
+b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076
 
 POSTP1-001V2A-R2 result =
 IMPLEMENTATION COMPLETE / FAILED FINAL INDEPENDENT EXACT-HASH XHIGH REVIEW
@@ -106,6 +107,9 @@ IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH INTEGRATION CLOSUR
 
 POSTP1-002V2A-I1 review result =
 FAIL — CALENDAR DEPENDENCY CALL-SITE CLOSURE INVALID
+
+POSTP1-001V2A-I1-R1 result =
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH CALL-SITE CLOSURE REVIEW
 
 ETF calendar trusted-persistence dependency =
 02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772
@@ -120,7 +124,7 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_PUBLICATION_CALENDAR_AUTHORITY_REQUIRES_FIX
+ETF_PUBLICATION_CALENDAR_AUTHORITY_V1_READY_FOR_FINAL_CALL_SITE_CLOSURE_XHIGH_REVIEW
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -253,7 +257,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-16
+- **Last updated:** 2026-09-17
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -439,7 +443,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   parent-bound children, passed the hostile material-substitution and disposable
   PostgreSQL 17.9 regressions, and closed the authority. This PASS authorizes
   only bounded ETF-calendar integration/refreeze against the exact certified
-  hash; V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked.
+  hash. POSTP1-001V2A-I1 integrated that dependency at `b499c6a4...e584e076`,
+  but POSTP1-002V2A-I1 failed it because authoritative calendar call sites did
+  not execute the exact dependency assertion. POSTP1-001V2A-I1-R1 preserves
+  that failed lineage and refreezes the corrected calendar authority at
+  `901f572e...fd9853f`. One explicit composition guard now runs the assertion
+  before production collection, every scientific-store admission, and every
+  authoritative `get`, `records`, or `envelopes` replay/read. The guard and its
+  five installations are parent-bound; bypassing any installation moves the
+  executable manifest and parent. Existing-store replay and collection fail
+  before return or side effects after dependency mismatch. All twelve shared
+  scientific children, including the exact `02f96203...1a12772` dependency,
+  remain byte-identical; only the integration manifest and parent moved. The
+  certified trusted-persistence authority and its runtime attestation remain
+  unchanged and reproduce exactly. The corrected calendar remains uncertified
+  pending independent exact-hash xHigh call-site closure review, so V2R1,
+  POSTP1-003R3, POSTP1-004 and collection remain blocked.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -452,36 +471,34 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-I1 failed exact-hash xHigh
-  integration closure review of calendar hash `b499c6a4...e584e076` because
-  authoritative `CalendarEvidenceStore.put()` verifies the currently installed
-  persistence authority but does not execute the calendar's exact frozen-
-  dependency assertion. Trusted-persistence authority V1 stays closed at
-  certified hash `02f96203...1a12772`
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-I1-R1 implementation is
+  complete at calendar hash `901f572e...fd9853f`; independent exact-hash xHigh
+  call-site closure review remains outstanding. Trusted-persistence authority
+  V1 stays closed and unchanged at certified hash `02f96203...1a12772`
 - **Current BLOCKED tickets:** ETF calendar authority certification remains
   blocked until one bounded calendar integration/refreeze passes its own
   closure review. POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** A bounded mechanical calendar-integration
-  correction/refreeze must make every authoritative acquisition/replay admission
-  execute the exact calendar dependency assertion before scientific evidence is
-  admitted, add hostile mismatch regressions, and receive a new independent
-  exact-hash review. This does not authorize V2 correction, POSTP1-003R3,
+- **Next dependency-satisfied ticket:** Independent exact-hash xHigh call-site
+  closure review of POSTP1-001V2A-I1-R1 authority
+  `901f572e...fd9853f`. This does not authorize V2 correction, POSTP1-003R3,
   POSTP1-004 or collection
 - **Other ready tickets:** None
-- **Latest verified test baseline:** 5,120 passed, 3 skipped under
+- **Latest verified test baseline:** 5,133 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
-  integration. The integrated focused calendar/trusted-persistence suite is
-  209 passed and the broader calendar, migration, trusted-persistence, ETF and
-  V1/V2 integrity set is 625 passed with three explained skips. Python
-  3.12.14 and `cryptography 50.0.1` were used on 2026-09-16. The certified
+  integration. The focused calendar/trusted-persistence suite is 222 passed and
+  the broader calendar, migration, trusted-persistence, ETF and V1/V2 integrity
+  set is 632 passed with three explained skips. Python 3.12.14 and
+  `cryptography 50.0.1` were used on 2026-09-17. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
-- **Last relevant implementation/review commit:** POSTP1-001V2A-I1 implementation
-  commit `c040d2027abe8a7adb64be64a6450b6434bc6543` refreezes the calendar at
-  `b499c6a4...e584e076`; POSTP1-002V2A-I1 failed its independent exact-hash
-  xHigh integration closure review with no review-fix commit. POSTP1-002V2B-R3
+- **Last relevant implementation/review commit:** POSTP1-001V2A-I1-R1
+  implementation commit `8a2b41480eebd7aff31a2f087d8bf5a41360c3bc` refreezes the
+  call-site-closed calendar at `901f572e...fd9853f`; independent exact-hash
+  xHigh call-site closure review is outstanding. Failed I1 implementation
+  `c040d2027abe8a7adb64be64a6450b6434bc6543` and authority
+  `b499c6a4...e584e076` remain immutable and non-authoritative. POSTP1-002V2B-R3
   passed final
   independent exact-hash xHigh closure review with no review-fix commit; closure
   is recorded by `3522c89ad0807be942198b82e5d71248042e221a`.
