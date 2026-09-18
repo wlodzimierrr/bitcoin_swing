@@ -3184,6 +3184,90 @@ architecture/calendar regression passed 200 tests, and the full Python 3.12.14
 suite passed 5,202 tests with three explained skips under
 `-W error::RuntimeWarning`. Compileall and diff checks passed.
 
+## POSTP1-001V2A-PAD1 — `DEFINE_ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Dependency:** POSTP1-002V2A-AD1-R2 failure,
+`ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_REQUIRES_PROOF_ARCHITECTURE_DECISION`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** POSTP1-002V2A-PAD1, one independent exact-hash xHigh
+proof-architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_store_capability_normal_form_v1/`
+**Decision commit:** `3cf103119d2b28664fabec7e7a496a9fd8d1b377`
+**Decision hash:** `889a2c229d0e3bc18507f436f2154eaedf88e69cca95f9deb9e4fa90132fc212`
+
+### Decision objective and closed proof strategy
+
+This proof-architecture decision supersedes the failed open-ended route-model
+strategy without modifying any failed artifact or production calendar code.
+Scientific authority is proven by restricting repository-owned scientific code
+to a closed mechanically auditable store-capability grammar. The proof models
+every certified allowed store use and refuses every recognized use outside the
+grammar; it does not claim to understand every valid Python program and has no
+obligation to learn a future syntax automatically.
+
+Store-bearing roots and derivations are limited to directly annotated
+`CalendarEvidenceStore` parameters, simple local-name aliases, annotated
+`*args` elements, annotated `**kwargs` values, direct indexed extraction,
+direct variadic iteration targets, and simple aliases of those derived values.
+The only permitted uses are direct calls to `put`, `get`, `records`, or
+`envelopes`; direct forwarding to the exact frozen owner registry; transparent
+local aliases; and the frozen variadic derivations. Every use receives exactly
+one stable permitted or forbidden classification.
+
+Bare extraction of a documented or undocumented bound method is forbidden,
+including when another valid terminal exists. Return/yield of a store,
+arbitrary list/tuple/dict/set packing, object/subscript storage, unknown
+forwarding, nested function/lambda/generator capture, dynamic attribute access,
+and all other unsupported uses are refused. The proof does not propagate bound-
+method capabilities because extraction itself is outside the certified coding
+surface.
+
+### Preserved graph, boundary and implementation separation
+
+Only after the normal-form audit passes may proof reconcile the eleven frozen
+replay owners, extract direct documented terminal and enumerated-owner edges,
+reject cycles, and prove every owner path terminates at a documented store API.
+The trusted production-process boundary, project-owned bypass prohibition,
+private `_records`/`_envelopes` boundary, five direct-body dependency
+requirements and controlled startup self-check remain unchanged. If hostile
+same-process resistance later enters scope, process isolation remains required.
+
+This decision does not certify current production conformance. The current
+`common_etf_session_status` generator expression captures `evidence_store`, a
+syntax deliberately forbidden by the new grammar; a later implementation may
+rewrite it only after proof-architecture review PASS and must preserve its
+science and behavior. That later ticket must also implement the certified
+normal-form audit, remove wrapper-installed guards, insert direct assertions in
+the five required production bodies, perform controlled startup verification,
+and refreeze the calendar authority. This ticket performs none of those steps.
+
+### Evidence, safety and authorization
+
+The nine material children bind the trusted-process reference, store-bearing
+grammar, permitted and forbidden uses, replay graph, variadics, direct-body
+dependency rule, proof order/completeness, and science/lineage/safety. The
+focused decision suite passed 55 tests. The combined PAD1, original/R1/R2
+architecture and unchanged calendar regression set passed 255 tests. Exact
+artifact restoration, material mutation sensitivity, child-order reversal,
+three `PYTHONHASHSEED` values, alternate cwd, fresh process/output, compileall
+and diff checks passed under Python 3.12.14.
+
+All three failed architecture hashes and all five failed calendar hashes remain
+immutable, failed, non-certified, unused and at zero observations. Certified
+trusted persistence `02f96203...1a12772`, certified prospective V1
+`8915d991...fbfac7d7`, failed V2 `488251df...0ec0b6d`, and all calendar science
+remain unchanged. No observation was collected and no Stage-B evaluation ran.
+Calendar implementation/refreeze, POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and
+collection remain blocked; BTC-019 is untouched and Epic T is unchanged.
+
+Final classification is
+`ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_XHIGH_REVIEW`.
+Successful implementation authorizes only POSTP1-002V2A-PAD1 independent
+exact-hash xHigh proof-architecture review. Review PASS would authorize defining
+one calendar implementation/refreeze ticket, not implementation, V2R1 or
+collection directly.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3229,5 +3313,7 @@ suite passed 5,202 tests with three explained skips under
 | POSTP1-002V2A-AD1-R1 | independent exact-hash xHigh architecture re-review of `a7d2b087...534dd0` | COMPLETE / FAIL — TRANSITIVE REPLAY CLOSURE INVALID; BOUNDED ARCHITECTURE CORRECTION REQUIRED |
 | POSTP1-001V2A-AD1-R2 | enforce universal replay-route closure and variadic owner discovery at `dc36ffe2...f1372c3e` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH ARCHITECTURE REVIEW |
 | POSTP1-002V2A-AD1-R2 | independent exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e` | COMPLETE / FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
+| POSTP1-001V2A-PAD1 | define and freeze the closed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` proof architecture at `889a2c22...32fc212` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `889a2c22...32fc212` | READY / NOT STARTED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
