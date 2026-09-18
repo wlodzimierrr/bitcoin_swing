@@ -3193,8 +3193,8 @@ suite passed 5,202 tests with three explained skips under
 **Required review:** POSTP1-002V2A-PAD1, one independent exact-hash xHigh
 proof-architecture review
 **Artifacts:** `prospective_evidence/etf_calendar_store_capability_normal_form_v1/`
-**Decision commit:** `3cf103119d2b28664fabec7e7a496a9fd8d1b377`
-**Decision hash:** `889a2c229d0e3bc18507f436f2154eaedf88e69cca95f9deb9e4fa90132fc212`
+**Decision commit:** `2cc1ce600355483d5f7567e5294d59fcb934e999`
+**Decision hash:** `9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295`
 
 ### Decision objective and closed proof strategy
 
@@ -3247,8 +3247,8 @@ and refreeze the calendar authority. This ticket performs none of those steps.
 The nine material children bind the trusted-process reference, store-bearing
 grammar, permitted and forbidden uses, replay graph, variadics, direct-body
 dependency rule, proof order/completeness, and science/lineage/safety. The
-focused decision suite passed 55 tests. The combined PAD1, original/R1/R2
-architecture and unchanged calendar regression set passed 255 tests. Exact
+focused decision suite passed 56 tests. The combined PAD1, original/R1/R2
+architecture and unchanged calendar regression set passed 256 tests. Exact
 artifact restoration, material mutation sensitivity, child-order reversal,
 three `PYTHONHASHSEED` values, alternate cwd, fresh process/output, compileall
 and diff checks passed under Python 3.12.14.
@@ -3313,7 +3313,7 @@ collection directly.
 | POSTP1-002V2A-AD1-R1 | independent exact-hash xHigh architecture re-review of `a7d2b087...534dd0` | COMPLETE / FAIL — TRANSITIVE REPLAY CLOSURE INVALID; BOUNDED ARCHITECTURE CORRECTION REQUIRED |
 | POSTP1-001V2A-AD1-R2 | enforce universal replay-route closure and variadic owner discovery at `dc36ffe2...f1372c3e` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH ARCHITECTURE REVIEW |
 | POSTP1-002V2A-AD1-R2 | independent exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e` | COMPLETE / FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
-| POSTP1-001V2A-PAD1 | define and freeze the closed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` proof architecture at `889a2c22...32fc212` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `889a2c22...32fc212` | READY / NOT STARTED |
+| POSTP1-001V2A-PAD1 | define and freeze the closed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` proof architecture at `9f6af179...7ac86295` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `9f6af179...7ac86295` | READY / NOT STARTED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

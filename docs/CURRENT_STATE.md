@@ -164,10 +164,10 @@ ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1 =
 FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
 
 ETF calendar store-capability normal-form decision hash =
-889a2c229d0e3bc18507f436f2154eaedf88e69cca95f9deb9e4fa90132fc212
+9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295
 
 POSTP1-001V2A-PAD1 implementation commit =
-3cf103119d2b28664fabec7e7a496a9fd8d1b377
+2cc1ce600355483d5f7567e5294d59fcb934e999
 
 POSTP1-001V2A-PAD1 result =
 IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH PROOF-ARCHITECTURE REVIEW
@@ -540,7 +540,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD1 froze the closed
-  store-capability normal-form proof architecture at `889a2c22...32fc212` and
+  store-capability normal-form proof architecture at `9f6af179...7ac86295` and
   awaits POSTP1-002V2A-PAD1 independent exact-hash xHigh review. It replaces
   the failed open-ended route-analysis strategy with a finite grammar: direct
   documented calls, direct enumerated-owner forwarding, transparent aliases
@@ -552,7 +552,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   PASS; POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
 - **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD1, independent exact-
-  hash xHigh proof-architecture review of `889a2c22...32fc212`. This does not
+  hash xHigh proof-architecture review of `9f6af179...7ac86295`. This does not
   authorize calendar implementation, V2 correction, POSTP1-003R3, POSTP1-004
   or collection
 - **Other ready tickets:** None
@@ -569,15 +569,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
 - **Latest proof-architecture validation:** POSTP1-001V2A-PAD1 focused suite
-  passed 55 tests; the combined PAD1, original/R1/R2 architecture-decision and
-  unchanged calendar regression set passed 255 tests. Exact persisted-artifact
+  passed 56 tests; the combined PAD1, original/R1/R2 architecture-decision and
+  unchanged calendar regression set passed 256 tests. Exact persisted-artifact
   restoration, three fresh-process `PYTHONHASHSEED` values, alternate working
   directory/output, child-order reversal, compileall and diff checks passed on
   Python 3.12.14. No full-suite rerun was needed; the 5,202/3 baseline remains
   current because this decision changes no production calendar code
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD1 decision
-  commit `3cf103119d2b28664fabec7e7a496a9fd8d1b377` freezes the closed grammar at
-  `889a2c22...32fc212`; only POSTP1-002V2A-PAD1 review is authorized. The
+  commit `2cc1ce600355483d5f7567e5294d59fcb934e999` freezes the closed grammar at
+  `9f6af179...7ac86295`; only POSTP1-002V2A-PAD1 review is authorized. The
   decision explicitly does not certify current production conformance and
   binds the existing `common_etf_session_status` generator-expression capture
   as a later implementation delta that must preserve semantics. POSTP1-001V2A-
