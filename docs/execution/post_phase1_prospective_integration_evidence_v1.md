@@ -3309,6 +3309,75 @@ prior full-suite baseline remains 5,202 passed with three explained skips.
 Nine representative material mutations, fresh-process/hash-seed, alternate-
 cwd/output, child-order, compileall and diff checks passed.
 
+## POSTP1-001V2A-PAD1-R1 — `NARROW_ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH REVIEW`
+**Dependency:** POSTP1-002V2A-PAD1 failure,
+`ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_REQUIRES_FIX`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** POSTP1-002V2A-PAD1-R1, one independent exact-hash final
+xHigh proof-architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_store_capability_normal_form_v1_r1/`
+**Decision commit:** `22ba8194e591a5f76091abd3f7ceb8508abc7a19`
+**Decision hash:** `7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b`
+
+### Narrow corrected architecture
+
+The corrected candidate retains decision version
+`ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` in a new immutable R1 namespace
+and leaves failed parent `9f6af179...7ac86295` unchanged, non-certified, unused
+and at zero observations. It resolves exactly the three P1 review findings by
+narrowing the grammar to `DIRECT_IMMUTABLE_STORE_PARAMETER_NORMAL_FORM`.
+
+The only supported store-bearing root is a positional-only, ordinary
+positional/keyword or keyword-only function parameter explicitly annotated
+`CalendarEvidenceStore`. Names do not confer authority. Aliases, annotated
+store `*args`/`**kwargs`, local store construction, container derivation,
+nested annotated owners and starred store forwarding are forbidden. A root may
+only be the receiver of a direct `put`, `get`, `records` or `envelopes` call,
+or an ordinary positional/named keyword argument to an exact frozen replay
+owner.
+
+Each root has only its parameter binding. Before use or graph analysis, the
+executable audit refuses same-scope `Assign`, `AnnAssign`, `AugAssign`,
+`NamedExpr`, `For`, `AsyncFor`, `With`, `AsyncWith`, `ExceptHandler`, match
+capture, `Import`, `ImportFrom`, `FunctionDef`, `AsyncFunctionDef`, `ClassDef`
+and `Del` binding/unbinding events. A module-wide pass independently refuses
+all nested annotated owners, including under rootless outer functions. This
+closed syntax requires no alias propagation, reaching-definition analysis,
+SSA construction or arbitrary control-flow proof.
+
+Only after structural, binding and use audits pass does the analyzer reconcile
+the exact eleven ordinary annotated production owners, extract direct terminal
+and enumerated-owner edges, reject cycles and prove terminal paths. Current
+production is deliberately refused at the known
+`common_etf_session_status` generator-expression capture; no production or
+scientific code changed.
+
+### Evidence and authorization
+
+Ten mechanically enumerated material children bind the trusted-process
+boundary, root grammar, binding discipline, permitted uses, forbidden escapes,
+nested-owner prohibition, replay graph, direct-body dependency rule, proof
+order/completeness and science/lineage/safety. The focused R1 suite passed 81
+tests. The combined R1/PAD1/original-R1-R2 architecture and unchanged calendar
+regression set passed 337 tests. Three `PYTHONHASHSEED` values, alternate cwd,
+fresh output, reversed child order, artifact restoration and representative
+material mutations passed. Python 3.12 compileall and diff checks passed.
+
+Trusted persistence `02f96203...1a12772`, the trusted-process boundary, five
+direct dependency-body requirements, startup identity checks, calendar science
+and all prior lineages remain unchanged. No observations were collected and no
+real Stage-B evaluation ran. Calendar implementation/refreeze,
+POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked;
+BTC-019 is untouched and Epic T is unchanged.
+
+Final classification is
+`ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_FINAL_XHIGH_REVIEW`.
+Successful implementation authorizes only POSTP1-002V2A-PAD1-R1 independent
+exact-hash final xHigh review. Only review PASS may authorize one final ETF
+calendar implementation/refreeze ticket.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3356,5 +3425,7 @@ cwd/output, child-order, compileall and diff checks passed.
 | POSTP1-002V2A-AD1-R2 | independent exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e` | COMPLETE / FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD1 | define and freeze the closed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` proof architecture at `9f6af179...7ac86295` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `9f6af179...7ac86295` | COMPLETE / FAIL — CLOSED GRAMMAR COMPLETENESS INVALID; CORRECTED PROOF ARCHITECTURE REQUIRED |
+| POSTP1-001V2A-PAD1-R1 | narrow the corrected direct immutable-parameter proof architecture at `7ef114fe...8d17b` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH REVIEW |
+| POSTP1-002V2A-PAD1-R1 | independent exact-hash final xHigh proof-architecture review of `7ef114fe...8d17b` | READY |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

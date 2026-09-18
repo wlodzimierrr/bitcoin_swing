@@ -127,7 +127,7 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_REQUIRES_FIX
+ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_FINAL_XHIGH_REVIEW
 
 ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1 =
 FROZEN_PRE_DATA_FAILED_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_REVIEW
@@ -174,6 +174,18 @@ IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH PROOF-ARCHITECTURE
 
 POSTP1-002V2A-PAD1 review result =
 FAIL — CLOSED GRAMMAR COMPLETENESS INVALID
+
+ETF calendar corrected store-capability normal-form candidate =
+FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+
+corrected ETF calendar store-capability normal-form decision hash =
+7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b
+
+POSTP1-001V2A-PAD1-R1 implementation commit =
+22ba8194e591a5f76091abd3f7ceb8508abc7a19
+
+POSTP1-001V2A-PAD1-R1 result =
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH REVIEW
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -542,24 +554,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD1 failed the independent
-  exact-hash xHigh review of `9f6af179...7ac86295`. Although the parent and all
-  9/9 children reproduce, the executable grammar accepts direct `*store` and
-  `**store` forwarding outside the frozen variadic rule, misses nested annotated
-  store owners under a non-store outer function, and treats store roots and
-  aliases flow-insensitively so rebinding or use before alias assignment can
-  manufacture permitted calls and false replay-graph terminals. The candidate
-  remains immutable, non-certified, unused and at zero observations. Trusted
-  persistence stays closed at certified hash `02f96203...1a12772`
-- **Current BLOCKED tickets:** Do not create POSTP1-001V2A-AD1-R3. The proof
-  architecture requires correction and independent review before any calendar
-  implementation/refreeze; POSTP1-001V2R1,
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD1-R1 implemented and
+  froze corrected candidate `7ef114fe...8d17b` with 10/10 parent-bound material
+  children. The grammar now permits only ordinary explicitly annotated
+  immutable store parameters and refuses aliases, annotated store variadics,
+  starred forwarding, every frozen same-scope rebinding/unbinding form and all
+  nested annotated owners through a module-wide scan. Failed parent
+  `9f6af179...7ac86295` remains immutable, non-certified, unused and at zero
+  observations. Trusted persistence stays closed at certified hash
+  `02f96203...1a12772`
+- **Current BLOCKED tickets:** Do not create POSTP1-001V2A-PAD1-R2. The
+  corrected proof architecture requires independent review PASS before any
+  calendar implementation/refreeze; POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** None. A bounded corrected proof-
-  architecture ticket must first be explicitly defined; this review does not
-  authorize automatic analyzer expansion, calendar implementation, V2
-  correction, POSTP1-003R3, POSTP1-004 or collection
-- **Other ready tickets:** None
+- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD1-R1, independent
+  exact-hash final xHigh review of corrected candidate `7ef114fe...8d17b`
+- **Other ready tickets:** None. Calendar implementation, V2 correction,
+  POSTP1-003R3, POSTP1-004 and collection remain blocked pending review PASS
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
@@ -572,18 +583,21 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
-- **Latest proof-architecture validation:** POSTP1-002V2A-PAD1 independently
-  reproduced exact parent `9f6af179...7ac86295`, all 9/9 material children and
-  bindings, and the expected current-production generator-capture refusal. The
-  focused suite passed 56 tests and the combined PAD1, original/R1/R2
-  architecture-decision and unchanged calendar regression set passed 256
-  tests. Nine representative material mutations, three fresh-process
-  `PYTHONHASHSEED` values, alternate working directory/output, child-order
-  reversal, compileall and diff checks passed on Python 3.12.14. Independent
-  hostile grammar probes exposed the three blocking fail-open classes above.
-  No full-suite rerun was needed; the 5,202/3 baseline remains current because
-  production code was unchanged
-- **Last relevant implementation/review commit:** POSTP1-001V2A-PAD1 decision
+- **Latest proof-architecture validation:** POSTP1-001V2A-PAD1-R1 focused suite
+  passed 81 tests; the combined R1/PAD1, original/R1/R2 architecture-decision
+  and unchanged calendar regression set passed 337 tests. The tests cover root-
+  only grammar, aliases/variadics/starred forwarding, all frozen binding forms,
+  rootless and rooted nested owners, capability escapes, graph termination and
+  cycles, the exact 11-owner census, the expected current-production generator-
+  capture refusal, ten material child bindings/mutations, artifact restoration,
+  reversed child order, three fresh-process `PYTHONHASHSEED` values, alternate
+  cwd/output, compileall and diff checks on Python 3.12.14. No full-suite rerun
+  was needed because production behavior is unchanged; the 5,202/3 baseline
+  remains current
+- **Last relevant implementation/review commit:** POSTP1-001V2A-PAD1-R1
+  decision commit `22ba8194e591a5f76091abd3f7ceb8508abc7a19` freezes corrected candidate
+  `7ef114fe...8d17b`, awaiting POSTP1-002V2A-PAD1-R1 independent exact-hash
+  final xHigh review. POSTP1-001V2A-PAD1 decision
   commit `2cc1ce600355483d5f7567e5294d59fcb934e999` freezes the failed candidate at
   `9f6af179...7ac86295`; POSTP1-002V2A-PAD1 failed its independent review with
   no review-fix commit because correcting the closed grammar requires a new
