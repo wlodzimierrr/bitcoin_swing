@@ -84,7 +84,7 @@ PROSPECTIVE_INTEGRATION_EVIDENCE_SUFFICIENCY_GOVERNANCE_V1 =
 NO AUTHORITATIVE DEFINITION / CERTIFIED PARENT CHANGE REQUIRED
 
 ETF_PUBLICATION_CALENDAR_AUTHORITY_V1 =
-CALL_SITE_CLOSED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
+CALL_SITE_CLOSED_FROZEN_PRE_DATA_ETF_CALENDAR_AUTHORITY_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_CLOSURE_REVIEW
 
 ETF publication-calendar authority definition hash =
 901f572e03781030906cd6fe72a73ec5804f9ffbdefe6a8a944c067f7fd9853f
@@ -127,10 +127,10 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_FINAL_XHIGH_ARCHITECTURE_REVIEW
+ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_REQUIRES_PROOF_ARCHITECTURE_DECISION
 
 ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1 =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_REVIEW
+FROZEN_PRE_DATA_FAILED_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_REVIEW
 
 ETF calendar in-process authority-boundary decision hash =
 dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e
@@ -155,10 +155,10 @@ POSTP1-001V2A-AD1-R2 implementation commit =
 5d9bf9de9f90c48650a6d087df85cc1ac2349a75
 
 POSTP1-001V2A-AD1-R2 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH ARCHITECTURE REVIEW
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL XHIGH ARCHITECTURE REVIEW
 
 POSTP1-002V2A-AD1-R2 review result =
-NOT STARTED
+FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -527,20 +527,21 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-AD1-R2 corrected the two
-  bounded review defects and froze universal replay-route closure plus
-  annotated variadic consumer discovery at `dc36ffe2...f1372c3e`; independent
-  exact-hash final xHigh architecture review has not started. Trusted-
-  persistence authority V1 stays closed and unchanged at certified hash
-  `02f96203...1a12772`
-- **Current BLOCKED tickets:** Another ETF calendar implementation/refreeze is
-  blocked pending independent review PASS for the corrected architecture.
-  POSTP1-001V2R1,
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-AD1-R2 failed the final
+  exact-hash architecture review of `dc36ffe2...f1372c3e`: ordinary bound-
+  method extraction (`bad_fn = store.some_undocumented_method`) is not emitted
+  as a store-dependent edge, so a second valid terminal lets the owner pass.
+  The candidate remains immutable, non-certified, unused and at zero
+  observations. Trusted-persistence authority V1 stays closed and unchanged at
+  certified hash `02f96203...1a12772`
+- **Current BLOCKED tickets:** The ETF calendar architecture now requires an
+  explicit proof-architecture decision; do not create POSTP1-001V2A-AD1-R3.
+  Calendar implementation/refreeze, POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-AD1-R2, independent
-  exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e`. This
-  does not authorize calendar implementation, V2 correction, POSTP1-003R3,
-  POSTP1-004 or collection
+- **Next dependency-satisfied ticket:** None. An explicit proof-architecture
+  decision is required before another architecture implementation ticket may
+  be defined. This does not authorize calendar implementation, V2 correction,
+  POSTP1-003R3, POSTP1-004 or collection
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
@@ -555,9 +556,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
 - **Last relevant implementation/review commit:** POSTP1-001V2A-AD1-R2 decision
-  commit `5d9bf9de9f90c48650a6d087df85cc1ac2349a75` freezes the universal-route
-  corrected boundary at `dc36ffe2...f1372c3e`; its required independent final
-  xHigh review is outstanding. POSTP1-001V2A-AD1-R1 decision commit
+  commit `5d9bf9de9f90c48650a6d087df85cc1ac2349a75` freezes the failed universal-
+  route candidate at `dc36ffe2...f1372c3e`; POSTP1-002V2A-AD1-R2 failed its
+  independent final xHigh review with no review-fix commit because bound-method
+  extraction is outside the purported universal edge classification.
+  POSTP1-001V2A-AD1-R1 decision commit
   `e09534f611dc5043fbc8099c80106adba899a42c` froze the failed corrected
   project-owned bypass boundary at `a7d2b087...534dd0`; POSTP1-002V2A-AD1-R1
   failed its independent exact-hash xHigh architecture re-review with no review-

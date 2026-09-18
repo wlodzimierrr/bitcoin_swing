@@ -3154,6 +3154,36 @@ Successful implementation authorizes only POSTP1-002V2A-AD1-R2 independent
 exact-hash final xHigh architecture review. Only that review passing may
 authorize one final ETF calendar implementation/refreeze.
 
+### Independent final architecture review result
+
+POSTP1-002V2A-AD1-R2 independently reproduced exact parent
+`dc36ffe2...f1372c3e`, all ten material children and their parent bindings, the
+11/11 production replay-owner census, the acyclic actual owner graph, both
+failed architecture lineages and certified trusted-persistence dependency.
+The direct undocumented-method, branch-conservative, unknown-forward, cycle,
+variadic, private-state, direct-body, material-mutation and determinism probes
+passed.
+
+The candidate nevertheless failed with
+`FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE`. An ordinary bound-method
+extraction such as `bad_fn = store.some_undocumented_method` emits no edge and
+does not preserve a store-method capability. Therefore an owner that also calls
+`store.records()` passes because only the good terminal is visible. A
+documented bound-method alias is likewise silently omitted when another direct
+terminal exists. This is ordinary repository-owned behavior, not hostile
+obfuscation, and falsifies the frozen claim that every mechanically known
+store-dependent edge is classified.
+
+The exact candidate remains immutable, non-certified, unused and at zero
+observations. No review fix or production change was made. Per the final-review
+hard stopping rule, do not create POSTP1-001V2A-AD1-R3; an explicit proof-
+architecture decision is required. Calendar implementation/refreeze,
+POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
+and Epic T remain untouched. The focused R2 suite passed 40 tests, the combined
+architecture/calendar regression passed 200 tests, and the full Python 3.12.14
+suite passed 5,202 tests with three explained skips under
+`-W error::RuntimeWarning`. Compileall and diff checks passed.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3197,7 +3227,7 @@ authorize one final ETF calendar implementation/refreeze.
 | POSTP1-002V2A-AD1 | independent exact-hash xHigh architecture review of `0c237c1b...887b55d` | COMPLETE / FAIL — PROJECT-OWNED BYPASS MODEL INCOMPLETE |
 | POSTP1-001V2A-AD1-R1 | complete the project-owned private-state bypass model and exact replay-owner census at `a7d2b087...534dd0` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH ARCHITECTURE RE-REVIEW |
 | POSTP1-002V2A-AD1-R1 | independent exact-hash xHigh architecture re-review of `a7d2b087...534dd0` | COMPLETE / FAIL — TRANSITIVE REPLAY CLOSURE INVALID; BOUNDED ARCHITECTURE CORRECTION REQUIRED |
-| POSTP1-001V2A-AD1-R2 | enforce universal replay-route closure and variadic owner discovery at `dc36ffe2...f1372c3e` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH ARCHITECTURE REVIEW |
-| POSTP1-002V2A-AD1-R2 | independent exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e` | NOT STARTED |
+| POSTP1-001V2A-AD1-R2 | enforce universal replay-route closure and variadic owner discovery at `dc36ffe2...f1372c3e` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH ARCHITECTURE REVIEW |
+| POSTP1-002V2A-AD1-R2 | independent exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e` | COMPLETE / FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
