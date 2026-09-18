@@ -1,0 +1,19 @@
+{
+  "contract_version": "ETF_CALENDAR_PROJECT_OWNED_BYPASS_PROHIBITION_V1_R1",
+  "definition_sha256": "41042c7be48f400c0386e8a7ddaabfcb49a8eabb6af245c831afc7a99e330297",
+  "forbidden": [
+    "DIRECT_AUTHORITATIVE_INTERNAL_STATE_READ_OR_WRITE",
+    "__wrapped__",
+    "PUBLIC_RAW_OR_ORIGINAL_OWNER_ATTRIBUTES",
+    "UNGUARDED_CORE_METHODS_EXPOSED_FROM_PRODUCTION_MODULE",
+    "ALTERNATE_PRODUCTION_ALIASES_OR_STORE_IMPLEMENTATIONS",
+    "TEST_HELPERS_ACCEPTED_AS_PRODUCTION_AUTHORITY",
+    "CALLER_SELECTED_VERIFICATION_OR_PERSISTENCE_CAPABILITIES",
+    "RUNTIME_DECORATOR_OR_WRAPPER_INSTALLATION",
+    "FUNCTOOLS_WRAPS_AUTHORITY_GUARDS",
+    "MODULE_IMPORT_TIME_GUARD_REBINDING"
+  ],
+  "production_mutation_enters_through_documented_store_surfaces": true,
+  "project_owned_production_bypasses_permitted": false,
+  "test_modules_fixtures_and_explicit_test_only_helpers_excluded": true
+}

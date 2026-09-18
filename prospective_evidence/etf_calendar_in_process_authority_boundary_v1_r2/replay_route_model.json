@@ -1,0 +1,27 @@
+{
+  "all_store_dependent_edges_classified": true,
+  "contract_version": "ETF_CALENDAR_REPLAY_ROUTE_MODEL_V1",
+  "definition_sha256": "b3e3d769a7f7e09249604005b6c757e4c8fe66e8bf0133b330736b58b1b8c7f0",
+  "documented_terminal_store_apis": [
+    "put",
+    "get",
+    "records",
+    "envelopes"
+  ],
+  "edge_kinds": [
+    "DOCUMENTED_STORE_API_TERMINAL",
+    "ENUMERATED_REPLAY_OWNER_EDGE",
+    "FORBIDDEN_UNDOCUMENTED_STORE_METHOD",
+    "FORBIDDEN_UNENUMERATED_STORE_FORWARD",
+    "FORBIDDEN_PRIVATE_STATE_ROUTE"
+  ],
+  "stable_edge_identity": "OWNER_LINE_COLUMN_KIND_TARGET",
+  "store_bearing_expressions": [
+    "DIRECT_STORE_PARAMETERS",
+    "ORDINARY_ALIASES",
+    "ANNOTATED_VARARG_SUBSCRIPTS_AND_STARRED_ELEMENTS",
+    "ANNOTATED_KWARG_SUBSCRIPTS_AND_STARRED_VALUES",
+    "VARIADIC_ELEMENT_OR_VALUE_LOOP_TARGETS"
+  ],
+  "undocumented_store_methods_permitted": false
+}

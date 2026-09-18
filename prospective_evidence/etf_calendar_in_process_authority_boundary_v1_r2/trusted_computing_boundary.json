@@ -1,0 +1,9 @@
+{
+  "arbitrary_same_process_mutation_resistance_required": false,
+  "authority_kind": "SCIENTIFIC_CORRECTNESS_NOT_HOSTILE_INTERPRETER_ISOLATION",
+  "boundary": "PRODUCTION_PYTHON_INTERPRETER_AND_PROCESS_ARE_TRUSTED",
+  "bounded_convergence_rule": "Arbitrary caller execution that mutates interpreter internals is outside scope; repository-owned production/scientific bypasses remain in scope and forbidden.",
+  "contract_version": "ETF_CALENDAR_TRUSTED_COMPUTING_BOUNDARY_V1_R1",
+  "definition_sha256": "902005137e91eed20e8fa38a89ec55df0a548a25783cc6775f4cea6564ace99e",
+  "project_owned_production_scientific_bypasses_in_scope": true
+}

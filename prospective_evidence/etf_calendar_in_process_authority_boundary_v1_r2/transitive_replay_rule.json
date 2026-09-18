@@ -1,0 +1,15 @@
+{
+  "branch_feasibility_reasoning": "NOT_PERFORMED_ALL_SYNTACTIC_EDGES_COUNT",
+  "contract_version": "ETF_CALENDAR_TRANSITIVE_REPLAY_RULE_V1_R2",
+  "definition_sha256": "28294fc6f479ef556c646ec0d276355fe1a423e056da8630cd0f8542b9652ad4",
+  "existential_compliance_permitted": false,
+  "owner_compliance_quantifier": "UNIVERSAL",
+  "owner_graph_must_be_acyclic": true,
+  "rules": [
+    "ALL_STORE_DEPENDENT_EDGES_MUST_BE_PERMITTED",
+    "ALL_OWNER_PATHS_MUST_TERMINATE_AT_DOCUMENTED_STORE_API",
+    "ANY_OWNER_CYCLE_IS_FORBIDDEN",
+    "ANY_UNDOCUMENTED_STORE_METHOD_IS_FORBIDDEN",
+    "ANY_STORE_FORWARD_TO_UNENUMERATED_OWNER_IS_FORBIDDEN"
+  ]
+}

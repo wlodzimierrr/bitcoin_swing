@@ -1,0 +1,45 @@
+{
+  "authorization": {
+    "calendar_implementation_may_begin": false,
+    "independent_architecture_xhigh_final_review_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "all_store_dependent_edges_classified": true,
+    "annotated_variadic_store_consumers_discovered": true,
+    "arbitrary_caller_private_state_mutation_in_scope": false,
+    "direct_entrypoint_body_enforcement_required": true,
+    "dynamic_wrapper_installation_permitted": false,
+    "exposed_unguarded_production_owners_permitted": false,
+    "functools_wraps_authority_guards_permitted": false,
+    "owner_cycles_permitted": false,
+    "owner_route_compliance_is_universal": true,
+    "process_isolation_required_if_hostile_same_process_mutation_enters_scope": true,
+    "project_owned_private_state_access_in_scope": true,
+    "project_owned_private_state_access_permitted": false,
+    "trusted_production_python_process": true
+  },
+  "child_definition_sha256": {
+    "direct_body_enforcement": "1fd7f7b41b3cf6fbc79a28c95b4559bf895d8e4fde9e64522a9bce54141c8bfd",
+    "drift_science_and_safety": "eecd4162ec3946c3f3d0a0d259a2273afe0ec07f4d7f577fb084f6ac71ef8fd2",
+    "private_state_boundary": "a62e5b1070302af1d41e432bcf3a4d867bb7513bbbd43183952a1dc2d84e4d31",
+    "project_owned_bypass_prohibition": "41042c7be48f400c0386e8a7ddaabfcb49a8eabb6af245c831afc7a99e330297",
+    "replay_owner_registry": "87a20b501f63e31b0d231c1774ac5f5c6888cf7457c7473f5df9106be319ea30",
+    "replay_route_model": "b3e3d769a7f7e09249604005b6c757e4c8fe66e8bf0133b330736b58b1b8c7f0",
+    "runtime_mutation_threat_model": "e67c11f9c1d7fd6a4b68d6e8cbc1cb645ee90360235db093c56ab7b9792210a1",
+    "static_surface_audit": "40f8d0a55b990d41e9e52a9e01cadad4746824e822ce3e5a1250bc3c746c2220",
+    "transitive_replay_rule": "28294fc6f479ef556c646ec0d276355fe1a423e056da8630cd0f8542b9652ad4",
+    "trusted_computing_boundary": "902005137e91eed20e8fa38a89ec55df0a548a25783cc6775f4cea6564ace99e"
+  },
+  "decision_version": "ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1",
+  "definition_sha256": "dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e",
+  "final_classification": "ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_FINAL_XHIGH_ARCHITECTURE_REVIEW",
+  "material_child_count": 10,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-AD1-R2",
+  "required_review": "INDEPENDENT_EXACT_HASH_XHIGH_FINAL_ARCHITECTURE_REVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_XHIGH_ARCHITECTURE_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}
