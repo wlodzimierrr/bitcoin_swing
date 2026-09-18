@@ -127,7 +127,7 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_FINAL_XHIGH_REVIEW
+ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION
 
 ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1 =
 FROZEN_PRE_DATA_FAILED_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_REVIEW
@@ -176,7 +176,7 @@ POSTP1-002V2A-PAD1 review result =
 FAIL — CLOSED GRAMMAR COMPLETENESS INVALID
 
 ETF calendar corrected store-capability normal-form candidate =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+FROZEN_PRE_DATA_FAILED_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_REVIEW
 
 corrected ETF calendar store-capability normal-form decision hash =
 7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b
@@ -185,7 +185,10 @@ POSTP1-001V2A-PAD1-R1 implementation commit =
 22ba8194e591a5f76091abd3f7ceb8508abc7a19
 
 POSTP1-001V2A-PAD1-R1 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH REVIEW
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL XHIGH REVIEW
+
+POSTP1-002V2A-PAD1-R1 review result =
+FAIL — PYTHON 3.12 BINDING CENSUS INCOMPLETE
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -554,23 +557,28 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD1-R1 implemented and
-  froze corrected candidate `7ef114fe...8d17b` with 10/10 parent-bound material
-  children. The grammar now permits only ordinary explicitly annotated
-  immutable store parameters and refuses aliases, annotated store variadics,
-  starred forwarding, every frozen same-scope rebinding/unbinding form and all
-  nested annotated owners through a module-wide scan. Failed parent
-  `9f6af179...7ac86295` remains immutable, non-certified, unused and at zero
-  observations. Trusted persistence stays closed at certified hash
-  `02f96203...1a12772`
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD1-R1 failed the
+  independent exact-hash final xHigh review of corrected candidate
+  `7ef114fe...8d17b`. The exact parent and all 10/10 material children reproduce
+  and are parent-bound, but the claimed Python 3.12 immutable-root binding
+  census is incomplete. `ast.TypeAlias` is not audited, and nested function
+  defaults/decorators, lambda defaults and class headers/decorators are skipped
+  even though their assignment expressions execute in the enclosing owner
+  scope. Each omission can replace the annotated root and leave a later
+  `store.records()` classified as a permitted terminal. The candidate remains
+  immutable, non-certified, unused and at zero observations. Failed parent
+  `9f6af179...7ac86295` and certified trusted persistence
+  `02f96203...1a12772` remain unchanged
 - **Current BLOCKED tickets:** Do not create POSTP1-001V2A-PAD1-R2. The
-  corrected proof architecture requires independent review PASS before any
-  calendar implementation/refreeze; POSTP1-001V2R1,
+  proof architecture requires an explicit new decision before any calendar
+  implementation/refreeze; POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD1-R1, independent
-  exact-hash final xHigh review of corrected candidate `7ef114fe...8d17b`
+- **Next dependency-satisfied ticket:** None. An explicit proof-architecture
+  decision must define how the complete Python 3.12 binding census is closed;
+  do not automatically create POSTP1-001V2A-PAD1-R2
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked pending review PASS
+  POSTP1-003R3, POSTP1-004 and collection remain blocked pending an explicit
+  proof-architecture decision and its successful independent review
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
@@ -583,21 +591,24 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
-- **Latest proof-architecture validation:** POSTP1-001V2A-PAD1-R1 focused suite
-  passed 81 tests; the combined R1/PAD1, original/R1/R2 architecture-decision
-  and unchanged calendar regression set passed 337 tests. The tests cover root-
-  only grammar, aliases/variadics/starred forwarding, all frozen binding forms,
-  rootless and rooted nested owners, capability escapes, graph termination and
-  cycles, the exact 11-owner census, the expected current-production generator-
-  capture refusal, ten material child bindings/mutations, artifact restoration,
-  reversed child order, three fresh-process `PYTHONHASHSEED` values, alternate
-  cwd/output, compileall and diff checks on Python 3.12.14. No full-suite rerun
-  was needed because production behavior is unchanged; the 5,202/3 baseline
-  remains current
+- **Latest proof-architecture validation:** POSTP1-002V2A-PAD1-R1 independently
+  reproduced exact parent `7ef114fe...8d17b`, all 10/10 material children and
+  parent bindings, all ten requested mutation sensitivities, the exact 11-owner
+  production census and the sole expected current-production generator-capture
+  refusal. The focused R1 suite passed 81 tests; the combined R1/PAD1,
+  original/R1/R2 architecture-decision and unchanged calendar regression set
+  passed 337 tests. Artifact restoration, reversed child order, three fresh-
+  process `PYTHONHASHSEED` values, alternate cwd/output, compileall and diff
+  checks passed on Python 3.12.14. Independent TypeAlias and nested-definition-
+  header/default/decorator probes exposed the blocking fail-open binding
+  omissions. No full-suite rerun was needed because production behavior is
+  unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD1-R1
-  decision commit `22ba8194e591a5f76091abd3f7ceb8508abc7a19` freezes corrected candidate
-  `7ef114fe...8d17b`, awaiting POSTP1-002V2A-PAD1-R1 independent exact-hash
-  final xHigh review. POSTP1-001V2A-PAD1 decision
+  decision commit `22ba8194e591a5f76091abd3f7ceb8508abc7a19` freezes failed corrected
+  candidate `7ef114fe...8d17b`; POSTP1-002V2A-PAD1-R1 failed its independent
+  exact-hash final xHigh review with no review fix because the immutable-root
+  binding model itself is incomplete and requires an explicit new proof-
+  architecture decision. POSTP1-001V2A-PAD1 decision
   commit `2cc1ce600355483d5f7567e5294d59fcb934e999` freezes the failed candidate at
   `9f6af179...7ac86295`; POSTP1-002V2A-PAD1 failed its independent review with
   no review-fix commit because correcting the closed grammar requires a new
