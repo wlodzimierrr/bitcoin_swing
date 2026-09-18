@@ -402,6 +402,26 @@ def classify_store_uses(
             continue
         parents = _parent_map(owner)
         for candidate in ast.walk(owner):
+            if isinstance(candidate, (ast.FunctionDef, ast.AsyncFunctionDef)) and candidate is not owner:
+                ordinary, vararg, kwarg = _parameters(candidate)
+                parameters = (
+                    *ordinary,
+                    *((vararg,) if vararg else ()),
+                    *((kwarg,) if kwarg else ()),
+                )
+                if any(
+                    _annotation_names_calendar_store(parameter.annotation)
+                    for parameter in parameters
+                ):
+                    uses.append(
+                        StoreUse(
+                            owner_name,
+                            candidate.lineno,
+                            candidate.col_offset,
+                            "FORBIDDEN_NESTED_SCOPE_CAPTURE",
+                            "nested_store_parameter",
+                        )
+                    )
             if isinstance(candidate, ast.Name) and isinstance(candidate.ctx, ast.Load):
                 variadic = _classify_variadic_container_use(
                     candidate, owner, grammar, parents, frozen
@@ -652,6 +672,8 @@ def forbidden_capability_escape_rules() -> dict[str, Any]:
             "closure_or_local_callable_capture_permitted": False,
             "dynamic_attribute_authority_permitted": False,
             "unsupported_use_may_be_masked_by_valid_route": False,
+            "implementation_private_authoritative_state": ["_records", "_envelopes"],
+            "repository_owned_access_outside_CalendarEvidenceStore_permitted": False,
         }
     )
 

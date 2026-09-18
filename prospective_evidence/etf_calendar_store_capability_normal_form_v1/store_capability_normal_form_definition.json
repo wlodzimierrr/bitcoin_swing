@@ -19,7 +19,7 @@
   "certified_dependency_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
   "child_definition_sha256": {
     "direct_body_dependency_rule": "743bc6431260c9cf747dc183ee72b25fe99c5db15afe3be87121b4b748845a88",
-    "forbidden_capability_escape_rules": "504f58864282fb538091f1b95ad7148ba45a32305e641a4fbf15234b6e760ea1",
+    "forbidden_capability_escape_rules": "46d8dc99009bcadf2e4ea8ad55a72544cc1bb402cc92e2d49255f99f438f6355",
     "permitted_store_use_normal_form": "bfc53904da88a3600cbf0d414542bd489dfa322708409237191bb99e173cd509",
     "proof_order_and_completeness_definition": "15b11392f0e63f6b04871b8e8065b8e8af018782d5c0ef79e2194bc7745eb0ed",
     "replay_owner_graph_rule": "2ad568ab3a248b5bd3b10e41b1d0f7a4228fea83056cd9acba1c1198884ecf93",
@@ -29,7 +29,7 @@
     "variadic_store_reference_rule": "226cd9ecfa5846466b414af9f90e7f5e5161d26ad428efe64dcc4fb19d965aae"
   },
   "decision_version": "ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1",
-  "definition_sha256": "889a2c229d0e3bc18507f436f2154eaedf88e69cca95f9deb9e4fa90132fc212",
+  "definition_sha256": "9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295",
   "failed_parent_sha256": "dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e",
   "final_classification": "ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_XHIGH_REVIEW",
   "material_child_count": 9,

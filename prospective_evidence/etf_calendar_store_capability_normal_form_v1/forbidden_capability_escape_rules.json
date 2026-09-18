@@ -3,7 +3,7 @@
   "bare_undocumented_method_extraction_permitted": false,
   "closure_or_local_callable_capture_permitted": false,
   "contract_version": "ETF_CALENDAR_FORBIDDEN_CAPABILITY_ESCAPE_RULES_V1",
-  "definition_sha256": "504f58864282fb538091f1b95ad7148ba45a32305e641a4fbf15234b6e760ea1",
+  "definition_sha256": "46d8dc99009bcadf2e4ea8ad55a72544cc1bb402cc92e2d49255f99f438f6355",
   "dynamic_attribute_authority_permitted": false,
   "forbidden_categories": [
     "FORBIDDEN_STORE_ATTRIBUTE_EXTRACTION",
@@ -15,6 +15,11 @@
     "FORBIDDEN_DYNAMIC_ACCESS",
     "FORBIDDEN_OTHER_STORE_USE"
   ],
+  "implementation_private_authoritative_state": [
+    "_records",
+    "_envelopes"
+  ],
   "new_list_tuple_dict_set_packing_permitted": false,
+  "repository_owned_access_outside_CalendarEvidenceStore_permitted": false,
   "unsupported_use_may_be_masked_by_valid_route": false
 }

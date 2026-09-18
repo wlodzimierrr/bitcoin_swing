@@ -212,6 +212,17 @@ def owner(store: CalendarEvidenceStore):
         _audit(source)
 
 
+def test_nested_annotated_store_owner_is_forbidden_even_without_capture() -> None:
+    source = """
+def owner(store: CalendarEvidenceStore):
+    def inner(other_store: CalendarEvidenceStore):
+        return other_store.records()
+    return store.records()
+"""
+    with pytest.raises(normal.NormalFormError, match="NESTED_SCOPE_CAPTURE"):
+        _audit(source)
+
+
 @pytest.mark.parametrize(
     "expression",
     [
@@ -378,6 +389,14 @@ def test_lineage_science_and_safety_are_preserved() -> None:
     assert set(safety["preserved_science"].values()) == {"UNCHANGED"}
     assert safety["safety"]["prospective_observations"] == 0
     assert safety["safety"]["collection_authorized"] is False
+    escapes = normal.forbidden_capability_escape_rules()
+    assert escapes["implementation_private_authoritative_state"] == [
+        "_records",
+        "_envelopes",
+    ]
+    assert escapes[
+        "repository_owned_access_outside_CalendarEvidenceStore_permitted"
+    ] is False
 
 
 def test_artifacts_reproduce_child_order_is_invariant_and_tampering_refuses(
