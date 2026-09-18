@@ -593,6 +593,32 @@ human filtering of model signals
 
 Research outputs must not silently modify production strategy.
 
+Evidence Coverage / Comparability
+
+For champion/challenger, strategy, parameter-set, or cohort comparisons,
+do not accept object identity as proof that the evidence is comparable.
+
+Verify and persist, where applicable:
+
+- evaluation start/end
+- dataset/source identity
+- decision universe
+- eligibility universe
+- exclusions and reasons
+- trade count
+- fold definitions
+- setup/regime scope
+- cost policy
+- strategy/config identity
+
+A narrower arm must not silently appear superior because it was evaluated on
+a different or favorable subset.
+
+Explicitly test zero-observation / zero-trade evidence.
+
+Artifact completeness is not equivalent to empirical sufficiency for
+promotion.
+
 ---
 
 # 19. Parameter Robustness / Overfitting
@@ -1039,3 +1065,31 @@ Try to construct such cases.
 If you can, fix them and pin them with integration tests.
 
 If you cannot after independent adversarial review, the epic may be considered integration-complete within its documented scope.
+
+For time-series pipelines, verify that observation-row adjacency is never
+silently treated as calendar/session adjacency.
+
+Explicitly test missing-session gaps for:
+- returns
+- true range / ATR
+- realized volatility
+- rolling windows
+- annualization
+- swing/structure calculations
+- any downstream consumer that assumes a fixed observation interval
+
+Ambient Numerical-Context Independence
+
+For persisted deterministic evidence using Decimal, verify that changing the
+caller's ambient decimal context does not change:
+
+- decisions
+- ranks / bucket assignments
+- plateau membership
+- persisted numeric evidence
+- hashes / serialized records
+- restore/tamper validation
+
+Any required precision or rounding context must be owned explicitly by the
+calculation rather than inherited from process-global state.
+
