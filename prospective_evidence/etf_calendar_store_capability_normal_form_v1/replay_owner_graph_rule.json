@@ -1,0 +1,26 @@
+{
+  "contract_version": "ETF_CALENDAR_REPLAY_OWNER_GRAPH_RULE_V1_PAD1",
+  "cycles_permitted": false,
+  "definition_sha256": "2ad568ab3a248b5bd3b10e41b1d0f7a4228fea83056cd9acba1c1198884ecf93",
+  "edge_kinds": [
+    "DOCUMENTED_STORE_API_TERMINAL",
+    "ENUMERATED_REPLAY_OWNER_EDGE"
+  ],
+  "every_owner_path_terminates_at_documented_store_api": true,
+  "normal_form_audit_must_pass_before_graph_extraction": true,
+  "owner_census_relation": "DISCOVERED_EQUALS_FROZEN_REGISTRY",
+  "owner_count": 11,
+  "owners": [
+    "derive_normalized_schedule_from_official_source",
+    "venue_session_calendar_record",
+    "_verify_schedule",
+    "_verify_schedule_record",
+    "validate_normalized_schedule_against_source",
+    "_verify_venue_row",
+    "venue_session_status",
+    "common_etf_session_status",
+    "expected_etf_publication_dates",
+    "derive_etf_window_calendar",
+    "scientific_etf_flow_window"
+  ]
+}

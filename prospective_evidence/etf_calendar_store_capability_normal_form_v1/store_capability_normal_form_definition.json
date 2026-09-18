@@ -1,0 +1,43 @@
+{
+  "authorization": {
+    "calendar_implementation_may_begin": false,
+    "independent_proof_architecture_xhigh_review_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "bare_bound_method_extraction_permitted": false,
+    "calendar_science_changed": false,
+    "closed_supported_scientific_store_use_grammar": true,
+    "every_certified_allowed_store_use_modeled": true,
+    "every_non_certified_store_use_rejected": true,
+    "future_new_syntax_automatically_supported": false,
+    "models_arbitrary_python_dataflow": false,
+    "trusted_process_boundary_changed": false,
+    "unsupported_use_masked_by_valid_route_permitted": false
+  },
+  "certified_dependency_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "child_definition_sha256": {
+    "direct_body_dependency_rule": "743bc6431260c9cf747dc183ee72b25fe99c5db15afe3be87121b4b748845a88",
+    "forbidden_capability_escape_rules": "504f58864282fb538091f1b95ad7148ba45a32305e641a4fbf15234b6e760ea1",
+    "permitted_store_use_normal_form": "bfc53904da88a3600cbf0d414542bd489dfa322708409237191bb99e173cd509",
+    "proof_order_and_completeness_definition": "15b11392f0e63f6b04871b8e8065b8e8af018782d5c0ef79e2194bc7745eb0ed",
+    "replay_owner_graph_rule": "2ad568ab3a248b5bd3b10e41b1d0f7a4228fea83056cd9acba1c1198884ecf93",
+    "science_lineage_and_safety": "60ff35d18418a29edb8d9075e269c3a75a2d004d8e37e76687c97592b1781ae1",
+    "store_bearing_value_grammar": "f732f7241984ee844b81770f2f5d2b425ba0910de8cb65d11e91494d954e942c",
+    "trusted_process_boundary_reference": "424acce407b5a3601e7a28b9023843c866ede9acc21228bab75cde0854eed775",
+    "variadic_store_reference_rule": "226cd9ecfa5846466b414af9f90e7f5e5161d26ad428efe64dcc4fb19d965aae"
+  },
+  "decision_version": "ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1",
+  "definition_sha256": "889a2c229d0e3bc18507f436f2154eaedf88e69cca95f9deb9e4fa90132fc212",
+  "failed_parent_sha256": "dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e",
+  "final_classification": "ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_XHIGH_REVIEW",
+  "material_child_count": 9,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-PAD1",
+  "proof_strategy": "CLOSED_SUPPORTED_STORE_CAPABILITY_GRAMMAR",
+  "required_review": "POSTP1-002V2A-PAD1_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}

@@ -1,0 +1,16 @@
+{
+  "contract_version": "ETF_CALENDAR_STORE_BEARING_VALUE_GRAMMAR_V1",
+  "definition_sha256": "f732f7241984ee844b81770f2f5d2b425ba0910de8cb65d11e91494d954e942c",
+  "generic_container_dataflow": "NOT_SUPPORTED",
+  "other_derivations": "FORBIDDEN_UNLESS_EXPLICITLY_FROZEN",
+  "simple_alias_target": "LOCAL_ast.Name_ONLY",
+  "supported_roots_and_derivations": [
+    "DIRECT_PARAMETERS_ANNOTATED_CalendarEvidenceStore",
+    "SIMPLE_LOCAL_NAME_ALIAS_OF_STORE_BEARING_VALUE",
+    "ELEMENT_OF_ANNOTATED_VARARG_CalendarEvidenceStore",
+    "VALUE_OF_ANNOTATED_KWARG_CalendarEvidenceStore",
+    "DIRECT_INDEXED_VARIADIC_EXTRACTION",
+    "DIRECT_VARIADIC_ITERATION_TARGET",
+    "SIMPLE_LOCAL_ALIAS_OF_EXTRACTED_OR_ITERATED_VALUE"
+  ]
+}

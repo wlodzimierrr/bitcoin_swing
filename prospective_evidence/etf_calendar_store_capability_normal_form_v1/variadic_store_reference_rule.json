@@ -1,0 +1,17 @@
+{
+  "annotated_kwarg_values_supported": true,
+  "annotated_vararg_elements_supported": true,
+  "bound_method_extraction_permitted": false,
+  "container_escape_permitted": false,
+  "contract_version": "ETF_CALENDAR_VARIADIC_STORE_REFERENCE_RULE_V1",
+  "definition_sha256": "226cd9ecfa5846466b414af9f90e7f5e5161d26ad428efe64dcc4fb19d965aae",
+  "resulting_elements_subject_to_same_normal_form": true,
+  "supported_operations": [
+    "DIRECT_INDEXED_EXTRACTION",
+    "SIMPLE_LOCAL_ALIAS",
+    "DIRECT_ITERATION",
+    "DIRECT_DOCUMENTED_API_CALL",
+    "DIRECT_ENUMERATED_OWNER_FORWARD",
+    "MECHANICALLY_RESOLVABLE_STARRED_ENUMERATED_OWNER_FORWARD"
+  ]
+}

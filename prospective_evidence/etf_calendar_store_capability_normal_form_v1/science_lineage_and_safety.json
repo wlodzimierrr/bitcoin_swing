@@ -1,0 +1,64 @@
+{
+  "certified_dependency": {
+    "authority_version": "TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1",
+    "changed": false,
+    "definition_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+    "status": "CLOSED_CERTIFIED_FOR_BOUNDED_ETF_CALENDAR_INTEGRATION"
+  },
+  "contract_version": "ETF_CALENDAR_NORMAL_FORM_SCIENCE_LINEAGE_AND_SAFETY_V1",
+  "definition_sha256": "60ff35d18418a29edb8d9075e269c3a75a2d004d8e37e76687c97592b1781ae1",
+  "failed_architecture_lineage": [
+    {
+      "certified": false,
+      "definition_sha256": "0c237c1b217b1fd406ec3967309774293c01d3e27574b9f4a7d1b9a0e887b55d",
+      "failed": true,
+      "prospective_observations": 0,
+      "superseded_before_use": true,
+      "used": false
+    },
+    {
+      "certified": false,
+      "definition_sha256": "a7d2b08741080494cc4ca0269bf21e28e631c7f2e70887bcb0e1beb302534dd0",
+      "failed": true,
+      "prospective_observations": 0,
+      "superseded_before_use": true,
+      "used": false
+    },
+    {
+      "certified": false,
+      "definition_sha256": "dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e",
+      "failed": true,
+      "prospective_observations": 0,
+      "superseded_before_use": true,
+      "used": false
+    }
+  ],
+  "failed_calendar_lineage": [
+    "a1ceb66bc0f6b90066d3da123447ae6e7dd983047adf363790336bfb557db0b9",
+    "b81c1702c65e1e042b7a2f948216305618fd21fabe2e629edc46376882b357af",
+    "0524334396e529afbd057db25721b92c3074dd10205dd08be0946e512f99c855",
+    "b499c6a4d1a8a6c25c6b108279831f26508742de97bdbcd57c7bee58e584e076",
+    "901f572e03781030906cd6fe72a73ec5804f9ffbdefe6a8a944c067f7fd9853f"
+  ],
+  "preserved_hashes": {
+    "certified_prospective_v1": "8915d991fde536450a959a350f1a619544289ea0b9544f308b184cf7fbfac7d7",
+    "failed_prospective_v2": "488251df7bc1b49f801caa0dc28eb5224836574b154db9e4a70d4be670ec0b6d"
+  },
+  "preserved_science": {
+    "pit_common_session_etf_formulas_revision_semantics": "UNCHANGED",
+    "source_urls_profiles_tls_redirects_parsers_coverage_early_closes": "UNCHANGED",
+    "stage_b_metrics_risk_stops_thresholds": "UNCHANGED"
+  },
+  "safety": {
+    "btc019": "UNTOUCHED",
+    "calendar_certified": false,
+    "calendar_implementation": "BLOCKED_PENDING_PROOF_ARCHITECTURE_REVIEW_PASS",
+    "collection_authorized": false,
+    "epic_t": "UNCHANGED",
+    "postp1_001v2r1": "BLOCKED",
+    "postp1_003r3": "BLOCKED",
+    "postp1_004": "BLOCKED",
+    "prospective_observations": 0,
+    "real_stage_b_evaluation": false
+  }
+}
