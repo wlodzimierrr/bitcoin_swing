@@ -127,10 +127,10 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_REPEAT_XHIGH_REVIEW
+ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_REQUIRES_FIX
 
 ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1 =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_XHIGH_ARCHITECTURE_REVIEW
+FROZEN_PRE_DATA_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_RE_REVIEW
 
 ETF calendar in-process authority-boundary decision hash =
 a7d2b08741080494cc4ca0269bf21e28e631c7f2e70887bcb0e1beb302534dd0
@@ -145,7 +145,10 @@ POSTP1-002V2A-AD1 review result =
 FAIL — PROJECT-OWNED BYPASS MODEL INCOMPLETE
 
 POSTP1-001V2A-AD1-R1 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH ARCHITECTURE RE-REVIEW
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH ARCHITECTURE RE-REVIEW
+
+POSTP1-002V2A-AD1-R1 review result =
+FAIL — TRANSITIVE REPLAY CLOSURE INVALID
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -494,9 +497,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   production AST, and the full module rejects ordinary dotted, literal dynamic,
   `__dict__`, and `vars` bypass forms. Runtime wrappers, `functools.wraps`,
   exposed unguarded owners, and wrapper-level substitutes for process isolation
-  remain prohibited. The corrected decision awaits independent exact-hash xHigh
-  architecture re-review and does not authorize a calendar correction. V2R1,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked.
+  remain prohibited. POSTP1-002V2A-AD1-R1 reproduced the exact parent, all nine
+  children and the current 11/11 owner census, but rejected the decision because
+  the route audit proves only one acceptable path rather than every path. A
+  mixed owner cycle with a documented alternate exit and a mixed documented /
+  undocumented store-method owner both pass. Annotated variadic store consumers
+  also evade discovery. The frozen candidate remains immutable, non-certified,
+  unused and at zero observations. V2R1, POSTP1-003R3, POSTP1-004 and collection
+  remain blocked.
   Historically,
   BTC-019 stopped because ten Stage-A
   hard gates had no conforming executable owner; V4 deterministically moved only
@@ -509,18 +517,20 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-AD1-R1 has frozen the
-  corrected architecture decision at `a7d2b087...534dd0` and awaits independent
-  exact-hash xHigh architecture re-review. Trusted-persistence authority V1
-  stays closed and unchanged at certified hash `02f96203...1a12772`
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-AD1-R1 failed the exact
+  `a7d2b087...534dd0` architecture because transitive replay closure is not
+  universally enforced and annotated variadic consumers evade the census.
+  Trusted-persistence authority V1 stays closed and unchanged at certified hash
+  `02f96203...1a12772`
 - **Current BLOCKED tickets:** Another ETF calendar implementation/refreeze is
-  blocked until POSTP1-001V2A-AD1-R1 passes independent architecture re-review.
+  blocked pending a bounded corrected architecture and its independent review.
   POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-AD1-R1, the independent
-  exact-hash xHigh architecture re-review of `a7d2b087...534dd0`. Do not begin
-  another calendar implementation before PASS. This does not authorize V2
-  correction, POSTP1-003R3, POSTP1-004 or collection
+- **Next dependency-satisfied ticket:** None currently issued. The concrete
+  review defects permit issuance of one bounded architecture-correction ticket;
+  do not begin calendar implementation before that correction passes independent
+  exact-hash xHigh review. This does not authorize V2 correction, POSTP1-003R3,
+  POSTP1-004 or collection
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,162 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
@@ -531,13 +541,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   focused calendar/trusted-persistence suite is 222 passed and
   the broader calendar, migration, trusted-persistence, ETF and V1/V2 integrity
   set is 632 passed with three explained skips. Python 3.12.14 and
-  `cryptography 50.0.1` were used on 2026-09-17. The certified
+  `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
 - **Last relevant implementation/review commit:** POSTP1-001V2A-AD1-R1 decision
   commit `e09534f611dc5043fbc8099c80106adba899a42c` freezes the corrected
-  project-owned bypass boundary at `a7d2b087...534dd0`; independent exact-hash
-  xHigh architecture re-review remains outstanding. The failed AD1 decision
+  project-owned bypass boundary at `a7d2b087...534dd0`; POSTP1-002V2A-AD1-R1
+  failed its independent exact-hash xHigh architecture re-review with no review-
+  fix commit. The failed AD1 decision
   commit `28c9d985ffd08a8f65089b6648bb7e8b03fcf5fc` and boundary
   `0c237c1b...887b55d` remain immutable and non-certified.
   POSTP1-002V2A-I1-R1 failed the independent exact-hash xHigh call-site closure

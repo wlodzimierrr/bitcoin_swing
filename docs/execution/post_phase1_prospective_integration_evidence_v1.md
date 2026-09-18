@@ -2995,7 +2995,7 @@ non-certified, unused, and at zero observations.
 
 ## POSTP1-001V2A-AD1-R1 — `COMPLETE_ETF_CALENDAR_PROJECT_OWNED_BYPASS_MODEL_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH ARCHITECTURE RE-REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH ARCHITECTURE RE-REVIEW`
 **Dependency:** POSTP1-002V2A-AD1 failure,
 `ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_REQUIRES_FIX`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -3059,6 +3059,32 @@ POSTP1-003R3, POSTP1-004, and collection remain blocked; BTC-019 and Epic T are
 untouched. Final classification is
 `ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_READY_FOR_REPEAT_XHIGH_REVIEW`.
 
+### Independent architecture re-review result
+
+POSTP1-002V2A-AD1-R1 independently reproduced the exact parent
+`a7d2b087...534dd0`, all nine material children and the current 11/11 replay-
+owner census, but failed the candidate with
+`TRANSITIVE REPLAY CLOSURE INVALID`. The fixed-point route audit proves only
+that an owner has at least one documented-store path. It accepts a mixed owner
+cycle when one member also has a documented exit, and it accepts an owner that
+has both a documented call and an alternate undocumented store-method route.
+Therefore it does not prove the frozen universal invariant that every evidence
+route terminates at `put`, `get`, `records`, or `envelopes` and that no owner
+cycle can evade such termination.
+
+The re-review also found that annotated variadic parameters are omitted from
+the mechanical owner-discovery parameter census. A new top-level
+`*stores: CalendarEvidenceStore` consumer using `stores[0].records()` leaves
+the discovered and frozen sets unchanged and passes the complete static audit,
+contrary to the frozen annotation-discovery rule and new-consumer drift
+requirement. The exact candidate remains immutable, non-certified, unused and
+at zero observations. No review fix or production change was made. A bounded
+architecture correction is required before any calendar implementation; V2R1,
+POSTP1-003R3, POSTP1-004 and collection remain blocked. The focused corrected-
+architecture suite passed 22 tests; the full Python 3.12.14 suite passed 5,162
+tests with three explained skips under `-W error::RuntimeWarning`. Compileall
+and the reviewed documentation diff check also passed.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3100,7 +3126,7 @@ untouched. Final classification is
 | POSTP1-002V2A-I1-R1 | independent exact-hash xHigh call-site closure review of `901f572e...fd9853f` | COMPLETE / FAIL — CALL-SITE GUARD BYPASS INVALID; EXPLICIT ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-AD1 | define and freeze the trusted-process scientific authority boundary at `0c237c1b...887b55d` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT xHIGH ARCHITECTURE REVIEW |
 | POSTP1-002V2A-AD1 | independent exact-hash xHigh architecture review of `0c237c1b...887b55d` | COMPLETE / FAIL — PROJECT-OWNED BYPASS MODEL INCOMPLETE |
-| POSTP1-001V2A-AD1-R1 | complete the project-owned private-state bypass model and exact replay-owner census at `a7d2b087...534dd0` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH ARCHITECTURE RE-REVIEW |
-| POSTP1-002V2A-AD1-R1 | independent exact-hash xHigh architecture re-review of `a7d2b087...534dd0` | NEXT DEPENDENCY-SATISFIED TICKET |
+| POSTP1-001V2A-AD1-R1 | complete the project-owned private-state bypass model and exact replay-owner census at `a7d2b087...534dd0` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH ARCHITECTURE RE-REVIEW |
+| POSTP1-002V2A-AD1-R1 | independent exact-hash xHigh architecture re-review of `a7d2b087...534dd0` | COMPLETE / FAIL — TRANSITIVE REPLAY CLOSURE INVALID; BOUNDED ARCHITECTURE CORRECTION REQUIRED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
