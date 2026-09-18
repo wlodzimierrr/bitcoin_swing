@@ -127,7 +127,7 @@ POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_XHIGH_REVIEW
+ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_REQUIRES_FIX
 
 ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1 =
 FROZEN_PRE_DATA_FAILED_FINAL_INDEPENDENT_EXACT_HASH_XHIGH_ARCHITECTURE_REVIEW
@@ -161,7 +161,7 @@ POSTP1-002V2A-AD1-R2 review result =
 FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE
 
 ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1 =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
+FROZEN_PRE_DATA_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
 
 ETF calendar store-capability normal-form decision hash =
 9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295
@@ -170,7 +170,10 @@ POSTP1-001V2A-PAD1 implementation commit =
 2cc1ce600355483d5f7567e5294d59fcb934e999
 
 POSTP1-001V2A-PAD1 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH PROOF-ARCHITECTURE REVIEW
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH PROOF-ARCHITECTURE REVIEW
+
+POSTP1-002V2A-PAD1 review result =
+FAIL — CLOSED GRAMMAR COMPLETENESS INVALID
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -539,22 +542,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD1 froze the closed
-  store-capability normal-form proof architecture at `9f6af179...7ac86295` and
-  awaits POSTP1-002V2A-PAD1 independent exact-hash xHigh review. It replaces
-  the failed open-ended route-analysis strategy with a finite grammar: direct
-  documented calls, direct enumerated-owner forwarding, transparent aliases
-  and bounded variadic derivation are supported; every other recognized store-
-  bearing use is refused. The production Python process remains trusted and
-  trusted persistence stays closed at certified hash `02f96203...1a12772`
-- **Current BLOCKED tickets:** Do not create POSTP1-001V2A-AD1-R3. Calendar
-  implementation/refreeze remains blocked pending proof-architecture review
-  PASS; POSTP1-001V2R1,
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD1 failed the independent
+  exact-hash xHigh review of `9f6af179...7ac86295`. Although the parent and all
+  9/9 children reproduce, the executable grammar accepts direct `*store` and
+  `**store` forwarding outside the frozen variadic rule, misses nested annotated
+  store owners under a non-store outer function, and treats store roots and
+  aliases flow-insensitively so rebinding or use before alias assignment can
+  manufacture permitted calls and false replay-graph terminals. The candidate
+  remains immutable, non-certified, unused and at zero observations. Trusted
+  persistence stays closed at certified hash `02f96203...1a12772`
+- **Current BLOCKED tickets:** Do not create POSTP1-001V2A-AD1-R3. The proof
+  architecture requires correction and independent review before any calendar
+  implementation/refreeze; POSTP1-001V2R1,
   POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD1, independent exact-
-  hash xHigh proof-architecture review of `9f6af179...7ac86295`. This does not
-  authorize calendar implementation, V2 correction, POSTP1-003R3, POSTP1-004
-  or collection
+- **Next dependency-satisfied ticket:** None. A bounded corrected proof-
+  architecture ticket must first be explicitly defined; this review does not
+  authorize automatic analyzer expansion, calendar implementation, V2
+  correction, POSTP1-003R3, POSTP1-004 or collection
 - **Other ready tickets:** None
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
@@ -568,19 +572,24 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
-- **Latest proof-architecture validation:** POSTP1-001V2A-PAD1 focused suite
-  passed 56 tests; the combined PAD1, original/R1/R2 architecture-decision and
-  unchanged calendar regression set passed 256 tests. Exact persisted-artifact
-  restoration, three fresh-process `PYTHONHASHSEED` values, alternate working
-  directory/output, child-order reversal, compileall and diff checks passed on
-  Python 3.12.14. No full-suite rerun was needed; the 5,202/3 baseline remains
-  current because this decision changes no production calendar code
+- **Latest proof-architecture validation:** POSTP1-002V2A-PAD1 independently
+  reproduced exact parent `9f6af179...7ac86295`, all 9/9 material children and
+  bindings, and the expected current-production generator-capture refusal. The
+  focused suite passed 56 tests and the combined PAD1, original/R1/R2
+  architecture-decision and unchanged calendar regression set passed 256
+  tests. Nine representative material mutations, three fresh-process
+  `PYTHONHASHSEED` values, alternate working directory/output, child-order
+  reversal, compileall and diff checks passed on Python 3.12.14. Independent
+  hostile grammar probes exposed the three blocking fail-open classes above.
+  No full-suite rerun was needed; the 5,202/3 baseline remains current because
+  production code was unchanged
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD1 decision
-  commit `2cc1ce600355483d5f7567e5294d59fcb934e999` freezes the closed grammar at
-  `9f6af179...7ac86295`; only POSTP1-002V2A-PAD1 review is authorized. The
-  decision explicitly does not certify current production conformance and
-  binds the existing `common_etf_session_status` generator-expression capture
-  as a later implementation delta that must preserve semantics. POSTP1-001V2A-
+  commit `2cc1ce600355483d5f7567e5294d59fcb934e999` freezes the failed candidate at
+  `9f6af179...7ac86295`; POSTP1-002V2A-PAD1 failed its independent review with
+  no review-fix commit because correcting the closed grammar requires a new
+  reviewed authority, not an in-review analyzer expansion. The decision does
+  correctly avoid certifying current production and detects the existing
+  `common_etf_session_status` generator capture. POSTP1-001V2A-
   AD1-R2 decision
   commit `5d9bf9de9f90c48650a6d087df85cc1ac2349a75` freezes the failed universal-
   route candidate at `dc36ffe2...f1372c3e`; POSTP1-002V2A-AD1-R2 failed its

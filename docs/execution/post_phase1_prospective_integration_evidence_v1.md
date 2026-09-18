@@ -3186,7 +3186,7 @@ suite passed 5,202 tests with three explained skips under
 
 ## POSTP1-001V2A-PAD1 — `DEFINE_ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
 **Dependency:** POSTP1-002V2A-AD1-R2 failure,
 `ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1_REQUIRES_PROOF_ARCHITECTURE_DECISION`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -3268,6 +3268,47 @@ exact-hash xHigh proof-architecture review. Review PASS would authorize defining
 one calendar implementation/refreeze ticket, not implementation, V2R1 or
 collection directly.
 
+### Independent proof-architecture review result
+
+POSTP1-002V2A-PAD1 independently reproduced exact parent
+`9f6af179...7ac86295`, all nine material children and their parent bindings,
+the exact eleven-owner production census, all failed lineages, and certified
+trusted-persistence dependency `02f96203...1a12772`. The candidate correctly
+defines a finite grammar rather than claiming arbitrary Python analysis,
+refuses bare bound-method extraction and the current
+`common_etf_session_status` generator capture, and freezes that production
+delta without claiming current conformance. The explicitly listed return,
+yield, container, storage, nested-capture, dynamic-access and unknown-forward
+refusals, plus direct APIs, bounded variadics, cycles, material mutation
+sensitivity and determinism, otherwise behaved as specified.
+
+The candidate nevertheless failed with
+`FAIL — CLOSED GRAMMAR COMPLETENESS INVALID`. Three ordinary syntactic classes
+violate the frozen fail-closed boundary. First, a directly annotated ordinary
+store parameter is accepted in `enumerated_owner(*store)` and
+`enumerated_owner(**store)`, although starred forwarding is frozen only for the
+annotated variadic containers. Second, a nested function with an annotated
+`CalendarEvidenceStore` parameter is completely invisible when its top-level
+outer function has no store-bearing root. Third, roots and aliases are derived
+flow-insensitively and binding contexts are not audited: an annotated root or
+transparent alias can be rebound before a documented call, and an alias can be
+used before its later assignment, while the call is still classified as a
+permitted store terminal. The replay graph can therefore prove a terminal that
+does not consume the passed evidence capability.
+
+These are closed-grammar completeness defects, not requests to understand
+arbitrary Python dataflow. The exact candidate remains immutable,
+non-certified, unused and at zero observations. No review fix, artifact change
+or production change was made because the review may not expand the analyzer
+or rewrite the calendar implementation. A bounded corrected proof architecture
+and its own independent review are required before calendar implementation/
+refreeze. POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain
+blocked; BTC-019 and Epic T remain untouched. The focused PAD1 suite passed 56
+tests, the combined architecture/calendar regression passed 256 tests, and the
+prior full-suite baseline remains 5,202 passed with three explained skips.
+Nine representative material mutations, fresh-process/hash-seed, alternate-
+cwd/output, child-order, compileall and diff checks passed.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3313,7 +3354,7 @@ collection directly.
 | POSTP1-002V2A-AD1-R1 | independent exact-hash xHigh architecture re-review of `a7d2b087...534dd0` | COMPLETE / FAIL — TRANSITIVE REPLAY CLOSURE INVALID; BOUNDED ARCHITECTURE CORRECTION REQUIRED |
 | POSTP1-001V2A-AD1-R2 | enforce universal replay-route closure and variadic owner discovery at `dc36ffe2...f1372c3e` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH ARCHITECTURE REVIEW |
 | POSTP1-002V2A-AD1-R2 | independent exact-hash final xHigh architecture review of `dc36ffe2...f1372c3e` | COMPLETE / FAIL — UNIVERSAL EDGE CLASSIFICATION INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
-| POSTP1-001V2A-PAD1 | define and freeze the closed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` proof architecture at `9f6af179...7ac86295` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `9f6af179...7ac86295` | READY / NOT STARTED |
+| POSTP1-001V2A-PAD1 | define and freeze the closed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` proof architecture at `9f6af179...7ac86295` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `9f6af179...7ac86295` | COMPLETE / FAIL — CLOSED GRAMMAR COMPLETENESS INVALID; CORRECTED PROOF ARCHITECTURE REQUIRED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
