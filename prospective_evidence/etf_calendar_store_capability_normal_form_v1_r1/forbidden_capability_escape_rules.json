@@ -1,0 +1,29 @@
+{
+  "aliases_permitted": false,
+  "bare_documented_or_undocumented_method_extraction_permitted": false,
+  "closure_generator_or_comprehension_capture_permitted": false,
+  "contract_version": "ETF_CALENDAR_FORBIDDEN_CAPABILITY_ESCAPE_RULES_V1_R1",
+  "definition_sha256": "c5295128af1bfbfe3f741f588599f0db0151a5363abeda905149ec98938e9aa3",
+  "dynamic_attribute_authority_permitted": false,
+  "forbidden_categories": [
+    "FORBIDDEN_STORE_ATTRIBUTE_EXTRACTION",
+    "FORBIDDEN_UNKNOWN_FORWARD",
+    "FORBIDDEN_STARRED_FORWARD",
+    "FORBIDDEN_CONTAINER_ESCAPE",
+    "FORBIDDEN_RETURN_OR_YIELD",
+    "FORBIDDEN_OBJECT_OR_SUBSCRIPT_STORAGE",
+    "FORBIDDEN_NESTED_SCOPE_CAPTURE",
+    "FORBIDDEN_DYNAMIC_ACCESS",
+    "FORBIDDEN_OTHER_STORE_USE",
+    "FORBIDDEN_STORE_ROOT_REBIND_OR_UNBIND"
+  ],
+  "implementation_private_authoritative_state": [
+    "_records",
+    "_envelopes"
+  ],
+  "object_or_subscript_storage_permitted": false,
+  "repository_owned_access_outside_CalendarEvidenceStore_permitted": false,
+  "return_yield_or_container_escape_permitted": false,
+  "starred_store_forwarding_permitted": false,
+  "unsupported_use_may_be_masked_by_valid_route": false
+}

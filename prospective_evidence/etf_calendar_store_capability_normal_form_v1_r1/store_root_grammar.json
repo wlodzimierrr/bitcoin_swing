@@ -1,0 +1,19 @@
+{
+  "annotated_store_kwargs_permitted": false,
+  "annotated_store_varargs_permitted": false,
+  "container_derived_stores_permitted": false,
+  "contract_version": "ETF_CALENDAR_STORE_ROOT_GRAMMAR_V1_R1",
+  "definition_sha256": "810f1b56e333546779ffdcd6a70d7c89a94109c4af9033534b8152cd17e0170c",
+  "local_store_construction_permitted": false,
+  "naming_heuristics_permitted": false,
+  "nested_annotated_owners_permitted": false,
+  "normal_form": "DIRECT_IMMUTABLE_STORE_PARAMETER_NORMAL_FORM",
+  "ordinary_parameter_kinds": [
+    "POSITIONAL_ONLY",
+    "POSITIONAL_OR_KEYWORD",
+    "KEYWORD_ONLY"
+  ],
+  "other_roots_or_derivations": "FAIL_UNTIL_EXPLICIT_REVIEWED_AUTHORITY_CHANGE",
+  "supported_root": "ORDINARY_PARAMETER_EXPLICITLY_ANNOTATED_CalendarEvidenceStore",
+  "transparent_aliases_permitted": false
+}

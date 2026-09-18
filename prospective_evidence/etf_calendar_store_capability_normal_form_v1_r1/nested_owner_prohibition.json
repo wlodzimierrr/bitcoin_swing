@@ -1,0 +1,9 @@
+{
+  "contract_version": "ETF_CALENDAR_NESTED_OWNER_PROHIBITION_V1",
+  "definition_sha256": "7e07ffb953949893a831e035b21b17a4fab0cb5cc7302573cda442bcb1a7c6b5",
+  "nested_AsyncFunctionDef_with_annotated_store_parameter": "FORBIDDEN",
+  "nested_FunctionDef_with_annotated_store_parameter": "FORBIDDEN",
+  "nested_store_capture": "FORBIDDEN",
+  "rootless_outer_can_hide_nested_owner": false,
+  "scan_scope": "MODULE_WIDE_INDEPENDENT_OF_OUTER_STORE_ROOTS"
+}

@@ -1,0 +1,21 @@
+{
+  "contract_version": "ETF_CALENDAR_DIRECT_BODY_DEPENDENCY_RULE_V1_PAD1_R1",
+  "definition_sha256": "e30e1f275403aa6300e40c4fd2dea2843925cbe70917b7e57f3c5da22df74efe",
+  "exact_dependency_assertion": "assert_trusted_persistence_dependency",
+  "proof": "DIRECT_EXECUTABLE_AST_CALL_IN_EACH_REQUIRED_BODY",
+  "required_direct_bodies": [
+    "CalendarEvidenceStore.put",
+    "CalendarEvidenceStore.get",
+    "CalendarEvidenceStore.records",
+    "CalendarEvidenceStore.envelopes",
+    "collect_official_calendar"
+  ],
+  "startup_check_replaces_five_direct_checks": false,
+  "startup_self_check": [
+    "CALENDAR_AUTHORITY_PARENT",
+    "TRUSTED_PERSISTENCE_DEPENDENCY_CHILD",
+    "EXACT_CERTIFIED_TRUSTED_PERSISTENCE_IDENTITY",
+    "CERTIFIED_PRODUCTION_SURFACE_PROOF_IDENTITY"
+  ],
+  "wrapper_installed_guards_permitted": false
+}

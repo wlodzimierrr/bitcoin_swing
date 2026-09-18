@@ -1,0 +1,27 @@
+{
+  "alias_propagation": false,
+  "arbitrary_control_flow_graph_proof": false,
+  "completeness": "ONE_IMMUTABLE_ANNOTATED_ROOT_BINDING_PLUS_CLOSED_DIRECT_USE_SYNTAX",
+  "contract_version": "ETF_CALENDAR_PROOF_ORDER_AND_COMPLETENESS_V1_R1",
+  "decision_certifies_current_production_conformance": false,
+  "decision_certifies_grammar": true,
+  "definition_sha256": "eabdd10f429307698331c17e4de44e57b0534b56998708ecdda28d947184309d",
+  "future_unsupported_syntax": "FAIL_UNTIL_EXPLICIT_REVIEWED_AUTHORITY_CHANGE",
+  "known_future_implementation_delta": "COMMON_ETF_SESSION_STATUS_GENERATOR_CAPTURE_OF_EVIDENCE_STORE_MUST_BE_REWRITTEN_WITHOUT_SEMANTIC_PIT_ORDER_OR_EXCEPTION_DRIFT",
+  "models_all_possible_python_programs": false,
+  "proof_order": [
+    "REJECT_ALL_NESTED_ANNOTATED_STORE_OWNERS_MODULE_WIDE",
+    "DISCOVER_TOP_LEVEL_ORDINARY_ANNOTATED_STORE_ROOTS",
+    "REJECT_ANNOTATED_STORE_VARIADICS",
+    "AUDIT_IMMUTABLE_ROOT_BINDING_DISCIPLINE",
+    "CLASSIFY_EVERY_ROOT_USE",
+    "REJECT_EVERY_FORBIDDEN_USE",
+    "RECONCILE_DISCOVERED_AND_FROZEN_OWNER_REGISTRY",
+    "EXTRACT_DIRECT_API_AND_ENUMERATED_OWNER_EDGES",
+    "REJECT_OWNER_CYCLES",
+    "PROVE_EVERY_OWNER_PATH_TERMINATES_AT_DOCUMENTED_API",
+    "VERIFY_DIRECT_DEPENDENCY_BODY_AND_STARTUP_CONTRACTS"
+  ],
+  "reaching_definition_analysis": false,
+  "ssa_construction": false
+}

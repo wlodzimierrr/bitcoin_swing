@@ -1,0 +1,26 @@
+{
+  "binding_audit_precedes_use_and_graph_audits": true,
+  "contract_version": "ETF_CALENDAR_STORE_BINDING_DISCIPLINE_V1",
+  "definition_sha256": "55fc1d7b1d9e21cd888b019e33006091774b8a469511a49b6494cd5dfc40374f",
+  "forbidden_same_scope_binding_or_unbinding_forms": [
+    "Assign",
+    "AnnAssign",
+    "AugAssign",
+    "NamedExpr",
+    "For",
+    "AsyncFor",
+    "With",
+    "AsyncWith",
+    "ExceptHandler",
+    "MatchCapture",
+    "Import",
+    "ImportFrom",
+    "FunctionDef",
+    "AsyncFunctionDef",
+    "ClassDef",
+    "Del"
+  ],
+  "root_binding": "FUNCTION_PARAMETER_DECLARATION_ONLY",
+  "root_is_immutable": true,
+  "value_flow_after_rebinding_analyzed": false
+}

@@ -1,0 +1,43 @@
+{
+  "authorization": {
+    "calendar_implementation_may_begin": false,
+    "independent_final_proof_architecture_xhigh_review_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "calendar_science_changed": false,
+    "models_arbitrary_python_dataflow": false,
+    "nested_annotated_owner_can_be_hidden_by_rootless_outer": false,
+    "ordinary_explicitly_annotated_immutable_roots_only": true,
+    "root_rebinding_or_unbinding_permitted": false,
+    "starred_store_forwarding_permitted": false,
+    "store_aliases_permitted": false,
+    "store_variadics_permitted": false
+  },
+  "certified_dependency_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "child_definition_sha256": {
+    "direct_body_dependency_rule": "e30e1f275403aa6300e40c4fd2dea2843925cbe70917b7e57f3c5da22df74efe",
+    "forbidden_capability_escape_rules": "c5295128af1bfbfe3f741f588599f0db0151a5363abeda905149ec98938e9aa3",
+    "nested_owner_prohibition": "7e07ffb953949893a831e035b21b17a4fab0cb5cc7302573cda442bcb1a7c6b5",
+    "permitted_direct_store_use": "ec54c0cc8076c02641b5cfa2016c3b9d8a5dee96d4394781dd688cbd2d91d81e",
+    "proof_order_and_completeness_definition": "eabdd10f429307698331c17e4de44e57b0534b56998708ecdda28d947184309d",
+    "replay_owner_graph_rule": "fd50b37645833bcc18e19490a5472dd3c654882f194f3b584e250728b646b6e6",
+    "science_lineage_and_safety": "3e78204b4e16ef209fd9d1258891af398fc4b13cd123250941f81fdded0532a6",
+    "store_binding_discipline": "55fc1d7b1d9e21cd888b019e33006091774b8a469511a49b6494cd5dfc40374f",
+    "store_root_grammar": "810f1b56e333546779ffdcd6a70d7c89a94109c4af9033534b8152cd17e0170c",
+    "trusted_process_boundary_reference": "1e6357697410af9ac80aa9b5d3ecfd4bf89da796c886ad7d6054f448ff44fc6a"
+  },
+  "decision_version": "ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1",
+  "definition_sha256": "7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b",
+  "failed_parent_sha256": "9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295",
+  "final_classification": "ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1_READY_FOR_FINAL_XHIGH_REVIEW",
+  "material_child_count": 10,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-PAD1-R1",
+  "proof_strategy": "DIRECT_IMMUTABLE_STORE_PARAMETER_NORMAL_FORM",
+  "required_review": "POSTP1-002V2A-PAD1-R1_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}
