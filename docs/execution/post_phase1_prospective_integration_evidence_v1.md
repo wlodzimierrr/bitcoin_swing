@@ -3416,7 +3416,7 @@ explained skips because no production behavior changed.
 
 ## POSTP1-001V2A-PAD2 — `DEFINE_ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
 **Dependency:** POSTP1-002V2A-PAD1-R1 failure,
 `ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -3551,6 +3551,50 @@ implementation authorizes only POSTP1-002V2A-PAD2 independent exact-hash xHigh
 proof-architecture review. Only that review PASS may authorize the final ETF
 calendar implementation/refreeze ticket.
 
+### Independent proof-architecture review result
+
+POSTP1-002V2A-PAD2 independently reproduced exact parent
+`b5ca36bf...b2a8abe9`, all eleven material children and their parent bindings,
+the certified trusted-persistence dependency `02f96203...1a12772`, the exact
+CPython 3.12.14 identity, all 29 named name-referencing opcodes, reserved slot
+148 and the 64-entry specialization table. Deoptimized inspection exposed a
+quickened root mutation as base `STORE_FAST`. `TypeAlias`, all reviewed
+definition-time assignment expressions, ordinary binders, detached witnesses,
+owner-code collisions, root cells, dynamic execution, cycles and non-terminating
+graph routes refused as required. The exact eleven-owner production census has
+zero root write/clear/delete findings, the one expected
+`common_etf_session_status` cell capture and exactly five `globals()` namespace
+findings. All twelve requested material mutations moved both the owning child
+and parent hashes; artifact reproduction, child-order, three hash seeds,
+alternate cwd and fresh output also passed.
+
+The candidate nevertheless failed with
+`FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE`. The whole-module identity scan
+at `owner_name_identity_findings` recognizes direct owner-name stores/deletes,
+direct `STORE_ATTR`/`DELETE_ATTR` writes and a finite list of namespace-reach
+names. Ordinary project-owned source using either
+`sys.modules[__name__].__dict__["owner"] = replacement` or
+`owner.__setattr__("__code__", replacement.__code__)` produces none of those
+recognized forms. Both sources pass the complete PAD2 compiled, dynamic, AST,
+census and graph pipeline, while isolated execution confirms that each replaces
+what the reviewed owner executes. `object.__setattr__` and
+`type(owner).__setattr__` equivalents evade it too. Thus the module-owner
+guarantee depends on an incomplete, open-ended enumeration of Python namespace
+and function-mutation syntax even though the compiled root-binding witness
+itself is coherent and bounded.
+
+The exact candidate remains immutable, non-certified, unused and at zero
+observations. No review fix, proof artifact change or production change was
+made; adding more reflection names would not close the architectural defect.
+Do not automatically create POSTP1-001V2A-PAD2-R1 or start I2. An explicit
+bounded proof-architecture decision is required. Calendar
+implementation/refreeze, POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection
+remain blocked; trusted persistence, BTC-019 and Epic T remain unchanged. The
+focused PAD2 suite passed 155 tests and the combined architecture/calendar/
+trusted-persistence regression passed 583 tests. The prior full-suite baseline
+remains 5,202 passed with three explained skips because production behavior did
+not change.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3600,7 +3644,7 @@ calendar implementation/refreeze ticket.
 | POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `9f6af179...7ac86295` | COMPLETE / FAIL — CLOSED GRAMMAR COMPLETENESS INVALID; CORRECTED PROOF ARCHITECTURE REQUIRED |
 | POSTP1-001V2A-PAD1-R1 | narrow the corrected direct immutable-parameter proof architecture at `7ef114fe...8d17b` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH REVIEW |
 | POSTP1-002V2A-PAD1-R1 | independent exact-hash final xHigh proof-architecture review of `7ef114fe...8d17b` | COMPLETE / FAIL — PYTHON 3.12 BINDING CENSUS INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
-| POSTP1-001V2A-PAD2 | define and freeze the new `ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` proof architecture at `b5ca36bf...b2a8abe9` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | NOT STARTED |
+| POSTP1-001V2A-PAD2 | define and freeze the new `ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` proof architecture at `b5ca36bf...b2a8abe9` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | COMPLETE / FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE; EXPLICIT BOUNDED PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
