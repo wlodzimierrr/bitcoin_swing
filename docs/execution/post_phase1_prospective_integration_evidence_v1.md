@@ -3414,6 +3414,142 @@ suite passed 81 tests and the combined architecture/calendar regression passed
 337 tests. The prior full-suite baseline remains 5,202 passed with three
 explained skips because no production behavior changed.
 
+## POSTP1-001V2A-PAD2 — `DEFINE_ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Dependency:** POSTP1-002V2A-PAD1-R1 failure,
+`ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** POSTP1-002V2A-PAD2, one independent exact-hash xHigh
+proof-architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_compiled_binding_witness_v1/`
+**Decision hash:** `b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9`
+
+### New proof architecture
+
+This is an explicit new proof-architecture decision, not a PAD1 revision. The
+failed `ETF_CALENDAR_STORE_CAPABILITY_NORMAL_FORM_V1` candidates
+`9f6af179...7ac86295` and `7ef114fe...8d17b` are untouched, non-certified,
+unused and at zero observations, and no PAD1-R2 was created.
+
+The narrow PAD1-R1 coding grammar is retained in full: the only scientific root
+is an ordinary positional-only, positional-or-keyword or keyword-only parameter
+explicitly annotated `CalendarEvidenceStore`; aliases, annotated store
+variadics, starred forwarding, local construction, container derivation and
+nested annotated owners stay forbidden; a root may only receive a direct `put`,
+`get`, `records` or `envelopes` call or be a non-starred argument to an exact
+frozen replay owner. What is removed is the failed claim that a hand-maintained
+census of `ast` binding nodes is the proof of root immutability. The source
+binding visitor is demoted to diagnostics, early failure, reason codes and
+regression localization, and the frozen material states explicitly that a
+missing AST diagnostic can never make an actual compiled root write acceptable.
+
+Root immutability is now proven as `CLOSED_AST_USE_GRAMMAR_PLUS_FROZEN_CPYTHON_BINDING_WITNESS`
+against the exact compiled code object of each replay owner under frozen CPython
+`3.12.14` (`magic cb0d0d0a`, `cache_tag cpython-312`, `hexversion 0x030C0EF0`).
+Any runtime or compiler identity mismatch refuses scientific authority. The
+reviewed source is compiled with `dont_inherit=True, optimize=0` and never
+imported or executed; cached bytecode is never trusted. The frozen 29-name
+root-binding opcode policy is checked mechanically against the interpreter's own
+`haslocal | hasfree | hasname` tables, their opcode numbers, the single reserved
+unnamed slot `148`, and the 64-entry specialization table; anything unexpected
+requires a new proof architecture rather than a guess. Instructions are read
+deoptimized, so quickening cannot hide a root write.
+
+Each owner is identified by exactly one code object with `co_qualname` equal to
+the top-level name, `co_firstlineno` equal to the compiler's definition line
+(the first decorator line when decorated) and the root in its declared-parameter
+slice, so a same-named nested function can never be substituted. The module-level
+owner name must still denote that definition: owners may not be decorated, each
+owner name is bound exactly once in the module code object, and, anywhere in the
+module's whole code-object tree, a later rebinding or deletion of an owner name,
+a write to a live function object's `__code__`/`__defaults__`/`__closure__`/
+`__globals__`/`__dict__`, and any reach into the module namespace through
+`globals`, `vars`, `locals`, `setattr`, `delattr`, `exec`, `eval`, `compile` or
+`__import__` all refuse. Those checks descend into nested code objects, so a
+substitution hidden one call frame deep is refused too.
+
+The primary binding rule is structural: a conforming root may never be a cell
+variable of its owner. A cell is a first-class object that any capturing
+function exposes through `__closure__`, so writing `cell_contents` would rebind
+the root without emitting a single root-binding instruction; forbidding the cell
+removes that entire escape class by construction instead of by enumerating
+escape attributes. The rule is at least as strict as the source grammar's
+unconditional nested-capture prohibition and, in three known families — a bare
+`nonlocal` declaration naming the root, a PEP 695 lazy type-alias or
+type-parameter scope reading the root, and a statically dead nested scope that
+still cells the root — strictly stricter; that over-refusal is deliberate and
+fail closed, and the decision does not claim the two layers accept the same
+sources. On top of
+it, no instruction in the owner's own code object may write, clear or delete the
+root after frame-entry parameter establishment, and, as defence in depth, no
+nested code object holding the root as a free variable of the owner's cell may
+`STORE_DEREF` or `DELETE_DEREF` it; a class body's same-named `STORE_NAME` is a
+different namespace and is never an owner-root write, and a nested function
+body's own local assignment is not an outer-root write. `exec`, `eval`,
+`compile`, `__import__`, `getattr`/`setattr`/`delattr`, `globals`/`locals`/`vars`,
+`ctypes`, `gc`, `inspect`, `sys` and the frame/cell reflection attribute surface
+are forbidden inside replay owners as a conservative production rule, explicitly
+not as a completeness claim; frame-local mutation, debugger mutation and
+arbitrary reflective namespace manipulation remain outside the trusted-process
+threat model.
+
+The frozen proof order verifies compiler identity, compiles without executing,
+identifies the exact owner code objects, discovers annotated roots, runs the
+binding witness, rejects any root write, and only then runs the closed AST use
+grammar, the eleven-owner census, edge extraction, cycle rejection, termination
+and the direct-body/startup contracts. There is no graph authority before the
+binding witness, and a disagreement between the AST and compiled layers always
+fails closed. The architecture claims exactly three separate guarantees — the
+compiled witness proves the root is not rebound or deleted, the AST normal form
+proves permitted uses, the graph proves replay-route closure — and never that
+bytecode proves arbitrary program semantics. The witness carries the reviewed
+source hash, so a witness generated from other source cannot certify the module.
+
+### Evidence and authorization
+
+Eleven mechanically enumerated material children bind the trusted-process
+boundary, proof-interpreter identity, root/direct-use grammar, compiled binding
+witness, owner code-object identity, dynamic-execution prohibition, nested-owner
+and capability-escape rules, replay graph, direct-body dependency rule, proof
+order/completeness and science/lineage/safety. Two adversarial probing rounds
+against the frozen interpreter found and closed seven real defects: the
+`__closure__`/`cell_contents` cell escape, `ctypes`/`settrace` frame write-back,
+module-level owner-name substitution by decorator or `globals()`, the same
+substitution hidden one call frame deep, module-level `exec`, a live
+`owner.__code__` swap, and class-body `STORE_NAME` misread as an owner-cell
+write; the false "localsplus name tuples are disjoint" premise was corrected as
+well. The second round independently reconfirmed the opcode-table integrity and
+that a deoptimized scan is stable under quickening.
+
+Current production is binding-proof compatible: none of the eleven owners
+contains a root write, clear or delete, and none reaches a dynamic or reflective
+authority escape. The single compiled-layer finding is the known
+`common_etf_session_status` generator-expression capture of `evidence_store`,
+which exposes that root as a closure cell; the closed AST grammar refuses the
+same construct, so both layers refuse one and the same known use and the
+calendar implementation stays blocked on the rewrite that was already required.
+Production additionally reaches its own module namespace through `globals()` in
+five scopes: `_install_exact_dependency_guards`, which installs the wrapper
+guard the frozen direct-body dependency rule already forbids, and
+`_semantic_ast_sha256`, `_children`, `write_artifacts` and `restore_artifacts`,
+which dispatch artifact builders by name and must become an explicit registry.
+The exact five are frozen in the decision and verified mechanically. Both the
+cell-capture refusal and the module-namespace findings are deliberate, reported
+strengthenings of the expected result, which anticipated the compiled layer
+passing current production silently.
+
+Trusted persistence `02f96203...1a12772`, the trusted-process boundary, the five
+direct dependency-body requirements, startup identity checks, calendar science
+and all prior lineages are unchanged. No observation was collected and no real
+Stage-B evaluation ran.
+
+Final classification is
+`ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1_READY_FOR_XHIGH_REVIEW`. Successful
+implementation authorizes only POSTP1-002V2A-PAD2 independent exact-hash xHigh
+proof-architecture review. Only that review PASS may authorize the final ETF
+calendar implementation/refreeze ticket.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3463,5 +3599,7 @@ explained skips because no production behavior changed.
 | POSTP1-002V2A-PAD1 | independent exact-hash xHigh proof-architecture review of `9f6af179...7ac86295` | COMPLETE / FAIL — CLOSED GRAMMAR COMPLETENESS INVALID; CORRECTED PROOF ARCHITECTURE REQUIRED |
 | POSTP1-001V2A-PAD1-R1 | narrow the corrected direct immutable-parameter proof architecture at `7ef114fe...8d17b` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH REVIEW |
 | POSTP1-002V2A-PAD1-R1 | independent exact-hash final xHigh proof-architecture review of `7ef114fe...8d17b` | COMPLETE / FAIL — PYTHON 3.12 BINDING CENSUS INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
+| POSTP1-001V2A-PAD2 | define and freeze the new `ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` proof architecture at `b5ca36bf...b2a8abe9` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | NOT STARTED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

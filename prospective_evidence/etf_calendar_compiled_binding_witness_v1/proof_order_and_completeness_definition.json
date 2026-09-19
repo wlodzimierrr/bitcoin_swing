@@ -1,0 +1,53 @@
+{
+  "alias_propagation": false,
+  "arbitrary_control_flow_graph_proof": false,
+  "bytecode_proves_all_program_semantics": false,
+  "completeness": "FROZEN_CPYTHON_COMPILED_ROOT_BINDING_WITNESS_PLUS_CLOSED_DIRECT_USE_SYNTAX",
+  "contract_version": "ETF_CALENDAR_PROOF_ORDER_AND_COMPLETENESS_V1_PAD2",
+  "current_production_expected_result": {
+    "ast_direct_use_grammar": "NON_CONFORMING",
+    "blocking_use": "COMMON_ETF_SESSION_STATUS_GENERATOR_EXPRESSION_CAPTURE_OF_EVIDENCE_STORE",
+    "both_layers_refuse_the_same_single_construct": true,
+    "calendar_implementation": "BLOCKED",
+    "compiled_binding_witness": "BINDING_PROOF_COMPATIBLE",
+    "module_namespace_reach_sites": [
+      "<module>:_children:globals",
+      "<module>:_install_exact_dependency_guards:globals",
+      "<module>:_semantic_ast_sha256:globals",
+      "<module>:restore_artifacts:globals",
+      "<module>:write_artifacts:globals"
+    ],
+    "root_write_clear_or_delete_findings": 0,
+    "unexpected_root_rebinding": "NONE"
+  },
+  "decision_certifies_current_production_conformance": false,
+  "decision_certifies_grammar": true,
+  "definition_sha256": "56dbbf68ebd90185f76e6f9444a45973e50c02a74ef1045d67093e4f9003dc06",
+  "future_unsupported_syntax": "FAIL_UNTIL_EXPLICIT_REVIEWED_AUTHORITY_CHANGE",
+  "known_future_implementation_delta": "COMMON_ETF_SESSION_STATUS_GENERATOR_CAPTURE_OF_EVIDENCE_STORE_MUST_BE_REWRITTEN_WITHOUT_SEMANTIC_PIT_ORDER_OR_EXCEPTION_DRIFT",
+  "manually_maintained_ast_node_list_frozen_as_complete_python_312_binding_set": false,
+  "models_all_possible_python_programs": false,
+  "proof_order": [
+    "VERIFY_FROZEN_CPYTHON_COMPILER_IDENTITY",
+    "COMPILE_REVIEWED_SOURCE_WITHOUT_EXECUTION",
+    "IDENTIFY_EXACT_TOP_LEVEL_REPLAY_OWNER_CODE_OBJECTS",
+    "DISCOVER_ORDINARY_EXPLICITLY_ANNOTATED_STORE_ROOTS",
+    "RUN_COMPILED_BINDING_WITNESS_FOR_EVERY_ROOT",
+    "REJECT_ANY_ROOT_WRITE_CLEAR_OR_DELETE",
+    "RUN_CLOSED_AST_STORE_USE_GRAMMAR",
+    "REJECT_NESTED_ANNOTATED_OWNERS_AND_CAPABILITY_ESCAPES",
+    "RECONCILE_EXACT_ELEVEN_OWNER_CENSUS",
+    "EXTRACT_DIRECT_API_AND_ENUMERATED_OWNER_EDGES",
+    "REJECT_OWNER_CYCLES",
+    "PROVE_EVERY_OWNER_PATH_TERMINATES_AT_DOCUMENTED_STORE_API",
+    "VERIFY_DIRECT_DEPENDENCY_BODY_AND_STARTUP_CONTRACTS"
+  ],
+  "reaching_definition_analysis": false,
+  "separate_guarantees": {
+    "ast_normal_form": "PERMITTED_STORE_USES_ONLY",
+    "compiled_binding_witness": "FROZEN_ROOT_IS_NOT_REBOUND_OR_DELETED",
+    "replay_owner_graph": "REPLAY_ROUTE_CLOSURE"
+  },
+  "source_ast_binding_visitor_is_the_scientific_proof_of_root_immutability": false,
+  "ssa_construction": false
+}

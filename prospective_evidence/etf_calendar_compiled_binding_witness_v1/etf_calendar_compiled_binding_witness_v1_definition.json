@@ -1,0 +1,79 @@
+{
+  "authorization": {
+    "calendar_implementation_may_begin": false,
+    "independent_proof_architecture_xhigh_review_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "calendar_science_changed": false,
+    "closure_cell_or_frame_reflection_permitted_in_replay_owners": false,
+    "compiler_identity_is_scientific_proof_material": true,
+    "definition_time_named_expressions_refused_in_the_outer_owner": true,
+    "dynamic_execution_in_replay_owners_permitted": false,
+    "hand_maintained_ast_binder_census_is_the_completeness_proof": false,
+    "module_level_owner_name_substitution_permitted": false,
+    "nested_body_local_assignment_misclassified_as_outer_write": false,
+    "proves_arbitrary_python_semantics": false,
+    "root_immutability_proven_against_exact_compiled_owner_code_object": true,
+    "root_may_be_a_cell_variable_of_a_conforming_owner": false,
+    "starred_store_forwarding_permitted": false,
+    "store_aliases_permitted": false,
+    "store_variadics_permitted": false,
+    "type_statement_root_replacement_refused_before_graph_authority": true
+  },
+  "certified_dependency_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "child_definition_sha256": {
+    "compiled_binding_witness_definition": "109b1ca3183d60adccca8b81d4ab0beeb00731597a364e1ba8798188fe2f1cfe",
+    "direct_body_dependency_rule": "dabfc38e81c8954109ee6b16bb7c36f99e379803c803871726da4bd40eb25397",
+    "dynamic_execution_prohibition": "234335b6ac592c29b677a758b557dffeaf6e89ea5e4fd242f69e2bb4a393b282",
+    "nested_owner_and_capability_escape_rule": "5b8804cadce5ab623513015cb6cb10077dd7a8abaeea042de0ff90bf44119368",
+    "owner_code_object_identity_rule": "85f005c242944dffd841115fede91c6123ac723d942c63db181d2968d111ade7",
+    "proof_interpreter_identity": "5a02dd7a04b0bca51711db59fe1af1382b6209cb9d65f337461cc8386d7c4669",
+    "proof_order_and_completeness_definition": "56dbbf68ebd90185f76e6f9444a45973e50c02a74ef1045d67093e4f9003dc06",
+    "replay_owner_graph_rule": "e0bad68618173fe63f7de3e3a954f945b8d4d168e0cf053582a2b3ba0bacfab2",
+    "science_lineage_and_safety": "2625d1d593f62a740be3a9c7f3849b5545fe6de987155ba9c30dfddcf1d8d830",
+    "store_root_and_direct_use_grammar": "bbd8a39c2a1977b2d18f4fa81d4f36ec07e033a0faa75ba32f2c15c8576b77cc",
+    "trusted_process_boundary_reference": "480602609f4966e2a7b33a8590d92455257ebcd3786acdb8e1941b297b7e857d"
+  },
+  "current_production_expected_result": {
+    "ast_direct_use_grammar": "REFUSED",
+    "blocking_owner": "common_etf_session_status",
+    "blocking_root": "evidence_store",
+    "both_layers_refuse_the_same_single_construct": true,
+    "compiled_binding_witness": "BINDING_PROOF_COMPATIBLE",
+    "expected_generator_blocker": true,
+    "module_namespace_reach_sites": [
+      "<module>:_children:globals",
+      "<module>:_install_exact_dependency_guards:globals",
+      "<module>:_semantic_ast_sha256:globals",
+      "<module>:restore_artifacts:globals",
+      "<module>:write_artifacts:globals"
+    ],
+    "root_write_clear_or_delete_findings": 0,
+    "unexpected_root_rebinding": "NONE"
+  },
+  "decision_version": "ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1",
+  "definition_sha256": "b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9",
+  "failed_parent_sha256": "7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b",
+  "final_classification": "ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1_READY_FOR_XHIGH_REVIEW",
+  "material_child_count": 11,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-PAD2",
+  "proof_interpreter": {
+    "cache_tag": "cpython-312",
+    "hexversion": 51121904,
+    "implementation_name": "cpython",
+    "magic_number_hex": "cb0d0d0a",
+    "version_major": 3,
+    "version_micro": 14,
+    "version_minor": 12,
+    "version_releaselevel": "final",
+    "version_serial": 0
+  },
+  "proof_strategy": "CLOSED_AST_USE_GRAMMAR_PLUS_FROZEN_CPYTHON_BINDING_WITNESS",
+  "required_review": "POSTP1-002V2A-PAD2_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}

@@ -1,0 +1,18 @@
+{
+  "arbitrary_dynamic_python_mutation_proved": false,
+  "arbitrary_hostile_in_process_manipulation_in_scope": false,
+  "contract_version": "ETF_CALENDAR_TRUSTED_PROCESS_BOUNDARY_REFERENCE_V1_PAD2",
+  "definition_sha256": "480602609f4966e2a7b33a8590d92455257ebcd3786acdb8e1941b297b7e857d",
+  "failed_boundary_lineage": [
+    "0c237c1b217b1fd406ec3967309774293c01d3e27574b9f4a7d1b9a0e887b55d",
+    "a7d2b08741080494cc4ca0269bf21e28e631c7f2e70887bcb0e1beb302534dd0",
+    "dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e",
+    "9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295",
+    "7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b"
+  ],
+  "hostile_same_process_mutation_resistance_required": false,
+  "hostile_same_process_resistance_if_later_required": "PROCESS_ISOLATION",
+  "production_python_process_trusted": true,
+  "project_owned_scientific_bypasses_in_scope": true,
+  "wrapper_metaclass_or_source_hash_substitutes_for_isolation": false
+}

@@ -1,0 +1,34 @@
+{
+  "aliases_or_variadics_reintroduced_by_this_decision": false,
+  "bound_method_extraction_permitted": false,
+  "closure_generator_or_comprehension_capture_permitted": false,
+  "contract_version": "ETF_CALENDAR_NESTED_OWNER_AND_CAPABILITY_ESCAPE_RULE_V1_PAD2",
+  "definition_sha256": "5b8804cadce5ab623513015cb6cb10077dd7a8abaeea042de0ff90bf44119368",
+  "dynamic_attribute_authority_permitted": false,
+  "forbidden_categories": [
+    "FORBIDDEN_STORE_ATTRIBUTE_EXTRACTION",
+    "FORBIDDEN_UNKNOWN_FORWARD",
+    "FORBIDDEN_STARRED_FORWARD",
+    "FORBIDDEN_CONTAINER_ESCAPE",
+    "FORBIDDEN_RETURN_OR_YIELD",
+    "FORBIDDEN_OBJECT_OR_SUBSCRIPT_STORAGE",
+    "FORBIDDEN_NESTED_SCOPE_CAPTURE",
+    "FORBIDDEN_DYNAMIC_ACCESS",
+    "FORBIDDEN_OTHER_STORE_USE",
+    "FORBIDDEN_STORE_ROOT_REBIND_OR_UNBIND"
+  ],
+  "implementation_private_authoritative_state": [
+    "_records",
+    "_envelopes"
+  ],
+  "nested_AsyncFunctionDef_with_annotated_store_parameter": "FORBIDDEN",
+  "nested_FunctionDef_with_annotated_store_parameter": "FORBIDDEN",
+  "object_or_subscript_storage_permitted": false,
+  "repository_owned_access_outside_CalendarEvidenceStore_permitted": false,
+  "return_yield_or_container_escape_permitted": false,
+  "rootless_outer_can_hide_nested_owner": false,
+  "scan_scope": "MODULE_WIDE_INDEPENDENT_OF_OUTER_STORE_ROOTS",
+  "starred_store_forwarding_permitted": false,
+  "unknown_forwarding_permitted": false,
+  "unsupported_use_may_be_masked_by_valid_route": false
+}

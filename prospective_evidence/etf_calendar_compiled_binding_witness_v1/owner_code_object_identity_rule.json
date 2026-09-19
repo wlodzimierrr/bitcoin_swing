@@ -1,0 +1,35 @@
+{
+  "ambiguous_or_absent_code_object": "REFUSE",
+  "co_name_alone_is_sufficient": false,
+  "contract_version": "ETF_CALENDAR_OWNER_CODE_OBJECT_IDENTITY_RULE_V1_PAD2",
+  "decorated_replay_owner_definition": "REFUSE",
+  "definition_sha256": "85f005c242944dffd841115fede91c6123ac723d942c63db181d2968d111ade7",
+  "duplicate_or_conditional_module_level_definition": "REFUSE",
+  "function_object_mutation_anywhere_in_the_module_tree": "REFUSE",
+  "identity_components": [
+    "TOP_LEVEL_OWNER_NAME",
+    "CO_QUALNAME_EQUALS_TOP_LEVEL_OWNER_NAME",
+    "CO_FIRSTLINENO_EQUALS_AST_DECORATOR_OR_DEF_DEFINITION_LINE",
+    "ROOT_IS_A_DECLARED_PARAMETER_OF_THAT_CODE_OBJECT",
+    "EXACTLY_ONE_MATCHING_CODE_OBJECT"
+  ],
+  "module_level_owner_name_rebinding_or_deletion": "REFUSE",
+  "module_namespace_reach_anywhere_in_the_module_tree": "REFUSE",
+  "nested_function_with_the_same_simple_name_may_be_substituted": false,
+  "owner_count": 11,
+  "owner_discovery": "TOP_LEVEL_ORDINARY_EXPLICITLY_ANNOTATED_PARAMETERS_ONLY",
+  "owner_name_module_binding_count": 1,
+  "owners": [
+    "derive_normalized_schedule_from_official_source",
+    "venue_session_calendar_record",
+    "_verify_schedule",
+    "_verify_schedule_record",
+    "validate_normalized_schedule_against_source",
+    "_verify_venue_row",
+    "venue_session_status",
+    "common_etf_session_status",
+    "expected_etf_publication_dates",
+    "derive_etf_window_calendar",
+    "scientific_etf_flow_window"
+  ]
+}

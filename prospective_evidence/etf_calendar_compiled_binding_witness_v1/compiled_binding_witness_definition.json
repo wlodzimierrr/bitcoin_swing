@@ -1,0 +1,130 @@
+{
+  "ast_and_compiled_disagreement": "FAIL_CLOSED_NEVER_PERMISSIVE",
+  "ast_binding_visitor_role": [
+    "DIAGNOSTICS",
+    "EARLY_FAILURE",
+    "HUMAN_READABLE_REASON_CODES",
+    "REGRESSION_LOCALIZATION"
+  ],
+  "attribute_namespace_opcodes": [
+    "DELETE_ATTR",
+    "LOAD_ATTR",
+    "LOAD_METHOD",
+    "LOAD_SUPER_ATTR",
+    "LOAD_SUPER_METHOD",
+    "LOAD_ZERO_SUPER_ATTR",
+    "LOAD_ZERO_SUPER_METHOD",
+    "STORE_ATTR"
+  ],
+  "binding_witness_precedes_graph_authority": true,
+  "class_body_store_name_is_an_owner_root_write": false,
+  "contract_version": "ETF_CALENDAR_COMPILED_BINDING_WITNESS_DEFINITION_V1_PAD2",
+  "definition_sha256": "109b1ca3183d60adccca8b81d4ab0beeb00731597a364e1ba8798188fe2f1cfe",
+  "detached_witness_may_certify_another_source": false,
+  "does_not_prove_arbitrary_python_semantics": true,
+  "frame_entry_cell_opcodes": [
+    "MAKE_CELL"
+  ],
+  "frame_entry_parameter_establishment_exemption": "MAKE_CELL_ON_A_ROOT_IS_PERMITTED_ONLY_BEFORE_THE_FIRST_RESUME",
+  "frozen_opcode_numbers": {
+    "DELETE_ATTR": 96,
+    "DELETE_DEREF": 139,
+    "DELETE_FAST": 126,
+    "DELETE_GLOBAL": 98,
+    "DELETE_NAME": 91,
+    "IMPORT_FROM": 109,
+    "IMPORT_NAME": 108,
+    "LOAD_ATTR": 106,
+    "LOAD_CLOSURE": 136,
+    "LOAD_DEREF": 137,
+    "LOAD_FAST": 124,
+    "LOAD_FAST_AND_CLEAR": 143,
+    "LOAD_FAST_CHECK": 127,
+    "LOAD_FROM_DICT_OR_DEREF": 176,
+    "LOAD_FROM_DICT_OR_GLOBALS": 175,
+    "LOAD_GLOBAL": 116,
+    "LOAD_METHOD": 262,
+    "LOAD_NAME": 101,
+    "LOAD_SUPER_ATTR": 141,
+    "LOAD_SUPER_METHOD": 263,
+    "LOAD_ZERO_SUPER_ATTR": 265,
+    "LOAD_ZERO_SUPER_METHOD": 264,
+    "MAKE_CELL": 135,
+    "STORE_ATTR": 95,
+    "STORE_DEREF": 138,
+    "STORE_FAST": 125,
+    "STORE_FAST_MAYBE_NULL": 266,
+    "STORE_GLOBAL": 97,
+    "STORE_NAME": 90
+  },
+  "hand_maintained_ast_binder_census_is_the_proof": false,
+  "instruction_scan_deoptimizes_specialized_instructions": true,
+  "known_structural_over_refusal_families": [
+    "BARE_NONLOCAL_DECLARATION_NAMING_THE_ROOT",
+    "PEP_695_LAZY_TYPE_ALIAS_OR_TYPE_PARAM_SCOPE_READING_THE_ROOT",
+    "STATICALLY_DEAD_NESTED_SCOPE_THAT_STILL_CELLS_THE_ROOT"
+  ],
+  "missing_ast_diagnostic_can_accept_a_compiled_root_write": false,
+  "module_identity_finding_kinds": [
+    "MODULE_FUNCTION_OBJECT_MUTATION",
+    "MODULE_NAMESPACE_REACH",
+    "MODULE_OWNER_DECORATED",
+    "MODULE_OWNER_NAME_NOT_UNIQUELY_BOUND",
+    "MODULE_OWNER_NAME_REBOUND"
+  ],
+  "module_level_owner_name_identity_rule": "EXACTLY_ONE_MODULE_STORE_NAME_PER_OWNER_NO_DECORATOR_NO_LATER_REBIND_NO_FUNCTION_OBJECT_MUTATION_AND_NO_MODULE_NAMESPACE_REACH_ANYWHERE_IN_THE_REVIEWED_MODULE_CODE_OBJECT_TREE",
+  "nested_body_local_assignment_is_an_outer_root_write": false,
+  "opcode_policy_integrity_checked_against_interpreter_table": true,
+  "owner_cell_closure_rule": "NO_STORE_DEREF_OR_DELETE_DEREF_ON_THE_ROOT_IN_A_NESTED_CODE_OBJECT_THAT_HOLDS_THE_ROOT_AS_A_FREE_VARIABLE_OF_THE_OWNER_CELL",
+  "owner_cell_closure_rule_is_defence_in_depth": true,
+  "owner_scope_rule": "NO_ROOT_WRITE_CLEAR_OR_DELETE_INSTRUCTION_IN_THE_OWNER_OWN_CODE_OBJECT",
+  "proof_strategy": "CLOSED_AST_USE_GRAMMAR_PLUS_FROZEN_CPYTHON_BINDING_WITNESS",
+  "proves": "THE_FROZEN_ANNOTATED_STORE_ROOT_IS_NOT_REBOUND_CLEARED_OR_DELETED_BY_EXECUTABLE_CODE_IN_THE_OWNING_FUNCTION_COMPILED_SCOPE_UNDER_THE_FROZEN_CPYTHON_COMPILER",
+  "recursively_treats_all_nested_writes_as_outer_writes": false,
+  "reserved_unnamed_name_group_opcodes": [
+    148
+  ],
+  "root_clear_opcodes": [
+    "LOAD_FAST_AND_CLEAR"
+  ],
+  "root_delete_opcodes": [
+    "DELETE_DEREF",
+    "DELETE_FAST",
+    "DELETE_GLOBAL",
+    "DELETE_NAME"
+  ],
+  "root_may_be_a_cell_variable_of_the_owner": false,
+  "root_read_opcodes": [
+    "IMPORT_FROM",
+    "IMPORT_NAME",
+    "LOAD_CLOSURE",
+    "LOAD_DEREF",
+    "LOAD_FAST",
+    "LOAD_FAST_CHECK",
+    "LOAD_FROM_DICT_OR_DEREF",
+    "LOAD_FROM_DICT_OR_GLOBALS",
+    "LOAD_GLOBAL",
+    "LOAD_NAME"
+  ],
+  "root_target_rule": "INSTRUCTION_EFFECTIVE_TARGET_IDENTITY_EQUALS_ROOT_NAME",
+  "root_write_opcodes": [
+    "STORE_DEREF",
+    "STORE_FAST",
+    "STORE_FAST_MAYBE_NULL",
+    "STORE_GLOBAL",
+    "STORE_NAME"
+  ],
+  "source_identity_binding": [
+    "SOURCE_SHA256",
+    "COMPILED_ARTIFACT",
+    "OWNER_CODE_OBJECT_IDENTITY",
+    "BINDING_WITNESS_RESULT"
+  ],
+  "specialized_or_instrumented_opcode_may_hide_a_root_write": false,
+  "structural_root_cell_prohibition": "A_CONFORMING_ROOT_IS_AN_UNCAPTURED_FAST_LOCAL_SO_NO_FIRST_CLASS_CELL_OBJECT_FOR_THE_ROOT_EVER_EXISTS",
+  "structural_root_cell_prohibition_rationale": "A_CELL_IS_A_FIRST_CLASS_OBJECT_REACHABLE_THROUGH_A_CAPTURING_FUNCTION___closure___SO_cell_contents_COULD_REBIND_THE_ROOT_WITHOUT_ANY_ROOT_BINDING_INSTRUCTION",
+  "structural_rule_is_at_least_as_strict_as_the_source_nested_capture_prohibition": true,
+  "structural_rule_may_refuse_sources_the_source_grammar_accepts": true,
+  "structural_rule_over_refusal_is_fail_closed_and_deliberate": true,
+  "unexpected_or_unclassified_root_binding_opcode": "REFUSE_REQUIRE_NEW_PROOF_ARCHITECTURE"
+}

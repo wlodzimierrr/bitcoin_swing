@@ -126,7 +126,7 @@ FAIL — ETF CALENDAR SOURCE ORIGIN AUTHORITY INVALID
 POSTP1-002V2A-R2 review result =
 FAIL — ETF CALENDAR TRUSTED ORIGIN BOUNDARY INVALID
 
-ETF calendar authority execution classification =
+ETF calendar authority execution classification (superseded) =
 ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION
 
 ETF_CALENDAR_IN_PROCESS_AUTHORITY_BOUNDARY_V1 =
@@ -189,6 +189,37 @@ IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL XHIGH REVIEW
 
 POSTP1-002V2A-PAD1-R1 review result =
 FAIL — PYTHON 3.12 BINDING CENSUS INCOMPLETE
+
+ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1 =
+FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
+
+ETF calendar compiled binding-witness decision hash =
+b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9
+
+material child contracts bound by the compiled binding witness = 11
+
+compiled binding-witness proof strategy =
+CLOSED_AST_USE_GRAMMAR_PLUS_FROZEN_CPYTHON_BINDING_WITNESS
+
+frozen proof interpreter =
+CPython 3.12.14 / cache tag cpython-312 / bytecode magic cb0d0d0a
+
+POSTP1-001V2A-PAD2 result =
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH
+PROOF-ARCHITECTURE REVIEW
+
+POSTP1-002V2A-PAD2 = NOT STARTED
+
+current production compiled binding witness =
+NO ROOT WRITE, CLEAR OR DELETE IN ANY OF THE 11 OWNERS; the single compiled root
+refusal is the known common_etf_session_status generator-expression capture of
+evidence_store, which the closed AST grammar refuses as well, plus five frozen
+module-namespace globals() reach sites (_install_exact_dependency_guards,
+_semantic_ast_sha256, _children, write_artifacts, restore_artifacts) that the
+calendar implementation ticket must remove
+
+ETF calendar authority execution classification =
+ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1_READY_FOR_XHIGH_REVIEW
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -321,7 +352,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-18
+- **Last updated:** 2026-09-19
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -569,16 +600,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   immutable, non-certified, unused and at zero observations. Failed parent
   `9f6af179...7ac86295` and certified trusted persistence
   `02f96203...1a12772` remain unchanged
-- **Current BLOCKED tickets:** Do not create POSTP1-001V2A-PAD1-R2. The
-  proof architecture requires an explicit new decision before any calendar
-  implementation/refreeze; POSTP1-001V2R1,
-  POSTP1-003R3, POSTP1-004 and collection remain transitively blocked
-- **Next dependency-satisfied ticket:** None. An explicit proof-architecture
-  decision must define how the complete Python 3.12 binding census is closed;
-  do not automatically create POSTP1-001V2A-PAD1-R2
+- **Current BLOCKED tickets:** Calendar implementation/refreeze,
+  POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked until
+  POSTP1-002V2A-PAD2 passes. POSTP1-001V2A-PAD1-R2 was deliberately not created;
+  POSTP1-001V2A-PAD2 froze a new proof architecture instead
+- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD2, the independent
+  exact-hash xHigh proof-architecture review of
+  `b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9`
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked pending an explicit
-  proof-architecture decision and its successful independent review
+  POSTP1-003R3, POSTP1-004 and collection remain blocked pending that review
+  PASS
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
@@ -591,7 +622,19 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
-- **Latest proof-architecture validation:** POSTP1-002V2A-PAD1-R1 independently
+- **Latest proof-architecture validation:** POSTP1-001V2A-PAD2 froze
+  `ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` at
+  `b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9` with 11
+  material children, all parent-bound. The focused PAD2 suite is 155 passed and
+  the combined PAD2/PAD1-R1/PAD1, original/R1/R2 architecture-decision and
+  unchanged calendar regression set is 583 passed with the one explained
+  PostgreSQL opt-in skip. Three fresh-process `PYTHONHASHSEED` values, alternate
+  cwd/output, reversed child order, artifact restoration, thirteen material
+  mutations, compileall and diff checks passed on CPython 3.12.14. Two
+  adversarial rounds against the frozen interpreter found and closed seven real
+  witness defects before freezing. No production behaviour changed, so the
+  5,202/3 full-suite baseline remains current
+- **Superseded proof-architecture validation:** POSTP1-002V2A-PAD1-R1 independently
   reproduced exact parent `7ef114fe...8d17b`, all 10/10 material children and
   parent bindings, all ten requested mutation sensitivities, the exact 11-owner
   production census and the sole expected current-production generator-capture
