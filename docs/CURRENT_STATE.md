@@ -215,7 +215,7 @@ POSTP1-002V2A-PAD2 review result =
 FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE
 
 ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1 =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW
+FROZEN_PRE_DATA_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
 
 ETF calendar runtime owner-attestation decision hash =
 b8f8b92d4e3c1c80c4226f7101e71f95d125bd48afbfcde72e489408f6b5b996
@@ -228,27 +228,32 @@ COMPILED_ROOT_WITNESS_PLUS_CLOSED_AST_STORE_USE_GRAMMAR_PLUS_RUNTIME_SCIENTIFIC_
 static reflection blacklist is owner identity proof =
 NO (reflection_blacklist_complete = false)
 
-attested runtime surface =
-11 FROZEN REPLAY OWNERS PLUS THE MECHANICALLY DERIVED TRANSITIVE EXECUTION
-CLOSURE (25 functions, 7 classes, 15 values, 14 imported bindings)
+claimed attested runtime surface =
+11 FROZEN REPLAY OWNERS PLUS THE MECHANICALLY DERIVED CALENDAR-MODULE EXECUTION
+CLOSURE (25 functions, 7 classes, 15 values, 14 imported bindings); review found
+the closure is not transitive across project imports or generated class methods
 
 POSTP1-001V2A-PAD3 decision commit =
 385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9
 
 POSTP1-001V2A-PAD3 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH
 PROOF-ARCHITECTURE REVIEW
+
+POSTP1-002V2A-PAD3 review result =
+FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE
 
 current production compiled binding witness =
 NO ROOT WRITE, CLEAR OR DELETE IN ANY OF THE 11 OWNERS; the single compiled root
 refusal is the known common_etf_session_status generator-expression capture of
 evidence_store, which the closed AST grammar refuses as well, plus five frozen
 module-namespace globals() reach sites (_install_exact_dependency_guards,
-_semantic_ast_sha256, _children, write_artifacts, restore_artifacts) that the
-calendar implementation ticket must remove
+_semantic_ast_sha256, _children, write_artifacts, restore_artifacts); only the
+wrapper installer writes the namespace and must be removed, while the four
+read-only artifact dispatch sites need not be rewritten solely for owner identity
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1_READY_FOR_XHIGH_REVIEW
+ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -617,33 +622,29 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD3 froze the new
-  `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` proof architecture at
-  `b8f8b92d...f6b5b996` and awaits POSTP1-002V2A-PAD3, its one independent exact-hash
-  xHigh proof-architecture review. The failed PAD2 static module-owner identity
-  model is replaced, not patched: `reflection_blacklist_complete = false` is
-  frozen, and effective owner identity is measured at the scientific execution
-  boundary instead of enumerated. All four PAD2-evading substitution forms, plus
-  same-code foreign globals, defaults/kwdefaults mutation and wrapper, partial,
-  callable-object and bound-method substitution, refuse without appearing in any
-  blacklist. Independent adversarial probing then reproduced, against the
-  implementation, that an owner-only surface still admits a wrong scientific
-  result when an ordinary project-owned helper, constant, result class or
-  dependency function drifts, so the attested surface was extended to the
-  mechanically derived transitive execution closure. Current production is
-  unchanged: all eleven runtime owner bindings attest cleanly and the closure
-  refuses at the `functools.wraps` `CalendarEvidenceStore` guards, which runtime
-  measurement therefore rediscovers independently. Certified trusted persistence
-  `02f96203...1a12772` is unchanged
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD3 failed the independent
+  exact-hash xHigh proof-architecture review of
+  `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` at `b8f8b92d...f6b5b996`. The
+  owner identity, intra-module fixpoint and epoch layers reproduce, but the
+  project-owned import rule stops at module source plus top-level function
+  identity. Mutating `_flow.FIVE_DAY_ETF_FLOW_FEATURE_ID` leaves the complete
+  attestation digest unchanged, changes the scientific feature ID to `WRONG`
+  and is admitted with equal pre/post digests. `_flow` constant drift during a
+  normal or exceptional operation also escapes the post sweep. Project imported
+  classes and re-export origin bindings have equivalent gaps. Separately,
+  replacing the dataclass-generated `ScientificEtfFlowResult.__init__` leaves
+  the digest unchanged, changes the scientific result and is admitted. The
+  candidate remains immutable, non-certified, unused and at zero observations;
+  certified trusted persistence `02f96203...1a12772` is unchanged
 - **Current BLOCKED tickets:** Calendar implementation/refreeze,
   POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked pending
-  POSTP1-002V2A-PAD3 PASS. Do not automatically create POSTP1-001V2A-PAD3-R1 and
-  do not start I2
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD3, the independent
-  exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996`. Only that PASS
-  may authorize the final ETF calendar implementation/refreeze
+  an explicit bounded proof-architecture decision and its successful independent
+  review. Do not automatically create POSTP1-001V2A-PAD3-R1 and do not start I2
+- **Next dependency-satisfied ticket:** None. An explicit proof-architecture
+  decision must define a genuinely transitive project-import and class execution
+  closure before another implementation/refreeze may be scheduled
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked pending that review
+  POSTP1-003R3, POSTP1-004 and collection remain blocked pending that decision
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
@@ -656,27 +657,18 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
-- **Latest proof-architecture validation:** POSTP1-001V2A-PAD3 reproduces parent
-  `b8f8b92d...f6b5b996` and all 16 material children from one explicit builder
-  registry. Its focused suite is 148 passed and the combined
-  PAD3/PAD2/PAD1-R1/PAD1 and original/R1/R2 architecture-decision set is 440
-  passed on Python 3.12.14. The eleven-owner census is 11 frozen, 11
-  source-discovered and 11 runtime-attested; the derived closure is 25
-  functions, 7 classes, 15 statically derived values and 14 imported bindings,
-  of which 4 are project-owned with certified source digests and 50 attested
-  dependency functions. Adversarial runtime regressions refuse module-dictionary
-  replacement, all three `__setattr__` code-mutation forms, same-code foreign
-  globals, defaults and kwdefaults mutation, closure substitution, wrapper,
-  partial, callable-object and bound-method substitution, helper, constant,
-  registry, dataclass, error-class and dependency-function drift, duplicate
-  module instances, package-attribute and consumer-binding divergence, poisoned
-  builtins, lazy results and mid-epoch mutation, and the exception path sweeps
-  for persistent drift. Result-admission ordering is proven structurally. All 21
-  requested material mutations plus two removals move both child and parent
-  hashes, and artifact reproduction, reversed child order, three
-  `PYTHONHASHSEED` values, alternate cwd, fresh output and a fresh-process
-  attestation digest all reproduce. No full-suite rerun was needed because
-  production behavior is unchanged; the 5,202/3 baseline remains current
+- **Latest proof-architecture validation:** POSTP1-002V2A-PAD3 independently
+  reproduced parent `b8f8b92d...f6b5b996`, all 16/16 material children and
+  parent bindings, CPython 3.12.14, closure digest `d41b47db...e7b7`, the exact
+  11/11/11 owner census, the 25-function/7-class/15-value/14-import calendar
+  closure, current blockers and determinism. The focused suite passed 148 tests,
+  the combined PAD3/PAD2/PAD1-R1/PAD1 suite passed 440 and the calendar/ETF/
+  trusted-persistence regression passed 741 with one explained PostgreSQL
+  opt-in skip. Independent `_flow` constant, imported class, re-export and
+  generated-dataclass-method probes exposed the blocking transitive-closure gaps;
+  persistent imported drift can survive pre/post comparison and still be
+  admitted. No production behaviour changed, so the 5,202/3 full-suite baseline
+  remains current
 - **Superseded proof-architecture validation:** POSTP1-002V2A-PAD2 independently
   reproduced exact parent `b5ca36bf...b2a8abe9`, all 11/11 material children and
   parent bindings, the frozen CPython 3.12.14 identity, all 29 named name-
@@ -705,7 +697,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD3 decision
-  commit `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9` freezes `b8f8b92d...f6b5b996` and awaits POSTP1-002V2A-PAD3.
+  commit `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9` freezes failed candidate
+  `b8f8b92d...f6b5b996`; POSTP1-002V2A-PAD3 failed its independent exact-hash
+  xHigh proof-architecture review with no review fix because the project-import
+  and generated-class execution closure is incomplete and requires an explicit
+  new bounded proof-architecture decision.
   POSTP1-001V2A-PAD2 decision
   commit `a83dcf4c5b4a5a34c251434e1488ec2b1d0cb072` freezes failed candidate
   `b5ca36bf...b2a8abe9`; POSTP1-002V2A-PAD2 failed its independent exact-hash

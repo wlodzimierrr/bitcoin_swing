@@ -3597,7 +3597,7 @@ not change.
 
 ## POSTP1-001V2A-PAD3 — `DEFINE_ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
 **Dependency:** POSTP1-002V2A-PAD2 failure,
 `ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -3792,6 +3792,51 @@ scientific result under ordinary project-owned drift, which is the same class of
 defect that failed PAD2. Reviewers should treat the closure tier as the material
 scope extension of this decision.
 
+### Independent proof-architecture review result
+
+POSTP1-002V2A-PAD3 independently reproduced exact parent
+`b8f8b92d...f6b5b996`, all sixteen material children and their parent bindings,
+failed PAD2 parent `b5ca36bf...b2a8abe9`, certified trusted-persistence dependency
+`02f96203...1a12772`, the exact CPython 3.12.14 identity, and closure expectation
+digest `d41b47db...e7b7`. The current mechanically derived calendar-module closure
+is exactly 25 functions, 7 classes, 15 values and 14 imports; its intra-module
+fixpoint, nested-code scan, code/value fingerprints, eleven-owner identity
+contract, route checks, epoch sequencing, lazy-result refusal, current-production
+blockers, material binding and determinism otherwise reproduced. The focused
+suite passed 148 tests, the combined PAD3/PAD2/PAD1-R1/PAD1 suite passed 440, and
+the calendar/ETF/trusted-persistence regression passed 741 with the one explained
+PostgreSQL opt-in skip.
+
+The candidate nevertheless failed with
+`FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE`. A project-owned import is
+attested by module route/source identity and by the runtime identity of its
+top-level functions, but the derivation does not recurse through the globals
+those functions and the calendar owner read. After a clean conforming
+attestation, changing only `_flow.FIVE_DAY_ETF_FLOW_WINDOW_DAYS` or
+`_flow.FIVE_DAY_ETF_FLOW_FEATURE_ID` leaves the complete attestation digest
+unchanged. The feature-ID mutation changes the end-to-end scientific result from
+`ETF_FLOW_5D` to `WRONG`, and the epoch admits it with equal pre/post digests.
+Mutating a `_flow` constant during the operation is likewise admitted; the same
+persistent mutation on an exception path escapes the drift sweep. Replacing
+`_flow.EtfFlowFeatureResult` and substituting both the package re-export and
+calendar binding of `require_utc_datetime` also pass unchanged while effective
+runtime behavior changes.
+
+A separate blocking class-closure defect was reproduced. The class attestor
+records names and wrapper states for dataclass-generated functions but does not
+fingerprint or reject them. Replacing `ScientificEtfFlowResult.__init__` leaves
+the full attestation digest unchanged, changes an end-to-end result from
+`NOT_EVALUABLE` to `WRONG`, and is admitted by the epoch. Adding an uncertified
+method also leaves the class conforming despite the frozen refusal code.
+
+The exact PAD3 candidate remains immutable, non-certified, unused and at zero
+observations. No review fix, proof artifact change or production change was
+made. Do not automatically create POSTP1-001V2A-PAD3-R1 and do not start I2;
+the incomplete cross-module/class closure requires an explicit new bounded
+proof-architecture decision. Calendar implementation/refreeze,
+POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked;
+trusted persistence, failed PAD2 lineage, BTC-019 and Epic T remain unchanged.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3843,7 +3888,7 @@ scope extension of this decision.
 | POSTP1-002V2A-PAD1-R1 | independent exact-hash final xHigh proof-architecture review of `7ef114fe...8d17b` | COMPLETE / FAIL — PYTHON 3.12 BINDING CENSUS INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD2 | define and freeze the new `ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` proof architecture at `b5ca36bf...b2a8abe9` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | COMPLETE / FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE; EXPLICIT BOUNDED PROOF-ARCHITECTURE DECISION REQUIRED |
-| POSTP1-001V2A-PAD3 | define and freeze the new `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` proof architecture at `b8f8b92d...f6b5b996` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | READY; only a PASS may authorize the final ETF calendar implementation/refreeze |
+| POSTP1-001V2A-PAD3 | define and freeze the new `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` proof architecture at `b8f8b92d...f6b5b996` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | COMPLETE / FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
