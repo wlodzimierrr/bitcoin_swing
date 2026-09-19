@@ -244,7 +244,7 @@ POSTP1-002V2A-PAD3 review result =
 FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE
 
 ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1 =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
+FROZEN_PRE_DATA_CANDIDATE_FAILED_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
 
 ETF calendar isolated scientific worker decision hash =
 cc1b325a656f5b0be046d46700a4fcb9ad7ad94bf9b3440acac164677b809e78
@@ -275,8 +275,21 @@ POSTP1-001V2A-PAD4 decision commit =
 02df82c2516ebcc50a592e5466fd15a61dcee481
 
 POSTP1-001V2A-PAD4 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH XHIGH
 PROOF-ARCHITECTURE REVIEW
+
+POSTP1-002V2A-PAD4 review result =
+FAIL — EXECUTED BYTECODE NOT BOUND TO CERTIFIED SOURCE
+
+POSTP1-002V2A-PAD4 additional confirmed release-critical defects =
+CERTIFIED SOURCE AUTHORITY NOT FROZEN; CONTROLLER AUTHORITY BINDING INVALID;
+THIRD-PARTY INSTALLED CONTENT NOT ATTESTED; THIRD-PARTY DEPENDENCY AUTHORITY
+NOT FROZEN
+
+POSTP1-002V2A-PAD4 isolation boundary verdict =
+SOUND — fresh exec'd one-shot worker, fork negative control, parent mutable
+object isolation and process/protocol lifecycle all reproduced; do NOT reopen
+same-process runtime-object attestation
 
 current production compiled binding witness =
 NO ROOT WRITE, CLEAR OR DELETE IN ANY OF THE 11 OWNERS; the single compiled root
@@ -288,7 +301,7 @@ wrapper installer writes the namespace and must be removed, while the four
 read-only artifact dispatch sites need not be rewritten solely for owner identity
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_READY_FOR_XHIGH_REVIEW
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_REQUIRES_FIX
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -657,7 +670,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4 froze the new
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD4 completed and
+  **failed**: the exact candidate `cc1b325a...7b809e78` is immutable,
+  non-certified, unused and at zero observations, and no review fix was made
+  because authority anchoring itself is incomplete. The fresh-exec
+  process-isolation boundary is sound and fully reproduced, so the next decision
+  must preserve it and must not reopen same-process runtime-object attestation.
+  Four release-critical anchoring defects were confirmed by real worker runs:
+  forged cached bytecode executes while the certified `.py` SHA, origin and the
+  frozen `674b006a...3aadbb8` manifest digest all still match; certified source
+  mutated before request construction re-derives a new self-consistent manifest
+  that is admitted with a drifted scientific result; an arbitrary
+  caller-selected PAD4 decision hash such as `0000...0000` is admitted because
+  admission is an echo comparison and `cc1b325a...7b809e78` appears in no
+  executable file; and third-party attestation hashes only the `RECORD` file, so
+  a tampered installed dependency file executes and an unreviewed declared
+  version self-certifies. Historical context: POSTP1-001V2A-PAD4 had frozen the
+  new
   `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at
   `cc1b325a...7b809e78` with 17 mechanically enumerated parent-bound children.
   It is not a PAD3 revision: the failed PAD3 parent `b8f8b92d...f6b5b996` is
@@ -676,12 +705,18 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   persistence `02f96203...1a12772` is unchanged
 - **Current BLOCKED tickets:** Calendar implementation/refreeze
   (POSTP1-001V2A-I2), POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection
-  remain blocked pending POSTP1-002V2A-PAD4. Do not automatically create
-  POSTP1-001V2A-PAD4-R1 and do not start I2 before that review passes
-- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD4, one independent
-  exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78`
+  remain blocked because POSTP1-002V2A-PAD4 failed. Do not start I2
+- **Next dependency-satisfied ticket:** None is automatically authorized. The
+  indicated next work is a bounded `POSTP1-001V2A-PAD4-R1` that preserves the
+  proven fresh-exec isolation boundary and repairs executed-code binding,
+  frozen certified-source anchoring, controller authority anchoring and
+  third-party installed-content/semantic-version attestation, then its own
+  independent exact-hash xHigh proof-architecture review. It must also resolve
+  explicitly whether the exact 116-module manifest child is scientific
+  authority, since it is embedded in the parent hash and the I2-mandated
+  `common_etf_session_status` rewrite will move it
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked pending that review
+  POSTP1-003R3, POSTP1-004 and collection remain blocked
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
@@ -718,7 +753,30 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   reversed child order, an alternate working directory and a fresh output
   directory, under Python 3.12.14 with `cryptography 50.0.1`. No production
   behaviour changed, so the 5,202/3 full-suite baseline remains current
-- **Latest proof-architecture validation:** POSTP1-002V2A-PAD3 independently
+- **Latest proof-architecture validation:** POSTP1-002V2A-PAD4 independently
+  reproduced exact parent `cc1b325a...7b809e78`, 17/17 material children
+  mechanically enumerated from the single builder registry with 17/17 parent
+  bindings, the frozen CPython 3.12.14 identity, the failed PAD3 parent and the
+  whole failed proof and calendar lineage, certified trusted persistence
+  `02f96203...1a12772`, an independently re-derived 116-module project import
+  closure at `674b006a...3aadbb8`, the five distribution roots, the preserved
+  compiled root witness, root-cell prohibition, closed AST store grammar, exact
+  11/11 owner census and graph, the direct dependency-body rule and every
+  unchanged current-production blocker. All fifteen requested material mutations
+  moved both child and parent hashes, and the parent reproduced under three
+  `PYTHONHASHSEED` values, reversed child order, an alternate working directory
+  and a fresh output directory byte-identical to the persisted namespace. The
+  focused PAD4 suite passed 77, the combined PAD4/PAD3/PAD2/PAD1-R1/PAD1 suite
+  passed 517, and the wider calendar/ETF/trusted-persistence/V1/V2 corpus set
+  passed 1,279 with three explained skips; `compileall` and `git diff --check`
+  are clean on Python 3.12.14. Real exec'd worker runs confirmed the isolation
+  boundary, including parent feature-ID drift producing parent `WRONG` against
+  worker `ETF_FLOW_5D` and a fork-only child inheriting what exec does not.
+  Independent forged-`.pyc`, pre-request source-drift, wrong-decision-hash,
+  tampered-installed-dependency and forged-dependency-version probes then
+  exposed the four blocking anchoring defects. No production behaviour changed,
+  so the 5,202/3 full-suite baseline remains current
+- **Superseding-context proof-architecture validation:** POSTP1-002V2A-PAD3 independently
   reproduced parent `b8f8b92d...f6b5b996`, all 16/16 material children and
   parent bindings, CPython 3.12.14, closure digest `d41b47db...e7b7`, the exact
   11/11/11 owner census, the 25-function/7-class/15-value/14-import calendar
@@ -758,8 +816,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4 decision
-  commit `02df82c2516ebcc50a592e5466fd15a61dcee481` freezes `cc1b325a...7b809e78` and awaits
-  POSTP1-002V2A-PAD4. POSTP1-001V2A-PAD3 decision
+  commit `02df82c2516ebcc50a592e5466fd15a61dcee481` freezes failed candidate
+  `cc1b325a...7b809e78`; POSTP1-002V2A-PAD4 failed its independent exact-hash
+  xHigh proof-architecture review with no review fix because executed bytecode is
+  not bound to the certified source and the certified-source, controller-authority
+  and third-party anchors are caller-supplied rather than frozen. The fresh-exec
+  isolation boundary is sound and must be preserved. POSTP1-001V2A-PAD3 decision
   commit `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9` freezes failed candidate
   `b8f8b92d...f6b5b996`; POSTP1-002V2A-PAD3 failed its independent exact-hash
   xHigh proof-architecture review with no review fix because the project-import

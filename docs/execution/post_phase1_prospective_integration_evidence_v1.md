@@ -3839,7 +3839,7 @@ trusted persistence, failed PAD2 lineage, BTC-019 and Epic T remain unchanged.
 
 ## POSTP1-001V2A-PAD4 — `DEFINE_ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
 **Dependency:** POSTP1-002V2A-PAD3 failure,
 `ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION`
 **Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
@@ -4015,6 +4015,104 @@ calendar science, and refreeze `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` before an
 independent exact-hash calendar closure review. Only that closure PASS may
 unblock POSTP1-001V2R1.
 
+### Independent proof-architecture review result
+
+POSTP1-002V2A-PAD4 independently reproduced exact parent
+`cc1b325a...7b809e78`, all 17 material children mechanically enumerated from the
+single builder registry, 17/17 child reproduction and 17/17 parent binding, the
+frozen CPython 3.12.14 identity (`hexversion` 51121904, `cache_tag`
+`cpython-312`, magic `cb0d0d0a`), the failed PAD3 parent `b8f8b92d...f6b5b996`,
+the whole failed proof and calendar lineage, certified trusted-persistence
+dependency `02f96203...1a12772`, the recursive 116-module project import closure
+at digest `674b006a...3aadbb8` re-derived from an independent implementation,
+the five non-stdlib distribution roots, the preserved compiled root-binding
+witness, root-cell prohibition, closed AST store grammar, exact 11/11 owner
+census and graph, the direct dependency-body rule and every unchanged
+current-production blocker. All fifteen requested material mutations moved both
+the owning child hash and the parent hash, and the parent reproduced under three
+`PYTHONHASHSEED` values, reversed child order, an alternate working directory
+and a fresh output directory that is byte-identical to the persisted namespace.
+The focused PAD4 suite passed 77, the combined PAD4/PAD3/PAD2/PAD1-R1/PAD1 suite
+passed 517, and the wider calendar, ETF, trusted-persistence and V1/V2 corpus
+regression passed 1,279 with the three explained skips. `compileall` and
+`git diff --check` are clean.
+
+**The isolation boundary itself is sound and is not the defect.** Real
+exec-launched worker processes were driven for every isolation probe. Parent
+mutation of `_flow.FIVE_DAY_ETF_FLOW_FEATURE_ID`,
+`_flow.FIVE_DAY_ETF_FLOW_WINDOW_DAYS`, the generated
+`ScientificEtfFlowResult.__init__`, the `require_utc_datetime` re-export,
+`sys.modules` and `builtins.sorted` each demonstrably corrupted the parent's own
+evaluation while the worker returned the certified result unchanged; the
+principal feature-ID probe reproduced parent `WRONG` against worker
+`ETF_FLOW_5D`. A real `os.fork()` child inherited the mutation that exec does
+not. `-I -S -B`, the frozen `LC_ALL`/`LANG`/`TZ` child environment, disabled user
+site, unexecuted `sitecustomize`/`usercustomize`, ignored ambient `PYTHONPATH`,
+parent-bound `sys.path`, the frozen three-operation registry, canonical
+non-executable IPC, lazy-result refusal, one-request-one-process, result-digest
+binding, timeout, crash, signal, extra-stdout and typed-exception handling, the
+signing-key and `PYTHON*` environment refusals and the wrong-dependency-origin
+refusal all failed closed.
+
+The candidate nevertheless failed with
+`FAIL — EXECUTED BYTECODE NOT BOUND TO CERTIFIED SOURCE`, plus three further
+independent release-critical authority-anchoring defects.
+
+1. **Executed bytecode is not bound to the certified `.py` source.** `-B` only
+   suppresses bytecode *writes*; nothing suppresses or validates cached
+   bytecode *reads*. A `__pycache__/flow.cpython-312.pyc` was forged under the
+   frozen interpreter carrying different executable code while its timestamp
+   invalidation header still matched the certified source. With the certified
+   `btc_predictor/features/flow.py` bytes unchanged, its origin path unchanged
+   and the request manifest digest exactly `674b006a...3aadbb8`, the real worker
+   executed the forged bytecode and the controller admitted
+   `feature_id: FORGED_BYTECODE_ID`. No `sys.pycache_prefix` isolation,
+   hash-based invalidation requirement, `__cached__` check or `__pycache__`
+   absence check exists anywhere in the architecture.
+2. **`FAIL — CERTIFIED SOURCE AUTHORITY NOT FROZEN.`** `build_scientific_request`
+   re-derives the manifest from live disk and
+   `verify_project_source_manifest` only compares disk against that
+   caller-supplied manifest. Mutating a certified project source file *before*
+   request construction produced a new self-consistent digest
+   (`36ccbc82...`, and `37b7ffa2...` for the semantic variant) that was
+   admitted; the semantic variant admitted a drifted
+   `feature_id: WRONG_DRIFTED_ID` in place of `ETF_FLOW_5D`. Post-request drift
+   is correctly refused, so the frozen authority binds nothing before request
+   time.
+3. **`FAIL — CONTROLLER AUTHORITY BINDING INVALID.`** The worker echoes
+   `payload["worker_authority_sha256"]` and `admit_worker_result` compares that
+   echo with the same request value. `cc1b325a...7b809e78` appears in no
+   executable file in the repository. Requests declaring
+   `0000...0000` and `deadbeef...deadbeef` were both admitted with a real
+   scientific result. `controller_result_admission_rule.json` materially claims
+   `worker_authority_hash_is_controller_bound` and lists
+   `worker_authority_identity` and `worker_source_manifest_identity` under
+   `validated_before_admission`; echo comparison establishes neither.
+4. **`FAIL — THIRD-PARTY INSTALLED CONTENT NOT ATTESTED` and
+   `FAIL — THIRD-PARTY DEPENDENCY AUTHORITY NOT FROZEN.`**
+   `verify_third_party_manifest` hashes only the `RECORD` file and never checks
+   any installed file against the per-file hashes `RECORD` declares. With
+   `RECORD` bytes unchanged and one executable installed dependency file
+   modified, the tampered dependency code executed inside the worker and the
+   result was admitted. Separately, the declared `version` is never compared to
+   anything: a manifest declaring `99.99.99-FORGED` for all five distributions
+   was admitted, so no reviewed semantic dependency authority exists.
+
+The exact PAD4 candidate remains immutable, non-certified, unused and at zero
+observations. No review fix, proof-artifact change or production change was
+made, because authority anchoring itself is incomplete and section 65 forbids
+patching it inside review. The fresh-exec process-isolation concept is **not**
+rejected and same-process runtime-object attestation must **not** be reopened: a
+`POSTP1-001V2A-PAD4-R1` that preserves this isolation boundary and repairs
+executed-code binding, frozen source anchoring, controller authority anchoring
+and third-party content attestation is the indicated path. A successor must also
+resolve explicitly whether the exact 116-module manifest child is scientific
+authority, because it is embedded in the parent hash and the I2-mandated
+`common_etf_session_status` rewrite will necessarily move it. Calendar
+implementation/refreeze, POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection
+remain blocked; trusted persistence, calendar science, failed proof and calendar
+lineage, BTC-019 and Epic T remain unchanged.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -4068,7 +4166,7 @@ unblock POSTP1-001V2R1.
 | POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | COMPLETE / FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE; EXPLICIT BOUNDED PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD3 | define and freeze the new `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` proof architecture at `b8f8b92d...f6b5b996` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | COMPLETE / FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
-| POSTP1-001V2A-PAD4 | define and freeze the new `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at `cc1b325a...7b809e78` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD4 | independent exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78` | NOT STARTED |
+| POSTP1-001V2A-PAD4 | define and freeze the new `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at `cc1b325a...7b809e78` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4 | independent exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78` | COMPLETE / FAIL — EXECUTED BYTECODE NOT BOUND TO CERTIFIED SOURCE; SOURCE, CONTROLLER-AUTHORITY AND THIRD-PARTY ANCHORING ALSO INVALID; ISOLATION BOUNDARY SOUND |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
