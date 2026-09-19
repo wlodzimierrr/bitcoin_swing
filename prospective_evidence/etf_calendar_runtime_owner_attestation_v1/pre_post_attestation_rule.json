@@ -1,0 +1,61 @@
+{
+  "admission_gated_on": "POST_ATTESTATION_DIGEST_EQUALS_PRE_ATTESTATION_DIGEST",
+  "best_effort_execution": false,
+  "compared_material": [
+    "binding_present",
+    "callable_type",
+    "name",
+    "qualname",
+    "module",
+    "code_fingerprint",
+    "globals_is_attested_module_namespace",
+    "builtins_is_the_real_builtins_namespace",
+    "closure_contract",
+    "defaults_fingerprint",
+    "kwdefaults_fingerprint",
+    "wrapper_state"
+  ],
+  "compared_surface": [
+    "ELEVEN_FROZEN_REPLAY_OWNERS",
+    "TRANSITIVE_EXECUTION_CLOSURE",
+    "MODULE_ROUTE_AND_NAMESPACE_IDENTITY"
+  ],
+  "contract_version": "ETF_CALENDAR_PRE_POST_ATTESTATION_RULE_V1_PAD3",
+  "definition_sha256": "5b7f1849d12e3e1b3623fc055c389e6e95672a94c9508ae151b4bd453ef4a481",
+  "epoch_lock_serializes_epochs_against_non_epoch_threads": false,
+  "failure_semantics": "FAIL_CLOSED",
+  "fallback_to_an_unattested_owner": false,
+  "persist_then_discover_mismatch": false,
+  "post_attestation_before_result_admission": true,
+  "post_attestation_detects": [
+    "PERSISTENT_MUTATION_OCCURRING_DURING_THE_OPERATION"
+  ],
+  "post_attestation_failure": [
+    "RESULT_REJECTED",
+    "DATA_QUALITY_FAIL"
+  ],
+  "post_attestation_failure_effects": [
+    "NO_SCIENTIFIC_EVIDENCE_ADMISSION",
+    "NO_DOWNSTREAM_STAGE_B_CONSUMPTION"
+  ],
+  "post_execution_attestation_required": true,
+  "pre_attestation_detects": [
+    "PERSISTENT_SUBSTITUTION_BEFORE_THE_OPERATION",
+    "IMPORT_TIME_MUTATION",
+    "STARTUP_CONFIGURATION_DRIFT"
+  ],
+  "pre_attestation_failure": "SCIENTIFIC_EXECUTION_NOT_AUTHORIZED",
+  "pre_attestation_failure_effects": [
+    "NO_OWNER_CALL",
+    "NO_PARTIAL_CALENDAR_RESULT",
+    "NO_PERSISTENCE",
+    "NO_STAGE_B_EVIDENCE"
+  ],
+  "pre_execution_attestation_required": true,
+  "process_startup_attestation_alone_is_sufficient": false,
+  "result_admitted_before_post_attestation": false,
+  "transient_mutate_and_restore_escalation": "PROCESS_ISOLATION",
+  "transient_mutate_and_restore_inside_one_epoch_detected": false,
+  "transient_mutate_and_restore_is_cause_neutral": true,
+  "transient_mutate_and_restore_statement": "ANY_MUTATION_FULLY_REVERTED_BETWEEN_THE_PRE_AND_POST_ATTESTATION_INSTANTS_IS_NOT_DETECTED_WHATEVER_ITS_CAUSE_INCLUDING_BENIGN_CONCURRENT_PATCH_AND_RESTORE_BY_PROJECT_OWNED_CODE"
+}

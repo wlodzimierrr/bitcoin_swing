@@ -3595,6 +3595,203 @@ trusted-persistence regression passed 583 tests. The prior full-suite baseline
 remains 5,202 passed with three explained skips because production behavior did
 not change.
 
+## POSTP1-001V2A-PAD3 — `DEFINE_ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Dependency:** POSTP1-002V2A-PAD2 failure,
+`ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** POSTP1-002V2A-PAD3, one independent exact-hash xHigh
+proof-architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_runtime_owner_attestation_v1/`
+**Decision commit:** `PENDING_COMMIT`
+**Decision hash:** `b8f8b92d4e3c1c80c4226f7101e71f95d125bd48afbfcde72e489408f6b5b996`
+
+### New proof architecture
+
+This is an explicit new proof-architecture decision, not a PAD2 revision. No
+`POSTP1-001V2A-PAD2-R1` was created, the failed
+`ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` parent `b5ca36bf...b2a8abe9` is
+untouched and is never certified here, and the whole failed lineage
+`0c237c1b...887b55d`, `a7d2b087...534dd0`, `dc36ffe2...f1372c3e`,
+`9f6af179...7ac86295`, `7ef114fe...8d17b` and `b5ca36bf...b2a8abe9` remains
+immutable, non-certified, unused and at zero observations.
+
+Exactly one failed component is replaced.
+`STATIC_COMPLETE_MODULE_OWNER_IDENTITY_PROOF` becomes
+`CONTROLLED_RUNTIME_OWNER_ATTESTATION`, and the decision freezes
+`STATIC_REFLECTION_BLACKLIST_IS_NOT_OWNER_IDENTITY_PROOF` with
+`reflection_blacklist_complete = false`. A list such as `globals`, `locals`,
+`vars`, `setattr`, `delattr`, `sys.modules`, `object.__setattr__` and
+`type.__setattr__` is no longer claimed to enumerate every way Python can
+replace a module binding or change what a function executes. Those source
+checks survive only as diagnostics, defence in depth and coding-policy
+enforcement, never as scientific completeness authority.
+
+Everything that independently survived PAD2 review is preserved and freshly
+parent-bound: the frozen CPython 3.12.14 identity and exact opcode policy
+checked against the interpreter's own tables, the deoptimized instruction scan,
+`TypeAlias` and definition-time mutation detection, exact owner code-object
+identification, nested-body scoping correctness, the structural rule that a
+conforming root may never be a cell variable, the closed AST store-use grammar,
+the exact eleven-owner census and graph, the direct dependency-body requirement
+and the trusted-process boundary.
+
+### Measured runtime identity
+
+Effective scientific owner identity is measured, not enumerated. Immediately
+before and immediately after every authoritative calendar or replay
+computation, each frozen owner is read out of the loaded calendar module's own
+`__dict__` and checked against material derived by independently compiling the
+certified reviewed source under the frozen interpreter: the binding's presence,
+its exact `types.FunctionType` type, its `__name__`, `__qualname__` and
+`__module__`, a deterministic recursive execution fingerprint of its `__code__`,
+the identity of its `__globals__` and of its bound builtins namespace, its
+closure contract, its `__defaults__` and `__kwdefaults__` fingerprints and its
+wrapper state. Code identity is a fingerprint rather than an object comparison,
+because independently compiled equivalent code objects are not the same object;
+the fingerprint covers argument layout, flags, stack, name and variable tuples,
+the exception and line tables, the raw bytecode and a type-tagged canonical
+encoding of the constant pool, recursing into nested code objects, and excludes
+only `co_filename`, whose reviewed-source identity is attested separately and
+exactly. `__globals__` identity is required for its own reason: a
+`types.FunctionType(expected_code, foreign_globals)` reconstruction matches the
+code bytes exactly and would otherwise pass.
+
+Adversarial regression proves that module-dictionary replacement,
+`owner.__setattr__("__code__", ...)`, `object.__setattr__`,
+`type(owner).__setattr__`, same-code foreign globals, `__defaults__` and
+`__kwdefaults__` mutation, and partial, wrapper, callable-object and
+bound-method substitution are all refused without any of those syntactic forms
+appearing in a blacklist.
+
+### Transitive execution closure
+
+Independent adversarial probing of the owner-only design found, and reproduced
+against the implementation, that attesting only the eleven entry bindings
+measures who is called and not what executes: substituting a private helper such
+as `_parse_date`, a frozen constant such as `CANONICAL_VENUES`, a result
+dataclass, the error type or a dependency-module function changes the scientific
+answer while all eleven owner fingerprints still match byte for byte. An
+executed end-to-end demonstration turned an honest `2025-01-04/CLOSED`
+resolution into `2025-01-05/CLOSED` with a conforming owner attestation.
+
+The attested surface is therefore the transitive execution closure, derived as a
+mechanical fixpoint over the module-level names the certified owner code objects
+can actually load, seeded by the eleven owners and by the declared
+`CalendarEvidenceStore` root type, recursing into nested code objects and reading
+instructions deoptimized. It is a derivation, not a hand-maintained list, and a
+closure member missing from the frozen expectation refuses. For current
+production it is 25 functions, 7 classes, 15 values and 14 imported bindings.
+Reachable functions carry the full identity contract; reachable classes are
+attested by exact metaclass, qualname, module, certified method code
+fingerprints with their descriptor kinds, method wrapper state and an
+uncertified-attribute census; reachable values by a deterministic deep typed
+fingerprint against the literal the reviewed source declares, with a
+non-literal value refusing; project-owned imports by `sys.modules` identity,
+origin-attribute identity, their own certified source digest and the full
+identity contract over every top-level function of the defining module, with
+re-export chains followed. Interpreter-provided modules are attested by binding
+identity only, because the frozen proof interpreter identity is already an
+explicit axiom of this architecture and is not re-proved function by function.
+
+The module itself must also be the one callers reach: exactly a
+`types.ModuleType`, the live `sys.modules` entry, the package attribute of the
+same name, the only loaded instance of the certified source, and holding the real
+builtins namespace; a loaded consumer holding its own divergent binding for a
+frozen owner name refuses too.
+
+### Scientific execution epoch
+
+`CALENDAR_SCIENTIFIC_EXECUTION_EPOCH` encloses every authoritative computation:
+pre-execution attestation, then the synchronous computation in the very module
+whose bindings were attested, then post-execution attestation, and only then
+admission or persistence. A pre-attestation mismatch is
+`SCIENTIFIC_EXECUTION_NOT_AUTHORIZED` with no owner call, no partial result, no
+persistence and no Stage-B evidence; a post-attestation that does not reproduce
+the pre-attestation digest is `RESULT_REJECTED` / `DATA_QUALITY_FAIL`. The
+ordering is proven structurally over the architecture's own source rather than
+asserted. The operation is frozen as pure with respect to durable state so that
+all persistence happens in the admission call after post-attestation; a lazy or
+deferred result is refused because its body would run after the measured window
+closed; and every exit path, including an exception raised by the operation,
+sweeps for persistent drift. Startup attestation additionally refuses a process
+that is already wrong, records the baseline the first pre-attestation must
+reproduce, and never replaces per-epoch attestation. Epochs are serialised one
+at a time per process and a nested or reentrant epoch refuses; the lock is for
+deterministic execution and configuration integrity, not hostile same-process
+security.
+
+### Bounded guarantee and explicit limit
+
+Any substitution or mutation anywhere in the attested closure that is still in
+effect at either attestation point refuses before any result is admitted. Any
+mutation fully reverted between the two attestation instants is explicitly not
+detected, whatever its cause, including benign concurrent patch-and-restore by
+project-owned code in a non-epoch thread. That case is classified as arbitrary
+adversarial same-process mutation, outside the accepted trust model, which is
+unchanged: the production Python process is trusted, project-owned scientific
+drift and misconfiguration are in scope, and arbitrary debugger, memory and
+interpreter mutation is out of scope. If resistance to the transient case ever
+becomes required the escalation is process isolation, never more Python
+reflection filters. The threat model is not silently strengthened.
+
+### Evidence and authorization
+
+Sixteen mechanically enumerated material children, built from one explicit
+registry of builder callables rather than by module-namespace dispatch, bind the
+trusted-process boundary, proof-interpreter identity, compiled root-binding
+witness, store root and direct-use grammar, runtime owner identity contract,
+transitive execution closure rule, owner code fingerprint definition, scientific
+execution epoch rule, pre/post attestation rule, attestation evidence schema,
+replay owner graph rule, direct-body dependency rule, static reflection policy
+demotion, module-namespace reach classification, proof order/completeness and
+science/lineage/safety.
+
+Current production is unchanged and no ETF calendar production code was
+modified. It reports zero compiled root writes, clears or deletes; the single
+root-cell finding remains `common_etf_session_status:evidence_store`; the closed
+AST grammar refuses at the same generator capture; and all eleven effective
+runtime owner bindings attest cleanly. The transitive closure does not: the
+`CalendarEvidenceStore` admission and read methods are `functools.wraps` guards
+installed at import, so runtime measurement independently rediscovers the
+wrapper-installer blocker that the certified direct-body architecture already
+forbids. Of the five module-namespace reaches, exactly one —
+`_install_exact_dependency_guards` — writes, and the key it writes is not a
+replay owner; the other four are read-only artifact-builder dispatch lookups
+that cannot change any effective owner binding, established both by mechanical
+AST classification and by measuring the owner attestation digest across artifact
+generation, so this decision does not require them to be rewritten for owner
+identity. Full calendar conformance is `NO` and the implementation stays
+blocked.
+
+Trusted persistence `02f96203...1a12772` is closed, certified, unchanged and not
+re-reviewed. Calendar science, failed calendar lineage, BTC-019 and Epic T are
+unchanged. No observation was collected and no real Stage-B evaluation ran.
+
+Final classification is
+`ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1_READY_FOR_XHIGH_REVIEW`. Successful
+implementation authorizes only POSTP1-002V2A-PAD3 independent exact-hash xHigh
+proof-architecture review. Only that review PASS may authorize the final ETF
+calendar implementation/refreeze ticket, which must then rewrite the
+`common_etf_session_status` generator capture, remove the wrapper-installed
+guards, insert the five direct dependency assertions, implement startup and
+per-epoch pre/post attestation, persist execution attestation evidence and
+preserve the exact eleven-owner graph and the calendar science before an
+independent exact-hash calendar closure review.
+
+### Scope note
+
+The transitive execution closure is broader than the literal PAD3 owner-set
+wording, which specifies exactly eleven attested owners. That census is
+preserved exactly — eleven frozen, eleven source-discovered, eleven
+runtime-attested — and the closure is an additional mechanically derived tier.
+It was added because independent adversarial verification reproduced, against
+the implementation, that the eleven-owner surface alone admits a wrong
+scientific result under ordinary project-owned drift, which is the same class of
+defect that failed PAD2. Reviewers should treat the closure tier as the material
+scope extension of this decision.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3646,5 +3843,7 @@ not change.
 | POSTP1-002V2A-PAD1-R1 | independent exact-hash final xHigh proof-architecture review of `7ef114fe...8d17b` | COMPLETE / FAIL — PYTHON 3.12 BINDING CENSUS INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD2 | define and freeze the new `ETF_CALENDAR_COMPILED_BINDING_WITNESS_V1` proof architecture at `b5ca36bf...b2a8abe9` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | COMPLETE / FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE; EXPLICIT BOUNDED PROOF-ARCHITECTURE DECISION REQUIRED |
+| POSTP1-001V2A-PAD3 | define and freeze the new `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` proof architecture at `b8f8b92d...f6b5b996` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | READY; only a PASS may authorize the final ETF calendar implementation/refreeze |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

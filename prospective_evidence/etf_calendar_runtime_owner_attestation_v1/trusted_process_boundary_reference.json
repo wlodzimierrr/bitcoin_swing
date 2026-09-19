@@ -1,0 +1,25 @@
+{
+  "arbitrary_debugger_memory_or_interpreter_mutation_in_scope": false,
+  "arbitrary_dynamic_python_mutation_proved": false,
+  "arbitrary_hostile_in_process_manipulation_in_scope": false,
+  "contract_version": "ETF_CALENDAR_TRUSTED_PROCESS_BOUNDARY_REFERENCE_V1_PAD3",
+  "definition_sha256": "6f80a5437b4f4189c0784a5a5a788418ec51de408be9a0fc56c132ea306b679a",
+  "escalation_path_is_more_python_reflection_filters": false,
+  "failed_boundary_lineage": [
+    "0c237c1b217b1fd406ec3967309774293c01d3e27574b9f4a7d1b9a0e887b55d",
+    "a7d2b08741080494cc4ca0269bf21e28e631c7f2e70887bcb0e1beb302534dd0",
+    "dc36ffe228b7a3bc6d9145042b4e301c8624c99a79d71a88b46fc268f1372c3e",
+    "9f6af1794e8b49dce38288b9f1b9710bffd04ba70303b5c380e8fb447ac86295",
+    "7ef114fede9efebe594f0ecf119d097a1161119f448737d0df10afdf9468d17b",
+    "b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9"
+  ],
+  "hostile_same_process_mutation_resistance_required": false,
+  "hostile_same_process_resistance_if_later_required": "PROCESS_ISOLATION",
+  "production_python_process_trusted": true,
+  "project_owned_scientific_bypasses_in_scope": true,
+  "threat_model_changed_by_this_decision": false,
+  "transient_mutate_and_restore_classification": "ARBITRARY_ADVERSARIAL_SAME_PROCESS_MUTATION_OUTSIDE_ACCEPTED_TRUST_MODEL",
+  "transient_mutate_and_restore_limitation_is_explicit": true,
+  "transient_mutate_and_restore_resistance_claimed": false,
+  "wrapper_metaclass_or_source_hash_substitutes_for_isolation": false
+}

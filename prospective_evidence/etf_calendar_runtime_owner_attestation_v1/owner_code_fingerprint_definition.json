@@ -1,0 +1,73 @@
+{
+  "bool_and_int_constants_distinguished": true,
+  "byte_fields": [
+    "co_code",
+    "co_exceptiontable",
+    "co_linetable"
+  ],
+  "cached_pyc_trusted_without_recomparison": false,
+  "constant_pool_included": true,
+  "contract_version": "ETF_CALENDAR_OWNER_CODE_FINGERPRINT_V1_PAD3",
+  "definition_sha256": "b0a03a5004a7239a0278068a70d56c757ae9d558f3b01e386070113ce74407c1",
+  "derivation": "DETERMINISTIC_RECURSIVE_DIGEST_OF_THE_EFFECTIVE_RUNTIME_CODE_OBJECT_COMPARED_AGAINST_THE_CODE_OBJECT_INDEPENDENTLY_COMPILED_FROM_THE_CERTIFIED_REVIEWED_SOURCE",
+  "excluded_field_rationale": "CO_FILENAME_RECORDS_WHERE_THE_TEXT_WAS_READ_NOT_WHAT_EXECUTES_AND_REVIEWED_SOURCE_IDENTITY_IS_ATTESTED_SEPARATELY_AND_EXACTLY",
+  "excluded_fields": [
+    "co_filename"
+  ],
+  "execution_preconditions": [
+    "SYS_FLAGS_OPTIMIZE_EQUALS_THE_FROZEN_COMPILE_OPTIMIZE_LEVEL",
+    "EFFECTIVE_MODULE_LOADED_FROM_THE_CERTIFIED_REVIEWED_SOURCE_PATH",
+    "CERTIFIED_REVIEWED_SOURCE_SHA256_UNCHANGED"
+  ],
+  "fingerprint_version": "ETF_CALENDAR_OWNER_CODE_FINGERPRINT_V1_CPYTHON_312",
+  "frozenset_constants_ordered_by_canonical_encoding": true,
+  "hash_seed_dependent_material": false,
+  "int_and_float_constants_distinguished": true,
+  "interpreter_bound": {
+    "cache_tag": "cpython-312",
+    "hexversion": 51121904,
+    "implementation_name": "cpython",
+    "magic_number_hex": "cb0d0d0a",
+    "version_major": 3,
+    "version_micro": 14,
+    "version_minor": 12,
+    "version_releaselevel": "final",
+    "version_serial": 0
+  },
+  "name_tuple_fields": [
+    "co_names",
+    "co_varnames",
+    "co_freevars",
+    "co_cellvars"
+  ],
+  "nested_code_objects_recursed": true,
+  "object_address_or_id_material": false,
+  "scalar_fields": [
+    "co_argcount",
+    "co_posonlyargcount",
+    "co_kwonlyargcount",
+    "co_nlocals",
+    "co_stacksize",
+    "co_flags",
+    "co_firstlineno",
+    "co_name",
+    "co_qualname"
+  ],
+  "signed_zero_and_nan_distinguished": true,
+  "str_and_bytes_constants_distinguished": true,
+  "supported_constant_kinds": [
+    "NONE",
+    "ELLIPSIS",
+    "BOOL",
+    "INT",
+    "FLOAT",
+    "COMPLEX",
+    "STR",
+    "BYTES",
+    "TUPLE",
+    "FROZENSET",
+    "CODE"
+  ],
+  "type_tagged_constant_encoding": true,
+  "unsupported_constant_kind": "REFUSE_SCIENTIFIC_AUTHORITY"
+}

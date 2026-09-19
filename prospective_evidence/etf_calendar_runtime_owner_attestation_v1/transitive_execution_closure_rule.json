@@ -1,0 +1,65 @@
+{
+  "certified_source_closure_identity_required": true,
+  "class_members_attested": [
+    "EXACT_METACLASS",
+    "QUALNAME_AND_MODULE",
+    "CERTIFIED_METHOD_CODE_FINGERPRINTS",
+    "CERTIFIED_METHOD_WRAPPER_STATE",
+    "UNCERTIFIED_FUNCTION_ATTRIBUTE_CENSUS"
+  ],
+  "closure_contract_version": "CALENDAR_TRANSITIVE_EXECUTION_CLOSURE_V1",
+  "closure_kinds": [
+    "CLOSURE_FUNCTION",
+    "CLOSURE_CLASS",
+    "CLOSURE_VALUE",
+    "CLOSURE_IMPORT"
+  ],
+  "closure_member_absent_from_the_frozen_expectation": "REFUSE",
+  "closure_refusal_codes": [
+    "CLOSURE_BINDING_ABSENT",
+    "CLOSURE_CLASS_TYPE_MISMATCH",
+    "CLOSURE_CLASS_IDENTITY_MISMATCH",
+    "CLOSURE_CLASS_MRO_MISMATCH",
+    "CLOSURE_CLASS_CERTIFIED_METHOD_MISMATCH",
+    "CLOSURE_CLASS_METHOD_WRAPPER_STATE_MISMATCH",
+    "CLOSURE_CLASS_UNCERTIFIED_METHOD_PRESENT",
+    "CLOSURE_VALUE_FINGERPRINT_MISMATCH",
+    "CLOSURE_VALUE_NOT_STATICALLY_DERIVABLE",
+    "CLOSURE_IMPORT_KIND_MISMATCH",
+    "CLOSURE_IMPORT_NOT_BOUND_IN_SYS_MODULES",
+    "CLOSURE_IMPORT_ORIGIN_MISMATCH",
+    "CLOSURE_IMPORT_SOURCE_IDENTITY_MISMATCH",
+    "CLOSURE_IMPORT_OBJECT_IDENTITY_MISMATCH",
+    "CLOSURE_IMPORT_PROJECT_FUNCTION_MISMATCH"
+  ],
+  "contract_version": "ETF_CALENDAR_TRANSITIVE_EXECUTION_CLOSURE_RULE_V1_PAD3",
+  "definition_sha256": "7867c87fc41b895270f48f3fe2490464f97fb35b335a0c71b17b2db2dd3e0b56",
+  "derivation": "MECHANICAL_FIXPOINT_OVER_THE_MODULE_LEVEL_NAMES_THE_CERTIFIED_OWNER_CODE_OBJECTS_CAN_LOAD_PLUS_THE_DECLARED_STORE_ROOT_ANNOTATION_TYPE",
+  "derivation_is_a_hand_maintained_list": false,
+  "function_members_use_the_full_runtime_owner_identity_contract": true,
+  "instruction_scan_deoptimizes_specialized_instructions": true,
+  "interpreter_provided_import_members_attested_by": [
+    "SYS_MODULES_BINDING_IDENTITY",
+    "ORIGIN_ATTRIBUTE_IDENTITY"
+  ],
+  "interpreter_provided_module_internals_attested": false,
+  "interpreter_provided_module_internals_rationale": "THE_FROZEN_PROOF_INTERPRETER_IDENTITY_IS_ALREADY_AN_EXPLICIT_AXIOM_OF_THIS_ARCHITECTURE_AND_IS_NOT_RE_PROVED_FUNCTION_BY_FUNCTION",
+  "project_owned_import_members_attested_by": [
+    "SYS_MODULES_BINDING_IDENTITY",
+    "ORIGIN_ATTRIBUTE_IDENTITY",
+    "CERTIFIED_MODULE_SOURCE_SHA256",
+    "EVERY_TOP_LEVEL_FUNCTION_UNDER_THE_RUNTIME_IDENTITY_CONTRACT"
+  ],
+  "project_owned_import_whole_module_function_attestation": true,
+  "project_owned_reexport_chain_followed_to_the_defining_module": true,
+  "recurses_into_nested_code_objects": true,
+  "seeded_by": [
+    "EXACT_FROZEN_REPLAY_OWNERS",
+    "DECLARED_CalendarEvidenceStore_ROOT_ANNOTATION_TYPE"
+  ],
+  "unresolved_closure_name": "CLASSIFIED_AS_A_BUILTIN_AND_REPORTED",
+  "value_expectation_source": "REVIEWED_SOURCE_LITERAL",
+  "value_members_attested_by": "DETERMINISTIC_DEEP_TYPED_VALUE_FINGERPRINT",
+  "value_that_is_not_a_reviewable_literal": "REFUSE_AS_CLOSURE_VALUE_NOT_STATICALLY_DERIVABLE",
+  "why": "ATTESTING_ONLY_THE_ELEVEN_ENTRY_BINDINGS_MEASURES_WHO_IS_CALLED_NOT_WHAT_EXECUTES_SO_A_PERSISTENT_REPLACEMENT_OF_ANY_REACHABLE_CALLEE_VALUE_OR_DEPENDENCY_WOULD_CHANGE_THE_SCIENCE_WITH_EVERY_OWNER_FINGERPRINT_INTACT"
+}

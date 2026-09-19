@@ -1,0 +1,41 @@
+{
+  "annotated_store_kwargs_permitted": false,
+  "annotated_store_varargs_permitted": false,
+  "bound_method_store_extraction_permitted": false,
+  "capability_escape_permitted": false,
+  "container_derived_stores_permitted": false,
+  "contract_version": "ETF_CALENDAR_STORE_ROOT_AND_DIRECT_USE_GRAMMAR_V1_PAD3",
+  "definition_sha256": "48e6a0d23a121025122a1e411b4b2f573007e8195e2c1c5f41af1c3df1ab3546",
+  "direct_call_ast_shape": "ast.Call(func=ast.Attribute(value=EXACT_IMMUTABLE_ROOT, attr=DOCUMENTED_API))",
+  "documented_apis": [
+    "put",
+    "get",
+    "records",
+    "envelopes"
+  ],
+  "forward_target": "EXACT_FROZEN_REPLAY_OWNER_REGISTRY",
+  "implementation_private_authoritative_state": [
+    "_records",
+    "_envelopes"
+  ],
+  "local_store_construction_permitted": false,
+  "naming_heuristics_permitted": false,
+  "nested_annotated_owners_permitted": false,
+  "nested_store_capture_permitted": false,
+  "normal_form": "DIRECT_IMMUTABLE_STORE_PARAMETER_NORMAL_FORM",
+  "ordinary_parameter_kinds": [
+    "POSITIONAL_ONLY",
+    "POSITIONAL_OR_KEYWORD",
+    "KEYWORD_ONLY"
+  ],
+  "other_roots_or_derivations": "FAIL_UNTIL_EXPLICIT_REVIEWED_AUTHORITY_CHANGE",
+  "permitted_categories": [
+    "PERMITTED_DIRECT_STORE_API_CALL",
+    "PERMITTED_ENUMERATED_OWNER_FORWARD"
+  ],
+  "private_authoritative_state_access_permitted": false,
+  "starred_store_forwarding_permitted": false,
+  "supported_root": "ORDINARY_PARAMETER_EXPLICITLY_ANNOTATED_CalendarEvidenceStore",
+  "transparent_aliases_permitted": false,
+  "unknown_store_forwarding_permitted": false
+}

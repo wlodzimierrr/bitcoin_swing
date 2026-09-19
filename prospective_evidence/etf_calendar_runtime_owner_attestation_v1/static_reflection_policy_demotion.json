@@ -1,0 +1,48 @@
+{
+  "contract_version": "ETF_CALENDAR_STATIC_REFLECTION_POLICY_DEMOTION_V1_PAD3",
+  "definition_sha256": "77739a32996690db8141b41adbeff810a3846b4ec0d6bef9e9f8f538021c36b8",
+  "demoted_static_function_object_attributes": [
+    "__closure__",
+    "__code__",
+    "__defaults__",
+    "__dict__",
+    "__func__",
+    "__globals__",
+    "__kwdefaults__",
+    "__name__",
+    "__qualname__",
+    "__wrapped__"
+  ],
+  "demoted_static_names": [
+    "__import__",
+    "compile",
+    "delattr",
+    "eval",
+    "exec",
+    "execfile",
+    "globals",
+    "locals",
+    "setattr",
+    "vars"
+  ],
+  "detection_requires_knowing_how_the_mutation_was_performed": false,
+  "enumerating_more_reflection_names_is_a_valid_correction": false,
+  "failed_static_owner_identity_claim": "A_LIST_SUCH_AS_globals_locals_vars_setattr_delattr_sys_modules_object___setattr___type___setattr___ENUMERATES_EVERY_WAY_PYTHON_CAN_REPLACE_A_MODULE_BINDING_OR_FUNCTION_BEHAVIOUR",
+  "frozen_finding": "STATIC_REFLECTION_BLACKLIST_IS_NOT_OWNER_IDENTITY_PROOF",
+  "reflection_blacklist_complete": false,
+  "retained_roles": [
+    "DIAGNOSTIC",
+    "DEFENCE_IN_DEPTH",
+    "CODING_POLICY_ENFORCEMENT"
+  ],
+  "static_reflection_blacklist_is_scientific_completeness_authority": false,
+  "substitution_forms_detected_behaviourally_not_syntactically": [
+    "MODULE_DICTIONARY_OWNER_REPLACEMENT",
+    "OWNER___setattr___CODE_MUTATION",
+    "object___setattr___CODE_MUTATION",
+    "type_OWNER___setattr___CODE_MUTATION",
+    "SAME_CODE_FOREIGN_GLOBALS_RECONSTRUCTION",
+    "DEFAULTS_OR_KWDEFAULTS_MUTATION",
+    "WRAPPER_PARTIAL_BOUND_METHOD_OR_CALLABLE_OBJECT_SUBSTITUTION"
+  ]
+}

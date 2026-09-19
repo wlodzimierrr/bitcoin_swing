@@ -1,0 +1,28 @@
+{
+  "artifact_builder_determinism_governed_by": "EXISTING_ARTIFACT_TESTS",
+  "artifact_builder_dispatch_classification": "NON_SCIENTIFIC_ARTIFACT_GENERATION_DISPATCH",
+  "artifact_builder_dispatch_mutates_effective_replay_owner_bindings": false,
+  "artifact_builder_dispatch_rewrite_required_solely_by_owner_identity": false,
+  "artifact_builder_dispatch_sites": [
+    "_children",
+    "_semantic_ast_sha256",
+    "restore_artifacts",
+    "write_artifacts"
+  ],
+  "classification_method": "MECHANICAL_AST_CLASSIFICATION_OF_EVERY_MODULE_NAMESPACE_REACH_PLUS_EFFECTIVE_RUNTIME_OWNER_ATTESTATION_BEFORE_AND_AFTER_ARTIFACT_GENERATION",
+  "contract_version": "ETF_CALENDAR_MODULE_NAMESPACE_REACH_CLASSIFICATION_V1_PAD3",
+  "definition_sha256": "7bbaa231bf96524c662c71dc27eb99864a7c6186c1e0f0631088fdd323e3b83a",
+  "known_reach_site_count": 5,
+  "known_reach_sites": [
+    "_children",
+    "_install_exact_dependency_guards",
+    "_semantic_ast_sha256",
+    "restore_artifacts",
+    "write_artifacts"
+  ],
+  "namespace_write_to_a_frozen_owner_name": "REFUSE",
+  "unclassified_namespace_reach": "REFUSE",
+  "wrapper_installer_removal_authority": "CERTIFIED_DIRECT_BODY_ARCHITECTURE_FORBIDS_WRAPPER_INSTALLED_GUARDS",
+  "wrapper_installer_removal_required": true,
+  "wrapper_installer_site": "_install_exact_dependency_guards"
+}

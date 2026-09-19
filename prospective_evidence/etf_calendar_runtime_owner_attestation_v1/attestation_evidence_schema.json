@@ -1,0 +1,31 @@
+{
+  "attestation_digest_is_deterministic": true,
+  "attestation_digest_reproduces_across_processes_and_hash_seeds": true,
+  "contract_version": "ETF_CALENDAR_ATTESTATION_EVIDENCE_SCHEMA_V1_PAD3",
+  "decision_time_is_supplied_by_the_caller_not_read_from_a_clock": true,
+  "definition_sha256": "d45a6c0f20a1316e4f96e35c4a4fe46f3ad3e1e7147f517b06b2b6ff41d9d3be",
+  "digest_material": "STABLE_REVIEWED_EXECUTION_IDENTITY_ONLY",
+  "evidence_per_scientific_execution_epoch": true,
+  "fields": [
+    "execution_epoch_id",
+    "calendar_authority_sha256",
+    "proof_architecture_sha256",
+    "reviewed_source_sha256",
+    "proof_interpreter_identity",
+    "module_identity",
+    "pre_owner_attestation_digest",
+    "post_owner_attestation_digest",
+    "attestation_match",
+    "result_admitted",
+    "failure_reason",
+    "decision_time"
+  ],
+  "forbidden_digest_material": [
+    "OBJECT_ID",
+    "MEMORY_ADDRESS",
+    "REPR_CONTAINING_AN_ADDRESS",
+    "PROCESS_RANDOMIZED_OBJECT_REPRESENTATION"
+  ],
+  "raw_python_object_addresses_persisted_as_scientific_identity": false,
+  "refused_epoch_records_its_failure_reason": true
+}
