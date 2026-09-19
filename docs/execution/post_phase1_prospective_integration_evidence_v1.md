@@ -3846,7 +3846,7 @@ trusted persistence, failed PAD2 lineage, BTC-019 and Epic T remain unchanged.
 **Required review:** POSTP1-002V2A-PAD4, one independent exact-hash xHigh
 proof-architecture review
 **Artifacts:** `prospective_evidence/etf_calendar_isolated_scientific_worker_v1/`
-**Decision commit:** `PENDING_COMMIT`
+**Decision commit:** `02df82c2516ebcc50a592e5466fd15a61dcee481`
 **Decision hash:** `cc1b325a656f5b0be046d46700a4fcb9ad7ad94bf9b3440acac164677b809e78`
 
 ### New proof architecture

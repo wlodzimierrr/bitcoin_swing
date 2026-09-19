@@ -272,7 +272,7 @@ alembic, cryptography, numpy, scipy, sqlalchemy (exact version, install
 location and installed RECORD digest bound per launch, not in the artifact)
 
 POSTP1-001V2A-PAD4 decision commit =
-PENDING_COMMIT
+02df82c2516ebcc50a592e5466fd15a61dcee481
 
 POSTP1-001V2A-PAD4 result =
 IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH
@@ -758,7 +758,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4 decision
-  commit `PENDING_COMMIT` freezes `cc1b325a...7b809e78` and awaits
+  commit `02df82c2516ebcc50a592e5466fd15a61dcee481` freezes `cc1b325a...7b809e78` and awaits
   POSTP1-002V2A-PAD4. POSTP1-001V2A-PAD3 decision
   commit `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9` freezes failed candidate
   `b8f8b92d...f6b5b996`; POSTP1-002V2A-PAD3 failed its independent exact-hash
