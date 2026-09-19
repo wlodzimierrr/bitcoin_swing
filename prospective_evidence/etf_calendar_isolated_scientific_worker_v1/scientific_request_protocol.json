@@ -1,0 +1,75 @@
+{
+  "authoritative_envelope_replay_uses_the_certified_trusted_persistence_authority": true,
+  "authoritative_evidence_admission_mode": "PRODUCTION_SIGNED_ENVELOPE_REPLAY",
+  "contract_version": "ETF_CALENDAR_SCIENTIFIC_WORKER_REQUEST_V1",
+  "decimals": "CANONICAL_STRINGS_NEVER_BINARY_FLOATS",
+  "definition_sha256": "b7cea8a402e142956b1fe3eaa0696392d16bb3aad5ee1ab56de3040296975363",
+  "encoding": "CANONICAL_JSON_BYTES",
+  "evidence_reconstruction": "THE_WORKER_REBUILDS_A_READ_ONLY_EVIDENCE_VIEW_FROM_CANONICAL_DATA",
+  "executable_payload_permitted": false,
+  "fields": [
+    "calendar_authority_sha256",
+    "calendar_authority_version",
+    "decision_time",
+    "evidence_admission_mode",
+    "evidence_records",
+    "interpreter_identity",
+    "operation",
+    "operation_inputs",
+    "project_root",
+    "project_source_manifest",
+    "project_source_manifest_digest",
+    "request_schema_version",
+    "required_project_modules",
+    "sys_path",
+    "third_party_manifest",
+    "third_party_manifest_digest",
+    "trusted_persistence_authority_sha256",
+    "worker_authority_sha256",
+    "worker_authority_version",
+    "worker_entrypoint_module",
+    "worker_entrypoint_sha256",
+    "worker_protocol_sha256"
+  ],
+  "forbidden_request_payloads": [
+    "ARBITRARY_CALLABLE_OBJECTS",
+    "ARBITRARY_PICKLED_OBJECTS",
+    "CLASSES",
+    "FUNCTIONS",
+    "LIVE_CalendarEvidenceStore_OBJECT",
+    "MODULE_OBJECTS"
+  ],
+  "frozen_operations": [
+    "common_etf_session_status",
+    "derive_etf_window_calendar",
+    "scientific_etf_flow_window"
+  ],
+  "input_digest_persisted": true,
+  "missing_fields": "REFUSE",
+  "nan_or_infinity": "REFUSE",
+  "operation_inputs": {
+    "common_etf_session_status": [
+      "trade_date"
+    ],
+    "derive_etf_window_calendar": [
+      "earliest_date",
+      "end_date",
+      "window_days"
+    ],
+    "scientific_etf_flow_window": [
+      "as_of",
+      "earliest_date",
+      "end_date",
+      "etf_flows",
+      "funds",
+      "window_days"
+    ]
+  },
+  "parent_python_objects_shared": false,
+  "prototype_evidence_admission_mode": "NON_AUTHORITATIVE_CANONICAL_RECORD_REPLAY",
+  "prototype_mode_is_scientific_authority": false,
+  "schema_validated": true,
+  "timestamps": "CANONICAL_UTC_ROUND_TRIP_REQUIRED",
+  "transport": "WORKER_STDIN",
+  "unknown_fields": "REFUSE"
+}

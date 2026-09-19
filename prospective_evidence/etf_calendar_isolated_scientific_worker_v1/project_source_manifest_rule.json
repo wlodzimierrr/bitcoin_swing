@@ -1,0 +1,34 @@
+{
+  "ancestor_packages_included": true,
+  "bound_per_entry": [
+    "canonical_module_name",
+    "canonical_source_path",
+    "sha256"
+  ],
+  "certified_source_sha_mismatch": "REFUSE",
+  "contract_version": "ETF_CALENDAR_WORKER_PROJECT_SOURCE_MANIFEST_RULE_V1_PAD4",
+  "definition_sha256": "2c204435c4d22df095f84d67d7909dd7822e959ac1bfd12ffbd0b31ea22d2451",
+  "derivation_rule": "RECURSIVE_PROJECT_IMPORT_CLOSURE_FROM_THE_SCIENTIFIC_WORKER_ENTRYPOINT_USING_STATIC_IMPORT_DECLARATIONS",
+  "generated_class_methods_governed_by": [
+    "CERTIFIED_CPYTHON_AND_STDLIB_ENVIRONMENT",
+    "CERTIFIED_SOURCE_DECLARATION",
+    "FRESH_ISOLATED_CONSTRUCTION"
+  ],
+  "generated_runtime_methods_hand_fingerprinted": false,
+  "hand_maintained_helper_constant_or_class_list": false,
+  "manifest_version": "ETF_CALENDAR_WORKER_PROJECT_SOURCE_MANIFEST_V1",
+  "mechanically_derivable": true,
+  "missing_required_manifest_member": "REFUSE",
+  "package_reexport_direct_import_reduction": "PERMITTED_LATER_NOT_IN_THIS_TICKET",
+  "post_execution_verification_attests_every_runtime_object": false,
+  "post_execution_verification_is_defence_in_depth": true,
+  "project_owned_module_outside_the_manifest_may_execute": false,
+  "project_runtime_objects_are_freshly_constructed_from_certified_source": true,
+  "proof_boundary": "CERTIFIED_SOURCE_MODULES",
+  "proof_boundary_is_not": "EVERY_RUNTIME_CONSTANT_FUNCTION_CLASS_OBJECT_REACHABLE_AFTER_IMPORT",
+  "source_change_altering_a_generated_class": "CHANGES_THE_MANIFEST_AND_REQUIRES_REFREEZE",
+  "unexpected_project_module": "REFUSE",
+  "verified_again_before_emitting_a_successful_result": true,
+  "verified_before_scientific_execution": true,
+  "wrong_project_module_origin": "REFUSE"
+}

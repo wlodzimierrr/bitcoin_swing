@@ -1,0 +1,25 @@
+{
+  "capability_width_reason": "the current package re-export graph pulls btc_predictor.db and HTTPS-capable calendar collection modules into the certified import closure even though no frozen operation reaches them; the direct-import reduction that narrows this is explicitly deferred to the final calendar implementation ticket",
+  "certified_source_universe_includes_db_and_network_capable_modules": true,
+  "collection_authority_moved_into_the_worker": false,
+  "collection_remains_a_separate_governed_boundary": true,
+  "contract_version": "ETF_CALENDAR_WORKER_IO_AND_CAPABILITY_BOUNDARY_V1_PAD4",
+  "definition_sha256": "49bd055baf6182800570cf6805c6c393411799423bb0fc935a1bf4d2879fcd7b",
+  "enforcement": [
+    "FROZEN_READ_ONLY_OPERATION_REGISTRY",
+    "FROZEN_MINIMAL_CHILD_ENVIRONMENT",
+    "STATIC_CLOSED_WORKER_SOURCE_PROHIBITION"
+  ],
+  "operating_system_level_network_sandbox_claimed": false,
+  "preferred_boundary": "NO_WORKER_DATABASE_CONNECTION",
+  "result_admission_is_a_controller_responsibility": true,
+  "scientific_input_supplied_by_the_controller": true,
+  "signing_key_environment_variable_present": "REFUSE",
+  "worker_authoritative_db_write_permitted": false,
+  "worker_collector_signing_capability_permitted": false,
+  "worker_database_connection": "NOT_ESTABLISHED_BY_ANY_FROZEN_OPERATION",
+  "worker_https_permitted": false,
+  "worker_is_a_scientific_evaluator_not_the_acquisition_signer": true,
+  "worker_network_permitted": false,
+  "worker_private_signing_key_permitted": false
+}

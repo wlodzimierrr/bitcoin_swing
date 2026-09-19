@@ -1,0 +1,41 @@
+{
+  "ast_use_audit_must_pass_before_graph_extraction": true,
+  "both_layers_required": true,
+  "compiled_root_witness_must_pass_before_graph_extraction": true,
+  "contract_version": "ETF_CALENDAR_REPLAY_OWNER_GRAPH_RULE_V1_PAD4",
+  "cycles_permitted": false,
+  "definition_sha256": "b4741b06dcca99a4db666d940bbdec59f78610b1188ca48d35c4a74757487d6d",
+  "documented_terminals": [
+    "put",
+    "get",
+    "records",
+    "envelopes"
+  ],
+  "edge_kinds": [
+    "DOCUMENTED_STORE_API_TERMINAL",
+    "ENUMERATED_REPLAY_OWNER_EDGE"
+  ],
+  "either_layer_substitutes_for_the_other": false,
+  "every_owner_has_an_evidence_edge": true,
+  "every_owner_path_terminates_at_documented_store_api": true,
+  "owner_census_relation": "FROZEN_EQUALS_SOURCE_DISCOVERED_EQUALS_11",
+  "owner_count": 11,
+  "owners": [
+    "derive_normalized_schedule_from_official_source",
+    "venue_session_calendar_record",
+    "_verify_schedule",
+    "_verify_schedule_record",
+    "validate_normalized_schedule_against_source",
+    "_verify_venue_row",
+    "venue_session_status",
+    "common_etf_session_status",
+    "expected_etf_publication_dates",
+    "derive_etf_window_calendar",
+    "scientific_etf_flow_window"
+  ],
+  "process_isolation_redefines_the_owner_graph": false,
+  "runtime_owner_attestation_demoted_reason": "measured same-process owner identity is not a completeness proof; the certified isolated source universe replaces it",
+  "runtime_owner_attestation_required_at_execution": false,
+  "static_graph_proves": "CERTIFIED_SOURCE_STRUCTURE",
+  "unknown_forwarding_permitted": false
+}

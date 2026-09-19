@@ -1,0 +1,36 @@
+{
+  "abandoned_completeness_models": [
+    "GENERATED_RUNTIME_METHOD_ENUMERATION",
+    "RECURSIVE_SAME_PROCESS_RUNTIME_OBJECT_ATTESTATION",
+    "REFLECTION_BLACKLIST_COMPLETENESS",
+    "TRANSITIVE_MUTABLE_OBJECT_CLOSURE_ACROSS_THE_REPOSITORY"
+  ],
+  "certified_self_mutation_is_program_behavior_not_ambient_drift": true,
+  "certified_source_may_mutate_its_own_globals": true,
+  "contract_version": "ETF_CALENDAR_TRUSTED_PROCESS_AND_ISOLATION_BOUNDARY_V1_PAD4",
+  "definition_sha256": "9b56e721b8ad589d718c4d07c598cb72805bc15e89f90c5ddffc6acd4153476a",
+  "demoted_pad3_runtime_closure": {
+    "classes": 7,
+    "functions": 25,
+    "imports": 14,
+    "values": 15
+  },
+  "demoted_pad3_runtime_closure_role": "ARCHIVED_DIAGNOSTIC_EVIDENCE",
+  "escalation_rationale": "same-process scientific identity approaches failed because the mutable execution surface expands transitively through project-owned modules and generated runtime objects; PAD4 isolates mutable runtime state rather than enumerating it",
+  "hostile_operating_system_resistance_claimed": false,
+  "out_of_scope": [
+    "HOSTILE_DEBUGGER_ATTACHMENT",
+    "KERNEL_COMPROMISE",
+    "MALICIOUS_MODIFICATION_PERFECTLY_RACING_FILE_VERIFICATION",
+    "OPERATING_SYSTEM_MEMORY_INJECTION"
+  ],
+  "process_isolation_is_scientific_execution_boundary": true,
+  "runtime_object_closure_is_completeness_proof": false,
+  "scientific_execution_boundary": "OPERATING_SYSTEM_PROCESS",
+  "trusted_once": [
+    "CERTIFIED_PROJECT_SOURCE_ADMISSION_PASSES",
+    "CERTIFIED_THIRD_PARTY_ENVIRONMENT_ADMISSION_PASSES",
+    "FROZEN_INTERPRETER_IDENTITY_PASSES"
+  ],
+  "worker_trusted_after_admission": true
+}

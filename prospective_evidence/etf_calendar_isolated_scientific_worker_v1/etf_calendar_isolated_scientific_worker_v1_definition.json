@@ -1,0 +1,132 @@
+{
+  "authorization": {
+    "calendar_implementation_may_begin": false,
+    "independent_proof_architecture_xhigh_review_may_begin": true,
+    "postp1_001v2r1_may_begin": false,
+    "prospective_collection_may_begin": false
+  },
+  "central_decisions": {
+    "artifact_builder_dispatch_rewrite_required_by_this_decision": false,
+    "calendar_production_code_changed": false,
+    "calendar_science_changed": false,
+    "closed_ast_store_use_grammar_preserved": true,
+    "compiled_root_witness_preserved": true,
+    "direct_body_dependency_checks_preserved": true,
+    "dynamic_project_import_permitted": false,
+    "exact_eleven_owner_graph_preserved": true,
+    "fork_only_worker_permitted": false,
+    "generated_runtime_method_enumeration_required": false,
+    "hostile_operating_system_resistance_claimed": false,
+    "lazy_result_permitted": false,
+    "long_lived_worker_permitted": false,
+    "one_request_one_exec_process": true,
+    "parent_python_objects_shared": false,
+    "pickle_ipc_permitted": false,
+    "process_isolation_is_scientific_execution_boundary": true,
+    "project_source_manifest_required": true,
+    "reflection_blacklist_complete": false,
+    "root_may_be_a_cell_variable_of_a_conforming_owner": false,
+    "runtime_object_closure_is_completeness_proof": false,
+    "transitive_mutable_object_closure_required": false,
+    "unexpected_project_module_permitted": false,
+    "worker_authoritative_db_write_permitted": false,
+    "worker_network_permitted": false,
+    "worker_private_signing_key_permitted": false,
+    "wrapper_installed_guards_permitted": false
+  },
+  "certified_dependency_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "child_definition_sha256": {
+    "compiled_root_binding_witness_rule": "63003af03005448a1afea4fc32f63adcd68558548d17a11562463b1e5b46fa3c",
+    "controller_result_admission_rule": "5d0c7819a78f92ca268b9b5dfd6c812b0201d28519c2ea1f9f098e6d5f72e623",
+    "direct_body_dependency_rule": "2dede878c3084897c77bc37d70f79048443a2e599be4ec8a7a9e5ad2271ecc27",
+    "dynamic_import_and_execution_prohibition": "7807c4c412155a7b02c28916cc4a31a01b77dd7b387a62158e3e99c0bd50a59e",
+    "project_source_manifest_rule": "2c204435c4d22df095f84d67d7909dd7822e959ac1bfd12ffbd0b31ea22d2451",
+    "proof_interpreter_identity": "1f64b051d51fc8cd16da8911a69fe78ab0b71cd29c6ff452f47f78c50653bea3",
+    "proof_order_and_completeness_definition": "4401adf9c1791fcab02da32b2162b5dc723114f4035cf4a0d4679a6300ca6293",
+    "replay_owner_graph_rule": "b4741b06dcca99a4db666d940bbdec59f78610b1188ca48d35c4a74757487d6d",
+    "science_lineage_and_safety": "0be8f5423e7f0bad6ec2da81e912b36fd0991c693b64a427bd89a9eea4e62440",
+    "scientific_request_protocol": "b7cea8a402e142956b1fe3eaa0696392d16bb3aad5ee1ab56de3040296975363",
+    "scientific_response_protocol": "caa1c6a45a4a6634556e5496b3a26a44085af57e67c258a210e0a7f0daa37be4",
+    "store_root_and_direct_use_grammar": "5d25722107f9e2a3a7487c98282d91a3a8b9f1b3140fca61403ffb3e39953356",
+    "third_party_dependency_manifest_rule": "28161a5ecc65a85fab6df77f911bd52f8bb8a8d7b271b4a04730c66da10a68e2",
+    "trusted_process_and_isolation_boundary": "9b56e721b8ad589d718c4d07c598cb72805bc15e89f90c5ddffc6acd4153476a",
+    "worker_io_and_capability_boundary": "49bd055baf6182800570cf6805c6c393411799423bb0fc935a1bf4d2879fcd7b",
+    "worker_launch_contract": "d6009c2586a03e74434aa01b497286039b177941c62a45980fae442c79dc1860",
+    "worker_project_source_manifest": "f74ff52e957108e4fb4aeb0efcd0fa2b095e64fa0e54d59c81f72e6b77dda702"
+  },
+  "current_production_expected_result": {
+    "artifact_builder_dispatch_rewrite_required_solely_by_this_decision": false,
+    "ast_store_use_normal_form": "REFUSED_AT_THE_SAME_GENERATOR_CAPTURE",
+    "both_static_layers_refuse_the_same_single_construct": true,
+    "calendar_implementation": "BLOCKED",
+    "calendar_production_conformance": "NO",
+    "compiled_root_binding_witness": "BINDING_PROOF_COMPATIBLE",
+    "direct_dependency_body_findings": {
+      "bodies_absent": [],
+      "bodies_present": [
+        "CalendarEvidenceStore.envelopes",
+        "CalendarEvidenceStore.get",
+        "CalendarEvidenceStore.put",
+        "CalendarEvidenceStore.records",
+        "collect_official_calendar"
+      ],
+      "bodies_without_the_direct_dependency_assertion": [
+        "CalendarEvidenceStore.envelopes",
+        "CalendarEvidenceStore.get",
+        "CalendarEvidenceStore.put",
+        "CalendarEvidenceStore.records",
+        "collect_official_calendar"
+      ],
+      "conforms": false,
+      "decorated_bodies": [],
+      "required_direct_bodies": [
+        "CalendarEvidenceStore.put",
+        "CalendarEvidenceStore.get",
+        "CalendarEvidenceStore.records",
+        "CalendarEvidenceStore.envelopes",
+        "collect_official_calendar"
+      ]
+    },
+    "isolated_scientific_worker_implemented_in_production": false,
+    "module_namespace_reach_scopes": [
+      "_children",
+      "_install_exact_dependency_guards",
+      "_semantic_ast_sha256",
+      "restore_artifacts",
+      "write_artifacts"
+    ],
+    "module_namespace_write_scopes": [
+      "_install_exact_dependency_guards"
+    ],
+    "reviewed_source_sha256": "49fa356e48426aaaea0be987930062f85058839f9efd73feb2d210b3b79c4145",
+    "root_cell_finding": "common_etf_session_status:evidence_store",
+    "root_write_clear_or_delete_findings": 0,
+    "wrapper_installer_removal_required": true
+  },
+  "decision_version": "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1",
+  "definition_sha256": "cc1b325a656f5b0be046d46700a4fcb9ad7ad94bf9b3440acac164677b809e78",
+  "failed_parent_certified": false,
+  "failed_parent_sha256": "b8f8b92d4e3c1c80c4226f7101e71f95d125bd48afbfcde72e489408f6b5b996",
+  "final_classification": "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_READY_FOR_XHIGH_REVIEW",
+  "material_child_count": 17,
+  "material_child_enumeration": "MECHANICALLY_ENUMERATED_FROM_ONE_REGISTRY",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-PAD4",
+  "proof_interpreter": {
+    "cache_tag": "cpython-312",
+    "hexversion": 51121904,
+    "implementation_name": "cpython",
+    "magic_number_hex": "cb0d0d0a",
+    "version_major": 3,
+    "version_micro": 14,
+    "version_minor": 12,
+    "version_releaselevel": "final",
+    "version_serial": 0
+  },
+  "proof_strategy": "CERTIFIED_SOURCE_PLUS_FROZEN_CPYTHON_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER",
+  "required_review": "POSTP1-002V2A-PAD4_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW",
+  "status": "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_REVIEW",
+  "worker_project_source_manifest_digest": "674b006ae66b8aace3458cb870f898ecad33e1f23833436954d36749b3aadbb8",
+  "worker_project_source_module_count": 116,
+  "workstream": "EPIC X \u2014 PROSPECTIVE INTEGRATION EVIDENCE"
+}

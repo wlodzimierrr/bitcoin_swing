@@ -1,0 +1,28 @@
+{
+  "arbitrary_site_packages_state_is_scientific_authority": false,
+  "bound_per_entry": [
+    "distribution",
+    "installed_record_manifest_sha256",
+    "installed_record_manifest_path",
+    "install_location",
+    "root_modules",
+    "version"
+  ],
+  "contract_version": "ETF_CALENDAR_WORKER_THIRD_PARTY_MANIFEST_RULE_V1_PAD4",
+  "definition_sha256": "28161a5ecc65a85fab6df77f911bd52f8bb8a8d7b271b4a04730c66da10a68e2",
+  "environment_manifest_binding_reason": "install locations, versions and wheel record digests are machine-specific environment material; binding them into the decision artifact would make the frozen decision hash environment-dependent and unreproducible for an independent reviewer, so the artifact freezes the rule and the derived distribution roots while every launch binds the exact environment identity into the request and the response",
+  "environment_manifest_is_launch_bound_not_artifact_bound": true,
+  "frozen_distribution_roots": [
+    "alembic",
+    "cryptography",
+    "numpy",
+    "scipy",
+    "sqlalchemy"
+  ],
+  "installed_record_is_itself_a_per_file_hash_manifest": true,
+  "loaded_dependency_must_resolve_inside_the_certified_location": true,
+  "non_certified_dependency_environment": "REFUSE",
+  "non_stdlib_dependency_must_be_explicitly_frozen": true,
+  "stdlib_modules_recursively_attested": false,
+  "worker_verifies_without_importlib": true
+}

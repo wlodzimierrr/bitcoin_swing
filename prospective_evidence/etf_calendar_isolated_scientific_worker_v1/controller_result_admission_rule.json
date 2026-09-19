@@ -1,0 +1,33 @@
+{
+  "any_mismatch": [
+    "RESULT_NOT_ADMITTED",
+    "DATA_QUALITY_FAIL"
+  ],
+  "contract_version": "ETF_CALENDAR_CONTROLLER_RESULT_ADMISSION_RULE_V1_PAD4",
+  "definition_sha256": "5d0c7819a78f92ca268b9b5dfd6c812b0201d28519c2ea1f9f098e6d5f72e623",
+  "persistence_follows_admission": true,
+  "result_admission_precedes_any_persistence": false,
+  "scientific_success_requires": [
+    "EXPECTED_PROCESS_EXIT",
+    "SUCCESSFUL_WORKER_SELF_VERIFICATION",
+    "VALID_CANONICAL_RESPONSE"
+  ],
+  "silent_retry_with_a_different_authority_path": false,
+  "unexpected_crash_signal_timeout_protocol_error_or_extra_output": [
+    "RESULT_NOT_ADMITTED",
+    "DATA_QUALITY_FAIL"
+  ],
+  "validated_before_admission": [
+    "clean_process_termination",
+    "interpreter_identity",
+    "operation_identity",
+    "request_digest_echo_binding",
+    "response_schema_version",
+    "result_digest",
+    "success_status",
+    "worker_authority_identity",
+    "worker_source_manifest_identity"
+  ],
+  "worker_authority_hash_binding_reason": "the decision hash is derived from the decision artifact, which is deliberately outside the worker's certified source universe; the worker proves its entrypoint, protocol, project source, dependency and interpreter identity, and the controller binds the frozen decision hash by echo comparison",
+  "worker_authority_hash_is_controller_bound": true
+}

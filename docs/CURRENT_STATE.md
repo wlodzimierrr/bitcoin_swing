@@ -243,6 +243,41 @@ PROOF-ARCHITECTURE REVIEW
 POSTP1-002V2A-PAD3 review result =
 FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE
 
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1 =
+FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_PROOF_ARCHITECTURE_REVIEW
+
+ETF calendar isolated scientific worker decision hash =
+cc1b325a656f5b0be046d46700a4fcb9ad7ad94bf9b3440acac164677b809e78
+
+material child contracts bound by the isolated worker decision = 17
+
+isolated scientific worker proof strategy =
+CERTIFIED_SOURCE_PLUS_FROZEN_CPYTHON_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER
+
+runtime object closure is the completeness proof =
+NO (abandoned; PAD3's 25 functions / 7 classes / 15 values / 14 imports is now
+archived diagnostic evidence only)
+
+scientific execution boundary =
+FRESH EXEC'D CPYTHON 3.12.14 PROCESS, ONE REQUEST PER PROCESS, NO SHARED
+MUTABLE PYTHON STATE WITH THE APPLICATION PROCESS
+
+certified worker project source manifest =
+ETF_CALENDAR_WORKER_PROJECT_SOURCE_MANIFEST_V1; 116 mechanically derived
+project modules at digest
+674b006ae66b8aace3458cb870f898ecad33e1f23833436954d36749b3aadbb8
+
+frozen worker third-party distribution roots =
+alembic, cryptography, numpy, scipy, sqlalchemy (exact version, install
+location and installed RECORD digest bound per launch, not in the artifact)
+
+POSTP1-001V2A-PAD4 decision commit =
+PENDING_COMMIT
+
+POSTP1-001V2A-PAD4 result =
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH
+PROOF-ARCHITECTURE REVIEW
+
 current production compiled binding witness =
 NO ROOT WRITE, CLEAR OR DELETE IN ANY OF THE 11 OWNERS; the single compiled root
 refusal is the known common_etf_session_status generator-expression capture of
@@ -253,7 +288,7 @@ wrapper installer writes the namespace and must be removed, while the four
 read-only artifact dispatch sites need not be rewritten solely for owner identity
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_READY_FOR_XHIGH_REVIEW
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -622,29 +657,31 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD3 failed the independent
-  exact-hash xHigh proof-architecture review of
-  `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` at `b8f8b92d...f6b5b996`. The
-  owner identity, intra-module fixpoint and epoch layers reproduce, but the
-  project-owned import rule stops at module source plus top-level function
-  identity. Mutating `_flow.FIVE_DAY_ETF_FLOW_FEATURE_ID` leaves the complete
-  attestation digest unchanged, changes the scientific feature ID to `WRONG`
-  and is admitted with equal pre/post digests. `_flow` constant drift during a
-  normal or exceptional operation also escapes the post sweep. Project imported
-  classes and re-export origin bindings have equivalent gaps. Separately,
-  replacing the dataclass-generated `ScientificEtfFlowResult.__init__` leaves
-  the digest unchanged, changes the scientific result and is admitted. The
-  candidate remains immutable, non-certified, unused and at zero observations;
-  certified trusted persistence `02f96203...1a12772` is unchanged
-- **Current BLOCKED tickets:** Calendar implementation/refreeze,
-  POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked pending
-  an explicit bounded proof-architecture decision and its successful independent
-  review. Do not automatically create POSTP1-001V2A-PAD3-R1 and do not start I2
-- **Next dependency-satisfied ticket:** None. An explicit proof-architecture
-  decision must define a genuinely transitive project-import and class execution
-  closure before another implementation/refreeze may be scheduled
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4 froze the new
+  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at
+  `cc1b325a...7b809e78` with 17 mechanically enumerated parent-bound children.
+  It is not a PAD3 revision: the failed PAD3 parent `b8f8b92d...f6b5b996` is
+  untouched and uncertified, and PAD3's runtime object closure is demoted to
+  archived diagnostic evidence because enumerating the mutable execution surface
+  is not a bounded completeness argument. Scientific evaluation now happens in a
+  fresh exec'd CPython 3.12.14 process with a certified 116-module project
+  source/import universe at digest `674b006a...3aadbb8`, a canonical
+  non-executable request/response protocol, one request per process and
+  controller-side admission. Executed regressions show the parent `_flow`
+  feature-ID mutation turning the parent result into `WRONG` while the isolated
+  worker still returns `ETF_FLOW_5D`, and the parent generated-dataclass
+  `__init__` replacement leaving the worker's freshly generated class behaviour
+  untouched, with no generated-method fingerprinting. No ETF calendar production
+  code changed, the candidate is at zero observations, and certified trusted
+  persistence `02f96203...1a12772` is unchanged
+- **Current BLOCKED tickets:** Calendar implementation/refreeze
+  (POSTP1-001V2A-I2), POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection
+  remain blocked pending POSTP1-002V2A-PAD4. Do not automatically create
+  POSTP1-001V2A-PAD4-R1 and do not start I2 before that review passes
+- **Next dependency-satisfied ticket:** POSTP1-002V2A-PAD4, one independent
+  exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78`
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked pending that decision
+  POSTP1-003R3, POSTP1-004 and collection remain blocked pending that review
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning`; the third skip is the opt-in PostgreSQL test whose
   separate explicit disposable PostgreSQL 17 run passed unchanged before this
@@ -657,6 +694,30 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cryptography 50.0.1` were used on 2026-09-18. The certified
   dependency's explicit disposable PostgreSQL run and cleanup probes remain
   recorded by POSTP1-002V2B-R3
+- **Latest proof-architecture implementation validation:** POSTP1-001V2A-PAD4
+  reproduced parent `cc1b325a...7b809e78`, all 17/17 material children and
+  parent bindings, the exact CPython 3.12.14 identity shared by the worker
+  protocol and the compiled root witness, the mechanically derived 116-module
+  certified source manifest at `674b006a...3aadbb8`, the preserved 11-owner
+  census and graph and the unchanged current-production blockers. Sixteen
+  adversarial regressions executed real one-shot worker processes: parent
+  mutation of the `_flow` window constant and feature ID, the imported
+  `EtfFlowFeatureResult` class, the generated `ScientificEtfFlowResult.__init__`,
+  the `require_utc_datetime` package re-export, `sys.modules` and
+  `builtins.sum` each corrupted the parent's own evaluation and left the worker
+  result certified, while on-disk source drift, a shadowing wrong origin, an
+  unexpected project module, a tampered dependency `RECORD`, a leaked `PYTHON*`
+  environment, a signing-key variable, a drifted declared `sys.path`, a second
+  request in one process, a worker exception, a real timeout and extra stdout
+  all failed closed. A real `os.fork()` child demonstrably inherits the parent
+  mutation that exec does not. The focused PAD4 suite passed 77 tests, the
+  combined PAD4/PAD3/PAD2/PAD1-R1/PAD1 suite passed 517, and the calendar, ETF,
+  trusted-persistence and V1/V2 corpus regression passed 812 with three
+  explained skips (the opt-in PostgreSQL runtime test and two composite
+  component skips). Determinism held across three `PYTHONHASHSEED` values,
+  reversed child order, an alternate working directory and a fresh output
+  directory, under Python 3.12.14 with `cryptography 50.0.1`. No production
+  behaviour changed, so the 5,202/3 full-suite baseline remains current
 - **Latest proof-architecture validation:** POSTP1-002V2A-PAD3 independently
   reproduced parent `b8f8b92d...f6b5b996`, all 16/16 material children and
   parent bindings, CPython 3.12.14, closure digest `d41b47db...e7b7`, the exact
@@ -696,12 +757,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commit:** POSTP1-001V2A-PAD3 decision
+- **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4 decision
+  commit `PENDING_COMMIT` freezes `cc1b325a...7b809e78` and awaits
+  POSTP1-002V2A-PAD4. POSTP1-001V2A-PAD3 decision
   commit `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9` freezes failed candidate
   `b8f8b92d...f6b5b996`; POSTP1-002V2A-PAD3 failed its independent exact-hash
   xHigh proof-architecture review with no review fix because the project-import
-  and generated-class execution closure is incomplete and requires an explicit
-  new bounded proof-architecture decision.
+  and generated-class execution closure is incomplete and required an explicit
+  new bounded proof-architecture decision, which PAD4 is.
   POSTP1-001V2A-PAD2 decision
   commit `a83dcf4c5b4a5a34c251434e1488ec2b1d0cb072` freezes failed candidate
   `b5ca36bf...b2a8abe9`; POSTP1-002V2A-PAD2 failed its independent exact-hash

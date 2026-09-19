@@ -3837,6 +3837,184 @@ proof-architecture decision. Calendar implementation/refreeze,
 POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection remain blocked;
 trusted persistence, failed PAD2 lineage, BTC-019 and Epic T remain unchanged.
 
+## POSTP1-001V2A-PAD4 — `DEFINE_ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Dependency:** POSTP1-002V2A-PAD3 failure,
+`ETF_CALENDAR_PROOF_ARCHITECTURE_REQUIRES_NEW_DECISION`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** POSTP1-002V2A-PAD4, one independent exact-hash xHigh
+proof-architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_isolated_scientific_worker_v1/`
+**Decision commit:** `PENDING_COMMIT`
+**Decision hash:** `cc1b325a656f5b0be046d46700a4fcb9ad7ad94bf9b3440acac164677b809e78`
+
+### New proof architecture
+
+This is an explicit new proof-architecture decision, not a PAD3 revision. No
+`POSTP1-001V2A-PAD3-R1` was created, the failed
+`ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` parent `b8f8b92d...f6b5b996` is
+untouched and is never certified here, and the whole failed lineage
+`0c237c1b...887b55d`, `a7d2b087...534dd0`, `dc36ffe2...f1372c3e`,
+`9f6af179...7ac86295`, `7ef114fe...8d17b`, `b5ca36bf...b2a8abe9` and
+`b8f8b92d...f6b5b996` remains immutable, non-certified, unused and at zero
+observations.
+
+PAD3 proved that a clean attestation of the eleven owners plus the calendar
+module's own functions, classes, values and imports is insufficient: persistent
+mutation of `_flow.FIVE_DAY_ETF_FLOW_WINDOW_DAYS`,
+`_flow.FIVE_DAY_ETF_FLOW_FEATURE_ID`, `_flow.EtfFlowFeatureResult`, the
+`require_utc_datetime` re-export origin or the dataclass-generated
+`ScientificEtfFlowResult.__init__` changes the science while the attested
+surface is unchanged. Every earlier decision answered a defect by enlarging the
+enumerated surface, and the mutable execution surface expands transitively, so
+the enumeration can always be one object short.
+
+PAD4 therefore changes the boundary rather than the list: **do not share mutable
+Python scientific execution state with the application process**, rather than
+attempt to enumerate every mutable object capable of affecting execution.
+Recursive same-process runtime object attestation, transitive mutable-object
+closure across the repository, reflection blacklist completeness and
+generated-runtime-method enumeration are explicitly abandoned as completeness
+proofs. PAD3's measured 25-function, 7-class, 15-value, 14-import runtime
+closure is demoted to archived diagnostic evidence explaining why PAD3 failed.
+
+### The isolated scientific worker
+
+`ETF_CALENDAR_SCIENTIFIC_WORKER` is a fresh operating-system process created by
+an exec-style launch of the exact frozen CPython 3.12.14 interpreter under
+`-I -S -B`: fresh interpreter, fresh `sys.modules`, fresh project imports, no
+inherited Python module object, environment-variable Python configuration
+ignored, user site disabled, `sitecustomize`/`usercustomize` not executed,
+uncontrolled current-directory import precedence disabled and `sys.path`
+explicitly parent-controlled with no dependency on ambient `PYTHONPATH`. The
+child receives a frozen minimal environment, so parent environment drift after
+controller startup cannot reach it. A fork-only inherited interpreter is
+`NOT_AN_AUTHORIZED_SCIENTIFIC_WORKER`. One canonical request enters on stdin,
+exactly one fully materialized canonical response leaves on stdout, and the
+process exits; there is no worker pool, no reuse, no background thread, no async
+continuation and no lazy result. A wrong interpreter refuses with
+`REFUSE_SCIENTIFIC_AUTHORITY` before any project import runs.
+
+### Certified source universe, not object closure
+
+`ETF_CALENDAR_WORKER_PROJECT_SOURCE_MANIFEST_V1` is the recursive project import
+closure of the worker entrypoint, derived mechanically from static import
+declarations — nested function-level declarations included — plus every ancestor
+package, binding each module's canonical name, canonical source path and
+SHA-256. For current production it is exactly 116 modules at manifest digest
+`674b006a...3aadbb8`. No project-owned module outside the manifest may execute
+in the worker. The proof boundary is certified source modules, not every runtime
+object reachable after import, because under a fresh one-shot process every
+project-owned runtime object — including a dataclass-generated `__init__` — is
+freshly constructed from certified source under the frozen interpreter. A source
+change that alters a generated class changes the manifest and requires refreeze.
+
+Every non-stdlib dependency is explicitly frozen. The artifact freezes the rule
+and the mechanically derived distribution roots (`alembic`, `cryptography`,
+`numpy`, `scipy`, `sqlalchemy`); each launch binds the exact distribution,
+version, install location and installed `RECORD` hash-manifest digest into the
+request and the response, and the worker verifies them without `importlib`.
+Install locations and wheel digests are deliberately launch-bound rather than
+artifact-bound, because binding machine-specific environment material into the
+decision would make the frozen decision hash unreproducible for an independent
+reviewer.
+
+The closed worker-coding rule is scoped to the two repository-owned
+authoritative worker modules, `etf_calendar_scientific_worker_entry.py` and
+`etf_calendar_worker_protocol.py`. They may not use `exec`, `eval`, `compile`,
+`__import__`, `importlib`, `runpy`, `marshal`, `pickle`, `cloudpickle`, `dill`,
+`ctypes`, `subprocess`, `multiprocessing`, network or database client modules,
+or process-spawning `os` capabilities. Production calendar source remains
+governed by the compiled root witness and the closed AST store grammar, not by
+this rule, and this rule makes no claim to enumerate hostile Python techniques.
+
+### Protocol and admission
+
+`ETF_CALENDAR_SCIENTIFIC_WORKER_REQUEST_V1` is canonical JSON: schema-validated,
+unknown fields refused, NaN/Infinity refused, timestamps canonical UTC with a
+round-trip check, decimals canonical strings, and the received bytes must
+re-serialize to themselves, which is the enforceable form of the no-pickle rule.
+No function, class, module object, live `CalendarEvidenceStore`, pickled object
+or callable crosses the boundary; the worker reconstructs a read-only evidence
+view from canonical validated data. `ETF_CALENDAR_SCIENTIFIC_WORKER_RESPONSE_V1`
+carries the worker, calendar, trusted-persistence, interpreter, entrypoint,
+protocol, source-manifest and dependency-manifest identities, the request digest
+echo, the operation, the fully materialized result and its digest, the
+post-execution verification verdict and the one-request-one-process flag, with
+no memory addresses. The controller admits a result only after every binding
+reproduces and the process terminated cleanly; timeout, crash, protocol error,
+extra stdout or any mismatch is `RESULT_NOT_ADMITTED` / `DATA_QUALITY_FAIL` with
+no silent retry on a different authority path. The decision hash itself is
+controller-bound by echo comparison, because the decision artifact is
+deliberately outside the worker's certified source universe.
+
+### Preserved authority and current production
+
+The compiled root-binding witness, the root-cell prohibition, the closed AST
+store-use grammar, the exact eleven-owner census and graph, the documented
+`put`/`get`/`records`/`envelopes` terminals and the direct dependency-body
+requirement are preserved and freshly parent-bound. Process isolation does not
+redefine the owner graph and does not legalize wrappers. No ETF calendar
+production code was modified: current production still reports zero compiled
+root writes, clears or deletes, the single `common_etf_session_status`
+generator capture, the same closed-grammar refusal, the five wrapper-installed
+dependency guards and no isolated worker, so full conformance is `NO` and the
+implementation stays blocked.
+
+### Executed adversarial evidence
+
+Sixteen adversarial regressions execute real worker processes. Parent-process
+mutation of the `_flow` window constant, the `_flow` feature ID, the imported
+`EtfFlowFeatureResult` class, the dataclass-generated
+`ScientificEtfFlowResult.__init__`, the `require_utc_datetime` package
+re-export, `sys.modules` and `builtins.sum` each demonstrably corrupts the
+parent's own evaluation — the principal regression turns an honest
+`ETF_FLOW_5D` into `WRONG`, and the generated-method regression turns
+`EVALUABLE` into `WRONG` — while the isolated worker returns the certified
+result unchanged, with no generated-method fingerprinting anywhere. A real
+`os.fork()` child is shown to inherit the parent mutation that exec does not.
+On-disk certified source mutation, a shadowing wrong project origin, an
+unexpected project module, a tampered dependency `RECORD`, a leaked `PYTHON*`
+environment, a signing-key environment variable, a drifted declared `sys.path`,
+a second request in one process, a worker scientific exception, a real timeout
+and extra stdout all fail closed.
+
+### Recorded limits
+
+The trusted process model is explicit: the worker is trusted once its certified
+source and environment admission passes, and hostile debugger attachment,
+operating-system memory injection, kernel compromise and a modification
+perfectly racing file verification are out of scope. No operating-system-level
+network sandbox is claimed; the no-network, no-signing-key and no-database
+guarantees rest on the frozen read-only operation registry, the frozen minimal
+child environment and the static closed worker-source prohibition. The current
+package re-export graph makes the certified universe 116 modules wide and
+includes `btc_predictor.db` and HTTPS-capable calendar collection modules even
+though no frozen operation reaches them; the direct-import reduction that
+narrows this is explicitly deferred to the final calendar implementation ticket.
+The prototype non-authoritative evidence admission mode installs an
+already-verified acquisition snapshot directly, because the authoritative
+production-signed envelope replay path needs a production signing capability the
+worker must never hold; the authoritative mode uses only documented store APIs.
+
+Trusted persistence `02f96203...1a12772` is closed, certified, unchanged and not
+re-reviewed. Calendar science, failed calendar lineage, BTC-019 and Epic T are
+unchanged. No observation was collected and no real Stage-B evaluation ran.
+
+Final classification is
+`ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_READY_FOR_XHIGH_REVIEW`. Successful
+implementation authorizes only POSTP1-002V2A-PAD4 independent exact-hash xHigh
+proof-architecture review. Only that review PASS may authorize POSTP1-001V2A-I2,
+the final ETF calendar implementation/refreeze, which must then rewrite the
+`common_etf_session_status` generator capture, remove the wrapper-installed
+guards, insert the five direct dependency assertions, implement the one-shot
+isolated scientific worker with its canonical request/response protocol and
+controller result admission, preserve the exact eleven-owner graph and the
+calendar science, and refreeze `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` before an
+independent exact-hash calendar closure review. Only that closure PASS may
+unblock POSTP1-001V2R1.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -3890,5 +4068,7 @@ trusted persistence, failed PAD2 lineage, BTC-019 and Epic T remain unchanged.
 | POSTP1-002V2A-PAD2 | independent exact-hash xHigh proof-architecture review of `b5ca36bf...b2a8abe9` | COMPLETE / FAIL — MODULE OWNER IDENTITY MODEL INCOMPLETE; EXPLICIT BOUNDED PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD3 | define and freeze the new `ETF_CALENDAR_RUNTIME_OWNER_ATTESTATION_V1` proof architecture at `b8f8b92d...f6b5b996` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | COMPLETE / FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
+| POSTP1-001V2A-PAD4 | define and freeze the new `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at `cc1b325a...7b809e78` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4 | independent exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78` | NOT STARTED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

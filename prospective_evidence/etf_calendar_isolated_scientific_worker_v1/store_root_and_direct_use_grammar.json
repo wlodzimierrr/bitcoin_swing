@@ -1,0 +1,46 @@
+{
+  "annotated_store_kwargs_permitted": false,
+  "annotated_store_varargs_permitted": false,
+  "bound_method_store_extraction_permitted": false,
+  "capability_escape_permitted": false,
+  "container_derived_stores_permitted": false,
+  "contract_version": "ETF_CALENDAR_STORE_ROOT_AND_DIRECT_USE_GRAMMAR_V1_PAD4",
+  "definition_sha256": "5d25722107f9e2a3a7487c98282d91a3a8b9f1b3140fca61403ffb3e39953356",
+  "direct_call_ast_shape": "ast.Call(func=ast.Attribute(value=EXACT_IMMUTABLE_ROOT, attr=DOCUMENTED_API))",
+  "documented_apis": [
+    "put",
+    "get",
+    "records",
+    "envelopes"
+  ],
+  "forward_target": "EXACT_FROZEN_REPLAY_OWNER_REGISTRY",
+  "freshly_parent_bound_by": "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1",
+  "implementation_private_authoritative_state": [
+    "_records",
+    "_envelopes"
+  ],
+  "known_generator_capture_rewrite_still_required": "common_etf_session_status:evidence_store",
+  "local_store_construction_permitted": false,
+  "naming_heuristics_permitted": false,
+  "nested_annotated_owners_permitted": false,
+  "nested_store_capture_permitted": false,
+  "normal_form": "DIRECT_IMMUTABLE_STORE_PARAMETER_NORMAL_FORM",
+  "ordinary_parameter_kinds": [
+    "POSITIONAL_ONLY",
+    "POSITIONAL_OR_KEYWORD",
+    "KEYWORD_ONLY"
+  ],
+  "other_roots_or_derivations": "FAIL_UNTIL_EXPLICIT_REVIEWED_AUTHORITY_CHANGE",
+  "permitted_categories": [
+    "PERMITTED_DIRECT_STORE_API_CALL",
+    "PERMITTED_ENUMERATED_OWNER_FORWARD"
+  ],
+  "preserved_under_process_isolation": true,
+  "private_authoritative_state_access_permitted": false,
+  "process_isolation_legalizes_wrappers": false,
+  "root_may_be_a_cell_variable_of_a_conforming_owner": false,
+  "starred_store_forwarding_permitted": false,
+  "supported_root": "ORDINARY_PARAMETER_EXPLICITLY_ANNOTATED_CalendarEvidenceStore",
+  "transparent_aliases_permitted": false,
+  "unknown_store_forwarding_permitted": false
+}

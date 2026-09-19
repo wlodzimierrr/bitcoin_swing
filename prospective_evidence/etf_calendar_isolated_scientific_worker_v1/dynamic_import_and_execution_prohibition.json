@@ -1,0 +1,73 @@
+{
+  "arbitrary_source_loading_permitted": false,
+  "authoritative_worker_source": [
+    "btc_predictor/research/etf_calendar_scientific_worker_entry.py",
+    "btc_predictor/research/etf_calendar_worker_protocol.py"
+  ],
+  "authoritative_worker_source_sha256": {
+    "btc_predictor/research/etf_calendar_scientific_worker_entry.py": "cf85a16b68440568a953c757512dc2638d11958e852004383f5f0c4430d6ee62",
+    "btc_predictor/research/etf_calendar_worker_protocol.py": "2291cf952ad4416e732ddd2e2395e91994eee6b40b6281b422cde18bf0ec6757"
+  },
+  "claims_to_enumerate_hostile_python_techniques": false,
+  "closed": true,
+  "closed_worker_coding_rule": true,
+  "contract_version": "ETF_CALENDAR_WORKER_DYNAMIC_IMPORT_PROHIBITION_V1_PAD4",
+  "current_findings": [],
+  "definition_sha256": "7807c4c412155a7b02c28916cc4a31a01b77dd7b387a62158e3e99c0bd50a59e",
+  "dynamic_project_import_permitted": false,
+  "forbidden_callables": [
+    "exec",
+    "eval",
+    "compile",
+    "__import__"
+  ],
+  "forbidden_import_roots": [
+    "cloudpickle",
+    "ctypes",
+    "dill",
+    "http",
+    "httpx",
+    "importlib",
+    "marshal",
+    "multiprocessing",
+    "pickle",
+    "psycopg",
+    "psycopg2",
+    "requests",
+    "runpy",
+    "socket",
+    "sqlalchemy",
+    "ssl",
+    "subprocess",
+    "urllib"
+  ],
+  "forbidden_process_capabilities": [
+    "os.execl",
+    "os.execle",
+    "os.execlp",
+    "os.execv",
+    "os.execve",
+    "os.execvp",
+    "os.fork",
+    "os.forkpty",
+    "os.popen",
+    "os.posix_spawn",
+    "os.spawnl",
+    "os.spawnv",
+    "os.system"
+  ],
+  "forbidden_scientific_ipc": [
+    "pickle",
+    "cloudpickle",
+    "dill",
+    "marshal"
+  ],
+  "pickle_cloudpickle_dill_permitted": false,
+  "production_calendar_source_governed_separately_by": [
+    "CLOSED_AST_STORE_USE_GRAMMAR",
+    "COMPILED_ROOT_BINDING_WITNESS"
+  ],
+  "runpy_execution_permitted": false,
+  "scope": "AUTHORITATIVE_SCIENTIFIC_WORKER_SOURCE",
+  "serialized_executable_python_object_graph_permitted": false
+}
