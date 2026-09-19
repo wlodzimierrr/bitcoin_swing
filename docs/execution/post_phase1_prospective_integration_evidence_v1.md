@@ -3423,6 +3423,7 @@ explained skips because no production behavior changed.
 **Required review:** POSTP1-002V2A-PAD2, one independent exact-hash xHigh
 proof-architecture review
 **Artifacts:** `prospective_evidence/etf_calendar_compiled_binding_witness_v1/`
+**Decision commit:** `a83dcf4c5b4a5a34c251434e1488ec2b1d0cb072`
 **Decision hash:** `b5ca36bfa9b96970b667cc44b10c5c5da7eb5ce7c57e5739601640d9b2a8abe9`
 
 ### New proof architecture
