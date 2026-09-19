@@ -3604,7 +3604,7 @@ not change.
 **Required review:** POSTP1-002V2A-PAD3, one independent exact-hash xHigh
 proof-architecture review
 **Artifacts:** `prospective_evidence/etf_calendar_runtime_owner_attestation_v1/`
-**Decision commit:** `PENDING_COMMIT`
+**Decision commit:** `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9`
 **Decision hash:** `b8f8b92d4e3c1c80c4226f7101e71f95d125bd48afbfcde72e489408f6b5b996`
 
 ### New proof architecture

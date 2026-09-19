@@ -233,7 +233,7 @@ attested runtime surface =
 CLOSURE (25 functions, 7 classes, 15 values, 14 imported bindings)
 
 POSTP1-001V2A-PAD3 decision commit =
-PENDING_COMMIT
+385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9
 
 POSTP1-001V2A-PAD3 result =
 IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH XHIGH
@@ -705,7 +705,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD3 decision
-  commit `PENDING_COMMIT` freezes `b8f8b92d...f6b5b996` and awaits POSTP1-002V2A-PAD3.
+  commit `385dd8ed32b0537ac3c97fe7c35d3e3e49c49ca9` freezes `b8f8b92d...f6b5b996` and awaits POSTP1-002V2A-PAD3.
   POSTP1-001V2A-PAD2 decision
   commit `a83dcf4c5b4a5a34c251434e1488ec2b1d0cb072` freezes failed candidate
   `b5ca36bf...b2a8abe9`; POSTP1-002V2A-PAD2 failed its independent exact-hash
