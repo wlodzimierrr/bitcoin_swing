@@ -1,0 +1,1219 @@
+{
+  "candidate_worker_source_universe": {
+    "entries": [
+      {
+        "module": "btc_predictor",
+        "path": "btc_predictor/__init__.py",
+        "sha256": "4574cd41603677a2418e647c98ce52782039067681c61e381858b9e1ae2210ab"
+      },
+      {
+        "module": "btc_predictor.backtest",
+        "path": "btc_predictor/backtest/__init__.py",
+        "sha256": "8621121925a11b1ca0a6eea3010946774bf8f0dd614d53e166c67debe2dfc475"
+      },
+      {
+        "module": "btc_predictor.backtest.costs",
+        "path": "btc_predictor/backtest/costs.py",
+        "sha256": "856e44c8925b4bd5a04c44085edc33700e03b6b4595826c78441e2b180330d9f"
+      },
+      {
+        "module": "btc_predictor.backtest.engine",
+        "path": "btc_predictor/backtest/engine.py",
+        "sha256": "7d6425746023204e30af783339ce65341839e392ddb27291ad72c8287a8be44d"
+      },
+      {
+        "module": "btc_predictor.backtest.parameter_surfaces",
+        "path": "btc_predictor/backtest/parameter_surfaces.py",
+        "sha256": "8c83788876bcc345dc84fe27b6979eb1f0b23804dfbfded0c4ffd58f08711922"
+      },
+      {
+        "module": "btc_predictor.backtest.regime_performance",
+        "path": "btc_predictor/backtest/regime_performance.py",
+        "sha256": "d8cc62f2ae5b33884d7f0a4586b5ff54909e47a34812b0c7e1f210458c3301be"
+      },
+      {
+        "module": "btc_predictor.backtest.setup_performance",
+        "path": "btc_predictor/backtest/setup_performance.py",
+        "sha256": "95a2fe69f5d394cd500bf71922e85e850857400065e0070a2e86737b08c7be99"
+      },
+      {
+        "module": "btc_predictor.backtest.threshold_sweeps",
+        "path": "btc_predictor/backtest/threshold_sweeps.py",
+        "sha256": "d4fcd2608ef38c9ef03da363f13f5a0e336c95a73270b33e582bef6e0ee91a7f"
+      },
+      {
+        "module": "btc_predictor.backtest.walk_forward",
+        "path": "btc_predictor/backtest/walk_forward.py",
+        "sha256": "b360ad15c6f5417fe90d7c4f322ce566c42c9fb6dc923b920570ef5afedf910b"
+      },
+      {
+        "module": "btc_predictor.config",
+        "path": "btc_predictor/config/__init__.py",
+        "sha256": "5415c0338107654a4200594230648c1cb19cf7715914e3a6116b6fcc3a769bb5"
+      },
+      {
+        "module": "btc_predictor.config.application",
+        "path": "btc_predictor/config/application.py",
+        "sha256": "724fe645a6dafd0454763f0457f1bfc20ec867ee310f8e7cbc8600c681ac7e70"
+      },
+      {
+        "module": "btc_predictor.config.runtime",
+        "path": "btc_predictor/config/runtime.py",
+        "sha256": "c54e48ae49f9e0943ca9fc0d21045ae9541941ac660b361016275b6828103cf4"
+      },
+      {
+        "module": "btc_predictor.config.strategy",
+        "path": "btc_predictor/config/strategy.py",
+        "sha256": "c83eee0e50648967f0a3cab18224c96411d7e6b42c6377896fa1c20ba00dc963"
+      },
+      {
+        "module": "btc_predictor.data",
+        "path": "btc_predictor/data/__init__.py",
+        "sha256": "b111d53703dab75eeeb75165b93945879ffc025363ec694acc25cc34f8277386"
+      },
+      {
+        "module": "btc_predictor.data.audit",
+        "path": "btc_predictor/data/audit.py",
+        "sha256": "9255003cf3824757ce9a50f1153ff26d4d56b853006bf8f129114c0b997ea0d7"
+      },
+      {
+        "module": "btc_predictor.data.bitfinex",
+        "path": "btc_predictor/data/bitfinex.py",
+        "sha256": "0aa6bfc7ff54cf420f3e87e81a99a26a82cc95a7959707f11ce246459f158a80"
+      },
+      {
+        "module": "btc_predictor.data.bitstamp",
+        "path": "btc_predictor/data/bitstamp.py",
+        "sha256": "866fb37f26f1a6eb6ea1b714202ebaae2f02ed56442fd3dee11b1404743c3c93"
+      },
+      {
+        "module": "btc_predictor.data.coinbase",
+        "path": "btc_predictor/data/coinbase.py",
+        "sha256": "4003ab14e7a4c0565c4fa105d307798463281bff5d269448fed9ee9c1cd047bc"
+      },
+      {
+        "module": "btc_predictor.data.derivatives",
+        "path": "btc_predictor/data/derivatives.py",
+        "sha256": "f347e2d62a3bbdc6a54dc00f810a5f06cf912bc357fa41dc16d8b038e2e3f931"
+      },
+      {
+        "module": "btc_predictor.data.etf_flows",
+        "path": "btc_predictor/data/etf_flows.py",
+        "sha256": "3446c0b1901985abb00c0b051c32f2f2e400ac290f5d61f17fa9e66ba44b2d92"
+      },
+      {
+        "module": "btc_predictor.data.generic_series",
+        "path": "btc_predictor/data/generic_series.py",
+        "sha256": "92246cffe41a9c2e4b58111863b86b425fbf0e1dd258f33198875a4151211054"
+      },
+      {
+        "module": "btc_predictor.data.ohlcv",
+        "path": "btc_predictor/data/ohlcv.py",
+        "sha256": "5b5e19a9f61509ff4ce7b99f4e8b8c970348e59096bc8423a79176b0141e56e3"
+      },
+      {
+        "module": "btc_predictor.data.quality",
+        "path": "btc_predictor/data/quality.py",
+        "sha256": "abd4d422c78a13d9ce512dcd09537f9690ae60f115deffae84d8c27389958a57"
+      },
+      {
+        "module": "btc_predictor.db",
+        "path": "btc_predictor/db/__init__.py",
+        "sha256": "727888bddc13417f2f89d400ad63205f9d9fb0e50b23940cc9487350551e25b4"
+      },
+      {
+        "module": "btc_predictor.db.alembic",
+        "path": "btc_predictor/db/alembic.py",
+        "sha256": "752d3690799a76dfab9e716d360cdb404cbaa6a0629f373eddb458b50ba0fcb2"
+      },
+      {
+        "module": "btc_predictor.db.base",
+        "path": "btc_predictor/db/base.py",
+        "sha256": "a8104d0955d029fd15391f3ac49bf1b1052eda8ace0e51d6b3de2800c531ad85"
+      },
+      {
+        "module": "btc_predictor.db.connections",
+        "path": "btc_predictor/db/connections.py",
+        "sha256": "cf75324fadbbaaecc5b9e49237648e0d3f7c9a2c395d65f3c392efeec8682903"
+      },
+      {
+        "module": "btc_predictor.db.derived",
+        "path": "btc_predictor/db/derived.py",
+        "sha256": "fbe1713fe4231cce2f73fcc57bfd53976fd2eee34d6d8f1119a797c23e91ef29"
+      },
+      {
+        "module": "btc_predictor.db.portfolio",
+        "path": "btc_predictor/db/portfolio.py",
+        "sha256": "a535ae721cf5b2576bf28d51497e002430e9a28a2d6a90008f1fe35bf0cd0823"
+      },
+      {
+        "module": "btc_predictor.db.raw",
+        "path": "btc_predictor/db/raw.py",
+        "sha256": "43781548ed3d6675a24deb35003e8fbf5873b3a78ff9ba19ef52fcb089755d84"
+      },
+      {
+        "module": "btc_predictor.db.research",
+        "path": "btc_predictor/db/research.py",
+        "sha256": "b49c080102aea7ba04ae1f1ff02892179c2d366a1bc6d696206217f93660dfa0"
+      },
+      {
+        "module": "btc_predictor.db.signals",
+        "path": "btc_predictor/db/signals.py",
+        "sha256": "088cd0d66ef30c6866a2c0941f3444df56a8340e6f1f1363244358b9b355f3c2"
+      },
+      {
+        "module": "btc_predictor.db.system",
+        "path": "btc_predictor/db/system.py",
+        "sha256": "acc206c7a16adde26eb6174eecff3c2c30f540fc9f3a9ccc3bdfc8108dc8d129"
+      },
+      {
+        "module": "btc_predictor.features",
+        "path": "btc_predictor/features/__init__.py",
+        "sha256": "3ad251b84af1751ba11ccb38f016217bcda7287d821c47ce3e1195d02ad29050"
+      },
+      {
+        "module": "btc_predictor.features._scoring",
+        "path": "btc_predictor/features/_scoring.py",
+        "sha256": "895cef905e6292dd36e2d584e9c41cb00530728b472eace6f2c8626ff1e6ec06"
+      },
+      {
+        "module": "btc_predictor.features.add",
+        "path": "btc_predictor/features/add.py",
+        "sha256": "996adc4ba9648c0122bcaa439a4e607b6178e1731e731a5a0329b99d885290f8"
+      },
+      {
+        "module": "btc_predictor.features.entry",
+        "path": "btc_predictor/features/entry.py",
+        "sha256": "061975dbf8a1c18efd6d36da9812215309fa4a7bd8ef0d9ac65555510f270f1e"
+      },
+      {
+        "module": "btc_predictor.features.flow",
+        "path": "btc_predictor/features/flow.py",
+        "sha256": "8a05e6861ba39b19acbbb736407f497a2490d2aff4128acdfc403ed5dffcb558"
+      },
+      {
+        "module": "btc_predictor.features.hold",
+        "path": "btc_predictor/features/hold.py",
+        "sha256": "f7724f8a6b436d2223ad3071ad221604bcc0251ac317dd38de4338b563dfafc7"
+      },
+      {
+        "module": "btc_predictor.features.momentum",
+        "path": "btc_predictor/features/momentum.py",
+        "sha256": "9681b7093c5bd6fa7377f61b131911b5393b18d7f2c9b23799ea079ca52638b4"
+      },
+      {
+        "module": "btc_predictor.features.positioning",
+        "path": "btc_predictor/features/positioning.py",
+        "sha256": "b23ce0f240d82f180e24c74eb552e5e46bbd2b6fc6e6af8faa1cfa430436700e"
+      },
+      {
+        "module": "btc_predictor.features.regime",
+        "path": "btc_predictor/features/regime.py",
+        "sha256": "0e86be6a3d0f472e686d3e6086817384488f7c24b1399581ebf3d8a05ccdb7d4"
+      },
+      {
+        "module": "btc_predictor.features.rolling",
+        "path": "btc_predictor/features/rolling.py",
+        "sha256": "2f4b8ea3330d72ad50414e558b26434ff04203082d658cd0ac93e460c948a85c"
+      },
+      {
+        "module": "btc_predictor.features.scoring_contracts",
+        "path": "btc_predictor/features/scoring_contracts.py",
+        "sha256": "ab5ff4c4ed35a974b3c7f183c076d01a2292976329a3dc6c8a9c9c2798495257"
+      },
+      {
+        "module": "btc_predictor.features.setup",
+        "path": "btc_predictor/features/setup.py",
+        "sha256": "bef4346343ff5a3bd0d105d1604a8fbce8709aa61e3cda6189e2d51a293fd49e"
+      },
+      {
+        "module": "btc_predictor.features.structure",
+        "path": "btc_predictor/features/structure.py",
+        "sha256": "35576215f66ae07b43c75638b4b29abd30b2fe6a868a0607664a5d54209d76b6"
+      },
+      {
+        "module": "btc_predictor.features.trend",
+        "path": "btc_predictor/features/trend.py",
+        "sha256": "041050e9ada0c2ce1cbcff1af602fe3e4b3f22aee4289362465607068f0fe634"
+      },
+      {
+        "module": "btc_predictor.features.volatility",
+        "path": "btc_predictor/features/volatility.py",
+        "sha256": "bd81be840d70ee2266ba8d7003509c0ae771ecca8d0a083f39d2d47d6f37d27b"
+      },
+      {
+        "module": "btc_predictor.levels",
+        "path": "btc_predictor/levels/__init__.py",
+        "sha256": "99e7508f39aff33e329a3245fff6b505c07cfda60589750fb67d70ebb0d22817"
+      },
+      {
+        "module": "btc_predictor.levels.anchored_vwap",
+        "path": "btc_predictor/levels/anchored_vwap.py",
+        "sha256": "1e51daa94a4291b6ebee424056c1836e0c920ac845896d2a0265faa84c7952f1"
+      },
+      {
+        "module": "btc_predictor.levels.breakout",
+        "path": "btc_predictor/levels/breakout.py",
+        "sha256": "d19d388ba1f2912b0efcefb11783334a9b2088d84d2eda465ee559bbae2b3d1c"
+      },
+      {
+        "module": "btc_predictor.levels.clustering",
+        "path": "btc_predictor/levels/clustering.py",
+        "sha256": "4c2c35203e4dd520bcff53aea1e5a218f119de1e937e2f6f0906929f0d273ed4"
+      },
+      {
+        "module": "btc_predictor.levels.strength",
+        "path": "btc_predictor/levels/strength.py",
+        "sha256": "5d74ad41159c086c37754bdd661c8e5b01d5327ee04987a0ea636cfad97a0ab2"
+      },
+      {
+        "module": "btc_predictor.levels.swing",
+        "path": "btc_predictor/levels/swing.py",
+        "sha256": "ae7cd9ff611bfbb0d883937de69be7c050f812df7551fa254d77bdc7f9ab56eb"
+      },
+      {
+        "module": "btc_predictor.levels.volume_profile",
+        "path": "btc_predictor/levels/volume_profile.py",
+        "sha256": "84e524f6f2b251fba9b738f6b5d5af0bbfd602518de349b4cb687ba9f5141fb3"
+      },
+      {
+        "module": "btc_predictor.logging",
+        "path": "btc_predictor/logging.py",
+        "sha256": "559908e00e333c2487636fd3f54da3c5d5ffe0973b60bf183d6f390cced4af39"
+      },
+      {
+        "module": "btc_predictor.portfolio",
+        "path": "btc_predictor/portfolio/__init__.py",
+        "sha256": "1fff3db1b4620954fa2752933d41e07a3e3b44f44ae1446ff999d27b31f6af60"
+      },
+      {
+        "module": "btc_predictor.portfolio.account",
+        "path": "btc_predictor/portfolio/account.py",
+        "sha256": "6acb770d1399042d5dd214deac6b95c99842ce3f2270259d0791afa401c2d865"
+      },
+      {
+        "module": "btc_predictor.portfolio.accounting",
+        "path": "btc_predictor/portfolio/accounting.py",
+        "sha256": "e9f007fec30d0ba5c589d47942ccacf76c51db12cc3870c970805970e5dfe219"
+      },
+      {
+        "module": "btc_predictor.portfolio.add_execution",
+        "path": "btc_predictor/portfolio/add_execution.py",
+        "sha256": "1482827a43f5f67ff74343e9a98acd688785a12ec3827fab6f4fa745ab1f84b6"
+      },
+      {
+        "module": "btc_predictor.portfolio.entry_execution",
+        "path": "btc_predictor/portfolio/entry_execution.py",
+        "sha256": "87eac95a5ef4ca5fb694314d7d09d6b61d0c1eaeafc862b2da12385cdbdced73"
+      },
+      {
+        "module": "btc_predictor.portfolio.exit_execution",
+        "path": "btc_predictor/portfolio/exit_execution.py",
+        "sha256": "90297cf3ef36e80f09289e5922e268a9322bd65e227c60f490797221f7925ed2"
+      },
+      {
+        "module": "btc_predictor.portfolio.lifecycle_persistence",
+        "path": "btc_predictor/portfolio/lifecycle_persistence.py",
+        "sha256": "ba285de8bc9260f9f7701249cb55100e0dcfb77c953d7eaa29fa22e742acbc10"
+      },
+      {
+        "module": "btc_predictor.portfolio.state_machine",
+        "path": "btc_predictor/portfolio/state_machine.py",
+        "sha256": "88cb80d55756dfba7235d786d589c3489f38c815c23801ffc9da94903f45b09f"
+      },
+      {
+        "module": "btc_predictor.portfolio.stop_execution",
+        "path": "btc_predictor/portfolio/stop_execution.py",
+        "sha256": "6c7613adbf74942405dab5a676b97c8e022500a6a069bb0537ed7eca7be92bf2"
+      },
+      {
+        "module": "btc_predictor.portfolio.trim_execution",
+        "path": "btc_predictor/portfolio/trim_execution.py",
+        "sha256": "24287629714c548f40171b3b5202e9e6c510b95d5a02f2969f2393b5f9dac12e"
+      },
+      {
+        "module": "btc_predictor.quant",
+        "path": "btc_predictor/quant/__init__.py",
+        "sha256": "3e731c565e559e66678a37d899da6ca9c079f99d1083438ab1b9ab8befbda230"
+      },
+      {
+        "module": "btc_predictor.quant.arrays",
+        "path": "btc_predictor/quant/arrays.py",
+        "sha256": "645db15444aaec585a9a568da66fc90e0f17aa8bffce0d9a0d6245f2eaa81de5"
+      },
+      {
+        "module": "btc_predictor.quant.comparisons",
+        "path": "btc_predictor/quant/comparisons.py",
+        "sha256": "55aa8e923819766a6ce0c3135c9e97fdbc11611fb677d1d0289b802487bf3faf"
+      },
+      {
+        "module": "btc_predictor.quant.distances",
+        "path": "btc_predictor/quant/distances.py",
+        "sha256": "197557c355ca35674e41f40e0389217ffdcedc384a0df8035d6768a493a4a99a"
+      },
+      {
+        "module": "btc_predictor.quant.portfolio",
+        "path": "btc_predictor/quant/portfolio.py",
+        "sha256": "3a47d5c50741451149e9f27911b34d363d6c54d2823b2b5d4c59ada3869a5060"
+      },
+      {
+        "module": "btc_predictor.quant.risk",
+        "path": "btc_predictor/quant/risk.py",
+        "sha256": "7c0055648346de42fb221b1ab82f40189377f74904ecc11bc191449ebf57c004"
+      },
+      {
+        "module": "btc_predictor.quant.rolling",
+        "path": "btc_predictor/quant/rolling.py",
+        "sha256": "a051263bb2b0b019cb75f76a2487c0b13fdd6182e1ce4c92c30382515b2c7448"
+      },
+      {
+        "module": "btc_predictor.quant.scoring",
+        "path": "btc_predictor/quant/scoring.py",
+        "sha256": "2fa354c30c753fc4b402d3876502db17f153f9b19d54a5d3e4c0d608546c0780"
+      },
+      {
+        "module": "btc_predictor.quant.simulation",
+        "path": "btc_predictor/quant/simulation.py",
+        "sha256": "ecd22cef06d34b9a7b6a8f13767e1a07f1dd48664c79f5dbbd6b938beb123831"
+      },
+      {
+        "module": "btc_predictor.quant.transforms",
+        "path": "btc_predictor/quant/transforms.py",
+        "sha256": "ce56b842a5ca1f16fa2331b40fa2d5e3c9d94199ab6b3604f460417972d6b089"
+      },
+      {
+        "module": "btc_predictor.research",
+        "path": "btc_predictor/research/__init__.py",
+        "sha256": "7ed16cc01be76004ddbd728f6c547c04393ac97787c24b1192384f193f210059"
+      },
+      {
+        "module": "btc_predictor.research.component_ablation",
+        "path": "btc_predictor/research/component_ablation.py",
+        "sha256": "02f7d7e13b861c6b00cdce6cee6e5efc6e9922aaddafcc45344a6b35467f463b"
+      },
+      {
+        "module": "btc_predictor.research.decision_state",
+        "path": "btc_predictor/research/decision_state.py",
+        "sha256": "ec8f5de75ca1e98aab74c802f81b0817d674d067a49e6a64dac169ee8493ac87"
+      },
+      {
+        "module": "btc_predictor.research.etf_calendar_scientific_worker_entry",
+        "path": "btc_predictor/research/etf_calendar_scientific_worker_entry.py",
+        "sha256": "cf85a16b68440568a953c757512dc2638d11958e852004383f5f0c4430d6ee62"
+      },
+      {
+        "module": "btc_predictor.research.etf_calendar_semantics",
+        "path": "btc_predictor/research/etf_calendar_semantics.py",
+        "sha256": "87367f4c75471afaeaa005c8c0503717aa40b2b54c266736642d74a611171f64"
+      },
+      {
+        "module": "btc_predictor.research.etf_calendar_worker_protocol",
+        "path": "btc_predictor/research/etf_calendar_worker_protocol.py",
+        "sha256": "2291cf952ad4416e732ddd2e2395e91994eee6b40b6281b422cde18bf0ec6757"
+      },
+      {
+        "module": "btc_predictor.research.etf_publication_calendar",
+        "path": "btc_predictor/research/etf_publication_calendar.py",
+        "sha256": "49fa356e48426aaaea0be987930062f85058839f9efd73feb2d210b3b79c4145"
+      },
+      {
+        "module": "btc_predictor.research.feature_interactions",
+        "path": "btc_predictor/research/feature_interactions.py",
+        "sha256": "a5da8956ca4dd261c7095a5077cbc70e5910a3b3ea614a1d8dca52b3dbaa91a2"
+      },
+      {
+        "module": "btc_predictor.research.feature_matrix",
+        "path": "btc_predictor/research/feature_matrix.py",
+        "sha256": "e67a43becd823dbcbe36f15127454774ca00a3302beb97ac6a56d87cf8940a49"
+      },
+      {
+        "module": "btc_predictor.research.monte_carlo_risk",
+        "path": "btc_predictor/research/monte_carlo_risk.py",
+        "sha256": "d69aa5bd3313eec51fac6569507249cb0325de16acbe384451d4fd3cf129b6a7"
+      },
+      {
+        "module": "btc_predictor.research.paper_trade_outcomes",
+        "path": "btc_predictor/research/paper_trade_outcomes.py",
+        "sha256": "05bd7a790a17d223def02ea408e8c87c62571d0816fd35c0e64249ddc753f733"
+      },
+      {
+        "module": "btc_predictor.research.predictor_diagnostics",
+        "path": "btc_predictor/research/predictor_diagnostics.py",
+        "sha256": "4b23d3da3aeb2eb70ea8540f357922d28007e4727a68f5d7329ea5f319a7d72b"
+      },
+      {
+        "module": "btc_predictor.research.price_source_policy",
+        "path": "btc_predictor/research/price_source_policy.py",
+        "sha256": "71137e8dba309a229dcc157e3df1ad29f3f9cc350c58a37c3290b8d4b0df07a0"
+      },
+      {
+        "module": "btc_predictor.research.reference_composite",
+        "path": "btc_predictor/research/reference_composite.py",
+        "sha256": "6e4ab5d0c2ce970636728cd11e964184468e684ae0da09ec84baf2e72413a7b7"
+      },
+      {
+        "module": "btc_predictor.research.strategy_comparison",
+        "path": "btc_predictor/research/strategy_comparison.py",
+        "sha256": "44636078d1371d87ac3aef0b87b367b3520e21ba4d4190674f45250b5d33ca77"
+      },
+      {
+        "module": "btc_predictor.research.strategy_promotion",
+        "path": "btc_predictor/research/strategy_promotion.py",
+        "sha256": "82c9d1fe1f3df5ff20d8f76dab0170a0a4a701a0346e42f753d37536d1f55e7d"
+      },
+      {
+        "module": "btc_predictor.research.trusted_acquisition",
+        "path": "btc_predictor/research/trusted_acquisition.py",
+        "sha256": "df13fccd4abd62a38616f253ca09e91e885be3c44d353845cac445e1b490110f"
+      },
+      {
+        "module": "btc_predictor.research.trusted_acquisition_authority",
+        "path": "btc_predictor/research/trusted_acquisition_authority.py",
+        "sha256": "1263332d8139c669ed092bd4704270ab53c442f54516db29aa634afa1378e283"
+      },
+      {
+        "module": "btc_predictor.research.trusted_acquisition_persistence",
+        "path": "btc_predictor/research/trusted_acquisition_persistence.py",
+        "sha256": "3fae833cb659442af632b229f71e783526beb1cfefd8ec0cc19277a1bdec3ad3"
+      },
+      {
+        "module": "btc_predictor.risk",
+        "path": "btc_predictor/risk/__init__.py",
+        "sha256": "e8f10cb1e433c4b8d7b93558a7041182e699a92cc4bf9a5b136e6bd600906976"
+      },
+      {
+        "module": "btc_predictor.risk.budget",
+        "path": "btc_predictor/risk/budget.py",
+        "sha256": "f16cafdda0515732e7a878af89a18450fbc40cedc908b7e8eb6fc7c1a1b342a9"
+      },
+      {
+        "module": "btc_predictor.risk.buffer",
+        "path": "btc_predictor/risk/buffer.py",
+        "sha256": "28adc5d5e19dbdacf5c89e843bab501034035bd94d144e076e16a73059ec4c28"
+      },
+      {
+        "module": "btc_predictor.risk.exposure",
+        "path": "btc_predictor/risk/exposure.py",
+        "sha256": "63b566aa6b421507268eb343245bc161c0c6e7ce5be9d492949bfef45bbad00a"
+      },
+      {
+        "module": "btc_predictor.risk.invalidation",
+        "path": "btc_predictor/risk/invalidation.py",
+        "sha256": "182d62c17500c0527de82fb5e6ec76b0d53ca57678440fc973b33cf4f40f2d9d"
+      },
+      {
+        "module": "btc_predictor.risk.reward",
+        "path": "btc_predictor/risk/reward.py",
+        "sha256": "490ff52e8a387a1150ca96b944fe2a25b704bb5252c42f6174b16e2fa7516aac"
+      },
+      {
+        "module": "btc_predictor.risk.sizing",
+        "path": "btc_predictor/risk/sizing.py",
+        "sha256": "8c637f6d2b25e97cc98ac94188efecba3ff2875e70bf44682feca53adc8a1b3f"
+      },
+      {
+        "module": "btc_predictor.risk.stop",
+        "path": "btc_predictor/risk/stop.py",
+        "sha256": "ac65d1b90d691454ed3abb38a392e85fdb9c073bfe30a14bd6f42e7c9d7d79c6"
+      },
+      {
+        "module": "btc_predictor.risk.trailing",
+        "path": "btc_predictor/risk/trailing.py",
+        "sha256": "9bdd924c6d326f38cbddd3bd0310ff6dfa9ff5287389ab58498dea149971d795"
+      },
+      {
+        "module": "btc_predictor.risk.tranches",
+        "path": "btc_predictor/risk/tranches.py",
+        "sha256": "e522bf575529e00d95482efd7cbc5c34a9888821ff326b3c4eb5f34db2ceb9fa"
+      },
+      {
+        "module": "btc_predictor.signals",
+        "path": "btc_predictor/signals/__init__.py",
+        "sha256": "4cec6de171f26b3420adc4e33dcf68e1da339aef5a0afc68b21b5835d5dc4869"
+      },
+      {
+        "module": "btc_predictor.signals.add_requirements",
+        "path": "btc_predictor/signals/add_requirements.py",
+        "sha256": "3f4767d5f6308870a448cb84d96d3c95b259dbaa3f4e5218ed3362cfe3acebb8"
+      },
+      {
+        "module": "btc_predictor.signals.breakout_retest",
+        "path": "btc_predictor/signals/breakout_retest.py",
+        "sha256": "28e8649803a9d2e6502d5e38ad8570073d67d8faf6a7ad52bd442a4dedf4f999"
+      },
+      {
+        "module": "btc_predictor.signals.data_quality",
+        "path": "btc_predictor/signals/data_quality.py",
+        "sha256": "36eda24a209dbfc13c21cb30682efb20a0ec77b221e52fe9852f175f0caed1c7"
+      },
+      {
+        "module": "btc_predictor.signals.exit_rules",
+        "path": "btc_predictor/signals/exit_rules.py",
+        "sha256": "d76483f348ada1cf61dfdb1c4a038c41aad4254810b176c44dc8dabcd5301fff"
+      },
+      {
+        "module": "btc_predictor.signals.hard_veto",
+        "path": "btc_predictor/signals/hard_veto.py",
+        "sha256": "b1a9d2fae0f88a2553557e3de44d3dad172c35bf32090ef4dfc4affbeb13c5ef"
+      },
+      {
+        "module": "btc_predictor.signals.higher_low",
+        "path": "btc_predictor/signals/higher_low.py",
+        "sha256": "f0fac06e0a77cde3f5f258b994969e34247f76517020c77c12687d9356bd222b"
+      },
+      {
+        "module": "btc_predictor.signals.no_chase",
+        "path": "btc_predictor/signals/no_chase.py",
+        "sha256": "c00773594032044920e9d547f096fb3878f965085c11ab7e0be314c810432b18"
+      },
+      {
+        "module": "btc_predictor.signals.reason_codes",
+        "path": "btc_predictor/signals/reason_codes.py",
+        "sha256": "0a8d8f374bca3d7cf0cf57c48a1c55c7b1bebb237527698bdc553483027cc850"
+      },
+      {
+        "module": "btc_predictor.signals.reclaim",
+        "path": "btc_predictor/signals/reclaim.py",
+        "sha256": "c95ec5ad2a75e13f7ef3937fd934bd11aedc8d3ff6d340d09570a8f95319331c"
+      },
+      {
+        "module": "btc_predictor.signals.trim",
+        "path": "btc_predictor/signals/trim.py",
+        "sha256": "11f92d0452835d760169055504c8e0b6a3c0f90257edc76e7093c9abd1b4db2d"
+      },
+      {
+        "module": "etf_calendar_worker",
+        "path": "etf_calendar_worker/__init__.py",
+        "sha256": "28b263fdb0c202e7cf22f0e64bc613437e9ddef0e15972066881c51bedba49cb"
+      },
+      {
+        "module": "etf_calendar_worker.entry_r1",
+        "path": "etf_calendar_worker/entry_r1.py",
+        "sha256": "24aebc4e1b7536065a9cb131fa5b714e552482e0125dcfb6b89516fd56c9a535"
+      },
+      {
+        "module": "etf_calendar_worker.protocol_r1",
+        "path": "etf_calendar_worker/protocol_r1.py",
+        "sha256": "a896925a2cc24e323e1fe54537a5b17693ef3d9e837d1221d68f34b3d08e30de"
+      }
+    ],
+    "manifest_digest": "c6a71401a3d240c3196be0ef51a3fd14b93e44022baeaacfafe1112b7aa89332",
+    "module_count": 119,
+    "seed_entrypoint": "etf_calendar_worker.entry_r1"
+  },
+  "contract_version": "ETF_CALENDAR_WORKER_PRE_I2_SOURCE_MANIFEST_FIXTURE_V1",
+  "definition_sha256": "e7b1d5d19acf2844d98fe7ad19521d79c8b0b9183c4ca8a2dbd6bc0e4e4b5d00",
+  "future_production_source_manifest_role": "I2_DERIVED_AND_FINAL_CALENDAR_PARENT_BOUND",
+  "i2_will_change_at_least": [
+    "btc_predictor/research/etf_publication_calendar.py"
+  ],
+  "immutable_when_i2_later_changes_source": true,
+  "is_final_production_scientific_source_authority": false,
+  "package_reexport_direct_import_reduction": "PERMITTED_IN_I2_NOT_IN_THIS_TICKET",
+  "required_loaded_modules": [
+    "btc_predictor",
+    "btc_predictor.data.etf_flows",
+    "btc_predictor.data.ohlcv",
+    "btc_predictor.features.flow",
+    "btc_predictor.research.etf_calendar_scientific_worker_entry",
+    "btc_predictor.research.etf_calendar_semantics",
+    "btc_predictor.research.etf_calendar_worker_protocol",
+    "btc_predictor.research.etf_publication_calendar",
+    "btc_predictor.research.trusted_acquisition",
+    "etf_calendar_worker",
+    "etf_calendar_worker.protocol_r1"
+  ],
+  "reviewed_pre_i2_source_universe": {
+    "entries": [
+      {
+        "module": "btc_predictor",
+        "path": "btc_predictor/__init__.py",
+        "sha256": "4574cd41603677a2418e647c98ce52782039067681c61e381858b9e1ae2210ab"
+      },
+      {
+        "module": "btc_predictor.backtest",
+        "path": "btc_predictor/backtest/__init__.py",
+        "sha256": "8621121925a11b1ca0a6eea3010946774bf8f0dd614d53e166c67debe2dfc475"
+      },
+      {
+        "module": "btc_predictor.backtest.costs",
+        "path": "btc_predictor/backtest/costs.py",
+        "sha256": "856e44c8925b4bd5a04c44085edc33700e03b6b4595826c78441e2b180330d9f"
+      },
+      {
+        "module": "btc_predictor.backtest.engine",
+        "path": "btc_predictor/backtest/engine.py",
+        "sha256": "7d6425746023204e30af783339ce65341839e392ddb27291ad72c8287a8be44d"
+      },
+      {
+        "module": "btc_predictor.backtest.parameter_surfaces",
+        "path": "btc_predictor/backtest/parameter_surfaces.py",
+        "sha256": "8c83788876bcc345dc84fe27b6979eb1f0b23804dfbfded0c4ffd58f08711922"
+      },
+      {
+        "module": "btc_predictor.backtest.regime_performance",
+        "path": "btc_predictor/backtest/regime_performance.py",
+        "sha256": "d8cc62f2ae5b33884d7f0a4586b5ff54909e47a34812b0c7e1f210458c3301be"
+      },
+      {
+        "module": "btc_predictor.backtest.setup_performance",
+        "path": "btc_predictor/backtest/setup_performance.py",
+        "sha256": "95a2fe69f5d394cd500bf71922e85e850857400065e0070a2e86737b08c7be99"
+      },
+      {
+        "module": "btc_predictor.backtest.threshold_sweeps",
+        "path": "btc_predictor/backtest/threshold_sweeps.py",
+        "sha256": "d4fcd2608ef38c9ef03da363f13f5a0e336c95a73270b33e582bef6e0ee91a7f"
+      },
+      {
+        "module": "btc_predictor.backtest.walk_forward",
+        "path": "btc_predictor/backtest/walk_forward.py",
+        "sha256": "b360ad15c6f5417fe90d7c4f322ce566c42c9fb6dc923b920570ef5afedf910b"
+      },
+      {
+        "module": "btc_predictor.config",
+        "path": "btc_predictor/config/__init__.py",
+        "sha256": "5415c0338107654a4200594230648c1cb19cf7715914e3a6116b6fcc3a769bb5"
+      },
+      {
+        "module": "btc_predictor.config.application",
+        "path": "btc_predictor/config/application.py",
+        "sha256": "724fe645a6dafd0454763f0457f1bfc20ec867ee310f8e7cbc8600c681ac7e70"
+      },
+      {
+        "module": "btc_predictor.config.runtime",
+        "path": "btc_predictor/config/runtime.py",
+        "sha256": "c54e48ae49f9e0943ca9fc0d21045ae9541941ac660b361016275b6828103cf4"
+      },
+      {
+        "module": "btc_predictor.config.strategy",
+        "path": "btc_predictor/config/strategy.py",
+        "sha256": "c83eee0e50648967f0a3cab18224c96411d7e6b42c6377896fa1c20ba00dc963"
+      },
+      {
+        "module": "btc_predictor.data",
+        "path": "btc_predictor/data/__init__.py",
+        "sha256": "b111d53703dab75eeeb75165b93945879ffc025363ec694acc25cc34f8277386"
+      },
+      {
+        "module": "btc_predictor.data.audit",
+        "path": "btc_predictor/data/audit.py",
+        "sha256": "9255003cf3824757ce9a50f1153ff26d4d56b853006bf8f129114c0b997ea0d7"
+      },
+      {
+        "module": "btc_predictor.data.bitfinex",
+        "path": "btc_predictor/data/bitfinex.py",
+        "sha256": "0aa6bfc7ff54cf420f3e87e81a99a26a82cc95a7959707f11ce246459f158a80"
+      },
+      {
+        "module": "btc_predictor.data.bitstamp",
+        "path": "btc_predictor/data/bitstamp.py",
+        "sha256": "866fb37f26f1a6eb6ea1b714202ebaae2f02ed56442fd3dee11b1404743c3c93"
+      },
+      {
+        "module": "btc_predictor.data.coinbase",
+        "path": "btc_predictor/data/coinbase.py",
+        "sha256": "4003ab14e7a4c0565c4fa105d307798463281bff5d269448fed9ee9c1cd047bc"
+      },
+      {
+        "module": "btc_predictor.data.derivatives",
+        "path": "btc_predictor/data/derivatives.py",
+        "sha256": "f347e2d62a3bbdc6a54dc00f810a5f06cf912bc357fa41dc16d8b038e2e3f931"
+      },
+      {
+        "module": "btc_predictor.data.etf_flows",
+        "path": "btc_predictor/data/etf_flows.py",
+        "sha256": "3446c0b1901985abb00c0b051c32f2f2e400ac290f5d61f17fa9e66ba44b2d92"
+      },
+      {
+        "module": "btc_predictor.data.generic_series",
+        "path": "btc_predictor/data/generic_series.py",
+        "sha256": "92246cffe41a9c2e4b58111863b86b425fbf0e1dd258f33198875a4151211054"
+      },
+      {
+        "module": "btc_predictor.data.ohlcv",
+        "path": "btc_predictor/data/ohlcv.py",
+        "sha256": "5b5e19a9f61509ff4ce7b99f4e8b8c970348e59096bc8423a79176b0141e56e3"
+      },
+      {
+        "module": "btc_predictor.data.quality",
+        "path": "btc_predictor/data/quality.py",
+        "sha256": "abd4d422c78a13d9ce512dcd09537f9690ae60f115deffae84d8c27389958a57"
+      },
+      {
+        "module": "btc_predictor.db",
+        "path": "btc_predictor/db/__init__.py",
+        "sha256": "727888bddc13417f2f89d400ad63205f9d9fb0e50b23940cc9487350551e25b4"
+      },
+      {
+        "module": "btc_predictor.db.alembic",
+        "path": "btc_predictor/db/alembic.py",
+        "sha256": "752d3690799a76dfab9e716d360cdb404cbaa6a0629f373eddb458b50ba0fcb2"
+      },
+      {
+        "module": "btc_predictor.db.base",
+        "path": "btc_predictor/db/base.py",
+        "sha256": "a8104d0955d029fd15391f3ac49bf1b1052eda8ace0e51d6b3de2800c531ad85"
+      },
+      {
+        "module": "btc_predictor.db.connections",
+        "path": "btc_predictor/db/connections.py",
+        "sha256": "cf75324fadbbaaecc5b9e49237648e0d3f7c9a2c395d65f3c392efeec8682903"
+      },
+      {
+        "module": "btc_predictor.db.derived",
+        "path": "btc_predictor/db/derived.py",
+        "sha256": "fbe1713fe4231cce2f73fcc57bfd53976fd2eee34d6d8f1119a797c23e91ef29"
+      },
+      {
+        "module": "btc_predictor.db.portfolio",
+        "path": "btc_predictor/db/portfolio.py",
+        "sha256": "a535ae721cf5b2576bf28d51497e002430e9a28a2d6a90008f1fe35bf0cd0823"
+      },
+      {
+        "module": "btc_predictor.db.raw",
+        "path": "btc_predictor/db/raw.py",
+        "sha256": "43781548ed3d6675a24deb35003e8fbf5873b3a78ff9ba19ef52fcb089755d84"
+      },
+      {
+        "module": "btc_predictor.db.research",
+        "path": "btc_predictor/db/research.py",
+        "sha256": "b49c080102aea7ba04ae1f1ff02892179c2d366a1bc6d696206217f93660dfa0"
+      },
+      {
+        "module": "btc_predictor.db.signals",
+        "path": "btc_predictor/db/signals.py",
+        "sha256": "088cd0d66ef30c6866a2c0941f3444df56a8340e6f1f1363244358b9b355f3c2"
+      },
+      {
+        "module": "btc_predictor.db.system",
+        "path": "btc_predictor/db/system.py",
+        "sha256": "acc206c7a16adde26eb6174eecff3c2c30f540fc9f3a9ccc3bdfc8108dc8d129"
+      },
+      {
+        "module": "btc_predictor.features",
+        "path": "btc_predictor/features/__init__.py",
+        "sha256": "3ad251b84af1751ba11ccb38f016217bcda7287d821c47ce3e1195d02ad29050"
+      },
+      {
+        "module": "btc_predictor.features._scoring",
+        "path": "btc_predictor/features/_scoring.py",
+        "sha256": "895cef905e6292dd36e2d584e9c41cb00530728b472eace6f2c8626ff1e6ec06"
+      },
+      {
+        "module": "btc_predictor.features.add",
+        "path": "btc_predictor/features/add.py",
+        "sha256": "996adc4ba9648c0122bcaa439a4e607b6178e1731e731a5a0329b99d885290f8"
+      },
+      {
+        "module": "btc_predictor.features.entry",
+        "path": "btc_predictor/features/entry.py",
+        "sha256": "061975dbf8a1c18efd6d36da9812215309fa4a7bd8ef0d9ac65555510f270f1e"
+      },
+      {
+        "module": "btc_predictor.features.flow",
+        "path": "btc_predictor/features/flow.py",
+        "sha256": "8a05e6861ba39b19acbbb736407f497a2490d2aff4128acdfc403ed5dffcb558"
+      },
+      {
+        "module": "btc_predictor.features.hold",
+        "path": "btc_predictor/features/hold.py",
+        "sha256": "f7724f8a6b436d2223ad3071ad221604bcc0251ac317dd38de4338b563dfafc7"
+      },
+      {
+        "module": "btc_predictor.features.momentum",
+        "path": "btc_predictor/features/momentum.py",
+        "sha256": "9681b7093c5bd6fa7377f61b131911b5393b18d7f2c9b23799ea079ca52638b4"
+      },
+      {
+        "module": "btc_predictor.features.positioning",
+        "path": "btc_predictor/features/positioning.py",
+        "sha256": "b23ce0f240d82f180e24c74eb552e5e46bbd2b6fc6e6af8faa1cfa430436700e"
+      },
+      {
+        "module": "btc_predictor.features.regime",
+        "path": "btc_predictor/features/regime.py",
+        "sha256": "0e86be6a3d0f472e686d3e6086817384488f7c24b1399581ebf3d8a05ccdb7d4"
+      },
+      {
+        "module": "btc_predictor.features.rolling",
+        "path": "btc_predictor/features/rolling.py",
+        "sha256": "2f4b8ea3330d72ad50414e558b26434ff04203082d658cd0ac93e460c948a85c"
+      },
+      {
+        "module": "btc_predictor.features.scoring_contracts",
+        "path": "btc_predictor/features/scoring_contracts.py",
+        "sha256": "ab5ff4c4ed35a974b3c7f183c076d01a2292976329a3dc6c8a9c9c2798495257"
+      },
+      {
+        "module": "btc_predictor.features.setup",
+        "path": "btc_predictor/features/setup.py",
+        "sha256": "bef4346343ff5a3bd0d105d1604a8fbce8709aa61e3cda6189e2d51a293fd49e"
+      },
+      {
+        "module": "btc_predictor.features.structure",
+        "path": "btc_predictor/features/structure.py",
+        "sha256": "35576215f66ae07b43c75638b4b29abd30b2fe6a868a0607664a5d54209d76b6"
+      },
+      {
+        "module": "btc_predictor.features.trend",
+        "path": "btc_predictor/features/trend.py",
+        "sha256": "041050e9ada0c2ce1cbcff1af602fe3e4b3f22aee4289362465607068f0fe634"
+      },
+      {
+        "module": "btc_predictor.features.volatility",
+        "path": "btc_predictor/features/volatility.py",
+        "sha256": "bd81be840d70ee2266ba8d7003509c0ae771ecca8d0a083f39d2d47d6f37d27b"
+      },
+      {
+        "module": "btc_predictor.levels",
+        "path": "btc_predictor/levels/__init__.py",
+        "sha256": "99e7508f39aff33e329a3245fff6b505c07cfda60589750fb67d70ebb0d22817"
+      },
+      {
+        "module": "btc_predictor.levels.anchored_vwap",
+        "path": "btc_predictor/levels/anchored_vwap.py",
+        "sha256": "1e51daa94a4291b6ebee424056c1836e0c920ac845896d2a0265faa84c7952f1"
+      },
+      {
+        "module": "btc_predictor.levels.breakout",
+        "path": "btc_predictor/levels/breakout.py",
+        "sha256": "d19d388ba1f2912b0efcefb11783334a9b2088d84d2eda465ee559bbae2b3d1c"
+      },
+      {
+        "module": "btc_predictor.levels.clustering",
+        "path": "btc_predictor/levels/clustering.py",
+        "sha256": "4c2c35203e4dd520bcff53aea1e5a218f119de1e937e2f6f0906929f0d273ed4"
+      },
+      {
+        "module": "btc_predictor.levels.strength",
+        "path": "btc_predictor/levels/strength.py",
+        "sha256": "5d74ad41159c086c37754bdd661c8e5b01d5327ee04987a0ea636cfad97a0ab2"
+      },
+      {
+        "module": "btc_predictor.levels.swing",
+        "path": "btc_predictor/levels/swing.py",
+        "sha256": "ae7cd9ff611bfbb0d883937de69be7c050f812df7551fa254d77bdc7f9ab56eb"
+      },
+      {
+        "module": "btc_predictor.levels.volume_profile",
+        "path": "btc_predictor/levels/volume_profile.py",
+        "sha256": "84e524f6f2b251fba9b738f6b5d5af0bbfd602518de349b4cb687ba9f5141fb3"
+      },
+      {
+        "module": "btc_predictor.logging",
+        "path": "btc_predictor/logging.py",
+        "sha256": "559908e00e333c2487636fd3f54da3c5d5ffe0973b60bf183d6f390cced4af39"
+      },
+      {
+        "module": "btc_predictor.portfolio",
+        "path": "btc_predictor/portfolio/__init__.py",
+        "sha256": "1fff3db1b4620954fa2752933d41e07a3e3b44f44ae1446ff999d27b31f6af60"
+      },
+      {
+        "module": "btc_predictor.portfolio.account",
+        "path": "btc_predictor/portfolio/account.py",
+        "sha256": "6acb770d1399042d5dd214deac6b95c99842ce3f2270259d0791afa401c2d865"
+      },
+      {
+        "module": "btc_predictor.portfolio.accounting",
+        "path": "btc_predictor/portfolio/accounting.py",
+        "sha256": "e9f007fec30d0ba5c589d47942ccacf76c51db12cc3870c970805970e5dfe219"
+      },
+      {
+        "module": "btc_predictor.portfolio.add_execution",
+        "path": "btc_predictor/portfolio/add_execution.py",
+        "sha256": "1482827a43f5f67ff74343e9a98acd688785a12ec3827fab6f4fa745ab1f84b6"
+      },
+      {
+        "module": "btc_predictor.portfolio.entry_execution",
+        "path": "btc_predictor/portfolio/entry_execution.py",
+        "sha256": "87eac95a5ef4ca5fb694314d7d09d6b61d0c1eaeafc862b2da12385cdbdced73"
+      },
+      {
+        "module": "btc_predictor.portfolio.exit_execution",
+        "path": "btc_predictor/portfolio/exit_execution.py",
+        "sha256": "90297cf3ef36e80f09289e5922e268a9322bd65e227c60f490797221f7925ed2"
+      },
+      {
+        "module": "btc_predictor.portfolio.lifecycle_persistence",
+        "path": "btc_predictor/portfolio/lifecycle_persistence.py",
+        "sha256": "ba285de8bc9260f9f7701249cb55100e0dcfb77c953d7eaa29fa22e742acbc10"
+      },
+      {
+        "module": "btc_predictor.portfolio.state_machine",
+        "path": "btc_predictor/portfolio/state_machine.py",
+        "sha256": "88cb80d55756dfba7235d786d589c3489f38c815c23801ffc9da94903f45b09f"
+      },
+      {
+        "module": "btc_predictor.portfolio.stop_execution",
+        "path": "btc_predictor/portfolio/stop_execution.py",
+        "sha256": "6c7613adbf74942405dab5a676b97c8e022500a6a069bb0537ed7eca7be92bf2"
+      },
+      {
+        "module": "btc_predictor.portfolio.trim_execution",
+        "path": "btc_predictor/portfolio/trim_execution.py",
+        "sha256": "24287629714c548f40171b3b5202e9e6c510b95d5a02f2969f2393b5f9dac12e"
+      },
+      {
+        "module": "btc_predictor.quant",
+        "path": "btc_predictor/quant/__init__.py",
+        "sha256": "3e731c565e559e66678a37d899da6ca9c079f99d1083438ab1b9ab8befbda230"
+      },
+      {
+        "module": "btc_predictor.quant.arrays",
+        "path": "btc_predictor/quant/arrays.py",
+        "sha256": "645db15444aaec585a9a568da66fc90e0f17aa8bffce0d9a0d6245f2eaa81de5"
+      },
+      {
+        "module": "btc_predictor.quant.comparisons",
+        "path": "btc_predictor/quant/comparisons.py",
+        "sha256": "55aa8e923819766a6ce0c3135c9e97fdbc11611fb677d1d0289b802487bf3faf"
+      },
+      {
+        "module": "btc_predictor.quant.distances",
+        "path": "btc_predictor/quant/distances.py",
+        "sha256": "197557c355ca35674e41f40e0389217ffdcedc384a0df8035d6768a493a4a99a"
+      },
+      {
+        "module": "btc_predictor.quant.portfolio",
+        "path": "btc_predictor/quant/portfolio.py",
+        "sha256": "3a47d5c50741451149e9f27911b34d363d6c54d2823b2b5d4c59ada3869a5060"
+      },
+      {
+        "module": "btc_predictor.quant.risk",
+        "path": "btc_predictor/quant/risk.py",
+        "sha256": "7c0055648346de42fb221b1ab82f40189377f74904ecc11bc191449ebf57c004"
+      },
+      {
+        "module": "btc_predictor.quant.rolling",
+        "path": "btc_predictor/quant/rolling.py",
+        "sha256": "a051263bb2b0b019cb75f76a2487c0b13fdd6182e1ce4c92c30382515b2c7448"
+      },
+      {
+        "module": "btc_predictor.quant.scoring",
+        "path": "btc_predictor/quant/scoring.py",
+        "sha256": "2fa354c30c753fc4b402d3876502db17f153f9b19d54a5d3e4c0d608546c0780"
+      },
+      {
+        "module": "btc_predictor.quant.simulation",
+        "path": "btc_predictor/quant/simulation.py",
+        "sha256": "ecd22cef06d34b9a7b6a8f13767e1a07f1dd48664c79f5dbbd6b938beb123831"
+      },
+      {
+        "module": "btc_predictor.quant.transforms",
+        "path": "btc_predictor/quant/transforms.py",
+        "sha256": "ce56b842a5ca1f16fa2331b40fa2d5e3c9d94199ab6b3604f460417972d6b089"
+      },
+      {
+        "module": "btc_predictor.research",
+        "path": "btc_predictor/research/__init__.py",
+        "sha256": "7ed16cc01be76004ddbd728f6c547c04393ac97787c24b1192384f193f210059"
+      },
+      {
+        "module": "btc_predictor.research.component_ablation",
+        "path": "btc_predictor/research/component_ablation.py",
+        "sha256": "02f7d7e13b861c6b00cdce6cee6e5efc6e9922aaddafcc45344a6b35467f463b"
+      },
+      {
+        "module": "btc_predictor.research.decision_state",
+        "path": "btc_predictor/research/decision_state.py",
+        "sha256": "ec8f5de75ca1e98aab74c802f81b0817d674d067a49e6a64dac169ee8493ac87"
+      },
+      {
+        "module": "btc_predictor.research.etf_calendar_scientific_worker_entry",
+        "path": "btc_predictor/research/etf_calendar_scientific_worker_entry.py",
+        "sha256": "cf85a16b68440568a953c757512dc2638d11958e852004383f5f0c4430d6ee62"
+      },
+      {
+        "module": "btc_predictor.research.etf_calendar_semantics",
+        "path": "btc_predictor/research/etf_calendar_semantics.py",
+        "sha256": "87367f4c75471afaeaa005c8c0503717aa40b2b54c266736642d74a611171f64"
+      },
+      {
+        "module": "btc_predictor.research.etf_calendar_worker_protocol",
+        "path": "btc_predictor/research/etf_calendar_worker_protocol.py",
+        "sha256": "2291cf952ad4416e732ddd2e2395e91994eee6b40b6281b422cde18bf0ec6757"
+      },
+      {
+        "module": "btc_predictor.research.etf_publication_calendar",
+        "path": "btc_predictor/research/etf_publication_calendar.py",
+        "sha256": "49fa356e48426aaaea0be987930062f85058839f9efd73feb2d210b3b79c4145"
+      },
+      {
+        "module": "btc_predictor.research.feature_interactions",
+        "path": "btc_predictor/research/feature_interactions.py",
+        "sha256": "a5da8956ca4dd261c7095a5077cbc70e5910a3b3ea614a1d8dca52b3dbaa91a2"
+      },
+      {
+        "module": "btc_predictor.research.feature_matrix",
+        "path": "btc_predictor/research/feature_matrix.py",
+        "sha256": "e67a43becd823dbcbe36f15127454774ca00a3302beb97ac6a56d87cf8940a49"
+      },
+      {
+        "module": "btc_predictor.research.monte_carlo_risk",
+        "path": "btc_predictor/research/monte_carlo_risk.py",
+        "sha256": "d69aa5bd3313eec51fac6569507249cb0325de16acbe384451d4fd3cf129b6a7"
+      },
+      {
+        "module": "btc_predictor.research.paper_trade_outcomes",
+        "path": "btc_predictor/research/paper_trade_outcomes.py",
+        "sha256": "05bd7a790a17d223def02ea408e8c87c62571d0816fd35c0e64249ddc753f733"
+      },
+      {
+        "module": "btc_predictor.research.predictor_diagnostics",
+        "path": "btc_predictor/research/predictor_diagnostics.py",
+        "sha256": "4b23d3da3aeb2eb70ea8540f357922d28007e4727a68f5d7329ea5f319a7d72b"
+      },
+      {
+        "module": "btc_predictor.research.price_source_policy",
+        "path": "btc_predictor/research/price_source_policy.py",
+        "sha256": "71137e8dba309a229dcc157e3df1ad29f3f9cc350c58a37c3290b8d4b0df07a0"
+      },
+      {
+        "module": "btc_predictor.research.reference_composite",
+        "path": "btc_predictor/research/reference_composite.py",
+        "sha256": "6e4ab5d0c2ce970636728cd11e964184468e684ae0da09ec84baf2e72413a7b7"
+      },
+      {
+        "module": "btc_predictor.research.strategy_comparison",
+        "path": "btc_predictor/research/strategy_comparison.py",
+        "sha256": "44636078d1371d87ac3aef0b87b367b3520e21ba4d4190674f45250b5d33ca77"
+      },
+      {
+        "module": "btc_predictor.research.strategy_promotion",
+        "path": "btc_predictor/research/strategy_promotion.py",
+        "sha256": "82c9d1fe1f3df5ff20d8f76dab0170a0a4a701a0346e42f753d37536d1f55e7d"
+      },
+      {
+        "module": "btc_predictor.research.trusted_acquisition",
+        "path": "btc_predictor/research/trusted_acquisition.py",
+        "sha256": "df13fccd4abd62a38616f253ca09e91e885be3c44d353845cac445e1b490110f"
+      },
+      {
+        "module": "btc_predictor.research.trusted_acquisition_authority",
+        "path": "btc_predictor/research/trusted_acquisition_authority.py",
+        "sha256": "1263332d8139c669ed092bd4704270ab53c442f54516db29aa634afa1378e283"
+      },
+      {
+        "module": "btc_predictor.research.trusted_acquisition_persistence",
+        "path": "btc_predictor/research/trusted_acquisition_persistence.py",
+        "sha256": "3fae833cb659442af632b229f71e783526beb1cfefd8ec0cc19277a1bdec3ad3"
+      },
+      {
+        "module": "btc_predictor.risk",
+        "path": "btc_predictor/risk/__init__.py",
+        "sha256": "e8f10cb1e433c4b8d7b93558a7041182e699a92cc4bf9a5b136e6bd600906976"
+      },
+      {
+        "module": "btc_predictor.risk.budget",
+        "path": "btc_predictor/risk/budget.py",
+        "sha256": "f16cafdda0515732e7a878af89a18450fbc40cedc908b7e8eb6fc7c1a1b342a9"
+      },
+      {
+        "module": "btc_predictor.risk.buffer",
+        "path": "btc_predictor/risk/buffer.py",
+        "sha256": "28adc5d5e19dbdacf5c89e843bab501034035bd94d144e076e16a73059ec4c28"
+      },
+      {
+        "module": "btc_predictor.risk.exposure",
+        "path": "btc_predictor/risk/exposure.py",
+        "sha256": "63b566aa6b421507268eb343245bc161c0c6e7ce5be9d492949bfef45bbad00a"
+      },
+      {
+        "module": "btc_predictor.risk.invalidation",
+        "path": "btc_predictor/risk/invalidation.py",
+        "sha256": "182d62c17500c0527de82fb5e6ec76b0d53ca57678440fc973b33cf4f40f2d9d"
+      },
+      {
+        "module": "btc_predictor.risk.reward",
+        "path": "btc_predictor/risk/reward.py",
+        "sha256": "490ff52e8a387a1150ca96b944fe2a25b704bb5252c42f6174b16e2fa7516aac"
+      },
+      {
+        "module": "btc_predictor.risk.sizing",
+        "path": "btc_predictor/risk/sizing.py",
+        "sha256": "8c637f6d2b25e97cc98ac94188efecba3ff2875e70bf44682feca53adc8a1b3f"
+      },
+      {
+        "module": "btc_predictor.risk.stop",
+        "path": "btc_predictor/risk/stop.py",
+        "sha256": "ac65d1b90d691454ed3abb38a392e85fdb9c073bfe30a14bd6f42e7c9d7d79c6"
+      },
+      {
+        "module": "btc_predictor.risk.trailing",
+        "path": "btc_predictor/risk/trailing.py",
+        "sha256": "9bdd924c6d326f38cbddd3bd0310ff6dfa9ff5287389ab58498dea149971d795"
+      },
+      {
+        "module": "btc_predictor.risk.tranches",
+        "path": "btc_predictor/risk/tranches.py",
+        "sha256": "e522bf575529e00d95482efd7cbc5c34a9888821ff326b3c4eb5f34db2ceb9fa"
+      },
+      {
+        "module": "btc_predictor.signals",
+        "path": "btc_predictor/signals/__init__.py",
+        "sha256": "4cec6de171f26b3420adc4e33dcf68e1da339aef5a0afc68b21b5835d5dc4869"
+      },
+      {
+        "module": "btc_predictor.signals.add_requirements",
+        "path": "btc_predictor/signals/add_requirements.py",
+        "sha256": "3f4767d5f6308870a448cb84d96d3c95b259dbaa3f4e5218ed3362cfe3acebb8"
+      },
+      {
+        "module": "btc_predictor.signals.breakout_retest",
+        "path": "btc_predictor/signals/breakout_retest.py",
+        "sha256": "28e8649803a9d2e6502d5e38ad8570073d67d8faf6a7ad52bd442a4dedf4f999"
+      },
+      {
+        "module": "btc_predictor.signals.data_quality",
+        "path": "btc_predictor/signals/data_quality.py",
+        "sha256": "36eda24a209dbfc13c21cb30682efb20a0ec77b221e52fe9852f175f0caed1c7"
+      },
+      {
+        "module": "btc_predictor.signals.exit_rules",
+        "path": "btc_predictor/signals/exit_rules.py",
+        "sha256": "d76483f348ada1cf61dfdb1c4a038c41aad4254810b176c44dc8dabcd5301fff"
+      },
+      {
+        "module": "btc_predictor.signals.hard_veto",
+        "path": "btc_predictor/signals/hard_veto.py",
+        "sha256": "b1a9d2fae0f88a2553557e3de44d3dad172c35bf32090ef4dfc4affbeb13c5ef"
+      },
+      {
+        "module": "btc_predictor.signals.higher_low",
+        "path": "btc_predictor/signals/higher_low.py",
+        "sha256": "f0fac06e0a77cde3f5f258b994969e34247f76517020c77c12687d9356bd222b"
+      },
+      {
+        "module": "btc_predictor.signals.no_chase",
+        "path": "btc_predictor/signals/no_chase.py",
+        "sha256": "c00773594032044920e9d547f096fb3878f965085c11ab7e0be314c810432b18"
+      },
+      {
+        "module": "btc_predictor.signals.reason_codes",
+        "path": "btc_predictor/signals/reason_codes.py",
+        "sha256": "0a8d8f374bca3d7cf0cf57c48a1c55c7b1bebb237527698bdc553483027cc850"
+      },
+      {
+        "module": "btc_predictor.signals.reclaim",
+        "path": "btc_predictor/signals/reclaim.py",
+        "sha256": "c95ec5ad2a75e13f7ef3937fd934bd11aedc8d3ff6d340d09570a8f95319331c"
+      },
+      {
+        "module": "btc_predictor.signals.trim",
+        "path": "btc_predictor/signals/trim.py",
+        "sha256": "11f92d0452835d760169055504c8e0b6a3c0f90257edc76e7093c9abd1b4db2d"
+      }
+    ],
+    "manifest_digest": "674b006ae66b8aace3458cb870f898ecad33e1f23833436954d36749b3aadbb8",
+    "module_count": 116,
+    "seed_entrypoint": "btc_predictor.research.etf_calendar_scientific_worker_entry"
+  },
+  "role": "PRE_I2_CONFORMANCE_FIXTURE_AND_PROVENANCE",
+  "roles": [
+    "ARCHITECTURE_CONFORMANCE_TEST_VECTOR",
+    "PRE_I2_SOURCE_DRIFT_REGRESSION_ANCHOR",
+    "PROVENANCE"
+  ]
+}

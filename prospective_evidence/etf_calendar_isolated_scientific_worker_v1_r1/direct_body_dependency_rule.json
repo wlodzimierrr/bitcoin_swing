@@ -1,0 +1,34 @@
+{
+  "artifact_builder_dispatch_rewrite_required_by_this_decision": false,
+  "certified_dependency_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772",
+  "contract_version": "ETF_CALENDAR_DIRECT_BODY_DEPENDENCY_RULE_V1_PAD4_R1",
+  "definition_sha256": "cec45176066346776fcef22d36c57f9ac2f4632b6f506d4afcf776d0d75c733e",
+  "exact_dependency_assertion": "assert_trusted_persistence_dependency",
+  "freshly_parent_bound_by": "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_POSTP1-001V2A-PAD4-R1",
+  "functools_wraps_authority_guards_permitted": false,
+  "process_isolation_legalizes_wrappers": false,
+  "proof": "DIRECT_EXECUTABLE_AST_CALL_IN_EACH_REQUIRED_BODY",
+  "required_direct_bodies": [
+    "CalendarEvidenceStore.put",
+    "CalendarEvidenceStore.get",
+    "CalendarEvidenceStore.records",
+    "CalendarEvidenceStore.envelopes",
+    "collect_official_calendar"
+  ],
+  "startup_check_replaces_five_direct_checks": false,
+  "startup_check_replaces_per_epoch_attestation": false,
+  "startup_self_check": [
+    "CERTIFIED_PROOF_ARCHITECTURE_AUTHORITY",
+    "CERTIFIED_TRUSTED_PERSISTENCE_DEPENDENCY",
+    "FROZEN_PROOF_INTERPRETER_IDENTITY",
+    "REVIEWED_PRODUCTION_SOURCE_IDENTITY",
+    "CERTIFIED_SOURCE_CLOSURE_IDENTITY",
+    "ELEVEN_EFFECTIVE_RUNTIME_OWNER_BINDINGS",
+    "TRANSITIVE_EXECUTION_CLOSURE_BINDINGS",
+    "DIRECT_DEPENDENCY_BODY_AUTHORITY"
+  ],
+  "wrapper_installed_guards_permitted": false,
+  "wrapper_installer_must_be_removed": "_install_exact_dependency_guards",
+  "wrapper_installer_removal_required": "_install_exact_dependency_guards",
+  "wrapper_removal_is_independent_of_module_owner_attestation": true
+}

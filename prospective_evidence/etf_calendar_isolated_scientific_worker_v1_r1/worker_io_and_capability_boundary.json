@@ -1,0 +1,27 @@
+{
+  "capability_width_reason": "the current package re-export graph pulls btc_predictor.db and HTTPS-capable calendar collection modules into the certified import closure even though no frozen operation reaches them; the direct-import reduction that narrows this is deferred to POSTP1-001V2A-I2",
+  "certified_source_universe_includes_db_and_network_capable_modules": true,
+  "collection_authority_moved_into_the_worker": false,
+  "collection_remains_a_separate_governed_boundary": true,
+  "contract_version": "ETF_CALENDAR_WORKER_IO_AND_CAPABILITY_BOUNDARY_V1_PAD4_R1",
+  "definition_sha256": "ec702d6f96ef3d461c40a08fb123d0ab3e267901abc9cd3a9edf22887a7f05b6",
+  "enforcement": [
+    "FROZEN_MINIMAL_CHILD_ENVIRONMENT",
+    "FROZEN_READ_ONLY_OPERATION_REGISTRY",
+    "STATIC_CLOSED_WORKER_SOURCE_PROHIBITION"
+  ],
+  "no_network_guarantee_basis": "the frozen read-only operation registry, the frozen minimal child environment and the static closed worker-source prohibition; consistent with the reviewed PAD4 finding and deliberately not strengthened into a kernel-level claim",
+  "operating_system_level_network_sandbox_claimed": false,
+  "operating_system_network_sandbox_added_by_this_correction": false,
+  "preferred_boundary": "NO_WORKER_DATABASE_CONNECTION",
+  "result_admission_is_a_controller_responsibility": true,
+  "scientific_input_supplied_by_the_controller": true,
+  "signing_key_environment_variable_present": "REFUSE",
+  "worker_authoritative_db_write_permitted": false,
+  "worker_collector_signing_capability_permitted": false,
+  "worker_database_connection": "NOT_ESTABLISHED_BY_ANY_FROZEN_OPERATION",
+  "worker_https_permitted": false,
+  "worker_is_a_scientific_evaluator_not_the_acquisition_signer": true,
+  "worker_network_permitted": false,
+  "worker_private_signing_key_permitted": false
+}

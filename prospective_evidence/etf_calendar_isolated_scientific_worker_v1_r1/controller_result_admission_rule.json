@@ -1,0 +1,50 @@
+{
+  "admission_requires_all_three": [
+    "REQUEST_AGREES_WITH_THE_TRUSTED_AUTHORITY_CONTEXT",
+    "RESPONSE_AGREES_WITH_THE_TRUSTED_AUTHORITY_CONTEXT",
+    "RESPONSE_CROSS_BINDS_TO_THE_REQUEST"
+  ],
+  "any_mismatch": [
+    "RESULT_NOT_ADMITTED",
+    "DATA_QUALITY_FAIL"
+  ],
+  "caller_request_worker_agreement_is_necessary_but_not_sufficient": true,
+  "contract_version": "ETF_CALENDAR_CONTROLLER_RESULT_ADMISSION_RULE_V1_PAD4_R1",
+  "definition_sha256": "22db9d2bafe24c6f3a72d2c19ffbba7eb8e29dd6f29cd4e70fda8589ab0dd731",
+  "expected_dependency_authority_validated": [
+    "EXACT_DEPENDENCY_SET",
+    "EXACT_REVIEWED_RECORD_AND_ARTIFACT_IDENTITIES",
+    "EXACT_REVIEWED_VERSIONS",
+    "SUCCESSFUL_INSTALLED_CONTENT_VERIFICATION"
+  ],
+  "persistence_follows_admission": true,
+  "response_equals_request_is_sufficient": false,
+  "result_admission_precedes_any_persistence": false,
+  "scientific_success_requires": [
+    "EXPECTED_PROCESS_EXIT",
+    "SUCCESSFUL_WORKER_SELF_VERIFICATION",
+    "VALID_CANONICAL_RESPONSE"
+  ],
+  "silent_retry_with_a_different_authority_path": false,
+  "unexpected_crash_signal_timeout_protocol_error_or_extra_output": [
+    "RESULT_NOT_ADMITTED",
+    "DATA_QUALITY_FAIL"
+  ],
+  "validated_before_admission": [
+    "bytecode_cache_binding",
+    "clean_process_termination",
+    "interpreter_identity",
+    "operation_identity",
+    "request_authority_context_agreement",
+    "request_digest_cross_binding",
+    "response_authority_context_agreement",
+    "response_schema_version",
+    "result_digest",
+    "success_status",
+    "third_party_installed_content_verification",
+    "worker_authority_identity",
+    "worker_source_manifest_identity"
+  ],
+  "worker_authority_hash_binding_mechanism": "TRUSTED_CONTROLLER_AUTHORITY_CONTEXT_NOT_REQUEST_RESPONSE_ECHO",
+  "worker_authority_hash_is_controller_bound": true
+}

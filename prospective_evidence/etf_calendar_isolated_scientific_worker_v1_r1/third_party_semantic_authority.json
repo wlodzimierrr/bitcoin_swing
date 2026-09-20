@@ -1,0 +1,106 @@
+{
+  "arbitrary_installed_version_self_certification_permitted": false,
+  "arbitrary_site_packages_state_is_scientific_authority": false,
+  "caller_declared_version_may_become_authority": false,
+  "contract_version": "ETF_CALENDAR_WORKER_THIRD_PARTY_AUTHORITY_V1_R1",
+  "defect": "the declared version was never compared to anything, so a manifest declaring 99.99.99-FORGED for every distribution was admitted and no reviewed semantic dependency authority existed",
+  "definition_sha256": "6afc1bde136bca6beef7131d30031cbcd0ac198e49e6f1f9066d4651f00bb5d8",
+  "environment_portability_rule": "install location may remain machine-specific launch material; scientific semantic authority may not",
+  "i2_final_dependency_set_may_add_unreviewed_material": false,
+  "i2_final_dependency_set_may_be_a_subset": true,
+  "launch_bound_material": [
+    "absolute_installation_location",
+    "absolute_record_path",
+    "installation_environment_root"
+  ],
+  "loaded_dependency_must_resolve_inside_the_verified_location": true,
+  "new_artifact_identity": "REQUIRES_EXPLICIT_REVIEW_AND_REFREEZE",
+  "new_unreviewed_distribution": "REQUIRES_EXPLICIT_REVIEW_AND_REFREEZE",
+  "new_version": "REQUIRES_EXPLICIT_REVIEW_AND_REFREEZE",
+  "observed_version_differs_from_the_frozen_reviewed_version": "REFUSE",
+  "observed_version_is_record_hash_bound": true,
+  "observed_version_source": [
+    "INSTALLED_DIST_INFO_DIRECTORY_NAME",
+    "INSTALLED_METADATA_NAME_AND_VERSION_HEADERS"
+  ],
+  "parent_bound_material": [
+    "distribution",
+    "expected_root_modules",
+    "reviewed_record_artifact_identity",
+    "reviewed_record_content_manifest_identity",
+    "version"
+  ],
+  "repaired_review_finding": "D_THIRD_PARTY_INSTALLED_CONTENT_AND_SEMANTIC_AUTHORITY_NOT_ATTESTED",
+  "reviewed_distribution_count": 5,
+  "reviewed_distributions": [
+    {
+      "dist_info_directory": "alembic-1.19.1.dist-info",
+      "distribution": "alembic",
+      "hashed_row_count": 103,
+      "metadata_name": "alembic",
+      "record_content_manifest_digest": "86960035cb916589bea1fe28cf60646154484567b8b53f1247390699ad50a6f9",
+      "record_row_count": 180,
+      "record_sha256": "ebbb23640b1d2a9c5554db547f0af8ce79c36320e268ed25a376851e3c40dbe7",
+      "root_modules": [
+        "alembic"
+      ],
+      "version": "1.19.1"
+    },
+    {
+      "dist_info_directory": "cryptography-50.0.1.dist-info",
+      "distribution": "cryptography",
+      "hashed_row_count": 121,
+      "metadata_name": "cryptography",
+      "record_content_manifest_digest": "68c3a09f5bad49e0c7a0dfa968536d85f873e5022f34e00a9f636929f1e32d59",
+      "record_row_count": 200,
+      "record_sha256": "e77cb6a30c87bdac2ee2ec0819a509ca45f660bd263f41da1f21ac3b48f2fb8b",
+      "root_modules": [
+        "cryptography"
+      ],
+      "version": "50.0.1"
+    },
+    {
+      "dist_info_directory": "numpy-2.5.2.dist-info",
+      "distribution": "numpy",
+      "hashed_row_count": 928,
+      "metadata_name": "numpy",
+      "record_content_manifest_digest": "cb22b41061e85436627479fe57d26d119da169035a0cac36380b84c26c3014c3",
+      "record_row_count": 1336,
+      "record_sha256": "7cde927bec887ea8c7a9be3d1e5c6719e504b4e11e29bddc66ed328f64dd9faa",
+      "root_modules": [
+        "numpy"
+      ],
+      "version": "2.5.2"
+    },
+    {
+      "dist_info_directory": "scipy-1.18.1.dist-info",
+      "distribution": "scipy",
+      "hashed_row_count": 1432,
+      "metadata_name": "scipy",
+      "record_content_manifest_digest": "c103a8d760286c146a96259969b44d6d4694c12f152d66e6e19b5829d459cd84",
+      "record_row_count": 2421,
+      "record_sha256": "d376f6be3fce626b65090112b4498ae3221a25f6c8cb8d5fe46dd9f31d324858",
+      "root_modules": [
+        "scipy"
+      ],
+      "version": "1.18.1"
+    },
+    {
+      "dist_info_directory": "sqlalchemy-2.0.52.dist-info",
+      "distribution": "sqlalchemy",
+      "hashed_row_count": 274,
+      "metadata_name": "SQLAlchemy",
+      "record_content_manifest_digest": "0a236c13e7c0de3426b0d4611965a03801c241bbd2feab0a23fc65d1bcf13807",
+      "record_row_count": 531,
+      "record_sha256": "c386ba92b9d4998a846119301af8e71e13c741826ad4e6ad9103bde4b390a5b9",
+      "root_modules": [
+        "sqlalchemy"
+      ],
+      "version": "2.0.52"
+    }
+  ],
+  "same_version_different_unreviewed_artifact_is_authorized": false,
+  "stdlib_modules_recursively_attested": false,
+  "third_party_exact_reviewed_versions_required": true,
+  "third_party_reviewed_artifact_identity_required": true
+}

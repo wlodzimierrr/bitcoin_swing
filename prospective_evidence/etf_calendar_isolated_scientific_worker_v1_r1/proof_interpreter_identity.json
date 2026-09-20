@@ -1,0 +1,35 @@
+{
+  "contract_version": "ETF_CALENDAR_PROOF_INTERPRETER_IDENTITY_V1_PAD4_R1",
+  "definition_sha256": "e319dd6a6777117234505d57bd74e9bb0ae52feb3bbed1d5c850ed69c4b807fb",
+  "different_python_interpreter_may_reuse_this_authority": false,
+  "frozen_identity": {
+    "cache_tag": "cpython-312",
+    "hexversion": 51121904,
+    "implementation_name": "cpython",
+    "magic_number_hex": "cb0d0d0a",
+    "version_major": 3,
+    "version_micro": 14,
+    "version_minor": 12,
+    "version_releaselevel": "final",
+    "version_serial": 0
+  },
+  "future_python_upgrade": "REQUIRES_EXPLICIT_REVIEW_AND_REFREEZE",
+  "identity_fields": [
+    "cache_tag",
+    "hexversion",
+    "implementation_name",
+    "magic_number_hex",
+    "version_major",
+    "version_micro",
+    "version_minor",
+    "version_releaselevel",
+    "version_serial"
+  ],
+  "mismatch": "REFUSE_SCIENTIFIC_AUTHORITY",
+  "standard_library_semantics_rely_on_this_axiom": true,
+  "stdlib_boundary_is_an_explicit_architecture_axiom": true,
+  "stdlib_python_objects_recursively_attested": false,
+  "verified_before_any_scientific_call": true,
+  "worker_and_controller_share_one_identity_authority": true,
+  "worker_identity_restatement_is_mechanically_bound": true
+}

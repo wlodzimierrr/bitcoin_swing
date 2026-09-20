@@ -1,0 +1,40 @@
+{
+  "additional_flags": [
+    "-I",
+    "-S",
+    "-B"
+  ],
+  "applies_to_third_party_modules": true,
+  "cached_bytecode_may_override_certified_source": false,
+  "caller_selected_from_the_scientific_request": false,
+  "contract_version": "ETF_CALENDAR_WORKER_BYTECODE_EXECUTION_BINDING_RULE_V1_PAD4_R1",
+  "controller_created": true,
+  "defect": "-B prevents cached bytecode writes but does not prevent cached bytecode reads; a forged timestamp-valid __pycache__/flow.cpython-312.pyc executed while the certified .py source SHA-256 was unchanged",
+  "definition_sha256": "a4f794866dafc46b96d3eaa7784e9b7dab4ec8f621b8a350f63b1fa91f60948a",
+  "empty_before_launch": true,
+  "entrypoint_bytecode_is_never_cached": true,
+  "entrypoint_bytecode_reason": "a worker entrypoint executes as __main__ from its source path, which CPython never serves from a bytecode cache",
+  "failure": "REFUSE_SCIENTIFIC_AUTHORITY",
+  "fresh_cache_namespace_per_worker": true,
+  "hostile_filesystem_race_resistance_claimed": false,
+  "install_generated_site_packages_pyc_is_authoritative": false,
+  "interpreter_option": "-X pycache_prefix=<fresh_empty_dir>",
+  "loaded_module_cached_path_must_be_inside_the_namespace": true,
+  "loaded_module_origin_must_be_the_certified_py_source": true,
+  "mechanism": "INTERPRETER_X_OPTION_PYCACHE_PREFIX",
+  "removed_after_the_worker_exits": true,
+  "repair": "FRESH_CONTROLLER_CREATED_EMPTY_PER_WORKER_BYTECODE_CACHE_NAMESPACE",
+  "repaired_review_finding": "A_EXECUTED_BYTECODE_NOT_BOUND_TO_CERTIFIED_SOURCE",
+  "repository_pycache_authoritative": false,
+  "reused_between_workers": false,
+  "shared_with_repository_pycache": false,
+  "sourceless_or_wrong_origin_project_module": "REFUSE",
+  "third_party_cached_bytecode_may_override_verified_source": false,
+  "worker_verification_duplication_reason": "the check must pass before even the certified protocol module is imported, otherwise a forged protocol bytecode cache entry would be the thing deciding whether the cache namespace is trustworthy",
+  "worker_verification_is_duplicated_in_the_entrypoint": true,
+  "worker_verifies_before_project_imports": [
+    "sys.pycache_prefix == controller-declared operational cache prefix",
+    "sys.dont_write_bytecode is True",
+    "the declared cache namespace exists and is empty"
+  ]
+}

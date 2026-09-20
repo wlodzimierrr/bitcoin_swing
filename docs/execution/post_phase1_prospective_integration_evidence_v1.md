@@ -4113,6 +4113,216 @@ implementation/refreeze, POSTP1-001V2R1, POSTP1-003R3, POSTP1-004 and collection
 remain blocked; trusted persistence, calendar science, failed proof and calendar
 lineage, BTC-019 and Epic T remain unchanged.
 
+## POSTP1-001V2A-PAD4-R1 — `REPAIR_ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_AUTHORITY_ANCHORS_V1`
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL
+xHIGH PROOF-ARCHITECTURE REVIEW`
+**Dependency:** POSTP1-002V2A-PAD4 failure,
+`ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_REQUIRES_FIX`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Required review:** POSTP1-002V2A-PAD4-R1, one independent exact-hash final
+xHigh proof-architecture review
+**Artifacts:** `prospective_evidence/etf_calendar_isolated_scientific_worker_v1_r1/`
+**Decision commit:** `PENDING_COMMIT`
+**Decision hash:** `3415765f63a902e415e039ea71892087274541c1e8976a46d41c8f4afde37ebc`
+
+### A bounded correction, not a new architecture family
+
+This is a correction of PAD4. No `POSTP1-001V2A-PAD5` was created, the failed
+PAD4 parent `cc1b325a...7b809e78` keeps its own untouched namespace and remains
+failed, non-certified, unused, immutable, superseded before use and at zero
+observations, and the whole failed lineage `0c237c1b...887b55d`,
+`a7d2b087...534dd0`, `dc36ffe2...f1372c3e`, `9f6af179...7ac86295`,
+`7ef114fe...8d17b`, `b5ca36bf...b2a8abe9`, `b8f8b92d...f6b5b996` and
+`cc1b325a...7b809e78` is preserved unchanged. Same-process runtime-owner
+attestation, transitive mutable-object closure, reflection-blacklist
+completeness and generated-method enumeration are explicitly **not** reopened.
+
+POSTP1-002V2A-PAD4 found the fresh-exec process-isolation boundary **sound**,
+so the proven closed input boundary is preserved verbatim: a fresh exec'd
+CPython 3.12.14 worker under `-I -S -B`, one request per process, no parent
+Python object sharing, canonical JSON IPC, no pickle/cloudpickle/dill/marshal
+IPC, lazy-result refusal, controller result admission, fork-only refusal and
+parent monkeypatch isolation. The corrected proof strategy is
+`CERTIFIED_SOURCE_AUTHORITY + FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY +
+FROZEN_CPYTHON + FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE + CLOSED_STORE_GRAMMAR +
+COMPILED_ROOT_WITNESS + ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER +
+TRUSTED_CONTROLLER_AUTHORITY_CONTEXT`, frozen across 20 mechanically enumerated
+parent-bound children.
+
+### Repair A — executed bytecode is bound to certified source
+
+`-B` suppresses bytecode *writes* only; nothing suppressed or validated
+bytecode *reads*, so a forged timestamp-valid
+`__pycache__/flow.cpython-312.pyc` executed while the certified `.py` bytes,
+origin and manifest digest were all unchanged. Every worker now additionally
+runs under `-X pycache_prefix=<fresh empty per-worker directory>`. The
+namespace is controller-created, proven empty before launch, never shared with
+any repository or `site-packages` `__pycache__`, never reused between workers,
+never selected from the scientific request and removed after the worker exits.
+Before it imports even the certified protocol module the entrypoint refuses
+unless `sys.pycache_prefix` is exactly the declared namespace,
+`sys.dont_write_bytecode` is `True` and the namespace is empty; the protocol
+module re-verifies the same property as the owning authority, and every loaded
+certified and reviewed-dependency module's `__cached__` must lie inside the
+namespace. The exact `__file__`/`__spec__.origin` source-path checks are
+preserved, because a *sourceless* `flow/__init__.pyc` package shadow is not
+covered by a cache namespace at all. The cache path is operational launch
+material and is deliberately not scientific identity evidence.
+
+### Repair B — frozen certified source authority
+
+Authority construction and runtime are now two distinct operations. Mechanical
+derivation — the reviewed recursive static import closure, nested declarations
+followed, ancestor packages included — is used only for authority construction,
+refreeze, review and consistency checking. Runtime consumes an already-frozen
+expected manifest and compares module, relative path, SHA-256 and manifest
+digest exactly; unknown, missing, additional or altered entries refuse. The
+request builder has no manifest parameter, so source drift that exists before
+request construction leaves the request bound to the frozen expected values and
+the worker refuses the drifted disk instead of self-certifying.
+
+The exact 116-module universe at `674b006a...3aadbb8` is frozen as
+`ETF_CALENDAR_WORKER_PRE_I2_SOURCE_MANIFEST_FIXTURE_V1` with role
+`PRE_I2_CONFORMANCE_FIXTURE_AND_PROVENANCE`: an architecture conformance test
+vector, provenance and a pre-I2 source-drift regression anchor. It is
+explicitly **not** the future production scientific source authority, and it is
+embedded as literal material so it stays immutable when I2 changes source. The
+candidate worker universe is 119 modules at `c6a71401...7aa89332`, adding the
+three corrected worker-owned modules. POSTP1-001V2A-I2 **must** derive the
+exact final worker project-source manifest after all its source changes are
+complete and parent-bind that exact manifest to
+`ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`. I2 may perform the anticipated
+direct-import reduction provided the calendar science, the outputs and the
+replay-owner graph are unchanged and the manifest is mechanically re-derived;
+the proof-architecture hash does not change merely because the production
+manifest narrows.
+
+### Repair C — the trusted controller authority context
+
+PAD4 admitted a result when the worker echoed `worker_authority_sha256` back to
+the request. `ScientificWorkerAuthorityContext` now holds the trusted expected
+proof-architecture identity, source manifest and digest, third-party
+semantic/artifact authority, frozen interpreter identity, calendar authority
+identity and trusted-persistence identity. A request cannot construct it, a
+response cannot construct it, live disk cannot silently replace it and the
+installed environment cannot silently replace it. `build_scientific_request`
+takes the context and copies the authority fields from it; there is no raw
+`decision_sha256` parameter. Admission requires request equals context **and**
+response equals context **and** response cross-binds to the request: caller,
+request and worker agreeing with each other is necessary but never sufficient.
+
+The candidate parent hash cannot be materially embedded inside itself and no
+cryptographic self-hash fixed point is attempted. The architecture uses a
+two-stage boundary: the reviewer or harness instantiates the context with the
+recomputed parent hash, which comes from the trusted review context and never
+from the scientific request. `production_authority_context_from_calendar_authority`
+refuses today with `PRODUCTION_AUTHORITY_CONTEXT_NOT_YET_BOUND_BY_POSTP1_001V2A_I2`,
+because the production context must be derived from the final calendar
+authority, never from the request, the current filesystem, the ambient
+environment or a caller-selected SHA.
+
+### Repair D — third-party semantic and installed-content authority
+
+The exact reviewed registry is frozen: `alembic` 1.19.1, `cryptography` 50.0.1,
+`numpy` 2.5.2, `scipy` 1.18.1 and `SQLAlchemy` 2.0.52, each with its canonical
+distribution name, expected root module, reviewed `RECORD` SHA-256, normalized
+`RECORD` content-manifest digest and row counts. Distribution, version,
+reviewed artifact identity and root-module mapping are parent-bound; absolute
+install location and `RECORD` path stay launch-bound, so semantic authority is
+portable while installation material is not. An observed version that differs
+from the reviewed version refuses, and a same-version but different unreviewed
+artifact refuses because the reviewed `RECORD` identity is parent-bound.
+
+Before any scientific project import, the worker parses each reviewed `RECORD`
+with bounded deterministic CSV parsing, refuses an unreviewed hash algorithm
+rather than skipping it, resolves each row safely — absolute paths, Windows
+separators, `.` segments and interior traversal refuse, leading parent segments
+are permitted only for console-script rows that stay inside the installation
+environment — and verifies every declared file's bytes and size, including
+compiled extension and shared-library rows. The only reviewed unhashed-row
+exceptions are the distribution's own `RECORD`, whose exact bytes are
+parent-bound, and install-generated `__pycache__` bytecode, which is
+structurally unreachable under the enforced fresh cache namespace; any other
+unhashed installed file refuses. This ordering is why the corrected protocol
+lives in `etf_calendar_worker` rather than under `btc_predictor`: importing
+`btc_predictor` executes `numpy`, `scipy`, `sqlalchemy` and `alembic` through
+its re-export graph, so a protocol module inside the application package could
+only attest dependencies after they had already run.
+
+### Executed adversarial evidence
+
+The focused suite passed 100 tests driving real exec'd worker processes, the
+combined PAD4-R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1 proof-architecture suite passed
+617, and the wider calendar, ETF, trusted-persistence and V1/V2 corpus
+regression passed 1,453 with the three explained skips. A
+side-by-side probe reproduced the PAD4 defect exactly — `-I -S -B` alone
+executes a forged `.pyc` as `FORGED_BYTECODE_ID` — and the same tree returned
+`CERTIFIED` under a fresh cache namespace. A real worker over a forged
+repository `__pycache__/flow.cpython-312.pyc`, with `flow.py` byte-identical to
+the certified source, returned `ETF_FLOW_5D`. A forged
+`alembic/__pycache__/__init__.cpython-312.pyc` never executed its marker. A
+pre-populated namespace refused before the certified protocol module was
+imported, a sourceless `flow/__init__.pyc` shadow refused on the origin check,
+and a `.pyc`-only project module could not satisfy the frozen manifest.
+Pre-request drift of `flow.py`, of both corrected worker modules and of both
+reviewed PAD4 worker modules all refused while the request stayed bound to the
+frozen digest. `0000...0000` and `deadbeef...deadbeef` were refused with the
+worker echoing them consistently, and a context expecting a different hash
+refused an otherwise correct request. A `99.99.99-FORGED` version, a
+same-version different-artifact `RECORD` and a tampered installed
+`alembic/__init__.py` with unchanged `RECORD` all refused before the altered
+code executed, proven by an absent execution marker. Parent mutation of
+`_flow.FIVE_DAY_ETF_FLOW_FEATURE_ID`, of the generated
+`ScientificEtfFlowResult.__init__` and of `sys.modules` each left the worker
+result certified, and a real `os.fork()` child still inherits what exec does
+not.
+
+### Recorded limits
+
+Hostile filesystem race resistance is explicitly **not** claimed: a malicious
+modification perfectly racing verification or use is outside the accepted
+trusted-operating-system boundary, and the requirement is deterministic project
+and deployment integrity, not hostile kernel defence. No operating-system-level
+network sandbox is claimed and none was added; the no-network, no-signing-key
+and no-database guarantees still rest on the frozen read-only operation
+registry, the frozen minimal child environment and the static closed
+worker-source prohibition. The dynamic-import claim is scoped precisely:
+authoritative worker entry/protocol dynamic project execution is forbidden and
+statically audited, the certified universe is mechanically derived from static
+import declarations, an unexpected loaded project module refuses, and the
+per-module dynamic-construct scan of the current certified universe is recorded
+as a verified current-source fact rather than an eternal universal claim.
+
+### Preserved authority and current production
+
+The compiled root-binding witness, the root-cell prohibition, the closed AST
+store-use grammar, the exact eleven-owner census and graph, the documented
+`put`/`get`/`records`/`envelopes` terminals and the direct dependency-body
+requirement are preserved and freshly parent-bound. No ETF calendar production
+code was modified: current production still reports zero compiled root writes,
+clears or deletes, the single `common_etf_session_status` generator capture, the
+same closed-grammar refusal, the five wrapper-installed dependency guards and no
+isolated worker, so full conformance is `NO` and the implementation stays
+blocked. Trusted persistence `02f96203...1a12772` is closed, certified,
+unchanged and not re-reviewed. Calendar science, failed calendar lineage,
+BTC-019 and Epic T are unchanged. No observation was collected and no real
+Stage-B evaluation ran.
+
+Final classification is
+`ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R1_READY_FOR_FINAL_XHIGH_REVIEW`.
+Successful implementation authorizes only POSTP1-002V2A-PAD4-R1. Only that
+review PASS may authorize POSTP1-001V2A-I2, which must then bind the exact
+certified PAD4-R1 hash into the final calendar authority, rewrite the
+`common_etf_session_status` generator capture, remove the wrapper-installed
+guards, insert the five direct dependency assertions, derive and
+calendar-parent-bind the final post-I2 project source manifest, instantiate the
+production controller authority context from those certified values, integrate
+the one-shot worker, preserve the exact eleven-owner graph and the calendar
+science, and refreeze `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` before an
+independent exact-hash calendar closure review. Only that closure PASS may
+unblock POSTP1-001V2R1.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -4168,5 +4378,7 @@ lineage, BTC-019 and Epic T remain unchanged.
 | POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | COMPLETE / FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD4 | define and freeze the new `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at `cc1b325a...7b809e78` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4 | independent exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78` | COMPLETE / FAIL — EXECUTED BYTECODE NOT BOUND TO CERTIFIED SOURCE; SOURCE, CONTROLLER-AUTHORITY AND THIRD-PARTY ANCHORING ALSO INVALID; ISOLATION BOUNDARY SOUND |
+| POSTP1-001V2A-PAD4-R1 | bounded correction of the four POSTP1-002V2A-PAD4 authority-anchoring findings, refrozen at `3415765f...fde37ebc` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4-R1 | independent exact-hash final xHigh proof-architecture review of `3415765f...fde37ebc` | NOT STARTED / DEPENDENCY-SATISFIED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

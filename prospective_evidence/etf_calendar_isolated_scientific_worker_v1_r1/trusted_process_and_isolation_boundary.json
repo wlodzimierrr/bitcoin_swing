@@ -1,0 +1,53 @@
+{
+  "abandoned_completeness_models": [
+    "GENERATED_METHOD_ENUMERATION",
+    "REFLECTION_BLACKLIST_COMPLETENESS",
+    "SAME_PROCESS_RUNTIME_OWNER_ATTESTATION",
+    "TRANSITIVE_MUTABLE_OBJECT_CLOSURE"
+  ],
+  "accepted_race_boundary": "a malicious modification perfectly racing verification or use is outside the accepted trusted-operating-system boundary; the requirement is deterministic project and deployment integrity, not hostile kernel defence",
+  "certified_self_mutation_is_program_behavior_not_ambient_drift": true,
+  "certified_source_may_mutate_its_own_globals": true,
+  "closed_input_boundary": [
+    "CANONICAL_JSON_IPC",
+    "CONTROLLER_RESULT_ADMISSION",
+    "FORK_ONLY_REFUSAL",
+    "FRESH_EXEC_CPYTHON_WORKER",
+    "ISOLATED_NO_SITE_NO_BYTECODE_WRITE_STARTUP",
+    "LAZY_RESULT_REFUSAL",
+    "NO_PARENT_PYTHON_OBJECT_SHARING",
+    "NO_PICKLE_CLOUDPICKLE_DILL_MARSHAL_IPC",
+    "ONE_REQUEST_ONE_PROCESS",
+    "PARENT_MONKEYPATCH_ISOLATION"
+  ],
+  "contract_version": "ETF_CALENDAR_TRUSTED_PROCESS_AND_ISOLATION_BOUNDARY_V1_PAD4_R1",
+  "definition_sha256": "ce5726abe610599ab3b129cf7532f62fe4d195125a39e38a36a377b999c42b6d",
+  "demoted_pad3_runtime_closure": {
+    "classes": 7,
+    "functions": 25,
+    "imports": 14,
+    "values": 15
+  },
+  "demoted_pad3_runtime_closure_role": "ARCHIVED_DIAGNOSTIC_EVIDENCE",
+  "hostile_filesystem_race_resistance_claimed": false,
+  "hostile_operating_system_resistance_claimed": false,
+  "isolation_boundary_preserved_from_the_reviewed_pad4_candidate": true,
+  "isolation_boundary_was_the_defect": false,
+  "out_of_scope": [
+    "HOSTILE_DEBUGGER_ATTACHMENT",
+    "KERNEL_COMPROMISE",
+    "MALICIOUS_MODIFICATION_PERFECTLY_RACING_VERIFICATION_OR_USE",
+    "OPERATING_SYSTEM_MEMORY_INJECTION"
+  ],
+  "process_isolation_is_scientific_execution_boundary": true,
+  "reopened_by_this_correction": [],
+  "runtime_object_closure_is_completeness_proof": false,
+  "scientific_execution_boundary": "OPERATING_SYSTEM_PROCESS",
+  "trusted_once": [
+    "CERTIFIED_PROJECT_SOURCE_ADMISSION_PASSES",
+    "CERTIFIED_THIRD_PARTY_INSTALLED_CONTENT_ADMISSION_PASSES",
+    "FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PASSES",
+    "FROZEN_INTERPRETER_IDENTITY_PASSES"
+  ],
+  "worker_trusted_after_admission": true
+}

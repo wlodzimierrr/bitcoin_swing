@@ -1,0 +1,66 @@
+{
+  "additional_entry": "REFUSE",
+  "altered_entry": "REFUSE",
+  "ancestor_packages_included": true,
+  "bound_per_entry": [
+    "canonical_module_name",
+    "canonical_source_path",
+    "sha256"
+  ],
+  "certified_package_roots": [
+    "btc_predictor",
+    "etf_calendar_worker"
+  ],
+  "contract_version": "ETF_CALENDAR_WORKER_PROJECT_SOURCE_MANIFEST_BINDING_RULE_V1_PAD4_R1",
+  "defect": "request construction derived the manifest from whatever source was on disk, put it into the request and verified the worker against that same newly derived manifest, so source drift that existed before request construction self-certified",
+  "definition_sha256": "4de2e829f39367669827985004cdce07f488088418fd869ea3034a373a468ac0",
+  "derivation_rule": "RECURSIVE_STATIC_PROJECT_IMPORT_CLOSURE_FROM_THE_SCIENTIFIC_WORKER_ENTRYPOINT",
+  "final_i2_source_manifest_derivation_time": "AFTER_ALL_I2_SOURCE_CHANGES_ARE_COMPLETE",
+  "final_i2_source_manifest_must_be_calendar_parent_bound": true,
+  "final_i2_source_manifest_owner": "POSTP1-001V2A-I2",
+  "final_i2_source_manifest_parent": "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1",
+  "generated_runtime_methods_hand_fingerprinted": false,
+  "hand_maintained_helper_constant_or_class_list": false,
+  "i2_direct_import_reduction_requirements": [
+    "FINAL_EXACT_MANIFEST_PARENT_BOUND_TO_THE_CALENDAR_AUTHORITY",
+    "SAME_CALENDAR_SCIENCE",
+    "SAME_OUTPUTS",
+    "SAME_REPLAY_OWNER_GRAPH",
+    "SOURCE_MANIFEST_MECHANICALLY_REDERIVED"
+  ],
+  "i2_may_narrow_the_source_universe": true,
+  "manifest_version": "ETF_CALENDAR_WORKER_PROJECT_SOURCE_MANIFEST_V1_R1",
+  "mechanical_derivation_is_used_for": [
+    "AUTHORITY_CONSTRUCTION",
+    "CONSISTENCY_CHECKING",
+    "REFREEZE",
+    "REVIEW"
+  ],
+  "mechanical_derivation_is_used_for_runtime_authority_selection": false,
+  "mechanically_derivable": true,
+  "missing_entry": "REFUSE",
+  "nested_declaration_imports_followed": true,
+  "post_execution_verification_attests_every_runtime_object": false,
+  "post_execution_verification_is_defence_in_depth": true,
+  "project_runtime_objects_are_freshly_constructed_from_certified_source": true,
+  "proof_architecture_hash_changes_when_production_manifest_narrows": false,
+  "repaired_review_finding": "B_CERTIFIED_SOURCE_AUTHORITY_NOT_FROZEN",
+  "runtime_comparison_is_exact": [
+    "manifest_digest",
+    "module",
+    "relative_path",
+    "sha256"
+  ],
+  "runtime_request_construction_derives_authority_from_live_disk": false,
+  "runtime_source_manifest_rederivation_permitted": false,
+  "source_change_altering_a_generated_class": "CHANGES_THE_MANIFEST_AND_REQUIRES_REFREEZE",
+  "two_distinct_operations": {
+    "AUTHORITY_CONSTRUCTION_OR_REFREEZE": "derive the exact source manifest from reviewed source",
+    "RUNTIME": "consume an already-frozen expected source manifest"
+  },
+  "unexpected_project_module": "REFUSE",
+  "unknown_entry": "REFUSE",
+  "verified_again_before_emitting_a_successful_result": true,
+  "verified_before_scientific_execution": true,
+  "wrong_project_module_origin": "REFUSE"
+}

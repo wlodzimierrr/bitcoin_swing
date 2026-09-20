@@ -1,0 +1,83 @@
+{
+  "agreement_with_trusted_controller_authority_also_required": true,
+  "authority_bound_request_fields": [
+    "calendar_authority_sha256",
+    "calendar_authority_version",
+    "interpreter_identity",
+    "project_source_manifest_digest",
+    "project_source_manifest_role",
+    "third_party_authority_digest",
+    "trusted_persistence_authority_sha256",
+    "worker_authority_sha256",
+    "worker_authority_ticket",
+    "worker_authority_version",
+    "worker_entrypoint_module",
+    "worker_entrypoint_sha256",
+    "worker_protocol_sha256"
+  ],
+  "authority_bound_response_fields": [
+    "calendar_authority_sha256",
+    "calendar_authority_version",
+    "interpreter_identity",
+    "project_source_manifest_digest",
+    "project_source_manifest_role",
+    "third_party_authority_digest",
+    "trusted_persistence_authority_sha256",
+    "worker_authority_sha256",
+    "worker_authority_ticket",
+    "worker_authority_version",
+    "worker_entrypoint_module",
+    "worker_entrypoint_sha256",
+    "worker_protocol_sha256"
+  ],
+  "authority_context_origins": [
+    "AUTHORITY_CONSTRUCTION_REFREEZE",
+    "FINAL_CALENDAR_AUTHORITY",
+    "REVIEW_CANDIDATE_CONTEXT"
+  ],
+  "calendar_authority_sha256": "901f572e03781030906cd6fe72a73ec5804f9ffbdefe6a8a944c067f7fd9853f",
+  "calendar_authority_version": "ETF_PUBLICATION_CALENDAR_AUTHORITY_V1",
+  "caller_request_worker_agreement_is_sufficient": false,
+  "candidate_review_context_binds_the_recomputed_parent_hash": true,
+  "candidate_review_context_expected_hash_source": "TRUSTED_REVIEW_OR_CONTROLLER_CONTEXT_NEVER_THE_SCIENTIFIC_REQUEST",
+  "contract_version": "ETF_CALENDAR_SCIENTIFIC_WORKER_AUTHORITY_CONTEXT_V1_R1",
+  "defect": "the worker echoed the request decision hash and admission compared that echo with the same request value, so requests declaring 0000...0000 and deadbeef...deadbeef were admitted with a real scientific result",
+  "definition_sha256": "4d606487a34af983e3b444f8ba367396cd95a37668f1d94913e2c5782ca5859d",
+  "final_calendar_authority_worker_field": "isolated_scientific_worker_authority",
+  "final_i2_certified_hash_binding_required": true,
+  "final_i2_certified_hash_binding_ticket": "POSTP1-001V2A-I2",
+  "final_production_context_may_come_from": [
+    "FINAL_CALENDAR_AUTHORITY"
+  ],
+  "final_production_context_may_never_come_from": [
+    "AMBIENT_ENVIRONMENT",
+    "CALLER_SELECTED_SHA",
+    "CURRENT_FILESYSTEM",
+    "THE_SCIENTIFIC_REQUEST"
+  ],
+  "final_production_context_source": "FINAL_CALENDAR_AUTHORITY",
+  "installed_environment_can_silently_replace_the_authority_context": false,
+  "live_disk_can_silently_replace_the_authority_context": false,
+  "production_authority_context_available_today": false,
+  "production_authority_context_refusal": "PRODUCTION_AUTHORITY_CONTEXT_NOT_YET_BOUND_BY_POSTP1_001V2A_I2",
+  "raw_caller_supplied_decision_hash_parameter": false,
+  "repaired_review_finding": "C_CONTROLLER_AUTHORITY_BINDING_INVALID",
+  "request_authority_fields_are_copied_from_the_trusted_context": true,
+  "request_can_construct_the_authority_context": false,
+  "request_is_authority_root": false,
+  "response_can_construct_the_authority_context": false,
+  "response_echo_is_authority_root": false,
+  "self_hash_circularity_acknowledged": "the candidate parent hash cannot be materially embedded inside itself; the architecture uses a two-stage boundary instead",
+  "self_hash_fixed_point_attempted": false,
+  "trusted_controller_authority_context_required": true,
+  "trusted_expected_values": [
+    "calendar_authority_identity",
+    "certified_project_source_manifest",
+    "certified_project_source_manifest_digest",
+    "certified_third_party_semantic_and_artifact_authority",
+    "certified_worker_proof_architecture_identity",
+    "frozen_interpreter_identity",
+    "trusted_persistence_identity"
+  ],
+  "trusted_persistence_authority_sha256": "02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772"
+}
