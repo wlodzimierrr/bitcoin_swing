@@ -342,7 +342,7 @@ object isolation and process/protocol lifecycle all reproduced; do NOT reopen
 same-process runtime-object attestation
 
 POSTP1-001V2A-PAD4-R1 decision commit =
-PENDING_COMMIT
+37f0db2b12c86b5809d213ae3bdda77a46cc82c2
 
 POSTP1-001V2A-PAD4-R1 result =
 IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
@@ -905,7 +905,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4-R1
-  decision commit `PENDING_COMMIT` freezes the corrected pre-data candidate
+  decision commit `37f0db2b12c86b5809d213ae3bdda77a46cc82c2` freezes the corrected pre-data candidate
   `3415765f...fde37ebc`, which awaits POSTP1-002V2A-PAD4-R1, its independent
   exact-hash final xHigh proof-architecture review. It overwrites no PAD4
   artifact. POSTP1-001V2A-PAD4 decision
