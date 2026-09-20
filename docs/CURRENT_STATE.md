@@ -259,6 +259,43 @@ corrected isolated scientific worker decision hash =
 
 material child contracts bound by the corrected PAD4-R1 decision = 20
 
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1 (PAD4-R2) =
+FROZEN_PRE_DATA_CANDIDATE_AWAITING_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_PROOF_ARCHITECTURE_REVIEW
+
+bootstrap-bound isolated scientific worker decision hash =
+68e6bd074a027900b2f3dde3da0a31b6d1cb2f1b9fc6c563e9b45bdc70e52561
+
+material child contracts bound by the corrected PAD4-R2 decision = 22
+
+bootstrap-bound isolated scientific worker proof strategy =
+BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
+
+worker bootstrap source set =
+4 files at digest
+1811e04dac7a033de2c8e6620bf7d5aa227b94eebdf419657ecccf4d3fead411, in execution
+order etf_calendar_worker/__init__.py, etf_calendar_worker/protocol_r1.py,
+etf_calendar_worker/protocol_r2.py and etf_calendar_worker/entry_r2.py; derived
+mechanically as the transitive static project-import closure of the exec'd
+entrypoint restricted to the authoritative worker package plus ancestors, and
+deliberately NOT limited to the two filenames the review named
+
+bootstrap pre-execution source binding =
+NO PROJECT-OWNED WORKER BOOTSTRAP SOURCE MAY EXECUTE UNTIL ALREADY-TRUSTED
+CONTROLLER CODE HAS ESTABLISHED ITS EXPECTED PATH AND SOURCE SHA AGAINST THE
+TRUSTED ScientificWorkerAuthorityContext; bootstrap mismatch => the subprocess
+is NEVER spawned and no cache namespace is even allocated
+
+bootstrap self-verification is authority =
+NO for the entrypoint, the protocol modules and the package initializer; the
+in-worker checks remain DEFENCE_IN_DEPTH_NEVER_PRIMARY_BOOTSTRAP_AUTHORITY, and
+no worker-visible shared secret was invented as a substitute for correct
+pre-exec ordering
+
+authoritative worker launch path =
+run_scientific_worker(authority_context, request, launch) ONLY; the trusted
+context is a required positional argument, _spawn_unverified_worker_process is
+PRIVATE / NON-AUTHORITATIVE and scientific admission never uses it
+
 corrected isolated scientific worker proof strategy =
 CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -289,11 +326,17 @@ PRE_I2_CONFORMANCE_FIXTURE_AND_PROVENANCE — architecture conformance test
 vector, provenance and pre-I2 source-drift regression anchor; explicitly NOT
 the future production scientific source authority
 
-candidate corrected worker source universe =
+candidate corrected worker source universe (PAD4-R1) =
 119 modules at digest
 c6a71401a3d240c3196be0ef51a3fd14b93e44022baeaacfafe1112b7aa89332
 (the reviewed 116 plus etf_calendar_worker, etf_calendar_worker.protocol_r1 and
 etf_calendar_worker.entry_r1)
+
+candidate bootstrap-bound worker source universe (PAD4-R2) =
+120 modules (the reviewed 116 plus etf_calendar_worker,
+etf_calendar_worker.protocol_r1, etf_calendar_worker.protocol_r2 and
+etf_calendar_worker.entry_r2); every bootstrap source is also an ordinary
+certified manifest member with the identical path and SHA-256
 
 final production worker source manifest =
 POSTP1-001V2A-I2 MUST derive the exact final manifest AFTER all I2 source
@@ -378,6 +421,44 @@ supplied request; REPAIR D THIRD-PARTY SEMANTIC/CONTENT AUTHORITY VALID;
 REPAIR B FROZEN SOURCE AUTHORITY VALID FOR ORDINARY CERTIFIED SOURCE AND
 INCOMPLETE FOR THE PRE-TRUST BOOTSTRAP SOURCES
 
+POSTP1-001V2A-PAD4-R2 decision commit =
+PENDING_DECISION_COMMIT
+
+POSTP1-001V2A-PAD4-R2 result =
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
+PROOF-ARCHITECTURE REVIEW
+
+POSTP1-001V2A-PAD4-R2 repaired findings =
+P0_WORKER_BOOTSTRAP_SOURCE_NOT_BOUND_BEFORE_EXECUTION;
+P0_WORKER_PACKAGE_INITIALIZER_OUTSIDE_THE_BOOTSTRAP_AUTHORITY_SURFACE
+
+POSTP1-001V2A-PAD4-R2 preserved valid portions carried forward intact =
+FRESH_EXEC_ISOLATION; FRESH_EMPTY_PYCACHE_NAMESPACE; BYTECODE_EXECUTION_BINDING
+REPAIR A; FROZEN_SOURCE_AUTHORITY_FOR_ORDINARY_CERTIFIED_SOURCE REPAIR B;
+TRUSTED_CONTROLLER_AUTHORITY_CONTEXT REPAIR C;
+THIRD_PARTY_EXACT_VERSION_AND_ARTIFACT_AUTHORITY REPAIR D;
+RECORD_INSTALLED_CONTENT_VERIFICATION_BEFORE_DEPENDENCY_EXECUTION;
+CANONICAL_NON_EXECUTABLE_IPC; ONE_REQUEST_ONE_PROCESS_LIFECYCLE;
+COMPILED_ROOT_WITNESS; CLOSED_STORE_GRAMMAR; EXACT_ELEVEN_OWNER_GRAPH;
+DIRECT_DEPENDENCY_BODY_RULE
+
+POSTP1-001V2A-PAD4-R2 stable pre-launch bootstrap drift, all four sources =
+SUBPROCESS NEVER SPAWNED; MARKER ABSENT; NO RESPONSE EMITTED; NOTHING ADMITTED
+
+POSTP1-001V2A-PAD4-R2 defect reproduction control =
+through the PRIVATE non-authoritative raw helper the same trees execute their
+markers, and drifted entry_r2.py, protocol_r1.py and protocol_r2.py each have a
+fabricated scientific result ADMITTED, because a drifted protocol module owns
+the worker's own file_sha256 and canonical serializer
+
+POSTP1-002V2A-PAD4-R1 secondary candidates =
+candidate_review_authority_context accepting any well-formed SHA was reproduced
+and RECLASSIFIED AS NOT A DEFECT with behaviour unchanged, because constraining
+it is the self-hash fixed point the architecture refuses;
+worker_protocol_placement_reason was reproduced mechanically (top-level
+btc_predictor executes none of the four distributions, btc_predictor.research
+executes all four) and corrected as documentation wording only
+
 current production compiled binding witness =
 NO ROOT WRITE, CLEAR OR DELETE IN ANY OF THE 11 OWNERS; the single compiled root
 refusal is the known common_etf_session_status generator-expression capture of
@@ -388,7 +469,7 @@ wrapper installer writes the namespace and must be removed, while the four
 read-only artifact dispatch sites need not be rewritten solely for owner identity
 
 ETF calendar authority execution classification =
-ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R1_REQUIRES_FIX
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R2_READY_FOR_FINAL_XHIGH_REVIEW
 
 TRUSTED_ACQUISITION_PERSISTENCE_AUTHORITY_V1 =
 CLOSED / CERTIFIED FOR BOUNDED ETF CALENDAR INTEGRATION
@@ -757,33 +838,43 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R1 is
-  **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH
-  PROOF-ARCHITECTURE REVIEW** at `3415765f...fde37ebc` with 20 mechanically enumerated
-  parent-bound children. It is a bounded correction of PAD4, not a new
-  architecture family, and no PAD5 exists: the failed PAD4 parent
-  `cc1b325a...7b809e78` keeps its own untouched namespace and stays immutable,
-  non-certified, unused and at zero observations. Same-process runtime-owner
-  attestation, transitive mutable-object closure, reflection-blacklist
-  completeness and generated-method enumeration are not reopened, and the
-  proven closed-input isolation boundary is preserved verbatim. The four
-  POSTP1-002V2A-PAD4 anchoring defects are repaired: every worker now runs under
-  a fresh, controller-created, empty per-worker `-X pycache_prefix` namespace in
-  addition to `-I -S -B`, so a forged timestamp-valid repository or
-  site-packages `__pycache__` entry is never consulted and every loaded module's
-  `__cached__` must lie inside the namespace; certified-source derivation is
-  separated from runtime, so request construction copies an already-frozen
-  expected manifest and pre-request drift refuses instead of self-certifying; a
-  trusted `ScientificWorkerAuthorityContext` that no request, response, live
-  disk or installed environment can construct or replace is compared against
-  both the request and the response, so `0000...0000` and
-  `deadbeef...deadbeef` are refused even when worker and request agree; and the
-  exact reviewed third-party semantic and artifact registry is frozen with every
-  installed file byte verified against the declared `RECORD` hashes before any
-  dependency code executes. The exact 116-module manifest is explicitly
-  classified `PRE_I2_CONFORMANCE_FIXTURE_AND_PROVENANCE`, not production source
-  authority, and POSTP1-001V2A-I2 must derive and calendar-parent-bind its own
-  final post-rewrite manifest. No ETF calendar production code changed, the
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R2 is
+  **IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH
+  PROOF-ARCHITECTURE REVIEW** at `68e6bd07...e52561` with 22 mechanically
+  enumerated parent-bound children. It is a bounded ordering correction of
+  PAD4-R1, not a new architecture family, and no PAD5 exists: the failed PAD4
+  parent `cc1b325a...7b809e78` and the failed PAD4-R1 parent
+  `3415765f...fde37ebc` both keep their own untouched namespaces and stay
+  immutable, non-certified, unused and at zero observations. Same-process
+  runtime-object attestation is not reopened and the `-X pycache_prefix` launch
+  design is not redesigned; the five portions POSTP1-002V2A-PAD4-R1 reproduced
+  as valid are carried forward intact. The correction is that already-trusted
+  controller code now establishes the certified identity of the complete
+  bootstrap source set before any of it executes: the set is derived
+  mechanically as the transitive static project-import closure of the exec'd
+  entrypoint restricted to the worker package plus ancestors — four files at
+  `1811e04d...ead411`, wider than the two filenames the review named, because
+  the package initializer runs first and the reviewed PAD4-R1 protocol
+  implementation is reused rather than forked — and
+  `run_scientific_worker(authority_context, request, launch)` resolves, reads
+  and hashes every member against the trusted context, refusing before the
+  cache namespace is allocated and before `subprocess.run` is reached. The two
+  ad-hoc `worker_entrypoint_sha256` and `worker_protocol_sha256` request and
+  response fields are replaced by the complete authority-bound
+  `worker_bootstrap_manifest` and its digest; `_spawn_unverified_worker_process`
+  remains private and non-authoritative and scientific admission never uses it;
+  and `bootstrap_self_verification_is_authority`,
+  `entrypoint_self_verification_is_authority`,
+  `protocol_self_verification_is_authority` and
+  `package_initializer_self_verification_is_authority` are all `false`.
+  Completeness is proven, not asserted: no bootstrap module declares a
+  module-level project import outside the set or a module-level import outside
+  the standard library, every deferred certified import a bootstrap module
+  declares is an ordinary certified manifest member, and every deferred loader
+  is called strictly after the bootstrap, certified-source and third-party
+  verifiers, enforced by AST statement order. The exact 116-module manifest
+  keeps its `PRE_I2_CONFORMANCE_FIXTURE_AND_PROVENANCE` role and the candidate
+  universe is 120 modules. No ETF calendar production code changed, the
   candidate is at zero observations, and certified trusted persistence
   `02f96203...1a12772` is unchanged
 - **Last completed review:** POSTP1-002V2A-PAD4-R1,
@@ -809,27 +900,21 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
   implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
   POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. Collection is
-  **NOT AUTHORIZED** and observations remain **0**. POSTP1-002V2A-PAD4-R1
-  failed, so nothing it could have authorized is authorized: only a passing
-  independent exact-hash review of a corrected isolated-worker candidate may
-  authorize I2. Do not start I2
-- **Next dependency-satisfied ticket:** `POSTP1-001V2A-PAD4-R2`, a bounded
-  correction that pre-verifies the complete worker bootstrap source set in
-  already-trusted controller code before subprocess execution, while
-  preserving the validated PAD4-R1 isolation, bytecode and third-party
-  repairs. It is a bounded correction of PAD4-R1 and is deliberately **not** a
-  PAD5: no new proof-architecture family is authorized, the failed PAD4
-  namespace at `cc1b325a...7b809e78` and the failed R1 namespace at
-  `3415765f...fde37ebc` both stay immutable and preserved, and same-process
-  runtime-object attestation stays closed. Nothing else is authorized:
-  successful PAD4-R2 implementation authorizes only its own independent
-  exact-hash review, and only that review's PASS may make POSTP1-001V2A-I2
+  **NOT AUTHORIZED** and observations remain **0**. POSTP1-001V2A-PAD4-R2 is
+  implementation-complete but uncertified: it makes no production
+  isolated-worker authority available, and only a passing independent
+  exact-hash review of the corrected candidate may authorize I2. Do not
+  start I2
+- **Next dependency-satisfied ticket:** `POSTP1-002V2A-PAD4-R2`, one
+  independent exact-hash final xHigh proof-architecture review of the exact
+  frozen candidate `68e6bd07...e52561`. Successful PAD4-R2 implementation
+  authorizes only that review; only its PASS may make POSTP1-001V2A-I2
   dependency-satisfied. I2 must then bind the exact certified successor hash
   into the final calendar authority, rewrite the `common_etf_session_status`
   generator capture, remove the wrapper-installed guards, insert the five
-  direct dependency assertions, derive and calendar-parent-bind the final
-  post-I2 source manifest and refreeze
-  `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`
+  direct dependency assertions, derive and calendar-parent-bind both the final
+  post-I2 source manifest **and** the final post-I2 bootstrap source set, and
+  refreeze `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1`. Do not start I2
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
   POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019 remains
   terminal and untouched with its sealed sample unopened, and Epic T is
@@ -837,16 +922,60 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Latest verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning` remains the last full-suite baseline and is still
   current because no production behaviour changed. The focused
-  POSTP1-001V2A-PAD4-R1 suite is 100 passed, the combined
-  PAD4-R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1 proof-architecture suite is
-  617 passed, and the wider calendar, ETF, trusted-persistence and
-  V1/V2 corpus regression is 1,453 passed with the three explained skips
-  (the opt-in PostgreSQL runtime test and two composite component skips).
-  Python 3.12.14 and
-  `cryptography 50.0.1` were used on 2026-09-20. The certified
-  dependency's explicit disposable PostgreSQL run and cleanup probes remain
-  recorded by POSTP1-002V2B-R3
-- **Latest proof-architecture implementation validation:** POSTP1-001V2A-PAD4-R1
+  POSTP1-001V2A-PAD4-R2 suite is 89 passed, the combined
+  PAD4-R2/PAD4-R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1 proof-architecture suite is
+  706 passed, and the wider calendar, ETF, trusted-persistence and V1/V2
+  corpus regression over all seventeen `etf`/`calendar`/`trusted`/`corpus`
+  test modules is 1,478 passed with the three explained skips (the opt-in
+  PostgreSQL runtime test and two composite component skips). Python 3.12.14
+  and `cryptography 50.0.1` were used on 2026-09-20, and every proof suite is
+  run under `.venv312`, the only 3.12.14 environment carrying the five exact
+  reviewed distributions. The certified dependency's explicit disposable
+  PostgreSQL run and cleanup probes remain recorded by POSTP1-002V2B-R3
+- **Latest proof-architecture implementation validation:** POSTP1-001V2A-PAD4-R2
+  reproduced parent `68e6bd07...e52561`, all 22/22 material children and parent
+  bindings from the single builder registry, the exact CPython 3.12.14 identity
+  shared by the corrected worker protocol and the compiled root witness, the
+  frozen 116-module pre-I2 source fixture at `674b006a...3aadbb8`, the
+  120-module candidate worker universe, the mechanically derived four-file
+  bootstrap source set at `1811e04d...ead411`, the exact reviewed
+  five-distribution third-party registry, the preserved 11-owner census and
+  graph and the unchanged current-production blockers. The focused R2 suite
+  passed 89 tests with real exec'd worker processes throughout. Stable
+  pre-launch drift of each of the four bootstrap sources, introduced before
+  launch and left in place across the whole request, was driven through the
+  ordinary authoritative controller path: in every case the subprocess was
+  **never spawned**, the execution marker was **ABSENT**, no response was
+  emitted, nothing was admitted and no cache namespace was even allocated. The
+  reproduction control proves the drift is real and that self-verification
+  cannot be authority: through the private non-authoritative raw helper the
+  same trees execute their markers, and drifted `entry_r2.py`, `protocol_r1.py`
+  and `protocol_r2.py` each have a fabricated scientific result **ADMITTED**,
+  because a drifted protocol module owns the worker's own `file_sha256` and
+  canonical serializer. The clean positive control pre-verified, launched and
+  admitted the honest result. A missing bootstrap source, a sourceless
+  `protocol_r2.pyc` replacement, a competing `etf_calendar_worker.py` module
+  shadow, an alternate worker package earlier on `sys.path`, a wrong entrypoint
+  path and a symlinked bootstrap source all refused before launch, and moving
+  `_load_calendar` above `verify_project_source_manifest` refuses the ordering
+  audit. The preserved regressions held: a forged repository
+  `__pycache__/flow.cpython-312.pyc` was not executed, a forged
+  `etf_calendar_worker/__pycache__/protocol_r2.cpython-312.pyc` marker stayed
+  absent, a pre-populated namespace refused, a sourceless `flow/__init__.pyc`
+  shadow refused on the origin check, ordinary pre-request certified-source
+  drift refused, `0000...0000` and `deadbeef...deadbeef` were refused with the
+  worker echoing them consistently, a `99.99.99-FORGED` version refused, a
+  tampered installed `alembic/__init__.py` with unchanged `RECORD` refused with
+  its marker absent and was restored under `finally`, and parent `_flow`
+  feature-ID and `sys.modules` mutations left the worker result unaffected. Ten
+  material mutations moved both the owning child hash and the parent hash, and
+  the parent reproduced under three `PYTHONHASHSEED` values, reversed child
+  order, an alternate working directory and a fresh output directory, with no
+  operational cache path in any authority hash. `compileall` and
+  `git diff --check` are clean on Python 3.12.14 with `cryptography 50.0.1`. No
+  production behaviour changed, so the 5,202/3 full-suite baseline remains
+  current
+- **Preceding proof-architecture implementation validation:** POSTP1-001V2A-PAD4-R1
   reproduced parent `3415765f...fde37ebc`, all 20/20 material children and parent
   bindings from the single builder registry, the exact CPython 3.12.14 identity
   shared by the corrected worker protocol and the compiled root witness, the
@@ -991,7 +1120,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commit:** the POSTP1-002V2A-PAD4-R1
+- **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4-R2
+  decision commit `PENDING_DECISION_COMMIT` freezes the bootstrap-bound
+  pre-data candidate `68e6bd07...e52561`, which awaits POSTP1-002V2A-PAD4-R2,
+  its independent exact-hash final xHigh proof-architecture review. It
+  overwrites no PAD4 or PAD4-R1 artifact, changes no ETF calendar production
+  code and makes no production isolated-worker authority available. The
+  POSTP1-002V2A-PAD4-R1
   review record is documentation-only; it creates no review-fix commit,
   because no genuine defect exists that a review is permitted to patch here.
   POSTP1-001V2A-PAD4-R1 decision

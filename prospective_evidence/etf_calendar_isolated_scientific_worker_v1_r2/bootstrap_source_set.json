@@ -1,0 +1,107 @@
+{
+  "bootstrap_execution_order": [
+    "etf_calendar_worker/__init__.py",
+    "etf_calendar_worker/protocol_r1.py",
+    "etf_calendar_worker/protocol_r2.py",
+    "etf_calendar_worker/entry_r2.py"
+  ],
+  "bootstrap_manifest_digest": "1811e04dac7a033de2c8e6620bf7d5aa227b94eebdf419657ecccf4d3fead411",
+  "bootstrap_manifest_is_a_second_weaker_source_of_truth": false,
+  "bootstrap_source_count": 4,
+  "bootstrap_source_set_complete": true,
+  "certified_source_outside_the_bootstrap_set_executes_before_verification": false,
+  "closed": true,
+  "closed_worker_coding_rule_scope": [
+    "etf_calendar_worker/__init__.py",
+    "etf_calendar_worker/entry_r2.py",
+    "etf_calendar_worker/protocol_r1.py",
+    "etf_calendar_worker/protocol_r2.py"
+  ],
+  "closed_worker_coding_rule_scope_was_two_filenames": true,
+  "closure_properties_proven": [
+    "EVERY_DEFERRED_PROJECT_IMPORT_IS_A_CERTIFIED_MANIFEST_MEMBER",
+    "NO_MODULE_LEVEL_NON_STDLIB_IMPORT_EXECUTES_BEFORE_ATTESTATION",
+    "NO_MODULE_LEVEL_PROJECT_IMPORT_ESCAPES_THE_BOOTSTRAP_SET"
+  ],
+  "contract_version": "ETF_CALENDAR_WORKER_BOOTSTRAP_SOURCE_SET_V1_R2",
+  "deferred_certified_project_imports": {
+    "etf_calendar_worker/entry_r2.py": [
+      "btc_predictor.research",
+      "btc_predictor.research.etf_calendar_scientific_worker_entry",
+      "btc_predictor.research.etf_calendar_worker_protocol",
+      "btc_predictor.research.etf_publication_calendar"
+    ]
+  },
+  "definition": "every project-owned source file that can execute before the scientific verifier is trustworthy",
+  "definition_sha256": "8c700f4dee49e5d46a2e51183517dc51b2f12670d57b7573002c50102fc9c3f9",
+  "derivation_rule": "TRANSITIVE_MODULE_LEVEL_PROJECT_IMPORT_CLOSURE_OF_THE_EXEC_D_ENTRYPOINT_PLUS_ANCESTOR_PACKAGES",
+  "entries": [
+    {
+      "module": "etf_calendar_worker",
+      "path": "etf_calendar_worker/__init__.py",
+      "sha256": "28b263fdb0c202e7cf22f0e64bc613437e9ddef0e15972066881c51bedba49cb"
+    },
+    {
+      "module": "etf_calendar_worker.entry_r2",
+      "path": "etf_calendar_worker/entry_r2.py",
+      "sha256": "945588c73bf902ef8ea6c05dce66ae8acc34ef6786f088a8a8b389501b566851"
+    },
+    {
+      "module": "etf_calendar_worker.protocol_r1",
+      "path": "etf_calendar_worker/protocol_r1.py",
+      "sha256": "a896925a2cc24e323e1fe54537a5b17693ef3d9e837d1221d68f34b3d08e30de"
+    },
+    {
+      "module": "etf_calendar_worker.protocol_r2",
+      "path": "etf_calendar_worker/protocol_r2.py",
+      "sha256": "ea00785b18f30c34e40269f840269473d5ed194531e33ab38048a2ee59ff3f8d"
+    }
+  ],
+  "every_member_is_also_a_certified_manifest_member": true,
+  "execution_order_proof": {
+    "deferred_loader_statement_index": {
+      "_load_calendar": 19,
+      "_load_frozen_operations": 20
+    },
+    "deferred_loaders": {
+      "_load_calendar": [
+        "btc_predictor.research",
+        "btc_predictor.research.etf_publication_calendar"
+      ],
+      "_load_frozen_operations": [
+        "btc_predictor.research",
+        "btc_predictor.research.etf_calendar_scientific_worker_entry",
+        "btc_predictor.research.etf_calendar_worker_protocol"
+      ]
+    },
+    "every_deferred_loader_runs_after_verification": true,
+    "findings": [],
+    "first_verifier_statement_index": {
+      "verify_bootstrap_source_set": 15,
+      "verify_project_source_manifest": 17,
+      "verify_third_party_authority": 18
+    },
+    "guarded_scope": "serve_one_request",
+    "required_verifiers": [
+      "verify_bootstrap_source_set",
+      "verify_project_source_manifest",
+      "verify_third_party_authority"
+    ]
+  },
+  "findings": [],
+  "hand_maintained_filename_list": false,
+  "i2_must_rederive_the_bootstrap_set_after_its_source_changes": true,
+  "limited_to_the_two_p0_filenames": false,
+  "mechanically_derivable": true,
+  "package_initializer_included": true,
+  "package_initializer_inclusion_reason": "importing the worker protocol executes etf_calendar_worker/__init__.py first, and PAD4-R1 covered it by neither worker_entrypoint_sha256 nor worker_protocol_sha256",
+  "repaired_review_finding": "P0_WORKER_PACKAGE_INITIALIZER_OUTSIDE_THE_BOOTSTRAP_AUTHORITY_SURFACE",
+  "reused_reviewed_protocol_included": true,
+  "reused_reviewed_protocol_inclusion_reason": "the reviewed PAD4-R1 protocol implementation is reused rather than forked, so it executes during bootstrap and is pre-verified with the rest of the set",
+  "source_sha256": {
+    "etf_calendar_worker/__init__.py": "28b263fdb0c202e7cf22f0e64bc613437e9ddef0e15972066881c51bedba49cb",
+    "etf_calendar_worker/entry_r2.py": "945588c73bf902ef8ea6c05dce66ae8acc34ef6786f088a8a8b389501b566851",
+    "etf_calendar_worker/protocol_r1.py": "a896925a2cc24e323e1fe54537a5b17693ef3d9e837d1221d68f34b3d08e30de",
+    "etf_calendar_worker/protocol_r2.py": "ea00785b18f30c34e40269f840269473d5ed194531e33ab38048a2ee59ff3f8d"
+  }
+}

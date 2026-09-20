@@ -1,0 +1,122 @@
+{
+  "arbitrary_source_loading_permitted": false,
+  "authoritative_worker_dynamic_project_execution": "FORBIDDEN_AND_STATICALLY_AUDITED",
+  "authoritative_worker_source": [
+    "etf_calendar_worker/__init__.py",
+    "etf_calendar_worker/entry_r2.py",
+    "etf_calendar_worker/protocol_r1.py",
+    "etf_calendar_worker/protocol_r2.py"
+  ],
+  "authoritative_worker_source_sha256": {
+    "etf_calendar_worker/__init__.py": "28b263fdb0c202e7cf22f0e64bc613437e9ddef0e15972066881c51bedba49cb",
+    "etf_calendar_worker/entry_r2.py": "945588c73bf902ef8ea6c05dce66ae8acc34ef6786f088a8a8b389501b566851",
+    "etf_calendar_worker/protocol_r1.py": "a896925a2cc24e323e1fe54537a5b17693ef3d9e837d1221d68f34b3d08e30de",
+    "etf_calendar_worker/protocol_r2.py": "ea00785b18f30c34e40269f840269473d5ed194531e33ab38048a2ee59ff3f8d"
+  },
+  "certified_source_universe_derivation": "MECHANICALLY_DERIVED_FROM_STATIC_IMPORT_DECLARATIONS",
+  "claims_to_enumerate_hostile_python_techniques": false,
+  "closed": true,
+  "closed_worker_coding_rule": true,
+  "contract_version": "ETF_CALENDAR_WORKER_DYNAMIC_IMPORT_PROHIBITION_V1_PAD4_R2",
+  "current_certified_source_scan": {
+    "a_hit_is_evidence_of_a_dynamic_project_import": false,
+    "claim_kind": "VERIFIED_CURRENT_SOURCE_FACT_NOT_AN_ETERNAL_UNIVERSAL_CLAIM",
+    "hit_interpretation": "most hits are the network- and database-capable modules the current package re-export graph drags into the certified universe; no frozen operation reaches them, and the direct-import reduction that narrows this is deferred to POSTP1-001V2A-I2",
+    "modules": [
+      "btc_predictor.backtest.engine",
+      "btc_predictor.data.audit",
+      "btc_predictor.data.bitfinex",
+      "btc_predictor.data.bitstamp",
+      "btc_predictor.data.coinbase",
+      "btc_predictor.data.derivatives",
+      "btc_predictor.data.etf_flows",
+      "btc_predictor.data.generic_series",
+      "btc_predictor.data.ohlcv",
+      "btc_predictor.db.alembic",
+      "btc_predictor.db.base",
+      "btc_predictor.db.connections",
+      "btc_predictor.db.derived",
+      "btc_predictor.db.portfolio",
+      "btc_predictor.db.raw",
+      "btc_predictor.db.research",
+      "btc_predictor.db.signals",
+      "btc_predictor.db.system",
+      "btc_predictor.research.etf_publication_calendar",
+      "btc_predictor.research.trusted_acquisition_persistence",
+      "btc_predictor.signals.reason_codes"
+    ],
+    "modules_containing_a_closed_worker_rule_construct": 21,
+    "modules_scanned": 120,
+    "scanned_for": "CLOSED_WORKER_CODING_RULE_CONSTRUCTS: the dynamic execution callables, the forbidden import roots including ordinary network and database client modules, and the process-spawning os capabilities",
+    "scope": "CURRENT_CERTIFIED_SOURCE_UNIVERSE"
+  },
+  "current_findings": [],
+  "deferred_certified_project_imports": {
+    "etf_calendar_worker/entry_r2.py": [
+      "btc_predictor.research",
+      "btc_predictor.research.etf_calendar_scientific_worker_entry",
+      "btc_predictor.research.etf_calendar_worker_protocol",
+      "btc_predictor.research.etf_publication_calendar"
+    ]
+  },
+  "definition_sha256": "02126ea85f95c222d477b1fb89b780362194c81fa6adebd6d94ad3d3c2d9ccd1",
+  "dynamic_project_import_permitted": false,
+  "forbidden_callables": [
+    "exec",
+    "eval",
+    "compile",
+    "__import__"
+  ],
+  "forbidden_import_roots": [
+    "cloudpickle",
+    "ctypes",
+    "dill",
+    "http",
+    "httpx",
+    "importlib",
+    "marshal",
+    "multiprocessing",
+    "pickle",
+    "psycopg",
+    "psycopg2",
+    "requests",
+    "runpy",
+    "socket",
+    "sqlalchemy",
+    "ssl",
+    "subprocess",
+    "urllib"
+  ],
+  "forbidden_process_capabilities": [
+    "os.execl",
+    "os.execle",
+    "os.execlp",
+    "os.execv",
+    "os.execve",
+    "os.execvp",
+    "os.fork",
+    "os.forkpty",
+    "os.popen",
+    "os.posix_spawn",
+    "os.spawnl",
+    "os.spawnv",
+    "os.system"
+  ],
+  "forbidden_scientific_ipc": [
+    "pickle",
+    "cloudpickle",
+    "dill",
+    "marshal"
+  ],
+  "pickle_cloudpickle_dill_permitted": false,
+  "production_calendar_source_governed_separately_by": [
+    "CLOSED_AST_STORE_USE_GRAMMAR",
+    "COMPILED_ROOT_BINDING_WITNESS"
+  ],
+  "runpy_execution_permitted": false,
+  "scope": "COMPLETE_WORKER_BOOTSTRAP_SOURCE_SET",
+  "scope_was_two_filenames_in_pad4_r1": true,
+  "serialized_executable_python_object_graph_permitted": false,
+  "unexpected_loaded_project_module": "REFUSE",
+  "universal_claim_that_every_certified_module_is_free_of_every_dynamic_import_mechanism": false
+}

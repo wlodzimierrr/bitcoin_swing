@@ -1,0 +1,61 @@
+{
+  "absolute_machine_paths_are_scientific_evidence": false,
+  "accepted_hash_algorithms": [
+    "sha256"
+  ],
+  "any_other_unhashed_installed_file": "REFUSE",
+  "changed_by_this_correction": false,
+  "content_mismatch": "NON_CERTIFIED_DEPENDENCY_ENVIRONMENT",
+  "contract_version": "ETF_CALENDAR_WORKER_THIRD_PARTY_INSTALLED_CONTENT_RULE_V1_PAD4_R2",
+  "controller_compares_response_against_the_trusted_registry": true,
+  "covers_compiled_native_extension_and_shared_library_rows": true,
+  "declared_file_missing": "REFUSE",
+  "defect": "verification hashed only the RECORD file and never checked any installed file against the per-file hashes RECORD declares, so a tampered dependency file executed with RECORD unchanged",
+  "definition_sha256": "5abf011588f4affbb36c4f4163b0cf773c1ec68a71e8c368d6d05803ea1d1c2a",
+  "forbidden_sequence": "IMPORT_DEPENDENCIES_THEN_VERIFY_THEIR_FILES",
+  "hostile_filesystem_race_resistance_claimed": false,
+  "independently_reproduced_as_valid_by": "POSTP1-002V2A-PAD4-R1",
+  "installation_memory_addresses_in_evidence": false,
+  "missing_hashes_silently_treated_as_certified": false,
+  "per_row_verification": [
+    "COMPARE_DECLARED_SIZE_WHERE_AVAILABLE",
+    "COMPUTE_THE_DECLARED_HASH_OVER_THE_INSTALLED_BYTES",
+    "READ_THE_INSTALLED_BYTES",
+    "RESOLVE_THE_INSTALLED_FILE"
+  ],
+  "persisted_evidence": [
+    "distribution",
+    "observed_verified_content_manifest_digest",
+    "reviewed_record_artifact_digest",
+    "reviewed_version"
+  ],
+  "record_declared_installed_file_hashes_must_be_verified": true,
+  "record_parsing": "BOUNDED_DETERMINISTIC_CSV_ROWS",
+  "record_path_semantics": [
+    "ABSOLUTE_PATH_REFUSED",
+    "AMBIGUOUS_OR_INTERIOR_TRAVERSAL_REFUSED",
+    "LEADING_PARENT_SEGMENTS_PERMITTED_FOR_CONSOLE_SCRIPT_ROWS",
+    "RESOLUTION_MUST_STAY_INSIDE_THE_INSTALLATION_ENVIRONMENT",
+    "WINDOWS_SEPARATOR_REFUSED"
+  ],
+  "record_row_shape": "path,algorithm=base64,size",
+  "repaired_review_finding": "D_THIRD_PARTY_INSTALLED_CONTENT_AND_SEMANTIC_AUTHORITY_NOT_ATTESTED",
+  "request_agreement_with_itself_is_authority": false,
+  "request_may_carry_observed_environment_material": true,
+  "reviewed_unhashed_row_exceptions": {
+    "DISTRIBUTION_OWN_RECORD_MANIFEST": "the distribution's own RECORD cannot hash itself; it is the explicitly reviewed self-referential exception and its exact bytes are parent-bound as reviewed artifact identity",
+    "INSTALL_GENERATED_PYCACHE_BYTECODE": "install-generated __pycache__ bytecode is never consulted, because every worker runs in a fresh empty bytecode-cache namespace; the exception is conditional on that enforced structural property, not on silence"
+  },
+  "scientific_authority_inferred_from_arbitrary_absolute_caller_paths": false,
+  "size_mismatch": "NON_CERTIFIED_DEPENDENCY_ENVIRONMENT",
+  "unknown_hash_algorithm": "REFUSE",
+  "unknown_hash_algorithm_silently_skipped": false,
+  "verification_order_is_critical": true,
+  "verification_precedes_dependency_execution": true,
+  "verifies_only_python_source": false,
+  "worker_compares_semantic_identity_against_the_trusted_registry": true,
+  "worker_protocol_lives_outside_the_application_package": true,
+  "worker_protocol_placement_reason": "importing the btc_predictor.research package every frozen operation requires executes numpy, scipy, sqlalchemy and alembic through the package re-export graph, so a protocol module under btc_predictor could only attest dependencies after they had already executed",
+  "worker_protocol_placement_reason_alters_proof_architecture": false,
+  "worker_protocol_placement_reason_correction": "MECHANICAL_WORDING_ONLY: the top-level btc_predictor namespace alone executes none of the four; btc_predictor.research executes all four"
+}

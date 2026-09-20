@@ -1,0 +1,72 @@
+{
+  "ambient_pythonpath_dependency": false,
+  "async_scientific_continuation_permitted": false,
+  "authoritative_launch_api": "run_scientific_worker",
+  "authorized_mechanisms": [
+    "EXEC_FRESH_INTERPRETER"
+  ],
+  "bootstrap_pre_verification_precedes_cache_namespace_allocation": true,
+  "bootstrap_source_preverified_before_launch": true,
+  "child_working_directory": "PARENT_BOUND_PROJECT_ROOT",
+  "contract_version": "ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_V1_R2",
+  "definition_sha256": "644243c6ebcfca0200957db58cbb62b02d77b272d97f90aaa08e30120466d741",
+  "environment_variable_python_configuration_ignored": true,
+  "fork_only_worker_permitted": false,
+  "fresh_empty_pycache_namespace_required": true,
+  "fresh_interpreter": true,
+  "fresh_project_imports": true,
+  "fresh_sys_modules": true,
+  "frozen_child_environment": {
+    "LANG": "C",
+    "LC_ALL": "C",
+    "TZ": "UTC"
+  },
+  "inherited_parent_python_module_objects": false,
+  "launch": "EXEC_STYLE_LAUNCH_OF_THE_EXACT_FROZEN_INTERPRETER",
+  "launch_without_the_trusted_authority_context_permitted": false,
+  "launcher_flag_effects": {
+    "dont_write_bytecode": "NO_CACHED_BYTECODE_WRITTEN_BY_THE_WORKER",
+    "ignore_environment": "ENVIRONMENT_VARIABLE_PYTHON_CONFIGURATION_IGNORED",
+    "isolated": "ENVIRONMENT_VARIABLE_PYTHON_CONFIGURATION_IGNORED",
+    "no_site": "SITECUSTOMIZE_AND_USERCUSTOMIZE_NOT_EXECUTED",
+    "no_user_site": "USER_SITE_DISABLED",
+    "safe_path": "UNCONTROLLED_CURRENT_DIRECTORY_IMPORT_PRECEDENCE_DISABLED"
+  },
+  "launcher_flags": [
+    "-I",
+    "-S",
+    "-B"
+  ],
+  "launcher_x_options": [
+    "pycache_prefix"
+  ],
+  "long_lived_worker_permitted": false,
+  "nested_scientific_job_permitted": false,
+  "one_request_one_exec_process": true,
+  "parent_environment_drift_after_startup_reaches_the_child": false,
+  "performance_subordinate_to_proof_simplicity": true,
+  "private_non_authoritative_raw_subprocess_helper": "_spawn_unverified_worker_process",
+  "process_exits_after_response": true,
+  "pycache_namespace_is_operational_launch_material": true,
+  "pycache_namespace_is_scientific_identity_evidence": false,
+  "pycache_namespace_selected_by_the_scientific_request": false,
+  "pycache_prefix_launch_design_redesigned_by_this_correction": false,
+  "resource_limits": {
+    "max_request_bytes": 8388608,
+    "max_response_bytes": 4194304,
+    "silent_retry_on_a_different_authority_path": false,
+    "timeout_or_crash": "NO_SCIENTIFIC_RESULT_ADMISSION",
+    "timeout_seconds": 120
+  },
+  "scientific_background_thread_permitted": false,
+  "sitecustomize_and_usercustomize_executed": false,
+  "sys_path_explicitly_parent_controlled": true,
+  "unauthorized_mechanisms": [
+    "FORK_WITHOUT_EXEC",
+    "REUSED_LONG_LIVED_WORKER"
+  ],
+  "uncontrolled_current_directory_import_precedence": false,
+  "user_site_disabled": true,
+  "worker_concurrency": "ONE_SYNCHRONOUS_REQUEST_NO_BACKGROUND_THREAD",
+  "worker_reuse_permitted": false
+}

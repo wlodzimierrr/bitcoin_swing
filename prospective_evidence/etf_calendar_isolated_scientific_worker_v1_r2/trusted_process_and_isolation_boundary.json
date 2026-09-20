@@ -1,0 +1,72 @@
+{
+  "abandoned_completeness_models": [
+    "GENERATED_METHOD_ENUMERATION",
+    "REFLECTION_BLACKLIST_COMPLETENESS",
+    "SAME_PROCESS_RUNTIME_OWNER_ATTESTATION",
+    "TRANSITIVE_MUTABLE_OBJECT_CLOSURE",
+    "PYCACHE_PREFIX_LAUNCH_DESIGN"
+  ],
+  "accepted_race_boundary": "a malicious modification perfectly racing verification or use is outside the accepted trusted-operating-system boundary; the requirement is deterministic project and deployment integrity, not hostile kernel defence",
+  "bootstrap_source_executes_before_it_is_trusted": false,
+  "certified_self_mutation_is_program_behavior_not_ambient_drift": true,
+  "certified_source_may_mutate_its_own_globals": true,
+  "closed_input_boundary": [
+    "CANONICAL_JSON_IPC",
+    "CONTROLLER_RESULT_ADMISSION",
+    "FORK_ONLY_REFUSAL",
+    "FRESH_EXEC_CPYTHON_WORKER",
+    "ISOLATED_NO_SITE_NO_BYTECODE_WRITE_STARTUP",
+    "LAZY_RESULT_REFUSAL",
+    "NO_PARENT_PYTHON_OBJECT_SHARING",
+    "NO_PICKLE_CLOUDPICKLE_DILL_MARSHAL_IPC",
+    "ONE_REQUEST_ONE_PROCESS",
+    "PARENT_MONKEYPATCH_ISOLATION"
+  ],
+  "contract_version": "ETF_CALENDAR_TRUSTED_PROCESS_AND_ISOLATION_BOUNDARY_V1_PAD4_R2",
+  "definition_sha256": "9d17e8c351380db2c2a136ae11971f064ceb9fa46121c2c4d0f8f8e01b56a336",
+  "demoted_pad3_runtime_closure": {
+    "classes": 7,
+    "functions": 25,
+    "imports": 14,
+    "values": 15
+  },
+  "demoted_pad3_runtime_closure_role": "ARCHIVED_DIAGNOSTIC_EVIDENCE",
+  "hostile_filesystem_race_resistance_claimed": false,
+  "hostile_operating_system_resistance_claimed": false,
+  "isolation_boundary_independently_reproduced_again_by": "POSTP1-002V2A-PAD4-R1",
+  "isolation_boundary_preserved_from_the_reviewed_pad4_candidate": true,
+  "isolation_boundary_was_the_defect": false,
+  "out_of_scope": [
+    "HOSTILE_DEBUGGER_ATTACHMENT",
+    "KERNEL_COMPROMISE",
+    "MALICIOUS_MODIFICATION_PERFECTLY_RACING_VERIFICATION_OR_USE",
+    "OPERATING_SYSTEM_MEMORY_INJECTION"
+  ],
+  "preserved_valid_portions": [
+    "BYTECODE_EXECUTION_BINDING_REPAIR_A",
+    "CANONICAL_NON_EXECUTABLE_IPC",
+    "CLOSED_STORE_GRAMMAR",
+    "COMPILED_ROOT_WITNESS",
+    "DIRECT_DEPENDENCY_BODY_RULE",
+    "EXACT_ELEVEN_OWNER_GRAPH",
+    "FRESH_EMPTY_PYCACHE_NAMESPACE",
+    "FRESH_EXEC_ISOLATION",
+    "FROZEN_SOURCE_AUTHORITY_FOR_ORDINARY_CERTIFIED_SOURCE_REPAIR_B",
+    "ONE_REQUEST_ONE_PROCESS_LIFECYCLE",
+    "RECORD_INSTALLED_CONTENT_VERIFICATION_BEFORE_DEPENDENCY_EXECUTION",
+    "THIRD_PARTY_EXACT_VERSION_AND_ARTIFACT_AUTHORITY_REPAIR_D",
+    "TRUSTED_CONTROLLER_AUTHORITY_CONTEXT_REPAIR_C"
+  ],
+  "process_isolation_is_scientific_execution_boundary": true,
+  "reopened_by_this_correction": [],
+  "runtime_object_closure_is_completeness_proof": false,
+  "scientific_execution_boundary": "OPERATING_SYSTEM_PROCESS",
+  "trusted_once": [
+    "BOOTSTRAP_SOURCE_PRE_EXECUTION_BINDING_PASSES",
+    "CERTIFIED_PROJECT_SOURCE_ADMISSION_PASSES",
+    "CERTIFIED_THIRD_PARTY_INSTALLED_CONTENT_ADMISSION_PASSES",
+    "FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PASSES",
+    "FROZEN_INTERPRETER_IDENTITY_PASSES"
+  ],
+  "worker_trusted_after_admission": true
+}
