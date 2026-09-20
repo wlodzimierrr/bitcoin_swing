@@ -4115,7 +4115,7 @@ lineage, BTC-019 and Epic T remain unchanged.
 
 ## POSTP1-001V2A-PAD4-R1 — `REPAIR_ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_AUTHORITY_ANCHORS_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL
 xHIGH PROOF-ARCHITECTURE REVIEW`
 **Dependency:** POSTP1-002V2A-PAD4 failure,
 `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_REQUIRES_FIX`
@@ -4323,6 +4323,140 @@ science, and refreeze `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` before an
 independent exact-hash calendar closure review. Only that closure PASS may
 unblock POSTP1-001V2R1.
 
+## POSTP1-002V2A-PAD4-R1 — `FINAL_XHIGH_PROOF_ARCHITECTURE_REVIEW_ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R1`
+
+**Status:** `COMPLETE / FAIL`
+**Reviewed ticket:** POSTP1-001V2A-PAD4-R1
+**Reviewed decision commit:** `37f0db2b12c86b5809d213ae3bdda77a46cc82c2`
+**Reviewed authority:** `3415765f63a902e415e039ea71892087274541c1e8976a46d41c8f4afde37ebc`
+**Review model:** independent exact-hash final xHigh proof-architecture review
+of the exact corrected worker hash
+**Review result:** `FAIL — WORKER BOOTSTRAP SOURCE NOT BOUND BEFORE EXECUTION`
+**Execution classification:** `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R1_REQUIRES_FIX`
+
+Independent canonical-JSON regeneration reproduced the exact candidate parent
+`3415765f63a902e415e039ea71892087274541c1e8976a46d41c8f4afde37ebc`. All 20
+material children mechanically enumerated from the single builder registry
+reproduce: 20/20 child reproduction and 20/20 parent binding.
+
+### Independently reproduced valid portions
+
+These portions were independently reproduced and are preserved. A successor
+must not reopen, rebuild or renegotiate them.
+
+- **Fresh-exec isolation — VALID.** The one-shot exec'd worker boundary that
+  POSTP1-002V2A-PAD4 already found sound reproduces again and remains the
+  proven closed input boundary.
+- **Repair A — bytecode binding — VALID.** The fresh, controller-created,
+  empty per-worker `-X pycache_prefix` namespace closes the PAD4 forged-`.pyc`
+  defect.
+- **Repair C — trusted controller authority — VALID FOR ITS STATED SCOPE**,
+  but unable to close bootstrap ordering because worker-visible authority
+  fields are derivable from the supplied request. Within its stated scope
+  `ScientificWorkerAuthorityContext` is genuine trusted material that a
+  request, a response, live disk and the installed environment cannot
+  construct or silently replace, and admission does require request equals
+  context and response equals context and response cross-binds to request.
+  What it does not do is hand already-executing bootstrap code an authority
+  that code could not have reconstructed from its own input.
+- **Repair D — third-party semantic/content authority — VALID.** The exact
+  reviewed five-distribution semantic registry and the per-file
+  installed-content verification against the parent-bound `RECORD` identity
+  hold.
+- **Repair B — frozen source authority — VALID FOR ORDINARY CERTIFIED SOURCE,
+  INCOMPLETE FOR THE PRE-TRUST BOOTSTRAP SOURCES.** Runtime consumption of an
+  already-frozen expected manifest, with no request manifest parameter and no
+  runtime re-derivation, is correct for every certified project module the
+  verifier is in a position to check. It does not reach the modules that must
+  already have run in order for that verifier to exist.
+
+### Blocking invariant
+
+Already-trusted code does not establish the certified identity of the worker
+bootstrap source before that source executes.
+
+The controller allocates the fresh cache namespace, builds the parent-bound
+launch material and execs the entrypoint path directly. The frozen expected
+manifest is compared against disk inside the worker, by the worker's own
+protocol module. Every module that must execute to reach that comparison is
+therefore outside it: the manifest check is the first thing the bootstrap
+does, not the last thing the controller does. The already-trusted side of the
+boundary never hashes the bootstrap files it is about to run.
+
+### Bootstrap package surface
+
+- `etf_calendar_worker/entry_r1.py`
+- `etf_calendar_worker/__init__.py`
+- `etf_calendar_worker/protocol_r1.py`
+
+This set executes before the normal scientific verifier is trustworthy. The
+package `__init__.py` is on the surface because importing the protocol module
+executes it first; it is not covered by the `worker_entrypoint_sha256` and
+`worker_protocol_sha256` fields, and those two fields are in any case verified
+by code that has already run.
+
+### Stable pre-launch bootstrap drift
+
+Two stable pre-launch drift probes were executed against the exact frozen
+candidate. In each case the drift was introduced before launch and left in
+place across the whole request.
+
+- **Entrypoint drift:** marker **PRESENT**, fabricated scientific result
+  **ADMITTED**.
+- **Protocol drift:** marker **PRESENT**, fabricated scientific result
+  **ADMITTED**.
+
+The execution marker proves the drifted bootstrap module really ran, and the
+controller then admitted a fabricated scientific result. Pre-launch bootstrap
+drift is therefore not merely undetected; it is authoritative. This is the
+precise ordering complement of the POSTP1-002V2A-PAD4 pre-request source-drift
+finding that Repair B otherwise closes: Repair B moved the certified-source
+authority ahead of request construction, but the bootstrap source is ahead of
+Repair B.
+
+### Consequences
+
+The exact PAD4-R1 candidate remains immutable, non-certified, unused and at
+zero observations. No review fix, proof-artifact change, production change,
+calendar-science change or candidate-authority change was made, because
+authority ordering itself is incomplete and a review may not patch the
+authority it is reviewing. The isolated-worker proof-architecture family is
+**not** rejected, same-process runtime-object attestation must **not** be
+reopened, and the validated isolation, bytecode and third-party repairs must
+be carried forward intact.
+
+Calendar implementation/refreeze (POSTP1-001V2A-I2), POSTP1-001V2R1,
+POSTP1-003R3 and POSTP1-004 remain **BLOCKED**. Collection is **NOT
+AUTHORIZED** and observations remain **0**. No prospective observation was
+collected and no real Stage-B evaluation ran. Certified trusted persistence
+`02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772` is
+**CLOSED / CERTIFIED / UNCHANGED** and was not reopened. Calendar science, the
+failed proof and calendar lineage, the untouched failed PAD4 namespace at
+`cc1b325a...7b809e78`, BTC-019 (**UNTOUCHED**, sealed sample unopened) and
+Epic T (**UNCHANGED**) are all unaffected.
+
+### Indicated successor
+
+`POSTP1-001V2A-PAD4-R2` — a bounded correction that pre-verifies the complete
+worker bootstrap source set in already-trusted controller code before
+subprocess execution, while preserving the validated PAD4-R1 isolation,
+bytecode and third-party repairs.
+
+This is a bounded correction of PAD4-R1 and is deliberately **not** a PAD5: no
+new proof-architecture family is authorized and the R1 namespace stays
+immutable and preserved alongside the failed PAD4 namespace. Successful
+POSTP1-001V2A-PAD4-R2 implementation authorizes only its own independent
+exact-hash review; only that review's PASS may authorize POSTP1-001V2A-I2.
+
+### Documentation-only correction made by this review
+
+This review also independently identified one documentation-only defect:
+`CURRENT_STATE.md` recorded the combined
+PAD4-R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1 proof-architecture suite as **615** where
+the measured count is **617**, which this record corrects. No unrelated
+historical test count was altered, and no wider or full test rerun was
+required for this documentation-only review record.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -4378,7 +4512,8 @@ unblock POSTP1-001V2R1.
 | POSTP1-002V2A-PAD3 | independent exact-hash xHigh proof-architecture review of `b8f8b92d...f6b5b996` | COMPLETE / FAIL — PROJECT IMPORT EXECUTION CLOSURE INCOMPLETE; EXPLICIT PROOF-ARCHITECTURE DECISION REQUIRED |
 | POSTP1-001V2A-PAD4 | define and freeze the new `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` proof architecture at `cc1b325a...7b809e78` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4 | independent exact-hash xHigh proof-architecture review of `cc1b325a...7b809e78` | COMPLETE / FAIL — EXECUTED BYTECODE NOT BOUND TO CERTIFIED SOURCE; SOURCE, CONTROLLER-AUTHORITY AND THIRD-PARTY ANCHORING ALSO INVALID; ISOLATION BOUNDARY SOUND |
-| POSTP1-001V2A-PAD4-R1 | bounded correction of the four POSTP1-002V2A-PAD4 authority-anchoring findings, refrozen at `3415765f...fde37ebc` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD4-R1 | independent exact-hash final xHigh proof-architecture review of `3415765f...fde37ebc` | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-001V2A-PAD4-R1 | bounded correction of the four POSTP1-002V2A-PAD4 authority-anchoring findings, refrozen at `3415765f...fde37ebc` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4-R1 | independent exact-hash final xHigh proof-architecture review of `3415765f...fde37ebc` | COMPLETE / FAIL — WORKER BOOTSTRAP SOURCE NOT BOUND BEFORE EXECUTION; FRESH-EXEC ISOLATION, BYTECODE BINDING AND THIRD-PARTY AUTHORITY VALID |
+| POSTP1-001V2A-PAD4-R2 | bounded correction that pre-verifies the complete worker bootstrap source set in already-trusted controller code before subprocess execution, preserving the validated PAD4-R1 isolation, bytecode and third-party repairs | NOT STARTED / DEPENDENCY-SATISFIED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
