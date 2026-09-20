@@ -4467,7 +4467,7 @@ xHIGH PROOF-ARCHITECTURE REVIEW`
 **Required review:** POSTP1-002V2A-PAD4-R2, one independent exact-hash final
 xHigh proof-architecture review
 **Artifacts:** `prospective_evidence/etf_calendar_isolated_scientific_worker_v1_r2/`
-**Decision commit:** `PENDING_DECISION_COMMIT`
+**Decision commit:** `d6b5565a7006eec323e990d906e3a1240a2ee807`
 **Decision hash:** `68e6bd074a027900b2f3dde3da0a31b6d1cb2f1b9fc6c563e9b45bdc70e52561`
 
 ### A bounded ordering correction, not a new architecture family

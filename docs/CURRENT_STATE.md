@@ -422,7 +422,7 @@ REPAIR B FROZEN SOURCE AUTHORITY VALID FOR ORDINARY CERTIFIED SOURCE AND
 INCOMPLETE FOR THE PRE-TRUST BOOTSTRAP SOURCES
 
 POSTP1-001V2A-PAD4-R2 decision commit =
-PENDING_DECISION_COMMIT
+d6b5565a7006eec323e990d906e3a1240a2ee807
 
 POSTP1-001V2A-PAD4-R2 result =
 IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
@@ -1121,7 +1121,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4-R2
-  decision commit `PENDING_DECISION_COMMIT` freezes the bootstrap-bound
+  decision commit `d6b5565a7006eec323e990d906e3a1240a2ee807` freezes the bootstrap-bound
   pre-data candidate `68e6bd07...e52561`, which awaits POSTP1-002V2A-PAD4-R2,
   its independent exact-hash final xHigh proof-architecture review. It
   overwrites no PAD4 or PAD4-R1 artifact, changes no ETF calendar production
