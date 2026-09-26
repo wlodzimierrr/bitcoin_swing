@@ -1,0 +1,106 @@
+{
+  "arbitrary_callable_dispatch_permitted": false,
+  "authoritative_evidence_admission_mode": "PRODUCTION_SIGNED_ENVELOPE_REPLAY",
+  "authority_bound_fields": [
+    "calendar_authority_sha256",
+    "calendar_authority_version",
+    "interpreter_identity",
+    "project_source_manifest_digest",
+    "project_source_manifest_role",
+    "third_party_authority_digest",
+    "trusted_persistence_authority_sha256",
+    "worker_authority_sha256",
+    "worker_authority_ticket",
+    "worker_authority_version",
+    "worker_bootstrap_manifest_digest",
+    "worker_entrypoint_module"
+  ],
+  "authority_fields_are_copied_from_the_trusted_context": true,
+  "bootstrap_manifest_is_copied_from_the_trusted_context": true,
+  "caller_may_select_a_raw_decision_hash": false,
+  "caller_may_supply_a_project_source_manifest": false,
+  "caller_may_supply_a_third_party_semantic_registry": false,
+  "caller_may_supply_a_worker_bootstrap_manifest": false,
+  "contract_version": "ETF_CALENDAR_SCIENTIFIC_WORKER_REQUEST_V1_R2",
+  "decimals": "CANONICAL_STRINGS_NEVER_BINARY_FLOATS",
+  "definition_sha256": "791ccfa43aff42df06263b01ba5c8da26002a95a80f6b882601c690c07de3ae5",
+  "encoding": "CANONICAL_JSON_BYTES",
+  "evidence_reconstruction": "THE_WORKER_REBUILDS_A_READ_ONLY_EVIDENCE_VIEW_FROM_CANONICAL_DATA",
+  "exact_one_document_parsing": true,
+  "executable_payload_permitted": false,
+  "fields": [
+    "authority_context_origin",
+    "calendar_authority_sha256",
+    "calendar_authority_version",
+    "decision_time",
+    "evidence_admission_mode",
+    "evidence_records",
+    "interpreter_identity",
+    "operation",
+    "operation_inputs",
+    "project_root",
+    "project_source_manifest",
+    "project_source_manifest_digest",
+    "project_source_manifest_role",
+    "request_schema_version",
+    "required_project_modules",
+    "sys_path",
+    "third_party_authority",
+    "third_party_authority_digest",
+    "third_party_environment",
+    "trusted_persistence_authority_sha256",
+    "worker_authority_sha256",
+    "worker_authority_ticket",
+    "worker_authority_version",
+    "worker_bootstrap_manifest",
+    "worker_bootstrap_manifest_digest",
+    "worker_entrypoint_module"
+  ],
+  "forbidden_request_payloads": [
+    "ARBITRARY_CALLABLE_OBJECTS",
+    "ARBITRARY_PICKLED_OBJECTS",
+    "CLASSES",
+    "FUNCTIONS",
+    "LIVE_CalendarEvidenceStore_OBJECT",
+    "MODULE_OBJECTS"
+  ],
+  "frozen_operations": [
+    "common_etf_session_status",
+    "derive_etf_window_calendar",
+    "scientific_etf_flow_window"
+  ],
+  "input_digest_persisted": true,
+  "missing_fields": "REFUSE",
+  "nan_or_infinity": "REFUSE",
+  "operation_inputs": {
+    "common_etf_session_status": [
+      "trade_date"
+    ],
+    "derive_etf_window_calendar": [
+      "earliest_date",
+      "end_date",
+      "window_days"
+    ],
+    "scientific_etf_flow_window": [
+      "as_of",
+      "earliest_date",
+      "end_date",
+      "etf_flows",
+      "funds",
+      "window_days"
+    ]
+  },
+  "parent_python_objects_shared": false,
+  "prototype_evidence_admission_mode": "NON_AUTHORITATIVE_CANONICAL_RECORD_REPLAY",
+  "prototype_mode_is_scientific_authority": false,
+  "received_bytes_must_reserialize_to_themselves": true,
+  "replaced_pad4_r1_fields": [
+    "worker_entrypoint_sha256",
+    "worker_protocol_sha256"
+  ],
+  "replaced_pad4_r1_fields_reason": "worker_entrypoint_sha256 and worker_protocol_sha256 omitted the package initializer and were verified by code that had already run; the complete bootstrap manifest replaces them",
+  "schema_validated": true,
+  "timestamps": "CANONICAL_UTC_ROUND_TRIP_REQUIRED",
+  "transport": "WORKER_STDIN",
+  "unknown_fields": "REFUSE"
+}

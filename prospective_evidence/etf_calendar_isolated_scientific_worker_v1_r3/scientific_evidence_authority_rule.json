@@ -1,0 +1,19 @@
+{
+  "affirmative_authority_marker": "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R3",
+  "affirmative_evidence_construction_sites": 1,
+  "affirmative_evidence_creation_location": "_build_authoritative_scientific_execution_boundary._affirmative_scientific_evidence",
+  "affirmative_scientific_evidence_created_only_inside_authoritative_path": true,
+  "caller_built_admission_state_can_mint_evidence": false,
+  "contract_version": "ETF_CALENDAR_SCIENTIFIC_EVIDENCE_AUTHORITY_RULE_V1_R3",
+  "definition_sha256": "3c6fb44b3f4b142ca7f453e093736fc6d25c6a0fbf696bd35fce3f88f93c608e",
+  "evidence_is_address_free": true,
+  "evidence_is_deterministic": true,
+  "evidence_may_claim_trusted_preverification_only_when_it_occurred": true,
+  "module_accessible_evidence_constructor_exists": false,
+  "non_authoritative_marker": "NON_AUTHORITATIVE_RAW_EXECUTION",
+  "raw_diagnostic_admitted_field": false,
+  "raw_diagnostic_is_unambiguously_non_authoritative": true,
+  "raw_diagnostic_location": "btc_predictor/tests/etf_calendar_raw_worker_harness_r3.py",
+  "raw_execution_may_produce_diagnostic_evidence": true,
+  "superseded_lineage_evidence_can_emit_the_affirmative_marker": false
+}
