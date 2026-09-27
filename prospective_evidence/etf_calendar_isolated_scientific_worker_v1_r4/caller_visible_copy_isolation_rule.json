@@ -1,0 +1,333 @@
+{
+  "a_class_member_returns_the_authority_storage": false,
+  "accessor_mechanism": "FRESH_DETERMINISTIC_DECODE_OF_THE_FROZEN_CANONICAL_BYTES_PER_CALL",
+  "affirmative_evidence_mapping_is_retained_by_authority": false,
+  "authoritative_execution_exposes_a_material_deleter": false,
+  "authoritative_execution_exposes_a_material_setter": false,
+  "authoritative_execution_has_an_instance_dictionary": false,
+  "authority_storage_reachable_through_a_declared_member": false,
+  "authority_storage_reachable_through_closure_cells": true,
+  "authority_storage_reader_is_closure_local_and_not_a_member": true,
+  "caller_facing_material": [
+    "admitted",
+    "authoritative_snapshot_proof",
+    "failure_reason",
+    "request_digest",
+    "response",
+    "result",
+    "scientific_evidence"
+  ],
+  "caller_supplied_request_object_is_retained_by_authority": false,
+  "caller_visible_mutable_evidence_is_authority_storage": false,
+  "caller_visible_mutable_response_is_authority_storage": false,
+  "caller_visible_mutable_result_is_authority_storage": false,
+  "class_surface_is_a_verified_enumeration_not_an_allow_list": true,
+  "contract_version": "ETF_CALENDAR_CALLER_VISIBLE_COPY_ISOLATION_RULE_V1_R4",
+  "deep_copy_of_a_mutable_graph_is_the_mechanism": false,
+  "definition_sha256": "ffb49ced14c499dc5f56ecf9676e5ac9518fcc386f0e351c8903edc879b9b3d4",
+  "immutable_convenience_accessors": [
+    "admitted",
+    "failure_reason",
+    "request_digest"
+  ],
+  "mapping_proxy_outer_wrapper_is_the_mechanism": false,
+  "mutable_convenience_accessors": [
+    "response",
+    "result",
+    "scientific_evidence"
+  ],
+  "nested_mapping_mutation_is_isolated": true,
+  "nested_mutable_alias_can_change_authority": false,
+  "nested_sequence_mutation_is_isolated": true,
+  "prohibited_authority_copy_mechanisms": [
+    "MappingProxyType",
+    "copy.copy",
+    "copy.deepcopy",
+    "copy.replace",
+    "json.dumps",
+    "json.loads",
+    "types.MappingProxyType"
+  ],
+  "reflective_recovery_of_the_storage_is_claimed_impossible": false,
+  "reflectively_recovered_binding_container_is_mutable": true,
+  "reflectively_recovered_snapshot_is_immutable": true,
+  "repaired_review_finding": "P0_MATERIAL_CHILDREN_MUST_DESCRIBE_THE_IMPLEMENTED_RETURN_STATE_SEMANTICS",
+  "repeated_accessor_values_are_equal": true,
+  "repeated_accessor_values_share_mutable_descendants": false,
+  "response_and_result_convenience_values_share_mutable_descendants": false,
+  "return_state_audit": {
+    "accessor_frozen_fields": {
+      "admitted": "admitted",
+      "failure_reason": "failure_reason",
+      "request_digest": "request_digest",
+      "response": "response_bytes",
+      "result": "result_bytes",
+      "scientific_evidence": "affirmative_evidence_bytes"
+    },
+    "audit_version": "ETF_CALENDAR_AUTHORITATIVE_RETURN_STATE_AUDIT_V1_R4",
+    "authoritative_return_state": "ETF_CALENDAR_AUTHORITATIVE_ADMITTED_RETURN_STATE_V1_R4",
+    "authority_immutability_gate": "verify_frozen_authority_snapshot",
+    "authority_immutability_gate_is_module_level_and_inert": true,
+    "authority_immutability_gate_probes": {
+      "COMPLETE_IMMUTABLE_SNAPSHOT": "ACCEPTED_AS_FROZEN_SNAPSHOT",
+      "EXTRA_FIELD": "REFUSED",
+      "MISSING_FIELD": "REFUSED",
+      "MUTABLE_BYTEARRAY_VALUE": "REFUSED",
+      "MUTABLE_MAPPING_VALUE": "REFUSED",
+      "MUTABLE_SEQUENCE_VALUE": "REFUSED",
+      "MUTABLE_SET_VALUE": "REFUSED",
+      "NOT_A_MAPPING": "REFUSED"
+    },
+    "authority_storage_binding_is_resolved_by_equality_not_identity": true,
+    "authority_storage_name": "_material",
+    "authority_storage_reader": "_frozen",
+    "authority_storage_reader_scopes": [
+      [
+        "_build_authoritative_scientific_execution_boundary"
+      ]
+    ],
+    "authority_storage_references": [
+      {
+        "context": "Store",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary"
+        ]
+      },
+      {
+        "context": "Load",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "_frozen"
+        ]
+      },
+      {
+        "context": "Load",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "AuthoritativeScientificExecution",
+          "__init__"
+        ]
+      }
+    ],
+    "authority_storage_write_sites": [
+      {
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "AuthoritativeScientificExecution",
+          "__init__"
+        ],
+        "value": "verify_frozen_authority_snapshot"
+      }
+    ],
+    "caller_facing_accessor_descriptors": {
+      "admitted": {
+        "is_read_only_property": true
+      },
+      "failure_reason": {
+        "is_read_only_property": true
+      },
+      "request_digest": {
+        "is_read_only_property": true
+      },
+      "response": {
+        "is_read_only_property": true
+      },
+      "result": {
+        "is_read_only_property": true
+      },
+      "scientific_evidence": {
+        "is_read_only_property": true
+      }
+    },
+    "caller_facing_material": [
+      "admitted",
+      "authoritative_snapshot_proof",
+      "failure_reason",
+      "request_digest",
+      "response",
+      "result",
+      "scientific_evidence"
+    ],
+    "canonical_decode_call": "protocol.parse_canonical_json",
+    "canonical_encode_call": "protocol.canonical_json_bytes",
+    "closed": true,
+    "construction_authority_probes": {
+      "DIRECT_CONSTRUCTION": "REFUSED",
+      "FORGED_CAPABILITY": "REFUSED",
+      "NEW_BYPASS_MAPPING_ACCESSOR": "REFUSED",
+      "NEW_BYPASS_SCALAR_ACCESSOR": "REFUSED",
+      "NEW_BYPASS_SNAPSHOT_PROOF": "REFUSED",
+      "SUBCLASS": "REFUSED"
+    },
+    "construction_site_material_fields": [
+      "admitted",
+      "affirmative_evidence_bytes",
+      "affirmative_evidence_digest",
+      "failure_reason",
+      "request_digest",
+      "response_bytes",
+      "response_digest",
+      "result_bytes",
+      "result_digest"
+    ],
+    "container_has_instance_dictionary": false,
+    "declared_authority_storage_references": [
+      {
+        "context": "Store",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary"
+        ]
+      },
+      {
+        "context": "Load",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "_frozen"
+        ]
+      },
+      {
+        "context": "Load",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "AuthoritativeScientificExecution",
+          "__init__"
+        ]
+      }
+    ],
+    "declared_non_material_members": [
+      "__repr__"
+    ],
+    "declared_slots": [
+      "__weakref__"
+    ],
+    "declared_snapshot_introspection": [
+      "_asdict"
+    ],
+    "findings": [],
+    "frozen_authority_fields": [
+      "admitted",
+      "affirmative_evidence_bytes",
+      "affirmative_evidence_digest",
+      "failure_reason",
+      "request_digest",
+      "response_bytes",
+      "response_digest",
+      "result_bytes",
+      "result_digest"
+    ],
+    "frozen_authority_snapshot_type": {
+      "fields": [
+        "admitted",
+        "affirmative_evidence_bytes",
+        "affirmative_evidence_digest",
+        "failure_reason",
+        "request_digest",
+        "response_bytes",
+        "response_digest",
+        "result_bytes",
+        "result_digest"
+      ],
+      "has_instance_dictionary": false,
+      "is_tuple_subclass": true,
+      "mutating_members_present": [],
+      "name": "FrozenAuthoritySnapshot"
+    },
+    "immutable_convenience_accessors": [
+      "admitted",
+      "failure_reason",
+      "request_digest"
+    ],
+    "live_class_members": [
+      "admitted",
+      "authoritative_snapshot_proof",
+      "failure_reason",
+      "request_digest",
+      "response",
+      "result",
+      "scientific_evidence"
+    ],
+    "material_member_frozen_field_reads": {
+      "admitted": [
+        "admitted"
+      ],
+      "authoritative_snapshot_proof": [
+        "_asdict",
+        "admitted",
+        "affirmative_evidence_bytes",
+        "affirmative_evidence_digest",
+        "response_bytes",
+        "response_digest",
+        "result_bytes",
+        "result_digest"
+      ],
+      "failure_reason": [
+        "failure_reason"
+      ],
+      "request_digest": [
+        "request_digest"
+      ],
+      "response": [
+        "response_bytes"
+      ],
+      "result": [
+        "result_bytes"
+      ],
+      "scientific_evidence": [
+        "affirmative_evidence_bytes"
+      ]
+    },
+    "material_member_return_mechanisms": {
+      "admitted": [
+        "ATTRIBUTE"
+      ],
+      "authoritative_snapshot_proof": [
+        "DICT"
+      ],
+      "failure_reason": [
+        "ATTRIBUTE"
+      ],
+      "request_digest": [
+        "ATTRIBUTE"
+      ],
+      "response": [
+        "protocol.parse_canonical_json"
+      ],
+      "result": [
+        "protocol.parse_canonical_json"
+      ],
+      "scientific_evidence": [
+        "protocol.parse_canonical_json"
+      ]
+    },
+    "mutable_convenience_accessors": [
+      "response",
+      "result",
+      "scientific_evidence"
+    ],
+    "prohibited_authority_copy_mechanisms": [
+      "MappingProxyType",
+      "copy.copy",
+      "copy.deepcopy",
+      "copy.replace",
+      "json.dumps",
+      "json.loads",
+      "types.MappingProxyType"
+    ],
+    "prohibited_mechanism_sites": [],
+    "returning_class_members": [
+      "__repr__",
+      "admitted",
+      "authoritative_snapshot_proof",
+      "failure_reason",
+      "request_digest",
+      "response",
+      "result",
+      "scientific_evidence"
+    ],
+    "subclassing_the_authoritative_execution_is_refused": true
+  },
+  "shallow_copy_is_the_mechanism": false,
+  "temporary_admission_state_is_retained_by_authority": false,
+  "temporary_protocol_parser_state_is_retained_by_authority": false,
+  "top_level_mutation_is_isolated": true
+}

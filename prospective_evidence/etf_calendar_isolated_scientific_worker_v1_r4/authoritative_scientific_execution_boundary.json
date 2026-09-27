@@ -1,0 +1,340 @@
+{
+  "admitted_authority_uses_immutable_canonical_snapshot": true,
+  "api_closure_audit": {
+    "affirmative_marker_construction_sites": [
+      {
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "_affirmative_scientific_evidence"
+        ]
+      }
+    ],
+    "affirmative_marker_declared_readers": [
+      "affirmative_evidence_snapshot_rule",
+      "audit_scientific_api_closure",
+      "scientific_evidence_authority_rule"
+    ],
+    "affirmative_marker_free_modules": {
+      "btc_predictor/research/etf_calendar_isolated_scientific_worker.py": true,
+      "btc_predictor/research/etf_calendar_isolated_scientific_worker_r1.py": true,
+      "btc_predictor/research/etf_calendar_isolated_scientific_worker_r2.py": true,
+      "btc_predictor/research/etf_calendar_isolated_scientific_worker_r3.py": true,
+      "btc_predictor/tests/etf_calendar_raw_worker_harness_r3.py": true
+    },
+    "affirmative_marker_undeclared_sites": [],
+    "audit_version": "ETF_CALENDAR_SCIENTIFIC_API_CLOSURE_AUDIT_V1_R4",
+    "authoritative_execution_construction_sites": [
+      {
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "run_isolated_scientific_request"
+        ]
+      }
+    ],
+    "authoritative_execution_declared_refusal_probe_scopes": [
+      [
+        "audit_authoritative_return_state"
+      ]
+    ],
+    "authoritative_execution_refusal_probe_sites": [
+      {
+        "scope": [
+          "audit_authoritative_return_state"
+        ]
+      },
+      {
+        "scope": [
+          "audit_authoritative_return_state"
+        ]
+      }
+    ],
+    "authoritative_execution_undeclared_construction_sites": [],
+    "authoritative_production_operation": "run_isolated_scientific_request",
+    "authority_owned_steps": [
+      "_affirmative_scientific_evidence",
+      "_execute_exact_worker",
+      "_frozen",
+      "_validate_and_admit",
+      "run_isolated_scientific_request"
+    ],
+    "authority_owning_factory": "_build_authoritative_scientific_execution_boundary",
+    "authority_owning_factory_is_module_accessible": false,
+    "closed": true,
+    "findings": [],
+    "forbidden_authority_name_lineage_coverage": {
+      "etf_calendar_isolated_scientific_worker": [
+        "AdmissionOutcome",
+        "WorkerProcessOutcome",
+        "admit_worker_result",
+        "run_scientific_worker",
+        "scientific_response_evidence"
+      ],
+      "etf_calendar_isolated_scientific_worker_r1": [
+        "AdmissionOutcome",
+        "WorkerProcessOutcome",
+        "admit_worker_result",
+        "run_scientific_worker",
+        "scientific_response_evidence"
+      ],
+      "etf_calendar_isolated_scientific_worker_r2": [
+        "AdmissionOutcome",
+        "WorkerProcessOutcome",
+        "_spawn_unverified_worker_process",
+        "admit_worker_result",
+        "run_scientific_worker",
+        "scientific_response_evidence"
+      ],
+      "etf_calendar_isolated_scientific_worker_r3": []
+    },
+    "forbidden_authority_names": [
+      "AdmissionOutcome",
+      "WorkerProcessOutcome",
+      "_spawn_unverified_worker_process",
+      "admit_worker_result",
+      "run_scientific_worker",
+      "scientific_response_evidence"
+    ],
+    "forbidden_authority_names_defined": [],
+    "forbidden_authority_names_reexported": [],
+    "module_accessible_authority_bearing_operations": 1,
+    "module_attributes_bound_to_failed_lineage": [],
+    "production_launch_sites": [
+      {
+        "primitive": "subprocess.run",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "_execute_exact_worker"
+        ]
+      }
+    ]
+  },
+  "authoritative_execution_material": [
+    "admitted",
+    "authoritative_snapshot_proof",
+    "failure_reason",
+    "request_digest",
+    "response",
+    "result",
+    "scientific_evidence"
+  ],
+  "authoritative_execution_order": [
+    "1_RECEIVE_THE_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT",
+    "2_VALIDATE_THE_REQUEST_AGAINST_THE_TRUSTED_AUTHORITY",
+    "3_PREVERIFY_THE_COMPLETE_BOOTSTRAP_SOURCE_SET",
+    "4_ALLOCATE_THE_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE",
+    "5_SPAWN_THE_EXACT_WORKER_AND_OBTAIN_THE_EXACT_EXECUTION_RESULT",
+    "6_VALIDATE_THE_RESPONSE_PROTOCOL_INSIDE_THE_SAME_CLOSED_FLOW",
+    "7_CANONICALIZE_THE_EXACT_VALIDATED_RESPONSE_AND_RESULT",
+    "8_VERIFY_AND_BIND_THE_EXACT_RESULT_DIGEST_TO_THOSE_CANONICAL_BYTES",
+    "9_PERFORM_SUCCESSFUL_SCIENTIFIC_ADMISSION_INSIDE_THAT_FLOW",
+    "10_STORE_THE_IMMUTABLE_CANONICAL_ADMITTED_SNAPSHOT_AS_AUTHORITATIVE_TRUTH",
+    "11_CONSTRUCT_AFFIRMATIVE_EVIDENCE_FROM_THAT_IMMUTABLE_AUTHORITATIVE_TRUTH",
+    "12_RETURN_THE_AUTHORITATIVE_EXECUTION",
+    "13_SERVE_CALLER_FACING_ACCESS_WITHOUT_EXPOSING_AUTHORITY_BY_MUTABLE_REFERENCE"
+  ],
+  "authoritative_production_operation": "run_isolated_scientific_request",
+  "authoritative_return_state": "ETF_CALENDAR_AUTHORITATIVE_ADMITTED_RETURN_STATE_V1_R4",
+  "authority_bearing_mutable_mapping_retained_internally": false,
+  "authority_mechanism": "CLOSED_CONTROL_FLOW_AND_CAPABILITY_OWNERSHIP_PLUS_IMMUTABLE_CANONICAL_ADMITTED_SNAPSHOT_STORAGE",
+  "authority_owned_steps": [
+    "_affirmative_scientific_evidence",
+    "_execute_exact_worker",
+    "_frozen",
+    "_validate_and_admit",
+    "run_isolated_scientific_request"
+  ],
+  "authority_owning_factory": "_build_authoritative_scientific_execution_boundary",
+  "authority_snapshot_is_an_immutable_tuple": true,
+  "authority_snapshot_type": "FrozenAuthoritySnapshot",
+  "caller_created_post_admission_state_can_remain_inside_authority": false,
+  "caller_may_construct_the_authoritative_execution": false,
+  "class_naming_is_authority": false,
+  "closed_authority_path": "TRUSTED_BOOTSTRAP_PREVERIFICATION_THEN_EXACT_WORKER_LAUNCH_THEN_EXACT_WORKER_OUTCOME_THEN_CANONICAL_ADMITTED_SNAPSHOT_THEN_SCIENTIFIC_ADMISSION_THEN_FROZEN_AFFIRMATIVE_EVIDENCE",
+  "closed_r3_authority_flow_preserved": true,
+  "closed_reviewed_bypasses": [
+    "CALLER_BUILT_ADMISSION_STATE_INTO_AFFIRMATIVE_EVIDENCE",
+    "CALLER_FABRICATED_PASS_BOOTSTRAP_PRE_VERIFICATION_MAPPING",
+    "HAND_BUILT_WORKER_PROCESS_OUTCOME_WITH_NO_SUBPROCESS",
+    "RAW_UNVERIFIED_SPAWN_HELPER_INTO_GENERIC_ADMISSION"
+  ],
+  "closed_reviewed_return_state_mutations": [
+    "CALLER_MUTATED_RETURNED_RESPONSE_MAPPING_CHANGED_ADMITTED_AUTHORITY",
+    "CALLER_MUTATED_RETURNED_RESULT_MAPPING_CHANGED_ADMITTED_AUTHORITY",
+    "LIVE_AUTHORITATIVE_STATE_STOPPED_MATCHING_THE_BOUND_RESULT_DIGEST",
+    "RETURNED_RESPONSE_AND_RETURNED_RESULT_SHARED_MUTABLE_DESCENDANTS"
+  ],
+  "construction_authority_probes_are_behavioural": true,
+  "construction_authority_strengthened_by_this_decision": true,
+  "construction_authority_weakened_by_this_decision": false,
+  "construction_bypass_yields_unowned_object_that_refuses": true,
+  "contract_version": "ETF_CALENDAR_AUTHORITATIVE_SCIENTIFIC_EXECUTION_BOUNDARY_V1_R4",
+  "cryptographic_ceremony_introduced": false,
+  "defect": "the closed authority flow was correct through admission and then stored its authority as a shallow copy whose response value was the live protocol-parser mapping and whose result value was that mapping's own nested result object, and handed both straight back, so caller mutation of a returned mapping rewrote the authority-bearing state of an admitted, affirmatively stamped execution while the bound result digest kept describing what had actually been admitted",
+  "definition_sha256": "d4fe4ac788d3f6a8b3272dd3784b2c2f85d225db077a656a0457841d93805f1b",
+  "direct_worker_launch_census": {
+    "audit_version": "ETF_CALENDAR_DIRECT_WORKER_LAUNCH_CENSUS_V1_R4",
+    "authorized_launch_mechanisms": [
+      "EXEC_FRESH_INTERPRETER"
+    ],
+    "certified_worker_source_launch_sites": 0,
+    "closed": true,
+    "declared_non_worker_launch_sites": [
+      "interpreter_base_sys_path"
+    ],
+    "findings": [],
+    "production_reachable_inherited_launch_sites": [
+      {
+        "callable": "interpreter_base_sys_path",
+        "defining_module": "etf_calendar_isolated_scientific_worker_r1",
+        "primitive": "subprocess.run",
+        "qualname": "interpreter_base_sys_path"
+      }
+    ],
+    "production_scientific_authority_launch_sites": 1,
+    "recognised_primitives": [
+      "multiprocessing.Process",
+      "os.execl",
+      "os.execle",
+      "os.execlp",
+      "os.execlpe",
+      "os.execv",
+      "os.execve",
+      "os.execvp",
+      "os.execvpe",
+      "os.posix_spawn",
+      "os.posix_spawnp",
+      "os.spawnl",
+      "os.spawnle",
+      "os.spawnlp",
+      "os.spawnlpe",
+      "os.spawnv",
+      "os.spawnve",
+      "os.spawnvp",
+      "os.spawnvpe",
+      "subprocess.Popen",
+      "subprocess.call",
+      "subprocess.check_call",
+      "subprocess.check_output",
+      "subprocess.run"
+    ],
+    "sites": [
+      {
+        "classification": "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "interpreter_base_sys_path"
+        ]
+      },
+      {
+        "classification": "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "run_scientific_worker"
+        ]
+      },
+      {
+        "classification": "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker_r1.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "interpreter_base_sys_path"
+        ]
+      },
+      {
+        "classification": "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker_r1.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "run_scientific_worker"
+        ]
+      },
+      {
+        "classification": "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker_r2.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "_spawn_unverified_worker_process"
+        ]
+      },
+      {
+        "classification": "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker_r3.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "_execute_exact_worker"
+        ]
+      },
+      {
+        "classification": "PRODUCTION_SCIENTIFIC_AUTHORITY",
+        "path": "btc_predictor/research/etf_calendar_isolated_scientific_worker_r4.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "_build_authoritative_scientific_execution_boundary",
+          "_execute_exact_worker"
+        ]
+      },
+      {
+        "classification": "TEST_AND_REVIEW_HARNESS_ONLY",
+        "path": "btc_predictor/tests/etf_calendar_raw_worker_harness_r3.py",
+        "primitive": "subprocess.run",
+        "scope": [
+          "raw_unverified_worker_execution"
+        ]
+      }
+    ],
+    "surveyed_path_count": 126,
+    "unauthorized_launch_mechanisms": [
+      "FORK_WITHOUT_EXEC",
+      "REUSED_LONG_LIVED_WORKER"
+    ],
+    "undeclared_production_reachable_launch_sites": []
+  },
+  "field_values_are_authority": false,
+  "frozen_authority_fields": [
+    "admitted",
+    "affirmative_evidence_bytes",
+    "affirmative_evidence_digest",
+    "failure_reason",
+    "request_digest",
+    "response_bytes",
+    "response_digest",
+    "result_bytes",
+    "result_digest"
+  ],
+  "generic_admission_function_exists": false,
+  "generic_evidence_function_exists": false,
+  "generic_raw_outcome_type_exists_in_production": false,
+  "generic_snapshot_store_function_exists": false,
+  "immutable_convenience_accessors": [
+    "admitted",
+    "failure_reason",
+    "request_digest"
+  ],
+  "isinstance_of_a_public_dataclass_is_authority": false,
+  "leading_underscore_is_authority_boundary": false,
+  "module_accessible_authority_storage_write_exists": false,
+  "module_accessible_snapshot_gate_is_inert_and_grants_nothing": true,
+  "mutable_convenience_accessors": [
+    "response",
+    "result",
+    "scientific_evidence"
+  ],
+  "no_class_member_returns_authority_storage": true,
+  "post_admission_mutation_can_redefine_authority": false,
+  "post_admission_representation_is_immutable": true,
+  "preserved_r3_rule": "NO OUTCOME CREATED WITHOUT SUCCESSFUL TRUSTED-CONTROLLER BOOTSTRAP PREVERIFICATION MAY ENTER SCIENTIFIC ADMISSION OR PRODUCE AFFIRMATIVE SCIENTIFIC AUTHORITY EVIDENCE",
+  "raw_unverified_spawn_in_production_authority_surface": false,
+  "raw_unverified_spawn_location": "btc_predictor/tests/etf_calendar_raw_worker_harness_r3.py",
+  "repaired_review_finding": "P0_CALLER_CREATED_POST_ADMISSION_STATE_CAN_REMAIN_INSIDE_AFFIRMATIVE_AUTHORITY",
+  "return_state_audit_is_behavioural_not_only_structural": true,
+  "review": "POSTP1-002V2A-PAD4-R3",
+  "review_result": "FAIL \u2014 CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY",
+  "reviewed_parent": "1fd9a2f9d5e5318505a6c48241f243b358261c100f67c4bc5b2c43ac9bd8bad0",
+  "rule": "ONCE SCIENTIFIC ADMISSION SUCCEEDS, NO CALLER MUTATION MAY CHANGE THE AUTHORITATIVE RESPONSE, RESULT OR AFFIRMATIVE EVIDENCE REPRESENTED BY THAT ADMITTED EXECUTION",
+  "subclassing_the_authoritative_execution_is_refused": true,
+  "worker_computable_mac_key_introduced": false,
+  "worker_visible_secret_introduced": false
+}
