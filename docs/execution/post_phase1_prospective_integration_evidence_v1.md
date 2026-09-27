@@ -4942,11 +4942,16 @@ production-code change or proof-namespace change was made.
 
 ## POSTP1-001V2A-PAD4-R4 — `FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW`
 **Dependency:** POSTP1-002V2A-PAD4-R3,
 `COMPLETE / FAIL — CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY`
 **Bounded defect scope:** post-admission authoritative return-state immutability
 and material-child consistency for that authority rule
+**Frozen candidate:** `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` at
+`ae25c2468972725a0ebd2f7742a532f3ec616c2e2cc8e94d93b3de46f86e65bc`
+**Required review:** `POSTP1-002V2A-PAD4-R4`, independent exact-hash final xHigh
+proof-architecture review
+**Implementation commit:** `90fcf88a7be65bd43cefeb0eb766cccde766d6ae`
 
 The bounded invariant is:
 
@@ -4956,30 +4961,407 @@ AUTHORITATIVE RESPONSE, RESULT OR AFFIRMATIVE EVIDENCE REPRESENTED BY THAT
 ADMITTED EXECUTION.
 ```
 
-At governance level, the required semantic outcome is an immutable canonical
-snapshot of exactly what was admitted:
+Equivalently: what was admitted is what the authority permanently represents,
+for the whole lifetime of the admitted execution.
+
+### The reviewed defect, reproduced as a control
+
+`POSTP1-002V2A-PAD4-R3` established that admission itself was correct and the
+failure happened afterwards. `PAD4-R3` stored its authority as `dict(material)`
+— a shallow copy whose `response` value was the live protocol-parser mapping and
+whose `result` value was that mapping's own nested `result` object — and handed
+both straight back from `execution.result` and `execution.response`. The focused
+R4 suite drives the **preserved, untouched** `PAD4-R3` controller and reproduces
+exactly that: an honest admitted execution whose returned result mapping is
+mutated comes to represent caller-created state, `execution.response["result"]`
+and `execution.result` are the same nested object, and the bound `result_digest`
+keeps describing what was actually admitted. The same semantic mutation against
+R4 changes nothing at all.
+
+### The correction
+
+The correction is structural, not a defensive copy bolted onto an accessor: the
+authority-bearing storage stops being a mutable Python container. Successful
+admission canonicalises the exact validated response with the already reviewed
+worker protocol serialisation, takes the admitted result snapshot out of **that
+frozen response snapshot** rather than out of the live parser object, binds the
+exact result digest to those canonical bytes, and returns only immutable values.
+Affirmative evidence is then constructed *from* the frozen snapshot,
+canonicalised into bytes of its own, and only then does the admitted execution
+become caller-visible. The nine authority-bearing fields are
 
 ```text
-canonical admitted response/result bytes
--> bound digest
--> immutable authoritative representation
+admitted                       bool
+affirmative_evidence_bytes     bytes
+affirmative_evidence_digest    str
+failure_reason                 str | None
+request_digest                 str
+response_bytes                 bytes
+response_digest                str
+result_bytes                   bytes
+result_digest                  str | None
 ```
 
-Any caller-facing convenience value must not mutate the underlying admitted
-authority. An outer read-only mapping alone is not sufficient if nested mutable
-state remains authority-bearing. This requirement does not prescribe the
-implementation.
+and nothing else. They are held in a `FrozenAuthoritySnapshot`, a `tuple`
+subclass, because freezing only the *members* of a `dict` is not sufficient: the
+container itself would still have `__setitem__`, `update`, `setdefault` and
+`pop`, so anything holding the mapping could rewrite a field, promote a refusal
+to an admitted execution, or make the affirmative evidence describe something
+that was never admitted. A `tuple` subclass has no mutating API at all, in pure
+Python or through `object.__setattr__`. There is therefore no nested mutable
+descendant to reach and no mutable container to rewrite, and no read-only wrapper
+is used: an outer `MappingProxyType` over a mutable graph would leave every
+nested container writable and is explicitly **not** the mechanism and explicitly
+not sufficient.
 
-Unless a new concrete defect is independently found, R4 must preserve the one
-supported authority-bearing R3 flow, four-file bootstrap pre-execution binding,
-fresh-exec process isolation, Repairs A and B, Repair C through admission,
-Repair D, worker protocol, compiled root witness, closed store grammar, exact
-eleven-owner graph and direct dependency-body rule. It must not reopen
-same-process runtime-object attestation, bootstrap architecture, bytecode
-architecture, third-party authority architecture or calendar science. This
-entry establishes only the ticket identity, dependency, bounded defect scope
-and next dependency-satisfied status. PAD4-R4 is not implemented, and I2
-remains blocked.
+`verify_frozen_authority_snapshot` is the single write path into the
+closure-private storage and admits only `bool`, `bytes`, `int`, `str` and `None`.
+It is deliberately **module-level and inert**: a gate hidden inside the closure
+could have its whole body deleted without any mechanical audit noticing, which
+would leave the correction resting on an unverified claim, so the gate is placed
+where the audit and the suite can actually exercise its refusals. Being callable
+grants nothing — it validates a mapping and returns an inert immutable tuple, and
+an `AuthoritativeScientificExecution` is still obtainable only from
+`run_isolated_scientific_request`.
+
+No member of the returned class hands the snapshot to a caller. The single read
+of the storage is a **closure-local function**, not a method, because a method on
+the returned object is a caller-visible surface however it is spelled — a leading
+underscore is explicitly not the boundary in this architecture. The live class
+exposes exactly its seven declared caller-facing members, and the audit verifies
+that enumeration against the type rather than against a declared allow-list.
+
+`execution.result`, `execution.response` and `execution.scientific_evidence` are
+fresh deterministic decodes of those frozen bytes on every call, so a caller
+always receives a new, wholly detached object graph.
+`execution.authoritative_snapshot_proof()` reproduces the bound result, response
+and affirmative-evidence digests by hashing the frozen bytes alone, never a
+caller-visible object, which is how the exact-hash reviewer can establish that
+what is represented now is what was admitted then. There is no repair on read:
+post-admission mutation moves no digest in either direction. The accessor gives
+one uniform verdict on every path: a refusal binds no result digest, so an
+unbound digest is reported as unbound (`result_digest_is_bound`,
+`unbound_digest_names`) rather than compared against the digest of the canonical
+"no result" snapshot, which would read as a spurious mismatch on every refusal.
+
+Two distinct objects are named separately throughout, because conflating them is
+how a reviewer could be misled. The **snapshot** is the immutable tuple that
+carries the authority content. The **binding container** is the closure-private
+`WeakKeyDictionary` that binds an execution to its snapshot: it is an ordinary
+mutable mapping, it carries no authority content of its own, and every child that
+denies a mutating API says `authority_snapshot_*`, never `authority_storage_*`.
+
+Reflective recovery of the binding container — through the class's closure cells,
+the instance's weak-reference callback or a debugger — is deliberately **not**
+claimed to be impossible; arbitrary reflective namespace manipulation is outside
+the trusted-process threat model this architecture states, and `PAD4-R3` had
+identical exposure. The frozen children say so in as many words
+(`reflective_recovery_of_the_storage_is_claimed_impossible: false`,
+`authority_storage_reachable_through_closure_cells: true`,
+`reflectively_recovered_binding_container_is_mutable: true`). What the correction
+guarantees instead is that every *value* such a route recovers is an immutable
+snapshot, so no route reaches a mutable object carrying authority content — and
+the mandatory regressions drive exactly that route to prove it, rather than
+re-asserting the claim against itself.
+
+The container resolves a key by `__hash__`/`__eq__` rather than by identity, so a
+subclass that spoofed both would resolve to *another* execution's admitted
+snapshot and report its authority while carrying none of its own. Subclassing the
+authoritative execution is therefore **refused outright**, at class-creation
+time. Only a subclass can mount that route, because only a subclass inherits the
+accessors that would expose a snapshot; an unrelated class may spoof equality
+freely and has nothing to expose it through. The reviewed `PAD4-R3` controller
+accepted such a subclass and refused only its accessors, so this is a strict
+**strengthening** of the reviewed construction authority, not a weakening of it,
+and a control regression drives the attack against the preserved `PAD4-R3`
+controller to keep that statement honest.
+
+`PAD4-R3`'s construction authority is untouched. An
+`AuthoritativeScientificExecution` is still obtainable only as the return value
+of `run_isolated_scientific_request`; direct construction, `__new__` bypass and
+subclassing still yield an object whose every accessor refuses; the
+capability-owning factory is still deleted from the module namespace after one
+use; and no separately composable admission, snapshot-store or
+affirmative-evidence surface exists. R4 changes post-admission *representation*
+immutability, not the already-reviewed construction authority. No cryptography,
+no shared secret and no worker-computable MAC key was introduced, and the worker
+package is reused byte-identically.
+
+### Mechanical audits
+
+Three deterministic audits are frozen as evidence. `audit_scientific_api_closure`
+and `audit_direct_worker_launch_census` are carried forward from `PAD4-R3` with
+the now-superseded `PAD4-R3` controller added to the surveyed failed lineage: the
+census surveys **126** paths and reports exactly **one** production
+scientific-authority launch site, closure-owned, and **zero** in the 120-module
+certified worker source universe. The new
+`audit_authoritative_return_state` is the R4 correction's own audit and is
+embedded in the `caller_visible_copy_isolation_rule` child, so the parent hash
+depends on it. It is deliberately **behavioural as well as structural**, because
+a purely name-shaped audit can be satisfied by an implementation that leaks, and
+**surface-complete**, because an audit that inspects a declared allow-list cannot
+see an undeclared member. It proves over the module's own AST and the live types
+that the closure-private storage is referenced at exactly the three declared
+places — its declaration, the one write in `__init__` and the one closure-local
+read — so no second read, no mutating method call, no alias and no augmented
+assignment exists; that the value written at that one site is the gate's return
+value; that exercising the gate with a mutable mapping, a mutable sequence, a
+`set`, a `bytearray`, a short field set, an extra field and a non-mapping refuses
+every one of them while a complete immutable snapshot is accepted; that the
+stored snapshot type is a `tuple` subclass carrying exactly the frozen authority
+fields, with no mutating member and no instance dictionary; that the live class
+exposes exactly the declared caller-facing material and nothing else; that every
+mapping-like accessor returns a fresh canonical decode and each accessor reads
+the frozen field it is declared to read; that no refused copy or wrapper
+mechanism — `copy.copy`, `copy.deepcopy`, `copy.replace`, `MappingProxyType` or a
+second `json` encoding — appears anywhere inside the authority-owning closure;
+and that the container exposes no material setter, no material deleter and no
+instance dictionary.
+
+It probes **construction** authority behaviourally too, not only the gate, which
+is the gap a purely gate-focused probe set leaves open: subclassing, direct
+construction, a forged capability and three accessor reads on a `__new__` bypass
+must each refuse, and any `ACCEPTED` is a finding. The two construction calls the
+audit makes in order to prove they refuse are *declared* as refusal-probe scopes
+rather than hidden behind indirection the AST census could not see, and the
+closure audit reports the one authority-bearing construction site, the declared
+probe sites and any undeclared site separately.
+
+The two carried-forward audits are strengthened in two bounded ways. The
+closure audit now also scans aliasing imports, and it records explicitly which
+`(lineage module, forbidden name)` pairs actually exist, so an empty result is
+distinguishable from an inapplicable check — after `PAD4-R3` removed all six
+names, its column is legitimately empty because there is nothing there to alias.
+The census now keys each inherited-launch row on the resolved callable and its
+qualified name rather than on the module attribute pointing at it, so a second
+re-export or a diagnostic alias of an already declared non-worker helper cannot
+move this candidate's parent hash for a non-material reason.
+
+### Pre-freeze adversarial hardening
+
+An independent adversarial audit was run against this candidate *before* it was
+frozen, and it found a blocking defect of exactly the reviewed class, which was
+corrected before the namespace was written. The first draft exposed a `_owned()`
+method that returned the live authority-storage `dict`: a caller could rewrite a
+frozen field through it, and — because freezing only the *members* of a mapping
+leaves the mapping itself writable — could copy an admitted snapshot over a
+refusal's and obtain a fully self-consistent affirmatively-admitted execution
+whose `authoritative_snapshot_proof()` reported every digest as matching. Four
+further gaps were found and closed in the same pass: the return-state audit
+inspected a declared accessor allow-list rather than the class's own members, so
+it was structurally incapable of seeing that method; the immutability gate was
+closure-local and therefore its refusals could not be exercised at all; eight of
+nine `preserved_canonical_rejections` named labels the reused protocol does not
+raise; and the launch census keyed its inherited-helper rows on the module
+attribute name, so a diagnostic re-export moved the parent hash for a
+non-material reason.
+
+Recording this is not incidental. The corrected design is what it is *because* of
+those findings: the snapshot is a `tuple` subclass rather than a mapping of frozen
+values, the single storage read is a closure-local function rather than a method,
+the gate is module-level so it can be exercised, and the audit is behavioural and
+surface-complete rather than name-shaped.
+
+A second adversarial audit was then run against the corrected candidate. It found
+no residual route to change what an admitted execution represents, and surfaced
+three further items, all closed before this freeze. The equality-keyed binding
+container admitted a subclass that spoofed `__eq__` and `__hash__` — reproduced
+against both R4 and the preserved `PAD4-R3` controller, and closed by refusing
+subclassing outright. The term "authority storage" denoted both the immutable
+snapshot and its mutable binding container across different children, which is now
+split into `authority_snapshot_*` and `authority_binding_container_*` with the
+container's mutability disclosed rather than implied away. And
+`authoritative_snapshot_proof()` compared an unbound refusal digest against the
+digest of the canonical "no result" snapshot, which now reports as unbound. Two
+further second-round findings were refuted on examination, and one was an artefact
+of the candidate being regenerated while the audit was reading it.
+
+### Material authority
+
+The candidate binds **30** mechanically enumerated material children from one
+builder registry. **20** are carried forward **byte-identically** from the
+reviewed `PAD4-R3` namespace, asserted mechanically against the persisted
+`PAD4-R3` JSON rather than claimed — including the sixteen that already reached
+`PAD4-R3` byte-identically from `PAD4-R2`, and including
+`admission_provenance_rule`, `controller_result_admission_rule`,
+`trusted_process_and_isolation_boundary` and `worker_launch_contract`, whose
+semantics this correction does not touch because the reviewed defect was
+entirely after a successful admission. **Five** reviewed children are re-frozen
+under this parent: `authoritative_scientific_execution_boundary`,
+`scientific_evidence_authority_rule`, `controller_authority_context_rule`,
+`proof_order_and_completeness_definition` and `science_lineage_and_safety`. The
+re-frozen boundary child carries every key the reviewed `PAD4-R3` child carried,
+so a reviewer can diff it key by key. **Five** children are new and own the
+correction:
+
+```text
+authoritative_return_state_rule
+canonical_admitted_snapshot_rule
+caller_visible_copy_isolation_rule
+result_digest_lifetime_binding_rule
+affirmative_evidence_snapshot_rule
+```
+
+The frozen proof order is thirteen steps, and the implementation performs them in
+that order:
+
+```text
+ 1 receive the trusted controller authority context
+ 2 validate the request against the trusted authority
+ 3 preverify the complete bootstrap source set
+ 4 allocate the fresh empty bytecode-cache namespace
+ 5 spawn the exact worker and obtain the exact execution result
+ 6 validate the response protocol inside the same closed flow
+ 7 canonicalize the exact validated response and result
+ 8 verify and bind the exact result digest to those canonical bytes
+ 9 perform successful scientific admission inside that flow
+10 store the immutable canonical admitted snapshot as authoritative truth
+11 construct affirmative evidence from that immutable authoritative truth
+12 return the authoritative execution
+13 serve caller-facing access without exposing authority by mutable reference
+```
+
+### Executed adversarial evidence
+
+The focused suite passes 181 tests driving real exec'd worker processes.
+The mandatory return-state regressions are all present and all isolated: the
+`PAD4-R3` defect reproduces as a control against the frozen `PAD4-R3` controller;
+top-level result mutation, nested mapping mutation, nested sequence mutation
+(`append`, `extend`, item replacement, `clear`, and leaf mutation of a nested
+list-of-lists), response mutation and affirmative-evidence mutation each affect
+only the caller's copy; two reads of the same accessor are equal, are not the
+same object and share **no** mutable descendant; `execution.response["result"]`
+and `execution.result` share no mutable descendant, which is precisely what the
+reviewed defect made one object; the temporary protocol-parser mapping the closed
+flow actually worked with — captured at the protocol boundary — can be mutated
+and then discarded entirely with no effect; a caller's request object can be
+mutated and cleared with no effect; the bound result, response and
+affirmative-evidence digests reproduce from the frozen bytes; repeated reads
+after repeated mutation always return the original admitted state; authority is
+stable across garbage collection and across unrelated later requests; and two
+sequential legitimate requests have fully independent return state in both
+directions, with a third request afterwards rewriting neither. A refusal is
+frozen the same way, so the freeze is not limited to the admitted branch.
+
+Four further regressions cover the escalation classes a mutable container would
+have allowed. No class member hands out the authority storage: the live class's
+non-dunder members are enumerated and equal exactly the seven declared
+caller-facing names. The frozen snapshot type has no mutating API: every member
+of a declared mutating-member set is absent, `__setitem__` raises, and
+`object.__setattr__` raises. The immutability gate refuses a mutable mapping, a
+mutable sequence, a `bytearray`, a `set`, an extra field, a short field set, a
+non-mapping and `None`, and a snapshot it produces still cannot construct an
+authoritative execution. And a real refusal cannot be promoted to an admitted
+execution: the regression reflectively recovers the closure-private store from
+the returned object itself — the strongest available route, and one outside the
+stated threat model — and shows that copying an admitted snapshot over the
+refusal's, assigning into it and `object.__setattr__` all refuse, after which the
+refusal still reports `admitted is False`, `WORKER_TIMEOUT` and no bound result
+digest.
+
+Every preserved regression still holds through the R4 flow. The four reviewed
+`PAD4-R2` bypasses are each reproduced first as a **control** proving the old
+bypass genuinely worked and then refused; stable pre-launch drift of each of the
+four bootstrap sources never spawns the worker and leaves its marker absent; a
+forged repository `.pyc` is not executed; a forged worker `.pyc` marker stays
+absent; a pre-populated cache namespace refuses; a sourceless module origin
+refuses; ordinary pre-request certified-source drift refuses; `0000...0000` and
+`deadbeef...deadbeef` are refused by the trusted context; a tampered installed
+`alembic/__init__.py` with unchanged `RECORD` refuses with its marker absent,
+serialized and restored under `finally`; and parent mutation of `_flow`
+constants, `sys.modules`, `builtins`, a parent class body and a package
+re-export all leave the worker result unaffected.
+
+### Preserved authority and current production
+
+The worker package is unchanged: the four-file bootstrap source set is still
+`1811e04d...ead411`, recomputed file by file against the repository tree, and the
+frozen worker protocol authority ticket is still `POSTP1-001V2A-PAD4-R2`. The
+116-module manifest keeps its `PRE_I2_CONFORMANCE_FIXTURE_AND_PROVENANCE` role at
+`674b006a...3aadbb8` and is still not production authority; the candidate worker
+universe is 120 modules at `7ffbf157...a44e8e`, unchanged because the R4
+controller is parent-side and outside the worker-visible universe. The reviewed
+third-party registry is unchanged at `23e4f1d8...6298a6`, and the canonical
+rejections the reused protocol keeps enforcing are named by the exact reason
+identifiers `protocol_r1` and `protocol_r2` raise, with the one
+request-transport-only entry scope-qualified rather than implying a response-side
+rejection that does not exist. Repair A's `-I -S -B -X
+pycache_prefix=<fresh empty unique namespace>` launch, Repair B's frozen source
+authority, Repair C's trusted controller authority context and three-way
+agreement — now guaranteed through the lifetime of the returned authority, not
+only through admission — and Repair D's third-party semantic and
+installed-content authority are all preserved. The compiled root-binding witness,
+the root-cell prohibition, the closed AST store-use grammar, the exact
+eleven-owner census and graph and the direct dependency-body requirement are
+preserved and freshly parent-bound. No ETF calendar production code was
+modified: `etf_publication_calendar.py`, the calendar science, the
+`CalendarEvidenceStore` production implementation, the `common_etf_session_status`
+generator capture, the wrapper guards and the five direct dependency bodies are
+unchanged and remain I2 work, so full conformance is `NO` and the implementation
+stays blocked. Trusted persistence `02f96203...1a12772` is closed, certified,
+unchanged and not re-reviewed. Calendar science, PIT semantics, flow formulas,
+early-close rules, revision semantics, Stage-B metrics, strategy thresholds, risk
+logic, stop logic, the failed lineage, BTC-019 and Epic T are unchanged. No
+observation was collected and no real Stage-B evaluation ran.
+
+### Failed lineage
+
+`PAD4-R3` remains **FAILED / NON-CERTIFIED / UNUSED / IMMUTABLE / ZERO
+OBSERVATIONS**. Its namespace was not overwritten and not mutated: the focused R4
+suite restores the persisted `PAD4-R3` namespace and asserts it still reproduces
+`1fd9a2f9...d8bad0` with its 25 material children. The complete failed lineage is
+unchanged:
+
+```text
+PAD4     cc1b325a656f5b0be046d46700a4fcb9ad7ad94bf9b3440acac164677b809e78
+PAD4-R1  3415765f63a902e415e039ea71892087274541c1e8976a46d41c8f4afde37ebc
+PAD4-R2  68e6bd074a027900b2f3dde3da0a31b6d1cb2f1b9fc6c563e9b45bdc70e52561
+PAD4-R3  1fd9a2f9d5e5318505a6c48241f243b358261c100f67c4bc5b2c43ac9bd8bad0
+```
+
+### Determinism and validation
+
+The R4 parent reproduces byte-identically under a fresh process, a reversed child
+registry order, `PYTHONHASHSEED` `0`, `1` and `8675309`, an alternate working
+directory and a fresh output directory, and every file written to that fresh
+directory is byte-identical to the frozen namespace. No canonical byte depends on
+object identity, a memory address, dict insertion accident, a temporary
+filesystem path, the process identifier or `WeakKeyDictionary` identity. The
+return-state audit records only names, scopes, types, counts and fixed probe
+outcomes; it records the *names* of every returning class member but the return
+mechanism of only the declared caller-facing material, so editing a diagnostic
+cannot move a child hash while adding an undeclared member still does. The launch
+census keys each inherited-helper row on the resolved callable and its qualified
+name rather than on the module attribute pointing at it, so a diagnostic
+re-export cannot move the parent hash either, which a regression asserts
+directly.
+
+Validation used CPython 3.12.14 and `cryptography 50.0.1` under `.venv312`, the
+only 3.12.14 environment carrying the five exact reviewed distributions. The
+focused `POSTP1-001V2A-PAD4-R4` suite is **181 passed**. The combined
+PAD4-R4/PAD4-R3/PAD4-R2/PAD4-R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1 proof-architecture
+suite is **1009 passed**. The wider calendar, ETF, flow,
+trusted-persistence, corpus and prospective regression over all 20
+`etf`/`calendar`/`flow`/`trusted`/`corpus`/`prospective` test modules is
+**1821 passed** with 3 explained skips against
+1824 collected. The full repository suite was **NOT RUN**: no
+production behaviour outside the new pre-data controller changed, no wider
+regression failed, and no concrete review risk justified it, so the historical
+5,202-passed / 3-skipped baseline remains current. `python -m compileall
+btc_predictor etf_calendar_worker` and `git diff --check` both passed.
+
+Final classification is
+`ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_READY_FOR_FINAL_XHIGH_REVIEW`.
+
+R4 is **NOT certified**. It is a frozen pre-data candidate awaiting its own
+independent exact-hash final xHigh proof-architecture review,
+`POSTP1-002V2A-PAD4-R4`. Successful implementation authorizes only that review.
+`POSTP1-001V2A-I2`, `POSTP1-001V2R1`, `POSTP1-003R3` and `POSTP1-004` remain
+**BLOCKED**, prospective collection remains **NOT AUTHORIZED**, observations
+remain **0**, calendar certification remains **NO**, BTC-019 remains untouched
+with its sealed sample unopened, and Epic T is unchanged. Only an independent
+exact-hash **PASS** of `POSTP1-002V2A-PAD4-R4` may make `POSTP1-001V2A-I2`
+dependency-satisfied.
 
 ## Next EPIC X tasks
 
@@ -5042,6 +5424,7 @@ remains blocked.
 | POSTP1-002V2A-PAD4-R2 | independent exact-hash final xHigh proof-architecture review of `68e6bd07...e52561` | COMPLETE / FAIL — AUTHORITATIVE LAUNCH / ADMISSION BYPASS; PRE-EXECUTION BOOTSTRAP BINDING, FRESH-EXEC ISOLATION AND REPAIRS A/B/C/D VALID |
 | POSTP1-001V2A-PAD4-R3 | bounded admission-binding correction that removes the generic outcome/admission/evidence composition from the production scientific API and folds preverification, launch, validation, admission and affirmative-evidence construction into one closed `run_isolated_scientific_request` operation, frozen at `1fd9a2f9...d8bad0` | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R3 | independent exact-hash final xHigh proof-architecture review of `1fd9a2f9...d8bad0` | COMPLETE / FAIL — CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY |
-| POSTP1-001V2A-PAD4-R4 | `FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1`: bounded post-admission authoritative return-state immutability and material-child consistency correction | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-001V2A-PAD4-R4 | `FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1`: bounded post-admission correction that stores the admitted response, result and affirmative evidence as one immutable `FrozenAuthoritySnapshot` tuple of canonical bytes per admitted execution, binds the exact result digest to those bytes, exposes no class member that hands the snapshot out, serves every caller-facing mapping as a fresh detached decode, and refuses subclassing outright because the closure-private binding container resolves a key by equality rather than identity, frozen at `ae25c246...6e65bc` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4-R4 | independent exact-hash final xHigh proof-architecture review of `ae25c246...6e65bc` | NOT STARTED / DEPENDENCY-SATISFIED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
