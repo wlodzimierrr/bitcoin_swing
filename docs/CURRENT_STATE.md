@@ -338,14 +338,14 @@ PAD4-R3 candidate status =
 FAILED / NON-CERTIFIED / UNUSED / IMMUTABLE / ZERO OBSERVATIONS
 
 POSTP1-001V2A-PAD4-R4 =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL XHIGH
 PROOF-ARCHITECTURE REVIEW
 
 POSTP1-001V2A-PAD4-R4 task =
 FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1
 
 ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1 (PAD4-R4) =
-FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_REVIEW
+FROZEN_PRE_DATA_CANDIDATE_FAILED_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_PROOF_ARCHITECTURE_REVIEW
 
 frozen admitted return-state isolated scientific worker decision hash =
 ae25c2468972725a0ebd2f7742a532f3ec616c2e2cc8e94d93b3de46f86e65bc
@@ -404,15 +404,15 @@ container's mutability and equality-keyed lookup are disclosed explicitly rather
 than implied away
 
 PAD4-R4 construction authority =
-STRENGTHENED, NOT WEAKENED; because the binding container resolves a key by
-__hash__/__eq__ rather than by identity, a subclass that spoofed both would
-resolve to ANOTHER execution's admitted snapshot and report its authority while
-carrying none of its own. Subclassing the authoritative execution is therefore
-REFUSED OUTRIGHT at class-creation time. Only a subclass can mount that route,
-because only a subclass inherits the accessors that would expose a snapshot. The
-reviewed PAD4-R3 controller accepted such a subclass and refused only its
-accessors, and a control regression drives the attack against the preserved R3
-controller to keep that statement honest
+INVALID AT ONE BOUNDED RECEIVER-IDENTITY EDGE; subclassing is refused outright,
+but a distinct unrelated caller-defined object can reuse the public property and
+method descriptors from AuthoritativeScientificExecution and supply equality /
+hash behaviour matching a legitimate admitted execution. The equality-keyed
+WeakKeyDictionary lookup then resolves that forged receiver to the legitimate
+execution's FrozenAuthoritySnapshot. The reproduced object is neither an
+AuthoritativeScientificExecution instance nor a subclass, and the reproduction
+uses no closure-cell recovery, weakref callback access, module mutation or
+private API
 
 PAD4-R4 reflection posture =
 REFLECTIVE RECOVERY OF THE CLOSURE-PRIVATE STORE IS NOT CLAIMED IMPOSSIBLE;
@@ -464,24 +464,77 @@ accessor reads the frozen field it is declared to read. It is embedded in
 caller_visible_copy_isolation_rule and therefore parent-hash load-bearing
 
 PAD4-R4 construction authority =
-UNCHANGED from PAD4-R3; direct construction, __new__ bypass and subclassing
-still yield an object whose every accessor refuses, the capability-owning
-factory is still deleted after one use, and no separately composable admission,
-snapshot-store or affirmative-evidence surface exists
+DIRECT CONSTRUCTION REFUSED; __new__ CONSTRUCTION REFUSED; UNSUPPORTED SUBCLASS
+REFUSED; DISTINCT EQUAL-LOOKING UNRELATED CALLER OBJECT INCORRECTLY ACCEPTED /
+P0; LIVE MUTABLE SNAPSHOT EXPOSED BY A SUPPORTED ACCESSOR = NO. The exact gap is
+unrelated descriptor reuse combined with equality-keyed lookup without exact
+canonical receiver-identity enforcement. The capability-owning factory remains
+deleted after one use, and no separately composable admission, snapshot-store
+or affirmative-evidence surface exists
 
 POSTP1-001V2A-PAD4-R4 result =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL XHIGH
 PROOF-ARCHITECTURE REVIEW
 
 ETF calendar isolated scientific worker R4 execution classification =
-ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_READY_FOR_FINAL_XHIGH_REVIEW
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_REQUIRES_FIX
 
 POSTP1-002V2A-PAD4-R4 =
-NOT STARTED / DEPENDENCY-SATISFIED
+COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID
 
 PAD4-R4 candidate status =
-FROZEN / PRE-DATA / NOT CERTIFIED / UNUSED / ZERO OBSERVATIONS / AWAITING ITS
-OWN INDEPENDENT EXACT-HASH FINAL XHIGH REVIEW
+FAILED / NON-CERTIFIED / UNUSED / IMMUTABLE / ZERO OBSERVATIONS
+
+PAD4-R4 P0 invariant =
+A DISTINCT CALLER-CREATED OBJECT CAN RESOLVE AND PRESENT ANOTHER EXECUTION'S
+ADMITTED AUTHORITY
+
+PAD4-R4 defect classification =
+BOUNDED R4 CONSTRUCTION / AUTHORITY-BINDING DEFECT; the immutable canonical
+snapshot mechanism itself did not fail, caller-visible copy isolation remains
+valid, and a new proof-architecture decision is not presently indicated
+
+PAD4-R4 reviewed immutable-snapshot result =
+FrozenAuthoritySnapshot tuple-like immutable authority storage; no
+authority-bearing mutable container inside the snapshot; canonical response,
+result and affirmative-evidence bytes PASS; result, response and evidence
+digests reproduce their frozen bytes
+
+PAD4-R4 reviewed caller-copy isolation =
+top-level result, nested mapping, nested sequence, response and evidence
+mutations ISOLATED; cross-accessor aliasing ABSENT; temporary parser-state alias
+ABSENT; subsequent reads after mutation return ORIGINAL ADMITTED STATE; the
+preserved PAD4-R3 mutable-return-state defect independently reproduced as the
+control
+
+PAD4-R4 reviewed proof reproduction =
+expected and recomputed parent
+ae25c2468972725a0ebd2f7742a532f3ec616c2e2cc8e94d93b3de46f86e65bc;
+30/30 material children reproduce and are parent-bound; 20/30 R3 carried
+children are byte-identical; fresh rebuilt namespace is 32/32 files
+byte-identical; parent determinism passes under PYTHONHASHSEED 0, 1 and 8675309,
+reversed child order, alternate cwd and fresh process/output; all eleven
+representative material mutations moved both owning child and parent hashes
+
+PAD4-R4 preserved review scope =
+one supported authority-bearing flow YES; separate admission surface NO;
+separate evidence-escalation surface NO; failed PAD4-R2/R3 evidence becomes R4
+authority NO; bootstrap members 4/4 at 1811e04d...ead411; worker package
+unchanged; PRE-I2 fixture 116 modules at 674b006a...3aadbb8; worker candidate 120
+modules at 7ffbf157...a44e8e; no runtime live-authority derivation; Repairs A,
+B, C through canonical returned-authority lifetime and D PASS; third-party
+registry 23e4f1d8...6298a6, 5/5 distributions and 2,858 installed-content rows;
+compiled root witness, root-cell prohibition, closed grammar, 11/11 owner
+census, owner graph and direct-body rule PASS or PRESERVED
+
+PAD4-R4 successor governance =
+NO PAD4-R5 CREATED; NO IMPLEMENTATION TICKET IS DEPENDENCY-SATISFIED BY THIS
+FAIL. Next required action is a governance / architecture decision on the
+bounded R4 construction-identity defect before any successor implementation
+ticket is authorized. Future correction must make authority lookup identity-safe
+or make every authority-bearing descriptor/accessor verify exact canonical
+controller-owned execution identity, with regression coverage for non-subclass
+descriptor reuse by an unrelated equal/hash-equivalent caller object
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1125,24 +1178,21 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R4 is
-  **IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH
+  **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH
   PROOF-ARCHITECTURE REVIEW** at `ae25c246...6e65bc` with 30 mechanically
   enumerated parent-bound children, 20 of them byte-identical to the reviewed
   PAD4-R3 children, asserted mechanically against the persisted PAD4-R3
-  namespace. It is a bounded correction of the POSTP1-002V2A-PAD4-R3
-  return-state / authority-container defect and is deliberately **not** a PAD5:
-  the admitted response, result and affirmative evidence are stored only as
-  immutable canonical JSON bytes and immutable scalars, the bound result digest
-  is SHA-256 over those exact bytes, and `result`, `response` and
-  `scientific_evidence` are fresh detached decodes on every call, so no caller
-  mutation — top-level, nested mapping or nested sequence — can change what an
-  admitted execution represents. The immutable snapshot and its mutable
-  closure-private binding container are named separately throughout, the
-  container's equality-keyed lookup is disclosed, and subclassing the
-  authoritative execution is refused outright, which strengthens the reviewed
-  PAD4-R3 construction authority rather than weakening it. R4 is **NOT
-  certified**; it awaits its own independent exact-hash final xHigh review,
-  POSTP1-002V2A-PAD4-R4.
+  namespace. Its immutable canonical snapshot and caller-visible copy isolation
+  passed review: response, result and evidence remain frozen as canonical bytes,
+  their digests reproduce, and every caller-facing mapping is a fresh detached
+  decode. The candidate nevertheless fails because a distinct unrelated
+  caller-defined object can reuse the public authority-bearing descriptors and
+  supply equality/hash behaviour matching a legitimate execution; the
+  equality-keyed `WeakKeyDictionary` then resolves the forged receiver to the
+  legitimate execution's snapshot. This is a **BOUNDED R4 CONSTRUCTION /
+  AUTHORITY-BINDING DEFECT**, not a failure of the snapshot mechanism. R4 is
+  failed, non-certified, unused, immutable and at zero observations. No PAD4-R5
+  exists or is authorized.
 
   POSTP1-001V2A-PAD4-R3 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at `1fd9a2f9...d8bad0`
@@ -1200,29 +1250,36 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   universe is 120 modules. No ETF calendar production code changed, the
   candidate is at zero observations, and certified trusted persistence
   `02f96203...1a12772` is unchanged
-- **Last completed review:** POSTP1-002V2A-PAD4-R3,
-  **COMPLETE / FAIL — CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY**,
+- **Last completed review:** POSTP1-002V2A-PAD4-R4,
+  **COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID**,
   execution classification
-  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R3_REQUIRES_FIX`. Admission itself
-  succeeds correctly, but the returned authoritative execution exposes
-  result/response mappings whose post-admission contents can be changed by
-  caller mutation, so live authoritative state can diverge from the exact bound
-  result digest. This is a **BOUNDED RETURN-STATE / AUTHORITY-CONTAINER DEFECT**,
-  not a bootstrap-source completeness, bootstrap pre-execution binding,
-  process-isolation, bytecode-binding, source-authority, third-party
-  installed-content or same-process runtime-object attestation failure, and it
-  does not require a worker-protocol redesign. The review established exactly
-  one supported authority-bearing scientific flow; failed PAD4-R2 evidence
-  cannot become R3 authority; stable bootstrap-source drift does not execute
-  before refusal; and bootstrap pre-execution binding, Repairs A and B, Repair C
-  through admission, Repair D, the compiled root witness, closed store grammar,
-  exact eleven-owner graph and direct dependency-body rule remain valid. Repair
-  C's trusted controller/context binding remains valid through admission, but
-  the returned post-admission result is not sufficiently immutable. The review
-  itself made no repository changes; the three canonical documentation files
-  had pre-existing uncommitted implementation-handoff modifications at review
-  startup
-- **Preceding completed review:** POSTP1-002V2A-PAD4-R2, whose blocking finding
+  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_REQUIRES_FIX`. The exact P0 is
+  that a distinct caller-created object can resolve and present another
+  execution's admitted authority. The object is not an
+  `AuthoritativeScientificExecution` instance or subclass and uses no
+  closure-cell recovery, weakref callback, module mutation or private API. The
+  root cause is equality/hash-keyed `WeakKeyDictionary` resolution combined
+  with authority-bearing descriptors that do not verify exact canonical
+  receiver identity. Direct construction, `__new__` construction and unsupported
+  subclassing refuse; unrelated descriptor reuse with an equal/hash-equivalent
+  receiver is incorrectly accepted. The immutable canonical snapshot mechanism,
+  caller-visible copy isolation, one supported authority-bearing flow,
+  bootstrap binding, fresh-exec isolation, Repairs A/B/C/D, worker protocol,
+  source and third-party authority, compiled root witness, closed store grammar,
+  exact eleven-owner graph and direct-body rule remain valid. A new proof
+  architecture is not presently indicated, but no PAD4-R5 is automatically
+  created and no implementation ticket is dependency-satisfied by this fail
+- **Preceding completed review:** POSTP1-002V2A-PAD4-R3,
+  **COMPLETE / FAIL — CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY**,
+  whose bounded mutable-return-state defect R4 corrects and the R4 review
+  independently reproduced as its control. Admission succeeds correctly in R3,
+  but caller mutation can change returned authoritative response/result contents
+  after admission so live state diverges from the bound result digest. This is a
+  **BOUNDED RETURN-STATE / AUTHORITY-CONTAINER DEFECT**; bootstrap pre-execution
+  binding, Repairs A and B, Repair C through admission, Repair D, the compiled
+  root witness, closed store grammar, exact eleven-owner graph and direct
+  dependency-body rule remain valid
+- **Earlier completed review:** POSTP1-002V2A-PAD4-R2, whose blocking finding
   POSTP1-001V2A-PAD4-R3 now corrects,
   **COMPLETE / FAIL — AUTHORITATIVE LAUNCH / ADMISSION BYPASS**, execution
   classification `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R2_REQUIRES_FIX`.
@@ -1255,31 +1312,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
   implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
   POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. Collection is
-  **NOT AUTHORIZED** and observations remain **0**. POSTP1-001V2A-PAD4-R4 is
-  implementation-complete but **AWAITING** its independent exact-hash final
-  xHigh review, and POSTP1-001V2A-PAD4-R3 is implementation-complete but
-  **FAILED** review, so no certified production isolated-worker authority is
-  available. Only an independent exact-hash **PASS** of POSTP1-002V2A-PAD4-R4
-  may make POSTP1-001V2A-I2 dependency-satisfied. Calendar certification is
-  **NO**, no real Stage-B evaluation ran, and I2 must not start
-- **Next dependency-satisfied ticket:** `POSTP1-002V2A-PAD4-R4`, the
-  independent exact-hash final xHigh proof-architecture review of the frozen
-  pre-data candidate `ae25c246...6e65bc`. The review must independently
-  regenerate that exact parent hash and all 30 material children from the single
-  builder registry, confirm mechanically that the 20 children claimed
-  byte-identical to PAD4-R3 really are, and adversarially attack the frozen
-  invariant: after successful admission, no caller mutation of `result`,
-  `response` or `scientific_evidence` — at the top level, in a nested mapping or
-  in a nested sequence — may change what the admitted execution represents, and
-  the bound result digest must permanently equal SHA-256 over the immutable
-  canonical result bytes the authority stores. It must also confirm that the
-  reviewed PAD4-R3 defect reproduces as a control, that no class member hands the
-  snapshot out, that subclassing and every other construction bypass refuses,
-  that the one supported authority-bearing flow and its construction authority
-  are unweakened, and that
-  bootstrap binding, fresh-exec isolation, Repairs A/B/C/D, the compiled root
-  witness, the closed store grammar, the exact eleven-owner graph and the direct
-  dependency-body rule are preserved. R4 is **not certified**. Do not start I2
+  **NOT AUTHORIZED** and observations remain **0**. POSTP1-001V2A-PAD4-R4 and
+  all earlier PAD4 candidates have **FAILED** review, so no certified production
+  isolated-worker authority is available. Calendar certification is **NO**, no
+  real Stage-B evaluation ran, and I2 must not start
+- **Next dependency-satisfied implementation ticket:** None. No PAD4-R5 or
+  replacement implementation ticket exists. **Next required action:** a
+  governance / architecture decision on the bounded R4 construction-identity
+  defect before any successor implementation ticket is authorized; do not
+  invent an identifier, start I2 or reopen the otherwise validated snapshot,
+  bootstrap, bytecode, third-party, worker-protocol or calendar-science layers
 - **Other ready tickets:** None. Calendar implementation, V2 correction,
   POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019 remains
   terminal and untouched with its sealed sample unopened, and Epic T is
@@ -1296,11 +1338,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   1824 collected. The full suite was **NOT RUN**: no production
   behaviour outside the new pre-data controller changed and no wider regression
   failed
-- **Latest review validation:** POSTP1-002V2A-PAD4-R3 used CPython 3.12.14 and
-  `cryptography 50.0.1`; `python -m compileall btc_predictor
-  etf_calendar_worker` passed and `git diff --check` passed. The full suite was
-  **NOT RUN**. The completed review report supplied no exact focused, combined
-  or wider counts, so none are attributed to this review
+- **Latest review validation:** POSTP1-002V2A-PAD4-R4 used CPython 3.12.14 and
+  `cryptography 50.0.1`; the focused R4 suite passed **181 tests in 388.31s**,
+  the combined PAD1 through PAD4-R4 proof-architecture suite passed **1,009
+  tests in 1,272.38s**, and the wider 20-module regression passed **1,821 tests
+  with 3 explained skips in 1,730.30s**. The expected and recomputed parent are
+  `ae25c246...6e65bc`; all 30/30 children reproduce and are parent-bound, the
+  20 claimed R3-carried children are byte-identical, and a fresh rebuild is
+  32/32 files byte-identical. Determinism and eleven representative material
+  mutation probes pass. `python -m compileall btc_predictor
+  etf_calendar_worker` and `git diff --check` passed. The full suite was **NOT
+  RUN** and the historical full-suite result is not attributed to this review
 - **Historical verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning` remains the last full-suite baseline and is still
   current because no production behaviour changed. The focused
@@ -1509,9 +1557,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commit:** POSTP1-001V2A-PAD4-R4
-  implementation commit `90fcf88a7be65bd43cefeb0eb766cccde766d6ae`
-  freezes the frozen-return-state pre-data candidate
+- **Last relevant implementation/review commits:** POSTP1-001V2A-PAD4-R4
+  implementation commit `90fcf88a7be65bd43cefeb0eb766cccde766d6ae` and
+  decision-record commit `1d6cfdb16361c9c25eadccf4977fd39cf335eaa0`
+  together freeze and record the frozen-return-state pre-data candidate
   `ae25c2468972725a0ebd2f7742a532f3ec616c2e2cc8e94d93b3de46f86e65bc` with 30
   mechanically enumerated parent-bound material children, 20 of them
   byte-identical to the reviewed PAD4-R3 children. It adds one new pre-data
@@ -1520,7 +1569,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   mutates no failed namespace, changes no ETF calendar production code, changes
   no worker-package byte and makes no certified production isolated-worker
   authority available. Its required independent exact-hash final xHigh review,
-  POSTP1-002V2A-PAD4-R4, has **not** begun. POSTP1-001V2A-PAD4-R3
+  POSTP1-002V2A-PAD4-R4, is now **COMPLETE / FAIL — AUTHORITATIVE EXECUTION
+  CONSTRUCTION BOUNDARY INVALID** because unrelated descriptor reuse combined
+  with equality-keyed authority lookup does not enforce exact receiver identity.
+  The review record is documentation-only, creates no review-fix commit or
+  successor ticket, and leaves every proof namespace and production file
+  unchanged. POSTP1-001V2A-PAD4-R3
   decision commit `02c48103df8f435f29cf073074f2c75259ff18f3` freezes the authority-closed pre-data
   candidate `1fd9a2f9...d8bad0`, which **failed** POSTP1-002V2A-PAD4-R3, its
   independent exact-hash final xHigh proof-architecture review, because returned
