@@ -1102,7 +1102,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   moved to the new post-Phase-1 EPIC X, whose first task freezes that corpus
   prospectively
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
-- **Current implementation frontier:** Phase-1 implementation is complete and
+- **Current implementation frontier:** Two post-Phase-1 workstreams now run
+  in parallel. [EPIC Y](execution/research_backtest_track_v1.md), adopted
+  2026-09-28 under
+  [RESEARCH_BACKTEST_POLICY_V1](policies/research_backtest_policy_v1.md), is the
+  non-certifying path to the first real-data backtest of the frozen champion.
+  It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
+  2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
+  X-bound file or anything under `data/` or `research_artifacts/`. It gates
+  nothing in EPIC X and certifies nothing. The rest of this field describes
+  EPIC X. Phase-1 implementation is complete and
   BTC-019 is terminal, so the frontier has moved to the new post-Phase-1
   workstream [EPIC X](execution/post_phase1_prospective_integration_evidence_v1.md).
   POSTP1-001, POSTP1-001R, POSTP1-001R2, POSTP1-001R3 and POSTP1-001R4 failed
@@ -1487,10 +1496,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   audit, material mutation sensitivity and namespace determinism. The
   pre-committed escalation rule remains: a same-family review failure requires
   a new proof-architecture decision and does not automatically create R6
-- **Other ready tickets:** None besides `POSTP1-002V2A-PAD4-R5`. Calendar
-  implementation, V2 correction, POSTP1-003R3, POSTP1-004 and collection remain
-  blocked; BTC-019 remains terminal and untouched with its sealed sample
-  unopened, and Epic T is unchanged
+- **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
+  `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
+  `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
+  `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
+  RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
+- **Other ready tickets:** In EPIC X, none besides `POSTP1-002V2A-PAD4-R5`.
+  Calendar implementation, V2 correction, POSTP1-003R3, POSTP1-004 and
+  collection remain blocked; BTC-019 remains terminal and untouched with its
+  sealed sample unopened, and Epic T is unchanged
 - **Latest implementation validation:** POSTP1-001V2A-PAD4-R5 used exclusive
   CPython 3.12.14 under `.venv312`; the entry probes reconfirmed weak mapping and
   weak-reference equality, weak-witness liveness/cleanup, spoofed `__class__`
@@ -1890,6 +1904,8 @@ BTC_REFERENCE_COMPOSITE_V1 = RESEARCH_INCONCLUSIVE
 BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
+RESEARCH_BACKTEST_POLICY_V1 = ADOPTED 2026-09-28 (per-venue, non-certifying;
+approves, ranks and promotes no reference)
 BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
 STRUCTURAL_GATE_DENOMINATOR_RESOLUTION = NEW_PROTOCOL_VERSION_REQUIRED
@@ -2605,6 +2621,26 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- EPIC Y's governance decision (2026-09-28, documentation-only) answered how to
+  reach a first real-data backtest without an approved canonical reference.
+  Answer: run each required venue separately, declare every result
+  non-certifying, freeze 2020-01-01..2025-12-31 data with a 2026-H1 holdout,
+  and forbid anything before 2020.
+  - It records a structural finding: without ETF flows the champion cannot
+    complete its flow score, so it cannot trade before US spot ETF flow
+    history (2024-01-11 onward) is warm.
+  - CVD is absent and the Rulebook §6.2 `ETF_CORE` fallback applies. Macro,
+    on-chain and liquidity inputs are declared unavailable and the core regime
+    fallback applies.
+  - Price bars are modelled as available at close, because the frozen BTC-162
+    owner refuses any positive delay and EPIC X binds it.
+  - The EPIC Y composer enforces Rulebook §24 `NO ADDING` directly. The
+    lifecycle-state (`DEFEND`) mapping that the EPIC P audit left open **remains
+    open**.
+  - EPIC Y is additive-only because the EPIC X 120-module source universe binds
+    the backtest, portfolio, feature, risk, signal, level, data, db, quant and
+    config modules. A fix that needs one of those modules therefore becomes a
+    cross-workstream decision while EPIC X candidates bind them.
 - EPIC X's source-replayability correction at `8915d991...fbfac7d7` resolves the
   four P1 findings recorded against `fd946a09...bedff` and passed POSTP1-002R5,
   the sixth independent exact-hash review, after review fix

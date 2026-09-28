@@ -12,6 +12,8 @@ documents mapped below.
 | [Rulebook v1.2](strategy/bitcoin_swing_predictor_rulebook_v1_2.md) | Strategy semantics and mathematics for v1.2 | Authoritative except scopes explicitly superseded by newer narrow versioned policies | Read only sections relevant to the ticket's formulas and invariants |
 | [PRICE_SOURCE_POLICY_V1](policies/price_source_policy_v1.md) | Versioned empirical price-source evidence and conclusion | Authoritative for its explicitly defined V1 price-source-policy scope; newer than provisional Rulebook source language | Read for canonical/reference-source, provenance, fallback, or price-data work |
 | [EPIC X — Prospective Integration Evidence](execution/post_phase1_prospective_integration_evidence_v1.md) | Post-Phase-1 prospective integration-evidence workstream status, dependencies, and acceptance criteria | Authoritative for EPIC X only; not Phase-1 execution authority and not BTC-019 authority | Read when implementing or reviewing a POSTP1-xxx ticket |
+| [EPIC Y — First Research Backtest](execution/research_backtest_track_v1.md) | Non-certifying first real-data backtest workstream (RBT-xxx) status, dependencies and acceptance criteria | Authoritative for EPIC Y only; not Phase-1, EPIC X or BTC-019 authority | Read when implementing or reviewing an RBT-xxx ticket |
+| [RESEARCH_BACKTEST_POLICY_V1](policies/research_backtest_policy_v1.md) | Per-venue non-certifying backtest rules: windows, holdout, replay availability, input fallbacks, additive-only isolation, reporting | Authoritative for its explicitly defined EPIC Y scope; does not modify PRICE_SOURCE_POLICY_V1 or the Rulebook | Read for any RBT-xxx ticket |
 
 ## Prospective Evidence Artifacts
 
@@ -62,7 +64,7 @@ For normal ticket implementation or review, load only:
 1. `/AGENTS.md`
 2. `/docs/INDEX.md`
 3. `/docs/CURRENT_STATE.md`
-4. the exact `BTC-XXX` ticket block
+4. the exact `BTC-XXX`, `POSTP1-xxx` or `RBT-xxx` ticket block
 5. direct dependency blocks when needed
 6. relevant Rulebook sections
 7. applicable narrow policy documents

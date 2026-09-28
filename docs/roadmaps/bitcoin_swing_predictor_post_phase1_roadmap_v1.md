@@ -193,6 +193,34 @@ post-Phase-1 workstream that creates it forward in time under
 qualifying observation is accumulated. It changes no threshold, does not reopen
 BTC-019, and does not authorize opening the sealed 2015-2019 sample.
 
+## 4.4 First research backtest (EPIC Y, non-certifying)
+
+The certification pack in §4.1 needs an approved canonical reference, and the
+only planned route to one runs through EPIC X, which includes open-ended
+prospective collection. Meanwhile the backtester has never replayed real data.
+[EPIC Y](../execution/research_backtest_track_v1.md), under
+[RESEARCH_BACKTEST_POLICY_V1](../policies/research_backtest_policy_v1.md), runs
+the frozen champion once per required venue and declares every result
+non-certifying. The sequence:
+
+```text
+replay availability + input inventory + entry/management composer
+        ↓
+historical backfill (2020-01-01 .. 2025-12-31; nothing earlier)
+        ↓
+freeze + preregistration
+        ↓
+first research backtest (three venues × three cost rungs)
+        ↓
+2026-H1 holdout, opened once
+```
+
+EPIC Y runs in parallel with EPIC X and gates nothing in it. When a canonical
+reference is eventually approved, the §4.1 certification pack re-runs the EPIC Y
+pipeline on that reference under its own authority; EPIC Y results never carry
+over as certification evidence. The composer EPIC Y builds is also the missing
+piece that Phase 2A live shadow will need.
+
 ---
 
 # 5. Phase 2A — Live Shadow Operation
