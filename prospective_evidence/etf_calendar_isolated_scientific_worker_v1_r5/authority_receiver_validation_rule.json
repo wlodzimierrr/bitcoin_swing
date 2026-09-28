@@ -1,0 +1,17 @@
+{
+  "built_in_type_slot_used": true,
+  "contract_version": "ETF_CALENDAR_AUTHORITY_RECEIVER_VALIDATION_RULE_V1_R5",
+  "definition_sha256": "5236af8cb19cb00d8dc21b5b18d8b9a242ee839e3271380047b620a6dae0526f",
+  "exact_type_guard_is_load_bearing": false,
+  "exact_type_guard_required": true,
+  "identity_safe_lookup_is_load_bearing": true,
+  "isinstance_used": false,
+  "receiver_class_attribute_used": false,
+  "receiver_validation_chokepoint": "_frozen",
+  "receiver_validation_gate": "type(receiver) is AuthoritativeScientificExecution",
+  "registry_occupancy_is_exposed_by_refusal": false,
+  "spoofed_class_property_is_irrelevant": true,
+  "subclass_refusal_is_load_bearing": false,
+  "subclass_refusal_preserved": true,
+  "uniform_refusal_error": "AuthoritativeExecutionConstructionError"
+}

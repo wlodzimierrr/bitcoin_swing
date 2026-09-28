@@ -1,0 +1,167 @@
+{
+  "all_authority_reading_methods_and_dunders_are_censused": true,
+  "all_construction_sites_are_censused": true,
+  "all_properties_are_censused": true,
+  "all_receiver_validation_gates_are_censused": true,
+  "all_snapshot_lookup_sites_are_censused": true,
+  "audit": {
+    "audit_version": "ETF_CALENDAR_CONSTRUCTION_IDENTITY_AUDIT_V1_R5",
+    "authoritative_execution_eq_is_object_eq": true,
+    "authoritative_execution_hash_is_object_hash": true,
+    "authority_bearing_members": [
+      "__repr__",
+      "admitted",
+      "authoritative_snapshot_proof",
+      "failure_reason",
+      "request_digest",
+      "response",
+      "result",
+      "scientific_evidence"
+    ],
+    "authority_bearing_properties": [
+      "admitted",
+      "failure_reason",
+      "request_digest",
+      "response",
+      "result",
+      "scientific_evidence"
+    ],
+    "authority_bind_capability_tests": [
+      "capability is not _capability"
+    ],
+    "authority_bind_count": 1,
+    "authority_bind_insertions": [
+      "_material[bucket] = entry"
+    ],
+    "authority_bind_snapshot_gate_calls": [
+      "verify_frozen_authority_snapshot(material)"
+    ],
+    "authority_lookup_uses_exact_identity": true,
+    "authority_reader_count": 1,
+    "bare_id_is_authority": false,
+    "bucket_index": "id(receiver)",
+    "closed": true,
+    "concurrency": "NOT_SUPPORTED_OUTSIDE_CURRENT_CONTRACT",
+    "dead_execution_bucket_removed": true,
+    "dead_execution_collected": true,
+    "descriptor_reuse_outcomes": {
+      "__repr__": "REFUSED",
+      "admitted": "REFUSED",
+      "authoritative_snapshot_proof": "REFUSED",
+      "failure_reason": "REFUSED",
+      "request_digest": "REFUSED",
+      "response": "REFUSED",
+      "result": "REFUSED",
+      "scientific_evidence": "REFUSED"
+    },
+    "direct_construction": "REFUSED",
+    "exact_class_unowned_outcomes": {
+      "__repr__": "REFUSED",
+      "admitted": "REFUSED",
+      "authoritative_snapshot_proof": "REFUSED",
+      "failure_reason": "REFUSED",
+      "request_digest": "REFUSED",
+      "response": "REFUSED",
+      "result": "REFUSED",
+      "scientific_evidence": "REFUSED"
+    },
+    "exact_owner_outcomes": {
+      "__repr__": "AUTHORITY_AVAILABLE",
+      "admitted": "AUTHORITY_AVAILABLE",
+      "authoritative_snapshot_proof": "AUTHORITY_AVAILABLE",
+      "failure_reason": "AUTHORITY_AVAILABLE",
+      "request_digest": "AUTHORITY_AVAILABLE",
+      "response": "AUTHORITY_AVAILABLE",
+      "result": "AUTHORITY_AVAILABLE",
+      "scientific_evidence": "AUTHORITY_AVAILABLE"
+    },
+    "exact_owner_still_resolves_after_collision_probe": true,
+    "exact_type_guard": "type(receiver) is canonical class",
+    "exact_type_guard_is_load_bearing": false,
+    "final_authority_predicate": "live_witness is receiver",
+    "findings": [],
+    "identity_comparison_is_load_bearing": true,
+    "identity_refusal_message_is_uniform": true,
+    "live_witness": "entry.witness()",
+    "lookup_cache_permitted": false,
+    "receiver_controlled_code_executed": [],
+    "receiver_controlled_code_outcomes": {
+      "__repr__": "REFUSED",
+      "admitted": "REFUSED",
+      "authoritative_snapshot_proof": "REFUSED",
+      "failure_reason": "REFUSED",
+      "request_digest": "REFUSED",
+      "response": "REFUSED",
+      "result": "REFUSED",
+      "scientific_evidence": "REFUSED"
+    },
+    "receiver_controlled_hash_or_equality_executed": false,
+    "receiver_controlled_operations_in_lookup": [],
+    "receiver_keyed_mapping": false,
+    "receiver_none_rejected": true,
+    "receiver_validation_gates": [
+      "execution is None",
+      "type(execution) is not AuthoritativeScientificExecution",
+      "live is not execution"
+    ],
+    "registry_fetch_count_in_authority_reader": 1,
+    "registry_fetches_in_authority_reader": [
+      "_material.get(bucket)"
+    ],
+    "same_bucket_different_live_witness": "REFUSED",
+    "snapshot_lookup_sites": [
+      {
+        "member": "__repr__",
+        "reader": "_frozen"
+      },
+      {
+        "member": "admitted",
+        "reader": "_frozen"
+      },
+      {
+        "member": "authoritative_snapshot_proof",
+        "reader": "_frozen"
+      },
+      {
+        "member": "failure_reason",
+        "reader": "_frozen"
+      },
+      {
+        "member": "request_digest",
+        "reader": "_frozen"
+      },
+      {
+        "member": "response",
+        "reader": "_frozen"
+      },
+      {
+        "member": "result",
+        "reader": "_frozen"
+      },
+      {
+        "member": "scientific_evidence",
+        "reader": "_frozen"
+      }
+    ],
+    "spoofed_class_outcomes": {
+      "__repr__": "REFUSED",
+      "admitted": "REFUSED",
+      "authoritative_snapshot_proof": "REFUSED",
+      "failure_reason": "REFUSED",
+      "request_digest": "REFUSED",
+      "response": "REFUSED",
+      "result": "REFUSED",
+      "scientific_evidence": "REFUSED"
+    },
+    "stale_cleanup_preserved_newer_entry": true,
+    "unsupported_subclass": "REFUSED",
+    "weakref_keyed_authority_mapping": false
+  },
+  "contract_version": "ETF_CALENDAR_CONSTRUCTION_IDENTITY_AUDIT_RULE_V1_R5",
+  "definition_sha256": "cc8e6548441ad84f763ec5dc6a47d5d9072a77fcf7053f75817b2661c1b607a5",
+  "hardcoded_equality_identity_claim_removed": true,
+  "identity_safety_is_behaviourally_computed": true,
+  "live_surface_is_mechanically_discovered": true,
+  "r4_descriptor_reuse_control_required": true,
+  "r5_descriptor_reuse_refusal_required": true
+}
