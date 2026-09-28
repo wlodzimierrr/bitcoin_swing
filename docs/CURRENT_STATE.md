@@ -536,6 +536,121 @@ or make every authority-bearing descriptor/accessor verify exact canonical
 controller-owned execution identity, with regression coverage for non-subclass
 descriptor reuse by an unrelated equal/hash-equivalent caller object
 
+PAD4-R4 successor governance status =
+ANSWERED by the PAD4-R4 construction-identity governance decision recorded in
+EPIC X; the review-time statement above is preserved as the input to that
+decision and is no longer the current successor state
+
+ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_BINDING_CORRECTION_V1 =
+GOVERNANCE / ARCHITECTURE DECISION COMPLETE — BOUNDED PAD4 SUCCESSOR IS
+JUSTIFIED
+
+governance decision type =
+DOCUMENTATION-ONLY; no proof namespace frozen, no production code changed, no
+repository ticket identifier assigned to the decision itself
+
+governance decision answers =
+defect is exact-identity-local YES; immutable canonical snapshot mechanism
+itself failed NO; identity-safe binding closes the reviewed defect without
+reopening bootstrap, process isolation, bytecode, third-party authority, worker
+protocol or calendar science YES; one bounded PAD4 successor preferable to a new
+architecture family YES; implementation performed by the governance task NO
+
+governance cross-boundary sweep =
+ZERO concrete contradictions across all 16 preserved inputs; ZERO of the 9
+must-not-reopen failure families reopened. The closed store grammar, compiled
+root witness, 11-owner graph and direct-body rule cannot be violated because
+they audit etf_publication_calendar.py, not the controller
+
+exact receiver validation =
+SUPPORTING DEFENCE, not the boundary; it leaves lookup equality-keyed, verifies
+exact CLASS where the invariant needs exact INSTANCE, and after it every
+surviving receiver is separated from an owned execution only by object.__eq__
+identity semantics the class never asserts and no audit enforces. isinstance and
+__class__ spellings are defeated by a caller __class__ property; only
+type(receiver) is <canonical class> resists
+
+identity-safe authority registry =
+REQUIRED and load-bearing. A weak reference is NOT identity-keyed:
+WeakKeyDictionary.__getitem__ is self.data[ref(key)] and weakref.ref hashes by
+referent and compares by referent equality, so a hand-rolled ref-keyed dict is a
+NULL correction. Bare id() keying is strictly worse than the reviewed defect
+because address reuse after collection rebinds a dead execution's authority. The
+identity gate cannot live in the container; it must be an explicit `is`
+comparison against a live witness after retrieval
+
+selected semantic boundary =
+IDENTITY-SAFE SNAPSHOT LOOKUP IS THE SINGLE LOAD-BEARING BOUNDARY; pinned
+exact-type receiver validation is ALSO REQUIRED but declared NON-LOAD-BEARING
+DEFENCE IN DEPTH; both live at the one closure-local chokepoint all eight
+authority reads already funnel through, as a guard and never a cache
+
+PAD4-R5 bounded invariant (domain-scoped) =
+FOR ORDINARY PROJECT-OWNED CALLER CODE AND CALLER-DEFINED ORDINARY PYTHON
+OBJECTS — NO CLOSURE-CELL RECOVERY, NO PRIVATE-NAME REFLECTION, NO MODULE
+MUTATION — ONLY THE EXACT CONTROLLER-OWNED AUTHORITATIVE EXECUTION IDENTITY MAY
+RESOLVE THE FROZEN ADMITTED AUTHORITY BOUND TO THAT EXECUTION. The domain clause
+is part of the frozen text: an unqualified universal would be FALSE, because the
+module publishes AUTHORITY_STORAGE_NAME and the existing suite already walks
+__init__.__closure__ to recover the mutable binding container
+
+reviewed P0 split by this decision =
+P0-a UNEARNED RESOLUTION (a caller-created object that does not hold a
+legitimate execution resolves its authority) = CLOSED BY R5; P0-b RELAY (a
+caller-created object that DOES hold a legitimate execution re-presents its
+authority by delegation) = NOT CLOSABLE BY ANY IDENTITY GATE, recorded as a
+NAMED OPEN RESIDUAL, neither closed nor reclassified as a non-defect
+
+explicitly unchanged and NOT addressed by this decision =
+reflective recovery of the binding registry and of the construction capability
+through __init__.__closure__ (already declared, outside the stated threat
+model); the shape-not-provenance limit of the immutability gate together with
+the publicly constructible snapshot type; concurrency, which is neither
+supported nor tested (no threading, asyncio or lock anywhere in the controller;
+the worker launch is a blocking subprocess.run); and pickle safety, which is an
+incidental artifact of a deleted factory name
+
+PAD4-R5 true implementation cost =
+NOT AN IN-PLACE EDIT. PAD4-R4 is immutable and this lineage freezes
+generationally, so R5 is a NEW controller module plus a NEW frozen namespace
+that records the failed R4 digest and extends the failed-architecture and
+failed-lineage-controller tuples; the R4 namespace is neither overwritten nor
+mutated
+
+PAD4-R5 mandatory evidence-apparatus repairs =
+the audit currently emits
+authority_storage_binding_is_resolved_by_equality_not_identity as a HARDCODED
+LITERAL two lines below a probe-derived sibling, so it states the defect and
+passes anyway — R5 must make it behaviourally computed; NO receiver-identity or
+descriptor-reuse probe exists; the unrelated-spoof regression asserts only
+`not hasattr(spoof, name)` against a spoof that never reuses a descriptor and
+its comment restates the falsified premise, so it passes today, after the
+correction, and in the presence of the P0; there is NO checked-in reproducer
+(the unbound-descriptor call form appears zero times in both controller and
+suite); and the falsified __init_subclass__ docstring premise must be rewritten
+
+PAD4-R5 entry obligation =
+every dynamic CPython claim underpinning this decision was established by static
+reasoning plus stdlib probes taken OFF the frozen proof interpreter, so R5 must
+re-confirm them under an EXCLUSIVE .venv312 CPython 3.12.14 run before relying
+on them
+
+PAD4-R5 pre-committed escalation rule =
+if POSTP1-002V2A-PAD4-R5 fails anywhere in the same family — a caller-created
+object acquiring or carrying scientific authority, as at R2 fabricate, R3
+mutate and R4 impersonate — escalation to a NEW proof-architecture decision is
+AUTOMATIC, not discretionary
+
+POSTP1-001V2A-PAD4-R5 =
+NOT STARTED / DEPENDENCY-SATISFIED
+
+POSTP1-001V2A-PAD4-R5 task =
+BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1
+
+POSTP1-002V2A-PAD4-R5 =
+NOT STARTED / BLOCKED PENDING THE R5 IMPLEMENTATION; only an R5 review PASS may
+make POSTP1-001V2A-I2 dependency-satisfied
+
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -941,7 +1056,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-27
+- **Last updated:** 2026-09-28
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1191,8 +1306,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   equality-keyed `WeakKeyDictionary` then resolves the forged receiver to the
   legitimate execution's snapshot. This is a **BOUNDED R4 CONSTRUCTION /
   AUTHORITY-BINDING DEFECT**, not a failure of the snapshot mechanism. R4 is
-  failed, non-certified, unused, immutable and at zero observations. No PAD4-R5
-  exists or is authorized.
+  failed, non-certified, unused, immutable and at zero observations. The
+  bounded construction-identity governance decision has since been taken and
+  authorizes exactly one successor, **`POSTP1-001V2A-PAD4-R5`**, which is
+  **NOT STARTED**.
 
   POSTP1-001V2A-PAD4-R3 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at `1fd9a2f9...d8bad0`
@@ -1311,21 +1428,31 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   made
 - **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
   implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
-  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. Collection is
+  POSTP1-003R3 is **BLOCKED**, POSTP1-004 is **BLOCKED** and
+  POSTP1-002V2A-PAD4-R5 is **BLOCKED** pending the R5 implementation. Only an
+  R5 review **PASS** may make I2 dependency-satisfied; the R5 implementation
+  itself may not. Collection is
   **NOT AUTHORIZED** and observations remain **0**. POSTP1-001V2A-PAD4-R4 and
   all earlier PAD4 candidates have **FAILED** review, so no certified production
   isolated-worker authority is available. Calendar certification is **NO**, no
   real Stage-B evaluation ran, and I2 must not start
-- **Next dependency-satisfied implementation ticket:** None. No PAD4-R5 or
-  replacement implementation ticket exists. **Next required action:** a
-  governance / architecture decision on the bounded R4 construction-identity
-  defect before any successor implementation ticket is authorized; do not
-  invent an identifier, start I2 or reopen the otherwise validated snapshot,
-  bootstrap, bytecode, third-party, worker-protocol or calendar-science layers
-- **Other ready tickets:** None. Calendar implementation, V2 correction,
-  POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019 remains
-  terminal and untouched with its sealed sample unopened, and Epic T is
-  unchanged
+- **Next dependency-satisfied implementation ticket:**
+  **`POSTP1-001V2A-PAD4-R5`**, `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`,
+  **NOT STARTED / DEPENDENCY-SATISFIED**, authorized by the PAD4-R4
+  construction-identity governance decision. Its dependency
+  `POSTP1-002V2A-PAD4-R4` is `COMPLETE / FAIL`. R5 replaces equality-keyed
+  authority resolution with an identity-safe execution-to-snapshot binding,
+  adds pinned `type(receiver) is ...` receiver validation as declared
+  non-load-bearing defence in depth, repairs the evidence apparatus and lands
+  the missing non-subclass descriptor-reuse regression. It is a **new**
+  controller module and a **new** frozen namespace, not an edit of the
+  immutable R4. It must not start I2 and must not reopen the validated
+  snapshot, copy-isolation, bootstrap, bytecode, third-party, worker-protocol
+  or calendar-science layers
+- **Other ready tickets:** None besides `POSTP1-001V2A-PAD4-R5`. Calendar
+  implementation, V2 correction, POSTP1-003R3, POSTP1-004 and collection remain
+  blocked; BTC-019 remains terminal and untouched with its sealed sample
+  unopened, and Epic T is unchanged
 - **Latest implementation validation:** POSTP1-001V2A-PAD4-R4 used CPython
   3.12.14 and `cryptography 50.0.1` under `.venv312`; `python -m compileall
   btc_predictor etf_calendar_worker` passed and `git diff --check` passed. The

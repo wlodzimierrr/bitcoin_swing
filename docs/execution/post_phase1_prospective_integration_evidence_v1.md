@@ -5528,6 +5528,435 @@ certification remains **NO**. `POSTP1-001V2A-I2`, `POSTP1-001V2R1`,
 Epic T is unchanged. This review record is documentation-only: it makes no
 review fix, production-code change or frozen proof-namespace change.
 
+## PAD4-R4 construction-identity governance decision — `DECIDE_ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_BINDING_CORRECTION_V1`
+
+**Type:** governance / architecture decision only. It freezes no proof
+namespace, changes no production code and carries no repository ticket
+identifier of its own: `POSTP1-002V2A-PAD4-R4` assigns none, and this record
+does not invent one.
+**Decision model:** GPT-5.6 Sol — Extra High (xHigh)
+**Input:** `POSTP1-002V2A-PAD4-R4`,
+`COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID`
+**Reviewed failed candidate:** `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` at
+`ae25c2468972725a0ebd2f7742a532f3ec616c2e2cc8e94d93b3de46f86e65bc`, 30 material
+children, **FAILED / NON-CERTIFIED / UNUSED / IMMUTABLE / ZERO OBSERVATIONS**
+**Decision:** **BOUNDED PAD4 SUCCESSOR IS JUSTIFIED**
+**Authorized successor:** `POSTP1-001V2A-PAD4-R5` — and nothing else
+
+### The governance question
+
+Can the existing PAD4 architecture be closed by making authoritative execution
+binding exact-identity-safe, without reopening any previously closed boundary?
+
+The answer is **yes**, and the reasons are structural rather than optimistic.
+
+### Architecture assessment
+
+| Question | Answer |
+| --- | --- |
+| Immutable canonical snapshot mechanism remains valid | YES |
+| Caller-visible copy isolation remains valid | YES |
+| One closed authority-bearing flow remains valid | YES |
+| Bootstrap / Repair A / B / C / D remain valid | YES |
+| Defect is exact-identity-local | YES |
+| Identity-safe binding closes it without architecture redesign | YES |
+
+The defect is confined by five structural facts, each checked against the
+module rather than assumed. All eight authority-bearing reads funnel through
+one closure-local function, `_frozen`. The binding container has exactly one
+subscript read and exactly one capability-gated write, and
+`DECLARED_AUTHORITY_STORAGE_REFERENCES` is enforced by exact list equality, so
+no undeclared fourth reference can exist silently. `_frozen(execution: Any)`
+performs no `isinstance`, no exact-type comparison and no identity comparison
+before `_material[execution]`: the defect is a **missing predicate**, not a
+broken mechanism. The class defines neither `__eq__` nor `__hash__`, so genuine
+instances already carry `object`'s identity semantics, and the snapshot type,
+the immutability gate and the capability-gated write are all sound. Finally,
+the premise that sank the candidate — the `__init_subclass__` docstring claim
+that "an unrelated class can spoof equality just as easily but has no accessor
+to expose the snapshot through" — is load-bearing nowhere else: no contract,
+audit, digest or child artifact derives from it.
+
+A cross-boundary sweep over all sixteen preserved inputs found **zero**
+concrete contradictions, and over the nine must-not-reopen failure families
+found **zero** reopened. The two highest-risk inputs resolve on verified
+mechanism rather than assurance. Caller-visible copy isolation survives because
+freshness is enforced syntactically, from each accessor's own `ast.Return` at
+scope depth three, while an identity gate sits one level up inside `_frozen`,
+leaving every accessor return expression unchanged. The closed store grammar,
+compiled root witness, eleven-owner graph and direct dependency-body rule
+cannot be violated at all, because they audit a different module:
+`CALENDAR_SOURCE` resolves to `etf_publication_calendar.py`, and the single
+grammar call this lineage makes is fed that calendar source, not the
+controller's own.
+
+### Correction class A — exact receiver validation: SUPPORTING DEFENCE
+
+Requiring every authority-bearing descriptor to prove its receiver is of the
+exact canonical execution class **blocks the reproduced route**, and it removes
+the falsified premise's load. It is **not sufficient as the boundary**, for
+three reasons.
+
+It is a type assertion, not an authority assertion: it narrows *who may ask*
+the store and leaves *how the store decides* equality-keyed, satisfying neither
+disjunct of the mandated direction. Exact class is strictly weaker than exact
+instance — `__new__` bypass, `object.__new__`, `copy.copy` and `copy.deepcopy`
+all yield objects for which the class predicate is true, after which refusal
+rests **solely** on `object.__eq__` identity semantics that the class never
+asserts and no audit enforces. That residual is invisible to the existing
+audits: the live-surface enumeration filters every dunder, and the incidental
+AST check that would catch a `def __eq__` is silenced by one line in
+`DECLARED_NON_MATERIAL_MEMBERS` — a hatch with an existing precedent — while
+the assignment form `__eq__ = _fn` is invisible to both. An ordinary
+value-semantics refactor, the most natural thing a maintainer adds to a
+result-like object, would therefore silently reopen the full P0 with no hostile
+code at all, from inside the *ordinary project-owned caller code* tier.
+
+Spelling is load-bearing and the obvious spelling is exploitable.
+`isinstance(receiver, Cls)` does **not** block the reproduced route: CPython
+falls back to reading `receiver.__class__`, so an ordinary caller class with a
+`__class__` property returning the canonical class, plus spoofed `__eq__` and
+`__hash__`, passes it and reproduces the P0 verbatim. `receiver.__class__ is
+Cls` fails the same way. Only `type(receiver) is <the canonical class>`, a
+type-slot pointer read, resists.
+
+### Correction class B — identity-safe authority registry: REQUIRED
+
+A weak reference is **not** identity-keyed, and this is the decisive finding.
+`WeakKeyDictionary.__getitem__` is literally `return self.data[ref(key)]`;
+`weakref.ref` hashes by referent and compares by **referent equality** while
+both referents are alive. A hand-rolled `weakref.ref`-keyed dict is therefore a
+**null correction** — it reproduces the identical defect. Two further CPython
+semantics constrain the design: a ref's hash is memoised at first use and
+raises `TypeError` if first taken after the referent dies, and refs are
+interned without a callback but not with one, so ref-object identity is not a
+stable primitive either.
+
+Identity is available only through the `is` comparison and `id()`, neither of
+which has an overridable protocol. No mapping keyed on the receiver can supply
+identity semantics, because `dict.__getitem__` unconditionally dispatches to
+the key type's `__hash__` and `__eq__`, both attacker-owned for a foreign
+receiver. **The identity gate therefore cannot live in the container; it must
+be an explicit `is` comparison performed after retrieval.** This yields a
+sharper requirement than "use identity": no receiver-controlled code may
+execute anywhere in the authority path.
+
+Bare `id()` keying is strictly worse than the reviewed defect. After a dead
+execution is collected its address can be reused by an unrelated object, which
+would then resolve the dead execution's authority — needing no equality spoof,
+no descriptor reuse and no knowledge of the canonical class, only allocation
+pressure a caller can grind deterministically. What closes it is a stored live
+witness dereferenced and compared with `is`, which demotes `id()` from a key to
+a non-authoritative bucket index.
+
+An identity-safe registry is therefore **REQUIRED**. The only alternatives are
+per-accessor receiver validation, which needs the identical machinery
+replicated at eight sites instead of one and strictly enlarges the proof
+surface, or a redesign of the public class surface, which is out of bounds.
+
+### Selected semantic boundary
+
+Identity-safe snapshot lookup is the **single load-bearing boundary**. Exact
+canonical receiver-type validation is **also required**, but is declared
+**non-load-bearing defence in depth** with its spelling pinned — it secures no
+invariant on its own. This is the honest answer to the dual-protection
+question: both are mandated, only one is the boundary, and the proof surface
+stays simple because both live at the one chokepoint.
+
+Frozen at governance level:
+
+```text
+FOR ORDINARY PROJECT-OWNED CALLER CODE AND CALLER-DEFINED ORDINARY PYTHON
+OBJECTS — NO CLOSURE-CELL RECOVERY, NO PRIVATE-NAME REFLECTION, NO MODULE
+MUTATION — ONLY THE EXACT CONTROLLER-OWNED AUTHORITATIVE EXECUTION IDENTITY MAY
+RESOLVE THE FROZEN ADMITTED AUTHORITY BOUND TO THAT EXECUTION.
+```
+
+Equivalently, within that domain:
+
+```text
+equality is never authority
+hash equivalence is never authority
+descriptor reuse is never authority
+subclassing is never authority
+caller construction is never authority
+
+exact controller-owned object identity is required
+```
+
+The domain clause is deliberate and is part of the frozen text, not an attached
+note. An unqualified universal would be **false** and would be exactly the
+silent threat-model expansion this architecture forbids: the module publishes
+`AUTHORITY_STORAGE_NAME = "_material"` with no `__all__`, and the existing test
+suite already walks `execution.__init__.__func__.__closure__` to recover the
+binding container and asserts that it is mutable. That same traversal reaches
+any successor registry, and the same cells still yield the construction
+capability. R4 failed because a stated-but-false premise sat in the record
+while the audit passed anyway; an unqualified successor invariant would repeat
+that failure one level up, in the governance record itself.
+
+Because the mechanically decidable predicate is narrower than the phrase
+"controller-owned" suggests, the operative form the implementation must satisfy
+is: *the frozen admitted authority resolves only for a receiver that IS, by
+Python `is`, the exact object passed to the single capability-gated bind, and
+only while that object is alive.*
+
+### What this decision does not claim
+
+The reviewed P0 has two halves, and this decision closes one of them.
+
+- **P0-a, unearned resolution** — a caller-created object that does **not** hold
+  a legitimate execution resolves that execution's authority. **R5 closes this.**
+  It is the reproduced defect.
+- **P0-b, relay** — a caller-created object that **does** hold a legitimate
+  execution re-presents that execution's authority by delegating to it. **No
+  identity gate can close this**, because resolution happens through the genuine
+  receiver. It is recorded here as a **named, explicitly open residual**, not as
+  closed and not as a non-defect. Deciding what it would take to close it means
+  stating what authority is and who verifies it, which is an architecture
+  decision this task is forbidden to invent.
+
+Also explicitly **unchanged and not addressed**, so nothing is silently
+inherited as fixed: reflective recovery of the binding registry and of the
+construction capability through `__init__.__closure__`, both already declared
+in the R4 children and both outside the stated threat model; the shape-not-
+provenance limit of the immutability gate together with the publicly
+constructible snapshot type; concurrency, which is neither supported nor tested
+— there is no threading, asyncio or lock anywhere in the controller and the
+worker launch is a blocking `subprocess.run`; and pickle safety, which is an
+incidental artifact of a deleted factory name rather than a designed defence.
+
+### Why a bounded successor rather than a new proof architecture
+
+The strongest argument for a new architecture is that R2, R3 and R4 are one
+family — a caller-created object acquiring or carrying authority, at fabricate,
+then mutate, then impersonate, each found with ordinary public-name Python and
+each classified bounded. That pattern is real and is recorded here as a
+governance fact rather than dismissed.
+
+It does not carry the decision. Each correction closed its predecessor's defect
+and was independently reproduced as having done so: R3 closed R2's admission
+bypass, and R4's immutable canonical snapshot and caller-visible copy isolation
+both **passed** independent review. The sequence converges rather than
+diverges. No preserved input breaks, no closed family reopens, the proof
+reproduction apparatus is untouched, and the correction requires no change to
+any declared member list, storage-reference declaration or accessor return
+expression. Repository authority itself already reached this classification:
+the completed review records a **BOUNDED R4 CONSTRUCTION / AUTHORITY-BINDING
+DEFECT** and states that a new proof-architecture decision is not presently
+indicated. Nothing uncovered here contradicts that record.
+
+**Pre-committed escalation rule.** If `POSTP1-002V2A-PAD4-R5` fails anywhere in
+this same family — a caller-created object acquiring or carrying scientific
+authority — escalation to a new proof-architecture decision is **automatic, not
+discretionary**. This rule is frozen now, before the successor is attempted, so
+that the judgement cannot be made after the fact.
+
+## POSTP1-001V2A-PAD4-R5 — `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`
+
+**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Authorized by:** the PAD4-R4 construction-identity governance decision above
+**Dependency:** `POSTP1-002V2A-PAD4-R4`,
+`COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID`
+**Implementation model:** GPT-5.6 Sol — Extra High (xHigh)
+**Bounded defect scope:** exact execution identity binding, authority registry
+semantics, receiver validation, construction-boundary audit completeness,
+missing regression coverage, and material-child consistency for those rules
+**Required review:** `POSTP1-002V2A-PAD4-R5`, independent exact-hash final xHigh
+proof-architecture review
+**Implementation commit:** NONE — not started
+**Frozen candidate:** NONE — not started
+
+The bounded invariant is the domain-scoped one frozen in the governance
+decision above. Its mechanically decidable operative form is:
+
+```text
+THE FROZEN ADMITTED AUTHORITY RESOLVES ONLY FOR A RECEIVER THAT IS, BY PYTHON
+`is`, THE EXACT OBJECT PASSED TO THE SINGLE CAPABILITY-GATED BIND, AND ONLY
+WHILE THAT OBJECT IS ALIVE.
+```
+
+### Scope
+
+R5 is limited to exact execution identity binding, authority registry
+semantics, receiver validation, construction-boundary audit completeness, the
+missing regression coverage and material-child consistency for those rules. It
+must not carry unrelated cleanup or refactoring.
+
+**Cost is not three edits.** `PAD4-R4` is immutable, and this lineage freezes
+generationally: R5 is a **new controller module** that re-authors the authority
+boundary, records the failed R4 digest, extends the failed-architecture and
+failed-lineage-controller tuples with R4's digest and relative path, and
+re-runs the child-artifact and parent-determinism proof apparatus into a **new
+frozen namespace**. The R4 namespace is not overwritten and not mutated.
+
+### Required semantic properties
+
+The governance decision specifies semantics, not code. A candidate must satisfy
+all of the following.
+
+1. **Identity, not equality.** Lookup succeeds if and only if the receiver *is*
+   the exact object bound at the single capability-gated write. `x ==
+   canonical` must be irrelevant; only `x is canonical` may satisfy the binding.
+2. **No receiver-controlled code in the authority path.** Nothing the receiver's
+   type controls — `__hash__`, `__eq__`, `__class__`, `getattr`, `bool`, `repr`
+   — may execute anywhere in the lookup. The permitted primitives are `id()`,
+   `is`, and a type-slot read.
+3. **The container is never keyed on the receiver.** Any receiver-keyed mapping
+   reintroduces the defect by construction.
+4. **One fetch, then identity.** Exactly one fetch into a local, then the `is`
+   comparison against the live witness. No second index between the liveness
+   check and the identity check.
+5. **`receiver is None` is rejected explicitly**, so a dead witness's `None` can
+   never match.
+6. **Liveness without retention.** The registry must not keep executions alive,
+   and must not lose a binding while its execution is alive.
+7. **Identifier reuse cannot rebind old authority.** If an identifier is used as
+   a bucket index it is non-authoritative; a live witness compared with `is`
+   must be what decides.
+8. **Cleanup is conditional and cannot lose live authority.** A cleanup path
+   must delete only the entry it was created for, so that ordering can never
+   remove a newer live execution's entry. Correctness must not depend on
+   deallocation ordering.
+9. **Sequential requests are independent**, in both directions, with a third
+   request afterwards rewriting neither.
+10. **Uniform refusal.** Every refusal mode raises the one construction error,
+    so refusal is not an occupancy oracle.
+11. **Receiver-type validation is required, pinned and declared.** The spelling
+    must be `type(receiver) is <the canonical class>`. `isinstance(receiver,
+    ...)` and `receiver.__class__ is ...` are **forbidden**: an ordinary caller
+    class defeats both with a `__class__` property. The ticket must record that
+    this gate is non-load-bearing defence in depth.
+12. **One chokepoint.** The gate belongs inside the single closure-local reader
+    that all authority reads already funnel through — as a **guard, not a
+    cache**; a memoised lookup would break caller-visible copy isolation, which
+    is the only route by which this correction could contradict a preserved
+    input. Per-accessor placement is refused: it inherits hand-maintained-list
+    fragility and would omit `__repr__`, which reads the snapshot while being
+    declared non-material.
+
+### Reject-on-sight designs
+
+Named so a candidate cannot be certified on a null correction:
+
+- a hand-rolled `weakref.ref`-keyed dict — `weakref.ref` hashes by referent and
+  compares by referent equality, so this is the same defect;
+- bare `id()` keying with no live-witness identity check — strictly worse than
+  the reviewed defect, because address reuse after collection resolves a dead
+  execution's authority with no spoofing at all;
+- keeping the equality-keyed container with a post-hoc `is` check — a
+  transitional shim only, never the final design, because receiver-controlled
+  `__hash__`/`__eq__` still run in the authority path and can raise, re-enter or
+  stall;
+- storing the snapshot in a `__slots__` entry — it creates a directly readable
+  and writable authority surface and trips the live-member audit.
+
+### Proof obligations
+
+| Case | Required outcome |
+| --- | --- |
+| Real controller-owned execution | AUTHORITY AVAILABLE |
+| Distinct equal/hash-equivalent unrelated object | REFUSED |
+| Descriptor reuse on an unrelated class | REFUSED |
+| Unbound property `fget` reuse | REFUSED |
+| Unbound snapshot-proof method reuse | REFUSED |
+| Foreign receiver with a spoofed `__class__` property | REFUSED |
+| `__repr__` on a foreign receiver | REFUSED |
+| Direct construction | REFUSED |
+| `__new__` construction | REFUSED |
+| Unsupported subclass | REFUSED |
+| Distinct exact-class non-owned object | REFUSED |
+| Object-identifier reuse after collection | CANNOT REBIND OLD AUTHORITY |
+| Sequential legitimate requests | INDEPENDENT |
+| Concurrent requests, if supported | INDEPENDENT |
+| Dead execution cleanup | SAFE |
+
+The exact-owner positive control must continue to work normally: `admitted`,
+`result`, `response`, `scientific_evidence` and `authoritative_snapshot_proof()`
+must all keep representing the admitted immutable snapshot. **The fix must not
+disable legitimate authority access.**
+
+### Mandatory evidence-apparatus repairs
+
+These are release-critical because the R4 apparatus is currently blind to this
+entire defect class.
+
+- The audit emits `authority_storage_binding_is_resolved_by_equality_not
+  identity` as a **hardcoded literal**, two lines below a probe-derived sibling:
+  the audit states the defect as a fact and passes anyway. R5 must invert it
+  into a **behaviourally computed** claim.
+- No receiver-identity or descriptor-reuse probe exists anywhere. The
+  construction probes hold only subclass, direct construction, forged capability
+  and three `__new__` bypass entries. Each row of the proof-obligation table
+  above must become a named probe.
+- The existing unrelated-spoof regression asserts only `not hasattr(spoof,
+  name)` against a spoof that **never reuses a descriptor**, and its comment
+  restates the falsified premise. It passes today, passes after the correction,
+  and passes in the presence of the P0. It must be replaced, not extended.
+- There is **no checked-in reproducer**: the unbound-descriptor call form
+  appears zero times in both the controller and its suite. R5 must land a
+  regression that **fails against the preserved R4 controller and passes against
+  R5**, driven as a control exactly as R4 drove the R3 defect.
+- The falsified `__init_subclass__` docstring premise must be **rewritten**, and
+  its replacement must assert only what a probe computes. Subclass refusal is
+  retained as defence in depth.
+- Audit completeness must be established against the **actual live
+  authority-bearing surface** — all authority-bearing properties and methods,
+  all internal snapshot lookup sites, all execution construction sites and all
+  receiver validation gates — and must not be inferred from a hand-maintained
+  allow-list. The current live-surface enumeration filters every dunder, so
+  `__eq__`/`__hash__` introduced by **assignment** are invisible to it; R5 must
+  close that blindness and assert that both remain `object`'s.
+
+### Entry obligation
+
+Every dynamic claim underpinning this decision — weak-reference equality and
+hash-after-death behaviour, reference interning, resolution of a spoofed
+receiver, identifier reuse after collection, cleanup ordering, and whether the
+proposed gate spelling is defeated by a `__class__`-property receiver — was
+established by static CPython reasoning and by stdlib probes taken **off the
+frozen proof interpreter**. R5 must **re-confirm them under an exclusive
+`.venv312` CPython 3.12.14 run** before relying on them. Concurrent use of that
+environment is known to produce spurious proof-architecture failures.
+
+### Material contracts
+
+Contracts materially equivalent to the following, all parent-bound. Exact
+decomposition may differ.
+
+```text
+authoritative_execution_identity_rule
+identity_safe_snapshot_binding_rule
+authority_receiver_validation_rule
+construction_identity_audit_rule
+```
+
+### Preservation
+
+Byte-identical carry-forward wherever semantics did not change. At minimum the
+reviewed R4 semantics for the immutable snapshot, caller-visible copy
+isolation, digest lifetime binding, bootstrap authority, source authority,
+third-party authority, process isolation, the worker protocol and static
+calendar authority are preserved. R5 must not replace or weaken the frozen
+snapshot type, the canonical response, result and evidence bytes, the fresh
+detached decoded accessors or digest reproduction from frozen bytes: that
+correction **passed** independent review.
+
+R5 must not reopen the R2 generic outcome-to-admission composition, the R3
+caller-mutable returned authority, same-process runtime-object closure
+attestation, the worker bootstrap architecture, the fresh pycache architecture,
+the bytecode/source binding architecture, third-party RECORD/content authority,
+the worker protocol or calendar science. The receiver gate must be a
+type/identity **comparison** and must not drift into inspecting closure
+contents at read time.
+
+### Stopping rule
+
+A successful R5 implementation authorizes **only** its independent exact-hash
+final xHigh proof-architecture review, `POSTP1-002V2A-PAD4-R5`. R5
+implementation may **not** authorize `POSTP1-001V2A-I2`. Only an R5 review
+**PASS** may make I2 dependency-satisfied.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -5591,5 +6020,8 @@ review fix, production-code change or frozen proof-namespace change.
 | POSTP1-002V2A-PAD4-R3 | independent exact-hash final xHigh proof-architecture review of `1fd9a2f9...d8bad0` | COMPLETE / FAIL — CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY |
 | POSTP1-001V2A-PAD4-R4 | `FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1`: bounded post-admission correction that stores the admitted response, result and affirmative evidence as one immutable `FrozenAuthoritySnapshot` tuple of canonical bytes per admitted execution, binds the exact result digest to those bytes and serves every caller-facing mapping as a fresh detached decode, frozen at `ae25c246...6e65bc`; its immutable snapshot and copy-isolation correction passed review, but unrelated descriptor reuse plus equality-keyed lookup invalidates receiver-identity binding | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R4 | independent exact-hash final xHigh proof-architecture review of `ae25c246...6e65bc` | COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID; BOUNDED R4 CONSTRUCTION-IDENTITY GOVERNANCE / ARCHITECTURE DECISION REQUIRED BEFORE ANY SUCCESSOR TICKET |
+| PAD4-R4 construction-identity governance decision | `DECIDE_ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_BINDING_CORRECTION_V1`: governance/architecture decision on the bounded R4 construction-identity defect; no repository identifier is assigned to the decision itself | COMPLETE / BOUNDED PAD4 SUCCESSOR IS JUSTIFIED — authorizes `POSTP1-001V2A-PAD4-R5` and nothing else |
+| POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of the R5 candidate | NOT STARTED / BLOCKED PENDING THE POSTP1-001V2A-PAD4-R5 IMPLEMENTATION |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
