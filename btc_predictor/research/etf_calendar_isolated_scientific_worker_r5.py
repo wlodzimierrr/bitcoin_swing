@@ -3194,26 +3194,13 @@ def isolated_scientific_worker_v1_r5_definition(
 def verify_definition(persisted: Mapping[str, Any]) -> None:
     if dict(persisted) != isolated_scientific_worker_v1_r5_definition():
         raise IsolatedScientificWorkerR5Error(
-            "persisted frozen-return-state isolated scientific worker decision "
+            "persisted exact-identity isolated scientific worker decision "
             "does not reproduce"
         )
     _verify_definition_digest(persisted)
 
 
 def _report_markdown(decision: Mapping[str, Any]) -> str:
-    owners = "\n".join(f"- `{owner}`" for owner in FROZEN_REPLAY_OWNERS)
-    lineage = "\n".join(f"- `{sha}`" for sha in FAILED_ARCHITECTURE_LINEAGE)
-    bootstrap = "\n".join(
-        f"{index}. `{path}`"
-        for index, path in enumerate(decision["worker_bootstrap_source_set"], start=1)
-    )
-    order = "\n".join(f"{step}" for step in AUTHORITATIVE_EXECUTION_ORDER)
-    mutations = "\n".join(
-        f"- `{name}`" for name in CLOSED_REVIEWED_RETURN_STATE_MUTATIONS
-    )
-    preserved = "\n".join(f"- `{name}`" for name in PRESERVED_VALID_PORTIONS)
-    verbatim = "\n".join(f"- `{name}`" for name in VERBATIM_PAD4_R3_CHILDREN)
-    storage = "\n".join(f"- `{name}`" for name in FROZEN_AUTHORITY_FIELDS)
     children = "\n".join(
         f"- `{name}` — `{sha}`"
         for name, sha in sorted(decision["child_definition_sha256"].items())
@@ -3225,128 +3212,50 @@ def _report_markdown(decision: Mapping[str, Any]) -> str:
 **Final classification:** `{decision["final_classification"]}`
 **Required review:** `{decision["required_review"]}`
 
-## What this corrects
+## Bounded correction
 
-`{FAILED_PAD4_R3_REVIEW}` failed the `PAD4-R3` candidate
-`{FAILED_PAD4_R3_SHA256}` with:
+PAD4-R4 `{FAILED_PAD4_R4_SHA256}` remains failed, non-certified, unused,
+immutable and at zero observations. Its immutable canonical
+`FrozenAuthoritySnapshot`, fresh caller-visible decode isolation, response /
+result / affirmative-evidence digest lifetime binding, one supported
+authority-bearing flow, bootstrap pre-execution binding, fresh-exec process
+isolation, worker protocol, worker source authority, third-party installed-
+content authority, compiled root witness, closed store grammar, eleven-owner
+graph and direct dependency-body rule remain preserved.
 
-```text
-{FAILED_PAD4_R3_REVIEW_RESULT}
-```
-
-Admission itself was correct. The failure happened *after* successful admission:
-the closed flow stored its authority as a shallow copy whose `response` value was
-the live protocol-parser mapping and whose `result` value was that mapping's own
-nested `result` object, and handed both straight back. Mutating a returned
-mapping therefore rewrote the authority-bearing state of an admitted,
-affirmatively stamped execution, while the bound `result_digest` kept describing
-what had actually been admitted.
-
-This is a bounded return-state / authority-container correction. It is not a
-bootstrap, process-isolation, bytecode, source-authority, third-party-authority
-or worker-protocol correction, and it is not a `PAD5`.
-
-## The frozen rule
+R5 changes only authoritative execution construction identity. The operative rule
+is:
 
 ```text
-ONCE SCIENTIFIC ADMISSION SUCCEEDS, NO CALLER MUTATION MAY CHANGE THE
-AUTHORITATIVE RESPONSE, RESULT OR AFFIRMATIVE EVIDENCE REPRESENTED BY THAT
-ADMITTED EXECUTION.
+THE FROZEN ADMITTED AUTHORITY RESOLVES ONLY FOR A RECEIVER THAT IS, BY PYTHON
+is, THE EXACT OBJECT PASSED TO THE SINGLE CAPABILITY-GATED BIND, AND ONLY WHILE
+THAT OBJECT IS ALIVE.
 ```
 
-Equivalently: what was admitted is what the authority permanently represents,
-for the whole lifetime of the admitted execution.
+`id(receiver)` is only a non-authoritative integer bucket selector. One
+registry fetch yields a weak live witness plus the frozen snapshot. The
+load-bearing authority check is `live_witness is receiver`. The registry is not
+keyed by receiver or weakref, does not retain executions strongly, and its
+weakref cleanup deletes only the exact witness for which the callback was
+created. `type(receiver) is AuthoritativeScientificExecution` is required
+defence in depth and is not load-bearing.
 
-## The authority-bearing storage
+Relay remains an open residual and R5 makes no claim that it is closed.
 
-The authority stops being a Python container. These nine fields are the whole of
-what an admitted execution represents, and every one of them holds `bytes`,
-`str`, `bool` or `None`:
-
-{storage}
-
-There is therefore no nested mutable descendant to reach, and no read-only
-wrapper is used: an outer `MappingProxyType` over a mutable graph would leave
-every nested container writable and is explicitly **not** the mechanism. The
-canonical serialisation is the already reviewed worker protocol
-`{CANONICAL_AUTHORITY_ENCODER}` — no second canonical encoding was invented — and
-`{CANONICAL_AUTHORITY_DECODER}` produces a fresh, fully detached object graph on
-every mapping-like accessor call.
-
-## The closed authoritative order
-
-```text
-{order}
-```
-
-Affirmative evidence is constructed *from* the frozen snapshot, and the admitted
-execution is already frozen when it first becomes caller-visible. There is no
-window in which mutable admitted state is exposed and frozen afterwards.
-
-## Closed reviewed return-state mutations
-
-{mutations}
-
-## Authority mechanism
-
-Capability ownership and closed control flow, preserved exactly from the reviewed
-`PAD4-R3`, plus immutable canonical snapshot storage. Not naming, not a field
-value, not a dataclass identity, not a secret, not a signature, and not a
-defensive copy bolted onto an accessor. `{AUTHORITATIVE_SNAPSHOT_PROOF}()`
-reproduces the bound digests from the frozen bytes alone.
-
-## Preserved valid portions
-
-{preserved}
-
-## Children carried forward byte-identically from `PAD4-R3`
-
-{verbatim}
-
-## Worker bootstrap source set
-
-Unchanged from the reviewed `PAD4-R2` set carried through `PAD4-R3`, because this
-correction is entirely parent-side and post-admission.
-
-{bootstrap}
-
-**Bootstrap manifest digest:** `{decision["worker_bootstrap_manifest_digest"]}`
-
-## Source authority
-
-- PRE-I2 conformance fixture: {decision["pre_i2_project_source_module_count"]} modules
-  at `{decision["pre_i2_project_source_manifest_digest"]}`
-  (role `{decision["pre_i2_project_source_manifest_role"]}`)
-- Candidate worker source universe:
-  {decision["candidate_worker_source_module_count"]} modules at
-  `{decision["candidate_worker_source_manifest_digest"]}`
-- Third-party authority digest: `{decision["third_party_authority_digest"]}`
-
-## Preserved eleven replay owners
-
-{owners}
-
-## Failed architecture lineage — immutable, non-certified, unused
-
-{lineage}
-
-Trusted persistence `{CERTIFIED_DEPENDENCY_SHA256}` is closed, certified,
-unchanged and not re-reviewed by this decision.
-
-## Material children ({decision["material_child_count"]})
+## Material children
 
 {children}
 
-## Safety
+## Safety and authorization
 
-Observations remain **0**. No real Stage-B evaluation ran. The ETF calendar is
-**not** certified, no calendar production code changed, collection is **NOT
-AUTHORIZED**, `BTC-019` is untouched with its sealed sample unopened, and Epic T
-is unchanged.
+Observations remain zero. Real Stage-B is NO. Calendar authority is not
+certified. Prospective collection is not authorized. BTC-019 remains untouched
+and Epic T remains unchanged.
 
-Successful implementation authorizes only `POSTP1-002V2A-PAD4-R4`. It does
-**not** authorize `POSTP1-001V2A-I2`, `POSTP1-001V2R1`, `POSTP1-003R3`,
-`POSTP1-004` or any prospective collection.
+Successful R5 implementation authorizes only
+`POSTP1-002V2A-PAD4-R5`, the independent exact-hash final xHigh
+proof-architecture review. Only an R5 review PASS may make
+`POSTP1-001V2A-I2` dependency-satisfied.
 """
 
 
