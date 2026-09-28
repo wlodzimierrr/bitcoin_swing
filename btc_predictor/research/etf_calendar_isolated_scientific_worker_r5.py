@@ -104,36 +104,41 @@ import argparse
 import ast
 import inspect
 import json
+import gc
+import platform
 import shutil
 import subprocess
 import sys
 import textwrap
 import types
+from threading import Lock
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, NamedTuple, Sequence
-from weakref import WeakKeyDictionary
+from weakref import ref as weakref_ref
 
 from btc_predictor.research import etf_calendar_compiled_binding_witness as witness
 from btc_predictor.research import etf_calendar_isolated_scientific_worker as pad4
 from btc_predictor.research import etf_calendar_isolated_scientific_worker_r1 as r1
 from btc_predictor.research import etf_calendar_isolated_scientific_worker_r2 as r2
 from btc_predictor.research import etf_calendar_isolated_scientific_worker_r3 as r3
+from btc_predictor.research import etf_calendar_isolated_scientific_worker_r4 as r4
 from btc_predictor.research import etf_calendar_runtime_owner_attestation as attestation
 from btc_predictor.research import etf_calendar_store_capability_normal_form_r1 as narrow
 from etf_calendar_worker import protocol_r2 as protocol
 
 
 DECISION_VERSION = "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1"
-PROGRAM_TICKET = "POSTP1-001V2A-PAD4-R4"
-OUTPUT_NAMESPACE = "prospective_evidence/etf_calendar_isolated_scientific_worker_v1_r4"
-DEFINITION_FILENAME = "etf_calendar_isolated_scientific_worker_v1_r4_definition.json"
-REPORT_FILENAME = "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_REPORT.md"
+PROGRAM_TICKET = "POSTP1-001V2A-PAD4-R5"
+OUTPUT_NAMESPACE = "prospective_evidence/etf_calendar_isolated_scientific_worker_v1_r5"
+DEFINITION_FILENAME = "etf_calendar_isolated_scientific_worker_v1_r5_definition.json"
+REPORT_FILENAME = "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REPORT.md"
 STATUS = "FROZEN_PRE_DATA_AWAITING_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_REVIEW"
 FINAL_CLASSIFICATION = (
-    "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_READY_FOR_FINAL_XHIGH_REVIEW"
+    "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_READY_FOR_FINAL_XHIGH_REVIEW"
 )
 PROOF_STRATEGY = (
+    "EXACT_EXECUTION_IDENTITY_BINDING_PLUS_"
     "IMMUTABLE_CANONICAL_ADMITTED_SNAPSHOT_AUTHORITY_PLUS_"
     "AUTHORITATIVE_SCIENTIFIC_EXECUTION_CLOSURE_PLUS_"
     "BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_"
@@ -143,7 +148,7 @@ PROOF_STRATEGY = (
     "TRUSTED_CONTROLLER_AUTHORITY_CONTEXT"
 )
 REQUIRED_REVIEW = (
-    "POSTP1-002V2A-PAD4-R4_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_"
+    "POSTP1-002V2A-PAD4-R5_INDEPENDENT_EXACT_HASH_FINAL_XHIGH_"
     "PROOF_ARCHITECTURE_REVIEW"
 )
 
@@ -161,6 +166,12 @@ FAILED_PAD4_R3_EXECUTION_CLASSIFICATION = (
     "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R3_REQUIRES_FIX"
 )
 FAILED_PAD4_R2_SHA256 = r3.FAILED_PAD4_R2_SHA256
+FAILED_PAD4_R4_SHA256 = "ae25c2468972725a0ebd2f7742a532f3ec616c2e2cc8e94d93b3de46f86e65bc"
+FAILED_PAD4_R4_REVIEW = "POSTP1-002V2A-PAD4-R4"
+FAILED_PAD4_R4_REVIEW_RESULT = "FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID"
+FAILED_PAD4_R4_REVIEW_COMMIT = "9514d41ba9542e747dd2d35ec83d89dc73740a74"
+FAILED_PAD4_R4_GOVERNANCE_COMMIT = "6794a7354de4a5515b736d0291b4afd5dc61d902"
+FAILED_PAD4_R4_EXECUTION_CLASSIFICATION = "ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_REQUIRES_FIX"
 FAILED_PAD4_R1_SHA256 = r3.FAILED_PAD4_R1_SHA256
 FAILED_PAD4_SHA256 = r3.FAILED_PAD4_SHA256
 
@@ -218,8 +229,8 @@ CALENDAR_SOURCE = witness.CALENDAR_SOURCE
 CERTIFIED_DEPENDENCY_VERSION = witness.CERTIFIED_DEPENDENCY_VERSION
 CERTIFIED_DEPENDENCY_SHA256 = witness.CERTIFIED_DEPENDENCY_SHA256
 FAILED_ARCHITECTURE_LINEAGE = (
-    *r3.FAILED_ARCHITECTURE_LINEAGE,
-    FAILED_PAD4_R3_SHA256,
+    *r4.FAILED_ARCHITECTURE_LINEAGE,
+    FAILED_PAD4_R4_SHA256,
 )
 FAILED_CALENDAR_LINEAGE = witness.FAILED_CALENDAR_LINEAGE
 FROZEN_REPLAY_OWNERS = witness.FROZEN_REPLAY_OWNERS
@@ -239,7 +250,7 @@ _verify_definition_digest = narrow._verify_definition_digest
 #: path resolved under the certified project root so that every audit is
 #: reproducible from any working directory.
 CONTROLLER_RELATIVE_PATH = (
-    "btc_predictor/research/etf_calendar_isolated_scientific_worker_r4.py"
+    "btc_predictor/research/etf_calendar_isolated_scientific_worker_r5.py"
 )
 
 #: The deliberately non-production raw reproduction harness.  It is reused
@@ -255,17 +266,17 @@ RAW_REVIEW_HARNESS_RELATIVE_PATH = r3.RAW_REVIEW_HARNESS_RELATIVE_PATH
 #: is R4 authority and this module never delegates admission, freezing or
 #: evidence to them.
 FAILED_LINEAGE_CONTROLLER_MODULES: tuple[str, ...] = (
-    *r3.FAILED_LINEAGE_CONTROLLER_MODULES,
-    r3.CONTROLLER_RELATIVE_PATH,
+    *r4.FAILED_LINEAGE_CONTROLLER_MODULES,
+    r4.CONTROLLER_RELATIVE_PATH,
 )
 
 
-class IsolatedScientificWorkerR4Error(r3.IsolatedScientificWorkerR3Error):
+class IsolatedScientificWorkerR5Error(r4.IsolatedScientificWorkerR4Error):
     """Raised when the frozen-return-state worker architecture must refuse."""
 
 
 class AuthoritativeExecutionConstructionError(
-    r3.AuthoritativeExecutionConstructionError
+    r4.AuthoritativeExecutionConstructionError
 ):
     """Raised when authoritative scientific material is not controller-owned.
 
@@ -275,7 +286,7 @@ class AuthoritativeExecutionConstructionError(
     """
 
 
-BootstrapSourcePreVerificationError = r3.BootstrapSourcePreVerificationError
+BootstrapSourcePreVerificationError = r4.BootstrapSourcePreVerificationError
 
 
 def _revised(base: Mapping[str, Any], **overrides: Any) -> dict[str, Any]:
@@ -392,7 +403,7 @@ verify_current_production_expected_result = r3.verify_current_production_expecte
 # Repair C — the trusted controller authority context, R4 identity
 # ---------------------------------------------------------------------------
 
-AUTHORITY_CONTEXT_VERSION = "ETF_CALENDAR_SCIENTIFIC_WORKER_AUTHORITY_CONTEXT_V1_R4"
+AUTHORITY_CONTEXT_VERSION = "ETF_CALENDAR_SCIENTIFIC_WORKER_AUTHORITY_CONTEXT_V1_R5"
 AUTHORITY_CONSTRUCTION_REFREEZE = r3.AUTHORITY_CONSTRUCTION_REFREEZE
 FINAL_CALENDAR_AUTHORITY = r3.FINAL_CALENDAR_AUTHORITY
 REVIEW_CANDIDATE_CONTEXT = r3.REVIEW_CANDIDATE_CONTEXT
@@ -410,7 +421,7 @@ WORKER_PROTOCOL_AUTHORITY_TICKET = r3.WORKER_PROTOCOL_AUTHORITY_TICKET
 
 
 @dataclass(frozen=True)
-class ScientificWorkerAuthorityContext(r3.ScientificWorkerAuthorityContext):
+class ScientificWorkerAuthorityContext(r4.ScientificWorkerAuthorityContext):
     """The trusted expected values launch, request and admission all use.
 
     ``POSTP1-002V2A-PAD4-R3`` reproduced the ``PAD4-R3`` context as **valid**, so
@@ -437,7 +448,7 @@ class ScientificWorkerAuthorityContext(r3.ScientificWorkerAuthorityContext):
         return payload
 
 
-def _as_r4_context(
+def _as_r5_context(
     context: r3.ScientificWorkerAuthorityContext,
 ) -> ScientificWorkerAuthorityContext:
     """Rebind a reviewed ``PAD4-R3`` context builder result to the R4 type."""
@@ -475,7 +486,7 @@ def candidate_review_authority_context(
     reopened, and behaviour is unchanged.
     """
 
-    return _as_r4_context(
+    return _as_r5_context(
         r3.candidate_review_authority_context(proof_architecture_sha256, origin=origin)
     )
 
@@ -494,7 +505,7 @@ def derive_authority_context_from_reviewed_source(
     frozen context.
     """
 
-    return _as_r4_context(
+    return _as_r5_context(
         r3.derive_authority_context_from_reviewed_source(
             proof_architecture_sha256, project_root=project_root, origin=origin
         )
@@ -512,7 +523,7 @@ def production_authority_context_from_calendar_authority(
     does, there is no production context and this refuses.
     """
 
-    return _as_r4_context(
+    return _as_r5_context(
         r3.production_authority_context_from_calendar_authority(calendar_authority)
     )
 
@@ -563,7 +574,7 @@ def require_trusted_authority_context(
     """Only an ``R4`` trusted controller context may reach this architecture."""
 
     if not isinstance(authority_context, ScientificWorkerAuthorityContext):
-        raise IsolatedScientificWorkerR4Error(
+        raise IsolatedScientificWorkerR5Error(
             "the frozen-return-state scientific architecture requires an R4 "
             "trusted controller authority context, not "
             f"{type(authority_context).__name__}"
@@ -1092,7 +1103,7 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
         authorize_worker_launch_mechanism(launch.mechanism)
         payload = protocol.canonical_json_bytes(request)
         if len(payload) > protocol.MAX_REQUEST_BYTES:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 "scientific request exceeds the frozen input-size limit"
             )
         digest = protocol.digest_bytes(payload)
@@ -1287,12 +1298,12 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
         # regressions establish; it is checked anyway because "the digest
         # describes the bytes the authority stores" is the whole invariant.
         if protocol.digest_bytes(result_bytes) != bound_result_digest:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 "the frozen admitted result snapshot does not reproduce the "
                 "bound result digest"
             )
         if protocol.canonical_json_bytes(parsed["result"]) != result_bytes:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 "the admitted result and the frozen response snapshot disagree"
             )
 
@@ -1324,7 +1335,7 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
         if admission["admitted"] and response.get("result_digest") != admission[
             "result_digest"
         ]:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 "the frozen admitted response and the bound result digest "
                 "disagree; affirmative evidence must not be constructed"
             )
@@ -1424,19 +1435,19 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
 
         context = require_trusted_authority_context(trusted_authority_context)
         if not isinstance(launch_material, WorkerLaunch):
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 "the authoritative scientific execution requires parent-bound "
                 f"launch material, not {type(launch_material).__name__}"
             )
         if not isinstance(scientific_request, Mapping):
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 "the authoritative scientific execution requires a canonical "
                 f"scientific request mapping, not {type(scientific_request).__name__}"
             )
 
         drifted = verify_request_against_authority_context(context, scientific_request)
         if drifted:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 f"REQUEST_AUTHORITY_MISMATCH:{list(drifted)!r}"
             )
         pre_verification = preverify_worker_bootstrap_sources(context, launch_material)
@@ -1634,7 +1645,7 @@ _scope_index = r3._scope_index
 def _module_source(relative: str, project_root: Path = PROJECT_ROOT) -> str:
     target = Path(project_root) / relative
     if not target.is_file():
-        raise IsolatedScientificWorkerR4Error(
+        raise IsolatedScientificWorkerR5Error(
             f"the mechanical audit cannot read {relative}"
         )
     return target.read_text(encoding="utf-8")
@@ -2342,7 +2353,7 @@ def audit_direct_worker_launch_census(
     for relative, classification in sorted(surveyed.items()):
         target = Path(project_root) / relative
         if not target.is_file():
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 f"the direct launch census cannot read {relative}"
             )
         tree = ast.parse(target.read_text(encoding="utf-8"))
@@ -2626,7 +2637,7 @@ def caller_visible_copy_isolation_rule() -> dict[str, Any]:
 
     audit = audit_authoritative_return_state()
     if not audit["closed"]:
-        raise IsolatedScientificWorkerR4Error(
+        raise IsolatedScientificWorkerR5Error(
             f"the authoritative return-state audit refuses: {audit['findings']!r}"
         )
     return _definition(
@@ -2780,11 +2791,11 @@ def authoritative_scientific_execution_boundary() -> dict[str, Any]:
     closure = audit_scientific_api_closure()
     census = audit_direct_worker_launch_census()
     if not closure["closed"]:
-        raise IsolatedScientificWorkerR4Error(
+        raise IsolatedScientificWorkerR5Error(
             f"the scientific API closure audit refuses: {closure['findings']!r}"
         )
     if not census["closed"]:
-        raise IsolatedScientificWorkerR4Error(
+        raise IsolatedScientificWorkerR5Error(
             f"the direct worker launch census refuses: {census['findings']!r}"
         )
     return _definition(
@@ -3077,7 +3088,7 @@ def _children(
 # ---------------------------------------------------------------------------
 
 
-def isolated_scientific_worker_v1_r4_definition(
+def isolated_scientific_worker_v1_r5_definition(
     child_artifacts: Sequence[tuple[str, Callable[[], dict[str, Any]]]] | None = None,
 ) -> dict[str, Any]:
     source = CALENDAR_SOURCE.read_text(encoding="utf-8")
@@ -3267,8 +3278,8 @@ def isolated_scientific_worker_v1_r4_definition(
 
 
 def verify_definition(persisted: Mapping[str, Any]) -> None:
-    if dict(persisted) != isolated_scientific_worker_v1_r4_definition():
-        raise IsolatedScientificWorkerR4Error(
+    if dict(persisted) != isolated_scientific_worker_v1_r5_definition():
+        raise IsolatedScientificWorkerR5Error(
             "persisted frozen-return-state isolated scientific worker decision "
             "does not reproduce"
         )
@@ -3430,7 +3441,7 @@ def write_artifacts(
     child_artifacts: Sequence[tuple[str, Callable[[], dict[str, Any]]]] | None = None,
 ) -> dict[str, Any]:
     registry = _CHILD_ARTIFACTS if child_artifacts is None else tuple(child_artifacts)
-    decision = isolated_scientific_worker_v1_r4_definition(registry)
+    decision = isolated_scientific_worker_v1_r5_definition(registry)
     output_dir.mkdir(parents=True, exist_ok=True)
     payloads = {DEFINITION_FILENAME: decision}
     payloads.update({filename: builder() for filename, builder in registry})
@@ -3451,20 +3462,20 @@ def restore_artifacts(output_dir: Path) -> dict[str, Any]:
         persisted = json.loads((output_dir / filename).read_text(encoding="ascii"))
         expected = builder()
         if persisted != expected:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 f"persisted {filename} does not reproduce"
             )
         _verify_definition_digest(persisted)
         if decision["child_definition_sha256"].get(
             filename.removesuffix(".json")
         ) != expected["definition_sha256"]:
-            raise IsolatedScientificWorkerR4Error(
+            raise IsolatedScientificWorkerR5Error(
                 f"frozen-return-state isolated scientific worker parent does not "
                 f"bind {filename}"
             )
     report = (output_dir / REPORT_FILENAME).read_text(encoding="utf-8")
     if report != _report_markdown(decision):
-        raise IsolatedScientificWorkerR4Error(
+        raise IsolatedScientificWorkerR5Error(
             "persisted frozen-return-state isolated scientific worker report "
             "does not reproduce"
         )
