@@ -964,7 +964,6 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
             _bind_authority(self, capability, material)
 
         @property
-        def admitted        @property
         def admitted(self) -> bool:
             return _frozen(self).admitted
 
