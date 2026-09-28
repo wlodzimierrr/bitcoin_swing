@@ -1,0 +1,78 @@
+name: PAD4 R5 temporary validation
+
+on:
+  push:
+    branches:
+      - chatgpt/postp1-001v2a-pad4-r5
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - name: Interpreter
+        run: |
+          python -VV
+          python - <<'PY'
+          import platform
+          assert platform.python_implementation() == "CPython"
+          assert platform.python_version() == "3.12.14"
+          PY
+      - name: Compile
+        run: python -m compileall -q btc_predictor etf_calendar_worker
+      - name: Focused R5
+        run: python -m pytest -q btc_predictor/tests/test_etf_calendar_isolated_scientific_worker_r5.py
+      - name: Generate and restore artifacts
+        run: |
+          rm -rf /tmp/r5-artifacts /tmp/r5-artifacts-2
+          python -m btc_predictor.research.etf_calendar_isolated_scientific_worker_r5 /tmp/r5-artifacts
+          python -m btc_predictor.research.etf_calendar_isolated_scientific_worker_r5 /tmp/r5-artifacts-2
+          diff -ru /tmp/r5-artifacts /tmp/r5-artifacts-2
+          python - <<'PY'
+          from pathlib import Path
+          from btc_predictor.research import etf_calendar_isolated_scientific_worker_r5 as r5
+          restored = r5.restore_artifacts(Path("/tmp/r5-artifacts"))
+          assert restored == r5.isolated_scientific_worker_v1_r5_definition()
+          normal = r5.isolated_scientific_worker_v1_r5_definition()
+          reversed_order = r5.isolated_scientific_worker_v1_r5_definition(
+              tuple(reversed(r5._CHILD_ARTIFACTS))
+          )
+          assert normal == reversed_order
+          PY
+      - name: Hash seed determinism
+        run: |
+          for seed in 0 1 8675309; do
+            PYTHONHASHSEED="$seed" python - <<'PY' > "/tmp/hash-$seed"
+          from btc_predictor.research import etf_calendar_isolated_scientific_worker_r5 as r5
+          print(r5.isolated_scientific_worker_v1_r5_definition()["definition_sha256"])
+          PY
+          done
+          diff -u /tmp/hash-0 /tmp/hash-1
+          diff -u /tmp/hash-0 /tmp/hash-8675309
+      - name: Alternate cwd
+        run: |
+          root="$PWD"
+          cd /tmp
+          PYTHONPATH="$root" python - <<'PY'
+          from btc_predictor.research import etf_calendar_isolated_scientific_worker_r5 as r5
+          decision = r5.isolated_scientific_worker_v1_r5_definition()
+          assert decision["program_ticket"] == "POSTP1-001V2A-PAD4-R5"
+          PY
+      - name: Diff check
+        run: git diff --check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pad4-r5-artifacts
+          path: /tmp/r5-artifacts
+          if-no-files-found: ignore
