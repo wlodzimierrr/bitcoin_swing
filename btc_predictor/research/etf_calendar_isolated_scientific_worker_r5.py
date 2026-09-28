@@ -2284,6 +2284,52 @@ def audit_authoritative_return_state(
     }
 
 
+def _production_reachable_launch_sites() -> list[dict[str, Any]]:
+    """Inherited helpers this module re-exports that themselves create a process.
+
+    A file-level classification would hide these: the helper's *source* lives in
+    a superseded module, but R5 production code calls it, so the census must name
+    it.  Every one found must be a declared non-worker launch site.
+
+    Each row is keyed on the *resolved callable* — its defining module, qualified
+    name and primitive — and never on the module attribute that happens to point
+    at it, so a second re-export or a diagnostic alias of an already declared
+    helper cannot move this candidate's parent hash for a non-material reason.
+    """
+
+    found: list[dict[str, Any]] = []
+    module = sys.modules[__name__]
+    for name in sorted(vars(module)):
+        value = getattr(module, name)
+        if not isinstance(value, types.FunctionType):
+            continue
+        if value.__module__ == __name__:
+            continue
+        try:
+            snippet = textwrap.dedent(inspect.getsource(value))
+        except OSError:  # pragma: no cover - source always available here
+            continue
+        for node in ast.walk(ast.parse(snippet)):
+            if isinstance(node, ast.Call) and _dotted_call_name(node.func) in (
+                LAUNCH_PRIMITIVES
+            ):
+                found.append(
+                    {
+                        "callable": value.__name__,
+                        "defining_module": value.__module__.rsplit(".", 1)[-1],
+                        "primitive": _dotted_call_name(node.func),
+                        "qualname": value.__qualname__,
+                    }
+                )
+    deduplicated: list[dict[str, Any]] = []
+    for site in found:
+        if site not in deduplicated:
+            deduplicated.append(site)
+    return sorted(
+        deduplicated, key=lambda site: (site["qualname"], site["primitive"])
+    )
+
+
 def audit_direct_worker_launch_census(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
@@ -2303,7 +2349,7 @@ def audit_direct_worker_launch_census(
         RAW_REVIEW_HARNESS_RELATIVE_PATH: "TEST_AND_REVIEW_HARNESS_ONLY",
     }
     for relative in FAILED_LINEAGE_CONTROLLER_MODULES:
-        surveyed[relative] = "SUPERSEDED_FAILED_LINEAGE_NOT_R4_AUTHORITY"
+        surveyed[relative] = "SUPERSEDED_FAILED_LINEAGE_NOT_R5_AUTHORITY"
     for entry in frozen_candidate_source_manifest():
         surveyed.setdefault(entry.path, "CERTIFIED_WORKER_SOURCE_UNIVERSE")
 
