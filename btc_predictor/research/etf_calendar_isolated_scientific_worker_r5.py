@@ -178,8 +178,8 @@ FAILED_PAD4_SHA256 = r3.FAILED_PAD4_SHA256
 #: The one blocking finding this bounded correction repairs, and the material
 #: consistency obligation the completed review attached to it.
 REPAIRED_REVIEW_FINDINGS: tuple[str, ...] = (
-    "P0_CALLER_CREATED_POST_ADMISSION_STATE_CAN_REMAIN_INSIDE_AFFIRMATIVE_AUTHORITY",
-    "P0_MATERIAL_CHILDREN_MUST_DESCRIBE_THE_IMPLEMENTED_RETURN_STATE_SEMANTICS",
+    "P0_UNEARNED_RESOLUTION_EQUALITY_KEYED_BINDING_CAN_RESOLVE_FOREIGN_RECEIVER",
+    "P0_CONSTRUCTION_IDENTITY_AUDIT_MUST_BEHAVI0RALLY_PROVE_EXACT_RECEIVER_IDENTITY",
 )
 
 #: The exact post-admission mutations ``POSTP1-002V2A-PAD4-R3`` established
@@ -487,7 +487,7 @@ def candidate_review_authority_context(
     """
 
     return _as_r5_context(
-        r3.candidate_review_authority_context(proof_architecture_sha256, origin=origin)
+        r4.candidate_review_authority_context(proof_architecture_sha256, origin=origin)
     )
 
 
@@ -506,7 +506,7 @@ def derive_authority_context_from_reviewed_source(
     """
 
     return _as_r5_context(
-        r3.derive_authority_context_from_reviewed_source(
+        r4.derive_authority_context_from_reviewed_source(
             proof_architecture_sha256, project_root=project_root, origin=origin
         )
     )
@@ -524,7 +524,7 @@ def production_authority_context_from_calendar_authority(
     """
 
     return _as_r5_context(
-        r3.production_authority_context_from_calendar_authority(calendar_authority)
+        r4.production_authority_context_from_calendar_authority(calendar_authority)
     )
 
 
@@ -557,7 +557,7 @@ def build_scientific_request(
     """
 
     require_trusted_authority_context(authority_context)
-    return r3.build_scientific_request(
+    return r4.build_scientific_request(
         authority_context,
         launch=launch,
         operation=operation,
@@ -600,7 +600,7 @@ def preverify_worker_bootstrap_sources(
     """
 
     require_trusted_authority_context(authority_context)
-    return r3.preverify_worker_bootstrap_sources(authority_context, launch)
+    return r4.preverify_worker_bootstrap_sources(authority_context, launch)
 
 
 def verify_request_against_authority_context(
@@ -614,7 +614,7 @@ def verify_request_against_authority_context(
     execution and it cannot produce evidence.
     """
 
-    return r3.verify_request_against_authority_context(authority_context, request)
+    return r4.verify_request_against_authority_context(authority_context, request)
 
 
 def verify_response_against_authority_context(
@@ -627,7 +627,7 @@ def verify_response_against_authority_context(
     nothing.
     """
 
-    return r3.verify_response_against_authority_context(authority_context, response)
+    return r4.verify_response_against_authority_context(authority_context, response)
 
 
 # ---------------------------------------------------------------------------
@@ -2275,7 +2275,6 @@ def audit_authoritative_return_state(
     }
 
 
-def audit_direct_worker_launch_census(
 def audit_direct_worker_launch_census(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
