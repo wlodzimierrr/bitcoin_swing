@@ -2618,7 +2618,7 @@ def affirmative_evidence_snapshot_rule() -> dict[str, Any]:
     return _definition(
         {
             "contract_version": (
-                "ETF_CALENDAR_AFFIRMATIVE_EVIDENCE_SNAPSHOT_RULE_V1_R4"
+                "ETF_CALENDAR_AFFIRMATIVE_EVIDENCE_SNAPSHOT_RULE_V1_R5"
             ),
             "affirmative_authority_marker": AUTHORITATIVE_SCIENTIFIC_AUTHORITY,
             "non_authoritative_marker": NON_AUTHORITATIVE_SCIENTIFIC_AUTHORITY,
@@ -2652,7 +2652,7 @@ def affirmative_evidence_snapshot_rule() -> dict[str, Any]:
             "evidence_is_address_free": True,
             "evidence_is_deterministic": True,
             "superseded_lineage_evidence_can_emit_the_affirmative_marker": False,
-            "mutated_r3_evidence_can_be_mistaken_for_r4_authority": False,
+            "mutated_superseded_lineage_evidence_can_be_mistaken_for_r5_authority": False,
         }
     )
 
@@ -2712,9 +2712,50 @@ def authoritative_scientific_execution_boundary() -> dict[str, Any]:
         conditional_cleanup_is_witness_specific=True,
         identifier_reuse_can_rebind_stale_authority=False,
         relay_residual_closed=False,
+        repaired_review_finding=REPAIRED_REVIEW_FINDINGS[0],
+        authority_owned_steps=list(AUTHORITY_OWNED_STEPS),
+        closed_authority_path=(
+            "TRUSTED_BOOTSTRAP_PREVERIFICATION_THEN_EXACT_WORKER_LAUNCH_THEN_"
+            "CANONICAL_ADMISSION_THEN_FROZEN_SNAPSHOT_THEN_EXACT_LIVE_EXECUTION_"
+            "IDENTITY_BINDING_THEN_FROZEN_AFFIRMATIVE_EVIDENCE"
+        ),
         construction_identity_audit=identity,
         api_closure_audit=closure,
         direct_worker_launch_census=census,
+    )
+
+
+def scientific_evidence_authority_rule() -> dict[str, Any]:
+    """Only the exact R5 closed flow may state affirmative scientific authority."""
+
+    return _revised(
+        r4.scientific_evidence_authority_rule(),
+        contract_version="ETF_CALENDAR_SCIENTIFIC_EVIDENCE_AUTHORITY_RULE_V1_R5",
+        affirmative_authority_marker=AUTHORITATIVE_SCIENTIFIC_AUTHORITY,
+        affirmative_scientific_evidence_is_stored_as_immutable_canonical_bytes=True,
+        affirmative_evidence_is_constructed_from_the_frozen_admitted_snapshot=True,
+        caller_visible_evidence_mutation_can_change_affirmative_authority=False,
+        superseded_lineage_marker=r4.AUTHORITATIVE_SCIENTIFIC_AUTHORITY,
+        mutated_superseded_lineage_evidence_is_r5_authority=False,
+        exact_execution_identity_required_to_resolve_authority=True,
+        relay_residual_closed=False,
+    )
+
+
+def controller_authority_context_rule() -> dict[str, Any]:
+    """Preserve R4 context agreement under the exact-identity R5 container."""
+
+    return _revised(
+        r4.controller_authority_context_rule(),
+        contract_version="ETF_CALENDAR_CONTROLLER_AUTHORITY_CONTEXT_RULE_V1_PAD4_R5",
+        authority_context_version=AUTHORITY_CONTEXT_VERSION,
+        r5_trusted_context_type_required=True,
+        three_way_agreement_valid_through_admission=True,
+        three_way_agreement_valid_through_returned_authority_lifetime=True,
+        returned_authority_can_drift_from_the_trusted_context=False,
+        caller_mutation_can_break_the_three_way_agreement=False,
+        trusted_context_identity_is_frozen_into_the_affirmative_evidence_bytes=True,
+        exact_execution_identity_binding_changes_context_semantics=False,
     )
 
 
