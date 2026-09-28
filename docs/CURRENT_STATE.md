@@ -642,14 +642,49 @@ mutate and R4 impersonate — escalation to a NEW proof-architecture decision is
 AUTOMATIC, not discretionary
 
 POSTP1-001V2A-PAD4-R5 =
-NOT STARTED / DEPENDENCY-SATISFIED
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
+PROOF-ARCHITECTURE REVIEW
 
 POSTP1-001V2A-PAD4-R5 task =
 BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1
 
+POSTP1-001V2A-PAD4-R5 implementation commit =
+2d41fb13a411cd8a2a40efe2339b921116201d01
+
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5 =
+b4168dc9c757f3cdbdeed48e9a91cc35eb921728adb5d38d0d5b76fd2ef861c7
+
+PAD4-R5 material children =
+34 parent-bound; 22 byte-identical to reviewed PAD4-R4 children
+
+PAD4-R5 identity binding =
+closure-owned dict[int, entry]; id(receiver) is a non-authoritative bucket;
+entry contains a weak live execution witness plus the preserved immutable
+FrozenAuthoritySnapshot; authority resolves only when live_witness is receiver;
+type(receiver) is the canonical class is required non-load-bearing defence in
+depth; receiver equality/hash and weakref equality are never authority; one
+reader, one fetch, one capability-gated bind, no cache; None explicitly refused;
+conditional cleanup deletes only when current is the callback's exact entry
+
+PAD4-R5 audit and P0 =
+eight live authority-bearing members mechanically discovered, including
+__repr__; one reader and one bind; __eq__/__hash__ remain object identity; the
+preserved R4 unrelated non-subclass descriptor-reuse control incorrectly
+resolves R4 authority and is refused by R5 without receiver-controlled code;
+dead cleanup, stale cleanup, deterministic bucket collision and identifier reuse
+PASS; relay remains OPEN / NOT CLAIMED CLOSED
+
+PAD4-R5 validation =
+exclusive CPython 3.12.14 entry probes PASS; focused 201 passed; combined ten-
+generation PAD suite 1,210 passed; wider 21-module calendar/ETF/flow/trusted/
+corpus/prospective regression 2,022 passed and 3 explained skips; compileall and
+git diff --check PASS; full repository suite NOT RUN because the wider suite
+passed and no production or cross-boundary change required it
+
 POSTP1-002V2A-PAD4-R5 =
-NOT STARTED / BLOCKED PENDING THE R5 IMPLEMENTATION; only an R5 review PASS may
-make POSTP1-001V2A-I2 dependency-satisfied
+NOT STARTED / DEPENDENCY-SATISFIED — INDEPENDENT EXACT-HASH FINAL XHIGH
+PROOF-ARCHITECTURE REVIEW MAY BEGIN; only an R5 review PASS may make
+POSTP1-001V2A-I2 dependency-satisfied
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1292,24 +1327,34 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R4 is
-  **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH
-  PROOF-ARCHITECTURE REVIEW** at `ae25c246...6e65bc` with 30 mechanically
-  enumerated parent-bound children, 20 of them byte-identical to the reviewed
-  PAD4-R3 children, asserted mechanically against the persisted PAD4-R3
-  namespace. Its immutable canonical snapshot and caller-visible copy isolation
-  passed review: response, result and evidence remain frozen as canonical bytes,
-  their digests reproduce, and every caller-facing mapping is a fresh detached
-  decode. The candidate nevertheless fails because a distinct unrelated
-  caller-defined object can reuse the public authority-bearing descriptors and
-  supply equality/hash behaviour matching a legitimate execution; the
-  equality-keyed `WeakKeyDictionary` then resolves the forged receiver to the
-  legitimate execution's snapshot. This is a **BOUNDED R4 CONSTRUCTION /
-  AUTHORITY-BINDING DEFECT**, not a failure of the snapshot mechanism. R4 is
-  failed, non-certified, unused, immutable and at zero observations. The
-  bounded construction-identity governance decision has since been taken and
-  authorizes exactly one successor, **`POSTP1-001V2A-PAD4-R5`**, which is
-  **NOT STARTED**.
+- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R5 is
+  **IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH
+  PROOF-ARCHITECTURE REVIEW** at `b4168dc9...61c7`, implementation commit
+  `2d41fb13...1201d01`, with 34 mechanically enumerated parent-bound children,
+  22 byte-identical to reviewed PAD4-R4 children. Its closure-owned
+  `dict[int, entry]` uses `id(receiver)` only to select a bucket; the entry's
+  weak live witness authorizes only when `live_witness is receiver`. The sole
+  reader explicitly refuses `None`, applies `type(receiver) is` the canonical
+  class as non-load-bearing defence in depth, fetches once, and invokes no
+  receiver-controlled equality, hash, class, attribute, Boolean or repr code.
+  The sole capability-gated bind preserves R4's immutable
+  `FrozenAuthoritySnapshot`; conditional identity cleanup cannot remove a newer
+  entry, and deterministic collision/reuse probes establish that an identifier
+  is never authority. The live-surface audit discovers all eight authority
+  readers including `__repr__`, verifies one reader/one bind and object
+  `__eq__`/`__hash__`, and behaviourally closes the exact unrelated
+  descriptor-reuse P0 while preserving the R4 failure as a checked-in control.
+  Relay remains **OPEN / NOT CLAIMED CLOSED**. The candidate is frozen pre-data,
+  non-certified and at zero observations; it authorizes only
+  `POSTP1-002V2A-PAD4-R5`, not I2.
+
+  POSTP1-001V2A-PAD4-R4 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
+  EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at
+  `ae25c246...6e65bc`. Its 30-child namespace and controller are untouched,
+  failed, non-certified, unused, immutable and at zero observations. R4's
+  immutable canonical snapshot and caller-visible copy isolation passed review;
+  only its equality-keyed execution-to-snapshot binding failed, and R5 retains
+  R4 as the exact descriptor-reuse control.
 
   POSTP1-001V2A-PAD4-R3 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at `1fd9a2f9...d8bad0`
@@ -1428,43 +1473,38 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   made
 - **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
   implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
-  POSTP1-003R3 is **BLOCKED**, POSTP1-004 is **BLOCKED** and
-  POSTP1-002V2A-PAD4-R5 is **BLOCKED** pending the R5 implementation. Only an
-  R5 review **PASS** may make I2 dependency-satisfied; the R5 implementation
-  itself may not. Collection is
+  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. The R5 review is
+  now dependency-satisfied, but only an R5 review **PASS** may make I2
+  dependency-satisfied; the R5 implementation itself may not. Collection is
   **NOT AUTHORIZED** and observations remain **0**. POSTP1-001V2A-PAD4-R4 and
   all earlier PAD4 candidates have **FAILED** review, so no certified production
   isolated-worker authority is available. Calendar certification is **NO**, no
   real Stage-B evaluation ran, and I2 must not start
-- **Next dependency-satisfied implementation ticket:**
-  **`POSTP1-001V2A-PAD4-R5`**, `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`,
-  **NOT STARTED / DEPENDENCY-SATISFIED**, authorized by the PAD4-R4
-  construction-identity governance decision. Its dependency
-  `POSTP1-002V2A-PAD4-R4` is `COMPLETE / FAIL`. R5 replaces equality-keyed
-  authority resolution with an identity-safe execution-to-snapshot binding,
-  adds pinned `type(receiver) is ...` receiver validation as declared
-  non-load-bearing defence in depth, repairs the evidence apparatus and lands
-  the missing non-subclass descriptor-reuse regression. It is a **new**
-  controller module and a **new** frozen namespace, not an edit of the
-  immutable R4. It must not start I2 and must not reopen the validated
-  snapshot, copy-isolation, bootstrap, bytecode, third-party, worker-protocol
-  or calendar-science layers
-- **Other ready tickets:** None besides `POSTP1-001V2A-PAD4-R5`. Calendar
+- **Next dependency-satisfied ticket:** **`POSTP1-002V2A-PAD4-R5`**, independent
+  exact-hash final xHigh proof-architecture review of `b4168dc9...61c7`,
+  **NOT STARTED / DEPENDENCY-SATISFIED**. It must reproduce all 34 children,
+  the 22 R4 byte-identical carries, exact-identity behavior, the live-surface
+  audit, material mutation sensitivity and namespace determinism. The
+  pre-committed escalation rule remains: a same-family review failure requires
+  a new proof-architecture decision and does not automatically create R6
+- **Other ready tickets:** None besides `POSTP1-002V2A-PAD4-R5`. Calendar
   implementation, V2 correction, POSTP1-003R3, POSTP1-004 and collection remain
   blocked; BTC-019 remains terminal and untouched with its sealed sample
   unopened, and Epic T is unchanged
-- **Latest implementation validation:** POSTP1-001V2A-PAD4-R4 used CPython
-  3.12.14 and `cryptography 50.0.1` under `.venv312`; `python -m compileall
-  btc_predictor etf_calendar_worker` passed and `git diff --check` passed. The
-  focused R4 suite is **181 passed**, the combined
-  PAD4-R4/PAD4-R3/PAD4-R2/PAD4-R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1
-  proof-architecture suite is **1009 passed**, and the wider calendar,
-  ETF, flow, trusted-persistence, corpus and prospective regression over all
-  20 `etf`/`calendar`/`flow`/`trusted`/`corpus`/`prospective` test
-  modules is **1821 passed** with 3 explained skips against
-  1824 collected. The full suite was **NOT RUN**: no production
-  behaviour outside the new pre-data controller changed and no wider regression
-  failed
+- **Latest implementation validation:** POSTP1-001V2A-PAD4-R5 used exclusive
+  CPython 3.12.14 under `.venv312`; the entry probes reconfirmed weak mapping and
+  weak-reference equality, weak-witness liveness/cleanup, spoofed `__class__`
+  behavior and the exact R4 descriptor-reuse P0. The focused R5 suite is
+  **201 passed**, the combined PAD4-R5/R4/R3/R2/R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1
+  proof-architecture suite is **1,210 passed**, and the wider calendar, ETF,
+  flow, trusted-persistence, corpus and prospective regression over all 21
+  selected modules is **2,022 passed** with 3 explained skips. Parent
+  `b4168dc9...61c7`, all 34 children, 22 exact R4 carries and a fresh 36-file
+  namespace reproduce; hash-seed, child-order, alternate-cwd and fresh-output
+  determinism and required material mutation sensitivity pass. `python -m
+  compileall btc_predictor etf_calendar_worker` and `git diff --check` pass. The
+  full suite was **NOT RUN**: no production code changed, no wider regression
+  failed and no new cross-boundary defect appeared
 - **Latest review validation:** POSTP1-002V2A-PAD4-R4 used CPython 3.12.14 and
   `cryptography 50.0.1`; the focused R4 suite passed **181 tests in 388.31s**,
   the combined PAD1 through PAD4-R4 proof-architecture suite passed **1,009
@@ -1684,7 +1724,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** POSTP1-001V2A-PAD4-R4
+- **Last relevant implementation/review commits:** POSTP1-001V2A-PAD4-R5
+  implementation commit `2d41fb13a411cd8a2a40efe2339b921116201d01`
+  freezes exact-identity-bound pre-data candidate `b4168dc9...61c7` with 34
+  parent-bound children, 22 byte-identical to R4. It adds one new controller,
+  one new focused suite and one new immutable namespace; changes no worker or
+  calendar production source; and awaits POSTP1-002V2A-PAD4-R5 independent
+  exact-hash final xHigh review. The failed predecessor POSTP1-001V2A-PAD4-R4
   implementation commit `90fcf88a7be65bd43cefeb0eb766cccde766d6ae` and
   decision-record commit `1d6cfdb16361c9c25eadccf4977fd39cf335eaa0`
   together freeze and record the frozen-return-state pre-data candidate

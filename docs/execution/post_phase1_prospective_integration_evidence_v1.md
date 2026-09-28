@@ -5754,7 +5754,7 @@ that the judgement cannot be made after the fact.
 
 ## POSTP1-001V2A-PAD4-R5 — `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW`
 **Authorized by:** the PAD4-R4 construction-identity governance decision above
 **Dependency:** `POSTP1-002V2A-PAD4-R4`,
 `COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID`
@@ -5764,8 +5764,11 @@ semantics, receiver validation, construction-boundary audit completeness,
 missing regression coverage, and material-child consistency for those rules
 **Required review:** `POSTP1-002V2A-PAD4-R5`, independent exact-hash final xHigh
 proof-architecture review
-**Implementation commit:** NONE — not started
-**Frozen candidate:** NONE — not started
+**Implementation commit:** `2d41fb13a411cd8a2a40efe2339b921116201d01`
+**Frozen candidate:** `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` at
+`b4168dc9c757f3cdbdeed48e9a91cc35eb921728adb5d38d0d5b76fd2ef861c7`, with
+34 mechanically enumerated parent-bound material children, 22 byte-identical
+to reviewed PAD4-R4 children
 
 The bounded invariant is the domain-scoped one frozen in the governance
 decision above. Its mechanically decidable operative form is:
@@ -5950,6 +5953,94 @@ the worker protocol or calendar science. The receiver gate must be a
 type/identity **comparison** and must not drift into inspecting closure
 contents at read time.
 
+### Implementation notes
+
+R5 is generational: the new controller is
+`btc_predictor/research/etf_calendar_isolated_scientific_worker_r5.py`, its
+focused suite is
+`btc_predictor/tests/test_etf_calendar_isolated_scientific_worker_r5.py`, and
+its separate frozen namespace is
+`prospective_evidence/etf_calendar_isolated_scientific_worker_v1_r5/`. The R4
+controller and namespace remain untouched and reproduce at
+`ae25c246...6e65bc`.
+
+The closure-owned authority registry is a `dict[int, entry]`. The integer is
+only `id(receiver)` used as a non-authoritative bucket; each entry contains a
+weak execution witness and the reviewed immutable `FrozenAuthoritySnapshot`.
+The one reader explicitly rejects `None`, requires
+`type(receiver) is AuthoritativeScientificExecution`, performs exactly one
+registry fetch, resolves the weak witness, and returns the snapshot only when
+`live_witness is receiver`. The receiver is not a mapping key, a weak reference
+is not a mapping key, equality and hash equivalence are irrelevant, and no
+receiver-controlled `__hash__`, `__eq__`, `__class__`, `__getattr__`, `__bool__`
+or `__repr__` executes. The exact-type guard is defence in depth; the live
+identity comparison is the load-bearing predicate. There is no lookup cache.
+
+The one capability-gated bind validates the immutable snapshot before inserting
+one entry. The execution witness remains weak. Its callback deletes the bucket
+only when the current value `is` the exact entry for which that callback was
+created, so stale cleanup cannot remove a newer entry. Deterministic collision,
+dead-witness and identifier-reuse probes establish that the bucket identifier
+never becomes authority and that other live executions retain their bindings.
+Concurrency remains `NOT SUPPORTED / OUTSIDE CURRENT CONTRACT`.
+
+The live-surface audit mechanically discovers eight authority-bearing members:
+`__repr__`, the six properties `admitted`, `failure_reason`, `request_digest`,
+`response`, `result`, `scientific_evidence`, and
+`authoritative_snapshot_proof`. Every one reaches the sole reader; the audit
+finds one reader, one registry fetch, one capability-gated bind and one registry
+insertion. It also verifies that `__eq__` and `__hash__` remain `object`'s,
+computes identity safety behaviourally, and refuses descriptor reuse, a spoofed
+`__class__`, explosive receiver hooks, an exact-class unowned object, dead and
+different witnesses, direct construction, `__new__` construction and
+subclassing. The formerly hardcoded R4 equality-binding claim is now derived
+from that audit. The direct worker-launch census surveys 127 paths and retains
+exactly one closure-owned production scientific-authority launch site and zero
+inside the 120-module certified worker universe.
+
+The release-critical checked-in control drives the preserved R4 controller with
+an unrelated, non-subclass receiver that reuses the real authority-bearing
+descriptors and is equal/hash-equivalent to a legitimate execution: R4
+incorrectly resolves the legitimate snapshot, while the same receiver is
+uniformly refused by R5 without invoking its equality or hash methods. Unbound
+property getters, the unbound snapshot-proof method and foreign `__repr__` are
+also refused; the exact controller-owned execution continues to resolve all of
+its own authority.
+
+The frozen parent is `b4168dc9...61c7`. All 34/34 children reproduce and are
+parent-bound; 22 children are byte-identical to R4. A fresh namespace is 36/36
+files byte-identical. Parent determinism passes under `PYTHONHASHSEED` 0, 1 and
+8675309, reversed child order, alternate cwd and fresh process/output. The
+required identity-rule mutations move their owning child and the parent. The
+exclusive `.venv312` CPython 3.12.14 entry probes reconfirm
+`WeakKeyDictionary` and `weakref.ref` equality semantics, weak-witness liveness
+and cleanup, built-in `type()` behavior for a spoofed `__class__`, and the R4
+descriptor-reuse P0.
+
+Validation is **201 passed** focused, **1,210 passed** combined through all ten
+PAD generations, and **2,022 passed with 3 explained skips** across the wider
+21-module calendar/ETF/flow/trusted/corpus/prospective regression. `python -m
+compileall btc_predictor etf_calendar_worker` and `git diff --check` pass. The
+full repository suite was not run because no production code changed, the wider
+regression passed and no new cross-boundary defect appeared.
+
+Bootstrap authority remains 4 files at `1811e04d...ead411`; the worker package
+is unchanged. PRE-I2 remains 116 modules at `674b006a...3aadbb8`; the candidate
+worker universe remains 120 modules at `7ffbf157...a44e8e`; the third-party
+registry remains `23e4f1d8...6298a6` with 2,858 installed-content rows. Repairs
+A/B/C/D, the compiled root witness, root-cell prohibition, closed grammar,
+11/11 owner census, owner graph and direct-body rule pass or are preserved.
+Relay remains **OPEN / NOT CLAIMED CLOSED**, and the domain explicitly excludes
+closure-cell recovery, private-name reflection, module mutation and arbitrary
+hostile control of the trusted controller process.
+
+This candidate is frozen pre-data, non-certified and at zero observations. No
+real Stage-B evaluation ran, the calendar is not certified, prospective
+collection is not authorized, BTC-019 and Epic T are unchanged, and
+`POSTP1-001V2A-I2`, `POSTP1-001V2R1`, `POSTP1-003R3` and `POSTP1-004` remain
+blocked. Successful implementation authorizes only
+`POSTP1-002V2A-PAD4-R5`.
+
 ### Stopping rule
 
 A successful R5 implementation authorizes **only** its independent exact-hash
@@ -6021,7 +6112,7 @@ implementation may **not** authorize `POSTP1-001V2A-I2`. Only an R5 review
 | POSTP1-001V2A-PAD4-R4 | `FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1`: bounded post-admission correction that stores the admitted response, result and affirmative evidence as one immutable `FrozenAuthoritySnapshot` tuple of canonical bytes per admitted execution, binds the exact result digest to those bytes and serves every caller-facing mapping as a fresh detached decode, frozen at `ae25c246...6e65bc`; its immutable snapshot and copy-isolation correction passed review, but unrelated descriptor reuse plus equality-keyed lookup invalidates receiver-identity binding | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R4 | independent exact-hash final xHigh proof-architecture review of `ae25c246...6e65bc` | COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID; BOUNDED R4 CONSTRUCTION-IDENTITY GOVERNANCE / ARCHITECTURE DECISION REQUIRED BEFORE ANY SUCCESSOR TICKET |
 | PAD4-R4 construction-identity governance decision | `DECIDE_ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_BINDING_CORRECTION_V1`: governance/architecture decision on the bounded R4 construction-identity defect; no repository identifier is assigned to the decision itself | COMPLETE / BOUNDED PAD4 SUCCESSOR IS JUSTIFIED — authorizes `POSTP1-001V2A-PAD4-R5` and nothing else |
-| POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression | NOT STARTED / DEPENDENCY-SATISFIED |
-| POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of the R5 candidate | NOT STARTED / BLOCKED PENDING THE POSTP1-001V2A-PAD4-R5 IMPLEMENTATION |
+| POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression; frozen at `b4168dc9...61c7` with 34 parent-bound children, 22 byte-identical to R4 | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of `b4168dc9...61c7` | NOT STARTED / DEPENDENCY-SATISFIED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
