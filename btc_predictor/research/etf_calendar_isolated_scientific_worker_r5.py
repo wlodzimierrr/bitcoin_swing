@@ -867,41 +867,24 @@ ACCESSOR_FROZEN_FIELDS: Mapping[str, str] = {
 
 
 def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable[..., Any]]:
-    """Create the closed authority boundary and the one operation that owns it.
+    """Create the one closed R5 authority boundary.
 
-    Everything authority-bearing is captured in this factory's closure:
+    R4's immutable canonical FrozenAuthoritySnapshot is preserved.  R5 changes
+    only how that snapshot is associated with the returned execution.  _material
+    is an integer-bucket registry: id(receiver) selects a bucket but grants no
+    authority.  The bucket contains a weak live witness and the frozen snapshot.
+    The single reader first applies the pinned exact-type defence in depth, then
+    performs one registry fetch, and authority resolves only when
+    live_witness is receiver.
 
-    * ``_capability`` is a bare object bound to no module global, no class
-      attribute and no returned value, so it cannot be named by a caller;
-    * ``_material`` is a closure-private ``WeakKeyDictionary`` that is not
-      reachable *by name* from any module global, class attribute or returned
-      value, and that only the closed operation writes, so an instance obtained
-      by ``__new__`` bypass, by subclassing or by ``copy`` has no material and
-      refuses every accessor.  Reflective recovery of the store — through the
-      class's closure cells, the instance's weak-reference callback or a
-      debugger — is deliberately *not* claimed to be impossible: arbitrary
-      reflective namespace manipulation is outside the trusted-process threat
-      model this architecture states.  What R4 guarantees instead is that every
-      *value* the store holds is an **immutable** snapshot, so no route reaches a
-      mutable object carrying authority content.  The store itself is an
-      ordinary mutable ``WeakKeyDictionary``: it binds an execution to its
-      snapshot and carries no authority content of its own, and the cell holding
-      the closure-local reader is writable too, so a reflective route is met by
-      the threat model rather than by a claim of impossibility;
-    * ``_frozen``, ``_execute_exact_worker``, ``_validate_and_admit`` and
-      ``_affirmative_scientific_evidence`` are closure-local, so there is no
-      module-accessible spawn primitive, no module-accessible admission function,
-      no module-accessible authority-storage write and no module-accessible
-      affirmative-evidence constructor.
+    The registry never keys on the receiver or on weakref.ref(receiver), never
+    invokes receiver-controlled equality/hash/class/getattr/bool/repr code, and
+    never retains the execution strongly.  Weakref cleanup deletes a bucket only
+    if its current witness is the exact callback witness, so a delayed callback
+    cannot erase a newer entry after allocator identifier reuse.
 
-    ``PAD4-R3`` already established the capability boundary, and
-    ``POSTP1-002V2A-PAD4-R3`` reproduced it as valid.  What this factory adds is
-    the *representation*: ``_material`` holds one ``FrozenAuthoritySnapshot`` per
-    admitted execution — an immutable tuple of immutable canonical bytes and
-    immutable scalars — no member of the returned class hands that snapshot to a
-    caller, and every mapping-like accessor decodes the frozen bytes afresh.  The
-    reviewed defect was that ``_material`` held the live protocol-parser mapping
-    and handed it straight back.
+    Closure-cell recovery, private-name reflection and module mutation remain
+    outside the stated ordinary-caller domain.  Relay remains an open residual.
     """
 
     _capability = object()
