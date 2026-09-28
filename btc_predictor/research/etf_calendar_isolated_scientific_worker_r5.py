@@ -2037,6 +2037,12 @@ def audit_authoritative_return_state(
             dotted = _dotted_call_name(node.func)
             if dotted == f"{AUTHORITY_STORAGE_NAME}.get":
                 registry_get_scopes.append(list(chain))
+            if (
+                dotted == AUTHORITY_STORAGE_READER
+                and len(chain) == 3
+                and tuple(chain[:2]) == class_scope
+            ):
+                authority_reading_members.append(chain[2])
             if chain == reader_scope and dotted in {
                 "bool", "getattr", "hash", "repr",
             }:
@@ -2082,15 +2088,6 @@ def audit_authoritative_return_state(
                 and node.comparators[0].id == "_capability"
             ):
                 capability_guard_scopes.append(list(chain))
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if len(chain) == 3 and tuple(chain[:2]) == class_scope:
-                if any(
-                    isinstance(inner, ast.Call)
-                    and _dotted_call_name(inner.func) == AUTHORITY_STORAGE_READER
-                    for inner in ast.walk(node)
-                ):
-                    authority_reading_members.append(node.name)
-
     construction_probes: dict[str, str] = {}
 
     def refusal(name: str, action: Callable[[], Any]) -> None:
