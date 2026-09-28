@@ -933,7 +933,6 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
         _refuse_unowned_receiver()
 
     class AuthoritativeScientificExecution:
-    class AuthoritativeScientificExecution:
         """One complete authoritative scientific execution and its evidence.
 
         An instance is obtainable only as the return value of
