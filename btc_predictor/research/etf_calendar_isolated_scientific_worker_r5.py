@@ -1075,7 +1075,6 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
             )
 
     def _execute_exact_worker(
-    def _execute_exact_worker(
         request: Mapping[str, Any],
         launch: WorkerLaunch,
         pycache_namespace: Path | None,
