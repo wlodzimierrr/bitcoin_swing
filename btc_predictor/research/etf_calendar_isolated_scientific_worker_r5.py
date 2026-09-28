@@ -1967,6 +1967,10 @@ def probe_proof_interpreter_identity_assumptions() -> dict[str, Any]:
     weakref_hashes_equal_referent_hash = (
         hash(left_ref) == hash(right_ref) == hash(left) == hash(right)
     )
+    callbackless_ref_interned = weakref_ref(left) is weakref_ref(left)
+    callback_ref_one = weakref_ref(left, lambda _: None)
+    callback_ref_two = weakref_ref(left, lambda _: None)
+    callback_refs_are_not_interned = callback_ref_one is not callback_ref_two
 
     never_hashed = Equal()
     dead_ref = weakref_ref(never_hashed)
@@ -1986,6 +1990,29 @@ def probe_proof_interpreter_identity_assumptions() -> dict[str, Any]:
     gc.collect()
     previously_computed_hash_survives_death = hash(hashed_ref) == live_hash
 
+    callbacks: list[str] = []
+
+    class Lifetime:
+        __slots__ = ("__weakref__",)
+
+    lifetime = Lifetime()
+    lifetime_ref = weakref_ref(lifetime, lambda _: callbacks.append("DEAD"))
+    del lifetime
+    gc.collect()
+    callback_fired_after_collection = callbacks == ["DEAD"] and lifetime_ref() is None
+
+    class Reuse:
+        __slots__ = ()
+
+    def one_reuse_id() -> int:
+        value = Reuse()
+        return id(value)
+
+    first_released_id = one_reuse_id()
+    identifier_reuse_observed_after_collection = any(
+        one_reuse_id() == first_released_id for _ in range(10000)
+    )
+
     class Canonical:
         __slots__ = ()
 
@@ -2003,6 +2030,10 @@ def probe_proof_interpreter_identity_assumptions() -> dict[str, Any]:
         ),
         "weakref_equality_can_follow_referent_equality": weakrefs_compare_equal,
         "weakref_hash_can_follow_referent_hash": weakref_hashes_equal_referent_hash,
+        "callbackless_weakref_is_interned": callbackless_ref_interned,
+        "callback_weakrefs_are_not_interned": callback_refs_are_not_interned,
+        "weakref_callback_fires_after_collection": callback_fired_after_collection,
+        "identifier_reuse_observed_after_collection": identifier_reuse_observed_after_collection,
         "first_weakref_hash_after_referent_death_is_refused": first_hash_after_death_refused,
         "previously_computed_weakref_hash_survives_referent_death": previously_computed_hash_survives_death,
         "type_builtin_ignores_spoofed___class___property": type(Spoof()) is Spoof,
