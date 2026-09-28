@@ -2509,135 +2509,46 @@ def authoritative_return_state_rule() -> dict[str, Any]:
 
 
 def canonical_admitted_snapshot_rule() -> dict[str, Any]:
-    """How the admitted material becomes immutable, and with whose rules."""
+    """Preserve the R4 frozen snapshot and replace only its binding container."""
 
-    return _definition(
-        {
-            "contract_version": "ETF_CALENDAR_CANONICAL_ADMITTED_SNAPSHOT_RULE_V1_R4",
-            "authority_bearing_representation": "IMMUTABLE_CANONICAL_JSON_BYTES",
-            "canonical_encoder": CANONICAL_AUTHORITY_ENCODER,
-            "canonical_decoder": CANONICAL_AUTHORITY_DECODER,
-            "canonical_digest": CANONICAL_AUTHORITY_DIGEST,
-            "canonicalization_is_the_reviewed_worker_protocol": True,
-            "second_canonical_encoding_introduced": False,
-            "canonical_serialization_rules": [
-                "ASCII_ONLY",
-                "COMPACT_SEPARATORS",
-                "NO_NAN_OR_INFINITY",
-                "SORTED_KEYS",
-            ],
-            "preserved_canonical_rejections": list(PRESERVED_CANONICAL_REJECTIONS),
-            "preserved_canonical_rejections_are_exact_protocol_reasons": True,
-            "request_transport_only_canonical_rejections": list(
-                REQUEST_TRANSPORT_ONLY_CANONICAL_REJECTIONS
-            ),
-            "preserved_timestamp_rejection": PRESERVED_TIMESTAMP_REJECTION,
-            "response_side_re_serialization_equality_check_claimed": False,
-            "response_canonical_identity_is_established_by_the_frozen_snapshot": True,
-            "frozen_authority_fields": list(FROZEN_AUTHORITY_FIELDS),
-            "authority_snapshot_type": AUTHORITY_SNAPSHOT_TYPE,
-            "authority_snapshot_is_an_immutable_tuple": True,
-            "authority_snapshot_has_a_mutating_api": False,
-            "authority_snapshot_value_types": sorted(
-                value_type.__name__ for value_type in IMMUTABLE_AUTHORITY_VALUE_TYPES
-            ),
-            "authority_snapshot_holds_a_mutable_container": False,
-            "authority_snapshot_holds_a_nested_mutable_descendant": False,
-            # Two different objects, named separately on purpose.  The SNAPSHOT is
-            # the immutable tuple that carries the authority content.  The BINDING
-            # CONTAINER is the closure-private mapping that binds an execution to
-            # its snapshot; it is an ordinary mutable WeakKeyDictionary, it carries
-            # no authority content of its own, and it resolves a key by equality
-            # rather than identity — which is why subclassing the authoritative
-            # execution is refused outright.
-            "authority_binding_container_name": AUTHORITY_STORAGE_NAME,
-            "authority_binding_container_type": "WeakKeyDictionary",
-            "authority_binding_container_is_mutable": True,
-            "authority_binding_container_carries_authority_content": False,
-            "authority_binding_container_resolves_keys_by_equality_not_identity": True,
-            "subclassing_the_authoritative_execution_is_refused": True,
-            "snapshot_established_before_the_execution_is_caller_visible": True,
-            "mutable_admitted_state_is_exposed_and_frozen_afterwards": False,
-            "response_and_result_authority_derive_from_one_frozen_source": True,
-            "result_snapshot_is_taken_from_the_frozen_response_snapshot": True,
-            "refusal_snapshots_are_canonicalized_the_same_way": True,
-            "snapshot_depends_on_object_identity": False,
-            "snapshot_depends_on_memory_address": False,
-            "snapshot_depends_on_dict_insertion_order": False,
-            "snapshot_depends_on_a_temporary_filesystem_path": False,
-            "snapshot_depends_on_the_process_identifier": False,
-            "snapshot_depends_on_weak_key_dictionary_identity": False,
-            "immutability_gate": AUTHORITY_SNAPSHOT_GUARD,
-            "immutability_gate_is_module_level_so_it_can_be_exercised": True,
-            "immutability_gate_is_inert_and_grants_nothing": True,
-            "immutability_gate_refuses_a_mutable_container": True,
-            "immutability_gate_refusals_are_mechanically_exercised": True,
-            "immutability_gate_is_the_only_write_path_into_authority": True,
-            "immutable_authority_value_types": [
-                value_type.__name__ for value_type in IMMUTABLE_AUTHORITY_VALUE_TYPES
-            ],
-            "candidate_snapshot_is_materialized_once_before_validation": True,
-        }
+    return _revised(
+        r4.canonical_admitted_snapshot_rule(),
+        contract_version="ETF_CALENDAR_CANONICAL_ADMITTED_SNAPSHOT_RULE_V1_R5",
+        authority_binding_container_name=AUTHORITY_STORAGE_NAME,
+        authority_binding_container_type="DICT_INT_BUCKET_TO_WEAK_LIVE_WITNESS",
+        authority_binding_container_is_mutable=True,
+        authority_binding_container_carries_authority_content=False,
+        authority_binding_container_resolves_keys_by_equality_not_identity=False,
+        authority_binding_container_is_keyed_on_receiver=False,
+        authority_binding_container_is_keyed_on_weakref=False,
+        identifier_is_only_a_bucket_selector=True,
+        identifier_equality_is_authority=False,
+        live_witness_identity_is_authority=True,
+        live_witness_comparison="live_witness is receiver",
+        registry_retains_execution_strongly=False,
+        conditional_cleanup_is_witness_specific=True,
+        identifier_reuse_can_rebind_stale_authority=False,
+        exact_type_guard_is_required=True,
+        exact_type_guard_is_load_bearing=False,
+        snapshot_binding_depends_on_exact_execution_identity=True,
+        snapshot_depends_on_weak_key_dictionary_identity=False,
     )
 
 
 def caller_visible_copy_isolation_rule() -> dict[str, Any]:
-    """Caller-facing convenience values are detached from authority storage."""
+    """R4 copy isolation plus the repaired R5 live identity audit."""
 
     audit = audit_authoritative_return_state()
     if not audit["closed"]:
         raise IsolatedScientificWorkerR5Error(
             f"the authoritative return-state audit refuses: {audit['findings']!r}"
         )
-    return _definition(
-        {
-            "contract_version": "ETF_CALENDAR_CALLER_VISIBLE_COPY_ISOLATION_RULE_V1_R4",
-            "repaired_review_finding": REPAIRED_REVIEW_FINDINGS[1],
-            "caller_facing_material": list(AUTHORITATIVE_EXECUTION_MATERIAL),
-            "mutable_convenience_accessors": list(MUTABLE_CONVENIENCE_ACCESSORS),
-            "immutable_convenience_accessors": list(IMMUTABLE_CONVENIENCE_ACCESSORS),
-            "accessor_mechanism": (
-                "FRESH_DETERMINISTIC_DECODE_OF_THE_FROZEN_CANONICAL_BYTES_PER_CALL"
-            ),
-            "caller_visible_mutable_result_is_authority_storage": False,
-            "caller_visible_mutable_response_is_authority_storage": False,
-            "caller_visible_mutable_evidence_is_authority_storage": False,
-            "nested_mutable_alias_can_change_authority": False,
-            "top_level_mutation_is_isolated": True,
-            "nested_mapping_mutation_is_isolated": True,
-            "nested_sequence_mutation_is_isolated": True,
-            "repeated_accessor_values_are_equal": True,
-            "repeated_accessor_values_share_mutable_descendants": False,
-            "response_and_result_convenience_values_share_mutable_descendants": False,
-            "a_class_member_returns_the_authority_storage": False,
-            "class_surface_is_a_verified_enumeration_not_an_allow_list": True,
-            "authority_storage_reader_is_closure_local_and_not_a_member": True,
-            "authority_storage_reachable_through_a_declared_member": False,
-            # Honest rather than flat: the class's closure cells are reachable from
-            # the returned object, so the binding container and the reader cell can
-            # both be recovered reflectively.  That is met by the stated
-            # trusted-process threat model, not by a claim of impossibility, and
-            # what the correction guarantees is that every value so recovered is an
-            # immutable snapshot.
-            "authority_storage_reachable_through_closure_cells": True,
-            "reflective_recovery_of_the_storage_is_claimed_impossible": False,
-            "reflectively_recovered_snapshot_is_immutable": True,
-            "reflectively_recovered_binding_container_is_mutable": True,
-            "temporary_protocol_parser_state_is_retained_by_authority": False,
-            "temporary_admission_state_is_retained_by_authority": False,
-            "affirmative_evidence_mapping_is_retained_by_authority": False,
-            "caller_supplied_request_object_is_retained_by_authority": False,
-            "mapping_proxy_outer_wrapper_is_the_mechanism": False,
-            "shallow_copy_is_the_mechanism": False,
-            "deep_copy_of_a_mutable_graph_is_the_mechanism": False,
-            "authoritative_execution_exposes_a_material_setter": False,
-            "authoritative_execution_exposes_a_material_deleter": False,
-            "authoritative_execution_has_an_instance_dictionary": False,
-            "prohibited_authority_copy_mechanisms": list(
-                PROHIBITED_AUTHORITY_COPY_MECHANISMS
-            ),
-            "return_state_audit": audit,
-        }
+    return _revised(
+        r4.caller_visible_copy_isolation_rule(),
+        contract_version="ETF_CALENDAR_CALLER_VISIBLE_COPY_ISOLATION_RULE_V1_R5",
+        return_state_audit=audit,
+        exact_execution_identity_required_to_resolve_snapshot=True,
+        receiver_equality_or_hash_equivalence_can_resolve_snapshot=False,
     )
 
 
@@ -2730,15 +2641,11 @@ def affirmative_evidence_snapshot_rule() -> dict[str, Any]:
 
 
 def authoritative_scientific_execution_boundary() -> dict[str, Any]:
-    """The closed boundary, now with an immutable post-admission representation.
-
-    Every key the reviewed ``PAD4-R3`` child carried is carried here, so a
-    reviewer can diff this child against its ``PAD4-R3`` original key by key; the
-    additional keys are the return-state correction and nothing else.
-    """
+    """R4 immutable authority, bound to one exact live R5 execution identity."""
 
     closure = audit_scientific_api_closure()
     census = audit_direct_worker_launch_census()
+    identity = audit_authoritative_return_state()
     if not closure["closed"]:
         raise IsolatedScientificWorkerR5Error(
             f"the scientific API closure audit refuses: {closure['findings']!r}"
@@ -2747,175 +2654,82 @@ def authoritative_scientific_execution_boundary() -> dict[str, Any]:
         raise IsolatedScientificWorkerR5Error(
             f"the direct worker launch census refuses: {census['findings']!r}"
         )
-    return _definition(
-        {
-            "contract_version": AUTHORITATIVE_EXECUTION_BOUNDARY_VERSION,
-            "authoritative_return_state": AUTHORITATIVE_RETURN_STATE_VERSION,
-            "repaired_review_finding": REPAIRED_REVIEW_FINDINGS[0],
-            "reviewed_parent": FAILED_PAD4_R3_SHA256,
-            "review": FAILED_PAD4_R3_REVIEW,
-            "review_result": FAILED_PAD4_R3_REVIEW_RESULT,
-            "defect": (
-                "the closed authority flow was correct through admission and "
-                "then stored its authority as a shallow copy whose response "
-                "value was the live protocol-parser mapping and whose result "
-                "value was that mapping's own nested result object, and handed "
-                "both straight back, so caller mutation of a returned mapping "
-                "rewrote the authority-bearing state of an admitted, "
-                "affirmatively stamped execution while the bound result digest "
-                "kept describing what had actually been admitted"
-            ),
-            "rule": (
-                "ONCE SCIENTIFIC ADMISSION SUCCEEDS, NO CALLER MUTATION MAY "
-                "CHANGE THE AUTHORITATIVE RESPONSE, RESULT OR AFFIRMATIVE "
-                "EVIDENCE REPRESENTED BY THAT ADMITTED EXECUTION"
-            ),
-            "preserved_r3_rule": (
-                "NO OUTCOME CREATED WITHOUT SUCCESSFUL TRUSTED-CONTROLLER "
-                "BOOTSTRAP PREVERIFICATION MAY ENTER SCIENTIFIC ADMISSION OR "
-                "PRODUCE AFFIRMATIVE SCIENTIFIC AUTHORITY EVIDENCE"
-            ),
-            "closed_authority_path": (
-                "TRUSTED_BOOTSTRAP_PREVERIFICATION_THEN_EXACT_WORKER_LAUNCH_THEN_"
-                "EXACT_WORKER_OUTCOME_THEN_CANONICAL_ADMITTED_SNAPSHOT_THEN_"
-                "SCIENTIFIC_ADMISSION_THEN_FROZEN_AFFIRMATIVE_EVIDENCE"
-            ),
-            "authoritative_production_operation": AUTHORITATIVE_PRODUCTION_OPERATION,
-            "authoritative_execution_order": list(AUTHORITATIVE_EXECUTION_ORDER),
-            "authoritative_execution_material": list(AUTHORITATIVE_EXECUTION_MATERIAL),
-            "frozen_authority_fields": list(FROZEN_AUTHORITY_FIELDS),
-            "mutable_convenience_accessors": list(MUTABLE_CONVENIENCE_ACCESSORS),
-            "immutable_convenience_accessors": list(IMMUTABLE_CONVENIENCE_ACCESSORS),
-            "authority_mechanism": (
-                "CLOSED_CONTROL_FLOW_AND_CAPABILITY_OWNERSHIP_PLUS_IMMUTABLE_"
-                "CANONICAL_ADMITTED_SNAPSHOT_STORAGE"
-            ),
-            "authority_owning_factory": AUTHORITY_OWNING_FACTORY,
-            "authority_owned_steps": list(AUTHORITY_OWNED_STEPS),
-            "closed_reviewed_bypasses": list(r3.CLOSED_REVIEWED_BYPASSES),
-            "closed_reviewed_return_state_mutations": list(
-                CLOSED_REVIEWED_RETURN_STATE_MUTATIONS
-            ),
-            "closed_r3_authority_flow_preserved": True,
-            "admitted_authority_uses_immutable_canonical_snapshot": True,
-            "post_admission_representation_is_immutable": True,
-            "post_admission_mutation_can_redefine_authority": False,
-            "caller_created_post_admission_state_can_remain_inside_authority": False,
-            "authority_bearing_mutable_mapping_retained_internally": False,
-            "generic_admission_function_exists": False,
-            "generic_evidence_function_exists": False,
-            "generic_snapshot_store_function_exists": False,
-            "module_accessible_authority_storage_write_exists": False,
-            "module_accessible_snapshot_gate_is_inert_and_grants_nothing": True,
-            "authority_snapshot_type": AUTHORITY_SNAPSHOT_TYPE,
-            "authority_snapshot_is_an_immutable_tuple": True,
-            "no_class_member_returns_authority_storage": True,
-            "return_state_audit_is_behavioural_not_only_structural": True,
-            "construction_authority_probes_are_behavioural": True,
-            "construction_authority_strengthened_by_this_decision": True,
-            "subclassing_the_authoritative_execution_is_refused": True,
-            "generic_raw_outcome_type_exists_in_production": False,
-            "raw_unverified_spawn_in_production_authority_surface": False,
-            "raw_unverified_spawn_location": RAW_REVIEW_HARNESS_RELATIVE_PATH,
-            "leading_underscore_is_authority_boundary": False,
-            "isinstance_of_a_public_dataclass_is_authority": False,
-            "field_values_are_authority": False,
-            "class_naming_is_authority": False,
-            "caller_may_construct_the_authoritative_execution": False,
-            "construction_bypass_yields_unowned_object_that_refuses": True,
-            "construction_authority_weakened_by_this_decision": False,
-            "cryptographic_ceremony_introduced": False,
-            "worker_visible_secret_introduced": False,
-            "worker_computable_mac_key_introduced": False,
-            "api_closure_audit": closure,
-            "direct_worker_launch_census": census,
-        }
-    )
-
-
-def scientific_evidence_authority_rule() -> dict[str, Any]:
-    """Only the closed flow may state that a scientific execution is authority."""
-
+    if not identity["closed"]:
+        raise IsolatedScientificWorkerR5Error(
+            f"the construction identity audit refuses: {identity['findings']!r}"
+        )
     return _revised(
-        r3.scientific_evidence_authority_rule(),
-        contract_version="ETF_CALENDAR_SCIENTIFIC_EVIDENCE_AUTHORITY_RULE_V1_R4",
-        affirmative_authority_marker=AUTHORITATIVE_SCIENTIFIC_AUTHORITY,
-        affirmative_scientific_evidence_is_stored_as_immutable_canonical_bytes=True,
-        affirmative_evidence_is_constructed_from_the_frozen_admitted_snapshot=True,
-        caller_visible_evidence_mutation_can_change_affirmative_authority=False,
-        superseded_lineage_marker=r3.AUTHORITATIVE_SCIENTIFIC_AUTHORITY,
-        mutated_superseded_lineage_evidence_is_r4_authority=False,
-    )
-
-
-def controller_authority_context_rule() -> dict[str, Any]:
-    """Repair C, extended across the lifetime of the returned authority."""
-
-    return _revised(
-        r3.controller_authority_context_rule(),
-        contract_version="ETF_CALENDAR_CONTROLLER_AUTHORITY_CONTEXT_RULE_V1_PAD4_R4",
-        authority_context_version=AUTHORITY_CONTEXT_VERSION,
-        r4_trusted_context_type_required=True,
-        three_way_agreement_valid_through_admission=True,
-        three_way_agreement_valid_through_returned_authority_lifetime=True,
-        returned_authority_can_drift_from_the_trusted_context=False,
-        caller_mutation_can_break_the_three_way_agreement=False,
-        trusted_context_identity_is_frozen_into_the_affirmative_evidence_bytes=True,
+        r4.authoritative_scientific_execution_boundary(),
+        contract_version=AUTHORITATIVE_EXECUTION_BOUNDARY_VERSION,
+        reviewed_parent=FAILED_PAD4_R4_SHA256,
+        review=FAILED_PAD4_R4_REVIEW,
+        review_result=FAILED_PAD4_R4_REVIEW_RESULT,
+        defect=(
+            "the R4 immutable snapshot was stored correctly but its "
+            "WeakKeyDictionary execution binding resolved by equality/hash, so "
+            "a distinct unrelated caller object reusing public descriptors could "
+            "resolve another execution's authority"
+        ),
+        rule=(
+            "THE FROZEN ADMITTED AUTHORITY RESOLVES ONLY FOR A RECEIVER THAT IS, "
+            "BY PYTHON is, THE EXACT OBJECT PASSED TO THE SINGLE CAPABILITY-GATED "
+            "BIND, AND ONLY WHILE THAT OBJECT IS ALIVE"
+        ),
+        authority_mechanism=(
+            "IMMUTABLE_CANONICAL_SNAPSHOT_PLUS_NONAUTHORITATIVE_ID_BUCKET_PLUS_"
+            "WEAK_LIVE_WITNESS_EXACT_IDENTITY"
+        ),
+        identity_safe_snapshot_lookup_is_load_bearing=True,
+        exact_type_receiver_guard_is_required=True,
+        exact_type_receiver_guard_is_load_bearing=False,
+        receiver_equality_or_hash_equivalence_is_authority=False,
+        identifier_is_only_a_bucket_selector=True,
+        identifier_equality_is_authority=False,
+        live_witness_is_receiver_required=True,
+        registry_retains_execution_strongly=False,
+        conditional_cleanup_is_witness_specific=True,
+        identifier_reuse_can_rebind_stale_authority=False,
+        relay_residual_closed=False,
+        construction_identity_audit=identity,
+        api_closure_audit=closure,
+        direct_worker_launch_census=census,
     )
 
 
 def proof_order_and_completeness_definition() -> dict[str, Any]:
-    base = r3.proof_order_and_completeness_definition()
+    base = r4.proof_order_and_completeness_definition()
     return _revised(
         base,
-        contract_version="ETF_CALENDAR_ISOLATED_WORKER_PROOF_ORDER_V1_PAD4_R4",
-        controller_or_review_order=list(AUTHORITATIVE_EXECUTION_ORDER[:5]),
-        controller_admission_order=list(AUTHORITATIVE_EXECUTION_ORDER[5:]),
-        admitted_authority_is_frozen_before_it_becomes_caller_visible=True,
-        caller_facing_access_is_a_fresh_decode_of_frozen_bytes=True,
-        post_admission_mutation_can_redefine_authority=False,
-        # the list below unions this parent's own required regressions with every
-        # one inherited from the reviewed PAD4-R3 set.  An inherited entry names
-        # the property its own parent required, so an R3-framed name is read
-        # against PAD4-R3 rather than reinterpreted under this parent; the
-        # R4-framed counterpart of each such property is listed alongside it.
-        inherited_adversarial_regressions_are_read_against_their_own_parent=True,
+        contract_version="ETF_CALENDAR_ISOLATED_WORKER_PROOF_ORDER_V1_PAD4_R5",
+        exact_execution_identity_binding_required=True,
+        identity_safe_snapshot_lookup_is_load_bearing=True,
+        exact_type_guard_is_non_load_bearing_defence_in_depth=True,
+        relay_residual_closed=False,
         completeness_claim=(
-            "the scientific answer is produced by certified source whose "
-            "pre-trust bootstrap set was bound by already-trusted controller code "
-            "before any of it executed, executed as certified bytecode, under a "
-            "certified interpreter, against a reviewed third-party artifact whose "
-            "installed bytes were verified first, in a process that shares no "
-            "mutable Python state with the application, every material authority "
-            "identity reproduces against a trusted controller context, the "
-            "preverification, the launch, the outcome, the canonicalisation, the "
-            "digest binding, the admission and the affirmative evidence are one "
-            "closed controller operation that no caller can enter part-way and no "
-            "caller can compose, and what that operation admitted is what the "
-            "returned authority permanently represents because the authority is "
-            "an immutable canonical snapshot and every caller-facing value is a "
-            "detached decode of it"
+            base["completeness_claim"]
+            + "; R5 additionally binds the frozen authority to one exact live "
+            "controller-owned execution by weak witness identity, while "
+            "id(receiver) is only a non-authoritative bucket selector"
         ),
         required_adversarial_regressions=sorted(
             {
                 *base["required_adversarial_regressions"],
-                "AFFIRMATIVE_EVIDENCE_MUTATION_IS_ISOLATED",
-                "BOUND_RESULT_DIGEST_REPRODUCES_FROM_THE_FROZEN_SNAPSHOT",
-                "CALLER_MUTATED_NESTED_MAPPING_CANNOT_CHANGE_AUTHORITY",
-                "CALLER_MUTATED_NESTED_SEQUENCE_CANNOT_CHANGE_AUTHORITY",
-                "CALLER_MUTATED_RESPONSE_CANNOT_CHANGE_AUTHORITY",
-                "CALLER_MUTATED_RESULT_CANNOT_CHANGE_AUTHORITY",
-                "CROSS_ACCESSOR_VALUES_SHARE_NO_MUTABLE_DESCENDANT",
-                "DISCARDED_TEMPORARY_PARSER_STATE_CANNOT_CHANGE_AUTHORITY",
-                "REPEATED_READS_RETURN_THE_ORIGINAL_ADMITTED_STATE",
-                "A_REFUSAL_CANNOT_BE_PROMOTED_TO_AN_ADMITTED_EXECUTION",
-                "A_SUBCLASS_CANNOT_SPOOF_EQUALITY_TO_INHERIT_ADMITTED_AUTHORITY",
-                "NO_CLASS_MEMBER_HANDS_OUT_THE_AUTHORITY_STORAGE",
-                "SEQUENTIAL_REQUESTS_HAVE_INDEPENDENT_RETURN_STATE",
-                "SUPERSEDED_LINEAGE_EVIDENCE_IS_NOT_R4_AUTHORITY",
-                "THE_FROZEN_AUTHORITY_SNAPSHOT_HAS_NO_MUTATING_API",
-                "THE_IMMUTABILITY_GATE_REFUSES_MUTABLE_AND_MALFORMED_MATERIAL",
-                "THE_REVIEWED_R3_RETURN_STATE_DEFECT_REPRODUCES_AS_A_CONTROL",
+                "R4_DESCRIPTOR_REUSE_DEFECT_REPRODUCES_AS_A_CONTROL",
+                "DISTINCT_EQUAL_HASH_EQUIVALENT_UNRELATED_OBJECT_IS_REFUSED",
+                "DESCRIPTOR_REUSE_ON_UNRELATED_CLASS_IS_REFUSED",
+                "UNBOUND_PROPERTY_GETTER_WITH_FOREIGN_RECEIVER_IS_REFUSED",
+                "UNBOUND_SNAPSHOT_PROOF_WITH_FOREIGN_RECEIVER_IS_REFUSED",
+                "SPOOFED___CLASS___RECEIVER_IS_REFUSED",
+                "FOREIGN_REPR_RECEIVER_IS_REFUSED",
+                "DIRECT_CONSTRUCTION_IS_REFUSED",
+                "NEW_BYPASS_IS_REFUSED",
+                "UNSUPPORTED_SUBCLASS_IS_REFUSED",
+                "DISTINCT_EXACT_CLASS_NON_OWNED_OBJECT_IS_REFUSED",
+                "IDENTIFIER_REUSE_CANNOT_REBIND_STALE_AUTHORITY",
+                "DEAD_EXECUTION_CLEANUP_CANNOT_DELETE_NEWER_BINDING",
+                "SEQUENTIAL_LEGITIMATE_REQUESTS_REMAIN_INDEPENDENT",
+                "AUTHORITY_LOOKUP_CALLS_NO_RECEIVER_CONTROLLED_CODE",
+                "AUTHORITATIVE_CLASS_EQ_AND_HASH_REMAIN_OBJECT_IDENTITY_SEMANTICS",
             }
         ),
     )
@@ -2923,9 +2737,9 @@ def proof_order_and_completeness_definition() -> dict[str, Any]:
 
 def science_lineage_and_safety() -> dict[str, Any]:
     return _revised(
-        r3.science_lineage_and_safety(),
+        r4.science_lineage_and_safety(),
         contract_version=(
-            "ETF_CALENDAR_ISOLATED_WORKER_SCIENCE_LINEAGE_AND_SAFETY_V1_PAD4_R4"
+            "ETF_CALENDAR_ISOLATED_WORKER_SCIENCE_LINEAGE_AND_SAFETY_V1_PAD4_R5"
         ),
         failed_architecture_lineage=[
             {
@@ -2940,85 +2754,152 @@ def science_lineage_and_safety() -> dict[str, Any]:
             for sha in FAILED_ARCHITECTURE_LINEAGE
         ],
         corrected_predecessor={
-            "definition_sha256": FAILED_PAD4_R3_SHA256,
-            "decision_commit": FAILED_PAD4_R3_DECISION_COMMIT,
-            "review": FAILED_PAD4_R3_REVIEW,
-            "review_commit": FAILED_PAD4_R3_REVIEW_COMMIT,
-            "review_result": FAILED_PAD4_R3_REVIEW_RESULT,
-            "execution_classification": FAILED_PAD4_R3_EXECUTION_CLASSIFICATION,
-            "material_children": 25,
+            "definition_sha256": FAILED_PAD4_R4_SHA256,
+            "review": FAILED_PAD4_R4_REVIEW,
+            "review_commit": FAILED_PAD4_R4_REVIEW_COMMIT,
+            "review_result": FAILED_PAD4_R4_REVIEW_RESULT,
+            "execution_classification": FAILED_PAD4_R4_EXECUTION_CLASSIFICATION,
+            "material_children": 30,
             "artifacts_overwritten_by_this_correction": False,
             "namespace_mutated_by_this_correction": False,
             "certified": False,
             "used": False,
             "prospective_observations": 0,
         },
+        relay_residual_status="OPEN_RESIDUAL_NOT_CLOSED_BY_R5",
+    )
+
+
+def authoritative_execution_identity_rule() -> dict[str, Any]:
+    return _definition(
+        {
+            "contract_version": "ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_RULE_V1_R5",
+            "reviewed_parent": FAILED_PAD4_R4_SHA256,
+            "rule": (
+                "THE FROZEN ADMITTED AUTHORITY RESOLVES ONLY FOR A RECEIVER THAT "
+                "IS, BY PYTHON is, THE EXACT OBJECT PASSED TO THE SINGLE "
+                "CAPABILITY-GATED BIND, AND ONLY WHILE THAT OBJECT IS ALIVE"
+            ),
+            "exact_execution_identity_is_load_bearing": True,
+            "identifier_equality_is_authority": False,
+            "receiver_equality_is_authority": False,
+            "receiver_hash_equivalence_is_authority": False,
+            "relay_residual_closed": False,
+        }
+    )
+
+
+def identity_safe_snapshot_binding_rule() -> dict[str, Any]:
+    audit = audit_authoritative_return_state()
+    if not audit["closed"]:
+        raise IsolatedScientificWorkerR5Error(
+            f"identity-safe binding audit refuses: {audit['findings']!r}"
+        )
+    return _definition(
+        {
+            "contract_version": "ETF_CALENDAR_IDENTITY_SAFE_SNAPSHOT_BINDING_RULE_V1_R5",
+            "bucket_selector": "id(receiver)",
+            "bucket_selector_is_authority": False,
+            "registry_key_type": "int",
+            "registry_is_keyed_on_receiver": False,
+            "registry_is_keyed_on_weakref": False,
+            "registry_value": "weak_live_witness_plus_FrozenAuthoritySnapshot",
+            "registry_retains_execution_strongly": False,
+            "live_witness_comparison": "live_witness is receiver",
+            "authority_reader_registry_fetch_count": audit[
+                "authority_reader_registry_fetch_count"
+            ],
+            "conditional_cleanup_is_witness_specific": audit[
+                "conditional_cleanup_is_witness_specific"
+            ],
+            "identifier_reuse_can_rebind_stale_authority": False,
+            "behavioral_identity_safety_probe": audit[
+                "behavioral_identity_safety_probe"
+            ],
+        }
+    )
+
+
+def authority_receiver_validation_rule() -> dict[str, Any]:
+    audit = audit_authoritative_return_state()
+    return _definition(
+        {
+            "contract_version": "ETF_CALENDAR_AUTHORITY_RECEIVER_VALIDATION_RULE_V1_R5",
+            "receiver_none_is_refused": True,
+            "receiver_type_guard": "type(receiver) is AuthoritativeScientificExecution",
+            "exact_type_guard_is_required": True,
+            "exact_type_guard_is_load_bearing": False,
+            "load_bearing_guard": "live_witness is receiver",
+            "receiver_controlled_lookup_calls": audit[
+                "receiver_controlled_lookup_calls"
+            ],
+            "object_identity___eq___preserved": audit[
+                "object_identity___eq___preserved"
+            ],
+            "object_identity___hash___preserved": audit[
+                "object_identity___hash___preserved"
+            ],
+            "uniform_refusal_error": "AuthoritativeExecutionConstructionError",
+        }
+    )
+
+
+def construction_identity_audit_rule() -> dict[str, Any]:
+    audit = audit_authoritative_return_state()
+    if not audit["closed"]:
+        raise IsolatedScientificWorkerR5Error(
+            f"construction identity audit refuses: {audit['findings']!r}"
+        )
+    return _definition(
+        {
+            "contract_version": "ETF_CALENDAR_CONSTRUCTION_IDENTITY_AUDIT_RULE_V1_R5",
+            "audit": audit,
+            "checked_in_r4_fails_r5_passes_descriptor_reuse_control_required": True,
+            "proof_interpreter_entry_probe": "probe_proof_interpreter_identity_assumptions",
+            "proof_interpreter_required_implementation": "CPython",
+            "proof_interpreter_required_version": "3.12.14",
+            "live_surface_audit_includes_dunders": True,
+            "single_authority_reader_required": True,
+            "single_capability_gated_bind_required": True,
+            "relay_residual_closed": False,
+        }
     )
 
 
 _CHILD_ARTIFACTS: tuple[tuple[str, Callable[[], dict[str, Any]]], ...] = (
-    (
-        "authoritative_scientific_execution_boundary.json",
-        authoritative_scientific_execution_boundary,
-    ),
-    ("authoritative_return_state_rule.json", authoritative_return_state_rule),
+    ("authoritative_execution_identity_rule.json", authoritative_execution_identity_rule),
+    ("identity_safe_snapshot_binding_rule.json", identity_safe_snapshot_binding_rule),
+    ("authority_receiver_validation_rule.json", authority_receiver_validation_rule),
+    ("construction_identity_audit_rule.json", construction_identity_audit_rule),
+    ("authoritative_scientific_execution_boundary.json", authoritative_scientific_execution_boundary),
+    ("authoritative_return_state_rule.json", r4.authoritative_return_state_rule),
     ("canonical_admitted_snapshot_rule.json", canonical_admitted_snapshot_rule),
-    (
-        "caller_visible_copy_isolation_rule.json",
-        caller_visible_copy_isolation_rule,
-    ),
-    (
-        "result_digest_lifetime_binding_rule.json",
-        result_digest_lifetime_binding_rule,
-    ),
-    (
-        "affirmative_evidence_snapshot_rule.json",
-        affirmative_evidence_snapshot_rule,
-    ),
+    ("caller_visible_copy_isolation_rule.json", caller_visible_copy_isolation_rule),
+    ("result_digest_lifetime_binding_rule.json", r4.result_digest_lifetime_binding_rule),
+    ("affirmative_evidence_snapshot_rule.json", affirmative_evidence_snapshot_rule),
     ("admission_provenance_rule.json", admission_provenance_rule),
     ("scientific_evidence_authority_rule.json", scientific_evidence_authority_rule),
-    (
-        "bootstrap_pre_execution_source_binding_rule.json",
-        bootstrap_pre_execution_source_binding_rule,
-    ),
-    ("bootstrap_source_set.json", bootstrap_source_set),
-    (
-        "trusted_process_and_isolation_boundary.json",
-        trusted_process_and_isolation_boundary,
-    ),
-    ("proof_interpreter_identity.json", proof_interpreter_identity),
-    ("worker_launch_contract.json", worker_launch_contract),
-    ("bytecode_execution_binding_rule.json", bytecode_execution_binding_rule),
+    ("bootstrap_pre_execution_source_binding_rule.json", r4.bootstrap_pre_execution_source_binding_rule),
+    ("bootstrap_source_set.json", r4.bootstrap_source_set),
+    ("trusted_process_and_isolation_boundary.json", r4.trusted_process_and_isolation_boundary),
+    ("proof_interpreter_identity.json", r4.proof_interpreter_identity),
+    ("worker_launch_contract.json", r4.worker_launch_contract),
+    ("bytecode_execution_binding_rule.json", r4.bytecode_execution_binding_rule),
     ("controller_authority_context_rule.json", controller_authority_context_rule),
-    (
-        "project_source_manifest_binding_rule.json",
-        project_source_manifest_binding_rule,
-    ),
-    (
-        "pre_i2_project_source_manifest_fixture.json",
-        pre_i2_project_source_manifest_fixture,
-    ),
-    ("third_party_semantic_authority.json", third_party_semantic_authority),
-    (
-        "third_party_installed_content_attestation_rule.json",
-        third_party_installed_content_attestation_rule,
-    ),
-    (
-        "dynamic_import_and_execution_prohibition.json",
-        dynamic_import_and_execution_prohibition,
-    ),
-    ("scientific_request_protocol.json", scientific_request_protocol),
-    ("scientific_response_protocol.json", scientific_response_protocol),
-    ("worker_io_and_capability_boundary.json", worker_io_and_capability_boundary),
-    ("compiled_root_binding_witness_rule.json", compiled_root_binding_witness_rule),
-    ("store_root_and_direct_use_grammar.json", store_root_and_direct_use_grammar),
-    ("replay_owner_graph_rule.json", replay_owner_graph_rule),
-    ("direct_body_dependency_rule.json", direct_body_dependency_rule),
-    ("controller_result_admission_rule.json", controller_result_admission_rule),
-    (
-        "proof_order_and_completeness_definition.json",
-        proof_order_and_completeness_definition,
-    ),
+    ("project_source_manifest_binding_rule.json", r4.project_source_manifest_binding_rule),
+    ("pre_i2_project_source_manifest_fixture.json", r4.pre_i2_project_source_manifest_fixture),
+    ("third_party_semantic_authority.json", r4.third_party_semantic_authority),
+    ("third_party_installed_content_attestation_rule.json", r4.third_party_installed_content_attestation_rule),
+    ("dynamic_import_and_execution_prohibition.json", r4.dynamic_import_and_execution_prohibition),
+    ("scientific_request_protocol.json", r4.scientific_request_protocol),
+    ("scientific_response_protocol.json", r4.scientific_response_protocol),
+    ("worker_io_and_capability_boundary.json", r4.worker_io_and_capability_boundary),
+    ("compiled_root_binding_witness_rule.json", r4.compiled_root_binding_witness_rule),
+    ("store_root_and_direct_use_grammar.json", r4.store_root_and_direct_use_grammar),
+    ("replay_owner_graph_rule.json", r4.replay_owner_graph_rule),
+    ("direct_body_dependency_rule.json", r4.direct_body_dependency_rule),
+    ("controller_result_admission_rule.json", r4.controller_result_admission_rule),
+    ("proof_order_and_completeness_definition.json", proof_order_and_completeness_definition),
     ("science_lineage_and_safety.json", science_lineage_and_safety),
 )
 
