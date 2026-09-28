@@ -179,7 +179,7 @@ FAILED_PAD4_SHA256 = r3.FAILED_PAD4_SHA256
 #: consistency obligation the completed review attached to it.
 REPAIRED_REVIEW_FINDINGS: tuple[str, ...] = (
     "P0_UNEARNED_RESOLUTION_EQUALITY_KEYED_BINDING_CAN_RESOLVE_FOREIGN_RECEIVER",
-    "P0_CONSTRUCTION_IDENTITY_AUDIT_MUST_BEHAVI0RALLY_PROVE_EXACT_RECEIVER_IDENTITY",
+    "P0_CONSTRUCTION_IDENTITY_AUDIT_MUST_BEHAVIORALLY_PROVE_EXACT_RECEIVER_IDENTITY",
 )
 
 #: The exact post-admission mutations ``POSTP1-002V2A-PAD4-R3`` established
@@ -449,7 +449,7 @@ class ScientificWorkerAuthorityContext(r4.ScientificWorkerAuthorityContext):
 
 
 def _as_r5_context(
-    context: r3.ScientificWorkerAuthorityContext,
+    context: r4.ScientificWorkerAuthorityContext,
 ) -> ScientificWorkerAuthorityContext:
     """Rebind a reviewed ``PAD4-R3`` context builder result to the R4 type."""
 
@@ -1594,6 +1594,7 @@ AUTHORITY_MARKER_DECLARED_READERS: tuple[str, ...] = (
 #: can be composed by a caller with a caller-built value.
 AUTHORITY_OWNED_STEPS: tuple[str, ...] = (
     "_affirmative_scientific_evidence",
+    "_bind_authority",
     "_execute_exact_worker",
     AUTHORITY_STORAGE_READER,
     "_validate_and_admit",
@@ -2438,6 +2439,16 @@ VERBATIM_PAD4_R3_CHILDREN: tuple[str, ...] = (
 #: reviewed ``PAD4-R2`` and therefore carries two generations of provenance.
 VERBATIM_PAD4_R2_CHILDREN: tuple[str, ...] = r3.VERBATIM_PAD4_R2_CHILDREN
 
+VERBATIM_PAD4_R4_CHILDREN: tuple[str, ...] = tuple(
+    sorted(
+        {
+            *r4.VERBATIM_PAD4_R3_CHILDREN,
+            "authoritative_return_state_rule",
+            "result_digest_lifetime_binding_rule",
+        }
+    )
+)
+
 
 # ---------------------------------------------------------------------------
 # Material children — the R4 correction
@@ -2940,15 +2951,16 @@ def isolated_scientific_worker_v1_r5_definition(
             "proof_strategy": PROOF_STRATEGY,
             "pre_data": True,
             "required_review": REQUIRED_REVIEW,
-            "correction_of": FAILED_PAD4_R3_SHA256,
+            "correction_of": FAILED_PAD4_R4_SHA256,
             "correction_is_a_new_architecture_family": False,
-            "correction_scope": "BOUNDED_POST_ADMISSION_RETURN_STATE_IMMUTABILITY",
+            "correction_scope": "BOUNDED_AUTHORITATIVE_EXECUTION_EXACT_IDENTITY_BINDING",
             "repaired_review_findings": list(REPAIRED_REVIEW_FINDINGS),
             "closed_reviewed_bypasses": list(r3.CLOSED_REVIEWED_BYPASSES),
             "closed_reviewed_return_state_mutations": list(
                 CLOSED_REVIEWED_RETURN_STATE_MUTATIONS
             ),
             "preserved_valid_portions": list(PRESERVED_VALID_PORTIONS),
+            "verbatim_pad4_r4_children": list(VERBATIM_PAD4_R4_CHILDREN),
             "verbatim_pad4_r3_children": list(VERBATIM_PAD4_R3_CHILDREN),
             "verbatim_pad4_r2_children": list(VERBATIM_PAD4_R2_CHILDREN),
             "not_reopened": list(NOT_REOPENED),
@@ -2967,6 +2979,11 @@ def isolated_scientific_worker_v1_r5_definition(
             "failed_pad4_r3_artifacts_overwritten": False,
             "failed_pad4_r3_namespace_mutated": False,
             "failed_pad4_r3_material_children": 25,
+            "failed_pad4_r4_sha256": FAILED_PAD4_R4_SHA256,
+            "failed_pad4_r4_certified": False,
+            "failed_pad4_r4_artifacts_overwritten": False,
+            "failed_pad4_r4_namespace_mutated": False,
+            "failed_pad4_r4_material_children": 30,
             "certified_dependency_sha256": CERTIFIED_DEPENDENCY_SHA256,
             "proof_interpreter": dict(PROOF_INTERPRETER_IDENTITY),
             "material_child_count": len(children),
@@ -2990,7 +3007,22 @@ def isolated_scientific_worker_v1_r5_definition(
                 frozen_third_party_authority()
             ),
             "central_decisions": {
-                # -- the R4 correction ---------------------------------------
+                # -- the R5 correction ---------------------------------------
+                "exact_execution_identity_is_load_bearing": True,
+                "identity_safe_snapshot_lookup": True,
+                "identifier_is_only_a_bucket_selector": True,
+                "identifier_equality_is_authority": False,
+                "live_witness_is_receiver_required": True,
+                "receiver_is_registry_key": False,
+                "weakref_is_registry_key": False,
+                "registry_retains_execution_strongly": False,
+                "conditional_cleanup_is_witness_specific": True,
+                "identifier_reuse_can_rebind_stale_authority": False,
+                "receiver_exact_type_guard_required": True,
+                "receiver_exact_type_guard_is_load_bearing": False,
+                "receiver_controlled_hash_or_equality_in_lookup": False,
+                "relay_residual_closed": False,
+                # -- the R4 correction, preserved ---------------------------- ---------------------------------------
                 "admitted_authority_uses_immutable_canonical_snapshot": True,
                 "caller_visible_mutable_result_is_authority_storage": False,
                 "caller_visible_mutable_response_is_authority_storage": False,
