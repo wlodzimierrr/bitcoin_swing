@@ -1859,474 +1859,423 @@ def audit_scientific_api_closure(
     }
 
 
+def probe_identity_safe_binding_semantics() -> dict[str, Any]:
+    """Behaviorally exercise the R5 lookup algorithm without holding authority."""
+
+    class Canonical:
+        __slots__ = ("__weakref__",)
+
+    owner = Canonical()
+    snapshot = object()
+    registry = {id(owner): (weakref_ref(owner), snapshot)}
+
+    def resolve(receiver: Any) -> Any:
+        if receiver is None:
+            raise LookupError
+        if type(receiver) is not Canonical:
+            raise LookupError
+        binding = registry.get(id(receiver))
+        if binding is None:
+            raise LookupError
+        live_witness = binding[0]()
+        if live_witness is receiver:
+            return binding[1]
+        raise LookupError
+
+    calls = {"eq": 0, "hash": 0, "class": 0}
+
+    class Foreign:
+        @property
+        def __class__(self):
+            calls["class"] += 1
+            return Canonical
+
+        def __eq__(self, other: object) -> bool:
+            calls["eq"] += 1
+            return True
+
+        def __hash__(self) -> int:
+            calls["hash"] += 1
+            return 7
+
+    foreign = Foreign()
+    try:
+        resolve(foreign)
+    except LookupError:
+        foreign_refused = True
+    else:
+        foreign_refused = False
+
+    stale_receiver = Canonical()
+    registry[id(stale_receiver)] = registry[id(owner)]
+    try:
+        resolve(stale_receiver)
+    except LookupError:
+        stale_bucket_refused = True
+    else:
+        stale_bucket_refused = False
+
+    owner_resolves = resolve(owner) is snapshot
+
+    # Reproduce delayed-callback ordering directly: an old witness must not
+    # delete a newer entry that happens to occupy the same integer bucket.
+    cleanup_registry: dict[int, tuple[Any, object]] = {}
+    cleanup_owner = Canonical()
+    bucket = id(cleanup_owner)
+    old_witness = weakref_ref(cleanup_owner)
+    cleanup_registry[bucket] = (old_witness, object())
+    newer_owner = Canonical()
+    newer_witness = weakref_ref(newer_owner)
+    newer_snapshot = object()
+    cleanup_registry[bucket] = (newer_witness, newer_snapshot)
+    current = cleanup_registry.get(bucket)
+    if current is not None and current[0] is old_witness:
+        del cleanup_registry[bucket]
+    newer_survives_stale_cleanup = (
+        cleanup_registry.get(bucket) == (newer_witness, newer_snapshot)
+    )
+
+    return {
+        "exact_owner_resolves": owner_resolves,
+        "foreign_equal_hash_equivalent_receiver_refused": foreign_refused,
+        "receiver_controlled_eq_calls": calls["eq"],
+        "receiver_controlled_hash_calls": calls["hash"],
+        "receiver_controlled_class_calls": calls["class"],
+        "stale_identifier_bucket_refused_by_live_witness_identity": stale_bucket_refused,
+        "newer_entry_survives_stale_cleanup": newer_survives_stale_cleanup,
+    }
+
+
+def probe_proof_interpreter_identity_assumptions() -> dict[str, Any]:
+    """Reconfirm weakref/id assumptions under the frozen CPython interpreter."""
+
+    class Equal:
+        __slots__ = ("__weakref__",)
+
+        def __eq__(self, other: object) -> bool:
+            return isinstance(other, Equal)
+
+        def __hash__(self) -> int:
+            return 23
+
+    left = Equal()
+    right = Equal()
+    left_ref = weakref_ref(left)
+    right_ref = weakref_ref(right)
+    weakrefs_compare_equal = left_ref == right_ref
+    weakref_hashes_equal_referent_hash = (
+        hash(left_ref) == hash(right_ref) == hash(left) == hash(right)
+    )
+
+    never_hashed = Equal()
+    dead_ref = weakref_ref(never_hashed)
+    del never_hashed
+    gc.collect()
+    try:
+        hash(dead_ref)
+    except TypeError:
+        first_hash_after_death_refused = True
+    else:
+        first_hash_after_death_refused = False
+
+    hashed = Equal()
+    hashed_ref = weakref_ref(hashed)
+    live_hash = hash(hashed_ref)
+    del hashed
+    gc.collect()
+    previously_computed_hash_survives_death = hash(hashed_ref) == live_hash
+
+    class Canonical:
+        __slots__ = ()
+
+    class Spoof:
+        @property
+        def __class__(self):
+            return Canonical
+
+    return {
+        "implementation": platform.python_implementation(),
+        "version": platform.python_version(),
+        "is_frozen_proof_interpreter": (
+            platform.python_implementation() == "CPython"
+            and platform.python_version() == "3.12.14"
+        ),
+        "weakref_equality_can_follow_referent_equality": weakrefs_compare_equal,
+        "weakref_hash_can_follow_referent_hash": weakref_hashes_equal_referent_hash,
+        "first_weakref_hash_after_referent_death_is_refused": first_hash_after_death_refused,
+        "previously_computed_weakref_hash_survives_referent_death": previously_computed_hash_survives_death,
+        "type_builtin_ignores_spoofed___class___property": type(Spoof()) is Spoof,
+    }
+
+
 def audit_authoritative_return_state(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
-    """Prove mechanically that caller-visible state cannot reach authority.
-
-    This is the ``R4`` correction's own audit, and it is the mechanical answer to
-    the reviewed finding.  It is deterministic and structural: it reports names,
-    scopes, types, counts and the outcomes of fixed behavioural probes, never a
-    source hash and never a filesystem path.
-
-    It is deliberately *behavioural as well as structural*, because a purely
-    name-shaped audit can be satisfied by an implementation that leaks: it
-    actually calls the immutability gate with a mutable container, with a short
-    field set and with an extra field, and requires each to refuse, so deleting
-    the gate's body is a finding rather than an invisible change.  It is also
-    *surface-complete*: it enumerates the live class's own members rather than a
-    declared allow-list, so an undeclared member that hands out stored state is a
-    finding rather than something the audit never looks at.
-
-    It establishes, over this module's own AST and the live types:
-
-    1. the closure-private authority storage is referenced at exactly the three
-       declared places — its declaration, the one write in ``__init__`` and the
-       one closure-local read — so no second read, no mutating method call, no
-       alias and no augmented assignment exists;
-    2. the value written at that one write site is the immutability gate's return
-       value, the gate is module-level so it can be exercised, and exercising it
-       refuses every mutable and malformed snapshot while accepting a complete
-       immutable one;
-    3. the stored snapshot type is a ``tuple`` subclass carrying exactly the
-       frozen authority fields, with no mutating member and no instance
-       dictionary, so an admitted snapshot cannot be changed in place by any
-       route — including a reflective route that recovers the store and reads a
-       value out of it;
-    4. the live class exposes exactly the declared caller-facing material and
-       nothing else, no member returns stored state, every mapping-like accessor
-       returns a *fresh decode* of the frozen canonical bytes, and each accessor
-       reads the frozen field it is declared to read;
-    5. no refused copy or wrapper mechanism — shallow ``copy.copy``, a
-       ``deepcopy`` of a mutable graph, an outer ``MappingProxyType`` or a second
-       ``json`` encoding — appears anywhere inside the authority-owning closure;
-       and
-    6. the container exposes no material setter, no material deleter and no
-       instance dictionary, so an admitted execution's representation cannot be
-       reassigned from outside either.
-    """
+    """Mechanically and behaviorally audit immutable state plus exact identity."""
 
     source = _module_source(CONTROLLER_RELATIVE_PATH, project_root)
     tree = ast.parse(source)
     scopes = _scope_index(tree)
+    reader_scope = (AUTHORITY_OWNING_FACTORY, AUTHORITY_STORAGE_READER)
+    bind_scope = (AUTHORITY_OWNING_FACTORY, "_bind_authority")
+    cleanup_scope = (AUTHORITY_OWNING_FACTORY, "_cleanup_binding")
     class_scope = (AUTHORITY_OWNING_FACTORY, AUTHORITATIVE_EXECUTION_TYPE_NAME)
 
-    member_return_mechanisms: dict[str, list[str]] = {}
-    member_frozen_fields: dict[str, list[str]] = {}
-    storage_references: list[dict[str, Any]] = []
-    storage_write_sites: list[dict[str, Any]] = []
-    construction_material_fields: list[str] = []
-    prohibited_sites: list[dict[str, Any]] = []
-    reader_definition_scopes: list[list[str]] = []
+    registry_get_scopes: list[list[str]] = []
+    registry_write_scopes: list[list[str]] = []
+    registry_delete_scopes: list[list[str]] = []
+    live_identity_scopes: list[list[str]] = []
+    exact_type_scopes: list[list[str]] = []
+    capability_guard_scopes: list[list[str]] = []
+    reader_receiver_controlled_calls: list[str] = []
+    authority_reading_members: list[str] = []
 
     for node in ast.walk(tree):
-        chain = scopes.get(node, ())
-        # (4) every member of the authoritative class, not an allow-list
-        if (
-            isinstance(node, ast.Return)
-            and len(chain) == 3
-            and tuple(chain[:2]) == class_scope
-        ):
-            value = node.value
-            mechanism = (
-                _dotted_call_name(value.func) or "CALL"
-                if isinstance(value, ast.Call)
-                else type(value).__name__.upper()
-            )
-            member_return_mechanisms.setdefault(chain[2], []).append(mechanism)
-            for inner in ast.walk(node):
-                if not isinstance(inner, ast.Attribute):
-                    continue
-                if (
-                    isinstance(inner.value, ast.Call)
-                    and _dotted_call_name(inner.value.func) == AUTHORITY_STORAGE_READER
-                ) or (
-                    isinstance(inner.value, ast.Name)
-                    and inner.value.id == AUTHORITY_SNAPSHOT_LOCAL
-                ):
-                    member_frozen_fields.setdefault(chain[2], []).append(inner.attr)
-        # (1) every reference to the closure-private storage
-        if isinstance(node, ast.Name) and node.id == AUTHORITY_STORAGE_NAME:
-            storage_references.append(
-                {"scope": list(chain), "context": type(node.ctx).__name__}
-            )
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if (
-                    isinstance(target, ast.Subscript)
-                    and isinstance(target.value, ast.Name)
-                    and target.value.id == AUTHORITY_STORAGE_NAME
-                ):
-                    storage_write_sites.append(
-                        {
-                            "scope": list(chain),
-                            "value": (
-                                _dotted_call_name(node.value.func) or "CALL"
-                                if isinstance(node.value, ast.Call)
-                                else type(node.value).__name__.upper()
-                            ),
-                        }
-                    )
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if node.name == AUTHORITY_STORAGE_READER:
-                reader_definition_scopes.append(list(chain[:-1]))
+        chain = tuple(scopes.get(node, ()))
         if isinstance(node, ast.Call):
             dotted = _dotted_call_name(node.func)
-            if dotted == AUTHORITATIVE_EXECUTION_TYPE_NAME and len(node.args) == 2:
-                literal = node.args[1]
-                if isinstance(literal, ast.Dict):
-                    construction_material_fields = sorted(
-                        key.value
-                        for key in literal.keys
-                        if isinstance(key, ast.Constant) and isinstance(key.value, str)
-                    )
-        # (5) refused copy and wrapper mechanisms inside the authority closure
-        if chain and chain[0] == AUTHORITY_OWNING_FACTORY:
-            if isinstance(node, (ast.Name, ast.Attribute)):
-                dotted = _dotted_call_name(node)
-                if dotted in PROHIBITED_AUTHORITY_COPY_MECHANISMS:
-                    site = {"mechanism": dotted, "scope": list(chain)}
-                    if site not in prohibited_sites:
-                        prohibited_sites.append(site)
+            if dotted == f"{AUTHORITY_STORAGE_NAME}.get":
+                registry_get_scopes.append(list(chain))
+            if chain == reader_scope and dotted in {
+                "bool", "getattr", "hash", "repr",
+            }:
+                reader_receiver_controlled_calls.append(dotted)
+        if isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name):
+            if node.value.id == AUTHORITY_STORAGE_NAME:
+                if isinstance(node.ctx, ast.Store):
+                    registry_write_scopes.append(list(chain))
+                if isinstance(node.ctx, ast.Del):
+                    registry_delete_scopes.append(list(chain))
+        if isinstance(node, ast.Compare):
+            if (
+                chain == reader_scope
+                and isinstance(node.left, ast.Name)
+                and node.left.id == "live_witness"
+                and len(node.ops) == 1
+                and isinstance(node.ops[0], ast.Is)
+                and isinstance(node.comparators[0], ast.Name)
+                and node.comparators[0].id == "receiver"
+            ):
+                live_identity_scopes.append(list(chain))
+            if (
+                chain == reader_scope
+                and isinstance(node.left, ast.Call)
+                and isinstance(node.left.func, ast.Name)
+                and node.left.func.id == "type"
+                and len(node.left.args) == 1
+                and isinstance(node.left.args[0], ast.Name)
+                and node.left.args[0].id == "receiver"
+                and len(node.ops) == 1
+                and isinstance(node.ops[0], ast.IsNot)
+                and isinstance(node.comparators[0], ast.Name)
+                and node.comparators[0].id == AUTHORITATIVE_EXECUTION_TYPE_NAME
+            ):
+                exact_type_scopes.append(list(chain))
+            if (
+                chain == bind_scope
+                and isinstance(node.left, ast.Name)
+                and node.left.id == "capability"
+                and len(node.ops) == 1
+                and isinstance(node.ops[0], ast.IsNot)
+                and isinstance(node.comparators[0], ast.Name)
+                and node.comparators[0].id == "_capability"
+            ):
+                capability_guard_scopes.append(list(chain))
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if len(chain) == 3 and tuple(chain[:2]) == class_scope:
+                if any(
+                    isinstance(inner, ast.Call)
+                    and _dotted_call_name(inner.func) == AUTHORITY_STORAGE_READER
+                    for inner in ast.walk(node)
+                ):
+                    authority_reading_members.append(node.name)
 
-    # (2) exercise the immutability gate rather than merely naming it
-    accepted = {
-        "admitted": False,
-        "affirmative_evidence_bytes": b"null",
-        "affirmative_evidence_digest": "",
-        "failure_reason": None,
-        "request_digest": "",
-        "response_bytes": b"null",
-        "response_digest": "",
-        "result_bytes": b"null",
-        "result_digest": None,
-    }
-    probes: dict[str, Any] = {
-        "COMPLETE_IMMUTABLE_SNAPSHOT": dict(accepted),
-        "EXTRA_FIELD": {**accepted, "injected_field": "EXTRA"},
-        "MISSING_FIELD": {
-            name: value for name, value in accepted.items() if name != "result_digest"
-        },
-        "MUTABLE_BYTEARRAY_VALUE": {**accepted, "result_bytes": bytearray(b"null")},
-        "MUTABLE_MAPPING_VALUE": {**accepted, "result_bytes": {"state": "MUTABLE"}},
-        "MUTABLE_SEQUENCE_VALUE": {**accepted, "response_bytes": ["MUTABLE"]},
-        "MUTABLE_SET_VALUE": {**accepted, "response_digest": {"MUTABLE"}},
-        "NOT_A_MAPPING": ["not", "a", "mapping"],
-    }
-    gate_probes: dict[str, str] = {}
-    for name, probe in sorted(probes.items()):
-        try:
-            produced = verify_frozen_authority_snapshot(probe)
-        except AuthoritativeExecutionConstructionError:
-            gate_probes[name] = "REFUSED"
-        else:
-            gate_probes[name] = (
-                "ACCEPTED_AS_FROZEN_SNAPSHOT"
-                if type(produced) is FrozenAuthoritySnapshot
-                else f"ACCEPTED_AS_{type(produced).__name__}"
-            )
-
-    # (2b) exercise construction authority, not only the gate.  Every probe below
-    # is an attempt a caller can actually make, and each must refuse.
     construction_probes: dict[str, str] = {}
+
+    def refusal(name: str, action: Callable[[], Any]) -> None:
+        try:
+            action()
+        except AuthoritativeExecutionConstructionError:
+            construction_probes[name] = "REFUSED"
+        else:
+            construction_probes[name] = "ACCEPTED"
+
+    refusal("DIRECT_CONSTRUCTION", AuthoritativeScientificExecution)
+    unowned = AuthoritativeScientificExecution.__new__(AuthoritativeScientificExecution)
+    refusal("NEW_BYPASS_PROPERTY", lambda: unowned.admitted)
+    refusal("NEW_BYPASS_SNAPSHOT_PROOF", unowned.authoritative_snapshot_proof)
+
     try:
         type(
-            "ReturnStateAuditProbeSubclass",
+            "R5UnsupportedSubclass",
             (AuthoritativeScientificExecution,),
             {"__slots__": ()},
         )
     except AuthoritativeExecutionConstructionError:
-        construction_probes["SUBCLASS"] = "REFUSED"
-    else:  # pragma: no cover - a finding, not a path
-        construction_probes["SUBCLASS"] = "ACCEPTED"
-    try:
-        AuthoritativeScientificExecution()
-    except AuthoritativeExecutionConstructionError:
-        construction_probes["DIRECT_CONSTRUCTION"] = "REFUSED"
-    else:  # pragma: no cover - a finding, not a path
-        construction_probes["DIRECT_CONSTRUCTION"] = "ACCEPTED"
-    try:
-        AuthoritativeScientificExecution(
-            object(), {name: b"" for name in FROZEN_AUTHORITY_FIELDS}
-        )
-    except AuthoritativeExecutionConstructionError:
-        construction_probes["FORGED_CAPABILITY"] = "REFUSED"
-    else:  # pragma: no cover - a finding, not a path
-        construction_probes["FORGED_CAPABILITY"] = "ACCEPTED"
-    unowned = AuthoritativeScientificExecution.__new__(AuthoritativeScientificExecution)
-    for probe, read in (
-        ("NEW_BYPASS_SCALAR_ACCESSOR", lambda: unowned.admitted),
-        ("NEW_BYPASS_MAPPING_ACCESSOR", lambda: unowned.result),
-        ("NEW_BYPASS_SNAPSHOT_PROOF", unowned.authoritative_snapshot_proof),
-    ):
-        try:
-            read()
-        except AuthoritativeExecutionConstructionError:
-            construction_probes[probe] = "REFUSED"
-        else:  # pragma: no cover - a finding, not a path
-            construction_probes[probe] = "ACCEPTED"
+        construction_probes["UNSUPPORTED_SUBCLASS"] = "REFUSED"
+    else:
+        construction_probes["UNSUPPORTED_SUBCLASS"] = "ACCEPTED"
 
-    # (3) the stored snapshot type is genuinely immutable
-    snapshot_type = {
-        "name": FrozenAuthoritySnapshot.__name__,
-        "is_tuple_subclass": issubclass(FrozenAuthoritySnapshot, tuple),
-        "fields": list(FrozenAuthoritySnapshot._fields),
-        "mutating_members_present": sorted(
-            name
-            for name in MUTATING_CONTAINER_MEMBERS
-            if hasattr(FrozenAuthoritySnapshot, name)
-        ),
-        "has_instance_dictionary": "__dict__" in vars(FrozenAuthoritySnapshot),
+    calls = {"eq": 0, "hash": 0, "class": 0}
+
+    class Foreign:
+        @property
+        def __class__(self):
+            calls["class"] += 1
+            return AuthoritativeScientificExecution
+
+        def __eq__(self, other: object) -> bool:
+            calls["eq"] += 1
+            return True
+
+        def __hash__(self) -> int:
+            calls["hash"] += 1
+            return 0
+
+    foreign = Foreign()
+    properties = {
+        name: value
+        for name, value in vars(AuthoritativeScientificExecution).items()
+        if isinstance(value, property)
     }
+    for name, descriptor in sorted(properties.items()):
+        refusal(
+            f"UNBOUND_PROPERTY_{name}",
+            lambda descriptor=descriptor: descriptor.fget(foreign),
+        )
+    proof = vars(AuthoritativeScientificExecution)[AUTHORITATIVE_SNAPSHOT_PROOF]
+    refusal("UNBOUND_SNAPSHOT_PROOF", lambda: proof(foreign))
+    repr_method = vars(AuthoritativeScientificExecution)["__repr__"]
+    refusal("UNBOUND_REPR", lambda: repr_method(foreign))
 
-    # (4) and (6) the live class surface
-    live_members = sorted(
-        name
-        for name in vars(AuthoritativeScientificExecution)
-        if not (name.startswith("__") and name.endswith("__"))
+    class DescriptorReuse(Foreign):
+        admitted = properties["admitted"]
+        result = properties["result"]
+        authoritative_snapshot_proof = proof
+
+    reused = DescriptorReuse()
+    refusal("DESCRIPTOR_REUSE_FOREIGN_CLASS", lambda: reused.admitted)
+
+    exact_non_owned = AuthoritativeScientificExecution.__new__(
+        AuthoritativeScientificExecution
     )
-    descriptors: dict[str, dict[str, Any]] = {}
-    for name in sorted((*MUTABLE_CONVENIENCE_ACCESSORS, *IMMUTABLE_CONVENIENCE_ACCESSORS)):
-        descriptor = vars(AuthoritativeScientificExecution).get(name)
-        descriptors[name] = {
-            "is_read_only_property": isinstance(descriptor, property)
-            and descriptor.fset is None
-            and descriptor.fdel is None,
-        }
-    declared_slots = list(getattr(AuthoritativeScientificExecution, "__slots__", ()))
-    has_instance_dictionary = "__dict__" in vars(AuthoritativeScientificExecution)
+    refusal("DISTINCT_EXACT_CLASS_NON_OWNED", lambda: exact_non_owned.result)
+
+    behavior = probe_identity_safe_binding_semantics()
+    behavior_closed = (
+        behavior["exact_owner_resolves"]
+        and behavior["foreign_equal_hash_equivalent_receiver_refused"]
+        and behavior["stale_identifier_bucket_refused_by_live_witness_identity"]
+        and behavior["newer_entry_survives_stale_cleanup"]
+        and behavior["receiver_controlled_eq_calls"] == 0
+        and behavior["receiver_controlled_hash_calls"] == 0
+        and behavior["receiver_controlled_class_calls"] == 0
+    )
+
+    reader_gets = [
+        scope for scope in registry_get_scopes if tuple(scope) == reader_scope
+    ]
+    cleanup_gets = [
+        scope for scope in registry_get_scopes if tuple(scope) == cleanup_scope
+    ]
+    expected_readers = sorted(
+        (*AUTHORITATIVE_EXECUTION_MATERIAL, "__repr__")
+    )
+    actual_readers = sorted(set(authority_reading_members))
+    eq_identity = AuthoritativeScientificExecution.__eq__ is object.__eq__
+    hash_identity = AuthoritativeScientificExecution.__hash__ is object.__hash__
 
     findings: list[str] = []
-    declared_references = [
-        {"scope": list(scope), "context": context}
-        for scope, context in DECLARED_AUTHORITY_STORAGE_REFERENCES
-    ]
-    if storage_references != declared_references:
+    if len(reader_gets) != 1:
+        findings.append(f"AUTHORITY_READER_REGISTRY_FETCH_COUNT:{reader_gets!r}")
+    if len(live_identity_scopes) != 1:
+        findings.append(f"LIVE_WITNESS_IDENTITY_COMPARE_COUNT:{live_identity_scopes!r}")
+    if len(exact_type_scopes) != 1:
+        findings.append(f"EXACT_TYPE_GUARD_COUNT:{exact_type_scopes!r}")
+    if registry_write_scopes != [list(bind_scope)]:
+        findings.append(f"REGISTRY_WRITE_NOT_SINGLE_BIND:{registry_write_scopes!r}")
+    if capability_guard_scopes != [list(bind_scope)]:
+        findings.append(f"BIND_NOT_CAPABILITY_GATED:{capability_guard_scopes!r}")
+    if cleanup_gets != [list(cleanup_scope)]:
+        findings.append(f"CLEANUP_FETCH_COUNT:{cleanup_gets!r}")
+    if registry_delete_scopes != [list(cleanup_scope)]:
+        findings.append(f"CLEANUP_DELETE_COUNT:{registry_delete_scopes!r}")
+    if reader_receiver_controlled_calls:
         findings.append(
-            f"THE_AUTHORITY_STORAGE_IS_REFERENCED_OUTSIDE_THE_DECLARED_SITES:"
-            f"{storage_references!r}"
+            f"RECEIVER_CONTROLLED_CALL_IN_LOOKUP:{reader_receiver_controlled_calls!r}"
         )
-    expected_store_scope = [
-        AUTHORITY_OWNING_FACTORY,
-        AUTHORITATIVE_EXECUTION_TYPE_NAME,
-        "__init__",
-    ]
-    if storage_write_sites != [
-        {"scope": expected_store_scope, "value": AUTHORITY_SNAPSHOT_GUARD}
-    ]:
+    if actual_readers != expected_readers:
         findings.append(
-            f"AUTHORITY_STORAGE_IS_NOT_WRITTEN_ONLY_THROUGH_THE_IMMUTABILITY_GATE:"
-            f"{storage_write_sites!r}"
+            f"LIVE_AUTHORITY_READER_SURFACE:{actual_readers!r}"
         )
-    if reader_definition_scopes != [[AUTHORITY_OWNING_FACTORY]]:
-        findings.append(
-            f"THE_AUTHORITY_STORAGE_READER_IS_NOT_UNIQUELY_CLOSURE_LOCAL:"
-            f"{reader_definition_scopes!r}"
-        )
-    if construction_material_fields != sorted(FROZEN_AUTHORITY_FIELDS):
-        findings.append(
-            f"THE_CONSTRUCTION_SITE_DOES_NOT_STORE_THE_FROZEN_AUTHORITY_FIELD_SET:"
-            f"{construction_material_fields!r}"
-        )
-    expected_probes = {
-        name: ("ACCEPTED_AS_FROZEN_SNAPSHOT" if name == "COMPLETE_IMMUTABLE_SNAPSHOT"
-               else "REFUSED")
-        for name in probes
-    }
-    if gate_probes != expected_probes:
-        findings.append(
-            f"THE_IMMUTABILITY_GATE_DOES_NOT_REFUSE_MUTABLE_OR_MALFORMED_MATERIAL:"
-            f"{gate_probes!r}"
-        )
-    if sorted(construction_probes.values()) != ["REFUSED"] * len(construction_probes):
-        findings.append(
-            f"A_CONSTRUCTION_BYPASS_IS_NOT_REFUSED:{construction_probes!r}"
-        )
-    if not snapshot_type["is_tuple_subclass"]:
-        findings.append("THE_STORED_SNAPSHOT_TYPE_IS_NOT_IMMUTABLE")
-    if snapshot_type["fields"] != list(FROZEN_AUTHORITY_FIELDS):
-        findings.append(
-            f"THE_STORED_SNAPSHOT_TYPE_DOES_NOT_CARRY_THE_FROZEN_FIELD_SET:"
-            f"{snapshot_type['fields']!r}"
-        )
-    if snapshot_type["mutating_members_present"] or snapshot_type[
-        "has_instance_dictionary"
-    ]:
-        findings.append(
-            f"THE_STORED_SNAPSHOT_TYPE_EXPOSES_A_MUTATING_MEMBER:"
-            f"{snapshot_type['mutating_members_present']!r}"
-        )
-    if live_members != sorted(AUTHORITATIVE_EXECUTION_MATERIAL):
-        findings.append(
-            f"THE_AUTHORITATIVE_CLASS_EXPOSES_AN_UNDECLARED_MEMBER:{live_members!r}"
-        )
-    returning_members = sorted(member_return_mechanisms)
-    if returning_members != sorted(
-        (*AUTHORITATIVE_EXECUTION_MATERIAL, *DECLARED_NON_MATERIAL_MEMBERS)
-    ):
-        findings.append(
-            f"A_CLASS_MEMBER_RETURNS_WITHOUT_BEING_DECLARED:{returning_members!r}"
-        )
-    proof_fields = sorted(set(member_frozen_fields.get(AUTHORITATIVE_SNAPSHOT_PROOF, ())))
-    if not proof_fields or not set(proof_fields) <= {
-        *FROZEN_AUTHORITY_FIELDS,
-        *DECLARED_SNAPSHOT_INTROSPECTION,
-    }:
-        findings.append(
-            f"THE_SNAPSHOT_PROOF_READS_SOMETHING_OTHER_THAN_A_FROZEN_FIELD:"
-            f"{proof_fields!r}"
-        )
-    for name in MUTABLE_CONVENIENCE_ACCESSORS:
-        mechanisms = member_return_mechanisms.get(name, [])
-        if mechanisms != [CANONICAL_DECODE_CALL]:
-            findings.append(
-                f"MUTABLE_CONVENIENCE_ACCESSOR_IS_NOT_A_FRESH_CANONICAL_DECODE:"
-                f"{name!r}:{mechanisms!r}"
-            )
-    for name in IMMUTABLE_CONVENIENCE_ACCESSORS:
-        mechanisms = member_return_mechanisms.get(name, [])
-        if mechanisms != ["ATTRIBUTE"]:
-            findings.append(
-                f"IMMUTABLE_CONVENIENCE_ACCESSOR_IS_NOT_A_DIRECT_FROZEN_FIELD_READ:"
-                f"{name!r}:{mechanisms!r}"
-            )
-    if member_return_mechanisms.get(AUTHORITATIVE_SNAPSHOT_PROOF) != ["DICT"]:
-        findings.append(
-            f"THE_SNAPSHOT_PROOF_IS_NOT_A_PURE_DERIVATION_OF_THE_FROZEN_SNAPSHOT:"
-            f"{member_return_mechanisms.get(AUTHORITATIVE_SNAPSHOT_PROOF)!r}"
-        )
-    misbound = sorted(
-        f"{name}->{member_frozen_fields.get(name)!r}"
-        for name, field in ACCESSOR_FROZEN_FIELDS.items()
-        if member_frozen_fields.get(name) != [field]
-    )
-    if misbound:
-        findings.append(f"AN_ACCESSOR_READS_THE_WRONG_FROZEN_FIELD:{misbound!r}")
-    if prohibited_sites:
-        findings.append(
-            f"A_REFUSED_COPY_OR_WRAPPER_MECHANISM_IS_USED_INSIDE_THE_AUTHORITY_CLOSURE:"
-            f"{prohibited_sites!r}"
-        )
-    not_read_only = sorted(
-        name for name, row in descriptors.items() if not row["is_read_only_property"]
-    )
-    if not_read_only:
-        findings.append(f"CALLER_FACING_ACCESSOR_IS_NOT_READ_ONLY:{not_read_only!r}")
-    if declared_slots != ["__weakref__"] or has_instance_dictionary:
-        findings.append(
-            f"THE_AUTHORITATIVE_CONTAINER_EXPOSES_INSTANCE_STATE:{declared_slots!r}"
-        )
-    expected_material = sorted(
-        (
-            *MUTABLE_CONVENIENCE_ACCESSORS,
-            *IMMUTABLE_CONVENIENCE_ACCESSORS,
-            AUTHORITATIVE_SNAPSHOT_PROOF,
-        )
-    )
-    if sorted(AUTHORITATIVE_EXECUTION_MATERIAL) != expected_material:
-        findings.append(
-            f"THE_DECLARED_CALLER_FACING_MATERIAL_IS_NOT_THE_ACCESSOR_SET:"
-            f"{expected_material!r}"
-        )
+    if not eq_identity or not hash_identity:
+        findings.append("AUTHORITATIVE_CLASS_EQ_OR_HASH_IS_NOT_OBJECT_IDENTITY")
+    if calls != {"eq": 0, "hash": 0, "class": 0}:
+        findings.append(f"FOREIGN_RECEIVER_CONTROLLED_CODE_EXECUTED:{calls!r}")
+    if any(value != "REFUSED" for value in construction_probes.values()):
+        findings.append(f"CONSTRUCTION_OR_FOREIGN_PROBE_ACCEPTED:{construction_probes!r}")
+    if not behavior_closed:
+        findings.append(f"BEHAVIORAL_IDENTITY_PROBE_FAILED:{behavior!r}")
 
     return {
         "audit_version": RETURN_STATE_AUDIT_VERSION,
         "authoritative_return_state": AUTHORITATIVE_RETURN_STATE_VERSION,
-        "authority_storage_name": AUTHORITY_STORAGE_NAME,
-        "authority_storage_reader": AUTHORITY_STORAGE_READER,
-        "authority_storage_references": storage_references,
-        "declared_authority_storage_references": declared_references,
-        "authority_storage_write_sites": storage_write_sites,
-        "authority_storage_reader_scopes": reader_definition_scopes,
-        "authority_immutability_gate": AUTHORITY_SNAPSHOT_GUARD,
-        "authority_immutability_gate_is_module_level_and_inert": True,
-        "authority_immutability_gate_probes": gate_probes,
+        "identity_registry_bucket_selector": "id(receiver)",
+        "identifier_equality_is_authority": False,
+        "registry_key_is_receiver": False,
+        "registry_key_is_weakref": False,
+        "registry_retains_execution_strongly": False,
+        "authority_reader_registry_fetch_count": len(reader_gets),
+        "authority_reader_live_witness_identity_compare_count": len(live_identity_scopes),
+        "authority_receiver_exact_type_guard_count": len(exact_type_scopes),
+        "single_capability_gated_bind": (
+            registry_write_scopes == [list(bind_scope)]
+            and capability_guard_scopes == [list(bind_scope)]
+        ),
+        "conditional_cleanup_is_witness_specific": (
+            cleanup_gets == [list(cleanup_scope)]
+            and registry_delete_scopes == [list(cleanup_scope)]
+        ),
+        "receiver_controlled_lookup_calls": reader_receiver_controlled_calls,
+        "live_authority_reading_members": actual_readers,
+        "live_class_members_including_dunders": sorted(
+            vars(AuthoritativeScientificExecution)
+        ),
+        "object_identity___eq___preserved": eq_identity,
+        "object_identity___hash___preserved": hash_identity,
         "construction_authority_probes": dict(sorted(construction_probes.items())),
-        "authority_storage_binding_is_resolved_by_equality_not_identity": True,
-        "subclassing_the_authoritative_execution_is_refused": (
-            construction_probes.get("SUBCLASS") == "REFUSED"
-        ),
-        "frozen_authority_snapshot_type": snapshot_type,
+        "foreign_receiver_controlled_method_calls": calls,
+        "behavioral_identity_safety_probe": behavior,
+        "authority_storage_binding_is_resolved_by_identity_not_equality": behavior_closed,
+        "authority_storage_binding_is_resolved_by_equality_not_identity": False,
+        "exact_type_guard_is_load_bearing": False,
+        "live_witness_identity_compare_is_load_bearing": True,
+        "frozen_authority_snapshot_type": {
+            "name": FrozenAuthoritySnapshot.__name__,
+            "is_tuple_subclass": issubclass(FrozenAuthoritySnapshot, tuple),
+            "fields": list(FrozenAuthoritySnapshot._fields),
+            "mutating_members_present": sorted(
+                name
+                for name in MUTATING_CONTAINER_MEMBERS
+                if hasattr(FrozenAuthoritySnapshot, name)
+            ),
+            "has_instance_dictionary": "__dict__" in vars(FrozenAuthoritySnapshot),
+        },
         "frozen_authority_fields": list(FROZEN_AUTHORITY_FIELDS),
-        "construction_site_material_fields": construction_material_fields,
-        "canonical_decode_call": CANONICAL_DECODE_CALL,
-        "canonical_encode_call": CANONICAL_ENCODE_CALL,
         "caller_facing_material": list(AUTHORITATIVE_EXECUTION_MATERIAL),
-        "live_class_members": live_members,
-        "mutable_convenience_accessors": list(MUTABLE_CONVENIENCE_ACCESSORS),
-        "immutable_convenience_accessors": list(IMMUTABLE_CONVENIENCE_ACCESSORS),
-        "accessor_frozen_fields": dict(sorted(ACCESSOR_FROZEN_FIELDS.items())),
-        "declared_non_material_members": list(DECLARED_NON_MATERIAL_MEMBERS),
-        "declared_snapshot_introspection": list(DECLARED_SNAPSHOT_INTROSPECTION),
-        "returning_class_members": returning_members,
-        "material_member_return_mechanisms": {
-            name: mechanisms
-            for name, mechanisms in sorted(member_return_mechanisms.items())
-            if name in AUTHORITATIVE_EXECUTION_MATERIAL
-        },
-        "material_member_frozen_field_reads": {
-            name: sorted(set(fields))
-            for name, fields in sorted(member_frozen_fields.items())
-            if name in AUTHORITATIVE_EXECUTION_MATERIAL
-        },
-        "caller_facing_accessor_descriptors": dict(sorted(descriptors.items())),
-        "prohibited_authority_copy_mechanisms": list(
-            PROHIBITED_AUTHORITY_COPY_MECHANISMS
+        "declared_slots": list(
+            getattr(AuthoritativeScientificExecution, "__slots__", ())
         ),
-        "prohibited_mechanism_sites": prohibited_sites,
-        "declared_slots": declared_slots,
-        "container_has_instance_dictionary": has_instance_dictionary,
+        "container_has_instance_dictionary": (
+            "__dict__" in vars(AuthoritativeScientificExecution)
+        ),
+        "relay_residual_closed": False,
         "findings": findings,
         "closed": not findings,
     }
 
 
-def _production_reachable_launch_sites() -> list[dict[str, Any]]:
-    """Inherited helpers this module re-exports that themselves create a process.
-
-    A file-level classification would hide these: the helper's *source* lives in
-    a superseded module, but R4 production code calls it, so the census must name
-    it.  Every one found must be a declared non-worker launch site.
-
-    Each row is keyed on the *resolved callable* — its defining module, qualified
-    name and primitive — and never on the module attribute that happens to point
-    at it, so a second re-export or a diagnostic alias of an already declared
-    helper cannot move this candidate's parent hash for a non-material reason.
-    """
-
-    found: list[dict[str, Any]] = []
-    module = sys.modules[__name__]
-    for name in sorted(vars(module)):
-        value = getattr(module, name)
-        if not isinstance(value, types.FunctionType):
-            continue
-        if value.__module__ == __name__:
-            continue
-        try:
-            snippet = textwrap.dedent(inspect.getsource(value))
-        except OSError:  # pragma: no cover - source always available here
-            continue
-        for node in ast.walk(ast.parse(snippet)):
-            if isinstance(node, ast.Call) and _dotted_call_name(node.func) in (
-                LAUNCH_PRIMITIVES
-            ):
-                found.append(
-                    {
-                        "callable": value.__name__,
-                        "defining_module": value.__module__.rsplit(".", 1)[-1],
-                        "primitive": _dotted_call_name(node.func),
-                        "qualname": value.__qualname__,
-                    }
-                )
-    deduplicated: list[dict[str, Any]] = []
-    for site in found:
-        if site not in deduplicated:
-            deduplicated.append(site)
-    return sorted(
-        deduplicated, key=lambda site: (site["qualname"], site["primitive"])
-    )
-
-
+def audit_direct_worker_launch_census(
 def audit_direct_worker_launch_census(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
