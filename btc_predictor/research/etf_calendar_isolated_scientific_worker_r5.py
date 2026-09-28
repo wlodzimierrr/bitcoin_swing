@@ -635,7 +635,7 @@ def verify_response_against_authority_context(
 # ---------------------------------------------------------------------------
 
 AUTHORITATIVE_EXECUTION_BOUNDARY_VERSION = (
-    "ETF_CALENDAR_AUTHORITATIVE_SCIENTIFIC_EXECUTION_BOUNDARY_V1_R4"
+    "ETF_CALENDAR_AUTHORITATIVE_SCIENTIFIC_EXECUTION_BOUNDARY_V1_R5"
 )
 
 AUTHORITATIVE_RETURN_STATE_VERSION = (
@@ -650,7 +650,7 @@ AUTHORITATIVE_RETURN_STATE_VERSION = (
 #: ``PAD4-R3`` evidence payload — including one a caller mutated after
 #: admission — can never be mistaken for affirmative ``R4`` scientific
 #: authority.
-AUTHORITATIVE_SCIENTIFIC_AUTHORITY = "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R4"
+AUTHORITATIVE_SCIENTIFIC_AUTHORITY = "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R5"
 
 #: The stamp every non-authoritative execution must carry instead.  Reused
 #: unchanged so the reviewed raw-execution controls keep their exact meaning.
@@ -905,27 +905,51 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
     """
 
     _capability = object()
-    _material: "WeakKeyDictionary[Any, FrozenAuthoritySnapshot]" = WeakKeyDictionary()
+    _registry_lock = Lock()
+    _material: dict[int, tuple[Any, FrozenAuthoritySnapshot]] = {}
 
-    def _frozen(execution: Any) -> FrozenAuthoritySnapshot:
-        """The one read of the closure-private authority storage.
+    def _refuse_unowned_receiver() -> None:
+        raise AuthoritativeExecutionConstructionError(
+            "this receiver is not the exact live controller-owned authoritative scientific execution identity"
+        )
 
-        It is a closure-local function rather than a method, so the class the
-        caller receives exposes no member at all that hands out the stored
-        snapshot.  ``PAD4-R3``'s equivalent was a method, and a method on the
-        returned object is a caller-visible surface however it is spelled — a
-        leading underscore is explicitly *not* the boundary in this
-        architecture.
-        """
+    def _cleanup_binding(bucket: int, dead_witness: Any) -> None:
+        with _registry_lock:
+            current = _material.get(bucket)
+            if current is not None and current[0] is dead_witness:
+                del _material[bucket]
 
-        try:
-            return _material[execution]
-        except KeyError:
-            raise AuthoritativeExecutionConstructionError(
-                "this object carries no controller-owned scientific material "
-                "and is not an authoritative scientific execution"
-            ) from None
+    def _bind_authority(receiver: Any, capability: Any, material: Any) -> None:
+        if capability is not _capability:
+            _refuse_unowned_receiver()
+        snapshot = verify_frozen_authority_snapshot(material)
+        bucket = id(receiver)
 
+        def cleanup(dead_witness: Any, bucket: int = bucket) -> None:
+            _cleanup_binding(bucket, dead_witness)
+
+        live_witness = weakref_ref(receiver, cleanup)
+        with _registry_lock:
+            _material[bucket] = (live_witness, snapshot)
+
+    def _frozen(receiver: Any) -> FrozenAuthoritySnapshot:
+        """The single exact-identity authority reader."""
+
+        if receiver is None:
+            _refuse_unowned_receiver()
+        if type(receiver) is not AuthoritativeScientificExecution:
+            _refuse_unowned_receiver()
+        bucket = id(receiver)
+        with _registry_lock:
+            binding = _material.get(bucket)
+        if binding is None:
+            _refuse_unowned_receiver()
+        live_witness = binding[0]()
+        if live_witness is receiver:
+            return binding[1]
+        _refuse_unowned_receiver()
+
+    class AuthoritativeScientificExecution:
     class AuthoritativeScientificExecution:
         """One complete authoritative scientific execution and its evidence.
 
@@ -948,38 +972,17 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
         __slots__ = ("__weakref__",)
 
         def __init_subclass__(cls, **kwargs: Any) -> None:
-            """Refuse subclassing outright.
-
-            The closure-private store is keyed on the execution itself, and a
-            ``WeakKeyDictionary`` resolves a key by ``__hash__``/``__eq__`` rather
-            than by identity.  A subclass that spoofs those two methods would
-            therefore resolve to *another* execution's admitted snapshot and
-            report its authority while carrying none of its own — an unowned
-            object that does not refuse.  Only a subclass can mount that: an
-            unrelated class can spoof equality just as easily but has no accessor
-            to expose the snapshot through, and the accessors cannot be added to
-            the canonical type without mutating a shared class.  Closing
-            subclassing therefore closes the route, and it strictly strengthens
-            the reviewed ``PAD4-R3`` construction authority rather than weakening
-            it: ``PAD4-R3`` accepted the subclass and refused only its accessors.
-            """
+            """Refuse subclasses as non-load-bearing defence in depth."""
 
             raise AuthoritativeExecutionConstructionError(
-                "the authoritative scientific execution type may not be "
-                "subclassed; the closure-private store is keyed on the execution, "
-                "so a subclass that spoofs __eq__ and __hash__ would resolve to "
-                "another execution's admitted snapshot"
+                "the authoritative scientific execution type may not be subclassed"
             )
 
         def __init__(self, capability: Any = None, material: Any = None) -> None:
-            if capability is not _capability:
-                raise AuthoritativeExecutionConstructionError(
-                    "an authoritative scientific execution is produced only by "
-                    "run_isolated_scientific_request; it cannot be constructed"
-                )
-            _material[self] = verify_frozen_authority_snapshot(material)
+            _bind_authority(self, capability, material)
 
         @property
+        def admitted        @property
         def admitted(self) -> bool:
             return _frozen(self).admitted
 
@@ -1083,16 +1086,14 @@ def _build_authoritative_scientific_execution_boundary() -> tuple[type, Callable
             }
 
         def __repr__(self) -> str:  # pragma: no cover - diagnostic only
-            try:
-                snapshot = _frozen(self)
-            except AuthoritativeExecutionConstructionError:
-                return "<AuthoritativeScientificExecution UNOWNED>"
+            snapshot = _frozen(self)
             return (
                 "<AuthoritativeScientificExecution "
                 f"admitted={snapshot.admitted!r} "
                 f"failure_reason={snapshot.failure_reason!r}>"
             )
 
+    def _execute_exact_worker(
     def _execute_exact_worker(
         request: Mapping[str, Any],
         launch: WorkerLaunch,
@@ -1496,9 +1497,9 @@ del _build_authoritative_scientific_execution_boundary
 # Mechanical API-closure, return-state and direct-launch audits
 # ---------------------------------------------------------------------------
 
-API_CLOSURE_AUDIT_VERSION = "ETF_CALENDAR_SCIENTIFIC_API_CLOSURE_AUDIT_V1_R4"
-RETURN_STATE_AUDIT_VERSION = "ETF_CALENDAR_AUTHORITATIVE_RETURN_STATE_AUDIT_V1_R4"
-LAUNCH_CENSUS_AUDIT_VERSION = "ETF_CALENDAR_DIRECT_WORKER_LAUNCH_CENSUS_V1_R4"
+API_CLOSURE_AUDIT_VERSION = "ETF_CALENDAR_SCIENTIFIC_API_CLOSURE_AUDIT_V1_R5"
+RETURN_STATE_AUDIT_VERSION = "ETF_CALENDAR_AUTHORITATIVE_RETURN_STATE_AUDIT_V1_R5"
+LAUNCH_CENSUS_AUDIT_VERSION = "ETF_CALENDAR_DIRECT_WORKER_LAUNCH_CENSUS_V1_R5"
 
 #: The one authority-bearing production operation.
 AUTHORITATIVE_PRODUCTION_OPERATION = "run_isolated_scientific_request"
