@@ -829,9 +829,31 @@ bind the table and freeze the new corpus hash. Trusted persistence
 02f96203...1a12772 is unaffected
 
 POSTP1-001V2A-T1 =
-NOT STARTED / DEPENDENCY-SATISFIED — FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1;
-review POSTP1-002V2A-T1 is an independent exact-hash xHigh ticket review, not a
-proof-architecture review
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH TICKET REVIEW —
+FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1 frozen at
+2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710 in
+prospective_evidence/us_equity_market_closure_table_v1/, implementation commit
+52bbe12; review POSTP1-002V2A-T1 is an independent exact-hash xHigh ticket
+review, not a proof-architecture review
+
+US_EQUITY_MARKET_CLOSURE_TABLE_V1 =
+FROZEN_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_TICKET_REVIEW; 41 rows over
+coverage 2023-01-01..2026-12-31, every row a weekday: 2023 = 10 scheduled,
+2024 = 10 scheduled, 2025 = 10 scheduled + 1 unscheduled (2025-01-09, the
+National Day of Mourning), 2026 = 10 scheduled. NYSE Arca, Nasdaq and Cboe BZX
+agree on all 41 dates, so VENUE_DISAGREEMENT count = 0. Coverage ends at 2026,
+not the 2028 target, because at freeze time only NYSE had published beyond 2026;
+Nasdaq's per-year trading calendar and Cboe's equities holiday CSV both stop at
+2026, so 2027-2028 are outside coverage and the loader refuses them rather than
+implying an open day. 12 official source documents stored gzip+base64 under the
+namespace; past years cite archived copies of the publishers' own pages or the
+exchanges' own closure notices; no third-party aggregator. Authority is the
+exact-hash review of the table; citations are audit aids. Owner module
+btc_predictor/research/us_equity_market_closures.py exposes
+load_closures(start, end) -> frozenset[date], re-verifies the frozen hashes on
+every call, and refuses an out-of-coverage range, a VENUE_DISAGREEMENT date and
+any byte-level change. Pre-data, 0 observations; authorizes only
+POSTP1-002V2A-T1
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1483,7 +1505,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD5 is **COMPLETE / FAIL
+- **Current IN_PROGRESS ticket:** None. `POSTP1-001V2A-T1` is **IMPLEMENTATION
+  COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH TICKET REVIEW** and the next
+  EPIC X action is that review, `POSTP1-002V2A-T1`. The preceding EPIC X history
+  is preserved below.
+- **Last completed implementation:** `POSTP1-001V2A-T1`,
+  `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`, implementation commit `52bbe12`,
+  frozen at `2292388e...1d1710` in
+  `prospective_evidence/us_equity_market_closure_table_v1/`. It is the first
+  artifact of the architecture family the PAD5 owner scoping decision selected:
+  an ordinary reviewed frozen constant, not a proof architecture. 41 rows over
+  `2023-01-01..2026-12-31`, every row a weekday; 40 scheduled holidays and one
+  unscheduled closure (`2025-01-09`); NYSE Arca, Nasdaq and Cboe BZX agree on
+  all 41 dates, so there is no `VENUE_DISAGREEMENT`. Coverage ends at 2026
+  rather than the 2028 target because at freeze time only NYSE had published
+  beyond 2026; the loader refuses 2027-2028 rather than implying an open day.
+  Twelve official venue documents are stored under the namespace so the review
+  can re-hash and re-parse them offline. The owner module
+  `btc_predictor/research/us_equity_market_closures.py` is new and no existing
+  file changed. Pre-data, zero observations; it authorizes only
+  `POSTP1-002V2A-T1`
+- **Preceding completed EPIC X action:** POSTP1-002V2A-PAD5 is **COMPLETE / FAIL
   — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID**. The reviewed
   parent `54675984...f483` and all 31 children reproduce exactly. Independent
   probes made the verifier accept fabricated science re-derived by a shadow
@@ -1500,7 +1542,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   non-certified, unused and at zero observations. The mandatory owner scoping
   decision is now recorded. It closes the calendar proof-architecture program
   and replaces calendar authority with the frozen
-  `US_EQUITY_MARKET_CLOSURE_TABLE_V1` (`POSTP1-001V2A-T1`).
+  `US_EQUITY_MARKET_CLOSURE_TABLE_V1` (`POSTP1-001V2A-T1`), which is now frozen
+  at `2292388e...1d1710` and awaiting its `POSTP1-002V2A-T1` review.
 
   POSTP1-001V2A-PAD4-R4 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at
@@ -1638,20 +1681,38 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   **BLOCKED** behind V2R1 and its review. POSTP1-001V2A-I2 is **SUPERSEDED —
   NOT REQUIRED**. Collection is **NOT AUTHORIZED** and observations remain
   **0**. No real Stage-B evaluation ran
-- **Next dependency-satisfied EPIC X ticket:** **`POSTP1-001V2A-T1`**
-  `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`, the frozen, reviewed, hash-bound
-  full-day closure table that replaces runtime calendar authority, per the
-  recorded owner scoping decision. It is also the one EPIC X output EPIC Y's
-  RBT-006 needs. No PAD5-R1 or PAD6 is authorized
+- **Next dependency-satisfied EPIC X ticket:** **`POSTP1-002V2A-T1`**, the
+  independent exact-hash xHigh **ticket** review of the frozen closure table
+  `2292388e...1d1710` (not a proof-architecture review). `POSTP1-001V2A-T1` is
+  **IMPLEMENTATION COMPLETE** at commit `52bbe12` and authorizes only this
+  review. A T1 review PASS makes `POSTP1-001V2R1` dependency-satisfied and
+  satisfies the table dependency in EPIC Y's RBT-006. No PAD5-R1 or PAD6 is
+  authorized
 - **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
   `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
   `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
   RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
-- **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2A-T1`. V2
+- **Other ready tickets:** In EPIC X, none besides `POSTP1-002V2A-T1`. V2
   correction, POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
   remains terminal and untouched with its sealed sample unopened, and Epic T
-  and EPIC Y are unchanged
+  and EPIC Y are unchanged. EPIC Y consumes the closure table only after the T1
+  review passes
+- **Latest implementation validation:** POSTP1-001V2A-T1 used the exclusive
+  `.venv312` CPython 3.12.14 interpreter. The focused closure-table suite is
+  **145 passed** (deterministic and offline: every stored official source is
+  re-hashed and re-parsed, every covered venue-year is cross-checked against
+  those sources and against an independent rule-based computation, and the
+  owner-effect demonstration runs against an unchanged `flow.py`). Isolation
+  regressions: `git diff --stat` is empty and `git status` shows only new files,
+  so no tracked file changed; V5 recomputes to `95e43ee1...775a89` (**376
+  passed**, 2 pre-existing skips); the PAD5 namespace reproduces at
+  `54675984...f483` (**117 passed**) and PAD4-R5 at `b4168dc9...61c7` (**201
+  passed**); the flow regressions pass (**99 passed**); `python -m compileall
+  btc_predictor etf_calendar_worker` and `git diff --check` pass. The namespace
+  fingerprint is byte-identical under `PYTHONHASHSEED` 0/1/8675309, from an
+  alternate cwd, in fresh processes. The full suite was **NOT RUN**; no
+  production behaviour changed and no existing module was modified
 - **Latest review validation:** POSTP1-002V2A-PAD5 used exclusive CPython
   3.12.14 under `.venv312` with the exact 2,858-row installed-content registry
   `23e4f1d8...6298a6`, sibling same-filesystem temporary roots and sequential
@@ -2779,9 +2840,16 @@ unopened with no automatic dependency that would ever open it.
   preserved as its input. The owner closed the ETF calendar proof-architecture
   program and chose a frozen, reviewed `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as
   the `market_holidays` owner. The fixed-lag alternative is not adopted for
-  EPIC X. Still open, and owned by T1's review: the table's exact coverage end
-  year, and the fail-closed rule for any date on which the listing venues
-  disagree.
+  EPIC X. Both of the questions this entry left to T1 are now answered by the
+  frozen table, subject to the `POSTP1-002V2A-T1` review: **coverage ends
+  2026-12-31**, because at freeze time only NYSE had published beyond 2026
+  (Nasdaq's per-year trading calendar and Cboe's equities holiday CSV both stop
+  at 2026), so the 2028 target is not reachable for all three venues and the
+  loader refuses 2027-2028 rather than implying an open day; and **the venue
+  disagreement rule is fail-closed**, with any covered date on which the venues
+  disagree recorded as `VENUE_DISAGREEMENT` and the loader refusing any range
+  containing it until an amended frozen version defines the rule. No such date
+  exists in V1: all three venues agree on all 41 rows.
 - EPIC Y's V1 policy named no `market_holidays` owner. With the empty default,
   every ETF window spanning a US holiday fails closed, so a V1 run would have
   shown almost no evaluable decisions. `RESEARCH_BACKTEST_POLICY_V2` binds the

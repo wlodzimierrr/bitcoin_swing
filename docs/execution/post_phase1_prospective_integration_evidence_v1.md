@@ -7082,7 +7082,8 @@ review. The closure set is the same kind of object and gets the same treatment.
 
 ## POSTP1-001V2A-T1 — `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH
+TICKET REVIEW`
 **Authorized by:** the PAD5 owner scoping decision above
 **Implementation effort:** high
 **Required review:** `POSTP1-002V2A-T1`, an independent exact-hash xHigh
@@ -7149,6 +7150,151 @@ ticket.
 A successful implementation authorizes only `POSTP1-002V2A-T1`. A T1 review
 PASS makes `POSTP1-001V2R1` dependency-satisfied, and satisfies the table
 dependency in EPIC Y's RBT-006.
+
+### Implementation Notes
+
+**Implementation commit:** `52bbe12`
+**Definition hash:** `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`
+**Namespace:** `prospective_evidence/us_equity_market_closure_table_v1/`
+**Execution classification:**
+`US_EQUITY_MARKET_CLOSURE_TABLE_V1_READY_FOR_XHIGH_TICKET_REVIEW`
+
+#### What was frozen
+
+Three hash-bound files plus the twelve retrieved official source documents.
+
+| File | SHA-256 over the file bytes |
+| --- | --- |
+| `us_equity_market_closure_table_v1_definition.json` | `0692e778...4456fe` |
+| `closure_table.json` | `4a7a5a25...ee241d` |
+| `source_index.json` | `f939b1d7...38ebd3` |
+
+`definition_sha256` is the canonical-JSON digest of the definition with the
+field excluded, computed mechanically by the same rule the rest of this
+workstream uses. The definition binds the other two files by their byte hashes.
+
+Nothing acquires anything at runtime. There is no worker, verifier, capability
+object or origin authority, and the loader imports nothing from the closed
+calendar proof-architecture lineage.
+
+#### Coverage
+
+`2023-01-01` through `2026-12-31`, all three venues sourced for every year.
+
+**The 2028 target was not reachable.** The acceptance criterion is coverage
+"through the last year for which all listing venues have officially published a
+holiday schedule at freeze time". At freeze time (2026-09-29) only NYSE had
+published beyond 2026:
+
+- NYSE publishes 2026, 2027 and 2028 on its live hours-and-calendars page.
+- Nasdaq publishes 2026. Its trading-calendar page links per-year calendars for
+  2021-2026 only, and the `nasdaqtrader.com` per-year calendar URL returns no
+  2027 document.
+- Cboe publishes 2026. Its US equities holiday CSV serves the current year only
+  and ignores a `year` query parameter; its live page shows a 2026 schedule
+  only.
+
+2027 and 2028 are therefore outside coverage, and the loader refuses any range
+touching them rather than implying that a date in them was open. This is not a
+retrieval gap inside coverage; it is the coverage rule applied to what the
+venues have published. Extending coverage is a new frozen version once Nasdaq
+and Cboe publish 2027.
+
+#### Rows
+
+41 rows, every one a Monday-to-Friday date.
+
+| Year | Total | Scheduled holiday | Unscheduled closure |
+| --- | --- | --- | --- |
+| 2023 | 10 | 10 | 0 |
+| 2024 | 10 | 10 | 0 |
+| 2025 | 11 | 10 | 1 |
+| 2026 | 10 | 10 | 0 |
+
+Good Friday and Juneteenth are present in every covered year. The single
+unscheduled closure is `2025-01-09`, the National Day of Mourning for former
+President Jimmy Carter, confirmed independently from each venue's own
+publication: Cboe carries it on its 2025 equities holiday schedule, Nasdaq
+published Equity Trader Alert #2024-86, and the NYSE closure notice names NYSE
+Arca Equities explicitly.
+
+**Venue disagreements: none.** All three venues agree on all 41 dates, so no row
+is `VENUE_DISAGREEMENT` and the loader refuses no in-coverage range on that
+ground. An independent rule-based holiday computation reproduces all 40
+scheduled holidays as a cross-check; it never replaces the sources.
+
+Early closes are excluded and the rationale is frozen in the definition:
+trading occurs on those days, the venues publish them separately from full-day
+closures, and flow records exist for them.
+
+#### Provenance
+
+Each row carries, per venue, the publisher, document title, request URL, final
+URL, the original publisher URL, the retrieval timestamp and the SHA-256 of the
+retrieved bytes. The twelve retrieved documents are stored gzip+base64 under
+`sources/`, so a reviewer re-hashes and re-parses them offline.
+
+Live at freeze time: the NYSE hours-and-calendars page (2026), the Nasdaq
+trading calendar (2026), the Cboe equities holiday CSV (2026), and the Nasdaq
+Equity Trader Alert for the 2025 closure. Archived copies of the publishers'
+own pages, each marked with its capture timestamp: NYSE 2023-2025, Nasdaq 2023,
+2024 and 2025, Cboe 2023, 2024 and 2025, and the NYSE 2025 closure notice. No
+third-party aggregator is cited.
+
+The definition states that citations are audit aids and that the authority of
+this table is the exact-hash review of the table itself.
+
+#### Loader
+
+`btc_predictor/research/us_equity_market_closures.py` exposes
+`load_closures(start, end) -> frozenset[date]`. Every call re-reads and
+re-verifies the definition, table and source index against their frozen hashes,
+checks that the definition still binds the other two, validates every row, then
+returns the closures inside the range. It refuses an out-of-coverage range, a
+range containing a `VENUE_DISAGREEMENT` date, a disagreement summary that does
+not match its rows, an inverted range, a `start`/`end` that is not exactly a
+`datetime.date`, and any byte-level change to the namespace.
+
+#### Validation
+
+`btc_predictor/tests/test_us_equity_market_closures.py`, 145 deterministic
+offline tests, all passing:
+
+- every row is a covered weekday with all three venue statuses and complete
+  per-venue citations that agree with the source index;
+- every stored source file re-hashes to its recorded SHA-256 and decompresses
+  to exactly the recorded byte count;
+- every covered venue-year is cross-checked by re-parsing the stored official
+  documents, plus the independent rule-based computation, plus a check that no
+  early close leaked into the table;
+- loader: exact set in coverage, refusal out of coverage, refusal on a
+  synthetic `VENUE_DISAGREEMENT` date, refusal on a one-byte change to each of
+  the three frozen files;
+- owner-effect demonstration with `flow.py` unchanged: 5-day and 20-day windows
+  spanning a listed holiday report `ETF_FLOW_INPUT_MISSING` with the empty
+  default and are complete when given `load_closures(...)`; the 20-day window
+  is shown to span two listed closures; an unlisted closure still fails closed
+  with `flow_sum_usd` `None`, never zero.
+
+Isolation regressions, all passing: `git status` shows only new files and
+`git diff --stat` is empty, so no tracked file changed — no change to
+`btc_predictor/features/flow.py`, to the 120-module worker universe, to any
+frozen namespace, or to anything under `data/` or `research_artifacts/`. V5
+recomputes to `95e43ee1...775a89` (376 passed, 2 pre-existing skips). The PAD5
+namespace reproduces at `54675984...f483` (117 passed) and PAD4-R5 at
+`b4168dc9...61c7` (201 passed), run in an exclusive `.venv312` CPython 3.12.14.
+The flow regressions pass (99 passed). `compileall` and `git diff --check`
+pass. The namespace fingerprint is byte-identical under `PYTHONHASHSEED`
+0/1/8675309, from an alternate cwd, in fresh processes.
+
+#### Safety and authorization result
+
+Pre-data, zero observations. A successful implementation authorizes only
+`POSTP1-002V2A-T1`. Collection remains **NOT AUTHORIZED**. `POSTP1-001V2R1`,
+`POSTP1-003R3` and `POSTP1-004` remain **BLOCKED**; `POSTP1-001V2A-I2` remains
+**SUPERSEDED**. BTC-019 is **UNTOUCHED** and its sealed sample unopened; Epic T
+and EPIC Y are **UNCHANGED**. EPIC Y consumes this table only after the T1
+review passes.
 
 ## Next EPIC X tasks
 
@@ -7220,8 +7366,8 @@ dependency in EPIC Y's RBT-006.
 | POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule; frozen at `54675984...f483` with 31 parent-bound children, 15 byte-identical to PAD4-R5 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of `54675984...f483` | COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID; FAMILY FAILURE REQUIRES OWNER SCOPING DECISION; NO PAD5-R1 / NO PAD6 |
 | PAD5 owner scoping decision | `DECIDE_ETF_CALENDAR_SCOPE_AFTER_PAD5_V1`: owner decision; proof-grade runtime ETF calendar authority is not required and the calendar proof-architecture program is closed | COMPLETE / FROZEN US EQUITY MARKET CLOSURE TABLE SELECTED; I2 SUPERSEDED; NO PAD5-R1 / NO PAD6 |
-| POSTP1-001V2A-T1 | `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`: static, reviewed, hash-bound full-day closure table and loader for the `market_holidays` owner parameter | NOT STARTED / DEPENDENCY-SATISFIED |
-| POSTP1-002V2A-T1 | independent exact-hash xHigh ticket review of the closure table | BLOCKED — awaiting POSTP1-001V2A-T1 |
+| POSTP1-001V2A-T1 | `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`: static, reviewed, hash-bound full-day closure table and loader for the `market_holidays` owner parameter; frozen at `2292388e...1d1710`, 41 rows over 2023-01-01..2026-12-31, no venue disagreement | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH TICKET REVIEW |
+| POSTP1-002V2A-T1 | independent exact-hash xHigh ticket review of the closure table `2292388e...1d1710` | NOT STARTED / DEPENDENCY-SATISFIED |
 | POSTP1-001V2A-I2 | bind the calendar to a certified worker | SUPERSEDED — NOT REQUIRED (PAD5 owner scoping decision) |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings, with `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as the `market_holidays` owner; freezes the new corpus hash | BLOCKED — awaiting POSTP1-002V2A-T1 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
