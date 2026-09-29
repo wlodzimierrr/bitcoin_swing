@@ -6,7 +6,8 @@ and acceptance criteria. It is **not** Phase-1 execution authority: [Structured
 Tickets v2.6](bitcoin_swing_predictor_structured_tickets_v2_6.md) keeps that role
 and is not modified by this workstream. It is **not** EPIC X or BTC-019 authority.
 
-Governing policy: [`RESEARCH_BACKTEST_POLICY_V1`](../policies/research_backtest_policy_v1.md).
+Governing policy: [`RESEARCH_BACKTEST_POLICY_V2`](../policies/research_backtest_policy_v2.md),
+which superseded V1 before any run by naming the market-closure owner.
 Every rule in that policy binds every ticket below.
 
 ## Why this workstream exists
@@ -34,6 +35,10 @@ non-certifying.
 
 - EPIC X, BTC-019 and EPIC T are untouched. The sealed sample stays unopened:
   EPIC Y reads nothing before 2020-01-01.
+- EPIC Y's only dependency on EPIC X output is the reviewed
+  `US_EQUITY_MARKET_CLOSURE_TABLE_V1` (`POSTP1-001V2A-T1`, review
+  `POSTP1-002V2A-T1`). It is passed to the flow owner's existing
+  `market_holidays` parameter.
 - **Additive-only (policy §9).** No EPIC Y ticket edits a file bound by an EPIC X
   frozen candidate or certified authority, or any file under `data/` or
   `research_artifacts/`. EPIC Y code lives in the new package
@@ -187,6 +192,12 @@ Acceptance criteria:
   Deterministic fixtures exercise each hard veto and each archetype.
 - Batch/single parity: composer feature values equal the BTC-048 feature-matrix
   values for the same inputs.
+- **Market closures:** every ETF flow-window call receives the loaded
+  `US_EQUITY_MARKET_CLOSURE_TABLE_V1` set through `market_holidays`, never the
+  empty default. Until the table's review passes, tests inject a fixture set
+  labelled non-authoritative. A fixture test shows that a window spanning a
+  listed holiday is complete with the set and `ETF_FLOW_INPUT_MISSING` without
+  it.
 - The same composer can later drive the advisory and paper paths (Rulebook
   invariant 15). Adopting it there is out of scope.
 
@@ -222,8 +233,8 @@ Acceptance criteria:
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
-**Status:** `BLOCKED — awaiting RBT-003 and RBT-005`
-**Dependencies:** RBT-003, RBT-005
+**Status:** `BLOCKED — awaiting RBT-003, RBT-005 and the POSTP1-002V2A-T1 review PASS`
+**Dependencies:** RBT-003, RBT-005, `POSTP1-002V2A-T1` PASS (closure table)
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
 **Owner module:** `btc_predictor/research_backtest/preregistration.py` (new)
@@ -234,6 +245,8 @@ Acceptance criteria:
 
 - A preregistration artifact binds:
   - the code commit and the champion identity;
+  - the `US_EQUITY_MARKET_CLOSURE_TABLE_V1` hash, whose coverage must span the
+    whole data window;
   - the composer versions and the RBT-003 dataset manifests;
   - the cost ladder and the policy versions;
   - the report-generator version and the metric definitions.
@@ -300,6 +313,6 @@ version or any version derived from inspecting its result.
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001, RBT-002 |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
-| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005 |
+| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005, POSTP1-002V2A-T1 PASS |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |

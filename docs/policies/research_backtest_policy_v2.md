@@ -1,18 +1,28 @@
-> [!NOTE]
-> **SUPERSEDED 2026-09-29 by
-> [`RESEARCH_BACKTEST_POLICY_V2`](research_backtest_policy_v2.md), before any EPIC Y
-> run.** V1 named no owner for the ETF flow owner's `market_holidays`
-> parameter. It is retained unchanged below as provenance.
+# Research Backtest Policy V2
 
-# Research Backtest Policy V1
+Policy identifier: `RESEARCH_BACKTEST_POLICY_V2`
 
-Policy identifier: `RESEARCH_BACKTEST_POLICY_V1`
-
-Status: **ADOPTED 2026-09-28 — documentation-only governance decision**
+Status: **ADOPTED 2026-09-29 — documentation-only governance decision.
+Supersedes [`RESEARCH_BACKTEST_POLICY_V1`](research_backtest_policy_v1.md)
+before any EPIC Y run.**
 
 Scope: historical, **non-certifying** research backtests of the frozen Phase-1
 champion executed under [EPIC Y](../execution/research_backtest_track_v1.md)
 (`RBT-xxx` tickets). This policy controls nothing outside that scope.
+
+## Change from V1
+
+V1 did not name an owner for the ETF flow owner's `market_holidays`
+parameter. With its empty default, any 5- or 20-publication-day window that
+spans a US market holiday expects flow records for the holiday. None exist, so
+the owner correctly returns `ETF_FLOW_INPUT_MISSING`, the flow score is
+incomplete and the champion cannot trade on that date. A V1 run would have
+reported most real decision dates as unevaluable, for a data-plumbing reason
+rather than a strategy one.
+
+V2 binds `US_EQUITY_MARKET_CLOSURE_TABLE_V1` (EPIC X `POSTP1-001V2A-T1`) as that
+owner (§5), after its independent review passes. Nothing else changes. No
+EPIC Y run happened under V1.
 
 ## Why this policy exists
 
@@ -47,8 +57,9 @@ answer without weakening any certification gate.
   (§6.2 flow `ETF_CORE`; the core regime fallback) and its §24 hard-flag effects.
   It adds no strategy semantics.
 - [EPIC X](../execution/post_phase1_prospective_integration_evidence_v1.md) and
-  BTC-019 are **untouched**. No EPIC X ticket depends on EPIC Y and no EPIC Y
-  ticket depends on EPIC X.
+  BTC-019 are **untouched**. No EPIC X ticket depends on EPIC Y. EPIC Y depends
+  on exactly one EPIC X output: the reviewed `US_EQUITY_MARKET_CLOSURE_TABLE_V1`
+  artifact. It does not depend on any other EPIC X ticket, status or evidence.
 
 ## 1. Evidence class and prohibited uses
 
@@ -57,7 +68,7 @@ Every EPIC Y artifact carries:
 ```text
 evidence_class       = RESEARCH_BACKTEST_NON_CERTIFYING
 canonical_reference  = UNRESOLVED
-policy               = RESEARCH_BACKTEST_POLICY_V1
+policy               = RESEARCH_BACKTEST_POLICY_V2
 ```
 
 EPIC Y output may **never** be used to:
@@ -167,6 +178,7 @@ Rules:
 | Raw volume / spot participation | Bitstamp raw OHLCV, shared across all runs |
 | ETF flows + AUM | Required for any trade; backfilled with §4 availability |
 | Funding, open interest, perpetual volume | Required: positioning is an Entry Conviction component |
+| US equity market full-day closures (the flow owner's `market_holidays`) | **`US_EQUITY_MARKET_CLOSURE_TABLE_V1`**, loaded and hash-verified by its owner module and passed to the existing `market_holidays` parameter. Required, and only after the `POSTP1-002V2A-T1` review passes. A data-window date outside the table's coverage blocks the RBT-006 freeze. |
 | CVD (`SPOT_CVD`, `PERP_CVD`, `CVD_SPREAD`) | **Absent**: no persisted PIT source exists. The Rulebook §6.2 Phase-1 fallback applies mechanically: `FLOW_MODEL = ETF_CORE`. |
 | Macro, on-chain, liquidity | **Declared unavailable.** Vintage-correct point-in-time history is not established, and revised series would leak. The Rulebook core regime fallback applies. |
 
@@ -260,6 +272,6 @@ windows) and is reproducible byte-for-byte from them.
 
 ## 11. Change control
 
-Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V2`)
+Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V3`)
 recorded before the affected run. The holdout rule in §3 cannot be relaxed for
 any strategy version that has already been evaluated on the evaluation window.

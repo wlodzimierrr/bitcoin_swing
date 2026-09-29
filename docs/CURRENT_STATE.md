@@ -813,6 +813,25 @@ NO, calendar certified = NO, collection = NOT AUTHORIZED,
 I2/V2R1/POSTP1-003R3/POSTP1-004 remain BLOCKED, BTC-019 UNTOUCHED with its
 sealed sample unopened, Epic T UNCHANGED and EPIC Y UNCHANGED
 
+PAD5 owner scoping decision =
+COMPLETE (owner, 2026-09-29) — DECIDE_ETF_CALENDAR_SCOPE_AFTER_PAD5_V1:
+proof-grade runtime ETF calendar authority is NOT REQUIRED; the ETF calendar
+proof-architecture program is CLOSED with every namespace immutable failed
+lineage; NO PAD5-R1, NO PAD6. The only missing authority was the ETF flow
+owner's market_holidays set, which is replaced by US_EQUITY_MARKET_CLOSURE_TABLE_V1,
+a frozen, reviewed, hash-bound full-day closure table (NYSE Arca, Nasdaq, Cboe
+BZX; 2020 through the latest officially published year) whose authority is
+exact-hash review, like any frozen constant. A fixed publication lag is not
+adopted for EPIC X, because prospective collection observes true available_at.
+POSTP1-001V2A-I2 = SUPERSEDED — NOT REQUIRED. POSTP1-001V2R1 is re-scoped to
+bind the table and freeze the new corpus hash. Trusted persistence
+02f96203...1a12772 is unaffected
+
+POSTP1-001V2A-T1 =
+NOT STARTED / DEPENDENCY-SATISFIED — FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1;
+review POSTP1-002V2A-T1 is an independent exact-hash xHigh ticket review, not a
+proof-architecture review
+
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -1231,8 +1250,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** Two post-Phase-1 workstreams now run
   in parallel. [EPIC Y](execution/research_backtest_track_v1.md), adopted
-  2026-09-28 under
-  [RESEARCH_BACKTEST_POLICY_V1](policies/research_backtest_policy_v1.md), is the
+  2026-09-28 and governed since 2026-09-29 by
+  [RESEARCH_BACKTEST_POLICY_V2](policies/research_backtest_policy_v2.md), is the
   non-certifying path to the first real-data backtest of the frozen champion.
   It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
@@ -1477,10 +1496,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The verifier's caller-selected own import path and one nested unresolved-
   import audit gap are additional bounded findings, but family failure forbids
   PAD5-R1. **NO PAD5-R1 / NO PAD6**. The candidate is frozen, failed,
-  non-certified, unused and at zero observations. The next EPIC X action is the
-  mandatory owner scoping decision on whether proof-grade calendar authority
-  is required at all, including the pre-committed conservative fixed-lag/new-
-  corpus alternative.
+  non-certified, unused and at zero observations. The mandatory owner scoping
+  decision is now recorded. It closes the calendar proof-architecture program
+  and replaces calendar authority with the frozen
+  `US_EQUITY_MARKET_CLOSURE_TABLE_V1` (`POSTP1-001V2A-T1`).
 
   POSTP1-001V2A-PAD4-R4 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at
@@ -1613,23 +1632,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   same-process runtime-object attestation is **not** reopened. No review fix,
   proof-artifact change, production change or candidate-authority change was
   made
-- **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
-  implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
-  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. The PAD5 review
-  **FAILED in the pre-committed family**, so I2 is not dependency-satisfied.
-  Collection is **NOT AUTHORIZED** and observations remain **0**. No certified
-  production ETF calendar authority is available. Calendar certification is
-  **NO**, no real Stage-B evaluation ran, and I2 must not start
-- **Next dependency-satisfied EPIC X action:** the mandatory **PAD5 owner
-  scoping decision** on whether proof-grade ETF calendar authority is required
-  at all, including the pre-committed conservative fixed-lag alternative under
-  a new corpus version. No PAD5-R1 or PAD6 implementation is authorized
+- **Current BLOCKED tickets:** POSTP1-001V2R1 is **BLOCKED** until the
+  POSTP1-002V2A-T1 closure-table review passes; POSTP1-003R3 and POSTP1-004 are
+  **BLOCKED** behind V2R1 and its review. POSTP1-001V2A-I2 is **SUPERSEDED —
+  NOT REQUIRED**. Collection is **NOT AUTHORIZED** and observations remain
+  **0**. No real Stage-B evaluation ran
+- **Next dependency-satisfied EPIC X ticket:** **`POSTP1-001V2A-T1`**
+  `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`, the frozen, reviewed, hash-bound
+  full-day closure table that replaces runtime calendar authority, per the
+  recorded owner scoping decision. It is also the one EPIC X output EPIC Y's
+  RBT-006 needs. No PAD5-R1 or PAD6 is authorized
 - **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
   `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
   `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
   RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
-- **Other ready tickets:** In EPIC X, none. Calendar implementation, V2
+- **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2A-T1`. V2
   correction, POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
   remains terminal and untouched with its sealed sample unopened, and Epic T
   and EPIC Y are unchanged
@@ -2038,8 +2056,9 @@ BTC_REFERENCE_COMPOSITE_V1 = RESEARCH_INCONCLUSIVE
 BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
-RESEARCH_BACKTEST_POLICY_V1 = ADOPTED 2026-09-28 (per-venue, non-certifying;
-approves, ranks and promotes no reference)
+RESEARCH_BACKTEST_POLICY_V1 = ADOPTED 2026-09-28; SUPERSEDED before any run
+RESEARCH_BACKTEST_POLICY_V2 = ADOPTED 2026-09-29 (per-venue, non-certifying;
+approves, ranks and promotes no reference; binds the market-closure table)
 BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
 STRUCTURAL_GATE_DENOMINATOR_RESOLUTION = NEW_PROTOCOL_VERSION_REQUIRED
@@ -2755,6 +2774,17 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- **ANSWERED — PAD5 owner scoping decision (2026-09-29).** The entry below is
+  preserved as its input. The owner closed the ETF calendar proof-architecture
+  program and chose a frozen, reviewed `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as
+  the `market_holidays` owner. The fixed-lag alternative is not adopted for
+  EPIC X. Still open, and owned by T1's review: the table's exact coverage end
+  year, and the fail-closed rule for any date on which the listing venues
+  disagree.
+- EPIC Y's V1 policy named no `market_holidays` owner. With the empty default,
+  every ETF window spanning a US holiday fails closed, so a V1 run would have
+  shown almost no evaluable decisions. `RESEARCH_BACKTEST_POLICY_V2` binds the
+  same closure table before any run.
 - POSTP1-002V2A-PAD5 failed in the pre-committed family: request-selected
   uncertified stdlib code can generate the byte-identical re-derivation,
   authenticated records are not bound to a complete point-in-time set, and a

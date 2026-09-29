@@ -7005,6 +7005,146 @@ action is the mandatory owner scoping decision on whether proof-grade ETF
 calendar authority is required at all, including the pre-committed conservative
 fixed-lag alternative under a new corpus version.
 
+### PAD5 owner scoping decision
+
+**Decision:** `DECIDE_ETF_CALENDAR_SCOPE_AFTER_PAD5_V1`
+**Decided by:** the repository owner, 2026-09-29, as required by the
+pre-committed PAD5 escalation rule
+**Type:** documentation-only. No namespace is frozen and no code changes.
+**Input:** `POSTP1-002V2A-PAD5`,
+`COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID`
+**Result:** `PROOF-GRADE RUNTIME CALENDAR AUTHORITY IS NOT REQUIRED. REPLACED BY
+A FROZEN, REVIEWED US EQUITY MARKET CLOSURE TABLE.`
+
+#### What the calendar was for
+
+Every ETF-calendar ticket traces back to one POSTP1-002V2 blocking finding:
+`market_holidays` had no certified owner. The Phase-1 ETF flow owner
+(`btc_predictor.features.flow`, `_trailing_publication_dates`) counts back
+over weekdays that are not in the supplied `market_holidays` set, and the set
+defaults to empty. So a 5- or 20-publication-day window that spans a US market
+holiday expects flow records for that holiday. None exist, and the owner
+correctly returns `ETF_FLOW_INPUT_MISSING`. A closure set therefore changes
+publication windows, expected observations, missingness and feature values,
+and it needs an owner.
+
+That set is **a small list of dates**. The exchanges publish it years in
+advance, and it changes only when an unscheduled closure is declared.
+Deriving it at runtime from acquired web documents, then defending that
+derivation against hostile same-process code, is what produced 19 frozen
+candidates. The lookback lengths, weights and thresholds are just as material,
+and every one of them is a frozen constant, protected by hash binding and
+review. The closure set is the same kind of object and gets the same treatment.
+
+#### Decision
+
+1. **Scope.** EPIC X does not require proof-grade runtime ETF calendar
+   authority. The ETF calendar proof-architecture program is **CLOSED**, and
+   no PAD5-R1, PAD6 or further calendar-authority candidate is authorized.
+   Every calendar-authority, in-process-boundary, normal-form, witness,
+   attestation, isolated-worker and replay-verified namespace remains
+   immutable failed lineage.
+2. **Replacement.** A new owner, `US_EQUITY_MARKET_CLOSURE_TABLE_V1`, is frozen
+   by `POSTP1-001V2A-T1`. It is a static, hash-bound table of every full-day
+   closure of the US equity venues that list the spot bitcoin ETF universe.
+   - It contains scheduled holidays and unscheduled closures.
+   - Each row cites an official exchange publication.
+   - Its authority is **exact-hash review of the table**, like any frozen
+     constant. There is no runtime acquisition, worker, verifier or origin
+     authority. Citations are audit aids, not an authority mechanism.
+3. **Fixed publication lag: not adopted for EPIC X.** Prospective collection
+   records each flow's true `available_at` at ingestion, so point-in-time
+   availability is observed, not modelled. The closure set was the only
+   missing authority. (EPIC Y, which replays history, keeps its own modelled
+   `T+2 00:00` rule.)
+4. **Corpus version.** `POSTP1-001V2R1` is re-scoped to correct every
+   POSTP1-002V2 finding with the closure table as the `market_holidays` owner.
+   It freezes a **new corpus hash**, which is the new corpus version the
+   pre-commit requires. It is now blocked only on `POSTP1-002V2A-T1`.
+5. **Retired tickets.** `POSTP1-001V2A-I2` (bind the calendar to a certified
+   worker) is `SUPERSEDED — NOT REQUIRED`. The certified trusted persistence
+   `02f96203...1a12772` is unaffected; POSTP1-004 collection still uses it.
+6. **Shared artifact.** EPIC Y consumes the same table through
+   `RESEARCH_BACKTEST_POLICY_V2`. That is EPIC Y's only dependency on EPIC X
+   output.
+
+#### Why this is sound, not a relaxation
+
+- Every PAD5 family finding concerned proving that runtime-derived bytes came
+  from certified code and a complete point-in-time input set. A reviewed
+  constant has no runtime derivation to prove.
+- The failure mode of an **unscheduled future closure** that is missing from
+  the table is safe. The flow owner expects a record for that date, finds
+  none and fails closed with `ETF_FLOW_INPUT_MISSING`. That is never a zero
+  and never fabricated. The correction is a new table version, frozen and
+  reviewed before any consumer relies on the amended date. Evidence produced
+  under V1 keeps V1's semantics.
+
+## POSTP1-001V2A-T1 — `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`
+
+**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Authorized by:** the PAD5 owner scoping decision above
+**Implementation effort:** high
+**Required review:** `POSTP1-002V2A-T1`, an independent exact-hash xHigh
+**ticket** review. This is not a proof-architecture review.
+**Namespace:** `prospective_evidence/us_equity_market_closure_table_v1/` (new)
+**Owner module:** `btc_predictor/research/us_equity_market_closures.py` (new)
+
+### Scope
+
+Freeze the closure table and a loader. Nothing else. No change to
+`btc_predictor.features.flow`, to any module in the 120-module worker
+universe, to any frozen namespace, or to anything under `data/` or
+`research_artifacts/`. Consumers pass the loaded set to the existing
+`market_holidays` parameter; wiring any consumer belongs to that consumer's
+ticket.
+
+### Acceptance criteria
+
+- **Coverage.** Every full-day closure from `2020-01-01` through the last year
+  for which all listing venues have officially published a holiday schedule at
+  freeze time. The target is through 2028. The loader refuses any query outside
+  coverage. It never returns "open" for an uncovered date.
+- **Venues.** NYSE Arca, Nasdaq and Cboe BZX, the listing venues of the US spot
+  bitcoin ETF universe. Per-venue rows are recorded. A date is a closure only
+  when every listing venue is closed. If the venues ever disagree on a date,
+  the loader refuses that date (fail closed) until an amended version defines
+  the rule.
+- **Content.** Every scheduled holiday, including Good Friday and Juneteenth
+  from 2022. Every unscheduled closure in coverage, for example the 2025-01-09
+  National Day of Mourning. Every row is a weekday. Early closes are **out of
+  scope** because trading occurs and flows exist; the rationale is recorded.
+- **Provenance.** Each row carries its official source: publisher, document
+  title, URL, retrieval date and the SHA-256 of the retrieved copy. The frozen
+  definition states that citations are audit aids and that authority is the
+  exact-hash review of the table.
+- **Freezing.**
+  - The definition and table are canonical JSON with a mechanically computed
+    `definition_sha256`.
+  - The loader verifies the table bytes against the frozen hash before
+    returning a `frozenset[date]`.
+  - The namespace reproduces byte-for-byte under `PYTHONHASHSEED` 0/1/8675309,
+    an alternate cwd and a fresh process.
+- **Amendment rule (frozen text).** An unlisted closure fails closed through
+  the flow owner. Amendments are new versions, frozen and reviewed before use.
+  No in-place edits.
+- **Owner-effect demonstration** (tests):
+  - on a fixture spanning a listed holiday, `etf_flow_window` with the empty
+    default reports `ETF_FLOW_INPUT_MISSING`, while the same call given the
+    loaded set is complete;
+  - an unlisted closure fails closed;
+  - the loader refuses an out-of-coverage date.
+- **Isolation regressions.**
+  - V5 recomputes to `95e43ee1...775a89`;
+  - the PAD5 and PAD4-R5 namespaces reproduce unchanged;
+  - `compileall` and `git diff --check` pass.
+
+### Stopping rule
+
+A successful implementation authorizes only `POSTP1-002V2A-T1`. A T1 review
+PASS makes `POSTP1-001V2R1` dependency-satisfied, and satisfies the table
+dependency in EPIC Y's RBT-006.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -7074,6 +7214,9 @@ fixed-lag alternative under a new corpus version.
 | PAD4-R5 same-family escalation decision | `DECIDE_ETF_CALENDAR_PROOF_ARCHITECTURE_AFTER_PAD4_R5_V1`: retires in-process authority objects and selects authority by byte-identical re-derivation in a certified-only verifier process; no repository identifier is assigned to the decision itself | COMPLETE / NEW ARCHITECTURE FAMILY SELECTED — authorizes `POSTP1-001V2A-PAD5` and nothing else |
 | POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule; frozen at `54675984...f483` with 31 parent-bound children, 15 byte-identical to PAD4-R5 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of `54675984...f483` | COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID; FAMILY FAILURE REQUIRES OWNER SCOPING DECISION; NO PAD5-R1 / NO PAD6 |
-| PAD5 owner scoping decision | pre-committed decision on whether proof-grade ETF calendar authority is required at all after PAD5 family failure, including a conservative fixed-lag alternative under a new corpus version; no successor implementation ticket is assigned by this review | REQUIRED / DEPENDENCY-SATISFIED |
-| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
+| PAD5 owner scoping decision | `DECIDE_ETF_CALENDAR_SCOPE_AFTER_PAD5_V1`: owner decision; proof-grade runtime ETF calendar authority is not required and the calendar proof-architecture program is closed | COMPLETE / FROZEN US EQUITY MARKET CLOSURE TABLE SELECTED; I2 SUPERSEDED; NO PAD5-R1 / NO PAD6 |
+| POSTP1-001V2A-T1 | `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`: static, reviewed, hash-bound full-day closure table and loader for the `market_holidays` owner parameter | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-002V2A-T1 | independent exact-hash xHigh ticket review of the closure table | BLOCKED — awaiting POSTP1-001V2A-T1 |
+| POSTP1-001V2A-I2 | bind the calendar to a certified worker | SUPERSEDED — NOT REQUIRED (PAD5 owner scoping decision) |
+| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings, with `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as the `market_holidays` owner; freezes the new corpus hash | BLOCKED — awaiting POSTP1-002V2A-T1 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
