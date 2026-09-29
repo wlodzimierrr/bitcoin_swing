@@ -719,8 +719,73 @@ including a conservative fixed-lag alternative under a new corpus version; no
 PAD6
 
 POSTP1-001V2A-PAD5 =
-NOT STARTED / DEPENDENCY-SATISFIED —
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH
+PROOF-ARCHITECTURE REVIEW —
 DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1
+
+ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1 parent =
+546759848b27fc09af7701b6b40712838c5fc9eb1d8500df62a3e2e02df3f483
+
+PAD5 namespace =
+prospective_evidence/etf_calendar_replay_verified_evidence_v1/ with 31
+mechanically enumerated parent-bound material children: 15 carried forward
+byte-identically from the reviewed PAD4-R5 builders, 5 re-issued under new
+contract versions because the reviewed payload asserted in-process authority
+closure this architecture no longer claims, and 11 new. The 11 R5 identity
+children are retired as failed lineage and are NOT copied here as authority
+
+PAD5 implementation commit =
+37a595e
+
+PAD5 invariant =
+NO IN-PROCESS OBJECT CARRIES SCIENTIFIC AUTHORITY. Calendar evidence is
+admissible if and only if a standalone verifier process, executing only
+certified source at an exact reviewed commit, verifies the recorded request
+against the frozen trusted authority context, verifies every input evidence
+record under the certified trusted-persistence authority, re-executes the
+certified fresh-exec worker on the exact recorded request bytes, and finds the
+frozen deterministic projection of the response byte-identical to the recorded
+one
+
+PAD5 verifier closure =
+119 modules, every one hash-bound; 117 by the frozen certified worker
+source manifest 7ffbf157...a44e8e and 2 by the PAD5 verifier source manifest
+child. Zero uncertified members, zero failed-lineage controllers, and the
+producer is outside the closure. Derived mechanically as a probe, not a list
+
+PAD5 comparison projection =
+CLOSED INCLUSION LIST of all 32 response fields, never "everything except";
+RUN_LOCAL is EMPTY, measured rather than assumed by re-executing the same
+recorded request in separate processes with different bytecode-cache
+namespaces, different working directories and different PYTHONHASHSEED values
+
+PAD5 environment-local request fields =
+project_root, sys_path and third_party_environment; the frozen choice is
+VERIFY_IN_THE_RECORDED_ENVIRONMENT, no relocation rule is frozen and request
+bytes are NEVER rewritten
+
+PAD5 launch census =
+exactly ONE PAD5-owned process-creation site (spawn_isolated_process in the
+shared contract, used by the verifier to re-execute the worker and by a harness
+to start a verifier) and ZERO inside the 120-module certified worker source
+universe; the producer additionally reaches the preserved certified R5 launch,
+declared and justified
+
+PAD5 validation =
+focused suite 117 passed in 442.51s; combined PAD5/R5/R4/R3/R2/R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1
+suite 1,327 passed in 2,320.70s; wider 21-module regression 2,139 passed, 3 skipped in 2,647.83s (the three skips are the two deliberate composite-inherits-component-behaviour skips in `test_prospective_integration_corpus_v2.py` and the one disposable-PostgreSQL opt-in skip in `test_trusted_acquisition_postgresql_runtime.py`; the run is the reference 21 modules plus PAD5, and the difference from the 2,022-passed reference is exactly PAD5's 117); compileall PASS;
+git diff --check PASS; namespace deterministic under PYTHONHASHSEED 0/1/8675309,
+reversed child order, an alternate cwd and a fresh process/output directory
+
+POSTP1-002V2A-PAD5 =
+NOT STARTED / DEPENDENCY-SATISFIED — independent exact-hash xHigh
+proof-architecture review of 546759848b27fc09af7701b6b40712838c5fc9eb1d8500df62a3e2e02df3f483
+
+PAD5 authorization =
+authorizes ONLY POSTP1-002V2A-PAD5; observations remain 0, real Stage-B = NO,
+calendar certified = NO, collection = NOT AUTHORIZED, I2/V2R1/POSTP1-003R3/
+POSTP1-004 remain BLOCKED, BTC-019 UNTOUCHED with its sealed sample unopened,
+Epic T UNCHANGED and EPIC Y UNCHANGED
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT

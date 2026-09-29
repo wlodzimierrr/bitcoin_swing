@@ -6434,7 +6434,7 @@ input to one corpus.
 
 ## POSTP1-001V2A-PAD5 — `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
 **Authorized by:** the PAD4-R5 same-family escalation decision above
 **Dependency:** `POSTP1-002V2A-PAD4-R5`,
 `COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID`
@@ -6551,6 +6551,150 @@ Only a PAD5 review **PASS** may make `POSTP1-001V2A-I2` dependency-satisfied,
 and I2 must then bind calendar authority to accepting verifier records. The
 pre-committed escalation above applies.
 
+### POSTP1-001V2A-PAD5 implementation notes
+
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Implementation commit:** `37a595e`
+**Frozen parent:** `ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1` at
+`546759848b27fc09af7701b6b40712838c5fc9eb1d8500df62a3e2e02df3f483`
+**Namespace:** `prospective_evidence/etf_calendar_replay_verified_evidence_v1/`
+**Material children:** 31
+**Execution classification:**
+`ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1_READY_FOR_XHIGH_REVIEW`
+
+#### What was implemented
+
+Three new modules, none of which edits anything frozen:
+
+- `btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py` —
+  the frozen material both sides share: the twelve-field frozen trusted
+  authority context, the deterministic comparison projection, the evidence-item
+  layout, the verification-record contract and reason codes, the consumer
+  admission predicate, the mechanical closure derivation, and the **single**
+  process-creation site in the whole PAD5 surface.
+- `btc_predictor/research/etf_calendar_evidence_verifier.py` — the standalone
+  verifier. It runs as its own top-level `python -I -S -B` process with a fresh
+  `-X pycache_prefix` namespace and takes five command-line strings.
+- `btc_predictor/research/etf_calendar_replay_verified_evidence.py` — the
+  non-authoritative producer, five mechanical audits and the namespace.
+
+The producer reuses the preserved `PAD4-R5` launch path
+(`run_isolated_scientific_request`) unchanged, so the four-file bootstrap
+pre-execution binding, fresh-exec isolation, the fresh empty bytecode namespace
+and Repairs A/B/C/D still hold for the execution that produces candidate bytes.
+It writes only the canonical request bytes, the canonical response bytes, the
+signed input envelopes and a `NON_AUTHORITATIVE_CANDIDATE_EVIDENCE` manifest. It
+never writes the `R5` affirmative evidence, because that carries a retired
+authority marker.
+
+#### Verifier closure
+
+Derived mechanically from the verifier entry module by the same rule that
+produced the bootstrap set and the 120-module worker universe: **119
+modules**, every one hash-bound — 117 by the frozen certified worker source
+manifest `7ffbf157...a44e8e` and 2 by the PAD5 verifier source manifest child.
+Zero uncertified members, zero failed-lineage controllers, and the producer is
+outside it. The derivation is a probe, not a list, and the suite asserts it
+agrees exactly with the reviewed derivation on the same seeds.
+
+An earlier draft of that audit silently skipped a declared certified-root import
+whose module was absent from the tree under audit. The mutation probe caught it;
+the derivation now reports such imports and the audit fails on them.
+
+#### Deterministic comparison projection
+
+A **closed inclusion list** of all 32 response fields, never "everything
+except". `RUN_LOCAL` is empty, measured rather than assumed: re-executing the
+same recorded request in separate processes with different bytecode-cache
+namespaces, different working directories and different `PYTHONHASHSEED` values
+produced byte-identical responses on every field. Each field carries a written
+justification. A missing projected field refuses rather than being dropped.
+
+#### Environment-local request fields
+
+`project_root`, `sys_path` and `third_party_environment`. Of the two options the
+ticket permits, the frozen choice is **verification in the recorded
+environment**; no relocation rule is frozen and request bytes are never
+rewritten. A relocation rule would be a second canonicalisation of
+authority-bearing bytes and is one edit from rewriting them; the recorded
+environment is already pinned by the frozen interpreter identity, the certified
+source manifest and the third-party installed-content authority, all three of
+which are inside the projection. The cost is availability, not integrity.
+
+#### Launch census
+
+PAD5-owned source holds exactly **one** process-creation site,
+`spawn_isolated_process` in the shared contract, used by the verifier to
+re-execute the worker and by a harness to start a verifier. The 120-module
+certified worker source universe holds **zero**. The producer additionally
+reaches the preserved certified `R5` launch, which is declared and justified
+rather than hidden.
+
+#### Namespace
+
+31 mechanically enumerated parent-bound children: 15 carried forward
+byte-identically from the reviewed `PAD4-R5` builders, 5 re-issued under new
+contract versions because the reviewed payload asserted in-process authority
+closure this architecture no longer claims, and 11 new. The 11 `R5` identity
+children are retired as failed lineage and are **not** copied here as authority;
+the `R5` namespace is untouched and still reproduces at `b4168dc9...61c7`. The
+failed-architecture lineage is extended to 13 entries with `b4168dc9...61c7`,
+and the failed-lineage controller tuple with
+`btc_predictor/research/etf_calendar_isolated_scientific_worker_r5.py`.
+
+A reviewer diffing by *filename* will see a different 5 and 11 from the
+semantic classification above, and both are correct. By filename: 15 files are
+byte-identical to their `PAD4-R5` namesake; 5 keep a `PAD4-R5` filename with
+changed bytes (`bootstrap_pre_execution_source_binding_rule`,
+`proof_order_and_completeness_definition`, `science_lineage_and_safety`,
+`trusted_process_and_isolation_boundary`, `worker_launch_contract`); and 11
+filenames are new. Semantically, 2 of the re-issued children were also
+*renamed* — `controller_result_admission_rule` became
+`replay_verified_admission_rule` and `controller_authority_context_rule` became
+`trusted_authority_context_rule` — while `proof_order_and_completeness_definition`
+and `science_lineage_and_safety` are built fresh rather than re-issued and keep
+their names because their subject is unchanged.
+
+Byte-identical carry was applied only where the reviewed payload asserts nothing
+this architecture contradicts. `trusted_process_and_isolation_boundary`,
+`worker_launch_contract`, `bootstrap_pre_execution_source_binding_rule`, the
+authority-context rule and the admission rule each contained clauses that
+re-assert one closed in-process authority-bearing operation; carrying those
+unchanged would have published a false statement, so each names its corrected
+clauses and its reviewed predecessor digest.
+
+#### Validation
+
+- focused PAD5 suite: **117 passed in 442.51s**;
+- combined PAD5 / R5 / R4 / R3 / R2 / R1 / PAD4 / PAD3 / PAD2 / PAD1-R1 / PAD1
+  suite: **1,327 passed in 2,320.70s**;
+- wider 21-module calendar / ETF / flow / trusted / corpus / prospective
+  regression: **2,139 passed, 3 skipped in 2,647.83s** (the three skips are the two deliberate composite-inherits-component-behaviour skips in `test_prospective_integration_corpus_v2.py` and the one disposable-PostgreSQL opt-in skip in `test_trusted_acquisition_postgresql_runtime.py`; the run is the reference 21 modules plus PAD5, and the difference from the 2,022-passed reference is exactly PAD5's 117);
+- `python -m compileall btc_predictor etf_calendar_worker`: PASS;
+- `git diff --check`: PASS;
+- namespace determinism under `PYTHONHASHSEED` 0/1/8675309, reversed child
+  order, an alternate cwd and a fresh process and output directory: reproduces;
+- preserved values reproduce exactly: bootstrap 4 files at
+  `1811e04d...ead411`; worker universe 120 modules at `7ffbf157...a44e8e`;
+  PRE-I2 fixture 116 modules at `674b006a...3aadbb8`; third-party registry
+  `23e4f1d8...6298a6`; and the failed `R5` parent `b4168dc9...61c7` still
+  reproduces unchanged.
+
+All proof evidence used only the exclusive `.venv312` CPython 3.12.14
+interpreter, with suites run sequentially and temporary directories in a sibling
+of the repository root — on the repository filesystem, outside the repository
+tree — as the `PAD4-R5` review's EXDEV and namespace-contamination findings
+require.
+
+#### Safety and authorization result
+
+The candidate is frozen, pre-data, non-certified, unused and at **zero
+observations**. Real Stage-B = **NO**; calendar certified = **NO**; prospective
+collection = **NOT AUTHORIZED**. `POSTP1-001V2A-I2`, `POSTP1-001V2R1`,
+`POSTP1-003R3` and `POSTP1-004` remain **BLOCKED**. `BTC-019` is **UNTOUCHED**
+and its sealed sample remains unopened; Epic T and EPIC Y are **UNCHANGED**. A
+successful implementation authorizes only `POSTP1-002V2A-PAD5`.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -6618,8 +6762,8 @@ pre-committed escalation above applies.
 | POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression; frozen at `b4168dc9...61c7` with 34 parent-bound children, 22 byte-identical to R4 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of `b4168dc9...61c7` | COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID; SAME-FAMILY ESCALATION AUTOMATIC |
 | PAD4-R5 same-family escalation decision | `DECIDE_ETF_CALENDAR_PROOF_ARCHITECTURE_AFTER_PAD4_R5_V1`: retires in-process authority objects and selects authority by byte-identical re-derivation in a certified-only verifier process; no repository identifier is assigned to the decision itself | COMPLETE / NEW ARCHITECTURE FAMILY SELECTED — authorizes `POSTP1-001V2A-PAD5` and nothing else |
-| POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule | NOT STARTED / DEPENDENCY-SATISFIED |
-| POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of the PAD5 candidate | BLOCKED — awaiting POSTP1-001V2A-PAD5 |
+| POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule; frozen at `54675984...f483` with 31 parent-bound children, 15 byte-identical to PAD4-R5 | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of `54675984...f483` | NOT STARTED / DEPENDENCY-SATISFIED |
 | PAD4-R5 proof-architecture decision | governance/architecture decision required by the pre-committed escalation rule for GC object-graph recovery of the closure-owned registry and the unresolved canonical-class-mutation domain boundary; no repository identifier or successor implementation ticket is assigned by this review | REQUIRED / DEPENDENCY-SATISFIED; NO PAD4-R6 CREATED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
