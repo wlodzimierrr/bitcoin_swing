@@ -178,7 +178,7 @@ Rules:
 | Raw volume / spot participation | Bitstamp raw OHLCV, shared across all runs |
 | ETF flows + AUM | Required for any trade; backfilled with §4 availability |
 | Funding, open interest, perpetual volume | Required: positioning is an Entry Conviction component |
-| US equity market full-day closures (the flow owner's `market_holidays`) | **`US_EQUITY_MARKET_CLOSURE_TABLE_V1`**, loaded and hash-verified by its owner module and passed to the existing `market_holidays` parameter. Required, and only after the `POSTP1-002V2A-T1` review passes. A data-window date outside the table's coverage blocks the RBT-006 freeze. |
+| US equity market full-day closures (the flow owner's `market_holidays`) | **`US_EQUITY_MARKET_CLOSURE_TABLE_V1`**, loaded and hash-verified by its owner module and passed to the existing `market_holidays` parameter. Required, and only after the `POSTP1-002V2A-T1` review passes. A date on which a flow window is evaluated that falls outside the table's coverage blocks the RBT-006 freeze. |
 | CVD (`SPOT_CVD`, `PERP_CVD`, `CVD_SPREAD`) | **Absent**: no persisted PIT source exists. The Rulebook §6.2 Phase-1 fallback applies mechanically: `FLOW_MODEL = ETF_CORE`. |
 | Macro, on-chain, liquidity | **Declared unavailable.** Vintage-correct point-in-time history is not established, and revised series would leak. The Rulebook core regime fallback applies. |
 

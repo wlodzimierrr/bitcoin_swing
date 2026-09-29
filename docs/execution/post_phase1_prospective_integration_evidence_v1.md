@@ -7101,10 +7101,15 @@ ticket.
 
 ### Acceptance criteria
 
-- **Coverage.** Every full-day closure from `2020-01-01` through the last year
-  for which all listing venues have officially published a holiday schedule at
-  freeze time. The target is through 2028. The loader refuses any query outside
-  coverage. It never returns "open" for an uncovered date.
+- **Coverage.** Every full-day closure from at least `2023-01-01` through the
+  last year for which all listing venues have officially published a holiday
+  schedule at freeze time. The target is through 2028.
+  - The start is a full year before the first US spot bitcoin ETF flows on
+    2024-01-11, so every flow window that can hold a flow record is covered.
+  - Earlier years may be included only where all three venues are sourced.
+  - The loader API takes an explicit date range, for example
+    `load_closures(start, end) -> frozenset[date]`, and refuses any range not
+    wholly inside coverage. It never implies "open" for an uncovered date.
 - **Venues.** NYSE Arca, Nasdaq and Cboe BZX, the listing venues of the US spot
   bitcoin ETF universe. Per-venue rows are recorded. A date is a closure only
   when every listing venue is closed. If the venues ever disagree on a date,

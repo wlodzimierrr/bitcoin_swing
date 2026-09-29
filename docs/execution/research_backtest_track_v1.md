@@ -245,8 +245,8 @@ Acceptance criteria:
 
 - A preregistration artifact binds:
   - the code commit and the champion identity;
-  - the `US_EQUITY_MARKET_CLOSURE_TABLE_V1` hash, whose coverage must span the
-    whole data window;
+  - the `US_EQUITY_MARKET_CLOSURE_TABLE_V1` hash, whose coverage must span
+    every date on which a flow window is evaluated;
   - the composer versions and the RBT-003 dataset manifests;
   - the cost ladder and the policy versions;
   - the report-generator version and the metric definitions.

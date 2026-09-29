@@ -820,7 +820,8 @@ proof-architecture program is CLOSED with every namespace immutable failed
 lineage; NO PAD5-R1, NO PAD6. The only missing authority was the ETF flow
 owner's market_holidays set, which is replaced by US_EQUITY_MARKET_CLOSURE_TABLE_V1,
 a frozen, reviewed, hash-bound full-day closure table (NYSE Arca, Nasdaq, Cboe
-BZX; 2020 through the latest officially published year) whose authority is
+BZX; from 2023-01-01, a year before the first spot ETF flows, through the latest
+officially published year) whose authority is
 exact-hash review, like any frozen constant. A fixed publication lag is not
 adopted for EPIC X, because prospective collection observes true available_at.
 POSTP1-001V2A-I2 = SUPERSEDED — NOT REQUIRED. POSTP1-001V2R1 is re-scoped to
