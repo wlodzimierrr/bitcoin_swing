@@ -6434,7 +6434,7 @@ input to one corpus.
 
 ## POSTP1-001V2A-PAD5 — `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW`
 **Authorized by:** the PAD4-R5 same-family escalation decision above
 **Dependency:** `POSTP1-002V2A-PAD4-R5`,
 `COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID`
@@ -6695,6 +6695,316 @@ collection = **NOT AUTHORIZED**. `POSTP1-001V2A-I2`, `POSTP1-001V2R1`,
 and its sealed sample remains unopened; Epic T and EPIC Y are **UNCHANGED**. A
 successful implementation authorizes only `POSTP1-002V2A-PAD5`.
 
+### POSTP1-002V2A-PAD5 review outcome
+
+**Status:** `COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID`
+**Review model:** GPT-5 — Extra High (xHigh)
+**Reviewed implementation commit:**
+`37a595efe0dece17ec9147dfc8fd1d0aa2353716`
+**Reviewed decision-record commit:**
+`9827bf61dd9c1e94cfcdd68bbefbfb09d22a66b3`
+**Reviewed candidate:** `ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1` at
+`546759848b27fc09af7701b6b40712838c5fc9eb1d8500df62a3e2e02df3f483`
+**Execution classification:**
+`ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1_REQUIRES_OWNER_SCOPING_DECISION`
+**Review-fix commit:** none. The candidate is exact-hash frozen; this review
+changed documentation only.
+
+#### Result and findings
+
+The candidate **FAILS** its independent proof-architecture review. Four
+independent routes satisfy the pre-committed family-failure predicate: bytes
+not re-derived from a complete point-in-time authenticated input set by
+certified code can be accepted as calendar evidence, and a stored record can
+confer acceptance in an uncertified consumer process. Therefore the bounded
+verifier findings do **not** authorize `PAD5-R1`; **NO PAD5-R1 and NO PAD6 are
+authorized**. An owner scoping decision is mandatory.
+
+- **P0 / FAMILY — request-controlled worker `sys_path` admits fabricated
+  science re-derived by uncertified shadow standard-library code.** Location:
+  `etf_calendar_worker/entry_r2.py:439`,
+  `btc_predictor/research/etf_calendar_evidence_verifier.py:450-464`, and
+  `btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py:1039-1057`.
+  Current behaviour: the verifier copies `request["sys_path"]` into the
+  re-execution argv. A scratch `ssl.py`, placed first, executed after that path
+  installation and replaced `common_etf_session_status`; the real worker
+  recorded `CLOSED / FABRICATED_BY_SHADOW_SSL`, and the verifier returned
+  `ACCEPTED / ACCEPTED_BYTE_IDENTICAL_REDERIVATION`. Project-source checks and
+  installed third-party checks still passed; there is no loaded-standard-library
+  origin check. Expected behaviour: every byte used for accepted re-derivation
+  must be produced only by certified code and frozen interpreter content. Why
+  it matters: byte identity merely repeated the attacker's fabricated
+  computation. Reproducer: request digest `db031311...6a593`, fabricated
+  response digest `112dc772...10190`, accepted in a fresh sibling scratch
+  workspace. Missing regression: prepend a shadow of a post-installation
+  stdlib import to recorded `sys_path` and require refusal. This is exactly the
+  decision rule's B2 **FAMILY FAILURE** example.
+- **P0 / FAMILY — selective disclosure of genuine signed records is accepted.**
+  Location: `btc_predictor/research/etf_calendar_evidence_verifier.py:290-378`.
+  Current behaviour: the verifier proves only that the request's record set
+  equals the supplied envelope-payload set. Omitting the genuine CBOE BZX
+  annual calendar from the nine genuine correctly test-signed session records
+  produced `UNRESOLVED / VENUE_CALENDAR_EVIDENCE_MISSING`; re-execution was
+  byte-identical and the verifier accepted all eight remaining envelopes.
+  Nothing queries trusted persistence or binds the supplied set to the complete
+  authoritative set. Expected behaviour: omission, substitution, stale-record
+  selection and addition must be refused unless the exact complete applicable
+  authoritative set is proved. Why it matters: the producer chooses which
+  authenticated facts the verifier is allowed to see. Reproducer: the
+  eight-of-nine genuine-envelope scratch item and its accepting verification
+  record. Missing regression: omit each required annual/venue record and
+  require refusal before science. This is the pre-committed C2 **FAMILY
+  FAILURE**.
+- **P0 / FAMILY — post-decision evidence envelopes are accepted.** Location:
+  `btc_predictor/research/etf_calendar_evidence_verifier.py:290-378`. Current
+  behaviour: nine genuine correctly test-signed envelopes acquired/available
+  at `2026-09-13T08:54:45Z` were accepted for request `decision_time`
+  `2026-09-12T00:00:00Z`. The worker's scientific filter returned an unresolved
+  result, but neither verifier nor admission rule refused future input.
+  Expected behaviour: every supplied acquisition/availability time must be at
+  or before the decision time. Why it matters: acceptance is not point in time,
+  even when downstream science happens to ignore the future record. Reproducer:
+  the full nine-envelope future-input scratch item and accepting record. Missing
+  regression: correctly signed future envelopes must be rejected. Production
+  and test modes differ only in signature-key verification before this shared
+  missing check. This is the pre-committed C3 **FAMILY FAILURE**.
+- **P0 / FAMILY — any ordinary process can forge a record that `admits()`
+  accepts.** Location:
+  `btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py:685-740`.
+  Current behaviour: `verify_record_digest()` only recomputes an unkeyed digest
+  over caller-supplied JSON, and `admits()` then checks four string values. An
+  ordinary process wrote a minimal `PRODUCTION / ACCEPTED /
+  ACCEPTED_BYTE_IDENTICAL_REDERIVATION` record for fabricated request and
+  response digests, recomputed `record_sha256`, and `admits()` returned `True`.
+  It did not require the exact field set, authenticate verifier identity, or
+  cross-bind request, response and projection digests. Expected behaviour: a
+  process other than the certified verifier must not be able to mint admission
+  authority. Why it matters: the record itself becomes a forgeable bearer
+  credential. Reproducer: independently canonicalised forged record digest
+  `8d766764...370c`. Missing regression: construct and self-digest an accepting
+  record outside the verifier and require `admits()` to refuse. This is D1's
+  pre-committed **FAMILY FAILURE**.
+- **P0 / FAMILY — the frozen consumer rule lets four non-Stage-B consumers rely
+  on that stored record in uncertified/shared processes.** Location:
+  `btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py:702-740`
+  and `btc_predictor/research/etf_calendar_replay_verified_evidence.py:1449-1475`.
+  Current behaviour: I2, V2R1, sufficiency governance and collection need only
+  an `admits()`-accepted stored record; only Stage-B is expressly required to
+  verify every observation. Expected behaviour: scientific acceptance must be
+  inseparable from certified-only re-derivation or from an independently
+  authenticated verifier attestation that an uncertified process cannot forge.
+  Why it matters: the rule contradicts the selected architecture's operative
+  invariant. Reproducer: the D1 record satisfies the sole frozen predicate in
+  an ordinary process. Missing regression: every bound consumer must reject a
+  locally minted record and demonstrate its trusted verifier boundary. This is
+  D2's pre-committed **FAMILY FAILURE**.
+- **P1 / BOUNDED — the verifier imports attacker-selected code while claiming
+  the checkout's certified manifest.** Location:
+  `btc_predictor/research/etf_calendar_evidence_verifier.py:74-83`, `:99-125`
+  and `:575-595`, plus
+  `btc_predictor/research/etf_calendar_replay_verified_evidence.py:369-403`.
+  Current behaviour: `main()` installs caller-supplied `SYS_PATH_JSON` before
+  project import. A shadow contract whose projection was the constant bytes
+  `ATTACKER_CONTROLLED_PROJECTION` was imported and accepted fabricated
+  evidence while the record reported the trusted checkout's 119-module
+  manifest `37f69095...cf140`. No check authenticates the source actually
+  imported. Expected behaviour: an already-trusted launcher must derive the
+  verifier path from the exact reviewed checkout/environment; the producer must
+  not supply it. Why it matters: verifier verdict logic is attacker-replaceable.
+  Reproducer: prepend a shadow `btc_predictor.research` package and observe
+  `ACCEPTED`, projection digest `c731797d...b366`. Missing regression: a shadow
+  verifier/contract path must refuse before import. Per the pre-commit this is
+  a verifier-local **BOUNDED** defect, but family failures independently bar
+  `PAD5-R1`.
+- **P2 / BOUNDED — nested unresolvable imports can still be silently omitted by
+  the closure audit.** Location:
+  `btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py:866-941`,
+  especially `:931-935`. Current behaviour: adding
+  `import btc_predictor.missing_parent.missing_child` to a full certified
+  scratch tree leaves the derived closure at 119 members with an empty
+  unresolved report because the immediate parent is itself unresolved. The
+  actual candidate closure nevertheless independently re-derived as exactly
+  119 current modules: 117 worker-manifest plus two PAD5, zero uncertified and
+  zero failed-lineage members, with no dynamic loader. Expected behaviour: all
+  certified-root declared imports that cannot resolve must be reported. Why it
+  matters: the apparatus claim that the prior silent-skip hole is closed is too
+  broad, though the current exact closure contains no such import. Reproducer:
+  the nested-missing-import scratch tree. Missing regression: an unresolved
+  nested import whose parent package is also absent. This is verifier-local and
+  **BOUNDED**, severity P2 because it exposes no current acceptance route.
+
+There is no blocking classification ambiguity: B2, C2, C3, D1 and D2 match the
+pre-committed family examples literally; B1 and the closure-audit defect are
+local to the verifier/apparatus. The family findings control the escalation.
+
+#### Part A — exact hash, scope and preservation
+
+The review independently reproduced parent `54675984...f483` through the
+candidate restore/verify path and through separate ASCII canonical-JSON SHA-256
+code that called no candidate hash helper. All 31/31 children are parent-bound.
+The `a317d65..37a595e` diff contains only the three PAD5 modules, focused suite
+and 33-file namespace; `37a595e..9827bf6` is documentation only. No frozen
+predecessor namespace, `etf_calendar_worker/`, 120-module universe member,
+`trusted_acquisition*.py`, `data/` or `research_artifacts/` file changed.
+
+Filename comparison with PAD4-R5 gives 15 byte-identical names, five changed
+names (`bootstrap_pre_execution_source_binding_rule`,
+`proof_order_and_completeness_definition`, `science_lineage_and_safety`,
+`trusted_process_and_isolation_boundary`, `worker_launch_contract`) and eleven
+new names. This reconciles with the semantic 15 carried / 5 re-issued / 11 new
+report: two re-issued subjects were renamed, while proof-order and science
+lineage were freshly built under existing names. Every changed/re-issued diff
+stays within PAD5 verifier/replay authority scope.
+
+The exact 15 filename-level carries are `bootstrap_source_set`,
+`bytecode_execution_binding_rule`, `compiled_root_binding_witness_rule`,
+`direct_body_dependency_rule`, `dynamic_import_and_execution_prohibition`,
+`pre_i2_project_source_manifest_fixture`,
+`project_source_manifest_binding_rule`, `proof_interpreter_identity`,
+`replay_owner_graph_rule`, `scientific_request_protocol`,
+`scientific_response_protocol`, `store_root_and_direct_use_grammar`,
+`third_party_installed_content_attestation_rule`,
+`third_party_semantic_authority` and `worker_io_and_capability_boundary`.
+The eleven new filenames are `canonical_encoding_rule`,
+`comparison_projection_definition`, `consumer_admission_rule`,
+`evidence_item_layout_rule`, `non_authoritative_producer_rule`,
+`replay_verified_admission_rule`, `replay_verified_evidence_boundary`,
+`trusted_authority_context_rule`, `verification_record_contract`,
+`verifier_interface_boundary` and `verifier_source_manifest`.
+
+Fresh namespaces were byte-identical under `PYTHONHASHSEED` 0, 1 and 8675309,
+reversed child order, alternate cwd, fresh process and fresh sibling output.
+Preserved values reproduce exactly: bootstrap four files at
+`1811e04dac7a033de2c8e6620bf7d5aa227b94eebdf419657ecccf4d3fead411`;
+120-module worker universe at
+`7ffbf15792d33e0cd387eb995d8d733c1fa1b98b2859153957c670f796a44e8e`;
+116-module PRE-I2 fixture at
+`674b006ae66b8aace3458cb870f898ecad33e1f23833436954d36749b3aadbb8`;
+2,858-row installed-content registry at
+`23e4f1d89a503b43fc39ee0ae3516b742f6db72028224d78a9181be6726298a6`;
+and failed R5 parent
+`b4168dc9c757f3cdbdeed48e9a91cc35eb921728adb5d38d0d5b76fd2ef861c7`.
+
+#### Part B — verifier-process boundary
+
+B1 and B2 produce the blocking results recorded above. A traced successful
+worker showed that post-`sys.path` imports include the shadowable stdlib roots
+`calendar`, `fractions`, `ssl`, `statistics` and `zoneinfo`, and the reviewed
+third-party roots `alembic`, `cryptography`, `numpy`, `scipy` and `sqlalchemy`
+(plus their dependencies). Reviewed third-party origins and installed content
+are checked, so a simple reviewed-third-party shadow refuses; stdlib source
+origins are not attested, and the `ssl` shadow was accepted. `project_root`
+must resolve to this checkout and appear in the request path; RECORD files must
+exist and the reviewed third-party content is checked. Those constraints do not
+close the arbitrary earlier stdlib path entry.
+
+Independent AST closure derivation included function/class imports and found
+the exact current 119 modules and no conditional/dynamic import mechanism.
+The nested-unresolvable audit defect is separately recorded above. The verifier
+argv is syntactically five strings plus the canonical files they name; no
+callback or pickle crosses it, and production mode refuses test-key envelopes
+and file-supplied trust roots. Semantically, however, the `SYS_PATH_JSON`
+string names executable content, so the interface cannot support its stronger
+"nothing executable crosses" claim until launch trust is fixed.
+
+#### Part C — authenticity, completeness and point in time
+
+Unsigned, altered, differently re-signed and test-key production envelopes are
+rejected, as are file-supplied production trust roots. Completeness and
+point-in-time binding fail through C2 and C3 above. Changing only
+`calendar_authority_version` while preserving request schema is rejected at
+the frozen-context comparison (`etf_calendar_evidence_verifier.py:238-246`);
+removing that comparison makes the focused load-bearing regression fail. The
+field is therefore genuinely load-bearing, not decorative.
+
+#### Part D — record and consumer authority
+
+D1 and D2 fail as recorded above. For an honestly produced record, refusal
+handling is otherwise correct: both recorded and re-derived status must be
+`SUCCESS`; nonzero worker exit refuses; recorded response `request_digest` must
+equal the exact request-byte digest; and `result_digest` must describe the
+recorded result (`etf_calendar_evidence_verifier.py:417-487`). Those checks do
+not rescue a consumer predicate that accepts a wholly forged record.
+
+#### Part E — proof obligations and controls
+
+Every PAD5 proof-obligation row was re-run. The three R5 routes are non-vacuous:
+the checked-in control first recovers and exploits the R5 registry in process;
+inserting a genuine snapshot then yields the same response/projection digests
+and the verifier accepts no new evidence; inserting a fabricated snapshot
+produces `FABRICATED_BOOTSTRAP_STATE` and is rejected for non-identical
+projection; canonical-class mutation likewise presents the fabricated state
+to the producer and the verifier rejects it. The new B1/B2/C2/C3/D1 probes show
+that these valid controls do not cover launch-code trust, authoritative-set
+completeness, point in time or record provenance.
+
+#### Part F — apparatus and mutation sensitivity
+
+Each required mutation was applied separately in sibling scratch material.
+Digest-only acceptance, adding/removing a projection field, defining projection
+by exclusion, producer-process admission and producer self-attestation each
+move the bound child and parent and are caught by the corresponding focused
+mutation regression. An uncertified closure member and a callback/pickle
+interface each make their audit fail. Separate source copies that skipped
+envelope verification, skipped request-authority comparison or accepted a
+recorded refusal changed the frozen verifier source SHA from
+`bda78990...2692a` respectively to `5ad3ec99...4d5`,
+`d2682219...07d7` and `99885793...bcfe`; the manifest catches all three before
+execution. If re-frozen, the unsigned-envelope, load-bearing-authority and
+refusal regressions respectively fail. The nested unresolvable mutation is the
+one apparatus sensitivity gap and is the P2 finding above.
+
+Independent worker runs in three fresh controller processes, with separate
+working directories and bytecode-cache namespaces under outer
+`PYTHONHASHSEED` 0, 1 and 8675309, emitted byte-identical 2,487-byte responses
+at digest `28c5fb0c8c4a03fe21f9487945a31bff459d2d6c83fc64c50a6a7725a851dfda`.
+All 32 response fields are `IN_PROJECTION`; `RUN_LOCAL` is empty. The worker's
+frozen isolated launch itself intentionally ignores Python environment
+variables; varying the controller seed still exercises construction order
+before canonical launch.
+
+#### Part G — preservation
+
+Bootstrap binding, fresh-exec isolation, Repairs A/B/C/D, worker protocol and
+canonical bytes, project-source and third-party authority, compiled-root
+witness, closed grammar, exact 11-owner graph and direct-body rule all reproduce
+unchanged. A copied-venv probe modified copied NumPy only; the R5 path refused
+with `admitted=False / WORKER_EXIT_STATUS_6`. The shared `.venv312` was never
+mutated. Certified trusted persistence at
+`02f96203bf4ff21a5603161c54db2e5325f81deacfb0af5caa1478c2f1a12772`
+was used and not modified or reopened.
+
+#### Part H — validation
+
+All suites used the exclusive `.venv312` CPython 3.12.14 interpreter and exact
+2,858-row installed-content registry `23e4f1d8...6298a6`, ran sequentially, and
+used sibling same-filesystem temporary roots outside the repository.
+
+- focused PAD5 suite: **117 passed** in 442.59s;
+- combined 11-generation suite: **1,327 passed** in 2,178.89s;
+- wider 22-module regression: **2,139 passed, 3 skipped** in 2,660.31s;
+- `python -m compileall -q btc_predictor etf_calendar_worker`: PASS;
+- `git diff --check`: PASS.
+
+The three skips are exactly two deliberate
+composite-inherits-component-behaviour cases in
+`test_prospective_integration_corpus_v2.py` and the disposable-PostgreSQL
+opt-in in `test_trusted_acquisition_postgresql_runtime.py`. There is no count
+difference from the implementation claims and no unexplained skip. The green
+candidate-owned suites do not contain the family-failure regressions above.
+
+#### Safety, authorization and next action
+
+The candidate remains exact-hash frozen, failed, non-certified, unused and at
+**zero observations**. Real Stage-B = **NO**; calendar certified = **NO**;
+collection = **NOT AUTHORIZED**. `POSTP1-001V2A-I2`, `POSTP1-001V2R1`,
+`POSTP1-003R3` and `POSTP1-004` remain **BLOCKED**. BTC-019 is **UNTOUCHED**
+and its sealed sample remains unopened; Epic T and EPIC Y are **UNCHANGED**.
+I2 may not begin. PAD5-R1 may not begin. The next dependency-satisfied EPIC X
+action is the mandatory owner scoping decision on whether proof-grade ETF
+calendar authority is required at all, including the pre-committed conservative
+fixed-lag alternative under a new corpus version.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -6762,8 +7072,8 @@ successful implementation authorizes only `POSTP1-002V2A-PAD5`.
 | POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression; frozen at `b4168dc9...61c7` with 34 parent-bound children, 22 byte-identical to R4 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of `b4168dc9...61c7` | COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID; SAME-FAMILY ESCALATION AUTOMATIC |
 | PAD4-R5 same-family escalation decision | `DECIDE_ETF_CALENDAR_PROOF_ARCHITECTURE_AFTER_PAD4_R5_V1`: retires in-process authority objects and selects authority by byte-identical re-derivation in a certified-only verifier process; no repository identifier is assigned to the decision itself | COMPLETE / NEW ARCHITECTURE FAMILY SELECTED — authorizes `POSTP1-001V2A-PAD5` and nothing else |
-| POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule; frozen at `54675984...f483` with 31 parent-bound children, 15 byte-identical to PAD4-R5 | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of `54675984...f483` | NOT STARTED / DEPENDENCY-SATISFIED |
-| PAD4-R5 proof-architecture decision | governance/architecture decision required by the pre-committed escalation rule for GC object-graph recovery of the closure-owned registry and the unresolved canonical-class-mutation domain boundary; no repository identifier or successor implementation ticket is assigned by this review | REQUIRED / DEPENDENCY-SATISFIED; NO PAD4-R6 CREATED |
+| POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule; frozen at `54675984...f483` with 31 parent-bound children, 15 byte-identical to PAD4-R5 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of `54675984...f483` | COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID; FAMILY FAILURE REQUIRES OWNER SCOPING DECISION; NO PAD5-R1 / NO PAD6 |
+| PAD5 owner scoping decision | pre-committed decision on whether proof-grade ETF calendar authority is required at all after PAD5 family failure, including a conservative fixed-lag alternative under a new corpus version; no successor implementation ticket is assigned by this review | REQUIRED / DEPENDENCY-SATISFIED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

@@ -719,7 +719,7 @@ including a conservative fixed-lag alternative under a new corpus version; no
 PAD6
 
 POSTP1-001V2A-PAD5 =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH
 PROOF-ARCHITECTURE REVIEW —
 DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1
 
@@ -777,15 +777,41 @@ suite 1,327 passed in 2,320.70s; wider 21-module regression 2,139 passed, 3 skip
 git diff --check PASS; namespace deterministic under PYTHONHASHSEED 0/1/8675309,
 reversed child order, an alternate cwd and a fresh process/output directory
 
+PAD5 independent review validation =
+exclusive `.venv312` CPython 3.12.14 and exact 2,858-row installed-content
+registry 23e4f1d8...6298a6; sibling same-filesystem temporary roots; suites
+sequential. Focused 117 passed in 442.59s; combined 11-generation 1,327 passed
+in 2,178.89s; wider 22-module regression 2,139 passed, 3 explained skips in
+2,660.31s; compileall and git diff --check PASS. Independent runs reproduce 32
+IN_PROJECTION / 0 RUN_LOCAL with byte-identical responses across fresh
+processes, cwd, pycache namespaces and controller hash seeds 0/1/8675309
+
 POSTP1-002V2A-PAD5 =
-NOT STARTED / DEPENDENCY-SATISFIED — independent exact-hash xHigh
-proof-architecture review of 546759848b27fc09af7701b6b40712838c5fc9eb1d8500df62a3e2e02df3f483
+COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID;
+independent exact-hash xHigh proof-architecture review of
+546759848b27fc09af7701b6b40712838c5fc9eb1d8500df62a3e2e02df3f483
+
+PAD5 review execution classification =
+ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1_REQUIRES_OWNER_SCOPING_DECISION
+
+PAD5 blocking result =
+FAMILY FAILURE. Request-controlled sys_path lets uncertified shadow stdlib code
+fabricate a worker result that the verifier re-derives and ACCEPTS; genuine
+signed selective-disclosure and post-decision envelope sets are ACCEPTED; and
+an ordinary process can mint a self-digested PRODUCTION / ACCEPTED verifier
+record that admits() accepts. The frozen consumer rule lets I2, V2R1,
+sufficiency governance and collection rely on such a stored record outside a
+certified-only process. Two additional verifier-local defects are bounded: the
+verifier imports caller-selected shadow project code while attesting the
+checkout manifest, and a nested unresolved import can be silently skipped by
+the closure audit. The pre-committed family rule controls: NO PAD5-R1, NO PAD6;
+an owner scoping decision is mandatory
 
 PAD5 authorization =
-authorizes ONLY POSTP1-002V2A-PAD5; observations remain 0, real Stage-B = NO,
-calendar certified = NO, collection = NOT AUTHORIZED, I2/V2R1/POSTP1-003R3/
-POSTP1-004 remain BLOCKED, BTC-019 UNTOUCHED with its sealed sample unopened,
-Epic T UNCHANGED and EPIC Y UNCHANGED
+authorizes no successor implementation. Observations remain 0, real Stage-B =
+NO, calendar certified = NO, collection = NOT AUTHORIZED,
+I2/V2R1/POSTP1-003R3/POSTP1-004 remain BLOCKED, BTC-019 UNTOUCHED with its
+sealed sample unopened, Epic T UNCHANGED and EPIC Y UNCHANGED
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1437,28 +1463,24 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R5 is
-  **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH
-  PROOF-ARCHITECTURE REVIEW** at `b4168dc9...61c7`, implementation commit
-  `2d41fb13...1201d01`. The local exact-type/live-witness gate closes R4's
-  descriptor-reuse defect and all 34 parent-bound children reproduce, with 22
-  byte-identical R4 carries. Independent review nevertheless recovered the
-  closure-owned `dict[int, entry]` through public GC object-graph traversal,
-  inserted a real immutable snapshot for a caller-created exact-class object,
-  and resolved all eight authority members. No closure-cell recovery,
-  private-name reflection or module mutation was used. This is a same-family P0
-  under the frozen domain, so execution classification is
-  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REQUIRES_NEW_PROOF_ARCHITECTURE_DECISION`.
-  The pre-committed escalation is automatic: **NO PAD4-R6 is created** and the
-  next action is a new proof-architecture decision. Whether mutating attributes
-  of the canonical class is excluded "module mutation" is separately
-  **AMBIGUOUS / BLOCKING**. Relay remains **OPEN / NOT CLAIMED CLOSED**. The
-  candidate is frozen, failed, non-certified, unused and at zero observations.
-  The mandatory proof-architecture decision is now recorded in EPIC X. It
-  retires in-process authority objects and selects
-  `ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`, under which the P0, the P1 and
-  relay are harmless by construction, and it authorizes only
-  `POSTP1-001V2A-PAD5`.
+- **Current IN_PROGRESS ticket:** None. POSTP1-002V2A-PAD5 is **COMPLETE / FAIL
+  — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID**. The reviewed
+  parent `54675984...f483` and all 31 children reproduce exactly. Independent
+  probes made the verifier accept fabricated science re-derived by a shadow
+  stdlib module selected through request `sys_path`, accept genuine signed but
+  selectively disclosed and post-decision input sets, and accept an ordinary
+  process's forged self-digested PRODUCTION / ACCEPTED record through
+  `admits()`. The stored-record consumer rule carries that authority defect to
+  I2, V2R1, sufficiency governance and collection. These are the exact
+  pre-committed family failure; execution classification is
+  `ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1_REQUIRES_OWNER_SCOPING_DECISION`.
+  The verifier's caller-selected own import path and one nested unresolved-
+  import audit gap are additional bounded findings, but family failure forbids
+  PAD5-R1. **NO PAD5-R1 / NO PAD6**. The candidate is frozen, failed,
+  non-certified, unused and at zero observations. The next EPIC X action is the
+  mandatory owner scoping decision on whether proof-grade calendar authority
+  is required at all, including the pre-committed conservative fixed-lag/new-
+  corpus alternative.
 
   POSTP1-001V2A-PAD4-R4 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at
@@ -1593,41 +1615,34 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   made
 - **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
   implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
-  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. The R5 review
-  **FAILED**, so I2 is not dependency-satisfied. Collection is **NOT
-  AUTHORIZED** and observations remain **0**. Every PAD4 candidate through R5
-  has failed review, so no certified production isolated-worker authority is
-  available. Calendar certification is **NO**, no real Stage-B evaluation ran,
-  and I2 must not start
-- **Next dependency-satisfied EPIC X ticket:** **`POSTP1-001V2A-PAD5`**
-  `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`, authorized by the
-  recorded PAD4-R5 same-family escalation decision. It is the standalone
-  certified-only verifier that establishes calendar authority by byte-identical
-  re-derivation. It requires the exclusive `.venv312` CPython 3.12.14
-  environment. Only its independent review `POSTP1-002V2A-PAD5` may, on PASS,
-  make I2 dependency-satisfied
+  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. The PAD5 review
+  **FAILED in the pre-committed family**, so I2 is not dependency-satisfied.
+  Collection is **NOT AUTHORIZED** and observations remain **0**. No certified
+  production ETF calendar authority is available. Calendar certification is
+  **NO**, no real Stage-B evaluation ran, and I2 must not start
+- **Next dependency-satisfied EPIC X action:** the mandatory **PAD5 owner
+  scoping decision** on whether proof-grade ETF calendar authority is required
+  at all, including the pre-committed conservative fixed-lag alternative under
+  a new corpus version. No PAD5-R1 or PAD6 implementation is authorized
 - **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
   `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
   `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
   RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
-- **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2A-PAD5`.
-  Calendar implementation, V2 correction, POSTP1-003R3, POSTP1-004 and
-  collection remain blocked; BTC-019 remains terminal and untouched with its
-  sealed sample unopened, and Epic T is unchanged
-- **Latest implementation validation:** POSTP1-001V2A-PAD4-R5 used exclusive
-  CPython 3.12.14 under `.venv312`; the entry probes reconfirmed weak mapping and
-  weak-reference equality, weak-witness liveness/cleanup, spoofed `__class__`
-  behavior and the exact R4 descriptor-reuse P0. The focused R5 suite is
-  **201 passed**, the combined PAD4-R5/R4/R3/R2/R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1
-  proof-architecture suite is **1,210 passed**, and the wider calendar, ETF,
-  flow, trusted-persistence, corpus and prospective regression over all 21
-  selected modules is **2,022 passed** with 3 explained skips. Parent
-  `b4168dc9...61c7`, all 34 children, 22 exact R4 carries and a fresh 36-file
-  namespace reproduce; hash-seed, child-order, alternate-cwd and fresh-output
-  determinism and required material mutation sensitivity pass. `python -m
-  compileall btc_predictor etf_calendar_worker` and `git diff --check` pass. The
-  full suite was **NOT RUN**. This implementation evidence is preserved for
+- **Other ready tickets:** In EPIC X, none. Calendar implementation, V2
+  correction, POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
+  remains terminal and untouched with its sealed sample unopened, and Epic T
+  and EPIC Y are unchanged
+- **Latest review validation:** POSTP1-002V2A-PAD5 used exclusive CPython
+  3.12.14 under `.venv312` with the exact 2,858-row installed-content registry
+  `23e4f1d8...6298a6`, sibling same-filesystem temporary roots and sequential
+  suites. Focused PAD5 is **117 passed**; combined 11-generation proof
+  architecture is **1,327 passed**; wider 22-module calendar/ETF/flow/trusted/
+  corpus/prospective regression is **2,139 passed, 3 explained skips**.
+  Compileall and `git diff --check` pass. Exact parent/children, carried
+  authority values, namespace determinism and 32/0 projection determinism all
+  reproduce. Independent adversarial probes nevertheless establish the family
+  failure recorded above. This implementation evidence is preserved for
   provenance but does not supersede the independent review's P0
 - **Latest review validation:** POSTP1-002V2A-PAD4-R5 used the exclusive
   `.venv312` CPython 3.12.14 interpreter and independently verified the exact
@@ -2740,6 +2755,15 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- POSTP1-002V2A-PAD5 failed in the pre-committed family: request-selected
+  uncertified stdlib code can generate the byte-identical re-derivation,
+  authenticated records are not bound to a complete point-in-time set, and a
+  stored accepting record is forgeable and sufficient for four consumers in
+  ordinary processes. The mandatory next EPIC X action is an **owner scoping
+  decision** on whether proof-grade ETF calendar authority is needed at all,
+  including the pre-committed conservative fixed-lag alternative under a new
+  corpus version. Family failure forbids PAD5-R1 and PAD6; no successor
+  implementation ticket exists.
 - POSTP1-002V2A-PAD4-R5 failed in the pre-committed same family because public
   GC object-graph traversal can recover and mutate the closure-owned authority
   registry, allowing a caller-created exact-class object to acquire a real
