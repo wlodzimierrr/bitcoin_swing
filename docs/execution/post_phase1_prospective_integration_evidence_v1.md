@@ -5754,7 +5754,7 @@ that the judgement cannot be made after the fact.
 
 ## POSTP1-001V2A-PAD4-R5 — `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW`
+**Status:** `IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW`
 **Authorized by:** the PAD4-R4 construction-identity governance decision above
 **Dependency:** `POSTP1-002V2A-PAD4-R4`,
 `COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID`
@@ -6048,6 +6048,249 @@ final xHigh proof-architecture review, `POSTP1-002V2A-PAD4-R5`. R5
 implementation may **not** authorize `POSTP1-001V2A-I2`. Only an R5 review
 **PASS** may make I2 dependency-satisfied.
 
+### POSTP1-002V2A-PAD4-R5 review outcome
+
+**Status:** `COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID`
+**Review model:** GPT-5 — Extra High (xHigh)
+**Reviewed implementation commit:**
+`2d41fb13a411cd8a2a40efe2339b921116201d01`
+**Reviewed candidate:** `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1` at
+`b4168dc9c757f3cdbdeed48e9a91cc35eb921728adb5d38d0d5b76fd2ef861c7`
+**Execution classification:**
+`ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REQUIRES_NEW_PROOF_ARCHITECTURE_DECISION`
+**Review-fix commit:** none. The candidate is exact-hash frozen and the review
+changed documentation only.
+
+#### Result and findings
+
+The candidate **FAILS** its independent final proof-architecture review. The
+exact-type gate, one-fetch weak-witness identity comparison and conditional
+cleanup correctly close the R4 descriptor-reuse defect, but the closure-owned
+registry remains an ordinary GC-tracked Python object. Ordinary caller code can
+recover that dict by public `gc.get_objects()` / `gc.get_referents()` graph
+traversal, insert an entry for a caller-created exact-class object, and make all
+eight authority-bearing members resolve a real frozen snapshot. This uses no
+closure-cell recovery, private-name reflection or module mutation. It is the
+pre-committed same family — a caller-created object acquiring scientific
+authority — so **NO PAD4-R6 is authorized or created**. Escalation to a new
+proof-architecture decision is automatic.
+
+- **P0 — closure-owned registry is recoverable and writable through the public
+  object graph.** Location:
+  `btc_predictor/research/etf_calendar_isolated_scientific_worker_r5.py:840`
+  and `:868`, consumed at `:884-888`. Current behaviour: after one legitimate
+  execution is bound, a scratch probe enumerates GC-tracked objects, identifies
+  the unique `dict[int, tuple]` whose tuple contains a weak witness and
+  `FrozenAuthoritySnapshot`, constructs `forged = object.__new__(Canonical)`,
+  and inserts `registry[id(forged)] = Entry(ref(forged), existing.snapshot)`.
+  `forged is not legitimate`, but `admitted`, `failure_reason`,
+  `request_digest`, `response`, `result`, `scientific_evidence`,
+  `authoritative_snapshot_proof()` and `__repr__` then all resolve authority.
+  Expected behaviour: within the frozen ordinary-project-caller domain, no
+  caller-created object may acquire or carry scientific authority, and only an
+  object passed through the controller's capability-gated bind may resolve a
+  snapshot. Why it matters: this falsifies P0-a and the load-bearing operative
+  identity claim without using any named excluded route. Reproducer: the
+  independent scratch probe recovered exactly one registry by shape and
+  demonstrated full forged authority on the required CPython 3.12.14
+  interpreter. Missing regression: a public GC object-graph registry
+  recovery/insertion probe that asserts a caller-created exact-class object
+  cannot acquire authority.
+- **P1 — the treatment of mutation of the canonical class object is materially
+  ambiguous.** Location:
+  `docs/execution/post_phase1_prospective_integration_evidence_v1.md:5668-5673`
+  and
+  `btc_predictor/research/etf_calendar_isolated_scientific_worker_r5.py:890-958`.
+  Current behaviour: assigning replacement authority-bearing descriptors on
+  the canonical class makes an `object.__new__(Canonical)` object present
+  fabricated authority, without rebinding the module name. Expected behaviour:
+  the frozen domain must decide explicitly whether modifying attributes of a
+  module-owned class is excluded "module mutation". Why it matters: if it is
+  not excluded, P0-a also fails through this route; if it is excluded, the
+  exclusion must be stated rather than inferred. Reproducer: an independent
+  scratch probe replaced canonical-class properties/methods, constructed an
+  exact-class object with `object.__new__`, and read fabricated authority.
+  Missing regression/governance input: an explicit domain decision and a probe
+  matching that decision. The ambiguity is blocking independently of the P0.
+- **NOT_A_DEFECT — subclass-class-creation text differs from lookup refusal.**
+  The 72 construction and authority-lookup refusal cases use the same
+  `AuthoritativeExecutionConstructionError` and the exact same non-occupancy-
+  revealing message. Unsupported subclass creation uses the same exception
+  type but a defence-in-depth diagnostic. It occurs before any registry lookup,
+  cannot reveal occupancy and does not violate the uniform lookup-refusal
+  invariant.
+
+The required governance input is a **new proof-architecture decision**. It must
+either freeze a domain that explicitly excludes all relevant public object-
+graph recovery/mutation routes, with a defensible authority model, or select an
+architecture that remains sound when ordinary caller code can enumerate and
+mutate reachable Python objects. This review creates no successor
+implementation ticket.
+
+#### Part A — exact hash, scope and preservation
+
+The review independently reproduced the frozen parent
+`b4168dc9...61c7` through the controller's restore/verify path and by a separate
+canonical-JSON/hash implementation that did not call the controller hashing
+helpers. All 34/34 material children are parent-bound. The governance-base to
+implementation diff contains only the new R5 controller, focused suite and R5
+namespace; the implementation-to-decision-record diff is documentation only.
+The R4 controller and namespace, every earlier PAD namespace,
+`etf_calendar_worker/` and `etf_publication_calendar.py` are byte-unchanged.
+
+The 22 byte-identical R4 children are:
+`admission_provenance_rule`, `authoritative_return_state_rule`,
+`bootstrap_pre_execution_source_binding_rule`, `bootstrap_source_set`,
+`bytecode_execution_binding_rule`, `compiled_root_binding_witness_rule`,
+`controller_result_admission_rule`, `direct_body_dependency_rule`,
+`dynamic_import_and_execution_prohibition`,
+`pre_i2_project_source_manifest_fixture`,
+`project_source_manifest_binding_rule`, `proof_interpreter_identity`,
+`replay_owner_graph_rule`, `result_digest_lifetime_binding_rule`,
+`scientific_request_protocol`, `scientific_response_protocol`,
+`store_root_and_direct_use_grammar`,
+`third_party_installed_content_attestation_rule`,
+`third_party_semantic_authority`, `trusted_process_and_isolation_boundary`,
+`worker_io_and_capability_boundary`, and `worker_launch_contract`.
+
+The 12 changed or new children are:
+`affirmative_evidence_snapshot_rule`,
+`authoritative_execution_identity_rule`,
+`authoritative_scientific_execution_boundary`,
+`authority_receiver_validation_rule`, `caller_visible_copy_isolation_rule`,
+`canonical_admitted_snapshot_rule`, `construction_identity_audit_rule`,
+`controller_authority_context_rule`, `identity_safe_snapshot_binding_rule`,
+`proof_order_and_completeness_definition`, `science_lineage_and_safety`, and
+`scientific_evidence_authority_rule`. Their independent structural diffs remain
+within identity binding, registry semantics, receiver validation, construction
+audit, regressions, lineage tuples and material-child consistency.
+
+A fresh namespace is 36/36 files byte-identical under `PYTHONHASHSEED` 0, 1 and
+8675309, reversed child order, an alternate cwd and a fresh process/output
+directory. Preserved authority reproduces exactly: bootstrap 4 files at
+`1811e04d...ead411`; worker universe 120 modules at `7ffbf157...a44e8e`;
+PRE-I2 fixture 116 modules at `674b006a...3aadbb8`; third-party installed
+content `23e4f1d8...6298a6` with 2,858 rows; and preserved R4 at
+`ae25c246...6e65bc`.
+
+#### Part B — independent identity-boundary probes
+
+Fresh uncommitted probes instrumented receiver `__eq__`, `__hash__`,
+`__class__`, `__getattr__`, `__getattribute__`, `__bool__` and `__repr__` hooks;
+none ran on an R5 authority path. A real execution resolved all eight members,
+returned fresh detached decodes and reproduced every bound digest. The exact R4
+descriptor-reuse exploit still resolves while R5 uniformly refuses it. Unbound
+property getters, unbound proof/repr methods, spoofed `__class__`, direct and
+forged construction, `Canonical(None, material)`, `object.__new__`, subclassing,
+compatible-layout `__class__` reassignment, copy, deepcopy and weak proxy all
+failed to acquire authority; pickle did not round-trip. Reassigning a legitimate
+execution's class away and back restored only that same execution's existing
+binding.
+
+An organic exact-class address reuse occurred after 50 allocations and did not
+recover dead authority. Stale cleanup could not remove a newer entry, a live
+execution retained authority, and the registry retained no execution strongly.
+Three sequential executions A, B and C remained mutually independent. Forged
+re-invocation of `__init__` left an existing binding unchanged. Static reading
+confirmed no receiver-keyed or weakref-keyed mapping, no bare-id authority, no
+equality-keyed post-hoc identity design, no instance-held snapshot, one fetch
+before identity, no cache, one reader, one bind and one insertion. These local
+properties pass; the P0 is recovery and mutation of the registry itself.
+
+#### Part C — domain classification
+
+The frozen text is for "ORDINARY PROJECT-OWNED CALLER CODE AND CALLER-DEFINED
+ORDINARY PYTHON OBJECTS" and expressly says "NO CLOSURE-CELL RECOVERY, NO
+PRIVATE-NAME REFLECTION, NO MODULE MUTATION"; arbitrary hostile control of the
+trusted process is likewise outside the declared boundary.
+
+| route | can caller obtain or present authority? | classification | reason |
+| --- | --- | --- | --- |
+| C1 canonical-class attribute mutation | YES | **AMBIGUOUS / BLOCKING** | It changes a module-owned class but not the module binding; the frozen phrase "module mutation" does not define whether this route is excluded. |
+| C2 `gc.get_objects` / referent/referrer recovery and registry insertion | YES | **IN-DOMAIN / P0** | It uses public object enumeration and ordinary dict mutation, not closure-cell recovery, private-name reflection or module mutation. Treating it as "equivalent" to closure-cell recovery would silently broaden the exclusion. |
+| C3 relay through a held legitimate execution | YES | **IN-DOMAIN / OPEN RESIDUAL** | P0-b is expressly `OPEN / NOT CLAIMED CLOSED`; it is neither certified closed nor reclassified as a non-defect. |
+| C4 frames, tracing and `ctypes` | potentially | **OUT-OF-DOMAIN** | These require arbitrary hostile control of the trusted process. They remain residuals, not findings. |
+
+#### Part D — audit-apparatus repair
+
+The R4 hardcoded literal at the preserved R4 controller's line 2233 is gone.
+R5 lines 2774-2776 compute the claim by negating the live construction audit's
+`authority_lookup_uses_exact_identity` result. The review applied each required
+mutation separately to a scratch controller; all were detected:
+
+| mutation | detecting claim/test |
+| --- | --- |
+| receiver-keyed `WeakKeyDictionary` | identity/construction audit refuses the changed storage form |
+| weakref.ref-keyed dict | identity/construction audit refuses the changed storage form |
+| drop `live is execution` | receiver-gate drift and identifier-bucket-authority claims fail |
+| `isinstance` or `receiver.__class__ is` | forbidden receiver operation/gate drift; explosive `__class__` hook runs |
+| memoising lookup cache | receiver-gate drift and identifier-becomes-authority claim fail |
+| post-class `__eq__` / `__hash__` assignment | object-identity ownership claim fails |
+| second reader or second insertion | reader/bind/storage-reference and write-count claims fail |
+| unconditional cleanup delete | cleanup predicate and stale-callback probes fail |
+| authority property bypassing `_frozen` | derived live-surface/member/return audit fails |
+| snapshot stored on the instance | live-surface/slot-state audit fails |
+
+The checked-in control genuinely resolves authority under preserved R4 and
+refuses it under R5; it is not skipped, xfailed or vacuous. The old
+`not hasattr(spoof, name)` regression is absent from R5 and replaced rather than
+extended. The `__init_subclass__` docstring claims only probe-derived defence in
+depth. The live class drives the surface audit, dunders included, and reports
+eight members, one reader, one fetch, one bind and one insertion.
+
+#### Part E — preserved mechanisms
+
+Independent reproduction, byte comparison and regression tests preserve R4's
+`FrozenAuthoritySnapshot`, canonical response/result/evidence bytes, fresh
+detached decode and top-level/nested mapping/nested sequence/response/evidence/
+cross-accessor isolation, digest lifetime binding, sole authority-bearing flow,
+bootstrap pre-execution binding, fresh-exec isolation, Repairs A/B/C/D, worker
+protocol, source and third-party authority, compiled root witness, root-cell
+prohibition, closed store grammar, 11/11 owner census and graph, and direct-body
+rule. `_frozen` uses only the exact-type and live-witness identity gates at read
+time and does not inspect closure contents. Certified trusted persistence at
+`02f96203...1a12772` remains closed and was not reopened.
+
+#### Part F — validation
+
+All proof evidence used only the exclusive `.venv312` CPython 3.12.14
+interpreter and its exact installed-content registry
+`23e4f1d8...6298a6` (2,858 rows), with suites run sequentially. Entry probes
+reconfirmed `WeakKeyDictionary` and `weakref.ref` referent equality/hash
+semantics including death, weak-witness liveness and synchronous callback
+timing, unspoofable built-in `type()`, and the exact R4 descriptor-reuse P0.
+
+- focused R5 suite: **201 passed** in 491.73s;
+- combined R5/R4/R3/R2/R1/PAD4/PAD3/PAD2/PAD1-R1/PAD1 suite:
+  **1,210 passed** in 1,776.30s;
+- wider 21-module calendar/ETF/flow/trusted/corpus/prospective regression:
+  **2,022 passed, 3 skipped** in 2,215.86s;
+- `python -m compileall btc_predictor etf_calendar_worker`: PASS;
+- `git diff --check`: PASS.
+
+The three skips are two deliberate composite-inherits-component-behaviour skips
+in `test_prospective_integration_corpus_v2.py` and one disposable-PostgreSQL
+opt-in skip in `test_trusted_acquisition_postgresql_runtime.py`. The first two
+attempts used invalid temp placement: `/tmp` caused 20 expected cross-device
+hardlink failures after 181 passes, and an in-repository base temp polluted the
+certified project namespace and caused 30 collection errors after 171 passes;
+neither is proof evidence. Re-running in a clean same-filesystem sibling temp
+directory produced the valid counts above. A first combined run with its temp
+inside the repository produced 1,209 passes and the single expected namespace-
+closure failure; the clean sibling rerun produced the valid 1,210. The full
+repository suite was not run; no production code changed, and the wider
+regression is the ticket-required validation set.
+
+#### Safety and authorization result
+
+The candidate remains frozen, failed, non-certified, unused and at **zero
+observations**. Real Stage-B = **NO**; calendar certified = **NO**; prospective
+collection = **NOT AUTHORIZED**. `POSTP1-001V2A-I2`, `POSTP1-001V2R1`,
+`POSTP1-003R3` and `POSTP1-004` remain **BLOCKED**. BTC-019 is **UNTOUCHED** and
+its sealed sample remains unopened; Epic T is **UNCHANGED**. I2 may not begin.
+The next dependency-satisfied action is the mandatory new proof-architecture
+decision; no successor ticket exists until that decision is recorded.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -6112,7 +6355,8 @@ implementation may **not** authorize `POSTP1-001V2A-I2`. Only an R5 review
 | POSTP1-001V2A-PAD4-R4 | `FREEZE_ADMITTED_SCIENTIFIC_RETURN_STATE_V1`: bounded post-admission correction that stores the admitted response, result and affirmative evidence as one immutable `FrozenAuthoritySnapshot` tuple of canonical bytes per admitted execution, binds the exact result digest to those bytes and serves every caller-facing mapping as a fresh detached decode, frozen at `ae25c246...6e65bc`; its immutable snapshot and copy-isolation correction passed review, but unrelated descriptor reuse plus equality-keyed lookup invalidates receiver-identity binding | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R4 | independent exact-hash final xHigh proof-architecture review of `ae25c246...6e65bc` | COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID; BOUNDED R4 CONSTRUCTION-IDENTITY GOVERNANCE / ARCHITECTURE DECISION REQUIRED BEFORE ANY SUCCESSOR TICKET |
 | PAD4-R4 construction-identity governance decision | `DECIDE_ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_BINDING_CORRECTION_V1`: governance/architecture decision on the bounded R4 construction-identity defect; no repository identifier is assigned to the decision itself | COMPLETE / BOUNDED PAD4 SUCCESSOR IS JUSTIFIED — authorizes `POSTP1-001V2A-PAD4-R5` and nothing else |
-| POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression; frozen at `b4168dc9...61c7` with 34 parent-bound children, 22 byte-identical to R4 | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
-| POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of `b4168dc9...61c7` | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression; frozen at `b4168dc9...61c7` with 34 parent-bound children, 22 byte-identical to R4 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
+| POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of `b4168dc9...61c7` | COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID; SAME-FAMILY ESCALATION AUTOMATIC |
+| PAD4-R5 proof-architecture decision | governance/architecture decision required by the pre-committed escalation rule for GC object-graph recovery of the closure-owned registry and the unresolved canonical-class-mutation domain boundary; no repository identifier or successor implementation ticket is assigned by this review | REQUIRED / DEPENDENCY-SATISFIED; NO PAD4-R6 CREATED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
