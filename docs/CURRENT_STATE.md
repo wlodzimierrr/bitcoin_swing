@@ -691,6 +691,37 @@ ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REQUIRES_NEW_PROOF_ARCHITECTURE_DE
 POSTP1-001V2A-I2 remains blocked and the pre-committed same-family escalation
 rule requires a new proof-architecture decision; NO PAD4-R6 is created
 
+PAD4-R5 same-family escalation decision =
+COMPLETE / NEW ARCHITECTURE FAMILY SELECTED —
+ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1 (documentation-only; no repository
+identifier for the decision itself)
+
+decision answers =
+the R5 P0 and P1 share one root cause: any object reachable in a CPython
+process can be enumerated and mutated by other code in that process, so no
+in-process object can carry scientific authority. Widening the domain to
+exclude gc or class mutation is REJECTED, because it revives the already
+abandoned REFLECTION_BLACKLIST_COMPLETENESS model. Authority becomes
+byte-identical re-derivation: a standalone verifier process running only
+certified source re-verifies the request and the signed input records,
+re-executes the certified fresh-exec worker, and compares a closed
+deterministic response projection. The producer process is fully untrusted at
+the Python level; gc, class mutation and relay become harmless by
+construction; the "module mutation" phrase is not adopted or redefined. Every
+reviewed PAD4 component is preserved, and trusted persistence is not reopened.
+
+PAD5 pre-committed escalation =
+one bounded correction (PAD5-R1) for a verifier-local defect only. A failure in
+the family "bytes not re-derived from authenticated inputs by certified code
+are accepted as evidence", or any second failure, escalates to an OWNER SCOPING
+DECISION on whether proof-grade ETF calendar authority is needed at all,
+including a conservative fixed-lag alternative under a new corpus version; no
+PAD6
+
+POSTP1-001V2A-PAD5 =
+NOT STARTED / DEPENDENCY-SATISFIED —
+DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1
+
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -1358,6 +1389,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   of the canonical class is excluded "module mutation" is separately
   **AMBIGUOUS / BLOCKING**. Relay remains **OPEN / NOT CLAIMED CLOSED**. The
   candidate is frozen, failed, non-certified, unused and at zero observations.
+  The mandatory proof-architecture decision is now recorded in EPIC X. It
+  retires in-process authority objects and selects
+  `ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`, under which the P0, the P1 and
+  relay are harmless by construction, and it authorizes only
+  `POSTP1-001V2A-PAD5`.
 
   POSTP1-001V2A-PAD4-R4 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at
@@ -1498,20 +1534,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   has failed review, so no certified production isolated-worker authority is
   available. Calendar certification is **NO**, no real Stage-B evaluation ran,
   and I2 must not start
-- **Next dependency-satisfied action:** the mandatory PAD4-R5 **new proof-
-  architecture decision** required by the pre-committed same-family escalation
-  rule. It must decide the GC object-graph authority boundary and the ambiguous
-  canonical-class-mutation domain classification. The review assigns no
-  repository identifier and creates no PAD4-R6 or other successor ticket
+- **Next dependency-satisfied EPIC X ticket:** **`POSTP1-001V2A-PAD5`**
+  `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`, authorized by the
+  recorded PAD4-R5 same-family escalation decision. It is the standalone
+  certified-only verifier that establishes calendar authority by byte-identical
+  re-derivation. It requires the exclusive `.venv312` CPython 3.12.14
+  environment. Only its independent review `POSTP1-002V2A-PAD5` may, on PASS,
+  make I2 dependency-satisfied
 - **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
   `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
   `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
   RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
-- **Other ready tickets:** In EPIC X, none. Calendar implementation, V2
-  correction, POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
-  remains terminal and untouched with its sealed sample unopened, and Epic T is
-  unchanged
+- **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2A-PAD5`.
+  Calendar implementation, V2 correction, POSTP1-003R3, POSTP1-004 and
+  collection remain blocked; BTC-019 remains terminal and untouched with its
+  sealed sample unopened, and Epic T is unchanged
 - **Latest implementation validation:** POSTP1-001V2A-PAD4-R5 used exclusive
   CPython 3.12.14 under `.venv312`; the entry probes reconfirmed weak mapping and
   weak-reference equality, weak-witness liveness/cleanup, spoofed `__class__`
@@ -2650,6 +2688,12 @@ unopened with no automatic dependency that would ever open it.
   whether changing descriptors on a module-owned class object counts. The route
   can make an `object.__new__(Canonical)` object present fabricated authority,
   so the new proof-architecture decision must classify it explicitly.
+- **ANSWERED** by the PAD4-R5 same-family escalation decision recorded in EPIC
+  X, so the two review-time entries above are preserved as its input only. In
+  place of classifying either route, the decision removes in-process authority
+  altogether (`ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`), and it pre-commits a
+  bounded PAD5 escalation that ends in an owner scoping decision rather than a
+  PAD6.
 - EPIC Y's governance decision (2026-09-28, documentation-only) answered how to
   reach a first real-data backtest without an approved canonical reference.
   Answer: run each required venue separately, declare every result

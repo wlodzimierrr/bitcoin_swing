@@ -6291,6 +6291,261 @@ its sealed sample remains unopened; Epic T is **UNCHANGED**. I2 may not begin.
 The next dependency-satisfied action is the mandatory new proof-architecture
 decision; no successor ticket exists until that decision is recorded.
 
+### PAD4-R5 same-family escalation — proof-architecture decision
+
+**Decision:** `DECIDE_ETF_CALENDAR_PROOF_ARCHITECTURE_AFTER_PAD4_R5_V1`
+**Type:** documentation-only governance / architecture decision. No proof
+namespace is frozen, no production code changes, and no repository identifier
+is assigned to the decision itself.
+**Input:** `POSTP1-002V2A-PAD4-R5`,
+`COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID`, and
+the pre-committed rule that a same-family failure escalates automatically to a
+new proof-architecture decision rather than a PAD4-R6.
+**Result:** `NEW ARCHITECTURE FAMILY SELECTED — ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`.
+It authorizes `POSTP1-001V2A-PAD5` and nothing else.
+
+#### Diagnosis
+
+The PAD4 lineage failed three times in one family: R2 fabricate, R3 mutate, R4
+impersonate. R5 closed impersonation, yet a caller-created object acquired
+authority again, this time by recovering the closure-owned registry through
+public `gc` traversal. Its P0 inserted a **genuine** `FrozenAuthoritySnapshot`.
+The unresolved P1 shows that replacing descriptors on the canonical class
+presents **fabricated** authority.
+
+Both routes share one root cause. **Any object reachable in a CPython process
+can be enumerated and mutated by other code in the same process.** Closures,
+classes, registries, capabilities and weak references differ only in how many
+steps that takes. No arrangement of in-process Python state can make "only the
+exact controller-owned object resolves authority" true while uncertified caller
+code shares the interpreter.
+
+The repository has already recorded this conclusion twice.
+`trusted_process_and_isolation_boundary` lists
+`REFLECTION_BLACKLIST_COMPLETENESS` and
+`SAME_PROCESS_RUNTIME_OWNER_ATTESTATION` among its abandoned completeness
+models, and PAD4 moved scientific *execution* out of process for exactly this
+reason. Only scientific *authority* stayed behind, as a live object in the
+caller's process. That object is the defect.
+
+#### Options considered
+
+| option | decision | reason |
+| --- | --- | --- |
+| Widen the R5 domain to exclude `gc`, class mutation and further introspection | **REJECTED** | This revives the abandoned `REFLECTION_BLACKLIST_COMPLETENESS` model. CPython exposes an open-ended set of routes (`gc`, class and type attribute assignment, `__subclasses__`, `sys.modules`, frames, finalizers, import hooks), so completeness can never be demonstrated. Widening a domain after it failed review would also launder the failure. |
+| Classify canonical-class mutation as excluded "module mutation" and correct only the P0 | **REJECTED** | Same model. It closes one route and leaves the family open. |
+| A privilege-separated signing service holding a key the caller process cannot read | **DEFERRED** | It would work, but it needs new operating-system and key infrastructure that the next option does not. |
+| **Authority by independent byte-identical re-derivation in a process that runs only certified code** | **SELECTED** | It reuses only components that already passed review: canonical request/response bytes, fresh-exec isolation, bootstrap pre-execution binding, bytecode/source binding, third-party authority, the frozen interpreter identity and the certified trusted persistence. It makes object identity irrelevant instead of defending it. |
+
+#### Selected architecture — `ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`
+
+The invariant is:
+
+```text
+NO IN-PROCESS OBJECT CARRIES SCIENTIFIC AUTHORITY. CALENDAR EVIDENCE IS
+ADMISSIBLE IF AND ONLY IF A STANDALONE VERIFIER PROCESS, EXECUTING ONLY
+CERTIFIED SOURCE AT AN EXACT REVIEWED COMMIT, (1) VERIFIES THE RECORDED REQUEST
+AGAINST THE FROZEN TRUSTED AUTHORITY CONTEXT, (2) VERIFIES EVERY INPUT EVIDENCE
+RECORD UNDER THE CERTIFIED TRUSTED-PERSISTENCE AUTHORITY, (3) RE-EXECUTES THE
+CERTIFIED FRESH-EXEC WORKER ON THE EXACT RECORDED REQUEST BYTES, AND (4) FINDS
+THE FROZEN DETERMINISTIC PROJECTION OF THE RESPONSE BYTE-IDENTICAL TO THE
+RECORDED ONE.
+```
+
+- **Producer.** The in-process controller becomes a non-authoritative producer
+  of candidate evidence: canonical request bytes plus canonical response bytes.
+  The process that runs it is **fully untrusted at the Python level**. `gc`,
+  class and module mutation, closure recovery, private reflection, frames and
+  `ctypes` are all permitted there. None of them can matter, because nothing
+  the producer returns is authority.
+- **Verifier.** The verifier is a top-level program started as its own isolated
+  interpreter process. Its complete static import closure must be certified
+  manifest members, derived mechanically in the same way as the bootstrap set.
+  No uncertified project code, caller callback or caller-supplied object ever
+  executes in it. Its authority is anchored in the exact reviewed commit it
+  runs from; self-verification is not authority. It writes a canonical,
+  digest-bound verification record for each accepted or rejected item of
+  evidence.
+- **Consumers.** No downstream owner (I2, V2R1, sufficiency governance,
+  collection, Stage-B) may treat calendar evidence as scientific unless a
+  verifier record accepts it. Stage-B must run the verifier over every
+  observation before evaluating.
+
+What this decides about the R5 findings:
+
+| R5 finding / route | Under the selected architecture |
+| --- | --- |
+| P0 — `gc` registry recovery and insertion | **NOT APPLICABLE BY CONSTRUCTION.** No registry or in-process object is authority; a forged object presents nothing the verifier accepts. |
+| P1 — canonical-class mutation | **NOT APPLICABLE BY CONSTRUCTION.** Fabricated content fails byte-identical re-derivation. The ambiguous "module mutation" phrase is not adopted, redefined or relied on. |
+| P0-b — relay | **DISSOLVED, NOT RECLASSIFIED.** Re-presenting genuine evidence bytes presents the same verified evidence; duplication is not a scientific defect. |
+| Frames, tracing, `ctypes` in the producer | **IN-DOMAIN AND HARMLESS.** Same reason. |
+| Hostile kernel, debugger, OS memory injection, perfectly racing file modification | **OUT OF SCOPE**, unchanged from `trusted_process_and_isolation_boundary`. |
+
+Accepted costs:
+
+- Verification re-executes the worker once per evidence item. Calendar
+  operations are small and verification is batch work, so this is accepted.
+- Integrity is guaranteed but availability is not. A hostile producer can make
+  evidence be **rejected**; it cannot make evidence be **accepted**. Rejections
+  are counted and reported, never silently dropped.
+
+#### Preserved and retired
+
+Preserved byte-identically wherever the semantics did not move: the four-file
+bootstrap binding and digest, fresh-exec isolation, Repairs A/B/C/D, the worker
+protocol and canonical request/response bytes, the `FrozenAuthoritySnapshot`
+canonical encodings and digest reproduction, worker source authority, the
+120-module universe and 116-module PRE-I2 fixture, third-party installed-content
+authority, the compiled root witness, the closed store grammar, the 11-owner
+graph, the direct-body rule, the frozen interpreter identity, and the certified
+trusted persistence `02f96203...1a12772` (not reopened).
+
+Retired as authority mechanisms, kept only as producer conveniences where
+useful:
+
+- `AuthoritativeScientificExecution` as an authority carrier;
+- the capability-gated bind;
+- the closure-owned identity registry;
+- the exact-type receiver gate;
+- the R5 domain-scoped exclusion text.
+
+The identity children of the failed R5 namespace stay immutable as failed
+lineage.
+
+#### Pre-committed escalation for PAD5
+
+- `POSTP1-002V2A-PAD5` may find a **bounded** defect local to the verifier:
+  - uncertified code reachable in the verifier process;
+  - a non-deterministic field inside the comparison projection;
+  - an incomplete input-record verification;
+  - a consumer path that bypasses the verifier record.
+
+  Any of these authorizes exactly one bounded correction, `POSTP1-001V2A-PAD5-R1`.
+- A PAD5 or PAD5-R1 failure in the family **"bytes not re-derived from
+  authenticated inputs by certified code are accepted as evidence"**, or a
+  second failure of any kind, creates **no further candidate**. It escalates to
+  an **owner scoping decision** on whether EPIC X needs proof-grade ETF calendar
+  authority at all. That decision includes the alternative of a conservative
+  fixed publication-lag rule under a new corpus version.
+
+This bound is deliberate. The ETF calendar sub-lineage has produced 18 frozen
+candidates, and its cost now exceeds any plausible scientific value of one
+input to one corpus.
+
+## POSTP1-001V2A-PAD5 — `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`
+
+**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Authorized by:** the PAD4-R5 same-family escalation decision above
+**Dependency:** `POSTP1-002V2A-PAD4-R5`,
+`COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID`
+**Implementation effort:** Extra High (xHigh)
+**Required review:** `POSTP1-002V2A-PAD5`, independent exact-hash xHigh
+proof-architecture review
+**Namespace:** `prospective_evidence/etf_calendar_replay_verified_evidence_v1/` (new)
+
+Scope: the standalone verifier, the verification-record contract, the
+deterministic comparison projection, the non-authoritative producer
+re-labelling, the consumer admission rule, and material-child consistency for
+those rules. It must not change the worker package, the bootstrap set, calendar
+science, the trusted persistence or any preserved child listed above.
+
+### Required properties
+
+1. **No in-process authority.** Nothing the producer process returns is, or is
+   named as, scientific authority. The frozen definition states this and the
+   audit computes it: no authority marker survives on any producer-side type.
+2. **Verifier closure.** The verifier's static import closure is derived
+   mechanically. Every member is a certified manifest member, the verifier
+   starts in isolated mode with no site and no bytecode writes, and no import
+   outside the closure is reachable. The derivation is a probe, not a list.
+3. **No caller execution in the verifier.** The verifier accepts only file
+   paths to canonical bytes. No callback, plugin, pickle, class, module or
+   caller object crosses into it.
+4. **Input authenticity.** Every evidence record named by a request is verified
+   under the certified trusted-persistence authority before re-execution.
+   Unsigned, re-signed or altered records are rejected.
+5. **Request authority.** Every authority-bound request field is compared with
+   the frozen trusted context. The verifier never adopts a value from the
+   request itself.
+6. **Byte-identical re-derivation.** The certified fresh-exec worker is
+   re-executed on the exact recorded request bytes, using the preserved launch
+   and bootstrap binding. The frozen **deterministic comparison projection** of
+   its response must equal the recorded one byte-for-byte.
+   - The projection is a closed, frozen field list. It includes the full result
+     bytes, the result digest and every authority-bound field.
+   - Each excluded run-specific field is named and justified.
+   - A mutation probe proves that altering any in-projection field is
+     rejected.
+   - Some request fields are environment-local, such as `project_root` and
+     `sys_path`. For those, PAD5 must either freeze a canonical relocation
+     rule as part of the projection definition, or require verification in
+     the recorded environment. It may never silently rewrite request bytes.
+7. **Verification record.** One canonical, digest-bound record per evidence
+   item, carrying:
+   - the verdict and reason;
+   - the request, response and projection digests;
+   - the verifier's own source-manifest digest and commit;
+   - the interpreter identity.
+
+   Rejections are recorded, never dropped.
+8. **Consumer rule.** A frozen child states that I2, V2R1, sufficiency
+   governance, collection and Stage-B admit calendar evidence only through an
+   accepting verifier record. PAD5 freezes the rule; wiring the consumers
+   belongs to their own tickets.
+9. **Determinism.** Verification records and the namespace reproduce under
+   `PYTHONHASHSEED` 0/1/8675309, reversed order, an alternate cwd and a fresh
+   process.
+
+### Reject-on-sight designs
+
+- any in-process object, registry, capability, closure or type gate presented
+  as authority;
+- the verifier running inside the producer's process, or importing a module
+  outside the certified closure;
+- accepting evidence by digest comparison alone, without re-execution;
+- the producer or worker attesting its own authority (self-verification);
+- a comparison projection defined by exclusion ("everything except ...")
+  rather than by a closed inclusion list;
+- any domain text that excludes introspection routes in order to make a claim
+  true.
+
+### Proof obligations
+
+| case | required outcome |
+| --- | --- |
+| genuine producer output | ACCEPTED |
+| genuine bytes re-presented by any other object or process (relay) | ACCEPTED as the same evidence |
+| result fabricated in the producer (hostile `gc`, class mutation, closure recovery, `ctypes`) | REJECTED |
+| any in-projection response byte altered | REJECTED |
+| authority-bound request field altered | REJECTED |
+| evidence record unsigned, altered or re-signed | REJECTED |
+| worker bootstrap or source drift | REJECTED before execution (preserved binding) |
+| interpreter identity mismatch | REJECTED |
+| third-party installed-content drift | REJECTED (preserved Repair D) |
+| verifier closure contains an uncertified module (mutation probe) | audit FAILS |
+| caller object or callback offered to the verifier | impossible by interface; audit FAILS if added |
+| repeated verification of the same evidence | identical record bytes |
+
+The checked-in controls must show that:
+
+- the R5 `gc` registry insertion and the canonical-class mutation both still
+  "succeed" in-process against the producer;
+- both are **rejected** by the verifier.
+
+### Entry obligation
+
+The exclusive `.venv312` CPython 3.12.14 environment is required, as before, and
+the suites run sequentially. Temporary directories must share the repository
+filesystem but sit outside the repository tree; the R5 review recorded EXDEV and
+namespace contamination from other placements.
+
+### Stopping rule
+
+A successful PAD5 implementation authorizes **only** `POSTP1-002V2A-PAD5`.
+Only a PAD5 review **PASS** may make `POSTP1-001V2A-I2` dependency-satisfied,
+and I2 must then bind calendar authority to accepting verifier records. The
+pre-committed escalation above applies.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -6357,6 +6612,9 @@ decision; no successor ticket exists until that decision is recorded.
 | PAD4-R4 construction-identity governance decision | `DECIDE_ETF_CALENDAR_AUTHORITATIVE_EXECUTION_IDENTITY_BINDING_CORRECTION_V1`: governance/architecture decision on the bounded R4 construction-identity defect; no repository identifier is assigned to the decision itself | COMPLETE / BOUNDED PAD4 SUCCESSOR IS JUSTIFIED — authorizes `POSTP1-001V2A-PAD4-R5` and nothing else |
 | POSTP1-001V2A-PAD4-R5 | `BIND_AUTHORITATIVE_EXECUTION_TO_EXACT_IDENTITY_V1`: bounded correction replacing equality-keyed authority resolution with an identity-safe execution-to-snapshot binding, adding pinned exact-type receiver validation as declared non-load-bearing defence in depth, and landing the missing non-subclass descriptor-reuse regression; frozen at `b4168dc9...61c7` with 34 parent-bound children, 22 byte-identical to R4 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD4-R5 | independent exact-hash final xHigh proof-architecture review of `b4168dc9...61c7` | COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID; SAME-FAMILY ESCALATION AUTOMATIC |
+| PAD4-R5 same-family escalation decision | `DECIDE_ETF_CALENDAR_PROOF_ARCHITECTURE_AFTER_PAD4_R5_V1`: retires in-process authority objects and selects authority by byte-identical re-derivation in a certified-only verifier process; no repository identifier is assigned to the decision itself | COMPLETE / NEW ARCHITECTURE FAMILY SELECTED — authorizes `POSTP1-001V2A-PAD5` and nothing else |
+| POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of the PAD5 candidate | BLOCKED — awaiting POSTP1-001V2A-PAD5 |
 | PAD4-R5 proof-architecture decision | governance/architecture decision required by the pre-committed escalation rule for GC object-graph recovery of the closure-owned registry and the unresolved canonical-class-mutation domain boundary; no repository identifier or successor implementation ticket is assigned by this review | REQUIRED / DEPENDENCY-SATISFIED; NO PAD4-R6 CREATED |
 | POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings against the certified calendar authority | BLOCKED pending certification of an enforceable ETF calendar authority |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |
