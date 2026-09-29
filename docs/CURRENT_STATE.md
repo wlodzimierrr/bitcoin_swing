@@ -642,7 +642,7 @@ mutate and R4 impersonate — escalation to a NEW proof-architecture decision is
 AUTOMATIC, not discretionary
 
 POSTP1-001V2A-PAD4-R5 =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL XHIGH
+IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL XHIGH
 PROOF-ARCHITECTURE REVIEW
 
 POSTP1-001V2A-PAD4-R5 task =
@@ -672,7 +672,10 @@ __repr__; one reader and one bind; __eq__/__hash__ remain object identity; the
 preserved R4 unrelated non-subclass descriptor-reuse control incorrectly
 resolves R4 authority and is refused by R5 without receiver-controlled code;
 dead cleanup, stale cleanup, deterministic bucket collision and identifier reuse
-PASS; relay remains OPEN / NOT CLAIMED CLOSED
+PASS locally, but independent review found that public GC object-graph traversal
+can recover and mutate the closure-owned registry, allowing a caller-created
+exact-class object to acquire the stored FrozenAuthoritySnapshot; relay remains
+OPEN / NOT CLAIMED CLOSED
 
 PAD4-R5 validation =
 exclusive CPython 3.12.14 entry probes PASS; focused 201 passed; combined ten-
@@ -682,9 +685,11 @@ git diff --check PASS; full repository suite NOT RUN because the wider suite
 passed and no production or cross-boundary change required it
 
 POSTP1-002V2A-PAD4-R5 =
-NOT STARTED / DEPENDENCY-SATISFIED — INDEPENDENT EXACT-HASH FINAL XHIGH
-PROOF-ARCHITECTURE REVIEW MAY BEGIN; only an R5 review PASS may make
-POSTP1-001V2A-I2 dependency-satisfied
+COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID;
+execution classification =
+ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REQUIRES_NEW_PROOF_ARCHITECTURE_DECISION;
+POSTP1-001V2A-I2 remains blocked and the pre-committed same-family escalation
+rule requires a new proof-architecture decision; NO PAD4-R6 is created
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1091,7 +1096,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-28
+- **Last updated:** 2026-09-29
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1337,25 +1342,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. POSTP1-001V2A-PAD4-R5 is
-  **IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH FINAL xHIGH
+  **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH FINAL xHIGH
   PROOF-ARCHITECTURE REVIEW** at `b4168dc9...61c7`, implementation commit
-  `2d41fb13...1201d01`, with 34 mechanically enumerated parent-bound children,
-  22 byte-identical to reviewed PAD4-R4 children. Its closure-owned
-  `dict[int, entry]` uses `id(receiver)` only to select a bucket; the entry's
-  weak live witness authorizes only when `live_witness is receiver`. The sole
-  reader explicitly refuses `None`, applies `type(receiver) is` the canonical
-  class as non-load-bearing defence in depth, fetches once, and invokes no
-  receiver-controlled equality, hash, class, attribute, Boolean or repr code.
-  The sole capability-gated bind preserves R4's immutable
-  `FrozenAuthoritySnapshot`; conditional identity cleanup cannot remove a newer
-  entry, and deterministic collision/reuse probes establish that an identifier
-  is never authority. The live-surface audit discovers all eight authority
-  readers including `__repr__`, verifies one reader/one bind and object
-  `__eq__`/`__hash__`, and behaviourally closes the exact unrelated
-  descriptor-reuse P0 while preserving the R4 failure as a checked-in control.
-  Relay remains **OPEN / NOT CLAIMED CLOSED**. The candidate is frozen pre-data,
-  non-certified and at zero observations; it authorizes only
-  `POSTP1-002V2A-PAD4-R5`, not I2.
+  `2d41fb13...1201d01`. The local exact-type/live-witness gate closes R4's
+  descriptor-reuse defect and all 34 parent-bound children reproduce, with 22
+  byte-identical R4 carries. Independent review nevertheless recovered the
+  closure-owned `dict[int, entry]` through public GC object-graph traversal,
+  inserted a real immutable snapshot for a caller-created exact-class object,
+  and resolved all eight authority members. No closure-cell recovery,
+  private-name reflection or module mutation was used. This is a same-family P0
+  under the frozen domain, so execution classification is
+  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REQUIRES_NEW_PROOF_ARCHITECTURE_DECISION`.
+  The pre-committed escalation is automatic: **NO PAD4-R6 is created** and the
+  next action is a new proof-architecture decision. Whether mutating attributes
+  of the canonical class is excluded "module mutation" is separately
+  **AMBIGUOUS / BLOCKING**. Relay remains **OPEN / NOT CLAIMED CLOSED**. The
+  candidate is frozen, failed, non-certified, unused and at zero observations.
 
   POSTP1-001V2A-PAD4-R4 remains **IMPLEMENTATION COMPLETE / FAILED INDEPENDENT
   EXACT-HASH FINAL xHIGH PROOF-ARCHITECTURE REVIEW** at
@@ -1421,26 +1423,34 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   universe is 120 modules. No ETF calendar production code changed, the
   candidate is at zero observations, and certified trusted persistence
   `02f96203...1a12772` is unchanged
-- **Last completed review:** POSTP1-002V2A-PAD4-R4,
+- **Last completed review:** POSTP1-002V2A-PAD4-R5,
+  **COMPLETE / FAIL — CLOSURE-OWNED REGISTRY OBJECT-GRAPH BOUNDARY INVALID**,
+  execution classification
+  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R5_REQUIRES_NEW_PROOF_ARCHITECTURE_DECISION`.
+  The P0 is that ordinary caller code can enumerate GC-tracked objects, identify
+  the closure-owned authority registry by shape, insert an entry containing an
+  existing immutable snapshot for a caller-created exact-class object, and
+  resolve all eight authority-bearing members. The probe uses no closure-cell
+  recovery, private-name reflection or module mutation, so it is IN-DOMAIN
+  under the literal frozen boundary. Canonical-class attribute mutation also
+  permits fabricated presentation, but whether that counts as excluded
+  "module mutation" is materially **AMBIGUOUS** and independently blocking.
+  Exact identity, receiver-hook non-execution, cleanup, identifier reuse,
+  sequential isolation, construction refusal and audit mutation sensitivity all
+  pass locally. R4's immutable snapshot/copy isolation and every other preserved
+  mechanism remain valid. Because the failure is the pre-committed same family
+  — a caller-created object acquiring scientific authority — escalation to a
+  new proof-architecture decision is automatic and **NO PAD4-R6 is created**.
+  No review-fix commit exists; the review record is documentation only
+- **Preceding completed review:** POSTP1-002V2A-PAD4-R4,
   **COMPLETE / FAIL — AUTHORITATIVE EXECUTION CONSTRUCTION BOUNDARY INVALID**,
   execution classification
-  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_REQUIRES_FIX`. The exact P0 is
-  that a distinct caller-created object can resolve and present another
-  execution's admitted authority. The object is not an
-  `AuthoritativeScientificExecution` instance or subclass and uses no
-  closure-cell recovery, weakref callback, module mutation or private API. The
-  root cause is equality/hash-keyed `WeakKeyDictionary` resolution combined
-  with authority-bearing descriptors that do not verify exact canonical
-  receiver identity. Direct construction, `__new__` construction and unsupported
-  subclassing refuse; unrelated descriptor reuse with an equal/hash-equivalent
-  receiver is incorrectly accepted. The immutable canonical snapshot mechanism,
-  caller-visible copy isolation, one supported authority-bearing flow,
-  bootstrap binding, fresh-exec isolation, Repairs A/B/C/D, worker protocol,
-  source and third-party authority, compiled root witness, closed store grammar,
-  exact eleven-owner graph and direct-body rule remain valid. A new proof
-  architecture is not presently indicated, but no PAD4-R5 is automatically
-  created and no implementation ticket is dependency-satisfied by this fail
-- **Preceding completed review:** POSTP1-002V2A-PAD4-R3,
+  `ETF_CALENDAR_ISOLATED_SCIENTIFIC_WORKER_V1_R4_REQUIRES_FIX`. Its distinct
+  unrelated descriptor-reuse receiver exploited equality/hash-keyed
+  `WeakKeyDictionary` resolution. R5 closes that exact route and preserves R4
+  as a non-vacuous checked-in control, but R5's registry recovery defect prevents
+  certification
+- **Earlier completed review:** POSTP1-002V2A-PAD4-R3,
   **COMPLETE / FAIL — CALLER-CREATED STATE CAN BECOME SCIENTIFIC AUTHORITY**,
   whose bounded mutable-return-state defect R4 corrects and the R4 review
   independently reproduced as its control. Admission succeeds correctly in R3,
@@ -1482,29 +1492,26 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   made
 - **Current BLOCKED tickets:** POSTP1-001V2A-I2 (calendar
   implementation/refreeze) is **BLOCKED**, POSTP1-001V2R1 is **BLOCKED**,
-  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. The R5 review is
-  now dependency-satisfied, but only an R5 review **PASS** may make I2
-  dependency-satisfied; the R5 implementation itself may not. Collection is
-  **NOT AUTHORIZED** and observations remain **0**. POSTP1-001V2A-PAD4-R4 and
-  all earlier PAD4 candidates have **FAILED** review, so no certified production
-  isolated-worker authority is available. Calendar certification is **NO**, no
-  real Stage-B evaluation ran, and I2 must not start
-- **Next dependency-satisfied ticket:** **`POSTP1-002V2A-PAD4-R5`**, independent
-  exact-hash final xHigh proof-architecture review of `b4168dc9...61c7`,
-  **NOT STARTED / DEPENDENCY-SATISFIED**. It must reproduce all 34 children,
-  the 22 R4 byte-identical carries, exact-identity behavior, the live-surface
-  audit, material mutation sensitivity and namespace determinism. The
-  pre-committed escalation rule remains: a same-family review failure requires
-  a new proof-architecture decision and does not automatically create R6
+  POSTP1-003R3 is **BLOCKED** and POSTP1-004 is **BLOCKED**. The R5 review
+  **FAILED**, so I2 is not dependency-satisfied. Collection is **NOT
+  AUTHORIZED** and observations remain **0**. Every PAD4 candidate through R5
+  has failed review, so no certified production isolated-worker authority is
+  available. Calendar certification is **NO**, no real Stage-B evaluation ran,
+  and I2 must not start
+- **Next dependency-satisfied action:** the mandatory PAD4-R5 **new proof-
+  architecture decision** required by the pre-committed same-family escalation
+  rule. It must decide the GC object-graph authority boundary and the ambiguous
+  canonical-class-mutation domain classification. The review assigns no
+  repository identifier and creates no PAD4-R6 or other successor ticket
 - **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
   `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
   `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
   RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
-- **Other ready tickets:** In EPIC X, none besides `POSTP1-002V2A-PAD4-R5`.
-  Calendar implementation, V2 correction, POSTP1-003R3, POSTP1-004 and
-  collection remain blocked; BTC-019 remains terminal and untouched with its
-  sealed sample unopened, and Epic T is unchanged
+- **Other ready tickets:** In EPIC X, none. Calendar implementation, V2
+  correction, POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
+  remains terminal and untouched with its sealed sample unopened, and Epic T is
+  unchanged
 - **Latest implementation validation:** POSTP1-001V2A-PAD4-R5 used exclusive
   CPython 3.12.14 under `.venv312`; the entry probes reconfirmed weak mapping and
   weak-reference equality, weak-witness liveness/cleanup, spoofed `__class__`
@@ -1517,19 +1524,25 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   namespace reproduce; hash-seed, child-order, alternate-cwd and fresh-output
   determinism and required material mutation sensitivity pass. `python -m
   compileall btc_predictor etf_calendar_worker` and `git diff --check` pass. The
-  full suite was **NOT RUN**: no production code changed, no wider regression
-  failed and no new cross-boundary defect appeared
-- **Latest review validation:** POSTP1-002V2A-PAD4-R4 used CPython 3.12.14 and
-  `cryptography 50.0.1`; the focused R4 suite passed **181 tests in 388.31s**,
-  the combined PAD1 through PAD4-R4 proof-architecture suite passed **1,009
-  tests in 1,272.38s**, and the wider 20-module regression passed **1,821 tests
-  with 3 explained skips in 1,730.30s**. The expected and recomputed parent are
-  `ae25c246...6e65bc`; all 30/30 children reproduce and are parent-bound, the
-  20 claimed R3-carried children are byte-identical, and a fresh rebuild is
-  32/32 files byte-identical. Determinism and eleven representative material
-  mutation probes pass. `python -m compileall btc_predictor
-  etf_calendar_worker` and `git diff --check` passed. The full suite was **NOT
-  RUN** and the historical full-suite result is not attributed to this review
+  full suite was **NOT RUN**. This implementation evidence is preserved for
+  provenance but does not supersede the independent review's P0
+- **Latest review validation:** POSTP1-002V2A-PAD4-R5 used the exclusive
+  `.venv312` CPython 3.12.14 interpreter and independently verified the exact
+  third-party installed-content registry `23e4f1d8...6298a6` with 2,858 rows.
+  The focused R5 suite passed **201 tests in 491.73s**, the combined R5 through
+  PAD1 proof-architecture suite passed **1,210 tests in 1,776.30s**, and the
+  wider 21-module regression passed **2,022 tests with 3 explained skips in
+  2,215.86s**. Two skips are composite-inherits-component-behaviour cases; one
+  requires explicit disposable PostgreSQL opt-in. Parent `b4168dc9...61c7`, all
+  34 children, all 22 claimed R4 byte-identical carries, fresh 36/36 namespace
+  reproduction and all required determinism axes pass. Bootstrap 4-file,
+  120-module worker, 116-module PRE-I2, third-party and R4 authorities reproduce
+  exactly. All ten audit mutations are detected. Independent fresh probes then
+  exposed the blocking GC object-graph registry-recovery route and the canonical-
+  class-mutation ambiguity. `python -m compileall btc_predictor
+  etf_calendar_worker` and `git diff --check` pass. The full suite was **NOT
+  RUN**; no production code changed and the ticket-required wider regression
+  passed
 - **Historical verified test baseline:** 5,202 passed, 3 skipped under
   `-W error::RuntimeWarning` remains the last full-suite baseline and is still
   current because no production behaviour changed. The focused
@@ -1743,8 +1756,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   freezes exact-identity-bound pre-data candidate `b4168dc9...61c7` with 34
   parent-bound children, 22 byte-identical to R4. It adds one new controller,
   one new focused suite and one new immutable namespace; changes no worker or
-  calendar production source; and awaits POSTP1-002V2A-PAD4-R5 independent
-  exact-hash final xHigh review. The failed predecessor POSTP1-001V2A-PAD4-R4
+  calendar production source. POSTP1-002V2A-PAD4-R5's documentation-only review
+  record (this commit) records **COMPLETE / FAIL — CLOSURE-OWNED REGISTRY
+  OBJECT-GRAPH BOUNDARY INVALID**, no review-fix commit, automatic escalation
+  to a new proof-architecture decision and no PAD4-R6. The failed predecessor
+  POSTP1-001V2A-PAD4-R4
   implementation commit `90fcf88a7be65bd43cefeb0eb766cccde766d6ae` and
   decision-record commit `1d6cfdb16361c9c25eadccf4977fd39cf335eaa0`
   together freeze and record the frozen-return-state pre-data candidate
@@ -2621,6 +2637,19 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- POSTP1-002V2A-PAD4-R5 failed in the pre-committed same family because public
+  GC object-graph traversal can recover and mutate the closure-owned authority
+  registry, allowing a caller-created exact-class object to acquire a real
+  `FrozenAuthoritySnapshot`. A **new proof-architecture decision is mandatory**
+  and is the next dependency-satisfied action; no PAD4-R6 or other successor
+  ticket exists. The decision must address whether to exclude all public object-
+  graph recovery/mutation routes or select an authority architecture sound under
+  them.
+- The R5 domain is also materially ambiguous about canonical-class attribute
+  mutation. The frozen exclusion says "NO MODULE MUTATION", but does not say
+  whether changing descriptors on a module-owned class object counts. The route
+  can make an `object.__new__(Canonical)` object present fabricated authority,
+  so the new proof-architecture decision must classify it explicitly.
 - EPIC Y's governance decision (2026-09-28, documentation-only) answered how to
   reach a first real-data backtest without an approved canonical reference.
   Answer: run each required venue separately, declare every result
