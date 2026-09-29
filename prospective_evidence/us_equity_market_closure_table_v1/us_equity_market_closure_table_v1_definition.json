@@ -1,0 +1,94 @@
+{
+  "amendment_rule": "A full-day closure that is not listed in this frozen table is never treated as an open day and is never silently corrected. The flow owner btc_predictor.features.flow._trailing_publication_dates counts such a date as a publication date, etf_flow_window finds no flow record for it, and the window fails closed with ETF_FLOW_INPUT_MISSING. That is never a zero and never a fabricated value. A correction is a new frozen version (US_EQUITY_MARKET_CLOSURE_TABLE_V2, and so on), reviewed by exact hash before any consumer relies on the amended date. Evidence produced under V1 keeps V1 semantics. This table is never edited in place.",
+  "archived_source_rule": "Past years are no longer on the live official pages. Those rows cite an archived copy of the official publisher's own page or the exchange's own published notice, marked archived_copy true with its capture timestamp. No third-party aggregator is cited.",
+  "artifact_kind": "REVIEWED_FROZEN_CONSTANT",
+  "authority_mechanism": "EXACT_HASH_REVIEW_OF_THE_TABLE",
+  "authorized_by": "PAD5_OWNER_SCOPING_DECISION_DECIDE_ETF_CALENDAR_SCOPE_AFTER_PAD5_V1",
+  "authorizes": [
+    "POSTP1-002V2A-T1"
+  ],
+  "authorizes_collection": false,
+  "canonical_encoding": {
+    "canonical_serialization_rules": [
+      "ASCII_ONLY",
+      "COMPACT_SEPARATORS",
+      "NO_NAN_OR_INFINITY",
+      "SORTED_KEYS"
+    ],
+    "definition_sha256_excludes_itself": true,
+    "digest_algorithm": "SHA256_OVER_CANONICAL_JSON_BYTES",
+    "file_serialization": "INDENT_2_SORTED_KEYS_ASCII_TRAILING_NEWLINE"
+  },
+  "citation_authority_statement": "The per-venue citations and the stored source bytes in sources/ are audit aids. They let a reviewer re-hash the retrieved documents offline and re-derive every row. They are not an authority mechanism: the authority of this table is the exact-hash review of the table itself, exactly as for any other frozen constant in this repository. There is no runtime acquisition, worker, verifier or origin authority.",
+  "closure_table_file": "closure_table.json",
+  "closure_table_file_sha256": "4a7a5a25d19ead02619e83af6dd99574372450a08d1daac17973947911ee241d",
+  "consumers": {
+    "EPIC_X": "POSTP1-001V2R1 freezes a new corpus hash with this table as the market_holidays owner; blocked until POSTP1-002V2A-T1 passes.",
+    "EPIC_Y": "RESEARCH_BACKTEST_POLICY_V2 section 5 requires this table, loaded and hash-verified by its owner module; RBT-006 only after the POSTP1-002V2A-T1 review passes."
+  },
+  "contract_version": "US_EQUITY_MARKET_CLOSURE_TABLE_V1",
+  "coverage_end": "2026-12-31",
+  "coverage_end_rationale": "Coverage ends at the last year every listing venue had officially published at freeze time. At 2026-09-29 NYSE published 2026-2028, but Nasdaq published only through 2026 (its trading-calendar page lists 2021-2026 and no 2027 calendar exists at the nasdaqtrader.com per-year URL), and Cboe published only 2026 (its US equities holiday CSV serves the current year only and ignores a year parameter). The ticket target of 2028 is therefore not reachable for all three venues; 2027 and 2028 are outside coverage and the loader refuses them.",
+  "coverage_start": "2023-01-01",
+  "coverage_start_rationale": "2023-01-01 is a full year before the first US spot bitcoin ETF flows on 2024-01-11, so every trailing flow window that can contain a flow record lies inside coverage.",
+  "coverage_years": [
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "definition_sha256": "2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710",
+  "early_close_rationale": "Early closes (for example the 1:00 p.m. ET sessions after Thanksgiving and before Christmas) are deliberately out of scope. Trading occurs on those days, the listing venues publish them separately from full-day closures, and ETF flow records exist for them. Treating an early close as a closure would remove a real publication date from the flow owner's trailing window and change feature values. Only full-day closures enter this table.",
+  "early_closes_out_of_scope": true,
+  "file_hash_rule": "closure_table_file_sha256 and source_index_file_sha256 are SHA-256 over the checked-in file bytes. definition_sha256 is the canonical-JSON digest of this document with definition_sha256 itself excluded.",
+  "in_place_edits_permitted": false,
+  "isolation": "This ticket freezes the table and its loader only. It changes no module in btc_predictor.features.flow, no module in the 120-module worker universe, no frozen namespace, and nothing under data/ or research_artifacts/.",
+  "observations": 0,
+  "official_name_rule": "official_name is the NYSE published holiday row label for a scheduled holiday, and the name used in the venues' own closure notices for an unscheduled closure. Each venue's verbatim wording is preserved in venue_citations[venue].source_name_in_document.",
+  "out_of_coverage_rule": "load_closures refuses any range not wholly inside coverage. An uncovered date is never implied open.",
+  "owner_module": "btc_predictor/research/us_equity_market_closures.py",
+  "owner_parameter": "btc_predictor.features.flow.etf_flow_window(market_holidays=...)",
+  "pre_data": true,
+  "program_ticket": "POSTP1-001V2A-T1",
+  "required_review": "POSTP1-002V2A-T1",
+  "retired_lineage_note": "The ETF calendar proof-architecture program is closed by the PAD5 owner scoping decision. This table imports nothing from that failed lineage.",
+  "row_count": 41,
+  "row_rule": "Every row is a weekday inside coverage, is classified SCHEDULED_HOLIDAY or UNSCHEDULED_CLOSURE, carries an official_name, a per-venue status for each of the three venues, and a per-venue citation with publisher, document title, request URL, final URL, retrieval timestamp and the SHA-256 of the retrieved bytes.",
+  "rows_per_year": {
+    "2023": {
+      "scheduled_holiday": 10,
+      "total": 10,
+      "unscheduled_closure": 0
+    },
+    "2024": {
+      "scheduled_holiday": 10,
+      "total": 10,
+      "unscheduled_closure": 0
+    },
+    "2025": {
+      "scheduled_holiday": 10,
+      "total": 11,
+      "unscheduled_closure": 1
+    },
+    "2026": {
+      "scheduled_holiday": 10,
+      "total": 10,
+      "unscheduled_closure": 0
+    }
+  },
+  "runtime_acquisition": false,
+  "source_count": 12,
+  "source_index_file": "source_index.json",
+  "source_index_file_sha256": "f939b1d70da2f0543e19c73dcba96471c39735a369c159d4ead1041d7b38ebd3",
+  "status": "FROZEN_AWAITING_INDEPENDENT_EXACT_HASH_XHIGH_TICKET_REVIEW",
+  "venue_agreement_rule": "A date is a closure only when all three listing venues are closed. A covered date on which the venues disagree is recorded with its per-venue rows and agreement VENUE_DISAGREEMENT, and the loader refuses any range containing it until an amended frozen version defines the rule.",
+  "venue_disagreement_count": 0,
+  "venue_disagreement_dates": [],
+  "venue_scope": "NYSE Arca, Nasdaq and Cboe BZX are the US equity listing venues of the US spot bitcoin ETF universe. NYSE publishes one holiday schedule for all NYSE Group markets including NYSE Arca Equities; Nasdaq publishes one US equities schedule; Cboe publishes one US equities schedule covering BZX.",
+  "venues": [
+    "CBOE_BZX",
+    "NASDAQ",
+    "NYSE_ARCA"
+  ],
+  "workstream": "EPIC_X_POST_PHASE_1_PROSPECTIVE_INTEGRATION_EVIDENCE"
+}

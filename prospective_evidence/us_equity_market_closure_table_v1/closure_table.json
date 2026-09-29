@@ -1,0 +1,2211 @@
+{
+  "contract_version": "US_EQUITY_MARKET_CLOSURE_TABLE_V1_TABLE",
+  "coverage_end": "2026-12-31",
+  "coverage_start": "2023-01-01",
+  "definition_sha256": "76eb9dee41328194249af81a14295c68f5cb965b5c733de2e0d1c377b346727b",
+  "program_ticket": "POSTP1-001V2A-T1",
+  "row_count": 41,
+  "rows": [
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-01-02",
+      "official_name": "New Years Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "New Year's Day Observed",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "New Years Day (Observed)",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "New Years Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-01-16",
+      "official_name": "Martin Luther King, Jr. Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Martin Luther King Jr. Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-02-20",
+      "official_name": "Washington's Birthday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "President's Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "President's Day - U.S.",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Washington's Birthday",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-04-07",
+      "official_name": "Good Friday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-05-29",
+      "official_name": "Memorial Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Memorial Day - U.S.",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-06-19",
+      "official_name": "Juneteenth National Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Juneteenth Holiday",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Juneteenth Holiday (Observed)",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Juneteenth National Independence Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-07-04",
+      "official_name": "Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Independence Day - U.S. (Observed)",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "TUESDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-09-04",
+      "official_name": "Labor Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Labor Day - U.S.",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-11-23",
+      "official_name": "Thanksgiving Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Thanksgiving Day - U.S.",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2023-12-25",
+      "official_name": "Christmas Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:08Z",
+          "retrieved_sha256": "8ddb4b9f074f7fb92f07cd211dffbbf3ff4c0d9cc5e9e449dfb6447a7e22a0cb",
+          "source_id": "cboe_bzx_2023_holiday_schedule_csv",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/cboe_bzx_2023_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar",
+          "retrieved_at": "2026-09-29T20:00:34Z",
+          "retrieved_sha256": "f13e2f66a2bc385ad0bb10af2b0ccb7cbb133350b3edb026f9c7fc7d1d05c6ca",
+          "source_id": "nasdaq_2023_trading_calendar",
+          "source_name_in_document": "Christmas Holiday - U.S.",
+          "stored_file": "sources/nasdaq_2023_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-01-01",
+      "official_name": "New Years Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "New Year's Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "New Years Day (Observed)",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "New Years Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-01-15",
+      "official_name": "Martin Luther King, Jr. Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Martin Luther King Jr. Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-02-19",
+      "official_name": "Washington's Birthday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "President's Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "President's Day - U.S.",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Washington's Birthday",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-03-29",
+      "official_name": "Good Friday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-05-27",
+      "official_name": "Memorial Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Memorial Day - U.S.",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-06-19",
+      "official_name": "Juneteenth National Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Juneteenth Holiday",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Juneteenth Holiday (Observed)",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Juneteenth National Independence Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "WEDNESDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-07-04",
+      "official_name": "Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Independence Day - U.S. (Observed)",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-09-02",
+      "official_name": "Labor Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Labor Day - U.S.",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-11-28",
+      "official_name": "Thanksgiving Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Thanksgiving Day - U.S.",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2024-12-25",
+      "official_name": "Christmas Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:11Z",
+          "retrieved_sha256": "dc2d0ea70ede3af861a670899aaca7eca833cb4b66175bff38f9ec5a6f78a614",
+          "source_id": "cboe_bzx_2024_holiday_schedule_csv",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/cboe_bzx_2024_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:35Z",
+          "retrieved_sha256": "144f5810ca4c77e738405a63fd3470775d11a21c142c3a06ff686e4312937e96",
+          "source_id": "nasdaq_2024_trading_calendar",
+          "source_name_in_document": "Christmas Holiday - U.S.",
+          "stored_file": "sources/nasdaq_2024_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "WEDNESDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-01-01",
+      "official_name": "New Years Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "New Year's Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "New Years Day (Observed)",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "New Years Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "WEDNESDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "UNSCHEDULED_CLOSURE",
+      "date": "2025-01-09",
+      "official_name": "National Day of Mourning for Former President Jimmy Carter",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "National Day of Mourning (NDoM) - Jimmy Carter",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Equity Trader Alert #2024 - 86 U.S. Markets will be Closed for a National Day of Mourning for Former President Jimmy Carter",
+          "final_url": "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2024-87",
+          "original_publisher_url": "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2024-87",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2024-87",
+          "retrieved_at": "2026-09-29T20:05:51Z",
+          "retrieved_sha256": "abe3a43a22685fa02a7ee2e47d1bc01ec166532de39ec7b3519bb97c2bfd4326",
+          "source_id": "nasdaq_2025_national_day_of_mourning_alert",
+          "source_name_in_document": "U.S. Markets will be Closed for a National Day of Mourning for Former President Jimmy Carter",
+          "stored_file": "sources/nasdaq_2025_national_day_of_mourning_alert.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "Intercontinental Exchange - The New York Stock Exchange Will Close Markets on January 9 to Honor the Passing of Former President Jimmy Carter on National Day of Mourning",
+          "final_url": "https://web.archive.org/web/20241230201900id_/https://ir.theice.com/press/news-details/2024/The-New-York-Stock-Exchange-Will-Close-Markets-on-January-9-to-Honor-the-Passing-of-Former-President-Jimmy-Carter-on-National-Day-of-Mourning/",
+          "original_publisher_url": "https://ir.theice.com/press/news-details/2024/The-New-York-Stock-Exchange-Will-Close-Markets-on-January-9-to-Honor-the-Passing-of-Former-President-Jimmy-Carter-on-National-Day-of-Mourning/",
+          "publisher": "Intercontinental Exchange, Inc. (NYSE Group parent and NYSE press-release publisher)",
+          "request_url": "https://web.archive.org/web/20241230201900id_/https://ir.theice.com/press/news-details/2024/The-New-York-Stock-Exchange-Will-Close-Markets-on-January-9-to-Honor-the-Passing-of-Former-President-Jimmy-Carter-on-National-Day-of-Mourning/",
+          "retrieved_at": "2026-09-29T20:07:24Z",
+          "retrieved_sha256": "821790860122863e41cf97708213090078454855bd005b124be070891ae9450a",
+          "source_id": "nyse_arca_2025_national_day_of_mourning_notice",
+          "source_name_in_document": "The New York Stock Exchange Will Close Markets on January 9 to Honor the Passing of Former President Jimmy Carter on National Day of Mourning",
+          "stored_file": "sources/nyse_arca_2025_national_day_of_mourning_notice.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-01-20",
+      "official_name": "Martin Luther King, Jr. Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Martin Luther King Jr. Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-02-17",
+      "official_name": "Washington's Birthday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Presidents' Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "President's Day - U.S.",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Washington's Birthday",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-04-18",
+      "official_name": "Good Friday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-05-26",
+      "official_name": "Memorial Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Memorial Day - U.S.",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-06-19",
+      "official_name": "Juneteenth National Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Juneteenth Holiday",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Juneteenth Holiday (Observed)",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Juneteenth National Independence Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-07-04",
+      "official_name": "Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Independence Day - U.S. (Observed)",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-09-01",
+      "official_name": "Labor Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Labor Day - U.S.",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-11-27",
+      "official_name": "Thanksgiving Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Thanksgiving Day - U.S.",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2025-12-25",
+      "official_name": "Christmas Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": true,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T20:02:12Z",
+          "retrieved_sha256": "ac06f130a2822602f0df0cfccd9571449639f0dae567d3c5c4d0327411f67f7e",
+          "source_id": "cboe_bzx_2025_holiday_schedule_csv",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/cboe_bzx_2025_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": true,
+          "document_title": "Trading Calendar",
+          "final_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T20:00:36Z",
+          "retrieved_sha256": "ce6b489af57968f19ce108772a69f42d8b573cbc6c719732b1757a820e2b1e98",
+          "source_id": "nasdaq_2025_trading_calendar",
+          "source_name_in_document": "Christmas Holiday - U.S.",
+          "stored_file": "sources/nasdaq_2025_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": true,
+          "document_title": "NYSE: Holidays and Trading Hours",
+          "final_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T20:00:33Z",
+          "retrieved_sha256": "9c813edf3eb592f18c286fd5195084f55217a2b97e65cd4c482a1f52b0581ccc",
+          "source_id": "nyse_arca_2023_2025_hours_calendar",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/nyse_arca_2023_2025_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-01-01",
+      "official_name": "New Year\u2019s Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "New Year's Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "New Years Day (Observed)",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "New Year\u2019s Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-01-19",
+      "official_name": "Martin Luther King, Jr. Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Martin Luther King Jr. Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Martin Luther King, Jr. Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-02-16",
+      "official_name": "Washington's Birthday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Presidents' Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "President's Day - U.S.",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Washington's Birthday",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-04-03",
+      "official_name": "Good Friday",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Good Friday",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-05-25",
+      "official_name": "Memorial Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Memorial Day - U.S.",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Memorial Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-06-19",
+      "official_name": "Juneteenth National Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Juneteenth Holiday",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Juneteenth Holiday (Observed)",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Juneteenth National Independence Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-07-03",
+      "official_name": "Independence Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Independence Day Observed",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Independence Day - U.S. (Observed)",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Independence Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-09-07",
+      "official_name": "Labor Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Labor Day - U.S.",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Labor Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "MONDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-11-26",
+      "official_name": "Thanksgiving Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Thanksgiving Day - U.S.",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Thanksgiving Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "THURSDAY"
+    },
+    {
+      "agreement": "ALL_VENUES_CLOSED",
+      "closure_type": "SCHEDULED_HOLIDAY",
+      "date": "2026-12-25",
+      "official_name": "Christmas Day",
+      "venue_citations": {
+        "CBOE_BZX": {
+          "archived_copy": false,
+          "document_title": "Cboe U.S. Equities Holiday Schedule (CSV)",
+          "final_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "original_publisher_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "publisher": "Cboe BZX Exchange, Inc. (Cboe Global Markets)",
+          "request_url": "https://www.cboe.com/us/equities/holidays/csv/",
+          "retrieved_at": "2026-09-29T19:56:43Z",
+          "retrieved_sha256": "e57b3ca35227f65ec614003ee3611ec6263b24604a710826ace9b9445b74f00b",
+          "source_id": "cboe_bzx_2026_holiday_schedule_csv",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/cboe_bzx_2026_holiday_schedule_csv.gz.b64"
+        },
+        "NASDAQ": {
+          "archived_copy": false,
+          "document_title": "Trading Calendar",
+          "final_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "original_publisher_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "publisher": "The Nasdaq Stock Market LLC (Nasdaq Trader)",
+          "request_url": "https://www.nasdaqtrader.com/Trader.aspx?id=Calendar",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "899e010dac3981a2ccdad7a012b5bf452e31438667b0cc647d730a25a5518293",
+          "source_id": "nasdaq_2026_trading_calendar",
+          "source_name_in_document": "Christmas Holiday - U.S.",
+          "stored_file": "sources/nasdaq_2026_trading_calendar.gz.b64"
+        },
+        "NYSE_ARCA": {
+          "archived_copy": false,
+          "document_title": "Holidays & Trading Hours",
+          "final_url": "https://www.nyse.com/trade/hours-calendars",
+          "original_publisher_url": "https://www.nyse.com/markets/hours-calendars",
+          "publisher": "New York Stock Exchange (NYSE Group, Inc.)",
+          "request_url": "https://www.nyse.com/markets/hours-calendars",
+          "retrieved_at": "2026-09-29T19:55:23Z",
+          "retrieved_sha256": "b7c8c2fa1923de735a0bc29a4697b94957a6cc6ad7e219739282fea871d2de6f",
+          "source_id": "nyse_arca_2026_hours_calendar",
+          "source_name_in_document": "Christmas Day",
+          "stored_file": "sources/nyse_arca_2026_hours_calendar.gz.b64"
+        }
+      },
+      "venue_status": {
+        "CBOE_BZX": "CLOSED",
+        "NASDAQ": "CLOSED",
+        "NYSE_ARCA": "CLOSED"
+      },
+      "weekday": "FRIDAY"
+    }
+  ],
+  "rows_per_year": {
+    "2023": {
+      "scheduled_holiday": 10,
+      "total": 10,
+      "unscheduled_closure": 0
+    },
+    "2024": {
+      "scheduled_holiday": 10,
+      "total": 10,
+      "unscheduled_closure": 0
+    },
+    "2025": {
+      "scheduled_holiday": 10,
+      "total": 11,
+      "unscheduled_closure": 1
+    },
+    "2026": {
+      "scheduled_holiday": 10,
+      "total": 10,
+      "unscheduled_closure": 0
+    }
+  },
+  "venue_disagreement_dates": [],
+  "venues": [
+    "CBOE_BZX",
+    "NASDAQ",
+    "NYSE_ARCA"
+  ]
+}
