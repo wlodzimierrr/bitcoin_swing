@@ -1,0 +1,23 @@
+{
+  "a_non_authoritative_test_record_admits": false,
+  "a_record_with_a_broken_digest_admits": false,
+  "a_rejection_record_admits": false,
+  "admission_predicate": "btc_predictor.research.etf_calendar_replay_verified_evidence_contract.admits",
+  "admitting_reason_code": "ACCEPTED_BYTE_IDENTICAL_REDERIVATION",
+  "admitting_verdict": "ACCEPTED",
+  "admitting_verifier_mode": "PRODUCTION",
+  "bound_consumer_count": 5,
+  "bound_consumers": [
+    "POSTP1-001V2A-I2",
+    "POSTP1-001V2R1",
+    "POSTP1-003R3_SUFFICIENCY_GOVERNANCE",
+    "PROSPECTIVE_COLLECTION",
+    "STAGE_B_EVALUATION"
+  ],
+  "consumers_wired_by_this_ticket": 0,
+  "contract_version": "ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_CONSUMER_ADMISSION_V1",
+  "definition_sha256": "0929c1872caba4f9f8edbdbf89d80e7c6b625d1fdd48089543d3cdcaf9a615be",
+  "rule": "NO_BOUND_CONSUMER_MAY_TREAT_ETF_CALENDAR_EVIDENCE_AS_SCIENTIFIC_UNLESS_A_PRODUCTION_MODE_VERIFICATION_RECORD_WITH_VERDICT_ACCEPTED_AND_REASON_CODE_ACCEPTED_BYTE_IDENTICAL_REDERIVATION_EXISTS_FOR_THE_EXACT_REQUEST_AND_RESPONSE_DIGESTS_IT_CONSUMES",
+  "stage_b_must_verify_every_observation_before_evaluating": true,
+  "wiring_belongs_to": "EACH_CONSUMERS_OWN_TICKET"
+}

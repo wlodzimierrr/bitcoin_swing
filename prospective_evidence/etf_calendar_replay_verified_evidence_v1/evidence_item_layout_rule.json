@@ -1,0 +1,36 @@
+{
+  "affirmative_evidence_is_written": false,
+  "affirmative_evidence_is_written_because": "IT_CARRIES_A_RETIRED_AUTHORITY_MARKER_AND_A_CANDIDATE_ITEM_THAT_CARRIED_ONE_WOULD_CLAIM_THE_THING_THIS_ARCHITECTURE_REMOVED",
+  "contract_version": "ETF_CALENDAR_REPLAY_EVIDENCE_ITEM_LAYOUT_V1",
+  "definition_sha256": "7c9554f34899b7799b470a61dc084e2776447c14c7010c4ed15e198d9de5759f",
+  "file_digest_is_the_payload_digest": true,
+  "file_encoding": "EXACT_CANONICAL_JSON_BYTES_WITH_NO_TRAILING_NEWLINE",
+  "input_envelopes_file": "input_envelopes.canonical.json",
+  "item_manifest_fields": [
+    "authority",
+    "evidence_item_id",
+    "input_envelope_count",
+    "input_envelope_digests",
+    "item_layout_version",
+    "producer_program_ticket",
+    "producer_relative_path",
+    "request_digest",
+    "response_digest"
+  ],
+  "item_manifest_file": "item.canonical.json",
+  "optional_filenames": [
+    "test_trust_root.canonical.json"
+  ],
+  "request_file": "request.canonical.json",
+  "required_file_count": 4,
+  "required_filenames": [
+    "input_envelopes.canonical.json",
+    "item.canonical.json",
+    "request.canonical.json",
+    "response.canonical.json"
+  ],
+  "response_file": "response.canonical.json",
+  "test_trust_root_file": "test_trust_root.canonical.json",
+  "test_trust_root_permitted_in_production_mode": false,
+  "test_trust_root_refusal_reason": "A_CALLER_SUPPLIED_TRUST_REGISTRY_REACHING_PRODUCTION_VERIFICATION_IS_THE_EXACT_SHAPE_POSTP1_002V2B_FAILED"
+}

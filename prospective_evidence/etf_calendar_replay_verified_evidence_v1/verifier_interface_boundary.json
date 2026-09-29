@@ -1,0 +1,86 @@
+{
+  "argument_count": 5,
+  "argument_names": [
+    "sys_path_json",
+    "pycache_namespace",
+    "evidence_dir",
+    "record_dir",
+    "mode"
+  ],
+  "callback_can_cross": false,
+  "caller_object_can_cross": false,
+  "class_can_cross": false,
+  "contract_version": "ETF_CALENDAR_REPLAY_VERIFIER_INTERFACE_BOUNDARY_V1",
+  "definition_sha256": "f088244cbd5dccc1b71cb8fe0af889bf2b277bb9b3dd7feac3d9fe66ee955ebb",
+  "forbidden_names": [
+    "__import__",
+    "cloudpickle",
+    "compile",
+    "dill",
+    "eval",
+    "exec",
+    "importlib",
+    "marshal",
+    "pickle",
+    "runpy",
+    "shelve",
+    "yaml"
+  ],
+  "interface": "COMMAND_LINE_STRINGS_AND_CANONICAL_JSON_FILES_ONLY",
+  "interface_audit": {
+    "argument_count": 5,
+    "argument_names": [
+      "sys_path_json",
+      "pycache_namespace",
+      "evidence_dir",
+      "record_dir",
+      "mode"
+    ],
+    "audit_version": "ETF_CALENDAR_REPLAY_VERIFIER_INTERFACE_AUDIT_V1",
+    "callback_can_cross_the_boundary": false,
+    "caller_object_can_cross_the_boundary": false,
+    "closed": true,
+    "entry_accepts_varargs_or_kwargs": false,
+    "entry_function": "main",
+    "entry_parameter_annotations": [
+      "list[str]"
+    ],
+    "entry_parameters": [
+      "argv"
+    ],
+    "findings": [],
+    "forbidden_name_occurrences": [],
+    "forbidden_names": [
+      "__import__",
+      "cloudpickle",
+      "compile",
+      "dill",
+      "eval",
+      "exec",
+      "importlib",
+      "marshal",
+      "pickle",
+      "runpy",
+      "shelve",
+      "yaml"
+    ],
+    "module_can_cross_the_boundary": false,
+    "pickle_can_cross_the_boundary": false,
+    "surveyed_paths": [
+      "btc_predictor/research/etf_calendar_evidence_verifier.py",
+      "btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py"
+    ]
+  },
+  "modes": [
+    "PRODUCTION",
+    "NON_AUTHORITATIVE_TEST"
+  ],
+  "module_can_cross": false,
+  "pickle_can_cross": false,
+  "plugin_can_cross": false,
+  "production_mode_accepts_a_file_supplied_trust_root": false,
+  "production_mode_refuses_test_key_envelopes": true,
+  "test_mode_is_explicitly_non_authoritative": true,
+  "test_only_key_id_prefix": "TEST_ONLY_",
+  "why_impossible": "THE_ONLY_CHANNEL_IS_A_PROCESS_BOUNDARY_THAT_CARRIES_BYTES_AND_THE_ONLY_BYTES_ACCEPTED_ARE_FIVE_COMMAND_LINE_STRINGS_AND_THE_CANONICAL_JSON_DOCUMENTS_THEY_NAME"
+}

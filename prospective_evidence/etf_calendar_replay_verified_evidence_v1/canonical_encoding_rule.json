@@ -1,0 +1,30 @@
+{
+  "canonical_decoder": "etf_calendar_worker.protocol_r1.parse_canonical_json",
+  "canonical_digest": "etf_calendar_worker.protocol_r1.digest_bytes",
+  "canonical_encoder": "etf_calendar_worker.protocol_r1.canonical_json_bytes",
+  "canonical_serialization_rules": [
+    "ASCII_ONLY",
+    "COMPACT_SEPARATORS",
+    "NO_NAN_OR_INFINITY",
+    "SORTED_KEYS"
+  ],
+  "contract_version": "ETF_CALENDAR_REPLAY_CANONICAL_ENCODING_RULE_V1",
+  "definition_sha256": "18c47e468075b1e18df376512fa2b8e81bdb3d25a143296b1a858c3d00bc3f49",
+  "digest_algorithm": "SHA256_OVER_CANONICAL_JSON_BYTES",
+  "extracted_because": "THE_R5_CHILD_MIXED_ARCHITECTURE_NEUTRAL_CANONICALISATION_WITH_IN_PROCESS_IDENTITY_BINDING_AND_COULD_NOT_BE_CARRIED_WHOLE",
+  "extracted_from": "ETF_CALENDAR_CANONICAL_ADMITTED_SNAPSHOT_RULE_V1_R5",
+  "preserved_canonical_rejections": [
+    "CANONICAL_PAYLOAD_IS_NOT_ASCII",
+    "CANONICAL_PAYLOAD_IS_NOT_ONE_JSON_DOCUMENT",
+    "NON_FINITE_JSON_CONSTANT_REFUSED",
+    "PAYLOAD_IS_NOT_CANONICAL_JSON_SERIALIZABLE",
+    "REQUEST_FIELD_TYPE_REFUSED",
+    "RESPONSE_SCHEMA_VERSION_REFUSED",
+    "RESPONSE_SHAPE_REFUSED",
+    "SCIENTIFIC_IPC_PAYLOAD_IS_NOT_CANONICAL",
+    "UNKNOWN_RESPONSE_FIELD"
+  ],
+  "preserved_timestamp_rejection": "TIMESTAMP_IS_NOT_CANONICAL_UTC",
+  "received_bytes_must_reserialize_to_themselves": true,
+  "second_competing_canonical_form_exists": false
+}

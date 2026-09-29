@@ -1,0 +1,88 @@
+{
+  "contract_version": "ETF_CALENDAR_REPLAY_NON_AUTHORITATIVE_PRODUCER_V1",
+  "definition_sha256": "74d0c04c91e18d669291179a63b4b80aa3fed49928a152faff19bacfb72cf87d",
+  "no_in_process_authority_audit": {
+    "audit_version": "ETF_CALENDAR_REPLAY_NO_IN_PROCESS_AUTHORITY_AUDIT_V1",
+    "authority_anchor": "EXACT_REVIEWED_COMMIT_OF_THE_VERIFIER_SOURCE",
+    "closed": true,
+    "emitted_retired_markers": [],
+    "findings": [],
+    "pad5_class_definition_count": 2,
+    "pad5_class_definitions": [
+      {
+        "name": "ReplayVerifiedEvidenceError",
+        "path": "btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py",
+        "scope": [
+          "ReplayVerifiedEvidenceError"
+        ]
+      },
+      {
+        "name": "ReplayVerifiedEvidenceDecisionError",
+        "path": "btc_predictor/research/etf_calendar_replay_verified_evidence.py",
+        "scope": [
+          "ReplayVerifiedEvidenceDecisionError"
+        ]
+      }
+    ],
+    "producer_output_authority": "NON_AUTHORITATIVE_CANDIDATE_EVIDENCE",
+    "producer_process_trust": "FULLY_UNTRUSTED_AT_THE_PYTHON_LEVEL",
+    "producer_self_attestation_is_authority": false,
+    "retired_authority_markers": [
+      "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R5",
+      "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R4",
+      "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R3"
+    ],
+    "retired_authority_mechanisms": [
+      "CAPABILITY_GATED_BIND",
+      "CLOSURE_OWNED_IDENTITY_REGISTRY",
+      "DOMAIN_SCOPED_INTROSPECTION_EXCLUSION_TEXT",
+      "EXACT_TYPE_RECEIVER_GATE",
+      "IN_PROCESS_AUTHORITATIVE_EXECUTION_OBJECT"
+    ],
+    "retired_marker_occurrences": [
+      {
+        "kind": "EXACT_STRING",
+        "marker": "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R5",
+        "path": "btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py"
+      },
+      {
+        "kind": "EXACT_STRING",
+        "marker": "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R4",
+        "path": "btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py"
+      },
+      {
+        "kind": "EXACT_STRING",
+        "marker": "AUTHORITATIVE_CLOSED_CONTROLLER_EXECUTION_V1_R3",
+        "path": "btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py"
+      }
+    ],
+    "surveyed_paths": [
+      "btc_predictor/research/etf_calendar_replay_verified_evidence_contract.py",
+      "btc_predictor/research/etf_calendar_replay_verified_evidence.py",
+      "btc_predictor/research/etf_calendar_evidence_verifier.py"
+    ],
+    "verifier_self_attestation_is_authority": false
+  },
+  "permitted_in_the_producer_process": [
+    "CLASS_AND_MODULE_MUTATION",
+    "CLOSURE_CELL_RECOVERY",
+    "CTYPES",
+    "FRAMES_AND_TRACING",
+    "GC_OBJECT_GRAPH_ENUMERATION_AND_MUTATION",
+    "PRIVATE_NAME_REFLECTION"
+  ],
+  "preserved_launch_path": "run_isolated_scientific_request",
+  "producer_forks_the_bootstrap_set": false,
+  "producer_forks_the_protocol": false,
+  "producer_forks_the_worker": false,
+  "producer_is_inside_the_verifier_import_closure": false,
+  "producer_module": "btc_predictor.research.etf_calendar_replay_verified_evidence",
+  "producer_output_authority": "NON_AUTHORITATIVE_CANDIDATE_EVIDENCE",
+  "producer_output_is_authority": false,
+  "producer_process_trust": "FULLY_UNTRUSTED_AT_THE_PYTHON_LEVEL",
+  "producer_relative_path": "btc_predictor/research/etf_calendar_replay_verified_evidence.py",
+  "producer_reuses_the_preserved_launch_path": true,
+  "producer_self_attestation_is_authority": false,
+  "producer_side_type_carries_an_authority_marker": false,
+  "why_that_is_harmless": "NOTHING_THE_PRODUCER_RETURNS_IS_AUTHORITY_SO_AN_OBJECT_THAT_ACQUIRES_ANYTHING_IN_ITS_PROCESS_HAS_ACQUIRED_NOTHING_THE_VERIFIER_READS"
+}

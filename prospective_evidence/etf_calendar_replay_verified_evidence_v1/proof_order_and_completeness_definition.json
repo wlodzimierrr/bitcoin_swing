@@ -1,0 +1,105 @@
+{
+  "carried_forward_children": [
+    "bootstrap_source_set",
+    "bytecode_execution_binding_rule",
+    "compiled_root_binding_witness_rule",
+    "direct_body_dependency_rule",
+    "dynamic_import_and_execution_prohibition",
+    "pre_i2_project_source_manifest_fixture",
+    "project_source_manifest_binding_rule",
+    "proof_interpreter_identity",
+    "replay_owner_graph_rule",
+    "scientific_request_protocol",
+    "scientific_response_protocol",
+    "store_root_and_direct_use_grammar",
+    "third_party_installed_content_attestation_rule",
+    "third_party_semantic_authority",
+    "worker_io_and_capability_boundary"
+  ],
+  "completeness_claim": "THIS_ARCHITECTURE_CLAIMS_EXACTLY_ONE_THING: BYTES_THAT_WERE_NOT_RE_DERIVED_FROM_AUTHENTICATED_INPUTS_BY_CERTIFIED_CODE_RUNNING_IN_A_SEPARATE_PROCESS_ARE_NEVER_ACCEPTED_AS_EVIDENCE. IT_DOES_NOT_CLAIM_THAT_THE_PRODUCERS_PROCESS_IS_HONEST, THAT_CPYTHON_INTROSPECTION_CAN_BE_ENUMERATED, OR_THAT_AVAILABILITY_IS_GUARANTEED. A_HOSTILE_PRODUCER_CAN_MAKE_EVIDENCE_BE_REJECTED_AND_CANNOT_MAKE_IT_BE_ACCEPTED.",
+  "contract_version": "ETF_CALENDAR_REPLAY_VERIFIED_PROOF_ORDER_V1",
+  "definition_sha256": "f18a17f8e725e60da87f888106ea1ffa3b7fbe094a66023c19df68d5dab40bb1",
+  "determinism": [
+    "ALTERNATE_CURRENT_DIRECTORY",
+    "CHILD_ORDER_VARIATION",
+    "FRESH_OUTPUT_DIRECTORY",
+    "FRESH_PROCESS",
+    "MULTIPLE_PYTHONHASHSEED_VALUES"
+  ],
+  "explicit_limits": [
+    "ARBITRARY_OPERATING_SYSTEM_LEVEL_COMPROMISE_IS_OUT_OF_SCOPE",
+    "CERTIFIED_SOURCE_EXECUTING_ITS_OWN_SEMANTICS_IS_NOT_DRIFT",
+    "MODIFICATION_PERFECTLY_RACING_VERIFICATION_OR_USE_IS_OUT_OF_SCOPE",
+    "STDLIB_OBJECTS_ARE_TRUSTED_THROUGH_THE_INTERPRETER_AXIOM",
+    "THE_CANDIDATE_PARENT_HASH_IS_BOUND_BY_THE_REVIEW_CONTEXT"
+  ],
+  "new_children": [
+    "canonical_encoding_rule",
+    "comparison_projection_definition",
+    "consumer_admission_rule",
+    "evidence_item_layout_rule",
+    "non_authoritative_producer_rule",
+    "proof_order_and_completeness_definition",
+    "replay_verified_evidence_boundary",
+    "science_lineage_and_safety",
+    "verification_record_contract",
+    "verifier_interface_boundary",
+    "verifier_source_manifest"
+  ],
+  "reissued_children": [
+    "bootstrap_pre_execution_source_binding_rule",
+    "replay_verified_admission_rule",
+    "trusted_authority_context_rule",
+    "trusted_process_and_isolation_boundary",
+    "worker_launch_contract"
+  ],
+  "reject_on_sight": [
+    "ACCEPTING_EVIDENCE_BY_DIGEST_COMPARISON_ALONE_WITHOUT_RE_EXECUTION",
+    "ANY_DOMAIN_TEXT_THAT_EXCLUDES_INTROSPECTION_ROUTES_TO_MAKE_A_CLAIM_TRUE",
+    "ANY_IN_PROCESS_OBJECT_REGISTRY_CAPABILITY_CLOSURE_OR_TYPE_GATE_AS_AUTHORITY",
+    "A_COMPARISON_PROJECTION_DEFINED_BY_EXCLUSION",
+    "THE_PRODUCER_OR_WORKER_ATTESTING_ITS_OWN_AUTHORITY",
+    "THE_VERIFIER_IMPORTING_A_MODULE_OUTSIDE_THE_CERTIFIED_CLOSURE",
+    "THE_VERIFIER_RUNNING_INSIDE_THE_PRODUCERS_PROCESS"
+  ],
+  "retired_children_are_copied_here_as_authority": false,
+  "retired_r5_identity_children": [
+    "affirmative_evidence_snapshot_rule",
+    "authoritative_execution_identity_rule",
+    "authoritative_return_state_rule",
+    "authoritative_scientific_execution_boundary",
+    "authority_receiver_validation_rule",
+    "caller_visible_copy_isolation_rule",
+    "canonical_admitted_snapshot_rule",
+    "construction_identity_audit_rule",
+    "identity_safe_snapshot_binding_rule",
+    "result_digest_lifetime_binding_rule",
+    "scientific_evidence_authority_rule"
+  ],
+  "verification_order": [
+    "1_READ_THE_EVIDENCE_ITEM_AS_FILES_AND_CHECK_THE_FROZEN_LAYOUT",
+    "2_PARSE_THE_RECORDED_REQUEST_AS_EXACT_SELF_RESERIALIZING_CANONICAL_BYTES",
+    "3_VALIDATE_THE_RECORDED_REQUEST_AGAINST_THE_FROZEN_REQUEST_SCHEMA",
+    "4_COMPARE_EVERY_AUTHORITY_BOUND_REQUEST_FIELD_WITH_THE_FROZEN_CONTEXT",
+    "5_VERIFY_THAT_THIS_INTERPRETER_IS_THE_FROZEN_PROOF_INTERPRETER",
+    "6_VERIFY_THAT_THIS_IS_THE_RECORDED_ENVIRONMENT",
+    "7_VERIFY_EVERY_INPUT_ENVELOPE_UNDER_THE_CERTIFIED_TRUSTED_PERSISTENCE_PATH",
+    "8_REQUIRE_THE_RECORDED_EVIDENCE_RECORDS_AND_VERIFIED_PAYLOADS_TO_AGREE",
+    "9_BIND_THE_COMPLETE_BOOTSTRAP_SOURCE_SET_BEFORE_ANY_PROCESS_EXISTS",
+    "10_RE_EXECUTE_THE_CERTIFIED_WORKER_ON_THE_EXACT_RECORDED_REQUEST_BYTES",
+    "11_COMPARE_THE_FROZEN_PROJECTION_OF_BOTH_RESPONSES_BYTE_FOR_BYTE",
+    "12_WRITE_ONE_CANONICAL_DIGEST_BOUND_RECORD_WHETHER_ACCEPTED_OR_REJECTED"
+  ],
+  "worker_order": [
+    "8_VERIFY_INTERPRETER_STARTUP_AND_PYCACHE_CONTROLS",
+    "9_PARSE_THE_CANONICAL_REQUEST",
+    "10_DEFENCE_IN_DEPTH_SOURCE_CHECKS",
+    "11_VERIFY_THE_THIRD_PARTY_ENVIRONMENT_BEFORE_DEPENDENCY_CODE",
+    "12_ESTABLISH_CERTIFIED_PROJECT_IMPORTS",
+    "13_EXECUTE_EXACTLY_ONE_SCIENTIFIC_OPERATION",
+    "14_REFUSE_A_LAZY_RESULT",
+    "15_POST_VERIFY",
+    "16_EMIT_THE_CANONICAL_RESULT",
+    "17_EXIT"
+  ]
+}
