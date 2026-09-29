@@ -6526,11 +6526,16 @@ science, the trusted persistence or any preserved child listed above.
 | caller object or callback offered to the verifier | impossible by interface; audit FAILS if added |
 | repeated verification of the same evidence | identical record bytes |
 
-The checked-in controls must show that:
+The checked-in controls must reproduce all three R5 routes in-process against
+the producer and then show what the verifier does with each:
 
-- the R5 `gc` registry insertion and the canonical-class mutation both still
-  "succeed" in-process against the producer;
-- both are **rejected** by the verifier.
+- **`gc` registry insertion with a genuine snapshot** (the exact R5 P0). The
+  bytes the forged object presents are the genuine evidence, so the verifier
+  **accepts** them as that same evidence and nothing new is admitted.
+- **`gc` registry insertion with a fabricated `FrozenAuthoritySnapshot`.** The
+  verifier **rejects** it.
+- **Canonical-class mutation presenting fabricated content** (the R5 P1). The
+  verifier **rejects** it.
 
 ### Entry obligation
 
