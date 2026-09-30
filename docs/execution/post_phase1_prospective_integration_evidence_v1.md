@@ -7082,8 +7082,8 @@ review. The closure set is the same kind of object and gets the same treatment.
 
 ## POSTP1-001V2A-T1 — `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH
-TICKET REVIEW`
+**Status:** `COMPLETE / PASS — POSTP1-002V2A-T1 INDEPENDENT EXACT-HASH xHIGH
+TICKET REVIEW (2026-09-30)`
 **Authorized by:** the PAD5 owner scoping decision above
 **Implementation effort:** high
 **Required review:** `POSTP1-002V2A-T1`, an independent exact-hash xHigh
@@ -7156,7 +7156,10 @@ dependency in EPIC Y's RBT-006.
 **Implementation commit:** `52bbe12`
 **Definition hash:** `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`
 **Namespace:** `prospective_evidence/us_equity_market_closure_table_v1/`
-**Execution classification:**
+**Independent review:** `POSTP1-002V2A-T1 COMPLETE / PASS`, 2026-09-30;
+no review-fix commit. See the review outcome below for independently retrieved
+sources, limitations and acceptance-criteria verification.
+**Execution classification at implementation freeze:**
 `US_EQUITY_MARKET_CLOSURE_TABLE_V1_READY_FOR_XHIGH_TICKET_REVIEW`
 
 #### What was frozen
@@ -7296,6 +7299,267 @@ Pre-data, zero observations. A successful implementation authorizes only
 and EPIC Y are **UNCHANGED**. EPIC Y consumes this table only after the T1
 review passes.
 
+## POSTP1-002V2A-T1 review outcome
+
+**Review date:** 2026-09-30
+**Result:** `COMPLETE / PASS`
+**Reviewed implementation:** `52bbe12`; documentation `34e7fcb`; base `d7d5a89`
+**Reviewed definition:** `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`
+**Review procedure:** `prompts/review_ticket.md`, independent exact-hash xHigh
+**ticket** review, not a proof-architecture review. The implementation report,
+stored-source cross-checks and existing tests were not treated as authorities.
+The reviewer independently retrieved official publications, derived their date
+sets, re-hashed the stored copies, and exercised the loader and unchanged flow
+owner with separately constructed probes.
+**Findings:** no P0–P3 defect. No review-fix commit was needed or created.
+This documentation-only review-record commit changes no implementation,
+test, frozen artifact, loader constant, worker module or scientific data.
+
+### Official-source verification: all 41 rows, all three venues
+
+Every scheduled date was checked against the complete published annual set,
+not merely against another implementation-generated list. The three sets agree:
+10 dates in 2023, 10 in 2024, 11 in 2025 including January 9, and 10 in 2026.
+All 123 date/venue entries and their source-index citations were checked. All
+12 stored gzip/base64 documents reproduce both their stored-file hashes and
+their decompressed retrieved-byte hashes and lengths.
+
+Sources below were retrieved independently during this review. Archive dates
+are actual publisher-page capture times (UTC), not the review retrieval date.
+Live sources were retrieved 2026-09-30.
+
+| year / verified closures per venue | NYSE Arca | Nasdaq | Cboe BZX |
+| --- | --- | --- | --- |
+| 2023 / 10 | [NYSE Hours & Calendars](https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars), **archived 2023-02-25 06:50:47**; all NYSE markets, including Arca Equities | [Nasdaq Trader Trading Calendar](https://web.archive.org/web/20230701184604id_/https://www.nasdaqtrader.com/Trader.aspx?id=calendar), **archived 2023-07-01 18:46:04** | [Cboe US Equities Holiday CSV](https://web.archive.org/web/20230330003200id_/https://www.cboe.com/us/equities/holidays/csv/), **archived 2023-03-30 00:32:00** |
+| 2024 / 10 | [NYSE Hours & Calendars](https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars), **archived 2023-02-25 06:50:47** | [Nasdaq Trader Trading Calendar](https://web.archive.org/web/20240515134932id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar), **archived 2024-05-15 13:49:32** | [Cboe US Equities Holiday CSV](https://web.archive.org/web/20240119140539id_/https://www.cboe.com/us/equities/holidays/csv/), **archived 2024-01-19 14:05:39** |
+| 2025 / 11 | [NYSE Hours & Calendars](https://web.archive.org/web/20230225065047id_/https://www.nyse.com/markets/hours-calendars), **archived 2023-02-25 06:50:47**, plus the NYSE January 9 announcement below | [Nasdaq Trader Trading Calendar](https://web.archive.org/web/20250915131421id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar), **archived 2025-09-15 13:14:21**, plus the Nasdaq January 9 alert below | [Cboe US Equities Holiday CSV](https://web.archive.org/web/20250213212108id_/https://www.cboe.com/us/equities/holidays/csv/), **archived 2025-02-13 21:21:08**, already includes January 9; corroborating closure notice below |
+| 2026 / 10 | [NYSE Holidays & Trading Hours](https://www.nyse.com/trade/hours-calendars), **live 2026-09-30** | [Nasdaq Trader Trading Calendar](https://www.nasdaqtrader.com/Trader.aspx?id=Calendar), **live 2026-09-30** | [Cboe US Equities Holiday CSV](https://www.cboe.com/us/equities/holidays/csv/), **live 2026-09-30** |
+
+The independently verified full-day sets (month-day within each year) are:
+
+- 2023: `01-02, 01-16, 02-20, 04-07, 05-29, 06-19, 07-04, 09-04, 11-23, 12-25`.
+- 2024: `01-01, 01-15, 02-19, 03-29, 05-27, 06-19, 07-04, 09-02, 11-28, 12-25`.
+- 2025: `01-01, 01-09, 01-20, 02-17, 04-18, 05-26, 06-19, 07-04, 09-01, 11-27, 12-25`.
+- 2026: `01-01, 01-19, 02-16, 04-03, 05-25, 06-19, 07-03, 09-07, 11-26, 12-25`.
+
+January 9, 2025 was independently verified for each venue:
+
+- NYSE: [NYSE's December 30 announcement on its parent's investor-relations
+  site](https://web.archive.org/web/20241230201900id_/https://ir.theice.com/press/news-details/2024/The-New-York-Stock-Exchange-Will-Close-Markets-on-January-9-to-Honor-the-Passing-of-Former-President-Jimmy-Carter-on-National-Day-of-Mourning/),
+  **archived 2024-12-30 20:19:00**, explicitly includes NYSE Arca Equities
+  among all NYSE Group equity/options markets closing January 9. This is the
+  exchange's own announcement published by its parent ICE, **an official
+  publication, not an aggregator** (`NOT_A_DEFECT`). A nyse.com-hosted notice
+  also exists: [NYSE Regulation January 2, 2025 memo, RM-25-01](https://www.nyse.com/publicdocs/nyse/markets/american-options/rule-interpretations/2025/National_Day_of_Mourning_20250102.pdf),
+  **live**, confirms the same closure in its options-specific guidance; it
+  supplements, rather than replaces, the explicit equity-market announcement.
+- Nasdaq: [December 30, 2024 National Day of Mourning alert](https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2024-87),
+  **live**, confirms its US equities/options markets closed January 9.
+  The publisher itself displays alert `#2024-86` at the `ETA2024-87` URL;
+  the title/URL difference is not a mis-citation (`NOT_A_DEFECT`).
+- Cboe: [C2024123101 National Day of Mourning notice](https://cdn.cboe.com/resources/schedule_update/2025/Cboe-to-Observe-National-Day-of-Mourning-on-Thursday-January-9-2025.pdf),
+  **live**, explicitly closes BZX and the other Cboe US equities exchanges
+  for every trading session January 9; the 2025 CSV independently agrees.
+
+Nine of the 12 independently retrieved sources are byte-identical to their
+stored decompressed copies. Three live responses differ only in non-calendar
+content: Cboe's CSV generation timestamp, and Nasdaq's Incapsula nonce / hidden
+ASP.NET markup. The published dates, labels and closure announcement are
+unchanged; the frozen stored hashes still all match (`NOT_A_DEFECT`).
+
+### Completeness and schedule-revision searches
+
+For each of 2023, 2024, 2025 and 2026, the reviewer searched publisher-scoped
+NYSE/ICE, Nasdaq Trader and Cboe notices using the year and combinations of
+`full-day closure`, `unscheduled closure`, `emergency closure`, `market-wide`,
+`markets will be closed` and `National Day of Mourning`. NYSE's
+[market-status history](https://www.nyse.com/market-status/history) and
+[trader-update history](https://www.nyse.com/trader-update/history), and
+[Nasdaq's Trader Alert archive](https://www.nasdaqtrader.com/Trader.aspx?id=archiveheadlines&cat_id=2)
+were also inspected. These history pages use dynamic listings; the reviewer
+does **not** claim an exhaustive downloaded NYSE/Nasdaq notice census.
+
+Cboe's own public yearly notice listings were inspected directly, including
+titles and incident descriptions: [schedule updates](https://www.cboe.com/us/equities/notices/data/schedule_update/2023/)
+contain 27/26/26/12 notices for 2023/2024/2025/2026 respectively (**91**);
+[system notices](https://www.cboe.com/us/equities/notices/data/system/2023/)
+contain 29/40/26/14 respectively (**109**). The corresponding `/2024/`,
+`/2025/` and `/2026/` listings were all retrieved. No additional full-day
+closure was found. Certification-environment outages, weekend circuit-breaker
+tests, moments of silence, routing self-help and intraday/single-symbol
+incidents were checked and do not imply an all-venues full-day closure.
+The sole additional day is January 9, 2025. The Cboe August 14, 2024
+[Labor Day correction](https://cdn.cboe.com/resources/schedule_update/2024/Correction-Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Monday-September-2-2024.pdf)
+changes options-session details, not the September 2 BZX full-day closure.
+
+Later independently retrieved annual captures reproduce the same full-day
+date sets; NYSE/Nasdaq annual schedules intentionally need the separate
+January 9 announcement in 2025:
+
+| venue | year checked | later official-page capture (UTC) | result |
+| --- | --- | --- | --- |
+| NYSE Arca | 2023 | [2023-09-03 11:54:22](https://web.archive.org/web/20230903115422id_/https://www.nyse.com/markets/hours-calendars) | 10/10 scheduled dates unchanged |
+| NYSE Arca | 2024 | [2024-12-01 17:14:42](https://web.archive.org/web/20241201171442id_/https://www.nyse.com/markets/hours-calendars) | 10/10 scheduled dates unchanged |
+| NYSE Arca | 2025 | [2025-12-08 03:46:50](https://web.archive.org/web/20251208034650id_/https://www.nyse.com/markets/hours-calendars) | 10/10 scheduled dates unchanged; January 9 separately verified |
+| Nasdaq | 2023 | [2023-11-06 00:31:40](https://web.archive.org/web/20231106003140id_/http://www.nasdaqtrader.com/trader.aspx?id=calendar) | 10/10 unchanged |
+| Nasdaq | 2024 | [2024-11-08 17:11:06](https://web.archive.org/web/20241108171106id_/https://nasdaqtrader.com/trader.aspx?id=Calendar) | 10/10 unchanged |
+| Cboe BZX | 2024 | [2024-10-09 00:04:13](https://web.archive.org/web/20241009000413id_/https://www.cboe.com/us/equities/holidays/csv/) | 10/10 unchanged |
+| Cboe BZX | 2025 | [2025-12-22 11:34:51](https://web.archive.org/web/20251222113451id_/https://www.cboe.com/us/equities/holidays/csv/) | 11/11 unchanged, including January 9 |
+| Cboe BZX | 2026 | [2026-03-10 21:09:11](https://web.archive.org/web/20260310210911id_/https://www.cboe.com/us/equities/holidays/csv/) versus live September 30 | 10/10 unchanged |
+
+Archive limitation: CDX exposed **no later 2023 Cboe equities CSV capture**.
+October 2 and December 2 Hours & Holidays captures were retrieved, but their
+client-rendered holiday data were not captured; they are not asserted to be
+later complete annual schedules. Instead, later publisher notices were read:
+[May 29](https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Monday-May-29-2023.pdf)
+(C2023050800), [June 19](https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Monday-June-19-2023.pdf)
+(C2023053002), [July 4](https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Monday-July-3-and-Tuesday-July-4-2023.pdf)
+(C2023061301, also independently retrieved as an
+[archived 2023-06-21 04:24:02 capture](https://web.archive.org/web/20230621042402id_/https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Monday-July-3-and-Tuesday-July-4-2023.pdf)),
+[September 4](https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Closed-on-Monday-September-4-2023.pdf)
+(C2023081401), [November 23](https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Thursday-November-23-and-Friday-November-24.pdf)
+(C2023110201) and [December 25](https://cdn.cboe.com/resources/schedule_update/2023/Cboe-Holiday-Reminder-Modified-Trading-Hours-on-Christmas-and-New-Year-s-Day.pdf)
+(C2023120401). These confirm every closure after Good Friday in the March
+CSV; the April 7 reminder was also checked in the official notice index.
+The complete 2023 annual set is independently verified from the March CSV;
+no date mismatch or subsequent revision was found.
+
+### Coverage-end verdict
+
+**2026-12-31 is correct for this freeze.** This conclusion uses publications
+offered **before** September 29/30, not only today's pages:
+
+- [Nasdaq Trader, archived 2026-09-24 12:14:27](https://web.archive.org/web/20260924121427id_/https://www.nasdaqtrader.com/Trader.aspx?id=Calendar):
+  2026 US equities/options schedule, year-calendar links 2021–2026, no 2027
+  US calendar offered. The archive index for the official 2027 annual-PDF URL
+  also has no capture through September 30.
+- [Cboe Hours & Holidays, archived 2026-09-01 05:02:53](https://web.archive.org/web/20260901050253id_/https://www.cboe.com/about/hours):
+  US equities page offers only its 2026 equities holiday schedule and CSV.
+  A navigation link to the 2027 Risk Management Conference is not a calendar.
+- NYSE already offered 2027 in its December 2025 capture and 2026–2028 on its
+  live page. Nasdaq/Cboe publisher-scoped searches found no other published
+  2027 US equities schedule at freeze time.
+
+The absence of a jointly published 2027 schedule is an inference from the
+archived publisher offerings and notice searches, not a claim that archive
+absence alone proves nonexistence. The all-three-venues coverage criterion
+therefore stops at 2026. **2027 flow windows need a new frozen, reviewed V2
+table before use.** A subsequently announced 2026 emergency closure likewise
+requires an amendment; the owner must fail closed, never zero-fill it.
+
+### Exact hashes, scope and determinism
+
+Own canonical-JSON/SHA-256 code, without loader helpers, reproduced the
+definition hash above and all three file-byte anchors:
+
+| frozen file | independently recomputed SHA-256 |
+| --- | --- |
+| `us_equity_market_closure_table_v1_definition.json` | `0692e778a8a20e87cfa9b7c40b0d1af37b201e870d448d683ee467b7124456fe` |
+| `closure_table.json` | `4a7a5a25d19ead02619e83af6dd99574372450a08d1daac17973947911ee241d` |
+| `source_index.json` | `f939b1d70da2f0543e19c73dcba96471c39735a369c159d4ead1041d7b38ebd3` |
+
+For each JSON, remove only `definition_sha256`, serialize with sorted keys,
+ASCII, no NaN, compact `(',', ':')` separators, and hash; the checked-in file
+also reproduces sorted indent-2 ASCII plus one trailing newline. Table and
+source-index canonical digests respectively reproduce
+`76eb9dee41328194249af81a14295c68f5cb965b5c733de2e0d1c377b346727b` and
+`bd044ce76176a7960a63c10a3fa974e2a0bc2ff3dcb6babf348babedce6fc8a7`.
+The sorted `(relative_path, SHA256(file_bytes))` namespace fingerprint is
+`604ac4e03eff1632c5bb351d0b871007bfb58ccfc45681991ea44a882da6d129`
+in fresh processes at `PYTHONHASHSEED=0/1/8675309` and from `/tmp`.
+
+`git diff --name-status --diff-filter=MDRT d7d5a89 52bbe12` is empty;
+the implementation adds exactly 18 files. `git diff --name-status 52bbe12
+34e7fcb` lists only the three documentation files. Existing `flow.py`, the
+120-module worker universe, every pre-existing frozen namespace, `data/` and
+`research_artifacts/` are untouched. Independent V5/PAD5/PAD4-R5 recomputation
+and namespace reproduction preserve respectively `95e43ee1...775a89`,
+`54675984...f483` and `b4168dc9...61c7`.
+
+### Independent loader, flow-owner and frozen-text probes
+
+| probe | observed result |
+| --- | --- |
+| Full in-coverage load | exact 41-element immutable `frozenset[date]` |
+| Inclusive `2023-01-01` and `2026-12-31` singleton ranges | accepted; empty because neither is a listed closure |
+| Inclusive listed-date endpoints, `2024-01-01..2024-01-15` | both closures included |
+| Range crossing either coverage boundary | `ClosureTableError` |
+| `start > end` | `ClosureTableError` |
+| String / `None` inputs | `ClosureTableError` |
+| Naive start `datetime` / UTC-aware end `datetime` | `ClosureTableError`; exact `date` type is required despite subclassing |
+| Synthetic July 4 venue disagreement inside / outside range | range containing it refuses; range excluding it succeeds |
+| One changed byte in each of definition / table / source index | each separately refuses the file-byte hash, using scratch copies only |
+
+AST/source inspection confirms standard-library-only imports, no failed
+calendar/PAD imports, no network client or network access. A separate fixture
+with constant USD 17 flows per publication day, ending January 14, 2025 and
+spanning the Carter closure, gives:
+
+- Empty default: both 5-day and 20-day windows are incomplete with
+  `ETF_FLOW_INPUT_MISSING`, `flow_sum_usd=None`.
+- `load_closures(...)`: both complete, sums USD 85 and USD 340 respectively.
+- Remove an unlisted January 13 observation: both still fail closed with
+  `ETF_FLOW_INPUT_MISSING` and `None`, never zero.
+
+Every 5-/20-day trailing flow window evaluated on dates from 2024-01-11
+through the 2026-H1 holdout end 2026-06-30 was checked against coverage.
+The earliest 20-day lookback reaches **2023-12-13**, safely inside V1.
+This satisfies RBT-006's table-coverage prerequisite, not its remaining
+RBT-003/RBT-005 dependencies or any backtest-result gate.
+
+Early-close exclusion is correct: official venue schedules separately show
+trading on these days, and the review inspected [Farside Investors' own
+Bitcoin ETF flow table](https://farside.co.uk/bitcoin-etf-flow-all-data/),
+**live**, for actual records on 2024-07-03 (USD -20.5m aggregate), 2024-11-29
+(USD +320.0m) and 2024-12-24 (USD -338.4m). This corroborates flow existence
+only; it is not exchange-closure authority and no scientific dataset was
+ingested. Omitting those real publication days would alter the flow owner.
+
+The frozen definition explicitly contains: citations as audit aids with
+exact-hash review as authority; the amendment/no-in-place-edit rule and
+unlisted-closure fail-closed behavior; the early-close rationale; and the
+all-venues-closed / `VENUE_DISAGREEMENT` refusal rule. All are consistent with
+the owner scoping decision and research policy V2 section 5.
+
+### Validation and disposition
+
+All tests used `.venv312` **CPython 3.12.14**, exclusively and sequentially.
+Temporary roots were created with `mktemp -d` under `/tmp`, outside the repo
+tree and on the same filesystem (device 2096). Review commands:
+
+```text
+.venv312/bin/python -m pytest -q btc_predictor/tests/test_us_equity_market_closures.py btc_predictor/tests/test_flow_features.py --basetemp=/tmp/postp1-t1-review-Tmas2u/pytest-flow
+185 passed (145 focused T1 + 40 flow-owner regressions)
+.venv312/bin/python -m pytest -q btc_predictor/tests/test_etf_calendar_replay_verified_evidence.py -k 'persisted_namespace_reproduces_exactly or failed_r5_namespace_still_reproduces_unchanged' --basetemp=/tmp/postp1-t1-review-Tmas2u/pytest-pad5
+2 passed, 115 deselected
+.venv312/bin/python -m pytest -q btc_predictor/tests/test_etf_calendar_isolated_scientific_worker_r5.py -k 'persisted_namespace_reproduces_exactly or the_failed_r4_namespace_still_reproduces_untouched' --basetemp=/tmp/postp1-t1-review-Tmas2u/pytest-pad4-r5
+2 passed, 199 deselected
+.venv312/bin/python -m pytest -q btc_predictor/tests/test_reference_composite_v5.py btc_predictor/tests/test_etf_flows.py --basetemp=/tmp/postp1-t1-review-Tmas2u/pytest-v5
+31 passed
+.venv312/bin/python -m compileall -q btc_predictor etf_calendar_worker
+git diff --check
+```
+
+**220 tests passed**, zero executed-test skips; compileall and diff checks
+pass. Independent scratch `hashes`, `fingerprint`, `revisions` and `probes`
+programs also pass. The full suite was **NOT RUN**; this review changes only
+documentation, and the focused/relevant regression and required exact
+namespace reproductions passed. No tests were added, weakened or changed.
+
+All T1 acceptance criteria are satisfied. `POSTP1-001V2A-T1` is
+**COMPLETE / PASS**; `POSTP1-002V2A-T1` is **COMPLETE / PASS**.
+`POSTP1-001V2R1` is **NOT STARTED / DEPENDENCY-SATISFIED**.
+EPIC Y RBT-006's table dependency is satisfied, but RBT-006 remains
+**BLOCKED** on RBT-003 and RBT-005. Recommended next dependency-satisfied
+tickets: **POSTP1-001V2R1**, plus **RBT-001 / RBT-004** in EPIC Y.
+
+Safety invariants are unchanged: **observations = 0; real Stage-B = NO;
+collection = NOT AUTHORIZED; POSTP1-003R3 and POSTP1-004 = BLOCKED;
+POSTP1-001V2A-I2 = SUPERSEDED; BTC-019 = UNTOUCHED, sealed sample unopened;
+Epic T = UNCHANGED.** The PASS certifies only this exact closure-table
+constant and satisfies the stated dependencies; it certifies no retired
+calendar architecture, corpus successor, collector or strategy outcome.
+
 ## Next EPIC X tasks
 
 | ticket | task | status |
@@ -7366,8 +7630,8 @@ review passes.
 | POSTP1-001V2A-PAD5 | `DEFINE_AND_FREEZE_ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`: standalone certified-only verifier, closed deterministic comparison projection, verification records and consumer admission rule; frozen at `54675984...f483` with 31 parent-bound children, 15 byte-identical to PAD4-R5 | IMPLEMENTATION COMPLETE / FAILED INDEPENDENT EXACT-HASH xHIGH PROOF-ARCHITECTURE REVIEW |
 | POSTP1-002V2A-PAD5 | independent exact-hash xHigh proof-architecture review of `54675984...f483` | COMPLETE / FAIL — CERTIFIED-ONLY RE-DERIVATION AND CONSUMER AUTHORITY INVALID; FAMILY FAILURE REQUIRES OWNER SCOPING DECISION; NO PAD5-R1 / NO PAD6 |
 | PAD5 owner scoping decision | `DECIDE_ETF_CALENDAR_SCOPE_AFTER_PAD5_V1`: owner decision; proof-grade runtime ETF calendar authority is not required and the calendar proof-architecture program is closed | COMPLETE / FROZEN US EQUITY MARKET CLOSURE TABLE SELECTED; I2 SUPERSEDED; NO PAD5-R1 / NO PAD6 |
-| POSTP1-001V2A-T1 | `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`: static, reviewed, hash-bound full-day closure table and loader for the `market_holidays` owner parameter; frozen at `2292388e...1d1710`, 41 rows over 2023-01-01..2026-12-31, no venue disagreement | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT EXACT-HASH xHIGH TICKET REVIEW |
-| POSTP1-002V2A-T1 | independent exact-hash xHigh ticket review of the closure table `2292388e...1d1710` | NOT STARTED / DEPENDENCY-SATISFIED |
+| POSTP1-001V2A-T1 | `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`: static, reviewed, hash-bound full-day closure table and loader for the `market_holidays` owner parameter; frozen at `2292388e...1d1710`, 41 rows over 2023-01-01..2026-12-31, no venue disagreement | COMPLETE / PASS — independent exact-hash xHigh ticket review 2026-09-30 |
+| POSTP1-002V2A-T1 | independent exact-hash xHigh ticket review of the closure table `2292388e...1d1710` | COMPLETE / PASS |
 | POSTP1-001V2A-I2 | bind the calendar to a certified worker | SUPERSEDED — NOT REQUIRED (PAD5 owner scoping decision) |
-| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings, with `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as the `market_holidays` owner; freezes the new corpus hash | BLOCKED — awaiting POSTP1-002V2A-T1 PASS |
+| POSTP1-001V2R1 | bounded correction of all seven POSTP1-002V2 findings, with `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as the `market_holidays` owner; freezes the new corpus hash | NOT STARTED / DEPENDENCY-SATISFIED — POSTP1-002V2A-T1 PASS |
 | POSTP1-004 | schema, collectors, CVD/market-cap/liquidation capture and decision snapshot implementation | BLOCKED pending the POSTP1-001V2 exact-hash review, reissued sufficiency governance against the V2 parent and its own review |

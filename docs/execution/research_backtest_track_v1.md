@@ -233,13 +233,22 @@ Acceptance criteria:
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
-**Status:** `BLOCKED — awaiting RBT-003, RBT-005 and the POSTP1-002V2A-T1 review PASS`
-**Dependencies:** RBT-003, RBT-005, `POSTP1-002V2A-T1` PASS (closure table)
+**Status:** `BLOCKED — awaiting RBT-003 and RBT-005; closure-table dependency SATISFIED`
+**Dependencies:** RBT-003, RBT-005, `POSTP1-002V2A-T1` PASS (closure table,
+**SATISFIED 2026-09-30** at `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`)
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
 **Owner module:** `btc_predictor/research_backtest/preregistration.py` (new)
 
 Freeze everything before any result exists.
+
+The independent exact-hash T1 review verified coverage `2023-01-01..2026-12-31`
+against retrieved official exchange publications. Every 5-/20-day flow window
+from the first ETF flows (`2024-01-11`) through the `2026-06-30` holdout end
+lies inside coverage, including the earliest trailing lookback `2023-12-13`.
+This satisfies only the table prerequisite. It authorizes no preregistration
+before RBT-003/RBT-005, no backtest outcome and no holdout opening. Any 2027
+flow window needs a new frozen, reviewed table version before use.
 
 Acceptance criteria:
 
@@ -313,6 +322,6 @@ version or any version derived from inspecting its result.
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001, RBT-002 |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
-| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005, POSTP1-002V2A-T1 PASS |
+| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
