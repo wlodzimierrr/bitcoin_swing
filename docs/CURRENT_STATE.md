@@ -879,7 +879,7 @@ PASS; all four policy V4 data rules were adopted
 EPIC Y RBT-002 =
 CORRECTED / AWAITING INDEPENDENT RE-REVIEW — INVENTORY_HISTORICAL_INPUT_COVERAGE_V1,
 implementation ab210a5, review-fix 0b06a85, R1 correction 906c719. The
-2026-10-01 re-review attempt at 4556a01 is REVIEW BLOCKED — DATABASE:
+2026-10-01 re-review attempts at 4556a01 and 5ec8535 are REVIEW BLOCKED — DATABASE:
 all five required POSTGRES_* variables and PGOPTIONS were absent, including
 in a non-login shell; the approved environment URL helper raised ValueError
 before connecting. No query ran and no live fact was independently reproduced.
@@ -1333,7 +1333,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   INDEPENDENT RE-REVIEW**: the review failed it (`ab210a5`, review-fix
   `0b06a85`), and R1 correction `906c719` discovers the census and regenerates
   the inventory from a live read-only database run. RBT-002A and RBT-001A wait
-  on the re-review PASS. All four V4 data rules
+  on the re-review PASS. Both attempts (at `4556a01` and `5ec8535`) stopped at
+  the database gate because the exported configuration was absent. All four V4 data rules
   and the completion-spec choice are adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
   `POSTP1-002V2A-T1` passed on 2026-09-30 at `2292388e...1d1710`;
@@ -1819,8 +1820,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Next dependency-satisfied EPIC Y actions:**
   - Restore the exported read-only database environment and complete the
     independent xHigh re-review of corrected RBT-002 (R1 correction `906c719`),
-    with its own live timestamp-only reproduction. The attempt at `4556a01`
-    stopped as REVIEW BLOCKED — DATABASE; the prior FAIL stands.
+    with its own live timestamp-only reproduction. Attempts at `4556a01`
+    and `5ec8535` stopped as REVIEW BLOCKED — DATABASE; the prior FAIL stands.
   - The owner decisions are ANSWERED (2026-10-01). The four data rules are
     adopted as `RESEARCH_BACKTEST_POLICY_V4`. The undefined strategy inputs are
     filled by the pre-registered `CHAMPION_COMPLETION_SPEC_V1` (RBT-002A).
@@ -1844,8 +1845,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
-- **RBT-002 re-review attempt (2026-10-01):** REVIEW BLOCKED — DATABASE at
-  `4556a01`. Approved URL helper raised `ValueError`; all five required
+- **RBT-002 re-review attempts (2026-10-01):** REVIEW BLOCKED — DATABASE at
+  `4556a01` and again at `5ec8535` (approximately 20:53 UTC). In the latest
+  independent attempt the approved URL helper raised `ValueError`; all five required
   `POSTGRES_*` variables and `PGOPTIONS` were absent in a presence-only
   non-login-shell check. No connection or query, no live reproduction, and no
   substantive audit or test suites ran. Interpreter **3.12.14**, clean requested
@@ -2192,7 +2194,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-002 R1
   correction `906c719`; this documentation commit records it as **CORRECTED /
-  AWAITING INDEPENDENT RE-REVIEW**, with the re-review attempt at `4556a01`
+  AWAITING INDEPENDENT RE-REVIEW**, with re-review attempts at `4556a01` and `5ec8535`
   **REVIEW BLOCKED — DATABASE**. Earlier: implementation `ab210a5`, original
   documentation `d5daa0b`, review baseline `9a90313`, distinct review-fix
   `0b06a85`, and review record `f52bcf4` (**FAIL — RELEASE BLOCKING**).
