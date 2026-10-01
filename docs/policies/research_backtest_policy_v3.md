@@ -1,35 +1,36 @@
-> [!NOTE]
-> **SUPERSEDED 2026-10-01 by
-> [`RESEARCH_BACKTEST_POLICY_V3`](research_backtest_policy_v3.md), before any EPIC Y
-> run.** V2 gave no rule for futures basis, liquidations, market cap or
-> discretionary inputs, and had no input-surface completeness rule. It is
-> retained unchanged below as provenance.
+# Research Backtest Policy V3
 
-# Research Backtest Policy V2
+Policy identifier: `RESEARCH_BACKTEST_POLICY_V3`
 
-Policy identifier: `RESEARCH_BACKTEST_POLICY_V2`
+Status: **ADOPTED 2026-10-01 — documentation-only governance decision.
+Supersedes [`RESEARCH_BACKTEST_POLICY_V2`](research_backtest_policy_v2.md)
+before any EPIC Y run.** ([V1](research_backtest_policy_v1.md) was superseded by
+V2 for the same reason.)
 
-Status: **ADOPTED 2026-09-29 — documentation-only governance decision.
-Supersedes [`RESEARCH_BACKTEST_POLICY_V1`](research_backtest_policy_v1.md)
-before any EPIC Y run.**
+## Changes from earlier versions
 
-Scope: historical, **non-certifying** research backtests of the frozen Phase-1
-champion executed under [EPIC Y](../execution/research_backtest_track_v1.md)
-(`RBT-xxx` tickets). This policy controls nothing outside that scope.
+**V2 → V3.** RBT-001 found that the policy named no rule for inputs the
+champion cannot do without. Positioning (Rulebook §7.5) needs futures basis
+(`BasisHealth`) and BTC market cap (`LeverageHealth`, through OI intensity),
+and the Rulebook gives positioning **no** fallback. The volatility orderliness
+owner and the STRESS / CAPITULATION / EUPHORIA flags also consume liquidation,
+basis and manually asserted inputs that V2 never mentioned. Adding the missing
+inputs one at a time would cost a policy version per gap, so V3 instead:
 
-## Change from V1
+1. replaces the per-family availability list with **record-shape rules**
+   (`HISTORICAL_REPLAY_AVAILABILITY_V2`, §4), which every current and future
+   input falls under;
+2. adds explicit rows for futures basis, liquidations, market cap and
+   discretionary assertions (§4, §5);
+3. adds an **input-surface completeness rule** (§5A). RBT-002 must enumerate,
+   mechanically, every input the champion's decision path consumes, map each
+   one to a shape, a source and coverage, and stop on any gap, before anything
+   is collected.
 
-V1 did not name an owner for the ETF flow owner's `market_holidays`
-parameter. With its empty default, any 5- or 20-publication-day window that
-spans a US market holiday expects flow records for the holiday. None exist, so
-the owner correctly returns `ETF_FLOW_INPUT_MISSING`, the flow score is
-incomplete and the champion cannot trade on that date. A V1 run would have
-reported most real decision dates as unevaluable, for a data-plumbing reason
-rather than a strategy one.
+**V1 → V2.** V2 bound `US_EQUITY_MARKET_CLOSURE_TABLE_V1` as the flow owner's
+`market_holidays` set (§5).
 
-V2 binds `US_EQUITY_MARKET_CLOSURE_TABLE_V1` (EPIC X `POSTP1-001V2A-T1`) as that
-owner (§5), after its independent review passes. Nothing else changes. No
-EPIC Y run happened under V1.
+No EPIC Y run has happened under V1 or V2.
 
 ## Why this policy exists
 
@@ -75,7 +76,7 @@ Every EPIC Y artifact carries:
 ```text
 evidence_class       = RESEARCH_BACKTEST_NON_CERTIFYING
 canonical_reference  = UNRESOLVED
-policy               = RESEARCH_BACKTEST_POLICY_V2
+policy               = RESEARCH_BACKTEST_POLICY_V3
 ```
 
 EPIC Y output may **never** be used to:
@@ -136,19 +137,37 @@ confirm that no holdout-window observation already sits in the research
 database; if one does, it records that exposure instead of silently accepting
 it.
 
-## 4. Historical replay availability — `HISTORICAL_REPLAY_AVAILABILITY_V1`
+## 4. Historical replay availability — `HISTORICAL_REPLAY_AVAILABILITY_V2`
 
 Backfilled records carry a bulk ingestion time. Treated as live availability,
 that time makes a correctly built dataset replay with no executable decision
-(EPIC S audit). EPIC Y therefore models availability explicitly:
+(EPIC S audit). EPIC Y therefore models availability explicitly, by **record
+shape**. Every input the champion consumes must be assigned exactly one shape
+(§5A).
 
-| Input family | Modelled availability |
-| --- | --- |
-| `1h` price bar, reference venue | its close boundary (`timestamp + 1h`) |
-| Derived daily bar | the close boundary of its last constituent hour |
-| ETF flow and AUM, fund `f`, US trading date `T` | `00:00` UTC on calendar day `T+2`, or the source's own later publication/revision time if it supplies one |
-| Funding rate, settlement `S` | `S` |
-| Open interest / perpetual volume, interval ending `E` | `E` |
+| Shape | Meaning | Modelled availability |
+| --- | --- | --- |
+| `INTERVAL` | an aggregate over `[s, e)` (a bar, a volume or liquidation total) | `e` |
+| `SNAPSHOT` | a value as of instant `t` (open interest, a basis quote) | `t` |
+| `SETTLEMENT` | a value fixed at settlement `S` (funding) | `S` |
+| `EVENT` | an instantaneous event at `t` (a single liquidation) | `t` |
+| `DAILY_PUBLISHED` | a value for date `D` published by a third party (ETF flows and AUM, market cap) | `00:00` UTC on calendar day `D+2`, or the source's own later publication or revision time if it supplies one |
+| `DISCRETIONARY` | a manual or judgemental assertion (`systemic_shock`, `systemic_euphoria`) | **never back-filled.** It is supplied as not asserted (`None`), the owner's documented handling applies, and it is reported as a named limitation, because any historical value would be chosen with hindsight |
+
+Current assignments:
+
+| Input family | Shape | Modelled availability |
+| --- | --- | --- |
+| `1h` price bar, reference venue | `INTERVAL` | its close boundary (`timestamp + 1h`) |
+| Derived daily / weekly / monthly bar | `INTERVAL` | the close boundary of its last constituent hour |
+| ETF flow and AUM, fund `f`, US trading date `T` | `DAILY_PUBLISHED` | `00:00` UTC on `T+2`, or the source's later time |
+| Funding rate | `SETTLEMENT` | settlement time `S` |
+| Open interest | `SNAPSHOT` | snapshot instant |
+| Perpetual volume | `INTERVAL` | interval end. If the persisted timestamp is the interval start, the end is computed from the interval length; never earlier |
+| Futures basis (`futures_basis` raw table) | `SNAPSHOT` or `INTERVAL`, by its persisted semantics, which RBT-002 determines | the snapshot instant, or the interval end |
+| Liquidations (`liquidations` raw table) | `EVENT`, or `INTERVAL` if persisted as aggregates | event time, or the interval end |
+| BTC market cap (`MarketCapObservation`) | `DAILY_PUBLISHED` | `00:00` UTC on `D+2`, or the provider's later time |
+| `systemic_shock`, `systemic_euphoria` and any other manual assertion | `DISCRETIONARY` | not asserted (`None`) |
 
 Rules:
 
@@ -169,7 +188,8 @@ Rules:
   start, and modifying that owner is prohibited by §9. Exchange `1h` candles
   are final at close, and every decision still executes only on a later bar, so
   this convention introduces no look-ahead.
-- The `T+2 00:00` ETF rule is deliberately conservative: a daily flow is first
+- The `DAILY_PUBLISHED` `D+2 00:00` rule is deliberately conservative. For
+  ETF flows, the `T+2 00:00` rule: a daily flow is first
   usable one full day after the US session it describes. It is **not**
   `ETF_PUBLICATION_CALENDAR_AUTHORITY_V1` and makes no claim about it.
 - If a source provides only final (revised) values with no revision history,
@@ -179,18 +199,52 @@ Rules:
 
 ## 5. Input families and Rulebook fallbacks
 
-| Family | EPIC Y V1 treatment |
+| Family | EPIC Y treatment |
 | --- | --- |
 | Reference price (`1h`) | Required, per venue |
 | Raw volume / spot participation | Bitstamp raw OHLCV, shared across all runs |
 | ETF flows + AUM | Required for any trade; backfilled with §4 availability |
-| Funding, open interest, perpetual volume | Required: positioning is an Entry Conviction component |
+| Funding, open interest | Required. Positioning (an Entry Conviction component) has no Rulebook fallback |
+| Futures basis | **Required.** It feeds `BasisHealth` (positioning, no fallback) and the STRESS / EUPHORIA flags. It comes from the existing `futures_basis` raw table and the BTC-021 collector semantics; historical spans use a provider adapter that reproduces those semantics exactly (RBT-002 pins the contract definition) |
+| BTC market cap | **Required.** It feeds `LeverageHealth` through OI intensity (positioning, no fallback) and the EUPHORIA flag. No raw table or collector exists. It is one declared provider series, shared across all venue runs (never derived from a per-venue reference price), persisted as hash-bound evidence files under `backtest_evidence/` because §9 forbids a schema migration. RBT-002 selects the provider; a public, reproducible source is preferred |
+| Liquidations | **Required** wherever an Entry Conviction component consumes them (the volatility orderliness owner's liquidation component) and for the STRESS / CAPITULATION flags. It comes from the existing `liquidations` raw table. If no historical source exists for the evaluation span, that is a §5A blocker |
+| Perpetual volume | A flow spot/perp participation input. Under `ETF_CORE` it does not enter the flow score. It is retained for any owner RBT-002 finds consuming it; no positioning owner consumes it |
+| Discretionary assertions (`systemic_shock`, `systemic_euphoria`) | Not asserted (`DISCRETIONARY`, §4), and reported as named limitations together with the owner's documented handling of `None` |
 | US equity market full-day closures (the flow owner's `market_holidays`) | **`US_EQUITY_MARKET_CLOSURE_TABLE_V1`**, loaded and hash-verified by its owner module and passed to the existing `market_holidays` parameter. Required, and only after the `POSTP1-002V2A-T1` review passes. A date on which a flow window is evaluated that falls outside the table's coverage blocks the RBT-006 freeze. |
 | CVD (`SPOT_CVD`, `PERP_CVD`, `CVD_SPREAD`) | **Absent**: no persisted PIT source exists. The Rulebook §6.2 Phase-1 fallback applies mechanically: `FLOW_MODEL = ETF_CORE`. |
 | Macro, on-chain, liquidity | **Declared unavailable.** Vintage-correct point-in-time history is not established, and revised series would leak. The Rulebook core regime fallback applies. |
 
 Missing values are never zero-filled. Where the frozen owner code returns an
 incomplete result, that result propagates as the owner defines it.
+
+## 5A. Input-surface completeness
+
+The policy may never again learn of a required input piecemeal. Before any
+collection:
+
+1. **Mechanical enumeration.** RBT-002 enumerates, from owner code and not
+   from this document, every input consumed on the champion's decision path:
+   - every field of every Entry Conviction component's input type;
+   - the core regime score and the §24 hard flags;
+   - the hard vetoes and data-quality checks;
+   - the risk, sizing and stop owners;
+   - the lifecycle, add, trim and exit owners.
+   The enumeration is a test-backed artifact that fails if an owner input type
+   gains a field it does not classify.
+2. **Mapping.** Each input is mapped to a §4 shape, a §5 family, a historical
+   source (an existing raw table and collector, or a named provider adapter)
+   and coverage over every date on which it is evaluated.
+3. **Missing-input semantics.** For each input, record what the owner does when
+   it is missing: incomplete, a reason code, or a documented `None` handling.
+   Fallbacks exist only where the Rulebook defines them (§6.2 flow `ETF_CORE`;
+   the core regime). No implementer may add or infer a fallback.
+4. **Blockers.** Any input with no shape, no family, no historical source or
+   insufficient coverage is a **blocker**, recorded before RBT-003 starts. If a
+   blocker would leave an Entry Conviction component structurally incomplete
+   on every evaluation date, EPIC Y stops for an **owner decision**. The
+   options are to acquire the data (including a paid source), or to define an
+   explicitly versioned research strategy variant. The second is a
+   strategy-semantics change under AGENTS.md and is never made silently.
 
 ## 6. Champion identity and the no-tuning rule
 
@@ -279,6 +333,6 @@ windows) and is reproducible byte-for-byte from them.
 
 ## 11. Change control
 
-Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V3`)
+Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V4`)
 recorded before the affected run. The holdout rule in §3 cannot be relaxed for
 any strategy version that has already been evaluated on the evaluation window.

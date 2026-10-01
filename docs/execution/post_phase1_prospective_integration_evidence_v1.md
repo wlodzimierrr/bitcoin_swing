@@ -7065,7 +7065,7 @@ review. The closure set is the same kind of object and gets the same treatment.
    worker) is `SUPERSEDED — NOT REQUIRED`. The certified trusted persistence
    `02f96203...1a12772` is unaffected; POSTP1-004 collection still uses it.
 6. **Shared artifact.** EPIC Y consumes the same table through
-   `RESEARCH_BACKTEST_POLICY_V2`. That is EPIC Y's only dependency on EPIC X
+   `RESEARCH_BACKTEST_POLICY_V2` (carried into V3). That is EPIC Y's only dependency on EPIC X
    output.
 
 #### Why this is sound, not a relaxation

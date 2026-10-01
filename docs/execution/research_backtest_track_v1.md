@@ -6,8 +6,10 @@ and acceptance criteria. It is **not** Phase-1 execution authority: [Structured
 Tickets v2.6](bitcoin_swing_predictor_structured_tickets_v2_6.md) keeps that role
 and is not modified by this workstream. It is **not** EPIC X or BTC-019 authority.
 
-Governing policy: [`RESEARCH_BACKTEST_POLICY_V2`](../policies/research_backtest_policy_v2.md),
-which superseded V1 before any run by naming the market-closure owner.
+Governing policy: [`RESEARCH_BACKTEST_POLICY_V3`](../policies/research_backtest_policy_v3.md).
+It superseded V2 before any run, adding record-shape availability rules, the
+positioning, liquidation and discretionary inputs, and the input-surface
+completeness rule. V2 had superseded V1 by naming the market-closure owner.
 Every rule in that policy binds every ticket below.
 
 ## Why this workstream exists
@@ -60,9 +62,9 @@ non-certifying.
 ## Critical path
 
 ```text
-code path:  RBT-001 ─┬──────────────────────────┐
-            RBT-004 ─┴─ RBT-005 ────────────────┤
-data path:  RBT-002 ─── RBT-003 (needs RBT-001) ┤
+code path:  RBT-001 ─(review)─┐
+            RBT-004 ─── RBT-005 ─────────────────────────┤
+data path:  RBT-002 (§5A enumeration) ─┴─ RBT-001A ─ RBT-003 ┤
                                                 ▼
                          RBT-006 freeze + preregistration
                                                 ▼
@@ -349,7 +351,13 @@ five-lens review. Each lens finding was checked by a skeptic.
 
 This does not replace the required independent xHigh ticket review.
 
-**Cross-workstream findings for EPIC Y (unresolved; not decided here).**
+**Cross-workstream findings for EPIC Y.** The positioning-input gap below was
+**ANSWERED on 2026-10-01 by `RESEARCH_BACKTEST_POLICY_V3`**: record-shape
+availability rules, required rows for futures basis, market cap and
+liquidations, discretionary inputs not asserted, and the §5A completeness
+rule. RBT-001 implemented `HISTORICAL_REPLAY_AVAILABILITY_V1` under V2 and is
+reviewed against that scope. Its V3 extension is RBT-001A. The text below is
+preserved as the finding that triggered V3.
 
 - **Positioning inputs have no policy rule (material).**
   - Rulebook section 7.5 `PositioningScore` needs `BasisHealth` (futures basis)
@@ -398,13 +406,54 @@ Acceptance criteria:
 - Confirms that the research database holds no observation dated in the holdout
   window or before 2020-01-01. Any exposure found is recorded, not silently
   accepted.
+- **Policy V3 §5A input-surface enumeration.** From owner code, mechanically
+  enumerate every input on the champion's decision path:
+  - every Entry Conviction component;
+  - the core regime and the §24 hard flags;
+  - the hard vetoes and data quality;
+  - risk, sizing and stops;
+  - lifecycle, add, trim and exit.
+  Map each input to a §4 shape, a §5 family, a historical source and coverage,
+  and record the owner's missing-input behaviour. The enumeration is
+  test-backed and fails on any unclassified owner input field.
+- Pins the persisted semantics of `futures_basis` (snapshot or interval, and
+  the contract definition the BTC-021 collector uses) and of `liquidations`
+  (events or aggregates). Selects the market-cap provider.
+- Produces the §5A **blocker list**. If a blocker would leave an Entry
+  Conviction component structurally incomplete on every evaluation date,
+  record it as requiring an owner decision; do not proceed to RBT-003 scoping
+  for that input.
 - Persists the inventory under `backtest_evidence/research_backtest_v1/`.
   Nothing is collected by this ticket.
 
+## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
+
+**Status:** `BLOCKED — awaiting the RBT-001 review PASS and RBT-002`
+**Dependencies:** RBT-001 independent review PASS, RBT-002
+**Implementation effort:** high
+**Review:** independent xHigh ticket review
+**Owner module:** `btc_predictor/research_backtest/replay_inputs.py` (extended in a
+new generational module or additively; the reviewed RBT-001 behaviour must not
+change)
+
+Extend the reviewed builder from `HISTORICAL_REPLAY_AVAILABILITY_V1` to `_V2`
+(policy V3 §4). Acceptance criteria:
+
+- Applies the record-shape rules to every input RBT-002's enumeration
+  classifies, including futures basis, liquidations and market cap (as
+  hash-bound evidence files) at their pinned semantics.
+- `DISCRETIONARY` inputs are supplied as not asserted (`None`) and listed.
+- Inputs the RBT-002 blocker list marks unsourceable are refused, not
+  approximated.
+- Every RBT-001 test still passes unchanged; V1-built manifests remain
+  reproducible.
+- New tests cover each shape's boundaries and a point-in-time property test
+  through the real owners.
+
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `BLOCKED — awaiting RBT-001 and RBT-002`
-**Dependencies:** RBT-001, RBT-002
+**Status:** `BLOCKED — awaiting RBT-001A (and so RBT-001 review and RBT-002)`
+**Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
 **Owner modules:** new provider adapters under `btc_predictor/research_backtest/`
@@ -583,8 +632,9 @@ version or any version derived from inspecting its result.
 | ticket | task | status |
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW — implementation `402e120`; its review is next |
-| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | NOT STARTED / DEPENDENCY-SATISFIED — needs research database |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-002; RBT-001 implemented, awaiting its review |
+| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | NOT STARTED / DEPENDENCY-SATISFIED — needs the research database; now includes the policy V3 §5A input-surface enumeration and blocker list |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-001 review PASS, RBT-002 |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |

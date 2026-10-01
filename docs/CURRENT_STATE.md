@@ -1292,7 +1292,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current implementation frontier:** Two post-Phase-1 workstreams now run
   in parallel. [EPIC Y](execution/research_backtest_track_v1.md), adopted
   2026-09-28 and governed since 2026-09-29 by
-  [RESEARCH_BACKTEST_POLICY_V2](policies/research_backtest_policy_v2.md), is the
+  [RESEARCH_BACKTEST_POLICY_V3](policies/research_backtest_policy_v3.md), is the
   non-certifying path to the first real-data backtest of the frozen champion.
   It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
@@ -1744,10 +1744,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review of **`RBT-001`** (implementation `402e120`); `RBT-004`
   `COMPOSE_CHAMPION_ENTRY_DECISION_V1`; and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
-  RBT-003 is blocked on RBT-002 and on the RBT-001 review. RBT-005..RBT-008 are
-  blocked on their EPIC Y dependencies. The open positioning-input decision
-  (Important Unresolved Decisions) should be answered before RBT-002 scopes
-  collection and before RBT-004
+  RBT-001A (the policy V3 builder extension) waits on the RBT-001 review and
+  RBT-002. RBT-003 waits on RBT-001A. RBT-005..RBT-008 are blocked on their
+  EPIC Y dependencies. The positioning-input decision is ANSWERED by
+  `RESEARCH_BACKTEST_POLICY_V3`: RBT-002 now carries the §5A input-surface
+  enumeration and blocker list, and RBT-004 must consume the full V3 input
+  surface
 - **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2R1`.
   POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
   remains terminal and untouched with its sealed sample unopened, and Epic T
@@ -2210,7 +2212,10 @@ BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
 RESEARCH_BACKTEST_POLICY_V1 = ADOPTED 2026-09-28; SUPERSEDED before any run
-RESEARCH_BACKTEST_POLICY_V2 = ADOPTED 2026-09-29 (per-venue, non-certifying;
+RESEARCH_BACKTEST_POLICY_V3 = ADOPTED 2026-10-01; supersedes V2 before any run
+(record-shape availability, required basis / market cap / liquidations,
+input-surface completeness)
+RESEARCH_BACKTEST_POLICY_V2 = ADOPTED 2026-09-29; SUPERSEDED before any run (per-venue, non-certifying;
 approves, ranks and promotes no reference; binds the market-closure table)
 BTC-019 completion gate = BLOCKED_BY_UNRESOLVED_CORRECTNESS_DEFECT
 CROSS_PROVIDER_STRUCTURE_COMPARISON_V2 = RESEARCH_INCONCLUSIVE
@@ -2976,6 +2981,17 @@ unopened with no automatic dependency that would ever open it.
   altogether (`ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`), and it pre-commits a
   bounded PAD5 escalation that ends in an owner scoping decision rather than a
   PAD6.
+- **ANSWERED 2026-10-01 by `RESEARCH_BACKTEST_POLICY_V3`.** The entry below is
+  preserved as its input. V3 does four things:
+  - adds record-shape availability rules (`HISTORICAL_REPLAY_AVAILABILITY_V2`);
+  - makes futures basis, market cap (one shared provider, stored as evidence
+    files) and liquidations required inputs;
+  - supplies discretionary flags as not asserted;
+  - requires RBT-002 to enumerate the champion's full input surface
+    mechanically and to stop for an owner decision if any Entry Conviction
+    component would be structurally unsourceable.
+  No fallback is invented: positioning has none in the Rulebook. RBT-001A
+  extends the builder after the RBT-001 review and RBT-002.
 - **EPIC Y positioning inputs: OPEN (recorded by RBT-001, 2026-10-01).**
   - The gap: Rulebook section 7.5 `PositioningScore = 0.35 FundingHealth +
     0.30 OIHealth + 0.20 BasisHealth + 0.15 LeverageHealth` has no Phase-1
