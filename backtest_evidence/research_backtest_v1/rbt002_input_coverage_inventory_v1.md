@@ -1,7 +1,7 @@
 # RBT-002 historical input coverage inventory
 
 `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` under `RESEARCH_BACKTEST_POLICY_V3`. Evidence class `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED`.
-Inventory SHA-256 `b7b9a20b277310d354a60b0f92165dc8a618b18112397402d19dd0d629be3bf0` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
+Inventory SHA-256 `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
 
 Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.
 
@@ -30,11 +30,12 @@ Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.
 | kind | inputs |
 | --- | ---: |
 | ABSENT_RULEBOOK_FALLBACK | 11 |
-| DERIVED_BY_OWNER | 190 |
+| DERIVED_BY_OWNER | 189 |
 | DISCRETIONARY | 7 |
 | ENGINE_STATE | 62 |
 | OWNERLESS_CERTIFIED_DEFINITION | 3 |
-| OWNERLESS_UNDEFINED | 36 |
+| OWNERLESS_RULEBOOK_FALLBACK | 2 |
+| OWNERLESS_UNDEFINED | 35 |
 | RAW_HISTORICAL | 104 |
 | STRATEGY_CONFIG | 179 |
 
@@ -50,8 +51,9 @@ Owner-less inputs:
 - `FLOW_Z_ETF_NORM_5D` (OWNERLESS_UNDEFINED; Entry Conviction: flow)
 - `FLOW_Z_FLOW_ACCEL` (OWNERLESS_UNDEFINED; Entry Conviction: flow)
 - `LEVEL_REACTION_MAGNITUDE` (OWNERLESS_UNDEFINED; Entry Conviction: structure)
-- `LEVEL_VOLUME_PERCENTILE` (OWNERLESS_UNDEFINED; Entry Conviction: structure)
+- `LEVEL_VOLUME_PERCENTILE` (OWNERLESS_RULEBOOK_FALLBACK; Entry Conviction: structure)
 - `LIQUIDATION_PERCENTILE` (OWNERLESS_CERTIFIED_DEFINITION; Entry Conviction: volatility)
+- `MEASURED_MOVE_REFERENCE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `MOMENTUM_PERSISTENCE_SCORE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `NEW_STRUCTURAL_CONFIRMATION` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `NEW_STRUCTURE_SCORE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
@@ -142,7 +144,7 @@ Exposure: 2232 pre-2020 raw rows and 0 holdout raw rows. pre-2020 rows exist in 
 - **BLK-TREND-ZSCORE-NORMALISATION** (NEEDS_OWNER_DECISION): Trend z-score normalisation is undefined. Entry Conviction structurally incomplete on every date.
 - **BLK-FLOW-ZSCORE-NORMALISATION** (NEEDS_OWNER_DECISION): Flow z-score normalisation is undefined. Entry Conviction structurally incomplete on every date.
 - **BLK-VOLATILITY-RANGE-AND-RETURN** (NEEDS_OWNER_DECISION): Range percentile and downside/upside return are undefined. Entry Conviction structurally incomplete on every date.
-- **BLK-LEVEL-STRENGTH-INPUTS** (NEEDS_OWNER_DECISION): Level reaction magnitude and volume percentile have no owner. Entry Conviction structurally incomplete on every date.
+- **BLK-LEVEL-STRENGTH-INPUTS** (NEEDS_OWNER_DECISION): Level reaction is undefined; the volume fallback lacks an executable path. Entry Conviction structurally incomplete on every date.
 - **BLK-SEVERE-CROWDING-STATE** (NEEDS_OWNER_DECISION): 'Severe crowding' has no owner definition. Every new trade vetoed on every date.
 - **BLK-LIFECYCLE-PREDICATES** (NEEDS_OWNER_DECISION): Hold, add and exit inputs have no owner.
 - **BLK-SETUP-INPUTS** (NEEDS_OWNER_DECISION): Setup inputs without an owner.

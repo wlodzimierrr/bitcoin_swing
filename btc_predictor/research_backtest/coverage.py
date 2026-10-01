@@ -230,6 +230,7 @@ KIND_RAW = "RAW_HISTORICAL"
 KIND_DERIVED = "DERIVED_BY_OWNER"
 KIND_OWNERLESS_CERTIFIED = "OWNERLESS_CERTIFIED_DEFINITION"
 KIND_OWNERLESS_UNDEFINED = "OWNERLESS_UNDEFINED"
+KIND_OWNERLESS_FALLBACK = "OWNERLESS_RULEBOOK_FALLBACK"
 KIND_ENGINE_STATE = "ENGINE_STATE"
 KIND_CONFIG = "STRATEGY_CONFIG"
 KIND_DISCRETIONARY = "DISCRETIONARY"
@@ -239,6 +240,7 @@ INPUT_KINDS = (
     KIND_DERIVED,
     KIND_OWNERLESS_CERTIFIED,
     KIND_OWNERLESS_UNDEFINED,
+    KIND_OWNERLESS_FALLBACK,
     KIND_ENGINE_STATE,
     KIND_CONFIG,
     KIND_DISCRETIONARY,
@@ -326,7 +328,7 @@ class InputClassification:
             raise ValueError(f"unknown role {self.role!r}")
         if self.kind == KIND_RAW and self.shape not in POLICY_SHAPES:
             raise ValueError("a raw historical input needs a policy section 4 shape")
-        ownerless = self.kind in (KIND_OWNERLESS_CERTIFIED, KIND_OWNERLESS_UNDEFINED)
+        ownerless = self.kind in (KIND_OWNERLESS_CERTIFIED, KIND_OWNERLESS_UNDEFINED, KIND_OWNERLESS_FALLBACK)
         if ownerless != (self.producing_owner == OWNERLESS):
             raise ValueError("producing_owner is OWNERLESS exactly for owner-less inputs")
         if ownerless and not self.input_id:
@@ -465,6 +467,22 @@ def _ownerless(
         entry_components=entry_components,
         input_id=input_id,
         note=note,
+    )
+
+
+def _level_volume_fallback() -> InputClassification:
+    """Record existing authority without inventing a volume percentile.
+
+    The frozen strength owner still requires volume even at zero weight. This
+    is an implementation/authority compatibility gap, not a new percentile to
+    choose in CHAMPION_COMPLETION_SPEC_V1.
+    """
+
+    return dataclasses.replace(
+        _ownerless("LEVEL_VOLUME_PERCENTILE", _M_LEVEL_STRENGTH, _PRICE_VOLUME, (_STRUCTURE,)),
+        kind=KIND_OWNERLESS_FALLBACK,
+        historical_source="Rulebook v1.2 section 9.2 core weights: timeframe 0.30, touches 0.25, reaction 0.25, confluence 0.20; omit volume",
+        note="RULEBOOK_FALLBACK_EXISTS; calculate_level_strength still requires every component including volume, even at zero weight. The fallback has no executable production path; resolve that compatibility gap before composition. Do not define a new volume percentile.",
     )
 
 
@@ -1009,16 +1027,7 @@ FIELD_CLASSIFICATIONS: dict[type, dict[str, InputClassification]] = {
             (_STRUCTURE,),
             note="no owner measures it (Rulebook 9.2: f(ReactionMagnitude/ATR), undefined)",
         ),
-        "volume_percentile": _ownerless(
-            "LEVEL_VOLUME_PERCENTILE",
-            _M_LEVEL_STRENGTH,
-            _PRICE_VOLUME,
-            (_STRUCTURE,),
-            note=(
-                "no owner computes it; Rulebook 9.2 says omit volume and use the core weights, "
-                "but the owner and config weight it at 0.20 and require it"
-            ),
-        ),
+        "volume_percentile": _level_volume_fallback(),
         "confluence_score": _derived(clustering_owner.cluster_price_levels, _M_LEVEL_STRENGTH, _PRICE, (_STRUCTURE,)),
     },
     # -- core regime --------------------------------------------------------------------
@@ -1673,7 +1682,7 @@ CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassi
             "cluster": _up(clustering_owner.cluster_price_levels, _M_LEVEL_STRENGTH, _PRICE, (_STRUCTURE,)),
             "touch_count": _up(clustering_owner.cluster_price_levels, "None -> the cluster member_count", _PRICE, (_STRUCTURE,)),
             "reaction_magnitude_fraction": _ownerless("LEVEL_REACTION_MAGNITUDE", _M_LEVEL_STRENGTH, _PRICE, (_STRUCTURE,)),
-            "volume_percentile": _ownerless("LEVEL_VOLUME_PERCENTILE", _M_LEVEL_STRENGTH, _PRICE_VOLUME, (_STRUCTURE,)),
+            "volume_percentile": _level_volume_fallback(),
             "weights": _P_CONFIG,
             "timeframe_scores": _P_CONFIG,
             "touch_count_full": _P_CONFIG,
@@ -1869,7 +1878,10 @@ CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassi
             "resistance_clusters": _up(clustering_owner.cluster_price_levels, "None -> reference unavailable", _PRICE),
             "swing_highs": _up(swing_owner.detect_weekly_swing_levels, "None -> reference unavailable", _PRICE),
             "range_highs": _up(breakout_owner.detect_breakout_reclaim_levels, "None -> reference unavailable", _PRICE),
-            "measured_move": _up(setup_owner.detect_bull_trend_continuation, "None -> reference unavailable", _PRICE),
+            "measured_move": _ownerless(
+                "MEASURED_MOVE_REFERENCE", "None -> tier-four reference absent; other reward references still evaluate", _PRICE,
+                note="Rulebook 15 names a conservative measured move from the active setup, but no owner defines its target price and PIT detected_at. The setup detector produces filter results, not a measured-move target. Optional does not mean defined; the completion spec must explicitly resolve or omit this tier.",
+            ),
             "as_of": _P_INSTANT,
             "setup": _up(setup_owner.detect_bull_trend_continuation, "required", _ALL_COMPONENT_FAMILIES),
             "minimum_reward_risk": _P_CONFIG,
@@ -2117,7 +2129,7 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
                 raw_by_family[family] = raw_by_family.get(family, 0) + 1
         by_kind[classification.kind] = by_kind.get(classification.kind, 0) + 1
         by_shape[classification.shape] = by_shape.get(classification.shape, 0) + 1
-        if classification.kind in (KIND_OWNERLESS_CERTIFIED, KIND_OWNERLESS_UNDEFINED):
+        if classification.kind in (KIND_OWNERLESS_CERTIFIED, KIND_OWNERLESS_UNDEFINED, KIND_OWNERLESS_FALLBACK):
             entry = ownerless.setdefault(
                 classification.input_id or "",
                 {"kind": classification.kind, "certified_definition": None, "occurrences": [], "entry_components": set()},
@@ -2157,6 +2169,7 @@ RULE_TRAILING_WINDOW = "COUNT_IN_HALF_OPEN_TRAILING_WINDOW"
 RULE_ETF_WINDOW = "ETF_PUBLICATION_DAY_WINDOW"
 RULE_ALL_OF = "ALL_OF"
 RULE_UNDEFINED = "UNDEFINED_OWNERLESS"
+RULE_UNIMPLEMENTED_FALLBACK = "UNIMPLEMENTED_RULEBOOK_FALLBACK"
 
 SERIES_DAILY = "VENUE_1D_CANONICAL_BARS"
 SERIES_WEEKLY = "VENUE_1W_CANONICAL_BARS"
@@ -2499,8 +2512,12 @@ def minimum_history_requirements() -> tuple[HistoryRequirement, ...]:
             HistoryRequirement(input_id, OWNERLESS, RULE_UNDEFINED, SERIES_NONE, entry_components=(_STRUCTURE,), note=note)
             for input_id, note in (
                 ("LEVEL_REACTION_MAGNITUDE", "no owner measures the level reaction"),
-                ("LEVEL_VOLUME_PERCENTILE", "no owner computes the level volume percentile"),
             )
+        ),
+        HistoryRequirement(
+            "LEVEL_VOLUME_PERCENTILE", OWNERLESS, RULE_UNIMPLEMENTED_FALLBACK, SERIES_NONE,
+            entry_components=(_STRUCTURE,),
+            note="Rulebook 9.2 defines the core weights without volume; the frozen owner still requires volume even with zero weight. Implementation compatibility is unresolved, not a new percentile definition.",
         ),
         HistoryRequirement(
             "STRUCTURE_SCORE",
@@ -2557,6 +2574,7 @@ BASIS_PROJECTED = "PROJECTED_FROM_SOURCE_DEPTH"
 
 STATUS_EVALUABLE = "EVALUABLE"
 STATUS_UNDEFINED = "UNDEFINED_OWNERLESS"
+STATUS_UNIMPLEMENTED_FALLBACK = "UNIMPLEMENTED_RULEBOOK_FALLBACK"
 STATUS_NO_OBSERVATIONS = "NO_OBSERVATIONS"
 STATUS_INSUFFICIENT = "INSUFFICIENT_HISTORY_IN_DATA_WINDOW"
 
@@ -2621,6 +2639,8 @@ def earliest_evaluable_inputs(
             result = _series_result(input_id, series.get(input_id), lambda times: 0)
         elif requirement.rule == RULE_UNDEFINED:
             result = EarliestEvaluable(input_id, STATUS_UNDEFINED, blocking_inputs=(input_id,))
+        elif requirement.rule == RULE_UNIMPLEMENTED_FALLBACK:
+            result = EarliestEvaluable(input_id, STATUS_UNIMPLEMENTED_FALLBACK, blocking_inputs=(input_id,))
         elif requirement.rule == RULE_ALL_OF:
             result = _all_of(input_id, [resolve(name) for name in requirement.upstream])
         elif requirement.rule == RULE_LOOKBACK_ROWS:
@@ -3817,13 +3837,13 @@ OWNERLESS_BLOCKERS: tuple[BlockerDefinition, ...] = (
         members=("RANGE_PERCENTILE", "DOWNSIDE_RETURN", "UPSIDE_RETURN"),
     ),
     BlockerDefinition(
-        "BLK-LEVEL-STRENGTH-INPUTS", "Level reaction magnitude and volume percentile have no owner", DECISION_OWNER,
+        "BLK-LEVEL-STRENGTH-INPUTS", "Level reaction is undefined; the volume fallback lacks an executable path", DECISION_OWNER,
         "STRUCTURE_SCORE_V1_2 weights LevelStrength. calculate_level_strength returns None while reaction_magnitude_fraction or "
         "volume_percentile is None, and no owner produces either. Rulebook 9.2 says omit volume and use the core weights, but the "
         "owner and config weight volume at 0.20 and require it.",
-        "Decide the reaction-magnitude measure and either a volume-percentile definition or a versioned weight set without volume.",
+        "Define the reaction-magnitude measure. Reuse Rulebook 9.2 core weights without inventing a volume percentile; resolve the frozen owner's inability to omit missing volume through an explicit authorized compatibility correction.",
         _OWNER_OPTIONS, ("RBT-004", "RBT-006"),
-        members=("LEVEL_REACTION_MAGNITUDE", "LEVEL_VOLUME_PERCENTILE"),
+        members=("LEVEL_REACTION_MAGNITUDE",),
     ),
     BlockerDefinition(
         "BLK-SEVERE-CROWDING-STATE", "'Severe crowding' has no owner definition", DECISION_OWNER,
@@ -3847,11 +3867,11 @@ OWNERLESS_BLOCKERS: tuple[BlockerDefinition, ...] = (
     ),
     BlockerDefinition(
         "BLK-SETUP-INPUTS", "Setup inputs without an owner", DECISION_OWNER,
-        "Bullish Reset needs correction_from_local_high_fraction (no local-high owner), so it can never match. Bearish Distribution's "
+        "Bullish Reset needs correction_from_local_high_fraction (local-high selection undefined), so it can never match. The optional tier-four measured_move reward reference has no target-price/PIT owner. Bearish Distribution's "
         "distribution and short-trigger states have no owner, but are inert for the long-only champion (backtest.allow_short_trades = false).",
         "Decide the local-high measure before RBT-004 if Bullish Reset is to be reachable; the short-side inputs need nothing while shorts stay disabled.",
         _OWNER_OPTIONS, ("RBT-004",),
-        members=("CORRECTION_FROM_LOCAL_HIGH", "DISTRIBUTION_STATE", "SHORT_TRIGGER"),
+        members=("CORRECTION_FROM_LOCAL_HIGH", "DISTRIBUTION_STATE", "SHORT_TRIGGER", "MEASURED_MOVE_REFERENCE"),
     ),
 )
 

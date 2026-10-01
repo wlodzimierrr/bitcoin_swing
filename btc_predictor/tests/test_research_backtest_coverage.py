@@ -29,6 +29,7 @@ import functools
 import inspect
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -285,6 +286,7 @@ EXPECTED_OWNERLESS = {
     "LEVEL_REACTION_MAGNITUDE",
     "LEVEL_VOLUME_PERCENTILE",
     "LIQUIDATION_PERCENTILE",
+    "MEASURED_MOVE_REFERENCE",
     "MOMENTUM_PERSISTENCE_SCORE",
     "NEW_STRUCTURAL_CONFIRMATION",
     "NEW_STRUCTURE_SCORE",
@@ -399,8 +401,28 @@ def test_require_select_only_refuses_anything_else(statement: str) -> None:
 
 def test_no_statement_selects_a_value_column() -> None:
     for statement in _all_statements():
-        for column in VALUE_COLUMNS:
-            assert column not in statement, (column, statement)
+        _assert_no_value_columns(statement)
+
+
+def _assert_no_value_columns(statement: str) -> None:
+    # SQL permits both quoted and unquoted identifiers. Ignore comments and
+    # string literals, but retain double-quoted identifier contents.
+    sql = re.sub(r"/\*.*?\*/|--[^\n]*|'(?:''|[^'])*'", " ", statement, flags=re.S)
+    # raw.open_interest is a table, not a selected value column. Remove only
+    # table references after FROM/JOIN, retaining selected qualified columns.
+    identifier = r'(?:"[^"]+"|[A-Za-z_][A-Za-z_0-9]*)'
+    sql = re.sub(rf'\b(?:FROM|JOIN)\s+{identifier}(?:\s*\.\s*{identifier})*', " ", sql, flags=re.I)
+    identifiers = {token.lower() for token in re.findall(r"[A-Za-z_][A-Za-z_0-9]*", sql)}
+    forbidden = {column.strip('"') for column in VALUE_COLUMNS}
+    assert not (identifiers & forbidden), (identifiers & forbidden, statement)
+
+
+@pytest.mark.parametrize("column", ['"close"', 'close', 'CLOSE', 'b.close', 'sum(close)'])
+def test_the_no_value_column_check_rejects_real_select_mutations(column: str) -> None:
+    spec = coverage.RAW_TABLE_SPECS[0]
+    mutated = coverage.data_window_times_sql(spec).replace(" SELECT ", f" SELECT {column}, ", 1)
+    with pytest.raises(AssertionError):
+        _assert_no_value_columns(mutated)
 
 
 def test_rows_outside_the_data_window_are_only_aggregated_over_time_columns() -> None:
@@ -627,7 +649,7 @@ def test_minimum_history_parameters_are_the_owners_own_numbers() -> None:
     assert undefined == {
         "TREND_Z_M4", "TREND_Z_M12", "TREND_Z_20W", "TREND_Z_52H",
         "FLOW_Z_ETF_NORM_5D", "FLOW_Z_ETF_NORM_20D", "FLOW_Z_FLOW_ACCEL",
-        "RANGE_PERCENTILE", "DOWNSIDE_RETURN", "LEVEL_REACTION_MAGNITUDE", "LEVEL_VOLUME_PERCENTILE",
+        "RANGE_PERCENTILE", "DOWNSIDE_RETURN", "LEVEL_REACTION_MAGNITUDE",
     }
 
 
@@ -779,7 +801,7 @@ def test_every_owner_less_undefined_input_belongs_to_exactly_one_blocker() -> No
     blockers = coverage.derive_blockers(coverage.enumerate_input_surface())
     members = [name for blocker in blockers for name in blocker["inputs"]]
     assert len(members) == len(set(members))
-    assert set(members) == EXPECTED_OWNERLESS - {"LIQUIDATION_PERCENTILE"}
+    assert set(members) == EXPECTED_OWNERLESS - {"LIQUIDATION_PERCENTILE", "LEVEL_VOLUME_PERCENTILE"}
 
 
 def test_an_unassigned_owner_less_input_is_refused() -> None:
