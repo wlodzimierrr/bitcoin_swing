@@ -860,6 +860,19 @@ windows require a new frozen, reviewed V2 table. Pre-data, 0 observations;
 the PASS satisfies only V2R1 and RBT-006's stated table dependencies, not
 corpus/collector certification or collection authorization
 
+EPIC Y RBT-001 =
+IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW —
+BUILD_HISTORICAL_REPLAY_INPUTS_V1, the HISTORICAL_REPLAY_AVAILABILITY_V1 builder
+of RESEARCH_BACKTEST_POLICY_V2 section 4, implementation commit 402e120. It adds
+the new package btc_predictor/research_backtest/ and one new test module; no
+existing file changed. Checked-in control: a real-shaped bulk-backfilled
+Bitstamp 1h fixture gives 0 executed decisions through the unchanged
+run_backtest, and 2 (entry and exit, one closed trade) through the builder.
+Synthetic offline fixtures only: no real-data backtest outcome, holdout NOT
+COLLECTED, BTC-019 untouched with its sealed sample unopened, EPIC X and Epic T
+unchanged. Review is an independent xHigh ticket review under
+prompts/review_ticket.md
+
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -1265,7 +1278,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-09-30
+- **Last updated:** 2026-10-01
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1284,8 +1297,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
   X-bound file or anything under `data/` or `research_artifacts/`. It gates
-  nothing in EPIC X and certifies nothing. The rest of this field describes
-  EPIC X. The ordinary exact-hash xHigh closure-table ticket review
+  nothing in EPIC X and certifies nothing. Its first ticket, RBT-001
+  `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, is **IMPLEMENTATION COMPLETE / AWAITING
+  INDEPENDENT xHIGH TICKET REVIEW** at `402e120`. The rest of this field
+  describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
   `POSTP1-002V2A-T1` passed on 2026-09-30 at `2292388e...1d1710`;
   `POSTP1-001V2R1` is now dependency-satisfied. RBT-006's table dependency is
   satisfied, but its RBT-003/RBT-005 dependencies remain blocked. Collection
@@ -1514,7 +1529,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** None. `POSTP1-001V2A-T1` and its independent
+- **Current IN_PROGRESS ticket:** None. In EPIC Y, `RBT-001` is
+  **IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW**
+  (implementation `402e120`), and that review is the next EPIC Y action. In
+  EPIC X, `POSTP1-001V2A-T1` and its independent
   review `POSTP1-002V2A-T1` are **COMPLETE / PASS**. The next EPIC X action is
   `POSTP1-001V2R1`, **NOT STARTED / DEPENDENCY-SATISFIED**. The preceding
   EPIC X history is preserved below.
@@ -1525,7 +1543,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review-fix commit. Pre-freeze captures support coverage through 2026;
   2027 windows require V2. The detailed source/revision/search/probe evidence
   is in EPIC X's review outcome, not duplicated here
-- **Last completed implementation:** `POSTP1-001V2A-T1`,
+- **Last completed implementation:** EPIC Y `RBT-001`
+  `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, implementation commit `402e120`, still
+  awaiting its required independent xHigh ticket review.
+  - It is a pure, deterministic builder in `btc_predictor/research_backtest/`.
+    The output is replay copies of owner records, with modelled availability in
+    the field each owner's point-in-time predicate reads: `ingested_at` for
+    bars, `available_at` for ETF flows and derivatives. It also produces
+    content-addressed canonical-JSON manifests that keep every raw timestamp
+    beside the modelled one.
+  - The windows partition time. Pre-2020 and reserve records are refused,
+    never dropped, and the holdout is shut behind `HOLDOUT_OPENING_AUTHORIZED`.
+  - Each price series is one venue, with no splicing, and gaps are counted.
+    Non-price inputs form one shared snapshot.
+  - Control: a bulk-backfilled real-shaped series gives 0 executed decisions
+    through the unchanged engine and 2 through the builder.
+  - Two adversarial review rounds before commit fixed one P2 (ETF revisions
+    tied at the `T+2` floor were ordered by label) and the confirmed P3s.
+  - It surfaced the open positioning-input decision below.
+  - No existing file changed. Details are in the EPIC Y RBT-001 Implementation
+    Notes
+- **Preceding completed implementation (EPIC X):** `POSTP1-001V2A-T1`,
   `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`, implementation commit `52bbe12`,
   frozen at `2292388e...1d1710` in
   `prospective_evidence/us_equity_market_closure_table_v1/`. It is the first
@@ -1702,18 +1740,39 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y tickets:** **`RBT-001`**
-  `BUILD_HISTORICAL_REPLAY_INPUTS_V1` (recommended first), `RBT-004`
-  `COMPOSE_CHAMPION_ENTRY_DECISION_V1`, and `RBT-002`
+- **Next dependency-satisfied EPIC Y tickets:** the independent xHigh ticket
+  review of **`RBT-001`** (implementation `402e120`); `RBT-004`
+  `COMPOSE_CHAMPION_ENTRY_DECISION_V1`; and `RBT-002`
   `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
-  RBT-003 and RBT-005..RBT-008 are blocked on their EPIC Y dependencies
+  RBT-003 is blocked on RBT-002 and on the RBT-001 review. RBT-005..RBT-008 are
+  blocked on their EPIC Y dependencies. The open positioning-input decision
+  (Important Unresolved Decisions) should be answered before RBT-002 scopes
+  collection and before RBT-004
 - **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2R1`.
   POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
   remains terminal and untouched with its sealed sample unopened, and Epic T
   is unchanged. EPIC Y's RBT-006 table prerequisite is now satisfied; RBT-006
   remains blocked on RBT-003 and RBT-005. No EPIC Y input was collected or
-  backtest/holdout outcome produced
-- **Latest implementation validation:** POSTP1-001V2A-T1 used the exclusive
+  backtest/holdout outcome produced; RBT-001 used synthetic offline fixtures
+  only
+- **Latest implementation validation:** EPIC Y `RBT-001` used `.venv312`
+  CPython 3.12.14, offline. The proof suites ran alone and sequentially.
+  - Focused suite: **159 passed**. It includes the seeded point-in-time
+    property test through the real owner predicates against an independent
+    policy oracle, the checked-in control, and byte-identical manifests under
+    `PYTHONHASHSEED` 0/1/8675309, reordering, another cwd and a fresh process.
+  - Regressions: BTC-180..185 **282 passed**; BTC-220..224 **342 passed**; the
+    closure-table suite **145 passed**; the owners the builder calls **243
+    passed**.
+  - V5 recomputes to `95e43ee1...775a89` (**407 passed**, 2 pre-existing skips,
+    across V5, both prospective-corpus suites and `test_etf_flows`).
+  - The PAD5 `54675984...f483` and PAD4-R5 `b4168dc9...61c7` namespaces
+    reproduce: 2/2 each on the final code, and the complete suites passed
+    117/117 and 201/201.
+  - `compileall` and `git diff --check` pass.
+    `git diff --diff-filter=MDRT 9752f7b 402e120` is empty.
+  - The full suite was **NOT RUN**; no production behaviour changed
+- **Preceding implementation validation (EPIC X):** POSTP1-001V2A-T1 used the exclusive
   `.venv312` CPython 3.12.14 interpreter. The focused closure-table suite is
   **145 passed** (deterministic and offline: every stored official source is
   re-hashed and re-parsed, every covered venue-year is cross-checked against
@@ -1973,11 +2032,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** T1 implementation `52bbe12`
-  and implementation documentation `34e7fcb` freeze/record the unchanged
-  closure-table constant `2292388e...1d1710`. POSTP1-002V2A-T1's independent
-  **COMPLETE / PASS** is recorded in this documentation-only review-record
-  commit; no review-fix commit was needed. Earlier review provenance follows.
+- **Last relevant implementation/review commits:** EPIC Y RBT-001
+  implementation `402e120`, with this documentation commit recording its
+  status. Its independent xHigh ticket review is pending. In EPIC X, T1
+  implementation `52bbe12` and implementation documentation `34e7fcb`
+  freeze/record the unchanged closure-table constant `2292388e...1d1710`.
+  POSTP1-002V2A-T1's independent **COMPLETE / PASS** is recorded in the
+  documentation-only review-record commit `9752f7b`; no review-fix commit was
+  needed. Earlier review provenance follows.
   POSTP1-001V2A-PAD4-R5
   implementation commit `2d41fb13a411cd8a2a40efe2339b921116201d01`
   freezes exact-identity-bound pre-data candidate `b4168dc9...61c7` with 34
@@ -2914,6 +2976,28 @@ unopened with no automatic dependency that would ever open it.
   altogether (`ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`), and it pre-commits a
   bounded PAD5 escalation that ends in an owner scoping decision rather than a
   PAD6.
+- **EPIC Y positioning inputs: OPEN (recorded by RBT-001, 2026-10-01).**
+  - The gap: Rulebook section 7.5 `PositioningScore = 0.35 FundingHealth +
+    0.30 OIHealth + 0.20 BasisHealth + 0.15 LeverageHealth` has no Phase-1
+    fallback, and `calculate_positioning_score` is incomplete if any component
+    is missing. `BasisHealth` needs futures basis; `LeverageHealth` needs OI
+    intensity, which needs BTC market cap. EPIC X already records no market-cap
+    producer.
+  - `RESEARCH_BACKTEST_POLICY_V2` sections 4 and 5 give neither family an
+    availability rule or family entry. Section 5 lists perpetual volume under
+    positioning, which no positioning owner consumes. RBT-001 therefore refuses
+    `FuturesBasis`, `Liquidation` and market-cap inputs and invents no rule.
+  - Consequence: as specified, every EPIC Y Entry Conviction would be
+    structurally incomplete, every decision `STRUCTURALLY_UNEVALUABLE`, and
+    CROWDING never evaluable.
+  - Needed: an explicit decision before RBT-002 scopes collection and before
+    RBT-004. The options are a `RESEARCH_BACKTEST_POLICY_V3` family and rule,
+    or a recorded structural finding.
+  - Related acquisition requirement for RBT-003: RBT-001 reads
+    `PerpVolume.observation_time` as the interval start, a surfaced assumption,
+    because the schema allows "bar timestamp or period end". RBT-003 must
+    persist perpetual volume start-stamped and open interest at its snapshot
+    instant.
 - EPIC Y's governance decision (2026-09-28, documentation-only) answered how to
   reach a first real-data backtest without an approved canonical reference.
   Answer: run each required venue separately, declare every result

@@ -73,7 +73,7 @@ data path:  RBT-002 ─── RBT-003 (needs RBT-001) ┤
 
 ## RBT-001 — `BUILD_HISTORICAL_REPLAY_INPUTS_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW`
 **Dependencies:** none
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -108,6 +108,271 @@ Acceptance criteria:
   by BTC-162. Fills, stops and funding run through the unchanged owners.
 - Point-in-time property test: no replay input is visible to a decision before
   its modelled availability.
+
+### Implementation Notes
+
+**Implementation commit:** `402e120`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW`
+(2026-10-01). The review is an independent xHigh **ticket** review under
+`prompts/review_ticket.md`, not an exact-hash proof-architecture review.
+**Files:** new only.
+
+- `btc_predictor/research_backtest/__init__.py`
+- `btc_predictor/research_backtest/replay_inputs.py` (owner module)
+- `btc_predictor/tests/test_research_backtest_replay_inputs.py`
+
+`git diff --diff-filter=MDRT 9752f7b 402e120` is empty.
+
+**What exists.** A pure, deterministic builder over owner records the caller
+already holds: `OhlcvBar`, `EtfFlow`, `FundingRate`, `OpenInterest` and
+`PerpVolume`. It opens no database or network connection, and a test runs it
+with sockets disabled. No loader was added; RBT-003 reads rows through the
+existing owners. Entry points:
+
+- `build_shared_replay_snapshot(window=..., volume_bars=..., etf_flows=...,
+  etf_source_publication_times=..., funding_rates=..., open_interest=...,
+  perp_volumes=..., etf_market_holidays=None)` builds the one non-price
+  snapshot that all three venue runs share (policy section 2). It includes the
+  retained Bitstamp raw OHLCV for volume and spot participation.
+- `build_venue_replay_dataset(venue=..., window=..., price_bars=...,
+  shared_snapshot=...)` builds one venue's `1h` replay stream for the unchanged
+  `run_backtest`, checked against the engine's own `validate_backtest_bars`.
+  Its manifest binds the shared snapshot by digest. The three venue manifests
+  carry one shared digest and differ only in `venue` and `price_series`.
+- `replay_market_bars_at(replay_bars, decision_at=..., window=...)`, also
+  `VenueReplayDataset.market_bars_at`, derives daily, weekly and monthly bars
+  by calling BTC-040 `build_canonical_market_bars` with the decision instant as
+  its cutoff. It then restamps each bucket with the close of its last
+  constituent hour. BTC-040 stamps the cutoff, and `derive_ohlcv_bars` stamps
+  one value on every bucket, so the per-bucket value has to be set here. Its
+  source bars must be `1h` replay bars of one required venue, admitted by the
+  window.
+- `HOLDOUT_OPENING_AUTHORIZED = False` is the guard only RBT-008 may lift, in
+  its own reviewed commit. `ReplayInputRefused` carries a closed set of refusal
+  codes.
+
+**Field placement per owner.** A census of `backtest/`, `portfolio/`,
+`risk/`, `features/`, `signals/`, `levels/`, `data/`, `db/`, `quant/`,
+`reporting/`, `journal/` and `config/` was adversarially verified. It found
+that every bar predicate reads `ingested_at`, and that no predicate reads
+`ingested_at` for a non-bar family. The modelled value therefore goes only into
+the field each owner reads. Every other field keeps its raw value, including
+the ETF and derivative `ingested_at`.
+
+| Family | Point-in-time predicates and the fields they read | `observation_time` | Modelled availability | Replay field |
+| --- | --- | --- | --- | --- |
+| Reference `1h` price bar (one venue) | BTC-180 `_bar_available_at = max(timestamp+1h, ingested_at)` and `validate_backtest_bars`; BTC-040 `_source_bar_is_point_in_time_available` (close ≤ cutoff and `ingested_at` ≤ cutoff); BTC-161..165 `resolved_at = max(close, ingested_at)`, which sets the ENTER time and so BTC-162's first eligible bar; accounting excursions; volatility, swing, breakout, anchored-VWAP, volume-profile and signal-trigger bar filters (close and `ingested_at`) | bar start | `timestamp + 1h` | `ingested_at` |
+| Shared Bitstamp raw OHLCV (volume, spot participation) | the bar predicates above, plus `spot_perp_participation_from_rows` (`available_at := ingested_at`, `observation_time := timestamp`) | bar start | `timestamp + 1h` | `ingested_at` |
+| Derived `1d`/`1w`/`1mo` bar | the bar predicates above | bucket start | close of the last constituent hour (BTC-040 at the decision instant, restamped per bucket) | `ingested_at` |
+| ETF flow and AUM | `features.flow._latest_available_flows_by_fund_date` (`available_at ≤ as_of`; one row per `(fund, date)` by `(available_at, revision, provider)`); `data.etf_flows.latest_etf_flows_available_at` (`available_at`) | US trading date `T` | `max(T+2 00:00 UTC, supplied source publication time)` | `available_at` |
+| Funding rate | `features.positioning.funding_health`; `data.derivatives` SQL and `aggregate_btc_derivatives_available_at`; `data.quality` stale-funding check (`available_at ≤ t` and `observation_time ≤ t`) | settlement instant `S` | `S` | `available_at` |
+| Open interest | `open_interest_growth_health`, `open_interest_intensity`; `data.derivatives`; `data.quality` snapshot check (same two fields) | snapshot instant | `observation_time` | `available_at` |
+| Perpetual volume | `spot_perp_participation` perp leg; `data.derivatives`; `data.quality` (same two fields) | interval **start** (assumed, see below) | `next_bar_timestamp(start, timeframe)` | `available_at` |
+
+**Interval start/end finding.**
+
+- `FundingRate.observation_time` is the settlement instant. Migration 0012
+  calls it the "funding timestamp or period end reported by the exchange".
+- The owner defines `OpenInterest` as a snapshot ("market timestamp for the
+  open-interest snapshot") with no timeframe field. Policy section 4's
+  "interval ending E" is therefore the snapshot instant itself.
+- For `PerpVolume` the owner schema is **ambiguous**: it says "bar timestamp or
+  period end". The builder reads `observation_time` as the interval **start**
+  and computes the end with the OHLCV owner's `next_bar_timestamp`. It refuses
+  timeframes the owner cannot close.
+  - This is a surfaced assumption, recorded as such in every manifest rule, not
+    an owner fact.
+  - It is the reading `spot_perp_participation` needs, because it joins perp
+    `observation_time` to the start-stamped `OhlcvBar.timestamp` by equality.
+  - For an end-stamped series it can only delay availability by one interval,
+    never advance it.
+  - RBT-003 must persist perpetual volume stamped at the interval start and
+    open interest at the snapshot instant.
+
+**Control (checked in).** The fixture is one week, 2024-03-04..10, of 168
+Bitstamp `1h` candles. It is produced by the real `BitstampOhlcvProvider`
+reading canned `/api/v2/ohlc` payloads, through the real BTC-020
+`collect_btc_ohlcv` with one bulk `ingested_at` (2026-09-28 09:15 UTC), and
+its raw digest is pinned. A golden-style scripted plan arms one long at the
+2024-03-05 23:00 bar and exits at the 2024-03-08 23:00 bar if a position is
+open.
+
+| Run | Decisions taken | Executed decisions | Trades | Outcome |
+| --- | --- | --- | --- | --- |
+| Raw bulk backfill through unchanged `run_backtest` | 1, at the bulk instant | **0** | 0 | `QUEUED` → `UNEXECUTED` (`DATASET_ENDED_BEFORE_ELIGIBLE_BAR`); BTC-040 derives 0 bars at the decision instant |
+| Same bars through the replay builder | 2, at 2024-03-06 00:00 and 2024-03-09 00:00 | **2**: entry filled 2024-03-06 01:00, exit 2024-03-09 01:00 | 1 closed | daily bars for 03-04 and 03-05 visible at the decision instant |
+
+**Stops, fills and funding on replayed bars.**
+
+- A stop touched two bars after the fill resolves at that bar's close, and
+  BTC-162 does not refuse it.
+- An entry bracket touched on its own fill bar resolves at that bar's close.
+- The same series with any positive ingestion delay (1 µs, 1 s, or EPIC X's
+  5 min) makes BTC-162 refuse the bar after the fill and aborts the run. This is
+  the policy section 4 reason for modelling bars at their close.
+- Under the `stress` rung, BTC-180 carry is charged on every held bar at its
+  close (`effective_at = close − 1 µs`).
+- A missing first eligible bar expires the intent
+  (`FIRST_ELIGIBLE_BAR_MISSING`); the gap is never filled.
+
+**Design decisions.**
+
+1. **Admission covers the whole observation interval.**
+   - The interval is `[t, t+1h)` for a bar, `[start, end)` for perp volume, the
+     UTC day `T` for an ETF flow, `(S − funding_interval_hours, S]` for funding
+     and the instant for open interest.
+   - A record is refused, never dropped, if any part lies outside the window's
+     admitted windows. So funding settled 2020-01-01 00:00 is refused, because
+     it prices a 2019 period.
+   - A weekly perp interval opened in 2025 and closing in the holdout is
+     refused.
+   - Modelled availability may fall in the holdout (the 2025-12-31 23:00 bar is
+     available at 2026-01-01 00:00). That exposes no holdout market content.
+2. **Windows.**
+   - `PROHIBITED`, `DATA`, `HOLDOUT` and `RESERVE` are half-open and partition
+     time. `DATA = [2020-01-01, 2026-01-01)`; its last `1h` bar is 2025-12-31
+     23:00.
+   - A holdout build would admit data-window warm-up plus holdout observations,
+     per RBT-008's "warm-up drawn only from the data window".
+   - The guard's state is not written into any manifest, so a DATA dataset's
+     digest does not change when RBT-008 flips it. This is pinned by a test.
+   - Tests flip the guard only in-process and build no holdout-dated record.
+3. **ETF revisions.** The flow owner keeps one row per `(fund, date)` across
+   revisions and providers, by `(available_at, revision, provider)`.
+   - Several rows for one fund and date replay only if every row carries an
+     `EtfSourcePublicationTime` and no two share a publication instant.
+   - The owner's own choice at every modelled instant must also be the
+     latest-published row available then. Otherwise the build is refused with
+     `ETF_REVISION_ORDER_UNAVAILABLE`.
+   - The reason: revisions published before `T+2` share the `T+2` floor, and
+     the owner then breaks the tie by label. `initial`/`final` would serve the
+     superseded value forever.
+   - `T+2 00:00` is always the floor. A supplied time before the trading date
+     begins is refused as impossible.
+   - A raw `EtfFlow.available_at` is never read as a publication time, because a
+     backfill stamps it with collection time. A source's own time must be passed
+     explicitly; the manifest records the raw value beside it.
+   - Rows that differ only in raw `available_at` are refused as duplicates.
+4. **`REVISION_HISTORY_UNAVAILABLE`** labels every record whose availability is
+   not grounded in a source-supplied publication or revision time. That is
+   every bar and derivative record (the derivative schema cannot store
+   revisions) and every ETF row without a supplied time. It is informational,
+   counted per family, and never changes availability.
+5. **Gaps are counted per series on each owner's own definition.**
+   - `1h` bars and perp volume use the OHLCV owner's bar grid.
+   - Funding and open interest use the BTC-031 `data.quality`
+     `PROVIDER_DISCONTINUITY` rule: the declared interval plus 1 h for funding,
+     3 h for open interest.
+   - ETF uses the owner publication calendar, only when `etf_market_holidays` is
+     supplied (EPIC Y: `US_EQUITY_MARKET_CLOSURE_TABLE_V1`).
+   - An unevaluated or absent family reports `null` with its reasons, never
+     zero.
+6. **Manifests.** Two canonical-JSON documents with sha256 digests: sorted
+   keys, no whitespace, ASCII. Each input's entry carries:
+   - its content digest (the owner's `as_record`, with numbers rendered by
+     value, not by scale, so collector output and a `NUMERIC(38,18)` read-back
+     address identically);
+   - every raw time field;
+   - any supplied publication time;
+   - its observation end;
+   - its modelled availability;
+   - its labels.
+
+   At real data-window scale the shared manifest is about 78 MB (about 8.5 MB
+   gzipped) with one hourly derivatives exchange. RBT-003 should persist the
+   canonical bytes compressed (deterministic gzip) and keep the digest over the
+   uncompressed bytes.
+7. **Refused families.** `FuturesBasis`, `Liquidation` and market-cap
+   observations are refused: policy section 4 gives them no availability rule.
+
+**Tests.** 159 deterministic, offline tests, in these groups:
+
+- availability table and boundaries;
+- field placement per owner;
+- a seeded point-in-time property test over five seeds. It checks the real
+  BTC-180, BTC-040, `features.flow`, `data.derivatives` and
+  `features.positioning` predicates against an oracle computed from the raw
+  records and the policy table, including that the owner keeps the
+  latest-published ETF revision;
+- the control;
+- stops, fills and funding;
+- every refusal;
+- gaps;
+- manifest content;
+- determinism: reordering, `PYTHONHASHSEED` 0/1/8675309, an alternate cwd and
+  a fresh process.
+
+In-process mutation checks were each killed by the suite (13 mutants): a
+consistent +5 min shift, a dropped `T+2` floor, perp at interval start, no revision-order check,
+no key sorting, digests ignoring values, scale-dependent numbers, unguarded
+decision-instant bars, zero gaps for absent families, an ordering check run
+only at the last instant, no distinct-time refusal, and unchecked owner numbers.
+
+**Validation.** All runs used the `.venv312` CPython 3.12.14 interpreter, offline. The
+proof suites ran alone and sequentially, with temporary roots under `/tmp`
+outside the repository.
+
+| Suite | Result |
+| --- | --- |
+| Focused `test_research_backtest_replay_inputs.py` | **159 passed** |
+| BTC-180..185 (`test_backtest_engine`, `_engine_review`, `_cost_model`, `_walk_forward`, `_regime_performance`, `_setup_performance`, `_threshold_sweeps`, `_epic_s_integration`) | **282 passed** |
+| BTC-220..224 (`test_feature_score_boundary`, `test_quant_comparisons`, `test_look_ahead_bias`, `test_risk_invariants`, `test_paper_execution`, `test_golden_scenarios`) | **342 passed** |
+| Closure table `test_us_equity_market_closures.py` | **145 passed** |
+| Owners the builder calls (flow, positioning, derivatives collector and quality, OHLCV, market bars, Bitstamp adapter, stop and entry execution, market-bar rolling integration) | **243 passed** |
+| V5 recomputation (`test_reference_composite_v5`, both prospective-corpus suites, `test_etf_flows`): V5 unchanged at `95e43ee1...775a89` | **407 passed**, 2 pre-existing composite skips |
+| Namespace reproductions on the final code: PAD5 (`54675984...f483`) and PAD4-R5 (`b4168dc9...61c7`) | 2/2 each |
+| Complete PAD5 and PAD4-R5 suites, run alone during validation | 117/117 and 201/201 |
+
+`python -m compileall btc_predictor etf_calendar_worker` passes, and
+`git diff --check` passes on the staged files.
+`git diff --diff-filter=MDRT 9752f7b 402e120` is empty: no tracked file was
+modified, deleted, renamed or retyped.
+
+The full suite was **NOT RUN**. No production behaviour changed and no existing
+module was touched.
+
+**Independent pre-commit review.** Before commit, the implementation went
+through an adversarial census of the owners' point-in-time predicates and a
+five-lens review. Each lens finding was checked by a skeptic.
+
+- No P0 or P1 defect survived verification.
+- One P2 correctness defect, the ETF revision tie at the `T+2` floor, was
+  fixed, along with every confirmed P3.
+- A second round on those fixes confirmed all of them. It found and fixed
+  three P3 residuals: a supplied ETF publication time before its own trading
+  date is now refused (`SOURCE_PUBLICATION_BEFORE_OBSERVATION`); decision-instant
+  bars now meet the full venue bar contract and duplicate refusal; and the
+  property-test generator now draws revision labels independently of
+  publication order.
+- The remaining items are recorded here: the positioning-input gap, manifest
+  size and the ETF publication-time channel.
+
+This does not replace the required independent xHigh ticket review.
+
+**Cross-workstream findings for EPIC Y (unresolved; not decided here).**
+
+- **Positioning inputs have no policy rule (material).**
+  - Rulebook section 7.5 `PositioningScore` needs `BasisHealth` (futures basis)
+    and `LeverageHealth` (OI intensity, which needs BTC market cap). It has no
+    Phase-1 fallback, and `calculate_positioning_score` is incomplete if any
+    component is missing.
+  - Policy V2 sections 4 and 5 give no family or availability rule for futures
+    basis or market cap. Section 5 lists perpetual volume under positioning,
+    which no positioning owner consumes.
+  - As specified, EPIC Y would therefore leave every Entry Conviction
+    structurally incomplete, and CROWDING could never be evaluated.
+  - This needs an explicit decision before RBT-002 scopes collection and before
+    RBT-004. The options are a `RESEARCH_BACKTEST_POLICY_V3` family and rule, or
+    a recorded structural finding. RBT-001 invents no rule.
+- **RBT-004 must use replay inputs only.**
+  - It must feed replay bars, not raw bars, to every level, structure and
+    signal producer, because their `detected_at` inherits
+    `max(close, ingested_at)`.
+  - It should take daily bars from `replay_market_bars_at`, because
+    `risk.buffer.atr_from_daily_bars` applies no availability filter.
+  - `aggregate_btc_derivatives_available_at` is point-in-time but starts its
+    liquidation and perp-notional sums at zero and averages all visible
+    history, so it is not a champion feature source.
 
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
@@ -317,11 +582,17 @@ version or any version derived from inspecting its result.
 
 | ticket | task | status |
 | --- | --- | --- |
-| RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | NOT STARTED / DEPENDENCY-SATISFIED — recommended first |
+| RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW — implementation `402e120`; its review is next |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | NOT STARTED / DEPENDENCY-SATISFIED — needs research database |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001, RBT-002 |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-002; RBT-001 implemented, awaiting its review |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
+
+**Open EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
+positioning score needs futures basis and BTC market cap. Policy V2 gives
+neither an availability rule, so as specified every Entry Conviction would be
+structurally incomplete. The decision is needed before RBT-002 scopes
+collection and before RBT-004. See the RBT-001 Implementation Notes.
