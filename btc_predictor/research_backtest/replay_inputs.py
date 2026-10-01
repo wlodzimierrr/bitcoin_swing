@@ -666,6 +666,12 @@ class EtfSourcePublicationTime:
     It names one raw revision by the owner's identity. ``T+2 00:00`` UTC remains
     the floor: a supplied time earlier than that does not advance availability,
     and a time before the trading date itself is refused as impossible.
+
+    Publication timing alone says nothing about revision-history coverage.
+    ``revision_history_available`` may be asserted only when the source also
+    supplies the historical values for this revision's fund and trading date.
+    RBT-003 must persist that source evidence; a final-only export leaves it
+    false, even when the final revision has a publication timestamp.
     """
 
     fund: str
@@ -673,6 +679,7 @@ class EtfSourcePublicationTime:
     provider: str
     revision: str
     published_at: datetime
+    revision_history_available: bool = False
 
     def key(self) -> tuple[str, date, str, str]:
         return (self.fund, self.observation_date, self.provider, self.revision)
@@ -784,7 +791,9 @@ def build_shared_replay_snapshot(
     revision times. A raw ``EtfFlow.available_at`` is never read as one, because
     a backfill stamps it with collection time. Several rows for one fund and
     date replay only when every row is dated and the flow owner's own choice is
-    the latest publication at every instant.
+    the latest publication at every instant. Each supplied time separately
+    declares whether source-backed revision history is available; timestamps
+    alone never clear the missing-history label.
 
     ``etf_market_holidays`` is used only to count ETF publication gaps with the
     owner's calendar; EPIC Y passes ``US_EQUITY_MARKET_CLOSURE_TABLE_V1``. When
@@ -1038,8 +1047,14 @@ def _replay_etf_flows(
         by_key[key] = flow
 
     published: dict[tuple[str, date, str, str], datetime] = {}
+    history_available: dict[tuple[str, date, str, str], bool] = {}
     for supplied in tuple(publication_times):
         _require_type(supplied, EtfSourcePublicationTime, "ETF source publication time")
+        if type(supplied.revision_history_available) is not bool:
+            raise ReplayInputRefused(
+                "RECORD_TYPE_REFUSED",
+                "ETF revision_history_available must be an explicit bool",
+            )
         key = supplied.key()
         if key in published:
             raise ReplayInputRefused(
@@ -1059,6 +1074,7 @@ def _replay_etf_flows(
                 "before its own trading date began",
             )
         published[key] = published_at
+        history_available[key] = supplied.revision_history_available
 
     modelled_by_key = {
         key: modelled_etf_flow_available_at(by_key[key], source_published_at=published.get(key))
@@ -1092,6 +1108,7 @@ def _replay_etf_flows(
                 raw_times=(("available_at", flow.available_at), ("ingested_at", flow.ingested_at)),
                 source_published_at=supplied_at,
                 modelled_available_at=modelled,
+                revision_history_available=history_available.get(key, False),
             )
         )
     return tuple(replayed), tuple(entries)
@@ -1288,15 +1305,16 @@ def _availability(
     raw_times: tuple[tuple[str, datetime], ...],
     source_published_at: datetime | None,
     modelled_available_at: datetime,
+    revision_history_available: bool = False,
 ) -> ReplayInputAvailability:
     if modelled_available_at < observation_end:
         raise RuntimeError(
             f"{family} availability {modelled_available_at.isoformat()} precedes its "
             f"observation end {observation_end.isoformat()}"
         )
-    # Only a source-supplied publication or revision time says when a value was
-    # first public. Every other record carries the value the source holds now.
-    labels = () if source_published_at is not None else (REVISION_HISTORY_UNAVAILABLE,)
+    # A timestamp can date a final-only value without supplying prior revisions.
+    # Unknown coverage stays labelled, independently of modelled availability.
+    labels = () if revision_history_available else (REVISION_HISTORY_UNAVAILABLE,)
     return ReplayInputAvailability(
         family=family,
         identity=identity,

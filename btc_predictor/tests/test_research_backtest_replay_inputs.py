@@ -405,8 +405,8 @@ def mixed_inputs() -> dict[str, tuple[Any, ...]]:
             etf_flow("FBTC", date(2024, 3, 5), flow="12", revision="r2"),
         ),
         "publication": (
-            EtfSourcePublicationTime("FBTC", date(2024, 3, 5), "fixture-etf", "r1", utc(2024, 3, 5, 23, 40)),
-            EtfSourcePublicationTime("FBTC", date(2024, 3, 5), "fixture-etf", "r2", utc(2024, 3, 8, 14, 5)),
+            EtfSourcePublicationTime("FBTC", date(2024, 3, 5), "fixture-etf", "r1", utc(2024, 3, 5, 23, 40), revision_history_available=True),
+            EtfSourcePublicationTime("FBTC", date(2024, 3, 5), "fixture-etf", "r2", utc(2024, 3, 8, 14, 5), revision_history_available=True),
         ),
         "funding": tuple(funding_rate(MIXED_START + 8 * k * HOUR) for k in range(1, 12) if k != 5),
         "open_interest": tuple(
@@ -807,10 +807,10 @@ def test_a_gap_inside_a_bucket_is_preserved_rather_than_filled() -> None:
         (date(2024, 12, 31), None, utc(2025, 1, 2), True),
         (date(2025, 12, 31), None, utc(2026, 1, 2), True),
         # The source's own later publication or revision time wins.
-        (date(2024, 3, 4), utc(2024, 3, 7, 14, 5), utc(2024, 3, 7, 14, 5), False),
+        (date(2024, 3, 4), utc(2024, 3, 7, 14, 5), utc(2024, 3, 7, 14, 5), True),
         # T+2 00:00 is a floor: an earlier supplied time never advances it.
-        (date(2024, 3, 4), utc(2024, 3, 4, 22, 30), utc(2024, 3, 6), False),
-        (date(2024, 3, 4), utc(2024, 3, 6), utc(2024, 3, 6), False),
+        (date(2024, 3, 4), utc(2024, 3, 4, 22, 30), utc(2024, 3, 6), True),
+        (date(2024, 3, 4), utc(2024, 3, 6), utc(2024, 3, 6), True),
     ],
 )
 def test_an_etf_flow_is_available_at_t_plus_2_or_its_later_source_time(
@@ -984,7 +984,7 @@ def test_every_record_without_revision_history_is_labelled_and_counted() -> None
     families = snapshot.manifest["families"]
 
     labelled = [entry for entry in snapshot.availability if REVISION_HISTORY_UNAVAILABLE in entry.labels]
-    # Only the two FBTC revisions carry source publication times.
+    # Only the two FBTC revisions have explicitly supplied revision history.
     assert len(snapshot.availability) - len(labelled) == 2
     assert {
         family: families[family]["revision_history_unavailable_count"] for family in families
