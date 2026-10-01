@@ -1,7 +1,7 @@
 # RBT-002 historical input coverage inventory
 
-`INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` under `RESEARCH_BACKTEST_POLICY_V3`. Evidence class `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED`.
-Inventory SHA-256 `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
+`INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` under `RESEARCH_BACKTEST_POLICY_V4`. Evidence class `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED`.
+Inventory SHA-256 `a68e5284e99e39b113c7ed2705ca533c1c2cfc0e0a6432dde9fcd7de40ad765d` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
 
 Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.
 
@@ -57,7 +57,7 @@ Discovered, not listed: `DECISION_PATH_STATIC_CENSUS_V1` walks the owner code fr
 Owner-less inputs:
 
 - `ADD_MOMENTUM_SCORE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
-- `CAPITULATION_EVENT` (OWNERLESS_UNDEFINED; Entry Conviction: none)
+- `CAPITULATION_EVENT` (OWNERLESS_UNDEFINED; Entry Conviction: structure)
 - `CORRECTION_FROM_LOCAL_HIGH` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `DATA_RISK_EXIT_PREDICATE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `DISTRIBUTION_STATE` (OWNERLESS_UNDEFINED; Entry Conviction: none)

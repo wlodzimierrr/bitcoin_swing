@@ -137,7 +137,7 @@ from btc_predictor.signals import trim as trim_owner
 
 INVENTORY_VERSION = "INVENTORY_HISTORICAL_INPUT_COVERAGE_V1"
 INVENTORY_TICKET = "RBT-002"
-INVENTORY_POLICY_VERSION = "RESEARCH_BACKTEST_POLICY_V3"
+INVENTORY_POLICY_VERSION = "RESEARCH_BACKTEST_POLICY_V4"
 INVENTORY_AVAILABILITY_POLICY_VERSION = "HISTORICAL_REPLAY_AVAILABILITY_V2"
 DATABASE_COVERAGE_SNAPSHOT_VERSION = "RESEARCH_DATABASE_COVERAGE_SNAPSHOT_V1"
 SOURCE_PROBE_DATE = "2026-10-01"
@@ -1337,13 +1337,14 @@ _CAPITULATION_EVENT_NOTE = (
     "supplied by the caller, the CAPITULATION flag owner returns a flag, not an event instant, price or detection "
     "time, and Rulebook 9.1 names 'Anchored VWAPs from important market events' without defining the event. AVWAP "
     "confluence is an optional Phase 1 enhancement (Rulebook 9.2; BTC-097 'must not be required for the Phase 1 "
-    "score'), so the spec may define or explicitly omit this anchor; it must not be inferred."
+    "score'), so the spec may define or explicitly omit this anchor; it must not be inferred. When included, its "
+    "AVWAP enters cluster confluence, LevelStrength and the Structure Score. Optionality does not remove that dataflow."
 )
 
 
 def _capitulation_event_field(role: str) -> InputClassification:
     return dataclasses.replace(
-        _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, note=_CAPITULATION_EVENT_NOTE),
+        _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, (_STRUCTURE,), note=_CAPITULATION_EVENT_NOTE),
         role=role,
     )
 
@@ -2168,7 +2169,7 @@ _ROOT_CALL_SITES: tuple[tuple[Callable[..., Any], dict[str, InputClassification]
     ),
     (
         anchored_vwap_owner.anchored_vwap_anchor_from_capitulation_event,
-        {"event": _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, note=_CAPITULATION_EVENT_NOTE)},
+        {"event": _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, (_STRUCTURE,), note=_CAPITULATION_EVENT_NOTE)},
     ),
 )
 
@@ -4313,6 +4314,7 @@ class BlockerDefinition:
     blocks: tuple[str, ...]
     members: tuple[str, ...] = ()
     every_new_trade_blocked: bool = False
+    required_for_entry_component: bool = True
 
 
 _NO_DATA = Decimal("0")
@@ -4403,6 +4405,7 @@ OWNERLESS_BLOCKERS: tuple[BlockerDefinition, ...] = (
         ),
         ("RBT-004",),
         members=("CAPITULATION_EVENT",),
+        required_for_entry_component=False,
     ),
 )
 
@@ -4529,7 +4532,7 @@ def _blocker_record(
     entry_components: Sequence[str],
     inputs: Mapping[str, Sequence[str]],
 ) -> dict[str, Any]:
-    structural = category == "OWNERLESS_NO_DEFINITION" and bool(entry_components)
+    structural = category == "OWNERLESS_NO_DEFINITION" and bool(entry_components) and blocker.required_for_entry_component
     return {
         "blocker_id": blocker.blocker_id,
         "title": blocker.title,

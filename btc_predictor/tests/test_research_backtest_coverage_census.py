@@ -339,9 +339,10 @@ def test_the_capitulation_event_anchor_is_a_new_owner_less_input() -> None:
         "btc_predictor.levels.anchored_vwap.anchored_vwap_anchor_from_capitulation_event",
     }
     assert all(row.classification.kind == coverage.KIND_OWNERLESS_UNDEFINED for row in event)
-    assert all(row.classification.entry_components == () for row in event)
+    assert all(row.classification.entry_components == ("structure",) for row in event)
     blocker = next(item for item in coverage.derive_blockers(rows) if item["blocker_id"] == "BLK-AVWAP-EVENT-ANCHOR")
     assert blocker["entry_conviction_structurally_incomplete_on_every_date"] is False
+    assert blocker["entry_components"] == ["structure"]
     # no owner constructs the event
     assert not [site for site in _census().call_sites if site.callee == "btc_predictor.levels.anchored_vwap.CapitulationEvent"]
 
