@@ -861,17 +861,19 @@ the PASS satisfies only V2R1 and RBT-006's stated table dependencies, not
 corpus/collector certification or collection authorization
 
 EPIC Y RBT-001 =
-IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW —
+DONE / INDEPENDENT xHIGH TICKET REVIEW PASS AFTER REVIEW FIX a9773e7 —
 BUILD_HISTORICAL_REPLAY_INPUTS_V1, the HISTORICAL_REPLAY_AVAILABILITY_V1 builder
-of RESEARCH_BACKTEST_POLICY_V2 section 4, implementation commit 402e120. It adds
+of RESEARCH_BACKTEST_POLICY_V2 section 4, implementation commit 402e120. The
+review separated ETF publication timing from source-backed revision-history
+coverage; a final-only value retains its missing-history label. It adds
 the new package btc_predictor/research_backtest/ and one new test module; no
 existing file changed. Checked-in control: a real-shaped bulk-backfilled
 Bitstamp 1h fixture gives 0 executed decisions through the unchanged
 run_backtest, and 2 (entry and exit, one closed trade) through the builder.
 Synthetic offline fixtures only: no real-data backtest outcome, holdout NOT
 COLLECTED, BTC-019 untouched with its sealed sample unopened, EPIC X and Epic T
-unchanged. Review is an independent xHigh ticket review under
-prompts/review_ticket.md
+unchanged. Independent xHigh ticket review under prompts/review_ticket.md
+passed on 2026-10-01. RBT-001A waits only on RBT-002
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1298,8 +1300,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
   X-bound file or anything under `data/` or `research_artifacts/`. It gates
   nothing in EPIC X and certifies nothing. Its first ticket, RBT-001
-  `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, is **IMPLEMENTATION COMPLETE / AWAITING
-  INDEPENDENT xHIGH TICKET REVIEW** at `402e120`. The rest of this field
+  `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, is **DONE / independent xHigh ticket
+  review PASS**, implementation `402e120`, review fix `a9773e7`. RBT-001A
+  waits only on RBT-002. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
   `POSTP1-002V2A-T1` passed on 2026-09-30 at `2292388e...1d1710`;
   `POSTP1-001V2R1` is now dependency-satisfied. RBT-006's table dependency is
@@ -1530,13 +1533,21 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. In EPIC Y, `RBT-001` is
-  **IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW**
-  (implementation `402e120`), and that review is the next EPIC Y action. In
+  **DONE / independent xHigh ticket review PASS** after review fix `a9773e7`
+  (implementation `402e120`). RBT-002 and RBT-004 are ready; RBT-001A waits
+  only on RBT-002. In
   EPIC X, `POSTP1-001V2A-T1` and its independent
   review `POSTP1-002V2A-T1` are **COMPLETE / PASS**. The next EPIC X action is
   `POSTP1-001V2R1`, **NOT STARTED / DEPENDENCY-SATISFIED**. The preceding
   EPIC X history is preserved below.
-- **Most recent completed review:** `POSTP1-002V2A-T1`, 2026-09-30,
+- **Most recent completed review:** EPIC Y `RBT-001`, 2026-10-01,
+  **PASS** after distinct review fix `a9773e7`. The independent final-only ETF
+  probe exposed one P2: a publication timestamp incorrectly cleared the
+  missing-revision-history label. Explicit source-backed coverage now controls
+  that label separately from availability. All ticket acceptance criteria pass;
+  no P0–P3 defect remains. Detailed owner rulings, controls, adversarial fixtures
+  and validation are in EPIC Y's review outcome
+- **Preceding completed review:** `POSTP1-002V2A-T1`, 2026-09-30,
   **PASS** for exact definition `2292388e...1d1710`, implementation `52bbe12`
   and documentation `34e7fcb`. All 123 date/venue entries were independently
   verified against retrieved official publications; no P0–P3 defect and no
@@ -1544,8 +1555,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   2027 windows require V2. The detailed source/revision/search/probe evidence
   is in EPIC X's review outcome, not duplicated here
 - **Last completed implementation:** EPIC Y `RBT-001`
-  `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, implementation commit `402e120`, still
-  awaiting its required independent xHigh ticket review.
+  `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, implementation commit `402e120`,
+  with its required independent xHigh ticket review now **PASS** after
+  review fix `a9773e7`.
   - It is a pure, deterministic builder in `btc_predictor/research_backtest/`.
     The output is replay copies of owner records, with modelled availability in
     the field each owner's point-in-time predicate reads: `ingested_at` for
@@ -1561,8 +1573,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   - Two adversarial review rounds before commit fixed one P2 (ETF revisions
     tied at the `T+2` floor were ordered by label) and the confirmed P3s.
   - It surfaced the open positioning-input decision below.
-  - No existing file changed. Details are in the EPIC Y RBT-001 Implementation
-    Notes
+  - The implementation added only three files. The independent review changes
+    only this unbound replay module, its tests and EPIC Y/CURRENT_STATE docs;
+    it adds eight independent regression cases. Details are in the EPIC Y
+    RBT-001 Implementation Notes and review outcome
 - **Preceding completed implementation (EPIC X):** `POSTP1-001V2A-T1`,
   `FREEZE_US_EQUITY_MARKET_CLOSURE_TABLE_V1`, implementation commit `52bbe12`,
   frozen at `2292388e...1d1710` in
@@ -1740,12 +1754,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y tickets:** the independent xHigh ticket
-  review of **`RBT-001`** (implementation `402e120`); `RBT-004`
-  `COMPOSE_CHAMPION_ENTRY_DECISION_V1`; and `RBT-002`
-  `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database.
-  RBT-001A (the policy V3 builder extension) waits on the RBT-001 review and
-  RBT-002. RBT-003 waits on RBT-001A. RBT-005..RBT-008 are blocked on their
+- **Next dependency-satisfied EPIC Y tickets:** `RBT-002`
+  `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`, which needs the research database;
+  and `RBT-004` `COMPOSE_CHAMPION_ENTRY_DECISION_V1`.
+  RBT-001A (the policy V3 builder extension) waits only on RBT-002; its
+  RBT-001 review dependency is SATISFIED. RBT-003 waits on RBT-001A and RBT-002.
+  RBT-005..RBT-008 are blocked on their
   EPIC Y dependencies. The positioning-input decision is ANSWERED by
   `RESEARCH_BACKTEST_POLICY_V3`: RBT-002 now carries the §5A input-surface
   enumeration and blocker list, and RBT-004 must consume the full V3 input
@@ -1789,7 +1803,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   fingerprint is byte-identical under `PYTHONHASHSEED` 0/1/8675309, from an
   alternate cwd, in fresh processes. The full suite was **NOT RUN**; no
   production behaviour changed and no existing module was modified
-- **Latest review validation:** POSTP1-002V2A-T1 used exclusive `.venv312`
+- **Latest review validation:** RBT-001 used `.venv312` CPython 3.12.14.
+  **1,705 passed, 2 skipped** across the selected suites: focused **167**
+  (159 original + 8 independent); BTC-180..185 **282**; BTC-220..224 **342**;
+  closure table **145**; owner modules **243**; V5/corpus/ETF **407**, with two
+  pre-existing composite skips; complete PAD5 **117**; PAD4-R5 namespace **2**.
+  Isolation suites ran alone and sequentially, with outside-repository roots
+  independently confirmed on the same device. V5 `95e43ee1...775a89`, PAD5
+  `54675984...f483`, PAD4-R5 `b4168dc9...61c7`, all source/namespace authorities,
+  compileall and diff checks are unchanged/passing. Independent same-callback
+  0-to-2-execution control, close-time stop/funding, derivative quality,
+  cross-year incomplete-week and late ETF revision probes pass. Eight injected
+  bugs fail the focused suite as expected. Fresh-process shuffled manifests
+  match under seeds 0/1/8675309 and another cwd. A full-window synthetic shared
+  snapshot measured 73,938,804 bytes / 8,221,965 gzip bytes and retained its
+  exact uncompressed digest. Full repository suite **NOT RUN**; the historical
+  full-suite baseline remains historical. No real-data result or collection
+- **Preceding review validation:** POSTP1-002V2A-T1 used exclusive `.venv312`
   CPython 3.12.14 and sequential same-filesystem temporary roots outside the
   repo. **220 passed**: 145 T1, 40 flow-owner, 31 V5/ETF, two PAD5 and two
   PAD4-R5 namespace reproductions. All independent hash, 0/1/8675309 fresh-
@@ -2035,8 +2065,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-001
-  implementation `402e120`, with this documentation commit recording its
-  status. Its independent xHigh ticket review is pending. In EPIC X, T1
+  implementation `402e120`, implementation documentation `ac3590a`, review
+  baseline `7d765c7`, and distinct review fix `a9773e7`. This documentation
+  commit records its independent xHigh **PASS / DONE** and RBT-001A's satisfied
+  review prerequisite. In EPIC X, T1
   implementation `52bbe12` and implementation documentation `34e7fcb`
   freeze/record the unchanged closure-table constant `2292388e...1d1710`.
   POSTP1-002V2A-T1's independent **COMPLETE / PASS** is recorded in the

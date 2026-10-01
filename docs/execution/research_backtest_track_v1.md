@@ -75,7 +75,7 @@ data path:  RBT-002 (§5A enumeration) ─┴─ RBT-001A ─ RBT-003 ┤
 
 ## RBT-001 — `BUILD_HISTORICAL_REPLAY_INPUTS_V1`
 
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW`
+**Status:** `DONE — independent xHigh ticket review PASS after review fix a9773e7`
 **Dependencies:** none
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -114,7 +114,16 @@ Acceptance criteria:
 ### Implementation Notes
 
 **Implementation commit:** `402e120`
-**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW`
+**Independent review correction (`a9773e7`):** publication timing and revision-history
+coverage are separate facts. The review-fix commit adds
+`EtfSourcePublicationTime.revision_history_available` (default `False`).
+Only source-backed history explicitly declared available clears
+`REVISION_HISTORY_UNAVAILABLE`; a timestamp on a final-only value does not.
+RBT-003 must persist the supporting source history and timing evidence.
+Availability values and owner fields are unchanged. Eight independent review
+cases supplement the original 159 tests. The distinct fix commit is identified
+in the review outcome below.
+**Status:** `DONE — independent xHigh ticket review PASS after a9773e7`
 (2026-10-01). The review is an independent xHigh **ticket** review under
 `prompts/review_ticket.md`, not an exact-hash proof-architecture review.
 **Files:** new only.
@@ -255,11 +264,13 @@ open.
      backfill stamps it with collection time. A source's own time must be passed
      explicitly; the manifest records the raw value beside it.
    - Rows that differ only in raw `available_at` are refused as duplicates.
-4. **`REVISION_HISTORY_UNAVAILABLE`** labels every record whose availability is
-   not grounded in a source-supplied publication or revision time. That is
-   every bar and derivative record (the derivative schema cannot store
-   revisions) and every ETF row without a supplied time. It is informational,
-   counted per family, and never changes availability.
+4. **`REVISION_HISTORY_UNAVAILABLE`** labels every record whose revision-history
+   coverage is unknown. That is every bar and derivative record (the derivative
+   schema cannot store revisions), and every ETF row without an explicit
+   source-backed `revision_history_available=True` assertion. Publication timing
+   alone does not establish revision history. It is informational, counted per
+   family, and never changes availability. The original implementation conflated
+   these facts; the independent review corrected it before closure.
 5. **Gaps are counted per series on each owner's own definition.**
    - `1h` bars and perp volume use the OHLCV owner's bar grid.
    - Funding and open interest use the BTC-031 `data.quality`
@@ -382,6 +393,186 @@ preserved as the finding that triggered V3.
     liquidation and perp-notional sums at zero and averages all visible
     history, so it is not a champion feature source.
 
+### RBT-001 review outcome
+
+**Review date:** 2026-10-01. **Result:** **PASS after review fix `a9773e7`**.
+Independent xHigh ticket review under `prompts/review_ticket.md`, of
+implementation `402e120`, documentation `ac3590a`, base `9752f7b`, on the
+required `claude/etf-worker-prospective-integration-dixlte` branch after
+fast-forwarding to `7d765c7`. Review scope is the RBT-001 ticket and policy V2
+§4; policy V3 §4/§5A and RBT-001A are extension constraints.
+
+**Finding P2 — publication time incorrectly asserted revision-history
+coverage (corrected).** At `replay_inputs.py:1299` in `402e120` (now line 1317),
+`_availability` cleared `REVISION_HISTORY_UNAVAILABLE` whenever
+`source_published_at` was present. A synthetic final-only IBIT row for
+2024-03-28, with its final revision genuinely published 2024-04-02 16:30 UTC,
+therefore reported zero unavailable-history records despite having no earlier
+values. Expected: date availability from that timestamp while retaining the
+missing-history disclosure. This matters because policy V2 §4 explicitly
+permits final-only research only with that counted limitation; V3 market cap
+must not inherit the same conflation.
+
+The independently written
+`test_final_only_etf_with_a_real_publication_time_still_lacks_revision_history`
+failed on the reviewed implementation (`1 failed, 2 passed` in the initial
+three-case probe). The small fix separates the source-history assertion from
+publication timing, defaults coverage to unknown, validates the assertion as
+a Boolean, and binds the resulting label/count in the manifest. It changes no
+availability value, owner record field, raw row, or owner module. The original
+availability tests now explicitly declare the two fixture revisions' history;
+their mathematical and timing checks remain intact. New regressions check the
+final-only case, explicit coverage, changed manifest identity, and refusal of
+three non-Boolean assertions. **Distinct review-fix commit:** `a9773e7`.
+No other P0–P3 defect remains. RBT-001 is DONE; this ticket review satisfies
+RBT-001A's review dependency. It is not an EPIC X review or certification.
+
+**Per-owner field-placement verdict (PASS).** Serialization and UTC validation
+can read an ingestion timestamp without using it as a visibility predicate.
+
+| Owner(s) | Actual visibility/resolution fields | Replay placement and verdict |
+| --- | --- | --- |
+| BTC-180 `run_backtest`, `_bar_available_at`, `validate_backtest_bars`, queued-intent eligibility | `max(next_bar_timestamp(timestamp, timeframe), ingested_at)`; fill bar starts at the decision's next eligible boundary | `1h` `ingested_at = timestamp + 1h`; PASS |
+| BTC-040 `build_canonical_market_bars`, `derive_ohlcv_bars` | source close and `ingested_at` both at/before cutoff; exact complete-hour census for each bucket | derived `ingested_at = last constituent hour close`; cutoff first, restamp second; PASS |
+| BTC-161/162 and add/trim/exit execution; BTC-165 excursions | resolution `max(close, ingested_at)`; excursions require bar end and ingestion at/before accounting time | close in bar `ingested_at`; entry, resting/touched stop, exit and funding chronology PASS |
+| Swing, breakout/reclaim, anchored VWAP, volume profile; higher-low, reclaim and breakout/retest signals; volatility | bar close and ingestion at/before signal; detection uses latest close/ingestion of the confirmation bars | replay hourly and derived bars carry close in `ingested_at`; PASS |
+| Structure score from clusters | consumes generated cluster/level results, not raw bar ingestion | RBT-004 must generate those results from replay bars; no second raw timestamp placement; PASS |
+| `features.flow._latest_available_flows_by_fund_date`, `_flow_revision_sort_key` | `available_at <= as_of`, greatest `(available_at, revision, provider)` per fund/date | modelled ETF value only in `available_at`; raw ingestion retained; PASS |
+| `data.etf_flows.latest_etf_flows_available_at` | SQL visibility uses `available_at`; ranking is per fund/date/provider by availability/revision | same placement; retrieval retains provider candidates, feature owner chooses across providers; PASS |
+| Funding and OI positioning owners; every derivative `latest_*` query and aggregate | `available_at <= t` and `observation_time <= t` | settlement/snapshot time in `available_at`; raw ingestion retained; PASS |
+| `data.quality` funding freshness and snapshot checks | same availability/observation predicates; no ingestion predicate | same placement; PASS. Structural quality checks operate over all supplied rows, so the future composer must pass the visible prefix |
+| Spot/perp participation | spot converts bar ingestion to availability; perp reads availability; observations join by timestamp equality | spot `ingested_at = close`; perp `available_at = interval end`, observation stays start; PASS |
+
+**Six judgement-call rulings.**
+
+1. **Perp starts — NOT_A_DEFECT, explicit acquisition requirement.** Migration
+   0012 allows start or end stamps and BTC-021 preserves the provider stamp;
+   neither proves starts. The flow join requires starts. Interpreting an
+   end-stamped input as a start delays visibility, but also joins the wrong
+   spot period. RBT-002/RBT-003 must establish and persist interval-start
+   semantics, timeframe, original provider timestamp and any normalization;
+   incompatible rows must not silently enter the join. V3 should use a
+   generational extension rather than reinterpret V1.
+2. **Whole funding period — NOT_A_DEFECT.** Conservative admission protects
+   the explicit ban on any pre-2020 represented content. It refuses the
+   2020-01-01 00:00 eight-hour settlement, not settlements whose declared
+   accrual period lies wholly in DATA. An independent quarter-hour boundary
+   regression confirms the first wholly in-window period is accepted. This
+   admission rule does not move settlement availability or cost-owner timing.
+3. **Revision-history label — P2 corrected.** Absence of source revision
+   evidence warrants the conservative label, including bars/derivatives whose
+   schemas have no history. A publication time alone is insufficient to remove
+   it. Reporting must describe unknown history, not assert that revisions
+   definitely happened. Source-backed coverage is now a separate assertion.
+4. **ETF tie refusal — NOT_A_DEFECT.** Changes in the selected row occur only
+   at modelled availability boundaries. Checking every distinct boundary is
+   sufficient between boundaries, and the latest supplied publication must
+   win each check. Incomplete dates and equal publication instants fail closed.
+   A supplied earlier revision may be served before its successor is visible;
+   it is never selected afterward by the flow owner. The SQL loader retaining
+   one candidate per provider is not a feature selection rule.
+5. **Private flow-owner reuse — NOT_A_DEFECT, maintenance coupling.** This is
+   correct reuse of the frozen owner, avoiding a second formula. A future
+   owner interface change requires rerunning these parity/visibility tests;
+   no present signature or result mismatch exists.
+6. **Explicit source times — NOT_A_DEFECT, trusted data boundary.** The builder
+   cannot authenticate a caller's timestamp. A caller can explicitly pass bulk
+   collection time as a source time; that delays visibility and is accepted.
+   It does not happen automatically. RBT-003 must source and bind publication
+   evidence and revision-history assertions separately from collection times.
+   EPIC Y does not claim EPIC X's adversarial proof architecture.
+
+**Independent probes and acceptance evidence.**
+
+- A separately written canned Bitstamp adapter/collector control reconstructed
+  the 168 2024-03-04..10 candles and used the *same callback object* and same
+  raw bar fields in both runs. Raw: zero executions, zero trades,
+  `DATASET_ENDED_BEFORE_ELIGIBLE_BAR`. Replay: two executions (2024-03-06
+  01:00 entry, 2024-03-09 01:00 exit), one closed trade. Every raw field is
+  unchanged; only replay ingestion differs. This is a synthetic control,
+  not champion performance.
+- Independent flat bars resolve a stop touch at 2024-05-06 16:00, its close,
+  without BTC-162 refusal. The unchanged stress-cost owner charges four held
+  bars with `effective_at = close - 1 microsecond`. This proves owner carry
+  timing, not historical funding-rate injection into the engine.
+- Independent derivative aggregate and quality probes switch at settlement /
+  snapshot instants; perp becomes visible one hour later. Retained raw bulk
+  ingestion does not affect those predicates.
+- A 168-hour week spanning 2024-12-30..2025-01-06 produces no weekly bar one
+  microsecond early, one complete weekly bar at close with volume 336, and no
+  weekly bar when an interior hour is missing. Three shuffled ETF revisions
+  (`z-original`, `a-final`, `0-correction`) published across March/April select
+  10/20/30 at their independent expected instants, including a late supplied
+  publication and probes immediately before every change.
+- The seeded property test really reaches BTC-180, BTC-040, flow, derivative,
+  positioning and participation predicates. Its expected times are computed
+  from raw fields without builder helpers. Its refusal generator uses the
+  real flow owner; the independent three-revision fixture complements that
+  coupling. Derived completeness also follows independently from BTC-040's
+  exact-hour census.
+- Pre-2020, holdout, reserve, mixed venue, unknown window and unsourced shapes
+  fail the whole build; no bad row is dropped. Futures basis, liquidations and
+  market cap refusal is correct V1 scope. The false module guard exposes no
+  caller authorization parameter; only RBT-008's reviewed change may lift it.
+  Runtime monkeypatching is not a claimed security boundary.
+- Independently reconstructed venue/shared manifests are byte-identical with
+  shuffled inputs under fresh `PYTHONHASHSEED` 0/1/8675309 processes and a
+  different cwd. Canonical bytes and gzip decompression reproduce their
+  uncompressed digests. A full six-year synthetic shared snapshot (52,608
+  hourly rows per family, one derivatives exchange, eight-hour funding,
+  164,399 records, no ETF rows) measured **73,938,804 uncompressed bytes /
+  8,221,965 gzip bytes**, with exact round-trip and digest checks. The estimate
+  of 78 MB / 8.5 MB is plausible and workload-dependent, not a size contract.
+  RBT-003 should hash the exact uncompressed canonical
+  bytes, store deterministic gzip with zero mtime and no filename, verify after
+  decompression, and bind serializer/compressor versions. This plan is sound;
+  avoid reparsing/re-encoding as an integrity check.
+- Eight independent process-local mutants each fail the focused suite: a bar
+  shift of +5 minutes; removing the ETF T+2 floor; perp visibility at interval
+  start; unsorted JSON keys; a derived restamp one hour before close; checking
+  only the last ETF revision instant; an extra hour from perp start/end
+  confusion; and restoring the timestamp/coverage conflation. The last three
+  include independently chosen mutations. No source file or owner was mutated
+  on disk. The suite stops at the first failure in each fresh process; these
+  are expected mutation failures, not unresolved regressions. This samples the
+  implementer's claims; it does not claim to rerun all thirteen mutants.
+
+**Commands and independently measured results.** All Python runs used
+`.venv312/bin/python` (CPython **3.12.14**). PAD5 and PAD4-R5 ran alone and
+sequentially. PAD5 used its sibling `/home/wlodzimierrr/pad5_tmp`; PAD4-R5 used
+`--basetemp=/tmp/rbt001-review/pad4-temp`. `stat` independently confirmed that
+both temporary roots and the repository have the same device (**2096**), and
+both are outside the repository. All evidence is synthetic/offline.
+
+| Command / test-module set (`python -m pytest -q btc_predictor/tests/...`) | Independent result |
+| --- | --- |
+| `test_research_backtest_replay_inputs.py` + new `test_research_backtest_replay_review.py` | **167 passed** (original **159**, independent **8**); 4.27s |
+| `test_backtest_engine`, `_engine_review`, `_cost_model`, `_walk_forward`, `_regime_performance`, `_setup_performance`, `_threshold_sweeps`, `_epic_s_integration` | **282 passed**; final post-fix rerun |
+| `test_feature_score_boundary`, `test_quant_comparisons`, `test_look_ahead_bias`, `test_risk_invariants`, `test_paper_execution`, `test_golden_scenarios` | **342 passed**; final post-fix rerun |
+| `test_us_equity_market_closures.py` | **145 passed** |
+| `test_flow_features`, `test_positioning_features`, `test_derivatives_collector`, `test_derivatives_quality`, `test_ohlcv`, `test_market_bars`, `test_bitstamp_ohlcv`, `test_simulated_stop_execution`, `_stop_execution_review`, `_entry_execution`, `test_market_bar_rolling_integration` | **243 passed** |
+| `test_reference_composite_v5`, `test_prospective_integration_corpus`, `_corpus_v2`, `test_etf_flows` | **407 passed, 2 pre-existing composite skips**; 111.48s; V5 **`95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`** |
+| Full `test_etf_calendar_replay_verified_evidence.py` | **117 passed**; 442.81s; includes preserved-authority and persisted-namespace checks for PAD5 **`54675984...f483`** and unchanged R5 lineage |
+| `test_etf_calendar_isolated_scientific_worker_r5.py::test_persisted_namespace_reproduces_exactly` and `::test_child_order_variation_does_not_change_the_parent` | **2 passed**; 25.84s; PAD4-R5 **`b4168dc9...61c7`** |
+| `python -m compileall -q btc_predictor etf_calendar_worker`; `git diff --check` | **PASS** |
+| `git diff --diff-filter=MDRT 9752f7b 402e120`; `git diff --name-only 402e120 ac3590a`; review diff against `7d765c7` | implementation has only the three additions; documentation commit only two docs; review changes only replay code/tests and EPIC Y/CURRENT_STATE docs |
+
+Selected passing suite total: **1,705 passed, 2 skipped**. Expected failures
+from the before-fix reproducer and eight mutation runs are excluded. The full
+repository suite and the full 201-case PAD4-R5 suite were **NOT RUN** in this
+review; the historical full-suite baseline is not replaced. All acceptance
+criteria now pass, including corrected history disclosure. New scripts used
+only local temporary probe outputs; no real dataset or holdout was collected.
+
+**Extension and remaining limitations.** RBT-001A must preserve the reviewed V1
+entry points, constants and manifests; add V3 versions and shapes separately,
+and retain refusal of unclassified/unsourceable inputs. No owner modification
+is needed. RBT-002 remains responsible for source semantics, full input-surface
+coverage and source evidence, including the quality owner's need for filtered
+inputs. No real-data backtest outcome exists; holdout **NOT COLLECTED**;
+BTC-019 untouched and sealed sample unopened; EPIC X unchanged with
+`POSTP1-001V2R1` still next; Epic T unchanged.
+
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
 **Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
@@ -428,8 +619,8 @@ Acceptance criteria:
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `BLOCKED — awaiting the RBT-001 review PASS and RBT-002`
-**Dependencies:** RBT-001 independent review PASS, RBT-002
+**Status:** `BLOCKED — awaiting RBT-002 only; RBT-001 review PASS / dependency SATISFIED`
+**Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`), RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
 **Owner module:** `btc_predictor/research_backtest/replay_inputs.py` (extended in a
@@ -452,7 +643,7 @@ Extend the reviewed builder from `HISTORICAL_REPLAY_AVAILABILITY_V1` to `_V2`
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `BLOCKED — awaiting RBT-001A (and so RBT-001 review and RBT-002)`
+**Status:** `BLOCKED — awaiting RBT-001A and RBT-002; RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -631,9 +822,9 @@ version or any version derived from inspecting its result.
 
 | ticket | task | status |
 | --- | --- | --- |
-| RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW — implementation `402e120`; its review is next |
+| RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | NOT STARTED / DEPENDENCY-SATISFIED — needs the research database; now includes the policy V3 §5A input-surface enumeration and blocker list |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-001 review PASS, RBT-002 |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 only; RBT-001 review dependency SATISFIED |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
@@ -641,8 +832,11 @@ version or any version derived from inspecting its result.
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
-**Open EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
+**Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
 positioning score needs futures basis and BTC market cap. Policy V2 gives
 neither an availability rule, so as specified every Entry Conviction would be
-structurally incomplete. The decision is needed before RBT-002 scopes
-collection and before RBT-004. See the RBT-001 Implementation Notes.
+structurally incomplete. Policy V3 answered this before any run: RBT-002
+enumerates the full input surface and RBT-001A extends the reviewed builder.
+See the RBT-001 Implementation Notes and review outcome. Next
+dependency-satisfied EPIC Y tickets are **RBT-002** (requires the research
+database) and **RBT-004**. EPIC X's next ticket remains **POSTP1-001V2R1**.
