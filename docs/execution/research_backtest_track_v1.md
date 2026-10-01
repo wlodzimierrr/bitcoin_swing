@@ -578,7 +578,7 @@ BTC-019 untouched and sealed sample unopened; EPIC X unchanged with
 
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
-**Status:** `CORRECTED / AWAITING INDEPENDENT RE-REVIEW` — R1 correction `906c719` (discovered census and live read-only database regeneration). Both 2026-10-01 re-review attempts (at `4556a01` and `5ec8535`) are `REVIEW BLOCKED — DATABASE`; the prior `FAIL — RELEASE BLOCKING` stands until a completed re-review passes.
+**Status:** `FAIL — RELEASE BLOCKING` — completed independent xHigh re-review of R1 correction `906c719` on 2026-10-01 found unclassified nested trailing-helper inputs (R1-RR). Live database reproduction passes; review-fix `a281378` corrects the AVWAP component mapping and policy identity only. Another census correction and independent re-review are required. Earlier database-blocked attempts are historical.
 **Dependencies:** none
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -657,7 +657,7 @@ Acceptance criteria:
 ### Implementation Notes
 
 **Implementation commit:** `ab210a5`
-**Status:** `CORRECTED / AWAITING INDEPENDENT RE-REVIEW`. The independent review on `9a90313` failed (`FAIL — RELEASE BLOCKING`, review-fix `0b06a85`). The R1 correction `906c719` is recorded in "Correction (R1)" after the review outcome. The original Implementation Notes below are pre-review provenance: the review outcome and the correction supersede their completeness and undefined-input claims. The reviewed inventory `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` remains at `0b06a85`; the current inventory is `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30`.
+**Status:** `FAIL — RELEASE BLOCKING` after the completed independent re-review of `906c719` (R1-RR); bounded review-fix `a281378` and latest inventory `a68e5284...ad765d`. The independent review on `9a90313` failed (`FAIL — RELEASE BLOCKING`, review-fix `0b06a85`). The R1 correction `906c719` is recorded in "Correction (R1)" after the review outcome. The original Implementation Notes below are pre-review provenance: the review outcome and the correction supersede their completeness and undefined-input claims. The reviewed inventory `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` remains at `0b06a85`; the R1 correction inventory is `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30`; after this re-review fix the current inventory is `a68e5284e99e39b113c7ed2705ca533c1c2cfc0e0a6432dde9fcd7de40ad765d`.
 **Files:** new only.
 
 - `btc_predictor/research_backtest/coverage.py` (owner module)
@@ -1683,9 +1683,303 @@ independent re-review. Owner V4 decisions remain fixed.
 never read; BTC-019 untouched, sealed sample unopened; EPIC X unchanged,
 `POSTP1-001V2R1` still its next ticket; Epic T unchanged.
 
+#### Completed independent xHigh re-review at `2157aed`
+
+**Date:** 2026-10-01. **Ticket:** RBT-002. **Reviewed implementation:** R1
+correction `906c719`, with documentation `4556a01`, previous review-fix
+`0b06a85` and review record `f52bcf4`; clean requested branch initially at
+`2157aed`. **Result: FAIL — RELEASE BLOCKING. R1 remains OPEN.** This completed
+review supersedes the two database-blocked attempts as the latest assessment;
+it does not reverse the prior FAIL. RBT-002A and RBT-001A remain blocked.
+The fixed V4 data decisions and completion-spec choice were not reopened.
+
+**Distinct review-fix:** `a281378` fixes the optional AVWAP component
+mapping and inventory policy identity only, with independent regressions and
+regenerated inventory. It does not fix R1 or any frozen owner. Inventory
+before: `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30`;
+after: `a68e5284e99e39b113c7ed2705ca533c1c2cfc0e0a6432dde9fcd7de40ad765d`.
+
+**Findings and raised-item rulings.** All locations are repository-relative.
+
+| ID / severity / disposition | Location; actual versus required behavior; consequence | Independent reproducer, correction and regression |
+| --- | --- | --- |
+| R1-RR / **P1 OPEN, release blocking** | `btc_predictor/research_backtest/input_census.py:982`, `:1068`, `:1204`; `btc_predictor/risk/trailing.py:272`. The walker visits nested bytecode but creates parameter records only for live function objects. The real local helper `calculate_trailing_stop.<locals>.held` consumes `reason`, `candidate=None`, `complete=True`, none with a surface row. The tracer accepts any nested callable through its ancestor, masking the omitted input-bearing callable. §5A requires discovery and classification of these inputs, including internal defaults, before claiming completeness. | Recompile the actual trailing owner in memory, preserving filename/line positions, adding `independent_new_input=True` to `held` and using it in the `complete` argument to `_result`. The helper runs; surface stays **3,288 rows, identical**, its new input has no row, and `uncovered_traced` remains empty. New independent tests `test_nested_trailing_helper_parameters_are_enumerated` and `test_new_nested_live_input_is_refused` explicitly XFAIL; the latter run with `--runxfail` fails **DID NOT RAISE InputSurfaceError** after proving execution and equal rows. Required correction: discover named local function code objects/signatures/defaults/call sites and classify them; independently account for lambda/comprehension inputs; remove the unconditional ancestor exemption for input-bearing nested functions; extend live mutations to the enlarged set; regenerate/re-review. This exceeds a small review fix. |
+| R6 / **P2 FIXED** | `btc_predictor/research_backtest/coverage.py:1335`, `:2172`. `CAPITULATION_EVENT` claimed no Entry Conviction component because AVWAP is optional. Included event AVWAP changes cluster confluence, LevelStrength and thus Structure Score. Optionality controls requiredness, not dependency. | Synthetic actual event → anchor → closed hourly bar → AVWAP → clusters → LevelStrength → v1.2 Structure chain: adding the event AVWAP increases all three scores with fixed touches/reaction/volume. The old mapping fails the independent regression. All eight event rows now feed `structure`; a separate `BlockerDefinition.required_for_entry_component=False` preserves non-structural omission. Existing census test is corrected to the actual dataflow and strengthened to check both facts. |
+| R7 / **P3 FIXED** | `btc_predictor/research_backtest/coverage.py:140`. Artifact policy identity was V3 despite binding V4 and its adopted data rules/champion identity. Identical §5A wording does not make the entire policy identity accurate. | Independent test requiring `INVENTORY_POLICY_VERSION == RESEARCH_BACKTEST_POLICY_V4` fails before the fix and passes after. Label corrected; source/window/owner decisions unchanged. |
+| E1 / **P2 OPEN, frozen owner limitation** | `btc_predictor/features/positioning.py:1260`, `:1340`; `futures_basis_health:551`. Decimal sum/mean rounding gives nonzero computed variance for an exactly constant history, yielding a complete score where the owner promises a zero-variance refusal. This can fabricate positioning evaluability and CROWDING input. EPIC Y cannot edit this EPIC X-bound owner. | Independent 60-row synthetic series, annualized rate `Decimal('0.015') * 365 / 90` identical in every row: **z=1**, health **83.52702114112721**, complete **True**, no reason codes. The independent expected-refusal regression explicitly XFAILs. RBT-002A must record the limitation and require an RBT-004 composer-side equality guard on the owner's actual PIT prior annualized-basis history: constant history refuses `FUTURES_BASIS_ZERO_VARIANCE`, supplies no health/z, and records structural unevaluability; never reimplement the z-score or substitute zero. Use owner aggregation/history helpers, promoted to classified roots if called directly; test current-equals-history and current-differs-from-constant-history, PIT exclusion and unaffected nonconstant cases. An owner fix instead needs an explicit cross-workstream decision; no such edit is authorized here. Disclosure alone cannot justify accepting the false score. |
+| E3 / **NOT_A_DEFECT** | `btc_predictor/research_backtest/input_census.py:537`; inventory census source positions. Owner line shifts change the inventory digest. | Acceptable conservative identity binding for RBT-002A/RBT-006: freeze the reviewed inventory hash alongside code/spec identity and revalidate/rebind when the source census changes. Do not silently ignore line positions or compare only old counts. A separate semantic digest could be additive later; excluding positions is not required for closure. |
+| E4 / **P2 prospective contract risk; required future guard** | RBT-004/RBT-005 acceptance below; `input_census.py:160`. A composer directly calling an internal helper bypasses root-level input classifications even if that helper is already in the static closure. | Require a static, alias-resolving composer-call census and a runtime direct-caller check on all deterministic decision fixtures: every directly called decision owner function must resolve to a `DECISION_PATH_ROOTS` entry; no unresolved owner callback/dict/getattr/partial dispatch. Constructors are limited to explicitly classified composer input/raw types; owner outputs come from roots. Serializers may have an explicit type-bound evidence-only allowance. A new owner call must fail until its root, parameter classifications, left-out records and inventory are reviewed. Apply also to completion-spec-selected rolling helpers, currently deliberately left out. Add a mutation regression that introduces a direct internal-helper call. |
+
+**R1 root and circularity audit.** The 74 roots cover the implementable Rulebook
+component → regime/flags → setup/trigger → conviction → veto/R/R → stop →
+budget/sizing → lifecycle/management flow. Checked every root's justification
+against the owner signature and the required `BacktestIntent` fields:
+entry zone/initial stop/conviction, ADD requirements, TRIM signal, TRAIL result,
+EXIT reason, direction and provenance. The golden harness's direct
+`calculate_initial_stop`, `evaluate_add_requirements`, `evaluate_trim_rules`
+and `evaluate_exit_rules` are **not roots** but are reached through the chosen
+higher-level root wrappers; a composer using those lower-level APIs must first
+promote them to roots. No additional entry point is required by the current
+wrapper contract. Completion-spec-selected normalization helpers will require
+new roots before composition; the as-yet unimplemented spec cannot establish
+that future call contract.
+
+The committed registry is a two-way drift guard, not the discovery source:
+static traversal does not read it. No test silently regenerates it (snapshot
+writes are absent from the tests). Static discovery plus separate runtime
+profiling supplies completeness evidence; that evidence is **insufficient**
+for the nested-input omission above. Registry equality is correct but cannot
+rescue missing nodes.
+
+**Left-out sampling: 24 of 82 function definitions independently judged.**
+Names below are relative to `btc_predictor`; the evidence artifact records each
+full path, file:line and stated reason. Each reason is valid for the current
+single-decision/wrapper contract; none excuses the reached nested helper.
+
+| Function | Judgment |
+| --- | --- |
+| `features.add.calculate_add_score_batch` | Correct: batch wrapper; single-decision add root used. |
+| `features.entry.calculate_entry_conviction_batch` | Correct: batch wrapper; single-decision entry root used. |
+| `features.hold.calculate_hold_score_batch` | Correct: batch wrapper; single-decision hold root used. |
+| `features.momentum.four_week_momentum` | Correct: bare series variant; daily-bar root supplies the same 28-day quantity. |
+| `features.momentum.twelve_week_momentum` | Correct: bare series variant; daily-bar root supplies the same 84-day quantity. |
+| `features.rolling.historical_normalize` | Correct now: unused candidate convention; promote if selected by the completion spec. |
+| `features.rolling.rolling_percentile` | Correct now: unused candidate; same promotion obligation. |
+| `features.rolling.rolling_volatility` | Correct now: no reached caller; volatility uses its named owner. |
+| `features.rolling.rolling_zscore` | Correct now: unused candidate; same promotion obligation. |
+| `features.rolling.true_ranges` | Correct: standalone wrapper; reached ATR path uses the shared bar-range helper. |
+| `features.volatility.calculate_volatility_score_from_results` | Correct: result-conversion convenience wrapper; composer fills the scored input type. |
+| `features.volatility.rv_7_20_60_from_daily_bars` | Correct: convenience triple; roots compute required windows individually. |
+| `features.scoring_contracts.audit_factor_overlap` | Correct: reporting/audit, no decision input. |
+| `features.scoring_contracts.effective_weights` | Correct: reporting/audit, no decision input. |
+| `features.scoring_contracts.effective_weight_report` | Correct: reporting/audit, no decision input. |
+| `portfolio.state_machine.position_event_records` | Correct: persistence serialization after state transitions. |
+| `portfolio.state_machine.replay_position_lifecycle` | Correct: reconstructs existing engine state; not a newly measured input. |
+| `portfolio.state_machine.restore_position_lifecycle` | Correct: validates reconstructed persisted state. |
+| `risk.buffer.volatility_buffer_grid` | Correct: sensitivity grid; configured single buffer owner is the root. |
+| `risk.exposure.risk_at_stop_from_record` | Correct: persisted-result reconstruction, no measurement. |
+| `risk.trailing.trailing_stop_from_record` | Correct: persisted-result reconstruction, no measurement. |
+| `signals.exit_rules.exit_signal_from_record` | Correct: persisted-result reconstruction, no measurement. |
+| `signals.reason_codes.build_reason_code_engine` | Correct: explanation from already computed decisions. |
+| `signals.data_quality.build_recommendation_reason_code_records` | Correct: persistence rows for existing reasons. |
+
+**Independent adversarial fixtures.** Real package-source fixture owners,
+loaded under an in-scope module name, cover all requested pattern families.
+"Runtime catches" means an executed unknown function/type is actually reported
+uncovered, not merely observed. No market data is involved.
+
+| Pattern | Static discovery | Runtime when executed | Neither / real-code follow-up |
+| --- | --- | --- | --- |
+| Enclosing local holding a callback parameter | Misses concrete callback and its input type | Reports both uncovered | Neither can discover an unexecuted externally supplied callback. Real reached local-function audit finds `trailing...held`: its body is walked but its parameters are omitted, and the ancestor exemption masks that omission. |
+| Protocol method on an unnamed concrete class | Reaches Protocol; misses concrete method/input type | Reports both uncovered | Real `breakout.SourceLevel` is a field-only protocol; supported weekly/monthly concrete types are reached. No unclassified concrete implementation found. |
+| Global dict dispatch | Catches stored callback and input type | Covered | No real reached callable dispatch table outside the static set found. |
+| `getattr(module, name)()` dispatch | Misses concrete callback/input type | Reports both uncovered | If not run, neither catches it. Real reached `getattr` sites read enumerated config/state fields, properties or `as_record`; no undiscovered callable dispatch found. |
+| `__post_init__` reading a config | Catches config type/fields and method | Covered | Real quality/config post-init code is reached and classified. |
+| Property calling a helper | Catches property/helper/input type | Covered | Real lifecycle `tranche_count`, `is_open`, `is_terminal`, `persisted_status` and result properties are reached. |
+| Real named local `held`, including a newly used parameter | Body dependencies caught; helper/signature missing | Function observed; inputs **not** checked, falsely considered covered | R1-RR. Both completeness mechanisms miss the parameter surface, even on execution. |
+
+**Tracer adequacy and unexecuted branches.** My full-thunk trace reproduces
+**202 runs, 74 roots, 959 functions, 155 constructed dataclasses, zero path
+misses**. My owner selection runs **1,699 tests in 55 named modules** (explicit
+list in evidence), reaching all 74 roots, 952 functions and 124 constructed
+dataclasses, zero path misses. The correction did not commit its 52-module
+selection, so I do not claim to reproduce that exact selection or its 954
+function count. I initially selected 52 modules/1,677 tests, then added the
+relevant rolling-statistics, market-bar rolling integration and quant decision
+boundary suites (22 tests); both selections had zero path misses.
+
+Coverage.py **7.16.0**, branch measurement, all **50 reached source modules**
+included, even if a file never executes. Denominators below are computed from
+coverage JSON, not from fixture assertions. "Reached" restricts statements/arcs
+to source bodies of census callables; module totals also include unreached
+wrappers/persistence and initialization. Imports and fixture construction are
+included in the module measurement; runtime owner tracing is separately scoped.
+
+| Runs | Entire reached modules: lines / branches | Reached callable bodies: lines / branches |
+| --- | --- | --- |
+| 202 fixture runs | 4,993/11,539 (**43.27%**); 2,235/4,140 (**53.99%**) | 4,993/7,565 (**66.00%**); 2,235/3,728 (**59.95%**) |
+| My 1,699 owner tests | 6,480/11,539 (**56.16%**); 3,149/4,140 (**76.06%**) | 5,855/7,565 (**77.40%**); 2,934/3,728 (**78.70%**) |
+
+There are **1,493** fixture-unexecuted and **794** owner-test-unexecuted
+reached-body branch arcs. The complete file:source-line → target-line list,
+including the enclosing callable, is committed in
+[`rbt002_rereview_evidence_v1.json`](../../backtest_evidence/research_backtest_v1/rbt002_rereview_evidence_v1.json)
+under `coverage.runs.{fixtures,owners}.files.*.unexecuted_branches`.
+The `reviewer_probe_source` entries preserve the actual independent SQL,
+mutation, coverage/tracer and branch-analysis scripts (temporary working paths
+are explicit); `owner_test_files` supplies the exact owner selection. Negative
+targets mean function exit. This explicitly lists the branches; zero tracer
+misses is not interpreted as branch closure. Independent AST resolution of
+calls/constructions in never-executed reached statements found **no additional
+explicit owner target outside the static set**. Local and object dispatch were
+also inspected via the pattern audit. The named local-helper omission is the
+positive counterexample despite these zero target misses.
+
+**Injection verification.** Original three cloned-type reproducers and the
+reward/helper parameter reproducers genuinely replace live module bindings;
+they pass the focused suite. The committed universal tests at
+`test_research_backtest_coverage_census.py:284` and `:296` instead mutate census
+records, then call `_require_classified_census`: useful non-vacuous drift-guard
+tests, **not** 882 live-code / 157 live-type discovery experiments. I separately
+recompiled and substituted all **882** live function bodies with one extra
+keyword parameter: all refused `UNCLASSIFIED_PARAMETER`. I separately mutated
+all **157** live field schemas (156 dataclasses, one Protocol): all refused
+`UNCLASSIFIED_FIELD`. The dataclass experiment modifies the actual live
+`__dataclass_fields__` mapping; it does not claim to rebuild every constructor.
+A separate live `SourceLevel.__annotations__` mutation also refuses. An initial
+class-clone sweep stopped on `DecisionTolerance` because old default instances
+caused `CONFLICTING_OWNER_OBJECTS`; that partial sweep is not counted as a
+successful universal run. The independent by-hand top-level reward mutation
+passes its regression; the by-hand nested mutation exposes R1-RR. Mutation
+probes are preserved as source strings in the review evidence artifact; none
+silently regenerates the registry.
+
+**Classifications and R2–R5.** Independently checked **33 rows** across raw,
+derived, undefined, certified, fallback, discretionary, config, engine-state
+and internal-dataflow kinds. Full sampled row keys/classifications are in the
+evidence artifact. Spot checks include trend and ETF z-score undefinedness;
+weekly-structure producer; ETF_CORE absent CVD/participation; basis-health
+producer; daily market-cap shape; certified liquidation definition; downside
+return; v1.2 diagnostic-only outer confluence; severe crowding; systemic shock;
+add/hold/local-high/optional measured-move gaps; settlement/snapshot/interval
+stamps; event and SourceLevel; fixed windows; stress/quality/risk config;
+lifecycle quantity; cluster/risk/trailing outputs; quant weighted-score inputs;
+and config loading. The AVWAP mapping error is fixed as R6. No additional
+owner-less measurement ID was found by sampling; the internal nested omission
+is **not** a new undefined strategy convention.
+
+All **948 output fields / 84 output types** have a real AST constructor under
+a reached owner/root, not merely a registry category or annotation. Independently
+spot-checked 11 producers: AnchoredVwapAnchor, AnchoredVwapResult, LevelCluster,
+MonthlySwingLevel, VolumeProfileBin, VolumeProfileResult, PositioningScoreResult,
+FuturesBasisHealthResult, RegimeScoreResult, RiskBudgetResult, TrailingStopResult.
+The evidence records constructor/source/root paths. This output-field check does
+not classify the missing local helper's parameters. All **23 reported fixed
+defaults** match actual live signatures and defined owner conventions. More than
+10 checked individually: full-window `min_periods=None` in rolling mean/ATR/RV,
+20/52-week windows, DecisionTolerance `1E-12`, distance/risk/true-range
+`nan_policy='raise'`, RV `sample=False`, weighted-score tolerance `1e-6`,
+Gaussian maximum 100, normal-CDF bounds/mean/deviation, percentile direction,
+and reward major timeframes `('1w','1mo')`. Nested defaults are still outside
+this reported count and prevent a completeness PASS.
+
+Bytewise JSON comparisons against the `b4b51fc4...ed6a106` inventory confirm
+unchanged minimum histories, earliest dates, family coverage, exposure report,
+sources (including semantic pins/probes), and USD 29 acquisition plan. Before
+this review fix, exactly three of the original 592 rows had semantic changes:
+anchor producer/missing wording, weekly+monthly SourceLevel producers, and all
+accepted cluster producers plus volume family; each is justified by actual code.
+The review fix additionally changes the event's Structure mapping and policy
+label, with derived census-profile consequences, without moving any dates or
+source facts. The original 24 IDs, their occurrences and blocker membership,
+`MEASURED_MOVE_REFERENCE`, certified liquidations and the §9.2 volume fallback
+stay fixed. The frozen strength owner still refuses absent volume even at zero
+volume weight; the completion spec must cite the existing fallback and disclose
+this owner-compatibility gap, never define a new percentile or zero-fill it.
+R4's bare/quoted/qualified/aggregate value-column mutation guards still pass.
+R5 remains a historical procedural disclosure; no new provider probe was made.
+
+**Live database reproduction — independently VERIFIED.** Connection only
+through `_database_url_from_environment`; first query
+`SELECT current_setting('default_transaction_read_only')` returned **on**;
+transaction read-only also **on**. No `.env`, URL or credentials were read or
+printed. My own SQL uses only series identities, timestamps and counts; missing
+hours are a `generate_series` anti-join, grouped by timestamp minus hourly
+row-number to derive consecutive runs. Schema time-column metadata and aggregate
+scans separately distinguish observations, availability and ingestion. One
+initial composite query used a nonexistent timestamp column, failed read-only,
+and was corrected to schema-declared `observation_time`; no value query occurred.
+
+| Fact | Independently reproduced |
+| --- | --- |
+| Bitstamp | **52,608 distinct 1h timestamps**, zero missing. |
+| Coinbase | **52,597**, **11 missing in 5 runs**: 2020-01-30 17; 2020-09-04 23; 2020-10-20 20; 2023-03-04 18–20; 2025-10-25 16–20 UTC. |
+| Bitfinex | **52,592**, **16 missing in 7 runs**: 2020-02-11 11–12; 2020-08-12 21; 2021-06-30 08–09; 2021-10-13 14–16; 2022-10-12 08–11; 2023-03-06 10–11; 2024-05-05 10–11 UTC. |
+| Other raw tables | ETF, funding, basis, generic series, liquidations, OI, perpetual volume: **0 rows each**. Market cap has no raw table. |
+| December 2019 | **2,232**, **744 per venue**, December 1 00:00 through December 31 23:00. Count/timestamps only; exposure retained, not accepted. |
+| Holdout/reserve | **No raw observation rows**. Three composite availability timestamps at 2026-01-01 00:05 correspond to observations 2025-12-31 23:00. Raw OHLCV ingestion timestamps in August 2026 are provenance, not observations. |
+
+A separate guarded `coverage collect` to a temporary directory, using the
+stored collection instant solely to compare metadata, reproduces the **entire
+database snapshot exactly**. Thus the inventory comparison is not accepted on
+stored data alone. All inventory files re-hash/rebuild byte for byte in fresh
+processes, alternate cwd, seeds **0/1/8675309**, before and after the fix.
+
+**Four interrupted audit areas independently re-audited.** The correction's
+notes identify **composer-facing inputs, defaults, type categories,
+completeness** (not four completed agent verdicts).
+
+| Area | Independent result |
+| --- | --- |
+| Composer-facing | Root/wrapper/intent/golden contract checked; event undefinedness confirmed, Structure dependency corrected. Future direct-call guard required. |
+| Defaults | All 23 recorded defaults independently checked; real local `held` defaults omitted. **FAIL R1-RR.** |
+| Type categories | 84 constructor-backed output types, raw/composer types, 28 strategy config records, quality/tolerance/budget config and engine state checked; 33 cross-kind samples, 11 output producers. No new undefined ID beyond the confirmed event. |
+| Completeness | Registry independence, 74 roots, 24 left-outs, six adversarial patterns, both tracers, branch gaps and live mutations checked. **FAIL R1-RR** despite zero path misses. |
+
+**Confirmed RBT-002A minimum: 25 undefined IDs; no final completeness sign-off.**
+
+```text
+TREND_Z_M4, TREND_Z_M12, TREND_Z_20W, TREND_Z_52H
+FLOW_Z_ETF_NORM_5D, FLOW_Z_ETF_NORM_20D, FLOW_Z_FLOW_ACCEL
+RANGE_PERCENTILE, DOWNSIDE_RETURN, UPSIDE_RETURN
+LEVEL_REACTION_MAGNITUDE, SEVERE_CROWDING_STATE
+MOMENTUM_PERSISTENCE_SCORE, NEW_STRUCTURE_SCORE, ADD_MOMENTUM_SCORE
+NEW_STRUCTURAL_CONFIRMATION, REGIME_SUPPORTIVE_PREDICATE, FLOW_SUPPORTIVE_PREDICATE
+REGIME_INVALIDATION_PREDICATE, DATA_RISK_EXIT_PREDICATE
+CORRECTION_FROM_LOCAL_HIGH, DISTRIBUTION_STATE, SHORT_TRIGGER
+MEASURED_MOVE_REFERENCE, CAPITULATION_EVENT
+```
+
+Also account for `LEVEL_VOLUME_PERCENTILE` via the existing §9.2 fallback and
+its frozen-owner compatibility gap. `CAPITULATION_EVENT` is optional but feeds
+Structure when included; explicit omission is a completion-spec ruling. The
+short-only IDs stay inert. The list may grow during the required census
+correction; RBT-002A cannot start on a false final-list claim.
+
+**Commands / own validation counts.** `.venv312` CPython **3.12.14**. Proof
+subsets run alone, separately from each other and from other validation.
+
+| Suite / command | Own result |
+| --- | --- |
+| Original focused coverage/review/census/nine trace modules | **296 passed** before fix. |
+| Same focused modules plus independent re-review module after fix | **305 passed, 3 explicit XFAIL** (two release-blocking R1 regressions and the frozen basis owner defect). These are known failures, not closure evidence. |
+| New nested mutation with `--runxfail -k new_nested_live_input` | **1 failed as expected: DID NOT RAISE**, 11 deselected. |
+| RBT-001 replay inputs/review | **167 passed**. |
+| `test_us_equity_market_closures.py` | **145 passed**. |
+| BTC-180..185 named engine/cost/walk-forward/regime/setup/sweep/integration modules | **282 passed**. |
+| BTC-220..224 feature boundary/comparisons/look-ahead/risk/paper/golden | **342 passed**. |
+| Flow/positioning/volatility/trend/structure/derivatives collector+quality/OHLCV/market bars | **320 passed**. |
+| Reference V5 / corpus V1+V2 / ETF | **407 passed, 2 existing skips**; V5 `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`. |
+| PAD5 preserved authority / failed R5 predecessor / namespace / child order / frozen modules | **5 passed, 112 deselected**; `54675984...f483`. |
+| PAD4-R5 namespace / child order | **2 passed, 199 deselected**; `b4168dc9...61c7`. |
+| Owner tests under coverage and root-scoped profiling | **1,699 passed**; explicit 55-module list in evidence. |
+| `compileall -q btc_predictor etf_calendar_worker`; `git diff --check` | **PASS**. |
+| Hash / rebuild / seeds / cwd / fresh process | **PASS**, all three inventory files. |
+
+Whole-repository suite and full 117-test PAD5 proof suite **NOT RUN**; no full
+suite success is claimed. Regression counts are my runs, not copied assertions.
+
+**Acceptance / design / documentation / next.** Scope, live coverage/exposures,
+source/history preservation, artifact determinism and bounded classification
+fixes pass. The mandatory exhaustive input-surface criterion **FAILS**. No ticket
+closure is authorized; RBT-002 cannot remain DONE. No additional strategy
+semantics or owner formula was invented. Code/test/inventory changes are listed
+in the distinct review-fix; this outcome, affected statuses/Next EPIC Y table,
+future composer guard and CURRENT_STATE snapshot are updated in the subsequent
+documentation commit. The evidence artifact records branch lists, probes and
+samples. Next EPIC Y work: another **RBT-002 R1 correction**, followed by an
+independent xHigh re-review. RBT-002A/RBT-001A remain blocked. EPIC X's separate
+next dependency-satisfied ticket remains **POSTP1-001V2R1**.
+
+**Safety:** no real-data backtest outcome; holdout **NOT COLLECTED**, its values
+never read; BTC-019 untouched, sealed sample unopened; EPIC X unchanged,
+`POSTP1-001V2R1` still next; Epic T unchanged. Only EPIC Y's own modules, tests,
+evidence/inventory and the two handoff/roadmap documents change.
+
+
 ## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
 
-**Status:** `BLOCKED — awaiting the independent re-review PASS of the corrected RBT-002 (R1 correction 906c719); both 2026-10-01 re-review attempts REVIEW BLOCKED — DATABASE, latest at 5ec8535`
+**Status:** `BLOCKED — RBT-002 re-review FAIL (R1-RR); awaiting another census correction and independent xHigh PASS. Confirmed minimum 25 IDs plus existing volume fallback; no completeness sign-off.`
 **Dependencies:** RBT-002 independent review PASS, so that the list of
 owner-less inputs is confirmed complete
 **Implementation effort:** xHigh
@@ -1716,10 +2010,16 @@ Acceptance criteria:
   - the optional anchored-VWAP capitulation-event anchor `CAPITULATION_EVENT`,
     found by the R1 census (explicit omission is a ruling);
   - the short-side inputs, listed as inert.
-  The RBT-002 review outcome gives the 24 confirmed undefined IDs and the
-  separate Rulebook volume-fallback obligation. The R1 correction lists 25
-  (the 24 plus `CAPITULATION_EVENT`). RBT-002A cannot start until the corrected
-  RBT-002 re-review passes.
+  The completed RBT-002 re-review confirms a minimum of 25 undefined IDs
+  (the original 24 plus `CAPITULATION_EVENT`) and the separate Rulebook
+  volume-fallback obligation. The event feeds Structure when included but
+  is optional. R1-RR prevents a final completeness sign-off; the list may grow
+  during the required correction. RBT-002A cannot start until RBT-002 passes.
+- **Frozen basis limitation.** Record the non-terminating constant-series
+  zero-variance defect and require the owner-history equality/refusal guard
+  specified in the completed re-review; disclosure alone does not authorize
+  accepting the false health score. Do not restate the formula or edit the
+  frozen owner without a separate cross-workstream decision.
 - **Source precedence (§6A.2).** Each definition records its source class:
   Rulebook, Rulebook fallback, owner convention, config, or `NEW_PARAMETER`.
   It cites the exact line or symbol, and each `NEW_PARAMETER` has a one-line
@@ -1740,7 +2040,7 @@ Acceptance criteria:
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `BLOCKED — awaiting the independent re-review PASS of the corrected RBT-002 (906c719); both 2026-10-01 re-review attempts REVIEW BLOCKED — DATABASE, latest at 5ec8535; policy V4 data rules ADOPTED and RBT-001 review dependency SATISFIED`
+**Status:** `BLOCKED — RBT-002 re-review FAIL (R1-RR); awaiting another census correction and independent xHigh PASS. Policy V4 data rules ADOPTED; RBT-001 review dependency SATISFIED.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`), RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -1809,6 +2109,19 @@ Acceptance criteria:
 
 - **No new formulas.** Every numeric value comes from an owner call. Review
   verifies there is no restated threshold, weight or transform.
+- **Census call boundary.** A static alias-resolving call census and runtime
+  direct-caller check across deterministic fixtures must prove that every
+  decision owner function directly called by the composer is a census root.
+  Unresolved owner callback/dict/getattr/partial dispatch is refused. Explicitly
+  classified input/raw constructors and type-bound evidence serializers may be
+  separately allowed; owner output records come from roots. Promote and classify
+  any completion-spec helper before calling it, regenerate/review the inventory,
+  and add a mutation test introducing a new direct internal-helper call.
+- **Basis zero variance.** Enforce the re-review's composer-side constant-prior-
+  history refusal using the owner's PIT aggregation/history outputs, with no
+  restated z-score. Promote directly called helpers into the census. Record
+  structural unevaluability and no health/z value, with deterministic constant,
+  nonconstant and PIT boundary regressions.
 - The composer reads only `BacktestContext` and replay inputs whose modelled
   availability is at or before the decision instant. A point-in-time property
   test covers this.
@@ -1845,8 +2158,9 @@ The in-position half. From the hold score and lifecycle state it emits `TRAIL`,
 
 Acceptance criteria:
 
-- The same no-new-formula, point-in-time, decision-ledger and determinism
-  criteria as RBT-004.
+- The same no-new-formula, point-in-time, decision-ledger, determinism and
+  census direct-call boundary criteria as RBT-004. Its own fixtures and mutation
+  regression must cover the management composer as well.
 - **Rulebook §24 NO ADDING (policy §7):** no `ADD` intent is issued while
   STRESS, CROWDING or EUPHORIA is active. Each suppression is recorded as
   `RULEBOOK_24_NO_ADDING_ENFORCED`. The lifecycle-state (`DEFEND`) mapping is
@@ -1945,9 +2259,9 @@ version or any version derived from inspecting its result.
 | ticket | task | status |
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
-| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | CORRECTED / AWAITING INDEPENDENT RE-REVIEW — attempts on `4556a01` and `5ec8535` REVIEW BLOCKED — DATABASE (missing exported environment); R1 correction `906c719`, inventory `0d5f7040...987e30`. Prior review FAIL stands |
-| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — corrected RBT-002 re-review PASS; latest attempt at `5ec8535` DATABASE BLOCKED. Proposed 25-ID list pending re-review; previous 24 confirmed IDs and existing volume fallback retained |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — corrected RBT-002 re-review PASS; latest attempt at `5ec8535` DATABASE BLOCKED. V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
+| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | FAIL — RELEASE BLOCKING after completed re-review of `906c719`: R1-RR nested helper inputs. Review-fix `a281378`, inventory `a68e5284...ad765d`; live database verified. Another census correction/re-review required |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — RBT-002 R1-RR correction and review PASS. Confirmed minimum 25 IDs plus existing volume fallback; final completeness withheld |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 R1-RR correction and review PASS. V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 review; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
