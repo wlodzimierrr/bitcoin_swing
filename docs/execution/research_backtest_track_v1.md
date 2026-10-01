@@ -614,8 +614,42 @@ Acceptance criteria:
   Conviction component structurally incomplete on every evaluation date,
   record it as requiring an owner decision; do not proceed to RBT-003 scoping
   for that input.
+- **Owner-less derived inputs.** Some inputs have no Phase-1 owner that
+  produces them. The known case is `liquidation_percentile`, which only EPIC
+  X's certified corpus V1 defines, as
+  `PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1`. For each such input:
+  - Reuse an existing certified definition, by import or by exact reference;
+    never restate or invent one. For liquidations that means:
+    - daily long-plus-short USD notional per UTC day;
+    - a 730-day prior window with at least 365 prior observations;
+    - the midrank percentile convention;
+    - the `PROSPECTIVE_LIQUIDATION_CAPTURE_V1` universe, Kraken Futures
+      `PI_XBTUSD`;
+    - its hourly `LIQUIDATION_UTC_DAY_CENSUS_V1` completeness rule.
+  - If there is no certified definition, record a §5A blocker.
+- **Liquidation source order** (consistency with the EPIC X universe first,
+  cost second). For each candidate, measure history depth and record the cost.
+  The evaluation window needs daily observations from no later than
+  2023-01-11 (365 days before the first ETF-era decision), and ideally from
+  2022.
+  1. Kraken Futures public history for `PI_XBTUSD` liquidation fills: the same
+     universe, and raw events, so the hourly census applies unchanged.
+  2. A raw-trade archive for Kraken Futures (for example Tardis.dev) that keeps
+     liquidation flags: the same universe; paid, so record the exact price.
+  3. A free aggregator with retained daily history (for example the Coinalyze
+     `liquidation-history` daily interval), preferably for the Kraken
+     `PI_XBTUSD` series.
+  4. A low-cost paid aggregator (for example the CoinGlass Hobbyist plan, about
+     $29 for one month at the time of this note).
+
+  Options 3 and 4 give daily aggregates, so the hourly census cannot be applied
+  and the universe may differ. If either is the only adequate source, record
+  the exact deviation and a proposed daily-completeness rule as a blocker. It
+  needs an explicit policy V4 decision before RBT-001A, and is never adopted
+  silently.
 - Persists the inventory under `backtest_evidence/research_backtest_v1/`.
-  Nothing is collected by this ticket.
+  Nothing is collected by this ticket, apart from metadata probes (depth,
+  schema, pricing) needed to rank sources.
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
