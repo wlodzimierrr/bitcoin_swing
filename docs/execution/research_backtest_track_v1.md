@@ -6,10 +6,13 @@ and acceptance criteria. It is **not** Phase-1 execution authority: [Structured
 Tickets v2.6](bitcoin_swing_predictor_structured_tickets_v2_6.md) keeps that role
 and is not modified by this workstream. It is **not** EPIC X or BTC-019 authority.
 
-Governing policy: [`RESEARCH_BACKTEST_POLICY_V3`](../policies/research_backtest_policy_v3.md).
-It superseded V2 before any run, adding record-shape availability rules, the
-positioning, liquidation and discretionary inputs, and the input-surface
-completeness rule. V2 had superseded V1 by naming the market-closure owner.
+Governing policy: [`RESEARCH_BACKTEST_POLICY_V4`](../policies/research_backtest_policy_v4.md).
+It superseded V3 before any run. On the owner's RBT-002 decisions it adopts
+four data rules verbatim (liquidation hour completeness, futures-basis
+contract, STRESS hard-veto mapping, per-window ETF fund universe). It also
+makes the pre-registered `CHAMPION_COMPLETION_SPEC_V1` part of the champion
+identity. V3 had added record-shape availability rules and the input-surface
+completeness rule. V2 had named the market-closure owner.
 Every rule in that policy binds every ticket below.
 
 ## Why this workstream exists
@@ -1021,9 +1024,57 @@ module changed.
 - Binance's early `metrics` files carry duplicate slots.
 - This is not the independent review.
 
+## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
+
+**Status:** `BLOCKED — awaiting the RBT-002 independent review PASS`
+**Dependencies:** RBT-002 independent review PASS, so that the list of
+owner-less inputs is confirmed complete
+**Implementation effort:** xHigh
+**Review:** independent xHigh ticket review, which must also confirm that no
+outcome was computed
+**Owner:** `docs/policies/champion_completion_spec_v1.md` (new narrow versioned
+strategy policy, EPIC Y scope only), plus a hash-bound machine-readable
+definition and its coverage test under `btc_predictor/research_backtest/`
+
+Author `CHAMPION_COMPLETION_SPEC_V1` under the binding rules in policy V4 §6A.
+The owner chose this option on 2026-10-01.
+
+Acceptance criteria:
+
+- **Coverage.** Every owner-less, undefined input in the reviewed RBT-002
+  inventory is covered exactly once. A test fails if the inventory gains an
+  input the spec does not cover, or if any input is covered twice. The inputs
+  are:
+  - trend z-scores (`Z_M4`, `Z_M12`, `Z_20W`, `Z_52H`);
+  - flow z-scores (`ETFNorm_5`, `ETFNorm_20`, `FlowAccel`);
+  - range percentile, downside return and upside return;
+  - level reaction magnitude and level volume (or the Rulebook §9.2 core
+    weights without volume);
+  - severe crowding;
+  - the hold, add and exit predicates;
+  - Bullish Reset's local high;
+  - the short-side inputs, listed as inert.
+- **Source precedence (§6A.2).** Each definition records its source class:
+  Rulebook, Rulebook fallback, owner convention, config, or `NEW_PARAMETER`.
+  It cites the exact line or symbol, and each `NEW_PARAMETER` has a one-line
+  rationale.
+- **Uniformity (§6A.3).** One z-score rule and one percentile rule for every
+  undefined case. Exceptions are only where the Rulebook distinguishes inputs,
+  and each is listed.
+- **Predicates (§6A.4).** Every predicate maps to existing owner outputs and
+  thresholds, with no new indicator. Conservative readings follow §6A.5.
+- **Warm-up disclosure.** For each definition, give its warm-up and its effect
+  on each venue's earliest evaluable date, from RBT-002's coverage facts. No
+  outcome is computed.
+- **Pre-registration evidence.** The commit contains no real-data score,
+  signal or trade computation. State in the notes which data were consulted:
+  availability and coverage only.
+- **Freezing.** The definition is frozen by hash and byte-identical under
+  `PYTHONHASHSEED` 0/1/8675309, an alternate cwd and a fresh process.
+
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `BLOCKED — awaiting the RBT-002 independent review and the policy V4 decisions BLK-LIQUIDATION-HISTORICAL-CENSUS and BLK-FUTURES-BASIS-CONTRACT; RBT-001 review PASS / dependency SATISFIED`
+**Status:** `BLOCKED — awaiting the RBT-002 independent review; the policy V4 data rules were ADOPTED 2026-10-01; RBT-001 review PASS / dependency SATISFIED`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`), RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -1068,8 +1119,9 @@ Acceptance criteria:
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
-**Dependencies:** none (uses existing owner input types)
+**Status:** `BLOCKED — awaiting the RBT-002A review PASS (completion spec)`
+**Dependencies:** RBT-002A independent review PASS. Without the spec, every
+composed Entry Conviction is structurally incomplete.
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
 **Owner module:** `btc_predictor/research_backtest/entry_composer.py` (new)
@@ -1228,9 +1280,10 @@ version or any version derived from inspecting its result.
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW — implementation `ab210a5`; inventory `b7b9a20b...be3bf0`; EPIC Y stops for 4 Entry Conviction owner decisions, 3 further owner decisions and 4 policy V4 decisions |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 review; policy V4 decisions on the liquidation census and the futures-basis contract; RBT-001 review dependency SATISFIED |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — RBT-002 review PASS (owner chose the pre-registered spec, 2026-10-01) |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 review only; policy V4 decisions ADOPTED 2026-10-01; RBT-001 review dependency SATISFIED |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 review; plan total USD 29, nothing purchased |
-| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED by its ticket text; until the RBT-002 owner decisions land, every composed Entry Conviction is STRUCTURALLY_UNEVALUABLE and every new trade is vetoed |
+| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |

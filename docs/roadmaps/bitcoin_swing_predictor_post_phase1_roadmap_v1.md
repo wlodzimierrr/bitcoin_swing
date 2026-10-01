@@ -199,7 +199,7 @@ The certification pack in §4.1 needs an approved canonical reference, and the
 only planned route to one runs through EPIC X, which includes open-ended
 prospective collection. Meanwhile the backtester has never replayed real data.
 [EPIC Y](../execution/research_backtest_track_v1.md), under
-[RESEARCH_BACKTEST_POLICY_V3](../policies/research_backtest_policy_v3.md), runs
+[RESEARCH_BACKTEST_POLICY_V4](../policies/research_backtest_policy_v4.md), runs
 the frozen champion once per required venue and declares every result
 non-certifying. The sequence:
 

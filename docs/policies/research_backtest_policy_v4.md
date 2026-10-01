@@ -1,19 +1,28 @@
-> [!NOTE]
-> **SUPERSEDED 2026-10-01 by
-> [`RESEARCH_BACKTEST_POLICY_V4`](research_backtest_policy_v4.md), before any EPIC Y
-> run.** V4 adopts four RBT-002 data rules and adds the pre-registered
-> champion completion spec. V3 is retained unchanged below as provenance.
+# Research Backtest Policy V4
 
-# Research Backtest Policy V3
+Policy identifier: `RESEARCH_BACKTEST_POLICY_V4`
 
-Policy identifier: `RESEARCH_BACKTEST_POLICY_V3`
-
-Status: **ADOPTED 2026-10-01 — documentation-only governance decision.
-Supersedes [`RESEARCH_BACKTEST_POLICY_V2`](research_backtest_policy_v2.md)
-before any EPIC Y run.** ([V1](research_backtest_policy_v1.md) was superseded by
-V2 for the same reason.)
+Status: **ADOPTED 2026-10-01 — documentation-only owner decision.
+Supersedes [`RESEARCH_BACKTEST_POLICY_V3`](research_backtest_policy_v3.md)
+before any EPIC Y run.** (V2 and V1 were superseded the same way.)
 
 ## Changes from earlier versions
+
+**V3 → V4 (owner decisions on the RBT-002 blocker list).** RBT-002's
+mechanical enumeration (inventory `b7b9a20b…be3bf0`) found two kinds of gap:
+
+1. **Four data-plumbing rules**, adopted here verbatim as proposed (all $0):
+   - `HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1` (§4A);
+   - `FUTURES_BASIS_CONTRACT_V1` (§4A);
+   - the STRESS hard-veto mapping (§7);
+   - the per-window ETF fund universe (§5).
+2. **Undefined strategy inputs.** About 24 inputs that the Entry Conviction
+   components, the hard veto, the lifecycle owners and one setup consume have
+   no definition in any owner, config, certified contract or Rulebook text.
+   Trend, flow, volatility and structure can therefore never be complete. The
+   owner chose to fill them with a **pre-registered, versioned completion
+   spec**, `CHAMPION_COMPLETION_SPEC_V1`, authored by RBT-002A under the binding
+   rules in §6A. The champion identity (§6) now includes that spec.
 
 **V2 → V3.** RBT-001 found that the policy named no rule for inputs the
 champion cannot do without. Positioning (Rulebook §7.5) needs futures basis
@@ -82,7 +91,7 @@ Every EPIC Y artifact carries:
 ```text
 evidence_class       = RESEARCH_BACKTEST_NON_CERTIFYING
 canonical_reference  = UNRESOLVED
-policy               = RESEARCH_BACKTEST_POLICY_V3
+policy               = RESEARCH_BACKTEST_POLICY_V4
 ```
 
 EPIC Y output may **never** be used to:
@@ -203,17 +212,53 @@ Rules:
   in the report. For non-certifying research this is an accepted limitation.
 - Modelled availability is never earlier than the observation's close or end.
 
+## 4A. Adopted data rules
+
+**`HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1`**, adopted verbatim:
+
+> An hour [h, h+1) of PI_XBTUSD is OBSERVED when the paginated REST execution
+> log was read contiguously across it (unbroken continuation chain, no error)
+> and at least one execution of any order type is stamped in it; zero
+> Liquidation-typed fills then make OBSERVED_ZERO_EVENTS. An hour with no
+> execution at all, or a Tardis-reported incident hour, is SOURCE_UNAVAILABLE.
+> Kraken's hourly liquidation-volume series must agree within rounding. Days
+> still need all 24 OBSERVED hours; the percentile adapter is otherwise
+> unchanged.
+
+It replaces, for historical replay only, the live-capture evidence that EPIC
+X's `LIQUIDATION_UTC_DAY_CENSUS_V1` requires. Everything else is reused by
+reference, unchanged, from EPIC X's certified definitions:
+- the universe (Kraken Futures `PI_XBTUSD`);
+- the quantity (daily long-plus-short USD);
+- the window and minimum (730 days, 365 observations);
+- the midrank percentile convention.
+
+The source is Kraken Futures REST execution history (`$0`, measured depth
+from 2021-05-27). This rule makes no claim about EPIC X.
+
+**`FUTURES_BASIS_CONTRACT_V1`**, adopted verbatim:
+
+> Binance COIN-M BTCUSD quarterly delivery contracts listed at t, basis_rate =
+> futures 1h close / COIN-M BTCUSD index 1h close - 1 at the hour close t
+> (SNAPSHOT), annualized_basis_rate = basis_rate * 365 days / (expiry - t),
+> contracts within 7 days of expiry excluded; expiry = the contract's delivery
+> instant.
+
+The BTC-021 collector defines no contract, so this rule is the definition for
+EPIC Y. The owner `futures_basis_health` averages every row that shares an
+`observation_time`, unchanged.
+
 ## 5. Input families and Rulebook fallbacks
 
 | Family | EPIC Y treatment |
 | --- | --- |
 | Reference price (`1h`) | Required, per venue |
 | Raw volume / spot participation | Bitstamp raw OHLCV, shared across all runs |
-| ETF flows + AUM | Required for any trade; backfilled with §4 availability |
+| ETF flows + AUM | Required for any trade; backfilled with §4 availability. **Fund universe (adopted verbatim):** per decision, pass funds = the funds with a first US trading date on or before the window's first included publication date; record each fund's launch date with its source evidence. Pre-launch rows are never invented |
 | Funding, open interest | Required. Positioning (an Entry Conviction component) has no Rulebook fallback |
-| Futures basis | **Required.** It feeds `BasisHealth` (positioning, no fallback) and the STRESS / EUPHORIA flags. It comes from the existing `futures_basis` raw table and the BTC-021 collector semantics; historical spans use a provider adapter that reproduces those semantics exactly (RBT-002 pins the contract definition) |
+| Futures basis | **Required.** It feeds `BasisHealth` (positioning, no fallback) and the STRESS / EUPHORIA flags. It comes from the existing `futures_basis` raw table under `FUTURES_BASIS_CONTRACT_V1` (§4A), sourced from Binance COIN-M quarterly and index history ($0) |
 | BTC market cap | **Required.** It feeds `LeverageHealth` through OI intensity (positioning, no fallback) and the EUPHORIA flag. No raw table or collector exists. It is one declared provider series, shared across all venue runs (never derived from a per-venue reference price), persisted as hash-bound evidence files under `backtest_evidence/` because §9 forbids a schema migration. RBT-002 selects the provider; a public, reproducible source is preferred |
-| Liquidations | **Required** wherever an Entry Conviction component consumes them (the volatility orderliness owner's liquidation component) and for the STRESS / CAPITULATION flags. It comes from the existing `liquidations` raw table. If no historical source exists for the evaluation span, that is a §5A blocker |
+| Liquidations | **Required** wherever an Entry Conviction component consumes them (the volatility orderliness owner's liquidation component) and for the STRESS / CAPITULATION flags. It comes from the existing `liquidations` raw table, as per-side hourly aggregates for Kraken Futures `PI_XBTUSD`, under `HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1` (§4A). `liquidation_percentile` reuses EPIC X's certified adapter by reference |
 | Perpetual volume | A flow spot/perp participation input. Under `ETF_CORE` it does not enter the flow score. It is retained for any owner RBT-002 finds consuming it; no positioning owner consumes it |
 | Discretionary assertions (`systemic_shock`, `systemic_euphoria`) | Not asserted (`DISCRETIONARY`, §4), and reported as named limitations together with the owner's documented handling of `None` |
 | US equity market full-day closures (the flow owner's `market_holidays`) | **`US_EQUITY_MARKET_CLOSURE_TABLE_V1`**, loaded and hash-verified by its owner module and passed to the existing `market_holidays` parameter. Required, and only after the `POSTP1-002V2A-T1` review passes. A date on which a flow window is evaluated that falls outside the table's coverage blocks the RBT-006 freeze. |
@@ -256,13 +301,62 @@ collection:
 
 - The champion is the repository strategy configuration
   (`strategy_version = swing_v1.2`, `config_version = strategy_config_v2`,
-  `parameter_set_id = default_phase1`) at the code commit frozen by RBT-006,
-  composed by the RBT-004/RBT-005 composer.
+  `parameter_set_id = default_phase1`) **plus `CHAMPION_COMPLETION_SPEC_V1`**,
+  at the code commit frozen by RBT-006, composed by the RBT-004/RBT-005
+  composer.
+- Its research identifier is `swing_v1.2+completion_v1`. It is a research
+  strategy version. It does not replace `swing_v1.2` for advisory, paper or
+  EPIC X use. Adopting the spec anywhere else needs that workstream's own
+  decision.
 - No parameter, threshold, weight or rule changes during EPIC Y. BTC-185
   threshold sweeps may be reported as sensitivity, labelled
   `SENSITIVITY_ONLY_NOT_SELECTION`, and never select a value.
 - Any post-result change creates a new strategy version. Such a version can
   never claim evidence from the evaluation window or the opened holdout.
+
+## 6A. Binding rules for `CHAMPION_COMPLETION_SPEC_V1`
+
+The spec defines every input that RBT-002's inventory (as confirmed by its
+independent review) marks owner-less and undefined. It must follow these rules,
+which are the owner's decision:
+
+1. **Pre-registration.**
+   - The spec is authored, frozen by hash and reviewed before any backtest
+     output exists.
+   - No real-data score, signal, trade or performance figure may be computed
+     or inspected while drafting it. Input-availability facts, such as warm-up
+     and coverage dates, are allowed.
+   - Considering how a window affects the evaluation span is allowed, because
+     that is data availability, not outcome.
+2. **Source precedence.** For each input, use the first that applies:
+   1. explicit Rulebook formulas or numbers;
+   2. explicit Rulebook fallbacks (for example the §9.2 core level-strength
+      weights without volume);
+   3. existing owner conventions and helpers (the BTC-041 prior-window z-score
+      and percentile helpers; `volatility_percentile`'s 730-day window with a
+      365-observation minimum; the positioning 180-day funding z-score; EPIC X
+      certified definitions);
+   4. existing configuration thresholds and interpretation bands;
+   5. only then a new value, labelled `NEW_PARAMETER`, with a one-line
+      rationale.
+3. **Uniformity.**
+   - One normalisation rule for every undefined z-score (window, minimum,
+     degrees of freedom, prior-window exclusion).
+   - One rule for every undefined percentile.
+   - Exceptions only where the Rulebook distinguishes inputs.
+   - No per-input tuning.
+4. **Predicates.** Qualitative predicates (hold, add, exit, regime and flow
+   "supportive", new structure, data-risk exit) map to existing owner outputs
+   and thresholds. No new indicator is introduced.
+5. **Conservatism.** Where the Rulebook is ambiguous, choose the reading that
+   trades less. For example, severe crowding = the existing CROWDING flag.
+6. **Scope.** Long-only, as `backtest.allow_short_trades = false`; short-only
+   inputs stay inert and are listed.
+7. **Form.** A frozen, hash-bound definition maps every covered input to its
+   rule and the owner helpers it uses. A test fails if any owner-less input in
+   the reviewed inventory is uncovered, or covered twice. The composers
+   (RBT-004/RBT-005) implement the spec by calling owner helpers; the spec
+   itself adds no executable formula beyond what it declares.
 
 ## 7. Known strategy-semantics limitations
 
@@ -282,6 +376,12 @@ the *lifecycle-state mapping* open as a strategy decision. The EPIC Y composer
 does not choose that mapping. It enforces the Rulebook's stated effect directly:
 no ADD intent is issued while any of those three flags is active. Each
 suppressed ADD is recorded as `RULEBOOK_24_NO_ADDING_ENFORCED`.
+
+**STRESS hard-veto mapping (adopted verbatim, V4).** Pass
+`StressFlagResult.flagged` and record `STRESS_INPUT_MISSING` in
+`source_reason_codes` when the only missing input is DISCRETIONARY. Because
+`trim_rules_from_results` passes `None`, EUPHORIA trims never fire. That is a
+named limitation.
 
 ## 8. Required report contents (per venue and cost rung)
 
@@ -339,6 +439,6 @@ windows) and is reproducible byte-for-byte from them.
 
 ## 11. Change control
 
-Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V4`)
+Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V5`)
 recorded before the affected run. The holdout rule in §3 cannot be relaxed for
 any strategy version that has already been evaluated on the evaluation window.

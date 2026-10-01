@@ -1311,7 +1311,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current implementation frontier:** Two post-Phase-1 workstreams now run
   in parallel. [EPIC Y](execution/research_backtest_track_v1.md), adopted
   2026-09-28 and governed since 2026-09-29 by
-  [RESEARCH_BACKTEST_POLICY_V3](policies/research_backtest_policy_v3.md), is the
+  [RESEARCH_BACKTEST_POLICY_V4](policies/research_backtest_policy_v4.md), is the
   non-certifying path to the first real-data backtest of the frozen champion.
   It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
@@ -1794,14 +1794,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   PAD5-R1 or PAD6 is authorized
 - **Next dependency-satisfied EPIC Y actions:**
   - The independent xHigh ticket review of `RBT-002`.
-  - The owner decisions and policy V4 decisions it records (below).
-  - `RBT-004` `COMPOSE_CHAMPION_ENTRY_DECISION_V1` remains dependency-satisfied
-    by its ticket text. Until those decisions land, every composed Entry
-    Conviction would be `STRUCTURALLY_UNEVALUABLE` and every new trade vetoed.
+  - The owner decisions are ANSWERED (2026-10-01). The four data rules are
+    adopted as `RESEARCH_BACKTEST_POLICY_V4`. The undefined strategy inputs are
+    filled by the pre-registered `CHAMPION_COMPLETION_SPEC_V1` (RBT-002A).
 
   Blocked tickets:
-  - RBT-001A waits on the RBT-002 review and on the V4 decisions for the
-    liquidation census and the futures-basis contract.
+  - RBT-002A (the completion spec) waits on the RBT-002 review PASS.
+  - RBT-004 now waits on the RBT-002A review PASS. Without the spec every
+    composed Entry Conviction would be `STRUCTURALLY_UNEVALUABLE`.
+  - RBT-001A waits only on the RBT-002 review; its V4 data rules are adopted.
   - RBT-003 waits on RBT-001A and the RBT-002 review.
   - RBT-005..RBT-008 stay blocked on their EPIC Y dependencies.
 - **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2R1`.
@@ -2303,7 +2304,10 @@ BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
 RESEARCH_BACKTEST_POLICY_V1 = ADOPTED 2026-09-28; SUPERSEDED before any run
-RESEARCH_BACKTEST_POLICY_V3 = ADOPTED 2026-10-01; supersedes V2 before any run
+RESEARCH_BACKTEST_POLICY_V4 = ADOPTED 2026-10-01 (owner decisions on RBT-002);
+supersedes V3 before any run (four data rules adopted verbatim; champion =
+swing_v1.2 + CHAMPION_COMPLETION_SPEC_V1, pre-registered under section 6A)
+RESEARCH_BACKTEST_POLICY_V3 = ADOPTED 2026-10-01; SUPERSEDED before any run; supersedes V2 before any run
 (record-shape availability, required basis / market cap / liquidations,
 input-surface completeness)
 RESEARCH_BACKTEST_POLICY_V2 = ADOPTED 2026-09-29; SUPERSEDED before any run (per-venue, non-certifying;
@@ -3072,6 +3076,23 @@ unopened with no automatic dependency that would ever open it.
   altogether (`ETF_CALENDAR_REPLAY_VERIFIED_EVIDENCE_V1`), and it pre-commits a
   bounded PAD5 escalation that ends in an owner scoping decision rather than a
   PAD6.
+- **ANSWERED by the owner, 2026-10-01.** The RBT-002 blocker entry below is
+  preserved as its input.
+  - **Data rules:** all four NEEDS POLICY V4 items are adopted verbatim in
+    `RESEARCH_BACKTEST_POLICY_V4` §4A, §5 and §7, at $0.
+  - **Strategy semantics:** all seven NEEDS OWNER DECISION items, about 24
+    undefined inputs, are to be filled by `CHAMPION_COMPLETION_SPEC_V1`
+    (RBT-002A). It is pre-registered before any outcome under binding rules:
+    - source precedence: Rulebook, Rulebook fallback, owner convention,
+      config, then a labelled `NEW_PARAMETER`;
+    - one z-score rule and one percentile rule;
+    - predicates map to existing owner outputs;
+    - the conservative reading wins;
+    - long-only.
+  - **Scope:** the research champion becomes `swing_v1.2+completion_v1`, EPIC Y
+    scope only. Advisory, paper and EPIC X use need their own decisions.
+  - **Wider implication:** the same gap means no workstream can compute a
+    complete Phase-1 decision from raw inputs today.
 - **EPIC Y RBT-002 blockers: OPEN (recorded by RBT-002, 2026-10-01).** Each
   blocker's finding, proposed rule and costed resolution options are in the
   EPIC Y RBT-002 Implementation Notes and the inventory.
