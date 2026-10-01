@@ -2,9 +2,11 @@
 
 These tests pin:
 
-- the policy V3 section 5A enumeration: every owner input type field and every
-  owner call-site parameter is classified, and an owner that gains an input,
-  or a classification that outlives its field, fails;
+- the policy V3/V4 section 5A enumeration: every field of every type and every
+  parameter of every callable the decision-path census reaches is classified,
+  and an owner that gains an input, or a classification that outlives its
+  field, fails (the census itself is pinned in
+  test_research_backtest_coverage_census.py);
 - classification semantics on fixture owners (shape, family, OWNERLESS,
   DISCRETIONARY detection) and the owner-less findings on the real surface;
 - read-only coverage collection: every statement is a single SELECT, run
@@ -26,7 +28,6 @@ from __future__ import annotations
 
 import dataclasses
 import functools
-import inspect
 import json
 import os
 import re
@@ -48,7 +49,7 @@ from btc_predictor.features import trend as trend_owner
 from btc_predictor.features import volatility as volatility_owner
 from btc_predictor.research import prospective_integration_corpus as epic_x_corpus
 from btc_predictor.research.us_equity_market_closures import load_closures
-from btc_predictor.research_backtest import coverage
+from btc_predictor.research_backtest import coverage, input_census
 from btc_predictor.research_backtest.coverage import (
     CoverageError,
     InputClassification,
@@ -92,21 +93,34 @@ VALUE_COLUMNS = tuple(
 # --- section 5A enumeration ----------------------------------------------------------
 
 
+@functools.cache
+def _census() -> Any:
+    return input_census.discover_decision_path()
+
+
+@functools.cache
+def _surface() -> tuple[coverage.SurfaceRow, ...]:
+    return coverage.enumerate_input_surface(_census())
+
+
 def test_every_owner_input_field_and_call_site_parameter_is_classified() -> None:
-    rows = coverage.enumerate_input_surface()
-    expected = sum(len(dataclasses.fields(owner)) for owner in coverage.OWNER_INPUT_TYPES) + sum(
-        len(inspect.signature(function).parameters) for function, _ in coverage.CALL_SITE_CLASSIFICATIONS
+    census = _census()
+    rows = _surface()
+    expected = sum(len(record.fields) for record in census.types.values()) + sum(
+        len(record.parameters) for record in census.callables.values()
     )
     assert len(rows) == expected
-    assert len({row.key for row in rows}) == len(rows)
-    for owner in coverage.OWNER_INPUT_TYPES:
-        names = {row.name for row in rows if row.owner == coverage._owner_path(owner)}
-        assert names == {item.name for item in dataclasses.fields(owner)}
+    assert len({(row.surface, row.key) for row in rows}) == len(rows)
+    for path, record in census.types.items():
+        assert {row.name for row in rows if row.surface == coverage.SURFACE_FIELD and row.owner == path} == set(record.fields)
+    for path in coverage.OWNER_INPUT_TYPES:
+        owner = census.types[path]
+        assert {row.name for row in rows if row.owner == path} == set(owner.fields)
     assert all(isinstance(row.classification, InputClassification) for row in rows)
 
 
 def test_the_enumeration_covers_every_required_owner_area() -> None:
-    owners = {row.owner for row in coverage.enumerate_input_surface()}
+    owners = {row.owner for row in _surface()}
     required = {
         "btc_predictor.features.entry.EntryConvictionInput",
         "btc_predictor.features.trend.TrendScoreInput",
@@ -142,32 +156,31 @@ def _with_extra_field(owner: type) -> type:
         owner.__name__,
         [*fields, ("new_owner_input", "Decimal | None", dataclasses.field(default=None))],
         frozen=True,
+        module=owner.__module__,
     )
 
 
 def test_an_owner_type_that_gains_a_field_fails_the_enumeration() -> None:
     owner = positioning_owner.PositioningScoreInput
     grown = _with_extra_field(owner)
-    classifications = {grown: coverage.FIELD_CLASSIFICATIONS[owner]}
     with pytest.raises(InputSurfaceError) as raised:
-        coverage.enumerate_input_surface(classifications, ())
+        coverage.classify_owner_type(grown, coverage.INPUT_TYPE_FIELD_CLASSIFICATIONS[coverage._owner_path(owner)])
     assert raised.value.code == "UNCLASSIFIED_FIELD"
     assert "new_owner_input" in str(raised.value)
 
 
 def test_a_classification_that_outlives_its_field_is_stale() -> None:
     owner = positioning_owner.PositioningScoreInput
-    classified = dict(coverage.FIELD_CLASSIFICATIONS[owner])
+    classified = dict(coverage.INPUT_TYPE_FIELD_CLASSIFICATIONS[coverage._owner_path(owner)])
     classified["removed_field"] = classified["funding_health"]
     with pytest.raises(InputSurfaceError) as raised:
-        coverage.enumerate_input_surface({owner: classified}, ())
+        coverage.classify_owner_type(owner, classified)
     assert raised.value.code == "STALE_CLASSIFICATION"
 
 
 def test_a_call_site_that_gains_a_parameter_fails_the_enumeration() -> None:
-    function, classified = next(
-        item for item in coverage.CALL_SITE_CLASSIFICATIONS if item[0] is positioning_owner.funding_health
-    )
+    function = positioning_owner.funding_health
+    classified = coverage.ROOT_PARAMETER_CLASSIFICATIONS[coverage._owner_path(function)]
 
     def grown(funding_rates, *, as_of, average_window_days=7, zscore_window_days=180, min_zscore_observations=30,
               preferred_zscore=None, zscore_width=None, new_window=None):  # noqa: ANN001, ANN202
@@ -176,13 +189,13 @@ def test_a_call_site_that_gains_a_parameter_fails_the_enumeration() -> None:
     grown.__module__ = function.__module__
     grown.__qualname__ = function.__qualname__
     with pytest.raises(InputSurfaceError) as raised:
-        coverage.enumerate_input_surface({}, ((grown, classified),))
+        coverage.classify_owner_callable(grown, classified)
     assert raised.value.code == "UNCLASSIFIED_PARAMETER"
 
 
 def test_a_non_dataclass_owner_is_refused() -> None:
     with pytest.raises(InputSurfaceError) as raised:
-        coverage.enumerate_input_surface({dict: {}}, ())
+        coverage.classify_owner_type(dict, {})
     assert raised.value.code == "NOT_A_DATACLASS"
 
 
@@ -221,7 +234,7 @@ def _fixture_classifications() -> dict[str, InputClassification]:
 
 
 def test_fixture_owner_classification_reports_shape_family_and_ownerless_inputs() -> None:
-    rows = coverage.enumerate_input_surface({_FixtureOwnerInput: _fixture_classifications()}, ())
+    rows = coverage.classify_owner_type(_FixtureOwnerInput, _fixture_classifications())
     summary = coverage.input_surface_summary(rows)
     by_name = {row.name: row.classification for row in rows}
     assert by_name["observed_price"].shape == coverage.SHAPE_INTERVAL
@@ -275,6 +288,7 @@ def test_invalid_classifications_are_refused(kwargs: dict[str, Any], message: st
 
 EXPECTED_OWNERLESS = {
     "ADD_MOMENTUM_SCORE",
+    "CAPITULATION_EVENT",
     "CORRECTION_FROM_LOCAL_HIGH",
     "DATA_RISK_EXIT_PREDICATE",
     "DISTRIBUTION_STATE",
@@ -304,7 +318,7 @@ EXPECTED_OWNERLESS = {
 
 
 def test_the_real_surface_reports_these_owner_less_inputs() -> None:
-    summary = coverage.input_surface_summary(coverage.enumerate_input_surface())
+    summary = coverage.input_surface_summary(_surface())
     assert set(summary["ownerless_inputs"]) == EXPECTED_OWNERLESS
     certified = {name for name, entry in summary["ownerless_inputs"].items() if entry["kind"] == coverage.KIND_OWNERLESS_CERTIFIED}
     assert certified == {"LIQUIDATION_PERCENTILE"}
@@ -346,7 +360,7 @@ def test_the_crowding_owner_has_no_severity_grade() -> None:
 
 
 def test_liquidation_percentile_reuses_the_certified_epic_x_definition_by_reference() -> None:
-    rows = coverage.enumerate_input_surface()
+    rows = _surface()
     liquidation = [row.classification for row in rows if row.classification.input_id == "LIQUIDATION_PERCENTILE"]
     assert liquidation and all(item.kind == coverage.KIND_OWNERLESS_CERTIFIED for item in liquidation)
     assert all(epic_x_corpus.PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_VERSION in item.historical_source for item in liquidation)
@@ -798,21 +812,21 @@ def test_projected_positioning_series_respect_the_data_window_and_joins() -> Non
 
 
 def test_every_owner_less_undefined_input_belongs_to_exactly_one_blocker() -> None:
-    blockers = coverage.derive_blockers(coverage.enumerate_input_surface())
+    blockers = coverage.derive_blockers(_surface())
     members = [name for blocker in blockers for name in blocker["inputs"]]
     assert len(members) == len(set(members))
     assert set(members) == EXPECTED_OWNERLESS - {"LIQUIDATION_PERCENTILE", "LEVEL_VOLUME_PERCENTILE"}
 
 
 def test_an_unassigned_owner_less_input_is_refused() -> None:
-    rows = coverage.enumerate_input_surface({_FixtureOwnerInput: _fixture_classifications()}, ())
+    rows = coverage.classify_owner_type(_FixtureOwnerInput, _fixture_classifications())
     with pytest.raises(CoverageError) as raised:
         coverage.derive_blockers(rows)
     assert raised.value.code == "BLOCKER_MEMBERSHIP"
 
 
 def test_the_entry_conviction_structural_blockers_need_owner_decisions() -> None:
-    blockers = {item["blocker_id"]: item for item in coverage.derive_blockers(coverage.enumerate_input_surface())}
+    blockers = {item["blocker_id"]: item for item in coverage.derive_blockers(_surface())}
     structural = {key for key, item in blockers.items() if item["entry_conviction_structurally_incomplete_on_every_date"]}
     assert structural == {
         "BLK-TREND-ZSCORE-NORMALISATION",
@@ -829,7 +843,7 @@ def test_the_entry_conviction_structural_blockers_need_owner_decisions() -> None
 
 
 def test_policy_v4_source_blockers_follow_the_selected_sources() -> None:
-    rows = coverage.enumerate_input_surface()
+    rows = _surface()
     without = tuple(
         dataclasses.replace(candidate, deviations=())
         if candidate.candidate_id == "binance_coinm_quarterly_basis"
@@ -846,7 +860,7 @@ def test_source_selection_ranks_consistency_then_cost_and_the_plan_totals_29_usd
     assert selected[coverage.LIQUIDATION_FAMILY].candidate_id == "kraken_futures_rest_executions"
     assert selected[coverage.MARKET_CAP_FAMILY].candidate_id == "coinmetrics_community_capmrktcurusd"
     assert selected[coverage.ETF_FLOW_FAMILY].cost_usd == Decimal("29")
-    plan = coverage.acquisition_plan(synthetic_snapshot(), coverage.derive_blockers(coverage.enumerate_input_surface()))
+    plan = coverage.acquisition_plan(synthetic_snapshot(), coverage.derive_blockers(_surface()))
     assert plan["total_cost_usd"] == "29"
     assert plan["purchases_made"] is False
     status = {item["family"]: item["status"] for item in plan["items"]}

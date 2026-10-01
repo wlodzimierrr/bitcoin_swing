@@ -1,47 +1,63 @@
 # RBT-002 historical input coverage inventory
 
 `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` under `RESEARCH_BACKTEST_POLICY_V3`. Evidence class `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED`.
-Inventory SHA-256 `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
+Inventory SHA-256 `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
 
 Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.
 
-## Input surface (policy V3 section 5A)
+## Input surface (policy V3/V4 section 5A)
 
-592 inputs: 36 owner input types and 68 owner call sites.
+Discovered, not listed: `DECISION_PATH_STATIC_CENSUS_V1` walks the owner code from 74 hand-written roots and reaches 882 callables and 159 types (156 dataclasses, 1 protocol). 82 owner-module definitions are left out, each with a recorded reason.
+
+3288 inputs: the fields of 157 reached types, the parameters of 74 roots and the parameters of 662 internal callables.
+
+| census category | inputs |
+| --- | ---: |
+| COMPOSER_INPUT_TYPE | 259 |
+| CONFIG_LOADER_PARAMETER | 79 |
+| ENGINE_STATE | 34 |
+| INTERNAL_PARAMETER | 1407 |
+| OWNER_CONFIG | 15 |
+| OWNER_DEFAULT_CONSTANT | 23 |
+| OWNER_OUTPUT | 948 |
+| ROOT_PARAMETER | 367 |
+| STRATEGY_CONFIG | 156 |
 
 | family | raw leaf inputs | inputs drawing on the family (direct or upstream) |
 | --- | ---: | ---: |
-| BTC_MARKET_CAP | 5 | 58 |
-| CVD | 0 | 7 |
-| DISCRETIONARY_ASSERTION | 0 | 7 |
-| ENGINE_STATE | 0 | 62 |
-| ETF_FLOW_AND_AUM | 11 | 64 |
-| FUNDING_RATE | 12 | 70 |
-| FUTURES_BASIS | 12 | 66 |
-| LIQUIDATIONS | 13 | 64 |
+| BTC_MARKET_CAP | 5 | 827 |
+| CVD | 0 | 30 |
+| DISCRETIONARY_ASSERTION | 0 | 103 |
+| ENGINE_STATE | 0 | 135 |
+| ETF_FLOW_AND_AUM | 11 | 820 |
+| FUNDING_RATE | 12 | 880 |
+| FUTURES_BASIS | 12 | 837 |
+| LIQUIDATIONS | 13 | 872 |
 | MACRO_ONCHAIN_LIQUIDITY | 0 | 3 |
-| OPEN_INTEREST | 13 | 69 |
-| PERP_VOLUME | 13 | 20 |
-| REFERENCE_PRICE_1H | 25 | 198 |
-| SHARED_RAW_VOLUME_1H | 14 | 57 |
-| STRATEGY_CONFIG | 0 | 179 |
-| US_EQUITY_MARKET_CLOSURES | 2 | 50 |
+| OPEN_INTEREST | 13 | 909 |
+| PERP_VOLUME | 13 | 81 |
+| REFERENCE_PRICE_1H | 25 | 2243 |
+| SHARED_RAW_VOLUME_1H | 14 | 1113 |
+| STRATEGY_CONFIG | 0 | 481 |
+| US_EQUITY_MARKET_CLOSURES | 2 | 761 |
 
 | kind | inputs |
 | --- | ---: |
 | ABSENT_RULEBOOK_FALLBACK | 11 |
-| DERIVED_BY_OWNER | 189 |
+| DERIVED_BY_OWNER | 1149 |
 | DISCRETIONARY | 7 |
-| ENGINE_STATE | 62 |
+| ENGINE_STATE | 108 |
 | OWNERLESS_CERTIFIED_DEFINITION | 3 |
 | OWNERLESS_RULEBOOK_FALLBACK | 2 |
-| OWNERLESS_UNDEFINED | 35 |
+| OWNERLESS_UNDEFINED | 43 |
+| OWNER_INTERNAL_DATAFLOW | 1407 |
 | RAW_HISTORICAL | 104 |
-| STRATEGY_CONFIG | 179 |
+| STRATEGY_CONFIG | 454 |
 
 Owner-less inputs:
 
 - `ADD_MOMENTUM_SCORE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
+- `CAPITULATION_EVENT` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `CORRECTION_FROM_LOCAL_HIGH` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `DATA_RISK_EXIT_PREDICATE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
 - `DISTRIBUTION_STATE` (OWNERLESS_UNDEFINED; Entry Conviction: none)
@@ -67,6 +83,32 @@ Owner-less inputs:
 - `TREND_Z_M12` (OWNERLESS_UNDEFINED; Entry Conviction: trend)
 - `TREND_Z_M4` (OWNERLESS_UNDEFINED; Entry Conviction: trend)
 - `UPSIDE_RETURN` (OWNERLESS_UNDEFINED; Entry Conviction: none)
+
+Owner keyword defaults that no reached caller overrides (fixed constants of the decision path):
+
+- `btc_predictor.features.rolling.average_true_range.min_periods` = `None`
+- `btc_predictor.features.rolling.rolling_mean.min_periods` = `None`
+- `btc_predictor.features.trend.fifty_two_week_high_distance.window` = `52`
+- `btc_predictor.features.trend.twenty_week_ma_distance.window` = `20`
+- `btc_predictor.quant.comparisons.decision_compare.tolerance` = `btc_predictor.quant.comparisons.DecisionTolerance(absolute=Decimal('1E-12'), relative=Decimal('1E-12'))`
+- `btc_predictor.quant.distances.atr_normalized_distance.nan_policy` = `'raise'`
+- `btc_predictor.quant.distances.pairwise_price_distance.nan_policy` = `'raise'`
+- `btc_predictor.quant.risk.risk_improvement.nan_policy` = `'raise'`
+- `btc_predictor.quant.rolling.realized_volatility.min_periods` = `None`
+- `btc_predictor.quant.rolling.realized_volatility.nan_policy` = `'raise'`
+- `btc_predictor.quant.rolling.realized_volatility.sample` = `False`
+- `btc_predictor.quant.rolling.true_range.nan_policy` = `'raise'`
+- `btc_predictor.quant.scoring.weighted_score.weight_tolerance` = `1e-06`
+- `btc_predictor.quant.transforms.gaussian_health.maximum` = `100.0`
+- `btc_predictor.quant.transforms.gaussian_health.nan_policy` = `'raise'`
+- `btc_predictor.quant.transforms.normal_cdf_score.maximum` = `100.0`
+- `btc_predictor.quant.transforms.normal_cdf_score.mean` = `0.0`
+- `btc_predictor.quant.transforms.normal_cdf_score.minimum` = `0.0`
+- `btc_predictor.quant.transforms.normal_cdf_score.nan_policy` = `'raise'`
+- `btc_predictor.quant.transforms.normal_cdf_score.standard_deviation` = `1.0`
+- `btc_predictor.quant.transforms.percentile_to_health.higher_is_healthier` = `False`
+- `btc_predictor.quant.transforms.percentile_to_health.nan_policy` = `'raise'`
+- `btc_predictor.risk.reward.select_reward_reference.major_timeframes` = `('1w', '1mo')`
 
 ## Database coverage
 
@@ -148,6 +190,7 @@ Exposure: 2232 pre-2020 raw rows and 0 holdout raw rows. pre-2020 rows exist in 
 - **BLK-SEVERE-CROWDING-STATE** (NEEDS_OWNER_DECISION): 'Severe crowding' has no owner definition. Every new trade vetoed on every date.
 - **BLK-LIFECYCLE-PREDICATES** (NEEDS_OWNER_DECISION): Hold, add and exit inputs have no owner.
 - **BLK-SETUP-INPUTS** (NEEDS_OWNER_DECISION): Setup inputs without an owner.
+- **BLK-AVWAP-EVENT-ANCHOR** (NEEDS_OWNER_DECISION): The anchored-VWAP market-event anchor has no owner.
 - **BLK-LIQUIDATION-HISTORICAL-CENSUS** (NEEDS_POLICY_V4_DECISION): The certified hourly census cannot be applied unchanged to history.
 - **BLK-FUTURES-BASIS-CONTRACT** (NEEDS_POLICY_V4_DECISION): The futures-basis contract is not defined anywhere.
 - **BLK-STRESS-HARD-VETO-MAPPING** (NEEDS_POLICY_V4_DECISION): How an incomplete STRESS result reaches the hard veto. Every new trade vetoed on every date.

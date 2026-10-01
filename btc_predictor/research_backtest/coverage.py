@@ -5,15 +5,20 @@ collected before any backfill, under ``RESEARCH_BACKTEST_POLICY_V3`` sections 3,
 4, 5, 5A and 9. It decides nothing on its own and computes no trading outcome:
 no composer, score or backtest runs here.
 
-- **Input surface (section 5A).** Every field of every owner input type on the
-  champion's decision path, and every parameter of the owner call sites the
-  RBT-004/RBT-005 composers will make, is enumerated mechanically with
-  ``dataclasses.fields`` and ``inspect.signature``. Each must carry exactly one
-  :class:`InputClassification`: its section 4 shape, section 5 family, producing
-  owner (or ``OWNERLESS``), historical source, the owner's missing-input
-  behaviour and the Entry Conviction components it feeds. An unclassified field
-  or parameter raises :class:`InputSurfaceError`, so an owner that gains an
-  input fails the enumeration.
+- **Input surface (section 5A).** The surface is discovered, not listed: the
+  static census of :mod:`btc_predictor.research_backtest.input_census` walks the
+  owner code from the composer's entry points (the only hand-written list) and
+  reaches every helper, method, input/result/config dataclass and default on
+  the champion's decision path. Every field of every reached dataclass or
+  ``Protocol`` and every parameter of every reached callable must carry exactly
+  one :class:`InputClassification`: its section 4 shape, section 5 family,
+  producing owner (or ``OWNERLESS``), historical source, the owner's
+  missing-input behaviour and the Entry Conviction components it feeds.
+  Composer-facing inputs are classified field by field here; the rest follow
+  audited rules over the reviewed snapshot in ``input_census_registry``. An
+  unclassified owner, field or parameter raises :class:`InputSurfaceError`, so
+  an owner that gains an input, or a newly reached owner, fails the
+  enumeration.
 - **Database coverage.** Read-only ``SELECT`` statements report, per raw table
   and series, counts per policy window, first and last observation, gap
   positions, provenance and timestamp semantics. Rows dated before 2020-01-01 or
@@ -78,12 +83,15 @@ from btc_predictor.levels import strength as strength_owner
 from btc_predictor.levels import swing as swing_owner
 from btc_predictor.levels import volume_profile as volume_profile_owner
 from btc_predictor.research import prospective_integration_corpus as epic_x_corpus
+from btc_predictor.portfolio import state_machine as state_machine_owner
 from btc_predictor.research.us_equity_market_closures import (
     COVERAGE_END as CLOSURE_TABLE_COVERAGE_END,
     COVERAGE_START as CLOSURE_TABLE_COVERAGE_START,
     TABLE_VERSION as CLOSURE_TABLE_VERSION,
     load_closures,
 )
+from btc_predictor.research_backtest import input_census as census_owner
+from btc_predictor.research_backtest import input_census_registry as census_registry
 from btc_predictor.research_backtest.replay_inputs import (
     CANONICAL_REFERENCE_UNRESOLVED,
     DATA_WINDOW,
@@ -235,6 +243,7 @@ KIND_ENGINE_STATE = "ENGINE_STATE"
 KIND_CONFIG = "STRATEGY_CONFIG"
 KIND_DISCRETIONARY = "DISCRETIONARY"
 KIND_ABSENT = "ABSENT_RULEBOOK_FALLBACK"
+KIND_OWNER_INTERNAL = "OWNER_INTERNAL_DATAFLOW"
 INPUT_KINDS = (
     KIND_RAW,
     KIND_DERIVED,
@@ -245,6 +254,7 @@ INPUT_KINDS = (
     KIND_CONFIG,
     KIND_DISCRETIONARY,
     KIND_ABSENT,
+    KIND_OWNER_INTERNAL,
 )
 OWNERLESS = "OWNERLESS"
 
@@ -634,8 +644,10 @@ def _record_fields(
     return fields
 
 
-# Owner input types on the champion's decision path, with every field classified.
-FIELD_CLASSIFICATIONS: dict[type, dict[str, InputClassification]] = {
+# Composer-facing owner input types the census reaches, with every field
+# classified. Membership is decided by the census: the enumeration requires
+# these to be exactly the reached types that the registry does not categorise.
+_INPUT_TYPE_FIELDS: dict[type, dict[str, InputClassification]] = {
     # -- persisted raw records (the leaves) ---------------------------------------
     OhlcvBar: {
         **_record_fields(
@@ -1312,7 +1324,65 @@ FIELD_CLASSIFICATIONS: dict[type, dict[str, InputClassification]] = {
         )
     },
 }
-OWNER_INPUT_TYPES: tuple[type, ...] = tuple(FIELD_CLASSIFICATIONS)
+_SWING_LEVEL_PRODUCERS = (
+    "btc_predictor.levels.swing.detect_weekly_swing_levels / detect_monthly_swing_levels "
+    "(WeeklySwingLevel and MonthlySwingLevel satisfy the protocol)"
+)
+_M_CAPITULATION_EVENT = (
+    "no CapitulationEvent -> the composer builds no capitulation-event AVWAP anchor; the swing and breakout anchors "
+    "and every other level still evaluate (nothing is zero-filled)"
+)
+_CAPITULATION_EVENT_NOTE = (
+    "no owner produces a CapitulationEvent: BTC-093 implements 'capitulation anchors use explicit event metadata' "
+    "supplied by the caller, the CAPITULATION flag owner returns a flag, not an event instant, price or detection "
+    "time, and Rulebook 9.1 names 'Anchored VWAPs from important market events' without defining the event. AVWAP "
+    "confluence is an optional Phase 1 enhancement (Rulebook 9.2; BTC-097 'must not be required for the Phase 1 "
+    "score'), so the spec may define or explicitly omit this anchor; it must not be inferred."
+)
+
+
+def _capitulation_event_field(role: str) -> InputClassification:
+    return dataclasses.replace(
+        _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, note=_CAPITULATION_EVENT_NOTE),
+        role=role,
+    )
+
+
+INPUT_TYPE_FIELD_CLASSIFICATIONS: dict[str, dict[str, InputClassification]] = {
+    **{_owner_path(owner): fields for owner, fields in _INPUT_TYPE_FIELDS.items()},
+    # The anchored-VWAP owner's market-event anchor input (root
+    # anchored_vwap_anchor_from_capitulation_event); the composer would build it.
+    "btc_predictor.levels.anchored_vwap.CapitulationEvent": {
+        "event_timestamp": _capitulation_event_field(ROLE_OBSERVATION_TIME),
+        "detected_at": _capitulation_event_field(ROLE_AVAILABILITY),
+        "price": _capitulation_event_field(ROLE_VALUE),
+        "exchange": _capitulation_event_field(ROLE_IDENTITY),
+        "symbol": _capitulation_event_field(ROLE_IDENTITY),
+        "provider": _capitulation_event_field(ROLE_IDENTITY),
+        "reason_codes": _capitulation_event_field(ROLE_PROVENANCE),
+    },
+    # The breakout owner's structural view of its source levels.
+    "btc_predictor.levels.breakout.SourceLevel": {
+        name: _derived(
+            _SWING_LEVEL_PRODUCERS,
+            "no source levels -> no breakout/reclaim level is detected",
+            _PRICE,
+            (_STRUCTURE,),
+            role=role,
+        )
+        for name, role in (
+            ("feature_id", ROLE_PROVENANCE),
+            ("level_type", ROLE_IDENTITY),
+            ("level_timestamp", ROLE_OBSERVATION_TIME),
+            ("detected_at", ROLE_AVAILABILITY),
+            ("price", ROLE_VALUE),
+            ("exchange", ROLE_IDENTITY),
+            ("symbol", ROLE_IDENTITY),
+            ("provider", ROLE_IDENTITY),
+        )
+    },
+}
+OWNER_INPUT_TYPES: tuple[str, ...] = tuple(INPUT_TYPE_FIELD_CLASSIFICATIONS)
 
 
 # --- call-site parameters --------------------------------------------------------
@@ -1361,7 +1431,10 @@ def _up(owner: Any, missing: str, families: tuple[str, ...], components: tuple[s
     return _derived(owner, missing, families, components, **kwargs)
 
 
-CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassification]], ...] = (
+# Every parameter of every root (input_census.DECISION_PATH_ROOTS): the values
+# the RBT-004/RBT-005 composer supplies. The enumeration requires these keys to
+# be exactly the census roots and each signature to match.
+_ROOT_CALL_SITES: tuple[tuple[Callable[..., Any], dict[str, InputClassification]], ...] = (
     # trend
     (momentum_owner.four_week_momentum_from_daily_bars, {"bars": _P_DAILY}),
     (momentum_owner.twelve_week_momentum_from_daily_bars, {"bars": _P_DAILY}),
@@ -1636,7 +1709,7 @@ CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassi
     (
         breakout_owner.detect_breakout_reclaim_levels,
         {
-            "source_levels": _up(swing_owner.detect_weekly_swing_levels, "no levels -> no breakout/reclaim level", _PRICE, (_STRUCTURE,)),
+            "source_levels": _up(_SWING_LEVEL_PRODUCERS, "no levels -> no breakout/reclaim level", _PRICE, (_STRUCTURE,)),
             "bars": _P_DAILY,
             "as_of": _P_INSTANT,
             "breakout_close_buffer_fraction": _P_CONFIG,
@@ -1646,7 +1719,12 @@ CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassi
     (
         anchored_vwap_owner.calculate_anchored_vwaps,
         {
-            "anchors": _up(swing_owner.detect_weekly_swing_levels, "no anchors -> no AVWAP", _PRICE),
+            "anchors": _up(
+                "btc_predictor.levels.anchored_vwap.anchored_vwap_anchor_from_swing_level / "
+                "anchored_vwap_anchor_from_breakout_level / anchored_vwap_anchor_from_capitulation_event",
+                "no anchors -> no AVWAP level",
+                _PRICE,
+            ),
             "bars": dataclasses.replace(_P_HOURLY_VOLUME, families=_PRICE_VOLUME),
             "as_of": _P_INSTANT,
             "price_source": _P_CONFIG,
@@ -1667,7 +1745,13 @@ CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassi
     (
         clustering_owner.cluster_price_levels,
         {
-            "levels": _up(swing_owner.detect_weekly_swing_levels, "no levels -> no clusters", _PRICE, (_STRUCTURE,)),
+            "levels": _up(
+                "btc_predictor.levels: weekly and monthly swing levels, breakout/reclaim levels, volume-profile levels "
+                "and anchored-VWAP results (clustering._prepare_members accepts each by feature_id)",
+                "no levels -> LEVEL_CLUSTER_INPUT_MISSING; no clusters",
+                _PRICE_VOLUME,
+                (_STRUCTURE,),
+            ),
             "as_of": _P_INSTANT,
             "reference_price": _P_CURRENT_PRICE,
             "cluster_distance_fraction": _P_CONFIG,
@@ -2033,65 +2117,270 @@ CALL_SITE_CLASSIFICATIONS: tuple[tuple[Callable[..., Any], dict[str, InputClassi
             "source_reason_codes": _state("upstream owner reason codes", "evidence only", role=ROLE_PROVENANCE, source=_SRC_UPSTREAM),
         },
     ),
+    # lifecycle state machine and the trailing owner's lifecycle write
+    (
+        state_machine_owner.start_position_lifecycle,
+        {
+            "symbol": _state("the replay venue's instrument symbol", "required argument", role=ROLE_IDENTITY),
+            "direction": _config("long-only champion: backtest.allow_short_trades = false; the composer opens LONG lifecycles"),
+            "state": _state("the initial BTC-150 lifecycle state", "keyword default WATCH"),
+            "config_metadata": _P_META,
+        },
+    ),
+    (
+        state_machine_owner.apply_position_event,
+        {
+            "lifecycle": _P_LIFECYCLE,
+            "event": _state(
+                "the BTC-150 lifecycle event the BTC-180 engine applies for a composer intent, a fill, a stop or an exit",
+                "required argument; an event invalid in the current state is refused by the state machine",
+            ),
+            "event_time": _P_INSTANT,
+            "quantity": _state("the BTC-180 simulated fill quantity of a sized intent", "None for events that carry no quantity"),
+            "price": _state("the BTC-180 simulated fill price (next-bar execution)", "None for events that carry no fill"),
+            "stop_price": _up(
+                stop_owner.initial_stop_for_setup,
+                "None for events that leave the stop unchanged",
+                _PRICE,
+                note="the initial structural stop, or an advanced trailing stop through apply_trailing_stop",
+            ),
+            "reason_codes": _state("the event's reason codes", "empty tuple allowed; evidence only", role=ROLE_PROVENANCE, source=_SRC_UPSTREAM),
+            "source_feature_id": _state("the owner result that caused the event", "None allowed; evidence only", role=ROLE_PROVENANCE, source=_SRC_UPSTREAM),
+            "source_record_id": _state("the owner record that caused the event", "None allowed; evidence only", role=ROLE_PROVENANCE, source=_SRC_UPSTREAM),
+        },
+    ),
+    (
+        trailing_owner.apply_trailing_stop,
+        {
+            "lifecycle": _P_LIFECYCLE,
+            "result": _up(trailing_owner.trail_stop_for_position, "required; a held result records no event", _PRICE),
+            "event_time": _P_INSTANT,
+        },
+    ),
+    # anchored-VWAP anchors
+    (
+        anchored_vwap_owner.anchored_vwap_anchor_from_swing_level,
+        {"level": _up(_SWING_LEVEL_PRODUCERS, "no swing level -> no swing anchor", _PRICE, (_STRUCTURE,))},
+    ),
+    (
+        anchored_vwap_owner.anchored_vwap_anchor_from_breakout_level,
+        {"level": _up(breakout_owner.detect_breakout_reclaim_levels, "no breakout level -> no breakout anchor", _PRICE, (_STRUCTURE,))},
+    ),
+    (
+        anchored_vwap_owner.anchored_vwap_anchor_from_capitulation_event,
+        {"event": _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, note=_CAPITULATION_EVENT_NOTE)},
+    ),
 )
+
+
+def _root_parameter_table() -> dict[str, dict[str, InputClassification]]:
+    table: dict[str, dict[str, InputClassification]] = {}
+    for function, classified in _ROOT_CALL_SITES:
+        path = _owner_path(function)
+        if path in table:
+            raise ImportError(f"root {path} is classified twice")
+        table[path] = dict(classified)
+    return table
+
+
+ROOT_PARAMETER_CLASSIFICATIONS: dict[str, dict[str, InputClassification]] = _root_parameter_table()
 
 
 @dataclass(frozen=True)
 class SurfaceRow:
-    """One enumerated input: an owner type's field or an owner call's parameter."""
+    """One enumerated input: a reached type's field or a reached callable's parameter."""
 
     surface: str
     owner: str
     name: str
     classification: InputClassification
+    category: str = ""
+    default: str | None = None
+    default_override: str | None = None
+    reached_from: str = ""
 
     @property
     def key(self) -> str:
         return f"{self.owner}.{self.name}"
 
     def as_record(self) -> dict[str, Any]:
-        return {"surface": self.surface, "owner": self.owner, "name": self.name, **self.classification.as_record()}
+        return {
+            "surface": self.surface,
+            "owner": self.owner,
+            "name": self.name,
+            "census_category": self.category,
+            "default": self.default,
+            "default_override": self.default_override,
+            "reached_from": self.reached_from,
+            **self.classification.as_record(),
+        }
 
 
 SURFACE_FIELD = "OWNER_INPUT_TYPE_FIELD"
 SURFACE_PARAMETER = "OWNER_CALL_SITE_PARAMETER"
+SURFACE_INTERNAL_PARAMETER = "OWNER_INTERNAL_PARAMETER"
+SURFACES = (SURFACE_FIELD, SURFACE_PARAMETER, SURFACE_INTERNAL_PARAMETER)
+
+CATEGORY_INPUT_TYPE = "COMPOSER_INPUT_TYPE"
+CATEGORY_ROOT_PARAMETER = "ROOT_PARAMETER"
+CATEGORY_INTERNAL_PARAMETER = "INTERNAL_PARAMETER"
+CATEGORY_OWNER_DEFAULT = "OWNER_DEFAULT_CONSTANT"
+CATEGORY_CONFIG_LOADER = "CONFIG_LOADER_PARAMETER"
+
+_CONFIG_LOADER_MODULE = "btc_predictor.config.strategy"
+_PSEUDO_FAMILIES = (ENGINE_STATE_FAMILY, STRATEGY_CONFIG_FAMILY)
+_M_OWNER_OUTPUT = (
+    "owner output: present whenever the producing owner returns; incompleteness is reported by that owner's "
+    "complete flag, None values and reason codes, never zero-filled"
+)
+_M_INTERNAL = (
+    "supplied by the reached calling owner, never by the composer: it cannot be missing at the composer "
+    "boundary, and the caller's own missing-input handling applies"
+)
+_SRC_INTERNAL = "passed by the reached calling owner, computed from its own classified inputs"
+_SRC_STRATEGY_CONFIG = "btc_predictor/config/strategy/default.toml (strategy_config_v2) through load_strategy_config"
 
 
-def enumerate_input_surface(
-    field_classifications: Mapping[type, Mapping[str, InputClassification]] = FIELD_CLASSIFICATIONS,
-    call_sites: Sequence[tuple[Callable[..., Any], Mapping[str, InputClassification]]] = CALL_SITE_CLASSIFICATIONS,
-) -> tuple[SurfaceRow, ...]:
-    """Enumerate the section 5A input surface from the owners themselves.
+def classify_owner_type(owner_type: type, classified: Mapping[str, InputClassification]) -> tuple[SurfaceRow, ...]:
+    """Rows for one composer-facing type, refusing unclassified or stale fields.
 
-    Fields come from ``dataclasses.fields`` and parameters from
-    ``inspect.signature``, so the enumeration follows the owner code. Every
-    enumerated name must be classified, and every classification must name a
-    field or parameter that still exists.
+    Used for fixture owners; :func:`enumerate_input_surface` applies the same
+    check to every type the census reaches.
     """
 
+    if not isinstance(owner_type, type) or not (
+        dataclasses.is_dataclass(owner_type) or census_owner._is_protocol(owner_type)
+    ):
+        raise InputSurfaceError("NOT_A_DATACLASS", f"{owner_type!r} is not an owner dataclass or protocol")
+    path = _owner_path(owner_type)
+    names = census_owner._type_fields(owner_type)[1]
+    _require_exact_classification(path, names, classified, unclassified="UNCLASSIFIED_FIELD")
+    return tuple(SurfaceRow(SURFACE_FIELD, path, name, classified[name], category=CATEGORY_INPUT_TYPE) for name in names)
+
+
+def classify_owner_callable(
+    function: Callable[..., Any], classified: Mapping[str, InputClassification]
+) -> tuple[SurfaceRow, ...]:
+    """Rows for one root-like callable, refusing unclassified or stale parameters."""
+
+    path = _owner_path(function)
+    names = tuple(inspect.signature(function).parameters)
+    _require_exact_classification(path, names, classified, unclassified="UNCLASSIFIED_PARAMETER")
+    return tuple(
+        SurfaceRow(SURFACE_PARAMETER, path, name, classified[name], category=CATEGORY_ROOT_PARAMETER) for name in names
+    )
+
+
+def enumerate_input_surface(census: census_owner.DecisionPathCensus | None = None) -> tuple[SurfaceRow, ...]:
+    """Enumerate the section 5A input surface the census discovers.
+
+    The census is built from the live owner code unless one is passed. Every
+    field of every reached type and every parameter of every reached callable
+    must be classified: composer-facing types and roots field by field here,
+    everything else by the reviewed snapshot in ``input_census_registry``.
+    Unclassified owners, fields and parameters are refused before stale
+    classifications, so an owner that gains an input reports exactly that.
+    """
+
+    census = census_owner.discover_decision_path() if census is None else census
+    _require_classified_census(census)
+    profiles = _root_profiles(census)
     rows: list[SurfaceRow] = []
-    seen_types: set[type] = set()
-    for owner_type, classified in field_classifications.items():
-        if not dataclasses.is_dataclass(owner_type) or not isinstance(owner_type, type):
-            raise InputSurfaceError("NOT_A_DATACLASS", f"{owner_type!r} is not an owner dataclass")
-        if owner_type in seen_types:
-            raise InputSurfaceError("DUPLICATE_OWNER_TYPE", _owner_path(owner_type))
-        seen_types.add(owner_type)
-        names = tuple(item.name for item in dataclasses.fields(owner_type))
-        _require_exact_classification(_owner_path(owner_type), names, classified, unclassified="UNCLASSIFIED_FIELD")
-        rows.extend(
-            SurfaceRow(SURFACE_FIELD, _owner_path(owner_type), name, classified[name]) for name in names
-        )
-    seen_calls: set[str] = set()
-    for function, classified in call_sites:
-        path = _owner_path(function)
-        if path in seen_calls:
-            raise InputSurfaceError("DUPLICATE_CALL_SITE", path)
-        seen_calls.add(path)
-        names = tuple(inspect.signature(function).parameters)
-        _require_exact_classification(path, names, classified, unclassified="UNCLASSIFIED_PARAMETER")
-        rows.extend(SurfaceRow(SURFACE_PARAMETER, path, name, classified[name]) for name in names)
+    for path, record in census.types.items():
+        if path in INPUT_TYPE_FIELD_CLASSIFICATIONS:
+            classified = INPUT_TYPE_FIELD_CLASSIFICATIONS[path]
+            rows.extend(
+                SurfaceRow(SURFACE_FIELD, path, name, classified[name], CATEGORY_INPUT_TYPE, reached_from=record.reached_from)
+                for name in record.fields
+            )
+            continue
+        category, _, note = census_registry.DISCOVERED_TYPES[path]
+        for name in record.fields:
+            rows.append(
+                SurfaceRow(
+                    SURFACE_FIELD,
+                    path,
+                    name,
+                    _discovered_field(path, name, category, note, census, profiles),
+                    category,
+                    reached_from=record.reached_from,
+                )
+            )
+    roots = set(census.root_paths)
+    for path, record in census.callables.items():
+        if path in roots:
+            classified = ROOT_PARAMETER_CLASSIFICATIONS[path]
+            rows.extend(
+                SurfaceRow(
+                    SURFACE_PARAMETER,
+                    path,
+                    item.name,
+                    classified[item.name],
+                    CATEGORY_ROOT_PARAMETER,
+                    default=item.default,
+                    default_override=census_owner.DEFAULT_COMPOSER_SUPPLIED if item.has_default else None,
+                    reached_from=census_owner.ROOT_PARENT,
+                )
+                for item in record.parameters
+            )
+            continue
+        for item in record.parameters:
+            verdict = census.default_override(path, item.name)[0] if item.has_default else None
+            classification, category = _internal_parameter(path, item, verdict, census, profiles)
+            rows.append(
+                SurfaceRow(
+                    SURFACE_INTERNAL_PARAMETER,
+                    path,
+                    item.name,
+                    classification,
+                    category,
+                    default=item.default,
+                    default_override=verdict,
+                    reached_from=record.reached_from,
+                )
+            )
     return tuple(sorted(rows, key=lambda row: (row.surface, row.owner, row.name)))
+
+
+def _require_classified_census(census: census_owner.DecisionPathCensus) -> None:
+    semantic = INPUT_TYPE_FIELD_CLASSIFICATIONS
+    registry_types = census_registry.DISCOVERED_TYPES
+    registry_callables = census_registry.DISCOVERED_CALLABLES
+    roots = set(census.root_paths)
+    doubled = sorted(set(semantic) & set(registry_types))
+    if doubled:
+        raise InputSurfaceError("DUPLICATE_OWNER_TYPE", f"classified twice: {doubled}")
+    doubled = sorted(set(ROOT_PARAMETER_CLASSIFICATIONS) & set(registry_callables))
+    if doubled:
+        raise InputSurfaceError("DUPLICATE_CALL_SITE", f"classified as root and as internal: {doubled}")
+    # Unclassified owners, fields and parameters first.
+    for path, record in census.types.items():
+        if path in semantic:
+            _require_exact_classification(path, record.fields, semantic[path], unclassified="UNCLASSIFIED_FIELD")
+        elif path in registry_types:
+            category, names, _ = registry_types[path]
+            if category not in census_registry.TYPE_CATEGORIES:
+                raise InputSurfaceError("UNKNOWN_TYPE_CATEGORY", f"{path}: {category!r}")
+            _require_exact_names(path, record.fields, names, unclassified="UNCLASSIFIED_FIELD")
+        else:
+            raise InputSurfaceError("UNCLASSIFIED_OWNER_TYPE", f"{path} is reached from {record.reached_from} but has no classification")
+    missing_roots = sorted(roots - set(ROOT_PARAMETER_CLASSIFICATIONS))
+    if missing_roots:
+        raise InputSurfaceError("UNCLASSIFIED_PARAMETER", f"roots without parameter classifications: {missing_roots}")
+    for path, record in census.callables.items():
+        if path in roots:
+            _require_exact_classification(
+                path, record.parameter_names, ROOT_PARAMETER_CLASSIFICATIONS[path], unclassified="UNCLASSIFIED_PARAMETER"
+            )
+        elif path in registry_callables:
+            _require_exact_names(path, record.parameter_names, registry_callables[path], unclassified="UNCLASSIFIED_PARAMETER")
+        else:
+            raise InputSurfaceError("UNCLASSIFIED_CALLABLE", f"{path} is reached from {record.reached_from} but has no classification")
+    # Then classifications that outlived their owner.
+    stale = sorted((set(semantic) | set(registry_types)) - set(census.types))
+    stale += sorted((set(ROOT_PARAMETER_CLASSIFICATIONS) - roots) | (set(registry_callables) - set(census.callables)))
+    if stale:
+        raise InputSurfaceError("STALE_CLASSIFICATION", f"classified owners the census no longer reaches: {stale}")
 
 
 def _require_exact_classification(
@@ -2112,23 +2401,214 @@ def _require_exact_classification(
             raise InputSurfaceError(unclassified, f"{owner}.{name} has no InputClassification")
 
 
+def _require_exact_names(owner: str, names: Sequence[str], pinned: Sequence[str], *, unclassified: str) -> None:
+    missing = [name for name in names if name not in pinned]
+    if missing:
+        raise InputSurfaceError(unclassified, f"{owner} has unclassified inputs {missing}")
+    stale = sorted(set(pinned) - set(names))
+    if stale:
+        raise InputSurfaceError("STALE_CLASSIFICATION", f"{owner} no longer has {stale}")
+    if tuple(names) != tuple(pinned):
+        raise InputSurfaceError("SIGNATURE_ORDER_CHANGED", f"{owner}: {tuple(names)} != {tuple(pinned)}")
+
+
+def _root_profiles(census: census_owner.DecisionPathCensus) -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Each root's input families and Entry Conviction components."""
+
+    profiles = {}
+    for path in census.root_paths:
+        families: set[str] = set()
+        components: set[str] = set()
+        for classification in ROOT_PARAMETER_CLASSIFICATIONS[path].values():
+            families.update(classification.families)
+            components.update(classification.entry_components)
+        data = families - set(_PSEUDO_FAMILIES)
+        profiles[path] = (
+            tuple(family for family in FAMILIES if family in (data or families)),
+            tuple(component for component in ENTRY_CONVICTION_COMPONENTS if component in components),
+        )
+    return profiles
+
+
+def _reach_profile(
+    paths: Iterable[str],
+    census: census_owner.DecisionPathCensus,
+    profiles: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Families and components of every root whose closure reaches ``paths``."""
+
+    families: set[str] = set()
+    components: set[str] = set()
+    for path in paths:
+        for root in census.reaching_roots.get(path, ()):
+            families.update(profiles[root][0])
+            components.update(profiles[root][1])
+    data = families - set(_PSEUDO_FAMILIES)
+    return (
+        tuple(family for family in FAMILIES if family in (data or families or {STRATEGY_CONFIG_FAMILY})),
+        tuple(component for component in ENTRY_CONVICTION_COMPONENTS if component in components),
+    )
+
+
+def _producer_text(paths: Sequence[str]) -> str:
+    paths = sorted(paths)
+    if len(paths) <= 3:
+        return "; ".join(paths)
+    return "; ".join(paths[:3]) + f"; and {len(paths) - 3} more reached owners"
+
+
+def _field_role(name: str) -> str:
+    if name in ("reason_codes", "config_metadata", "feature_id", "policy_version", "source_record_id") or name.endswith(
+        ("_reason_codes", "_feature_id")
+    ):
+        return ROLE_PROVENANCE
+    if name in ("exchange", "symbol", "provider", "timeframe", "instrument", "fund", "market_type") or name.endswith("_id"):
+        return ROLE_IDENTITY
+    if name in ("detected_at", "available_at") or name.endswith(("_detected_at", "_available_at")):
+        return ROLE_AVAILABILITY
+    if name in ("as_of", "timestamp", "evaluated_at") or name.endswith(("_timestamp", "_time", "_at")):
+        return ROLE_OBSERVATION_TIME
+    return ROLE_VALUE
+
+
+def _type_producers(path: str, census: census_owner.DecisionPathCensus) -> tuple[str, ...]:
+    constructors = sorted({site.caller for site in census.call_sites if site.callee == path})
+    return tuple(constructors or census.callers.get(path, ()))
+
+
+def _discovered_field(
+    type_path: str,
+    name: str,
+    category: str,
+    note: str,
+    census: census_owner.DecisionPathCensus,
+    profiles: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]],
+) -> InputClassification:
+    role = _field_role(name)
+    if category == census_registry.TYPE_STRATEGY_CONFIG:
+        return dataclasses.replace(
+            _config(note or f"StrategyConfig section {type_path.rsplit('.', 1)[-1]}"),
+            producing_owner="btc_predictor.config.strategy.load_strategy_config (the frozen champion StrategyConfig)",
+            historical_source=_SRC_STRATEGY_CONFIG,
+            missing_behaviour="never missing: a declared field of the frozen champion StrategyConfig",
+            role=role,
+        )
+    if category == census_registry.TYPE_OWNER_CONFIG:
+        return dataclasses.replace(
+            _config(note),
+            producing_owner=type_path,
+            historical_source="the owner configuration record's own defaults (or values built from the frozen StrategyConfig)",
+            missing_behaviour="never missing: an owner configuration record built by owner code",
+            role=role,
+        )
+    if category == census_registry.TYPE_ENGINE_STATE:
+        return _state(
+            "btc_predictor.portfolio.state_machine (BTC-150 lifecycle maintained for the replay by the BTC-180 engine)",
+            "engine state: maintained by the state machine for the replay's own position; never back-filled",
+            role=role,
+            note=note,
+        )
+    if category == census_registry.TYPE_OWNER_OUTPUT:
+        producers = _type_producers(type_path, census)
+        if not producers:
+            raise InputSurfaceError("OWNER_OUTPUT_WITHOUT_PRODUCER", f"{type_path} is categorised as an owner output but nothing reached constructs it")
+        families, components = _reach_profile(producers, census, profiles)
+        return InputClassification(
+            kind=KIND_DERIVED,
+            shape=SHAPE_DERIVED,
+            families=families,
+            producing_owner=_producer_text(producers),
+            historical_source=_SRC_UPSTREAM,
+            missing_behaviour=_M_OWNER_OUTPUT,
+            entry_components=components,
+            role=role,
+            note=note,
+        )
+    raise InputSurfaceError("UNKNOWN_TYPE_CATEGORY", f"{type_path}: {category!r} has fields")
+
+
+def _internal_parameter(
+    path: str,
+    item: census_owner.CensusParameter,
+    verdict: str | None,
+    census: census_owner.DecisionPathCensus,
+    profiles: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]],
+) -> tuple[InputClassification, str]:
+    if path.startswith(_CONFIG_LOADER_MODULE + "."):
+        return (
+            dataclasses.replace(
+                _config("configuration loader internals: parse default.toml into the frozen StrategyConfig, reached only through an owner's config=None default"),
+                producing_owner=path,
+                historical_source=_SRC_STRATEGY_CONFIG,
+            ),
+            CATEGORY_CONFIG_LOADER,
+        )
+    if verdict == census_owner.DEFAULT_FIXED:
+        return (
+            dataclasses.replace(
+                _config(f"owner keyword default {item.default}"),
+                producing_owner=path,
+                historical_source="the owner's keyword default",
+                missing_behaviour=(
+                    f"never missing: the keyword default {item.default} is a fixed constant of the decision path "
+                    "because no reached caller passes this argument"
+                ),
+            ),
+            CATEGORY_OWNER_DEFAULT,
+        )
+    callers = census.callers.get(path, ())
+    record = census.callables[path]
+    if callers:
+        producer = _producer_text(callers)
+    elif record.role in (census_owner.ROLE_METHOD, census_owner.ROLE_PROPERTY, census_owner.ROLE_CLASSMETHOD):
+        producer = f"reached owner code calling {path} on an owner record"
+    else:
+        producer = f"the reached owner that holds {path} (reached by {record.reached_by} from {record.reached_from})"
+    families, components = _reach_profile((path,), census, profiles)
+    note = f"default {item.default} unless the caller passes it ({verdict})" if item.has_default else ""
+    return (
+        InputClassification(
+            kind=KIND_OWNER_INTERNAL,
+            shape=SHAPE_DERIVED,
+            families=families,
+            producing_owner=producer,
+            historical_source=_SRC_INTERNAL,
+            missing_behaviour=_M_INTERNAL,
+            entry_components=components,
+            note=note,
+        ),
+        CATEGORY_INTERNAL_PARAMETER,
+    )
+
+
 def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
-    """Counts by family and kind, plus the owner-less and discretionary inputs."""
+    """Counts by surface, category, family and kind, plus the owner-less,
+    discretionary and fixed-default inputs."""
 
     by_family: dict[str, int] = {}
     raw_by_family: dict[str, int] = {}
+    composer_by_family: dict[str, int] = {}
     by_kind: dict[str, int] = {}
     by_shape: dict[str, int] = {}
+    by_surface: dict[str, int] = {}
+    by_category: dict[str, int] = {}
     ownerless: dict[str, dict[str, Any]] = {}
     discretionary: dict[str, list[str]] = {}
+    defaults: list[dict[str, Any]] = []
     for row in rows:
         classification = row.classification
+        composer_facing = row.category in (CATEGORY_INPUT_TYPE, CATEGORY_ROOT_PARAMETER)
         for family in classification.families:
             by_family[family] = by_family.get(family, 0) + 1
+            if composer_facing:
+                composer_by_family[family] = composer_by_family.get(family, 0) + 1
             if classification.kind == KIND_RAW:
                 raw_by_family[family] = raw_by_family.get(family, 0) + 1
         by_kind[classification.kind] = by_kind.get(classification.kind, 0) + 1
         by_shape[classification.shape] = by_shape.get(classification.shape, 0) + 1
+        by_surface[row.surface] = by_surface.get(row.surface, 0) + 1
+        if row.category:
+            by_category[row.category] = by_category.get(row.category, 0) + 1
         if classification.kind in (KIND_OWNERLESS_CERTIFIED, KIND_OWNERLESS_UNDEFINED, KIND_OWNERLESS_FALLBACK):
             entry = ownerless.setdefault(
                 classification.input_id or "",
@@ -2140,11 +2620,17 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
                 entry["certified_definition"] = classification.historical_source
         if classification.kind == KIND_DISCRETIONARY:
             discretionary.setdefault(classification.input_id or row.name, []).append(row.key)
+        if row.category == CATEGORY_OWNER_DEFAULT:
+            defaults.append({"owner": row.owner, "parameter": row.name, "default": row.default})
     return {
         "rows": len(rows),
         "owner_input_types": len({row.owner for row in rows if row.surface == SURFACE_FIELD}),
         "owner_call_sites": len({row.owner for row in rows if row.surface == SURFACE_PARAMETER}),
+        "owner_internal_callables": len({row.owner for row in rows if row.surface == SURFACE_INTERNAL_PARAMETER}),
+        "count_by_surface": dict(sorted(by_surface.items())),
+        "count_by_census_category": dict(sorted(by_category.items())),
         "count_by_family": dict(sorted(by_family.items())),
+        "count_by_family_composer_facing": dict(sorted(composer_by_family.items())),
         "count_by_family_raw_leaves": dict(sorted(raw_by_family.items())),
         "count_by_kind": dict(sorted(by_kind.items())),
         "count_by_shape": dict(sorted(by_shape.items())),
@@ -2158,6 +2644,33 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
             for input_id, entry in sorted(ownerless.items())
         },
         "discretionary_inputs": {key: sorted(value) for key, value in sorted(discretionary.items())},
+        "owner_default_constants": sorted(defaults, key=lambda item: (item["owner"], item["parameter"])),
+    }
+
+
+def census_record(census: census_owner.DecisionPathCensus) -> dict[str, Any]:
+    """The census evidence persisted with the inventory: roots, left-out owner
+    definitions, and every reached type and callable with how it was reached."""
+
+    categories = {path: entry[0] for path, entry in census_registry.DISCOVERED_TYPES.items()}
+    return {
+        "summary": census.summary(),
+        "roots": [root.as_record() for root in census.roots],
+        "left_out_owner_definitions": [
+            {"definition": path, "justification": reason}
+            for path, reason in sorted(census_owner.LEFT_OUT_OWNER_DEFINITIONS.items())
+        ],
+        "outside_owner_scope": [
+            {"package": name, "justification": reason} for name, reason in sorted(census_owner.OUTSIDE_OWNER_SCOPE.items())
+        ],
+        "types": [
+            {**record.as_record(), "census_category": categories.get(path, CATEGORY_INPUT_TYPE)}
+            for path, record in census.types.items()
+        ],
+        "callables": [
+            {key: value for key, value in record.as_record().items() if key != "parameters"}
+            for record in census.callables.values()
+        ],
     }
 
 
@@ -3873,6 +4386,24 @@ OWNERLESS_BLOCKERS: tuple[BlockerDefinition, ...] = (
         _OWNER_OPTIONS, ("RBT-004",),
         members=("CORRECTION_FROM_LOCAL_HIGH", "DISTRIBUTION_STATE", "SHORT_TRIGGER", "MEASURED_MOVE_REFERENCE"),
     ),
+    BlockerDefinition(
+        "BLK-AVWAP-EVENT-ANCHOR", "The anchored-VWAP market-event anchor has no owner", DECISION_OWNER,
+        "anchored_vwap_anchor_from_capitulation_event takes a CapitulationEvent (event instant, price and detection time). "
+        "No owner produces one (BTC-093 takes 'explicit event metadata' from the caller): the CAPITULATION flag owner "
+        "returns a flag result, not an event, and Rulebook 9.1 names "
+        "'Anchored VWAPs from important market events' without defining the event. Found by the RBT-002 R1 census. AVWAP "
+        "confluence is an optional Phase 1 enhancement (Rulebook 9.2), so no Entry Conviction component is structurally "
+        "incomplete without it: the swing and breakout anchors and every other level still evaluate.",
+        "CHAMPION_COMPLETION_SPEC_V1 defines the event from existing owner outputs or explicitly omits the event anchor; "
+        "it is never inferred.",
+        (
+            ResolutionOption("Owner/Rulebook decision defining the event from existing owner outputs (a versioned owner contract)", _NO_DATA, "price history already in scope"),
+            ResolutionOption("Explicitly versioned research strategy variant (AGENTS.md strategy-semantics change)", _NO_DATA, "never silent; a new strategy version"),
+            ResolutionOption("Explicitly omit the optional event anchor", _NO_DATA, "Rulebook 9.2 optional enhancement; swing and breakout anchors still evaluate"),
+        ),
+        ("RBT-004",),
+        members=("CAPITULATION_EVENT",),
+    ),
 )
 
 POLICY_V4_BLOCKERS: tuple[BlockerDefinition, ...] = (
@@ -4250,7 +4781,8 @@ def build_inventory(snapshot: Mapping[str, Any]) -> dict[str, Any]:
 
     if snapshot.get("snapshot_version") != DATABASE_COVERAGE_SNAPSHOT_VERSION:
         raise CoverageError("SNAPSHOT_VERSION", "unsupported coverage snapshot")
-    rows = enumerate_input_surface()
+    census = census_owner.discover_decision_path()
+    rows = enumerate_input_surface(census)
     blockers = derive_blockers(rows)
     structural = [b["blocker_id"] for b in blockers if b["entry_conviction_structurally_incomplete_on_every_date"]]
     veto_every_trade = [b["blocker_id"] for b in blockers if b["every_new_trade_blocked_on_every_date"]]
@@ -4265,6 +4797,7 @@ def build_inventory(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         "windows": [window.as_record() for window in COVERAGE_WINDOWS],
         "input_surface": {
             "summary": input_surface_summary(rows),
+            "census": census_record(census),
             "rows": [row.as_record() for row in rows],
         },
         "database_coverage": snapshot,
@@ -4389,6 +4922,7 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
     """A short human report rendered deterministically from the inventory."""
 
     summary = inventory["input_surface"]["summary"]
+    census = inventory["input_surface"]["census"]
     lines = [
         "# RBT-002 historical input coverage inventory",
         "",
@@ -4398,9 +4932,20 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
         "",
         "Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.",
         "",
-        "## Input surface (policy V3 section 5A)",
+        "## Input surface (policy V3/V4 section 5A)",
         "",
-        f"{summary['rows']} inputs: {summary['owner_input_types']} owner input types and {summary['owner_call_sites']} owner call sites.",
+        f"Discovered, not listed: `{census['summary']['census_version']}` walks the owner code from "
+        f"{census['summary']['roots']} hand-written roots and reaches {census['summary']['callables']} callables and "
+        f"{census['summary']['types']} types ({census['summary']['dataclass_types']} dataclasses, "
+        f"{census['summary']['protocol_types']} protocol). {len(census['left_out_owner_definitions'])} owner-module "
+        "definitions are left out, each with a recorded reason.",
+        "",
+        f"{summary['rows']} inputs: the fields of {summary['owner_input_types']} reached types, the parameters of "
+        f"{summary['owner_call_sites']} roots and the parameters of {summary['owner_internal_callables']} internal callables.",
+        "",
+        "| census category | inputs |",
+        "| --- | ---: |",
+        *(f"| {category} | {count} |" for category, count in summary["count_by_census_category"].items()),
         "",
         "| family | raw leaf inputs | inputs drawing on the family (direct or upstream) |",
         "| --- | ---: | ---: |",
@@ -4419,6 +4964,10 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
             f"- `{name}` ({entry['kind']}; Entry Conviction: {', '.join(entry['entry_components']) or 'none'})"
             for name, entry in summary["ownerless_inputs"].items()
         ),
+        "",
+        "Owner keyword defaults that no reached caller overrides (fixed constants of the decision path):",
+        "",
+        *(f"- `{item['owner']}.{item['parameter']}` = `{item['default']}`" for item in summary["owner_default_constants"]),
         "",
         "## Database coverage",
         "",
