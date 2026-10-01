@@ -879,6 +879,13 @@ PASS; all four policy V4 data rules were adopted
 EPIC Y RBT-002 =
 CORRECTED / AWAITING INDEPENDENT RE-REVIEW — INVENTORY_HISTORICAL_INPUT_COVERAGE_V1,
 implementation ab210a5, review-fix 0b06a85, R1 correction 906c719. The
+2026-10-01 re-review attempt at 4556a01 is REVIEW BLOCKED — DATABASE:
+all five required POSTGRES_* variables and PGOPTIONS were absent, including
+in a non-login shell; the approved environment URL helper raised ValueError
+before connecting. No query ran and no live fact was independently reproduced.
+The reviewer stopped at the mandatory database gate; no R1 closure or final
+RBT-002A coverage-list sign-off was issued. Details are in the EPIC Y
+"RBT-002 re-review outcome"; RBT-002A and RBT-001A remain blocked. The
 2026-10-01 independent xHigh review result FAIL — RELEASE BLOCKING (reviewed
 inventory b4b51fc4...ed6a106) stands until the re-review. The correction
 replaces the hand-selected registry with a discovered census: 74 justified
@@ -1568,8 +1575,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `POSTP1-001V2R1`, **NOT STARTED / DEPENDENCY-SATISFIED**. The preceding
   EPIC X history is preserved below.
 - **Most recent completed review:** EPIC Y `RBT-002`, 2026-10-01,
-  **FAIL — RELEASE BLOCKING**. Its P1 owner registry incompleteness is now
-  addressed by R1 correction `906c719`, awaiting re-review;
+  **FAIL — RELEASE BLOCKING**. R1 correction `906c719` claims to address its
+  P1 owner registry incompleteness; independent validation remains pending;
   three small classification/test corrections are in distinct review-fix
   `0b06a85`. The reviewed inventory is `b4b51fc4...ed6a106`: 24 confirmed
   undefined IDs plus the existing volume fallback, no complete census sign-off.
@@ -1810,8 +1817,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
 - **Next dependency-satisfied EPIC Y actions:**
-  - Independent xHigh re-review of the corrected RBT-002 (R1 correction
-    `906c719`), with its own live read-only database reproduction.
+  - Restore the exported read-only database environment and complete the
+    independent xHigh re-review of corrected RBT-002 (R1 correction `906c719`),
+    with its own live timestamp-only reproduction. The attempt at `4556a01`
+    stopped as REVIEW BLOCKED — DATABASE; the prior FAIL stands.
   - The owner decisions are ANSWERED (2026-10-01). The four data rules are
     adopted as `RESEARCH_BACKTEST_POLICY_V4`. The undefined strategy inputs are
     filled by the pre-registered `CHAMPION_COMPLETION_SPEC_V1` (RBT-002A).
@@ -1835,6 +1844,18 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-002 re-review attempt (2026-10-01):** REVIEW BLOCKED — DATABASE at
+  `4556a01`. Approved URL helper raised `ValueError`; all five required
+  `POSTGRES_*` variables and `PGOPTIONS` were absent in a presence-only
+  non-login-shell check. No connection or query, no live reproduction, and no
+  substantive audit or test suites ran. Interpreter **3.12.14**, clean requested
+  branch, correction scope and documentation-only successor were checked.
+  Documentation-only `git diff --check` passed. Only EPIC Y/CURRENT_STATE
+  documentation is changed; no review-fix commit or new baseline.
+  RBT-002A's proposed 25-ID list and four raised-item rulings
+  remain pending re-review. No trading outcome; holdout NOT COLLECTED and its
+  values never read; BTC-019 untouched, sealed sample unopened; EPIC X/Epic T
+  unchanged. See the EPIC Y "RBT-002 re-review outcome".
 - **RBT-002 R1 correction validation (2026-10-01):** `.venv312` CPython
   3.12.14. Focused **296 passed** (original 65, review 2, census 27, runtime
   trace 202); RBT-001 **167**; closure table **145**; BTC-180..185 **282**;
@@ -2171,7 +2192,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-002 R1
   correction `906c719`; this documentation commit records it as **CORRECTED /
-  AWAITING INDEPENDENT RE-REVIEW**. Earlier: implementation `ab210a5`, original
+  AWAITING INDEPENDENT RE-REVIEW**, with the re-review attempt at `4556a01`
+  **REVIEW BLOCKED — DATABASE**. Earlier: implementation `ab210a5`, original
   documentation `d5daa0b`, review baseline `9a90313`, distinct review-fix
   `0b06a85`, and review record `f52bcf4` (**FAIL — RELEASE BLOCKING**).
   EPIC Y RBT-001

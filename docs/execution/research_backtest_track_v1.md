@@ -578,7 +578,7 @@ BTC-019 untouched and sealed sample unopened; EPIC X unchanged with
 
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
-**Status:** `CORRECTED / AWAITING INDEPENDENT RE-REVIEW` — R1 correction `906c719` (discovered census and live read-only database regeneration). The 2026-10-01 review result `FAIL — RELEASE BLOCKING` stands until the re-review.
+**Status:** `CORRECTED / AWAITING INDEPENDENT RE-REVIEW` — R1 correction `906c719` (discovered census and live read-only database regeneration). The 2026-10-01 re-review attempt is `REVIEW BLOCKED — DATABASE`; the prior `FAIL — RELEASE BLOCKING` stands until a completed re-review passes.
 **Dependencies:** none
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -1589,9 +1589,66 @@ The full repository suite and the full 117-test PAD5 suite were **NOT RUN**.
 - RBT-002A, RBT-001A and RBT-004 were not started.
 
 
+### RBT-002 re-review outcome
+
+**Date:** 2026-10-01. **Review target:** R1 correction `906c719`, documentation
+`4556a01`, previous review-fix `0b06a85` and review record `f52bcf4`, on
+`claude/etf-worker-prospective-integration-dixlte` at `4556a01`.
+**Attempt result: REVIEW BLOCKED — DATABASE.** This is an incomplete independent
+re-review under `prompts/review_ticket.md`, not a replacement verdict. The prior
+**FAIL — RELEASE BLOCKING** stands; R1 is not independently closed. RBT-002
+remains awaiting re-review, and RBT-002A and RBT-001A remain blocked.
+
+**Mandatory database gate.** The reviewer attempted a connection using only
+`btc_predictor.research.btc019_empirical._database_url_from_environment`, with
+`current_setting('default_transaction_read_only')` as the intended first query.
+The helper raised `ValueError` before an engine or connection could be created.
+An independent presence-only check in a non-login shell confirmed that
+`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
+`POSTGRES_DB` and `PGOPTIONS` were all absent. No credential values, URL or
+`.env` were read or printed. No database query ran; read-only mode and all live
+database facts are **UNVERIFIED**. Per the explicit stop instruction, substantive
+review stopped at this gate. The correction's stored snapshot and live-run
+claims were not accepted as substitutes.
+
+**Checks completed before stopping.** The worktree was clean at `4556a01` on
+the requested branch. `.venv312` reports CPython **3.12.14**.
+`git diff --stat f52bcf4 906c719` lists only EPIC Y research-backtest modules,
+their tests and three inventory artifacts (17 files).
+`git diff --stat 906c719 4556a01` lists only this roadmap and `CURRENT_STATE.md`.
+These preliminary scope observations do not establish census correctness or
+acceptance completion.
+
+**Not performed.** Inventory re-hash/rebuild/determinism; root and left-out
+audits; independent adversarial fixtures; tracer line/branch measurement;
+in-memory injection verification; classification sampling; live timestamp-only
+database reproduction; the four raised-item rulings; the four audit-area
+re-audits; focused/regression/proof suites, namespace digest checks and
+compileall. No test counts or additional input classifications are claimed.
+The earlier test baseline remains unchanged. Documentation-only
+`git diff --check` **passed** for this attempt record.
+
+**Coverage and decisions.** There is no final re-reviewed RBT-002A coverage
+list. The previous review's 24 confirmed undefined IDs and separate existing
+volume fallback remain its rulings; the correction's proposed addition of
+`CAPITULATION_EVENT` (25 total) is pending independent review. The AVWAP
+classification, futures-basis zero-variance issue, policy label, line-position
+digest sensitivity and composer guard remain unaudited in this attempt.
+The fixed V4 owner decisions are unchanged.
+
+**Review-fix:** none. Only this roadmap and `CURRENT_STATE.md` are updated to
+record the blocked attempt; no implementation, inventory or test changes.
+**Next work:** restore the exported read-only database environment, then
+complete the independent xHigh RBT-002 re-review, including its own live
+timestamp-only reproduction. Do not start RBT-002A or RBT-001A before a PASS.
+
+**Safety:** no real-data backtest outcome; holdout **NOT COLLECTED**, its values
+never read; BTC-019 untouched, sealed sample unopened; EPIC X unchanged,
+`POSTP1-001V2R1` still its next ticket; Epic T unchanged.
+
 ## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
 
-**Status:** `BLOCKED — awaiting the independent re-review PASS of the corrected RBT-002 (R1 correction 906c719)`
+**Status:** `BLOCKED — awaiting the independent re-review PASS of the corrected RBT-002 (R1 correction 906c719); 2026-10-01 re-review attempt REVIEW BLOCKED — DATABASE`
 **Dependencies:** RBT-002 independent review PASS, so that the list of
 owner-less inputs is confirmed complete
 **Implementation effort:** xHigh
@@ -1646,7 +1703,7 @@ Acceptance criteria:
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `BLOCKED — awaiting the independent re-review PASS of the corrected RBT-002 (906c719); policy V4 data rules ADOPTED and RBT-001 review dependency SATISFIED`
+**Status:** `BLOCKED — awaiting the independent re-review PASS of the corrected RBT-002 (906c719); 2026-10-01 re-review attempt REVIEW BLOCKED — DATABASE; policy V4 data rules ADOPTED and RBT-001 review dependency SATISFIED`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`), RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -1851,9 +1908,9 @@ version or any version derived from inspecting its result.
 | ticket | task | status |
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
-| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | CORRECTED / AWAITING INDEPENDENT RE-REVIEW — R1 correction `906c719` (discovered census, live read-only database regeneration); inventory `0d5f7040...987e30`. Review FAIL and review-fix `0b06a85` stand until the re-review |
-| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — corrected RBT-002 re-review PASS; coverage list 25 undefined IDs (the 24 confirmed plus `CAPITULATION_EVENT` from the R1 census) plus the existing volume fallback |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — corrected RBT-002 re-review PASS; V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
+| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | CORRECTED / AWAITING INDEPENDENT RE-REVIEW — attempt on `4556a01` REVIEW BLOCKED — DATABASE (missing exported environment); R1 correction `906c719`, inventory `0d5f7040...987e30`. Prior review FAIL stands |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — corrected RBT-002 re-review PASS; latest attempt DATABASE BLOCKED. Proposed 25-ID list pending re-review; previous 24 confirmed IDs and existing volume fallback retained |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — corrected RBT-002 re-review PASS; latest attempt DATABASE BLOCKED. V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 review; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
