@@ -575,7 +575,7 @@ BTC-019 untouched and sealed sample unopened; EPIC X unchanged with
 
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
-**Status:** `NOT STARTED / DEPENDENCY-SATISFIED`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW`
 **Dependencies:** none
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -651,9 +651,379 @@ Acceptance criteria:
   Nothing is collected by this ticket, apart from metadata probes (depth,
   schema, pricing) needed to rank sources.
 
+### Implementation Notes
+
+**Implementation commit:** `ab210a5`
+**Status:** `IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW`
+**Files:** new only.
+
+- `btc_predictor/research_backtest/coverage.py` (owner module)
+- `btc_predictor/tests/test_research_backtest_coverage.py`
+- `backtest_evidence/research_backtest_v1/rbt002_input_coverage_inventory_v1.json`
+  (canonical JSON, SHA-256 `b7b9a20b277310d354a60b0f92165dc8a618b18112397402d19dd0d629be3bf0`), its `.sha256` file and the
+  short human report `rbt002_input_coverage_inventory_v1.md`
+
+`git diff --diff-filter=MDRT 1e7c64e ab210a5` is empty: no tracked file was
+modified, deleted, renamed or retyped, and no schema migration was run.
+
+**What exists.** One module, imported by nothing else, that measures and
+decides nothing on its own. It computes no score, composer, fill or trade.
+
+- `enumerate_input_surface()` is the policy V3 §5A enumeration. It reads every
+  field of 36 owner input types with `dataclasses.fields`, and every parameter
+  of 68 owner call sites on the RBT-004/RBT-005 decision path with
+  `inspect.signature`. That gives **592 inputs**. Each needs exactly one
+  `InputClassification`:
+  - its §4 shape and §5 family;
+  - its producing owner, or `OWNERLESS`;
+  - its historical source;
+  - the owner's quoted missing-input behaviour;
+  - the Entry Conviction components it feeds.
+
+  An unclassified field or parameter raises `UNCLASSIFIED_FIELD` /
+  `UNCLASSIFIED_PARAMETER`. A classification for a removed name raises
+  `STALE_CLASSIFICATION`.
+- `collect_database_coverage(connection, collected_at=...)` takes a coverage
+  snapshot using only `SELECT` statements, each checked by
+  `require_select_only`. It runs on an engine with
+  `execution_options(postgresql_readonly=True)` from
+  `btc019_empirical._database_url_from_environment` (imported, never printed),
+  and it refuses unless `default_transaction_read_only` is `on`.
+  - Rows dated before 2020, in the holdout or in the reserve appear only in
+    `COUNT`, `MIN` and `MAX` of time columns.
+  - Data-window rows are read as series keys plus observation instants.
+  - No value column is named in any statement.
+  - Tables whose names mark trusted-acquisition or calendar persistence are
+    skipped unread.
+- `minimum_history_requirements()` reads every window, minimum and lookback
+  from owner constants and keyword defaults, and the liquidation percentile's
+  from EPIC X by reference. `earliest_evaluable_inputs()` simulates each rule:
+  - lookback rows;
+  - a rolling window that includes the current row;
+  - a count in the half-open `[t - window, t)` history;
+  - an ETF publication-day window;
+  - all-of.
+
+  Venue series come from `venue_bar_series()`, which runs BTC-040
+  `derive_ohlcv_bars` on timestamp-only stand-in bars, so the exact-hour census
+  is reused, not restated. Shared series come from `projected_shared_series()`,
+  using the selected sources' measured first instants and cadence.
+- `SOURCE_CANDIDATES`, `PROBE_EVIDENCE`, `SEMANTIC_PINS`, `derive_blockers()`,
+  `acquisition_plan()`, `build_inventory()` and `render_report()`.
+- The CLI has two commands. `python -m btc_predictor.research_backtest.coverage
+  collect` runs a read-only collection and writes the artifact. `rebuild`
+  regenerates the artifact from its own persisted snapshot, with no database.
+
+**Research database (read-only check, 2026-10-01).**
+
+- Server: PostgreSQL 17.9, database `btc-swing`, `default_transaction_read_only`
+  and `transaction_read_only` both `on`, Alembic revision
+  `0021_trade_accounting`.
+- `research` schema: no tables. No trusted-acquisition table exists in this
+  database.
+
+| family | venue | rows 2020–2025 | first / last | gaps (positions) | provider / source | publication or revision times |
+| --- | --- | ---: | --- | --- | --- | --- |
+| Reference price `1h` | Bitstamp | 52,608 | 2020-01-01 00:00 / 2025-12-31 23:00 | 0 | `bitstamp` | none (`REVISION_HISTORY_UNAVAILABLE`) |
+| Reference price `1h` | Coinbase | 52,597 | same | 11 in 5 runs: 2020-01-30 17:00; 2020-09-04 23:00; 2020-10-20 20:00; 2023-03-04 18:00–20:00; 2025-10-25 16:00–20:00 | `coinbase` | none |
+| Reference price `1h` | Bitfinex | 52,592 | same | 16 in 7 runs: 2020-02-11 11–12; 2020-08-12 21; 2021-06-30 08–09; 2021-10-13 14–16; 2022-10-12 08–11; 2023-03-06 10–11; 2024-05-05 10–11 (hours UTC) | `bitfinex` | none |
+| Shared raw volume | Bitstamp | 52,608 | as above | 0 | `bitstamp` | none |
+| ETF flows and AUM | shared | **0** | — | whole span | — | schema: `revision` column, no publication-time column |
+| Funding | shared | **0** | — | whole window | — | none |
+| Open interest | shared | **0** | — | whole window | — | none |
+| Futures basis | shared | **0** | — | whole window | — | none |
+| Liquidations | shared | **0** | — | whole window | — | none |
+| Perpetual volume | shared | **0** | — | whole window | — | none |
+| BTC market cap | shared | **0** (no raw table) | — | whole window | — | — |
+| `raw.generic_series` | — | 0 | — | — | — | — |
+
+- Every OHLCV hour is grid-aligned, with no duplicates and one bulk ingestion
+  on 2026-08-29 13:55–14:55 UTC.
+- **Timestamp semantics.**
+  - OHLCV stamps are *consistent with* interval start: every series runs from
+    the window start through the last start-grid hour and has no holdout row.
+    Stamps alone cannot exclude end stamping, so the BTC-020 adapters' candle
+    open time pins it.
+  - Perpetual volume, futures basis and liquidations have **no persisted rows**,
+    so their semantics cannot be confirmed from data. The schema fixes them, and
+    RBT-002 pins them for RBT-001A/RBT-003:
+    - `liquidations` is per-side **interval aggregates**, because its primary
+      key cannot hold events;
+    - `futures_basis` is a **snapshot** (a market timestamp, no timeframe);
+    - perpetual volume is the **interval start** (RBT-001's requirement).
+- **Exposure recorded, not accepted silently.** 2,232 `raw.btc_ohlcv` rows are
+  dated 2019-12-01 00:00 .. 2019-12-31 23:00: 744 per venue, bulk-ingested
+  2026-08-29 14:55 UTC. They lie outside the sealed BTC-019 sample, which ends
+  2019-11-30 23:00, but inside the policy §3 prohibited window. They were only
+  counted. RBT-001 refuses any pre-2020 record, and RBT-003 loaders must bound
+  every query to the data window.
+- No raw row is dated in the holdout or reserve. `derived.btc_reference_composite`
+  has three `available_at` values at 2026-01-01 00:05. These are availability
+  instants of its 2025-12-31 observations, and every observation instant of
+  that table lies in the data window.
+
+**Input surface (592 inputs).**
+
+| kind | inputs |
+| --- | ---: |
+| `RAW_HISTORICAL` | 104 |
+| `DERIVED_BY_OWNER` | 190 |
+| `OWNERLESS_CERTIFIED_DEFINITION` | 3 |
+| `OWNERLESS_UNDEFINED` | 36 |
+| `DISCRETIONARY` | 7 |
+| `ABSENT_RULEBOOK_FALLBACK` | 11 |
+| `ENGINE_STATE` | 62 |
+| `STRATEGY_CONFIG` | 179 |
+
+Raw leaf inputs by §5 family:
+
+| family | inputs |
+| --- | ---: |
+| reference price `1h` | 25 |
+| shared raw volume | 14 |
+| ETF flows and AUM | 11 |
+| funding | 12 |
+| open interest | 13 |
+| futures basis | 12 |
+| liquidations | 13 |
+| perpetual volume | 13 |
+| BTC market cap | 5 |
+| US equity market closures | 2 |
+
+The inventory also counts every input drawing on a family transitively.
+
+- Discretionary inputs are `SYSTEMIC_SHOCK`, `SYSTEMIC_EUPHORIA` and
+  `MANUAL_RESEARCH_OVERRIDE`. The owners' `None` handling is quoted per field.
+- **Owner-less inputs.** 24 have no definition anywhere: no owner, no config
+  value, no certified definition and no Rulebook number. One more,
+  `LIQUIDATION_PERCENTILE`, has a certified EPIC X definition. The 24 are:
+  - trend z-scores (`TREND_Z_M4`, `_M12`, `_20W`, `_52H`);
+  - flow z-scores (`FLOW_Z_ETF_NORM_5D`, `_20D`, `_FLOW_ACCEL`);
+  - `RANGE_PERCENTILE`, `DOWNSIDE_RETURN` and `UPSIDE_RETURN`;
+  - `LEVEL_REACTION_MAGNITUDE` and `LEVEL_VOLUME_PERCENTILE`;
+  - `SEVERE_CROWDING_STATE`;
+  - Hold/Add components and the add/exit predicates:
+    `MOMENTUM_PERSISTENCE_SCORE`, `NEW_STRUCTURE_SCORE`, `ADD_MOMENTUM_SCORE`,
+    `NEW_STRUCTURAL_CONFIRMATION`, `REGIME_SUPPORTIVE_PREDICATE`,
+    `FLOW_SUPPORTIVE_PREDICATE`, `REGIME_INVALIDATION_PREDICATE` and
+    `DATA_RISK_EXIT_PREDICATE`;
+  - setup inputs: `CORRECTION_FROM_LOCAL_HIGH`, and `DISTRIBUTION_STATE` /
+    `SHORT_TRIGGER` (inert while shorts are disabled).
+- `TrendScoreInput` has no `None` handling: `calculate_trend_score` raises
+  `RuntimeError` on a `None` component.
+- `LIQUIDATION_PERCENTILE` reuses EPIC X corpus V1 by reference. Its three
+  definition hashes are recorded in the inventory:
+  `PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1` `606e3930...215b7`,
+  `PROSPECTIVE_LIQUIDATION_CAPTURE_V1` `d4268aa2...798c8` and
+  `LIQUIDATION_UTC_DAY_CENSUS_V1` `7180ad6c...0a4a2`.
+
+**Earliest evaluable date (input completeness only).** Every Entry Conviction
+component and the core regime must be complete. On every venue that is
+**UNDEFINED**, because the trend, flow, volatility and structure components
+each need owner-less inputs. The table gives the lower bound on the available
+instant, assuming those inputs were defined with no extra history. Positioning
+is the only defined component.
+
+| venue | trend | flow | positioning | volatility | structure | all components and core regime |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bitstamp | ≥ 2021-01-04 | ≥ 2024-02-10 | 2020-10-02 | ≥ 2022-05-29 | ≥ 2020-02-24 | UNDEFINED, ≥ 2024-02-10 |
+| Coinbase | ≥ 2021-01-25 | ≥ 2024-02-10 | 2020-10-02 | ≥ 2022-05-29 | ≥ 2020-03-02 | UNDEFINED, ≥ 2024-02-10 |
+| Bitfinex | ≥ 2021-01-18 | ≥ 2024-02-10 | 2020-10-02 | ≥ 2022-05-29 | ≥ 2020-03-02 | UNDEFINED, ≥ 2024-02-10 |
+
+Price-derived dates are measured from each venue's real hour coverage; a
+missing hour removes its week's bar, which shifts Coinbase and Bitfinex.
+Everything else is projected from the selected sources' measured depth:
+
+- ETF: 20 publication days from 2024-01-11 (excluding MLK day) end on
+  2024-02-08; with T+2 availability that gives 2024-02-10 00:00.
+- Liquidations: 365 complete days from 2021-05-28.
+- Positioning: funding 2020-01-11 08:00, OI growth 2020-09-09 06:00, basis
+  2020-08-02 07:00, OI intensity 2020-10-02 00:00.
+
+Any owner-defined normalisation window adds its own warm-up on top of these
+lower bounds.
+
+**Source ranking (probed 2026-10-01; each probe's URL, status and response
+SHA-256 is recorded, never its values).**
+
+| family | rank | candidate | measured depth | exact cost | notes |
+| --- | ---: | --- | --- | --- | --- |
+| Liquidations | 1 | Kraken Futures public REST executions, `PI_XBTUSD` | 2021-05-27 11:55 UTC (none before 2020) | USD 0 | Same universe and raw fills; `takerOrder.orderType == "Liquidation"`. Covers all of 2022. Census not applicable unchanged. Licence unverified, so hashes only |
+| Liquidations | 1 (corroboration) | Kraken charts `liquidation-volume` hourly | 2020-02-26 | USD 0 | Explicit zero hours; totals only, no events |
+| Liquidations | 2 | Tardis.dev Kraken Futures liquidations | 2019-03-30 | USD 4,200 (Academic yearly; eligibility) or 8,400 (Solo yearly), reaching 2022-10-01; USD 36,000 (Business yearly) for 2019-03-30 | Records `wss://futures.kraken.com/ws/v1`, the EPIC X endpoint; one data-window incident on 2021-11-10 05:09–05:19 |
+| Liquidations | 3 | Coinalyze daily `liquidation-history` | UNVERIFIED (no `COINALYZE_API_KEY`) | USD 0 | Daily kept forever, intraday 1,500–2,000 points |
+| Liquidations | 4 | CoinGlass Hobbyist pair history | all-time at `1d` (plan table) | USD 29 for one month (USD 348 yearly) | Personal use; at least 4h interval; Kraken pair support UNVERIFIED |
+| Market cap | 1 | Coin Metrics Community `CapMrktCurUSD` | 2010-07-18 | USD 0 | CC BY-NC 4.0; not reviewable, so final values only; end-of-day close |
+| Market cap | 2 | CoinGecko (EPIC X prospective source) | public API: 365 days | UNVERIFIED (paid plan) | — |
+| Futures basis | 1 | Binance COIN-M quarterly vs COIN-M `BTCUSD` index | contracts from 2020-08-01; index from 2020-06-09 | USD 0 | CC BY-NC-SA 4.0; contract needs policy V4 |
+| Futures basis | 2 | Kraken fixed-maturity via Tardis | UNVERIFIED | in a Tardis subscription | — |
+| Funding | 1 | Binance USD-M `BTCUSDT` fundingRate archive | 2020-01-01 00:00 (8 h) | USD 0 | Settlement and interval map onto `FundingRate` |
+| Funding | 2 / 3 | Tardis Kraken `derivative_ticker` / Kraken v4 | 2019-03-30 / rolling year from 2025-10-01 | USD 4,200 / 0 | Kraken v4 is too shallow, and its responses carry holdout rows |
+| Open interest | 1 | Binance USD-M `metrics` | 2020-09-01 00:00 (5 min) | USD 0 | Early files: 2 rows per slot (de-duplicate) |
+| Open interest | 3 | Kraken charts open-interest | 2023-03-07 | USD 0 | Too shallow |
+| Perpetual volume | 1 | Binance USD-M `BTCUSDT` `1h` klines | 2020-01-01 00:00 | USD 0 | `open_time` = interval start |
+| ETF flows and AUM | 1 | CoinGlass Hobbyist: `etf/bitcoin/flow-history` + `etf/bitcoin/history` | 2024-01-11 (documented) | USD 29 (one month) | Personal use; no publication time or vintages, so `T+2` and `REVISION_HISTORY_UNAVAILABLE` |
+| ETF flows and AUM | 2 / 3 | Issuer sites / Farside | UNVERIFIED | USD 0 | 403/406/429 or no daily-history download on every issuer; Farside 403 |
+
+**Pinned semantics for RBT-001A/RBT-003.**
+
+- Perpetual volume: interval start.
+- Open interest: hourly `:00` snapshots in USD (the BTC-021 request defaults to
+  `1h`), so OI/market cap is dimensionless.
+- Funding: settlement at `calc_time`. The 2020-01-01 00:00 settlement is
+  refused because it prices 2019.
+- Market cap for day D: `observation_time = D+1 00:00`, available `D+2 00:00`,
+  first day 2020-01-01. The owner joins OI and market cap by exact instant.
+- Liquidations: per-side `1h` aggregates, with event-id digests kept in
+  evidence.
+- ETF: `T+2 00:00`.
+
+The data-quality owner requires `open_interest` **and** `perp_volume` feeds
+(`DerivativesQualityConfig.required_snapshot_feeds`). Perpetual volume is
+therefore required even though `ETF_CORE` does not use it.
+
+**Blocker list (policy V3 §5A).** EPIC Y **stops for owner decisions**. Four
+blockers leave an Entry Conviction component structurally incomplete on every
+evaluation date, whatever data is bought.
+
+- **NEEDS OWNER DECISION** (strategy semantics). For every item the data cost
+  is USD 0. The options are:
+  - a versioned owner contract or Rulebook decision;
+  - an explicitly versioned research strategy variant;
+  - no change, which leaves every decision `STRUCTURALLY_UNEVALUABLE`.
+
+  The blockers:
+  1. `BLK-TREND-ZSCORE-NORMALISATION`: trend, structural on every date.
+  2. `BLK-FLOW-ZSCORE-NORMALISATION`: flow, structural. Its window adds
+     warm-up after 2024-01-11.
+  3. `BLK-VOLATILITY-RANGE-AND-RETURN`: volatility, structural, through
+     orderliness. It also feeds STRESS, CAPITULATION and EUPHORIA.
+  4. `BLK-LEVEL-STRENGTH-INPUTS`: structure, structural. Rulebook 9.2 says to
+     omit volume, but the owner and config require it.
+  5. `BLK-SEVERE-CROWDING-STATE`: the hard veto fails closed, so every new
+     trade is vetoed on every date.
+  6. `BLK-LIFECYCLE-PREDICATES` (RBT-005): Hold Score is never complete and
+     every add fails closed.
+  7. `BLK-SETUP-INPUTS`: Bullish Reset can never match; the short-side inputs
+     are inert.
+- **NEEDS POLICY V4 DECISION.** Each carries a proposed rule:
+  1. `BLK-LIQUIDATION-HISTORICAL-CENSUS`. `LIQUIDATION_UTC_DAY_CENSUS_V1` needs
+     prospective websocket epoch, liveness, clock and collector-health evidence
+     that no historical source can supply. Proposed:
+     `HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1`, an hour counts as observed
+     when it is covered by contiguous pagination and contains at least one
+     execution. Universe, quantity, window, minimum and midrank are unchanged.
+     Options:
+     - Kraken REST: USD 0;
+     - Tardis: USD 4,200 or 8,400;
+     - a daily aggregate (Coinalyze or CoinGlass): USD 0–29, with a universe
+       deviation.
+  2. `BLK-FUTURES-BASIS-CONTRACT`. BTC-021 fixes no instrument, spot reference
+     or annualisation. Proposed: `FUTURES_BASIS_CONTRACT_V1` on Binance COIN-M
+     quarterlies vs the COIN-M index at hourly closes, with simple 365-day
+     annualisation, excluding contracts within 7 days of expiry. Cost USD 0.
+  3. `BLK-STRESS-HARD-VETO-MAPPING`. STRESS is never complete because
+     `systemic_shock` is `DISCRETIONARY`, and no owner maps an incomplete result
+     to `stress_flagged`. Passing `None` vetoes every trade. Proposed: pass
+     `flagged` and record `STRESS_INPUT_MISSING`. Cost USD 0.
+  4. `BLK-ETF-FUND-UNIVERSE`. A fund launched after 2024-01-11 makes every
+     window spanning its launch fail closed. Proposed: a per-window universe of
+     funds launched on or before the window's first publication date. Cost
+     USD 0.
+- **Named limitations** (policy §4/§7, no decision needed):
+  - EUPHORIA trims never fire, because `trim_rules_from_results` passes `None`
+    for an incomplete flag;
+  - the pre-2020 exposure above;
+  - `REVISION_HISTORY_UNAVAILABLE` for every selected source.
+
+**RBT-003 acquisition plan.** Spans run from the source depth or the data
+window start to 2025-12-31 23:00. Nothing outside the data window is requested.
+
+| item | status |
+| --- | --- |
+| ETF flows and AUM, CoinGlass (USD 29) | READY after RBT-001A |
+| Funding, Binance | READY after RBT-001A |
+| Open interest, Binance | READY after RBT-001A |
+| Perpetual volume, Binance | READY after RBT-001A |
+| Market cap, Coin Metrics (evidence files) | READY after RBT-001A |
+| Futures basis, Binance | BLOCKED on `BLK-FUTURES-BASIS-CONTRACT` |
+| Liquidations, Kraken REST | BLOCKED on `BLK-LIQUIDATION-HISTORICAL-CENSUS` |
+| Coinbase/Bitfinex missing hours | Re-requested through the existing adapters (USD 0); any hour still missing stays a preserved gap |
+
+**Total acquisition cost: USD 29** (one CoinGlass Hobbyist month). It would be
+USD 4,229 if V4 picks Tardis for liquidations. **Nothing was purchased.** RBT-003
+does not scope any owner-less input.
+
+**Design decisions.**
+
+1. The enumeration covers owner types *and* call-site parameters. It is strict
+   both ways (unclassified and stale), and duplicate owners are refused.
+2. A derived input carries its upstream families. Raw-leaf counts are reported
+   separately.
+3. Earliest dates are completeness only, and each is labelled
+   `MEASURED_FROM_RESEARCH_DATABASE` or `PROJECTED_FROM_SOURCE_DEPTH`. An
+   undefined input is never guessed. A composite reports its blocking inputs
+   and a lower bound.
+4. The read-only discipline has three layers: the statement guard, the
+   read-only engine option and the session-setting check.
+5. Probes are provenance plus metadata, and no third-party value is stored.
+   - Two responses (Kraken v4 funding and v3 recent trades) cannot be
+     date-filtered and included holdout or reserve rows. Only their timestamps,
+     type labels and uids were inspected. Nothing was printed or stored, and
+     neither was re-fetched.
+   - One exploratory probe printed `markPrice` strings from 2022-11-09 to the
+     session terminal. They were not persisted anywhere.
+6. Certified EPIC X liquidation definitions are reused by reference, never
+   restated.
+
+**Validation.** All runs used `.venv312` CPython 3.12.14. The proof suites ran
+alone, with same-device temporary roots outside the repository.
+
+| Suite | Result |
+| --- | --- |
+| Focused `test_research_backtest_coverage.py` | **60 passed** |
+| RBT-001 `test_research_backtest_replay_inputs.py` + `_replay_review.py` | **167 passed** |
+| Closure table `test_us_equity_market_closures.py` | **145 passed** |
+| BTC-180..185 (`test_backtest_engine`, `_engine_review`, `_cost_model`, `_walk_forward`, `_regime_performance`, `_setup_performance`, `_threshold_sweeps`, `_epic_s_integration`) | **282 passed** |
+| BTC-220..224 (`test_feature_score_boundary`, `test_quant_comparisons`, `test_look_ahead_bias`, `test_risk_invariants`, `test_paper_execution`, `test_golden_scenarios`) | **342 passed** |
+| Owners the inventory reads (flow, positioning, volatility, trend, structure, derivatives collector and quality, OHLCV, market bars) | **320 passed** |
+| V5 recomputation (`test_reference_composite_v5`, both prospective-corpus suites, `test_etf_flows`) | **407 passed**, 2 pre-existing composite skips. `v5_protocol_definition` recomputes independently to `95e43ee1...775a89`, equal to the persisted protocol |
+| PAD5, complete `test_etf_calendar_replay_verified_evidence.py`, run alone | **117 passed** (447 s). On the final code, the authority, namespace and frozen-module subset passed **4/4**, and the namespace restores `54675984...f483` |
+| PAD4-R5 `test_persisted_namespace_reproduces_exactly` and `test_child_order_variation_does_not_change_the_parent`, run alone | **2 passed**, twice (once before and once after the final fixes); the namespace restores `b4168dc9...61c7` |
+| `python -m compileall -q btc_predictor etf_calendar_worker`; `git diff --check` on the staged files | **PASS** |
+
+The focused suite includes:
+
+- fresh-process determinism under `PYTHONHASHSEED` 0/1/8675309 from another
+  cwd;
+- the persisted inventory rebuilt byte for byte from its own snapshot, with its
+  digest and report;
+- owner-parity checks: the real funding, volatility-percentile and ETF-window
+  owners are complete at the derived instant and incomplete just before it.
+
+The BTC-180..185, BTC-220..224, owner and V5 suites ran before three
+self-review fixes. Those fixes touched only the new module, which none of
+those suites import. The full repository suite was **NOT RUN**: no production
+module changed.
+
+**Remaining risks and limitations.**
+
+- UNVERIFIED:
+  - Coinalyze depth and its Kraken symbol;
+  - CoinGlass Kraken pair support;
+  - every issuer site and Farside;
+  - Tardis and Kraken redistribution terms;
+  - the Kraken REST liquidation label's equivalence with the websocket type
+    (the probed recent window had no liquidation).
+- Shared earliest dates are projections until RBT-003 persists the series.
+- CoinGlass ETF flows are aggregator values whose date convention RBT-003 must
+  check against an issuer where one is reachable.
+- Binance's early `metrics` files carry duplicate slots.
+- This is not the independent review.
+
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `BLOCKED — awaiting RBT-002 only; RBT-001 review PASS / dependency SATISFIED`
+**Status:** `BLOCKED — awaiting the RBT-002 independent review and the policy V4 decisions BLK-LIQUIDATION-HISTORICAL-CENSUS and BLK-FUTURES-BASIS-CONTRACT; RBT-001 review PASS / dependency SATISFIED`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`), RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -677,7 +1047,7 @@ Extend the reviewed builder from `HISTORICAL_REPLAY_AVAILABILITY_V1` to `_V2`
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `BLOCKED — awaiting RBT-001A and RBT-002; RBT-001 review PASS`
+**Status:** `BLOCKED — awaiting RBT-001A and the RBT-002 independent review; RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -857,14 +1227,31 @@ version or any version derived from inspecting its result.
 | ticket | task | status |
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
-| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | NOT STARTED / DEPENDENCY-SATISFIED — needs the research database; now includes the policy V3 §5A input-surface enumeration and blocker list |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 only; RBT-001 review dependency SATISFIED |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 |
-| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED |
+| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | IMPLEMENTATION COMPLETE / AWAITING INDEPENDENT xHIGH TICKET REVIEW — implementation `ab210a5`; inventory `b7b9a20b...be3bf0`; EPIC Y stops for 4 Entry Conviction owner decisions, 3 further owner decisions and 4 policy V4 decisions |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 review; policy V4 decisions on the liquidation census and the futures-basis contract; RBT-001 review dependency SATISFIED |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 review; plan total USD 29, nothing purchased |
+| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | NOT STARTED / DEPENDENCY-SATISFIED by its ticket text; until the RBT-002 owner decisions land, every composed Entry Conviction is STRUCTURALLY_UNEVALUABLE and every new trade is vetoed |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
+
+**Open EPIC Y decisions recorded by RBT-002 (2026-10-01).** The section 5A
+enumeration finds that four Entry Conviction components (trend, flow,
+volatility and structure) consume inputs that no owner, configuration value,
+certified definition or Rulebook number defines. They are structurally
+incomplete on every evaluation date whatever data is acquired, so EPIC Y
+stops for owner decisions (`BLK-TREND-ZSCORE-NORMALISATION`,
+`BLK-FLOW-ZSCORE-NORMALISATION`, `BLK-VOLATILITY-RANGE-AND-RETURN`,
+`BLK-LEVEL-STRENGTH-INPUTS`). `BLK-SEVERE-CROWDING-STATE` would veto every new
+trade, and `BLK-LIFECYCLE-PREDICATES` and `BLK-SETUP-INPUTS` affect RBT-005
+and the setup path. Four source and composer semantics need a
+`RESEARCH_BACKTEST_POLICY_V4` decision before RBT-001A/RBT-004:
+`BLK-LIQUIDATION-HISTORICAL-CENSUS`, `BLK-FUTURES-BASIS-CONTRACT`,
+`BLK-STRESS-HARD-VETO-MAPPING` and `BLK-ETF-FUND-UNIVERSE`. Each blocker lists
+its proposed rule and its resolution options with their costs in the RBT-002
+Implementation Notes. The next EPIC Y action is the independent xHigh review
+of RBT-002.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
 positioning score needs futures basis and BTC market cap. Policy V2 gives
@@ -872,5 +1259,5 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y tickets are **RBT-002** (requires the research
-database) and **RBT-004**. EPIC X's next ticket remains **POSTP1-001V2R1**.
+dependency-satisfied EPIC Y actions are now the **RBT-002 independent review**
+and **RBT-004** (see the RBT-002 decisions above). EPIC X's next ticket remains **POSTP1-001V2R1**.
