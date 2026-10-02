@@ -541,12 +541,19 @@ def test_collection_refuses_a_database_that_is_not_read_only() -> None:
 
 
 def test_the_research_engine_is_created_read_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    from btc_predictor.research import btc019_empirical
+    from btc_predictor.research_backtest import database
 
-    monkeypatch.setattr(btc019_empirical, "_database_url_from_environment", lambda: "sqlite://")
+    calls: list[None] = []
+
+    def url() -> str:
+        calls.append(None)
+        return "sqlite://"
+
+    monkeypatch.setattr(database, "database_url_from_environment", url)
     engine = coverage.open_research_engine()
     try:
         assert engine.get_execution_options()["postgresql_readonly"] is True
+        assert len(calls) == 1
     finally:
         engine.dispose()
 

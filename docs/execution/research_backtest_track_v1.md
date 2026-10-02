@@ -679,6 +679,21 @@ Acceptance criteria:
 **Status:** `DONE — independent R2 re-review PASS under V5 §5A.7`. Reviewed correction `812b968`, documentation `ce5cd70`, inventory `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a`; see the R2 re-review outcome below.
 
 **Prior status provenance (superseded):** `CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5 §5A.7` — correction R2 `812b968`, inventory `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a`; see "Correction (R2)" after the re-review outcome. Before R2: `FAIL — RELEASE BLOCKING` after the completed independent re-review of `906c719` (R1-RR); bounded review-fix `a281378` and inventory `a68e5284...ad765d`. The independent review on `9a90313` failed (`FAIL — RELEASE BLOCKING`, review-fix `0b06a85`). The R1 correction `906c719` is recorded in "Correction (R1)" after the review outcome. The original Implementation Notes below are pre-review provenance: the review outcome and the correction supersede their completeness and undefined-input claims. The reviewed inventory `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` remains at `0b06a85`; the R1 correction inventory is `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30`; after this re-review fix the current inventory is `a68e5284e99e39b113c7ed2705ca533c1c2cfc0e0a6432dde9fcd7de40ad765d`.
+**Database connection from policy V6 §9 onward (2026-10-02, R2-RR-FS1 fix).**
+`coverage.open_research_engine` now reads the database environment through
+EPIC Y's own `btc_predictor/research_backtest/database.py`
+(`database_url_from_environment`): the same five `POSTGRES_*` names, the same
+`postgresql+psycopg://` URL with `quote_plus` user and password, an error that
+names missing variables only, and nothing printed, logged or persisted. The
+read-only engine option and the `default_transaction_read_only` check are
+unchanged. No `research_backtest` module imports a BTC-019 research-only
+module any longer, so
+`test_btc019_completion_gate.py::test_no_production_module_reads_a_research_reference_candidate`
+passes, unedited. The inventory rebuilds byte-identical at
+`108ab25b...efe3a`. The mentions of `btc019_empirical._database_url_from_environment`
+below are historical: they record how RBT-002 and its reviews connected at the
+time. The fix is committed as Part 0 of RBT-002A; see its Implementation Notes.
+
 **Files:** new only.
 
 - `btc_predictor/research_backtest/coverage.py` (owner module)

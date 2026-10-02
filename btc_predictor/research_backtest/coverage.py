@@ -3689,15 +3689,16 @@ def _other_column_sql(schema: str, table: str, column: str, *, is_date: bool) ->
 def open_research_engine() -> Any:
     """A read-only engine over the environment's research database.
 
-    The URL comes from ``btc019_empirical._database_url_from_environment`` and
-    is never printed or persisted.
+    The URL comes from EPIC Y's own
+    :func:`~btc_predictor.research_backtest.database.database_url_from_environment`
+    (policy V6 section 9) and is never printed or persisted.
     """
 
     from sqlalchemy import create_engine
 
-    from btc_predictor.research.btc019_empirical import _database_url_from_environment
+    from btc_predictor.research_backtest import database
 
-    return create_engine(_database_url_from_environment()).execution_options(postgresql_readonly=True)
+    return create_engine(database.database_url_from_environment()).execution_options(postgresql_readonly=True)
 
 
 def collect_database_coverage(connection: Any, *, collected_at: datetime) -> dict[str, Any]:
