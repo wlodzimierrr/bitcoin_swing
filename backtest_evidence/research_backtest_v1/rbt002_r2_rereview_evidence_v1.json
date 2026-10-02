@@ -1,0 +1,3012 @@
+{
+  "A3_read_origin_audit": [
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_risk_band(item) for item in raw_schedule)",
+      "path": "btc_predictor.config.strategy.RiskConfig.from_mapping.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_positive_float(item, key) for item in value)",
+      "path": "btc_predictor.config.strategy._required_positive_float_tuple.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(isinstance(item, str) and item.strip() for item in value)",
+      "path": "btc_predictor.config.strategy._required_string_tuple.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "band.min_entry_conviction",
+          "btc_predictor.config.strategy.RiskBand.min_entry_conviction"
+        ]
+      ],
+      "expression": "lambda band: band.min_entry_conviction",
+      "path": "btc_predictor.config.strategy._validate_risk_schedule.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value > PERCENT_FRACTION_MAX for value in schedule)",
+      "path": "btc_predictor.config.strategy._validate_tranche_schedule.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(timestamp for timestamp in expected if timestamp not in observed)",
+      "path": "btc_predictor.data.ohlcv.missing_bar_timestamps.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "exchange.strip",
+          "scalar/container method, owner expression in source"
+        ],
+        [
+          "self.expected_exchanges",
+          "btc_predictor.data.quality.DerivativesQualityConfig.expected_exchanges"
+        ]
+      ],
+      "expression": "(exchange.strip() for exchange in self.expected_exchanges)",
+      "path": "btc_predictor.data.quality.DerivativesQualityConfig.__post_init__.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.available_at",
+          "btc_predictor.data.derivatives.OpenInterest.available_at"
+        ],
+        [
+          "row.exchange",
+          "btc_predictor.data.derivatives.OpenInterest.exchange"
+        ],
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ]
+      ],
+      "expression": "(row for row in rows if _derivatives_feed_name(row) == feed_name and row.exchange == exchange and (row.available_at <= as_of) and (row.observation_time <= as_of))",
+      "path": "btc_predictor.data.quality._missing_exchange_snapshot_issues.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "config.max_snapshot_staleness",
+          "btc_predictor.data.quality.DerivativesQualityConfig.max_snapshot_staleness"
+        ],
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ]
+      ],
+      "expression": "(row for row in available if row.observation_time >= as_of - config.max_snapshot_staleness)",
+      "path": "btc_predictor.data.quality._missing_exchange_snapshot_issues.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ]
+      ],
+      "expression": "lambda row: row.observation_time",
+      "path": "btc_predictor.data.quality._missing_exchange_snapshot_issues.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ]
+      ],
+      "expression": "lambda row: row.observation_time",
+      "path": "btc_predictor.data.quality._provider_discontinuity_issues.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(bar.timestamp for bar in bars)",
+      "path": "btc_predictor.data.quality._stale_data_issues.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(row for row in rows if isinstance(row, FundingRate))",
+      "path": "btc_predictor.data.quality._stale_funding_issues.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.available_at",
+          "btc_predictor.data.derivatives.FundingRate.available_at"
+        ],
+        [
+          "row.exchange",
+          "btc_predictor.data.derivatives.FundingRate.exchange"
+        ],
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.FundingRate.observation_time"
+        ]
+      ],
+      "expression": "(row for row in funding_rows if row.exchange == exchange and row.available_at <= as_of and (row.observation_time <= as_of))",
+      "path": "btc_predictor.data.quality._stale_funding_issues.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.FundingRate.observation_time"
+        ]
+      ],
+      "expression": "lambda row: row.observation_time",
+      "path": "btc_predictor.data.quality._stale_funding_issues.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(row for row in rows if isinstance(row, OpenInterest | Liquidation | PerpVolume))",
+      "path": "btc_predictor.data.quality._unit_change_issues.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timeframe",
+          "btc_predictor.data.ohlcv.OhlcvBar.timeframe"
+        ]
+      ],
+      "expression": "(bar for bar in bars if bar.timeframe == timeframe)",
+      "path": "btc_predictor.data.quality.validate_ohlcv_quality.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "inputs[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_id for component_id in ADD_SCORE_COMPONENT_IDS if inputs[component_id] is None)",
+      "path": "btc_predictor.features.add.AddScoreResult.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "contributions[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_id for component_id in ADD_SCORE_COMPONENT_IDS if contributions[component_id] is None)",
+      "path": "btc_predictor.features.add.AddScoreResult.as_record.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "contributions.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value for value in contributions.values() if value is not None)",
+      "path": "btc_predictor.features.add.AddScoreResult.as_record.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "inputs[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_id for component_id in ENTRY_CONVICTION_COMPONENT_IDS if inputs[component_id] is None)",
+      "path": "btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "contributions[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_id for component_id in ENTRY_CONVICTION_COMPONENT_IDS if contributions[component_id] is None)",
+      "path": "btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "contributions.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value for value in contributions.values() if value is not None)",
+      "path": "btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "ordered[1:]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(current <= previous for previous, current in zip(ordered, ordered[1:]))",
+      "path": "btc_predictor.features.entry._normalize_action_thresholds.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "decimal_weights.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(weight < 0 for weight in decimal_weights.values())",
+      "path": "btc_predictor.features.flow._flow_score_weights.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(observation_date for _, observation_date in flows_by_fund_date)",
+      "path": "btc_predictor.features.flow._latest_observation_date.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "values[:-1]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(value for value in values[:-1] if value is not None)",
+      "path": "btc_predictor.features.flow._latest_zscore.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "((value - mean) ** 2 for value in history)",
+      "path": "btc_predictor.features.flow._latest_zscore.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "available_flows[fund, observation_date]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(available_flows[fund, observation_date] for fund in fund_universe for observation_date in included_dates if (fund, observation_date) in available_flows)",
+      "path": "btc_predictor.features.flow.etf_flow_window.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "flow.flow_usd",
+          "btc_predictor.data.etf_flows.EtfFlow.flow_usd"
+        ]
+      ],
+      "expression": "(flow.flow_usd for flow in window_rows)",
+      "path": "btc_predictor.features.flow.etf_flow_window.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "observation.as_record",
+          "reached method btc_predictor.features.flow.CvdObservation.as_record"
+        ],
+        [
+          "observation.as_record()['available_at']",
+          "btc_predictor.features.flow.CvdObservation.available_at"
+        ],
+        [
+          "observation.as_record()['observation_time']",
+          "btc_predictor.features.flow.CvdObservation.observation_time"
+        ]
+      ],
+      "expression": "(observation for observation in observations if observation.as_record()['available_at'] <= signal_time and observation.as_record()['observation_time'] <= signal_time)",
+      "path": "btc_predictor.features.flow.spot_perp_cvd_spread.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "spot_by_time[time]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(spot_by_time[time] for time in common_times)",
+      "path": "btc_predictor.features.flow.spot_perp_cvd_spread.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "perp_by_time[time]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(perp_by_time[time] for time in common_times)",
+      "path": "btc_predictor.features.flow.spot_perp_cvd_spread.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "observation.as_record",
+          "reached method btc_predictor.features.flow.VolumeParticipationObservation.as_record"
+        ],
+        [
+          "observation.as_record()['available_at']",
+          "btc_predictor.features.flow.VolumeParticipationObservation.available_at"
+        ],
+        [
+          "observation.as_record()['observation_time']",
+          "btc_predictor.features.flow.VolumeParticipationObservation.observation_time"
+        ]
+      ],
+      "expression": "(observation for observation in observations if observation.as_record()['available_at'] <= signal_time and observation.as_record()['observation_time'] <= signal_time)",
+      "path": "btc_predictor.features.flow.spot_perp_participation.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "spot_by_time[time]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(spot_by_time[time] for time in common_times)",
+      "path": "btc_predictor.features.flow.spot_perp_participation.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "perp_by_time[time]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(perp_by_time[time] for time in common_times)",
+      "path": "btc_predictor.features.flow.spot_perp_participation.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "inputs[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_id for component_id in HOLD_SCORE_COMPONENT_IDS if inputs[component_id] is None)",
+      "path": "btc_predictor.features.hold.HoldScoreResult.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "contributions[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_id for component_id in HOLD_SCORE_COMPONENT_IDS if contributions[component_id] is None)",
+      "path": "btc_predictor.features.hold.HoldScoreResult.as_record.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "contributions.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value for value in contributions.values() if value is not None)",
+      "path": "btc_predictor.features.hold.HoldScoreResult.as_record.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_decimal(price) for price in prices)",
+      "path": "btc_predictor.features.momentum.price_momentum.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.features.momentum.price_momentum_from_daily_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "funding_averages.items",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(average for historical_time, average in sorted(funding_averages.items()) if window_start <= historical_time < observation_time)",
+      "path": "btc_predictor.features.positioning._funding_average_history.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.funding_rate",
+          "btc_predictor.data.derivatives.FundingRate.funding_rate"
+        ],
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.FundingRate.observation_time"
+        ]
+      ],
+      "expression": "(row.funding_rate for row in funding_rates if _in_trailing_day_window(row.observation_time, observation_time=observation_time, window_days=average_window_days))",
+      "path": "btc_predictor.features.positioning._funding_averages_by_time.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.FundingRate.observation_time"
+        ]
+      ],
+      "expression": "(1 for row in funding_rates if _in_trailing_day_window(row.observation_time, observation_time=observation_time, window_days=average_window_days))",
+      "path": "btc_predictor.features.positioning._funding_window_record_count.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "value[0]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(value[0] for value in values)",
+      "path": "btc_predictor.features.positioning._futures_basis_averages_by_time.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "value[1]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(value[1] for value in values)",
+      "path": "btc_predictor.features.positioning._futures_basis_averages_by_time.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "averages_by_time.items",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(annualized_average for historical_time, (_, annualized_average) in sorted(averages_by_time.items()) if window_start <= historical_time < observation_time)",
+      "path": "btc_predictor.features.positioning._futures_basis_history.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "growth_by_time.items",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(growth for historical_time, growth in sorted(growth_by_time.items()) if growth is not None and window_start <= historical_time < observation_time)",
+      "path": "btc_predictor.features.positioning._oi_growth_history.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "intensity_by_time.items",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(intensity for historical_time, intensity in sorted(intensity_by_time.items()) if window_start <= historical_time < observation_time)",
+      "path": "btc_predictor.features.positioning._oi_intensity_history.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(1 for item in history if item < value)",
+      "path": "btc_predictor.features.positioning._percentile_rank.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(1 for item in history if item == value)",
+      "path": "btc_predictor.features.positioning._percentile_rank.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "decimal_weights.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(weight < 0 for weight in decimal_weights.values())",
+      "path": "btc_predictor.features.positioning._positioning_score_weights.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(time for time in aggregate_by_time if time <= cutoff)",
+      "path": "btc_predictor.features.positioning._prior_open_interest.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "((item - mean) ** 2 for item in history)",
+      "path": "btc_predictor.features.positioning._zscore.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.positioning.calculate_crowding_flag.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "reason_code.endswith",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(reason_code.endswith('_EXCESS') for reason_code in reason_codes)",
+      "path": "btc_predictor.features.positioning.calculate_crowding_flag.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.as_record",
+          "reached method btc_predictor.data.derivatives.FundingRate.as_record"
+        ],
+        [
+          "row.as_record()['available_at']",
+          "btc_predictor.data.derivatives.FundingRate.available_at"
+        ],
+        [
+          "row.as_record()['observation_time']",
+          "btc_predictor.data.derivatives.FundingRate.observation_time"
+        ]
+      ],
+      "expression": "(row for row in funding_rates if row.as_record()['available_at'] <= signal_time and row.as_record()['observation_time'] <= signal_time)",
+      "path": "btc_predictor.features.positioning.funding_health.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.FundingRate.observation_time"
+        ]
+      ],
+      "expression": "(row.observation_time for row in available_rows)",
+      "path": "btc_predictor.features.positioning.funding_health.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.as_record",
+          "reached method btc_predictor.data.derivatives.FuturesBasis.as_record"
+        ],
+        [
+          "row.as_record()['available_at']",
+          "btc_predictor.data.derivatives.FuturesBasis.available_at"
+        ],
+        [
+          "row.as_record()['observation_time']",
+          "btc_predictor.data.derivatives.FuturesBasis.observation_time"
+        ]
+      ],
+      "expression": "(row for row in futures_basis_rows if row.as_record()['available_at'] <= signal_time and row.as_record()['observation_time'] <= signal_time)",
+      "path": "btc_predictor.features.positioning.futures_basis_health.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.FuturesBasis.observation_time"
+        ]
+      ],
+      "expression": "(row.observation_time for row in available_rows)",
+      "path": "btc_predictor.features.positioning.futures_basis_health.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.as_record",
+          "reached method btc_predictor.data.derivatives.OpenInterest.as_record"
+        ],
+        [
+          "row.as_record()['available_at']",
+          "btc_predictor.data.derivatives.OpenInterest.available_at"
+        ],
+        [
+          "row.as_record()['observation_time']",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ],
+        [
+          "row.open_interest_unit",
+          "btc_predictor.data.derivatives.OpenInterest.open_interest_unit"
+        ]
+      ],
+      "expression": "(row for row in open_interest_rows if row.open_interest_unit == open_interest_unit and row.as_record()['available_at'] <= signal_time and (row.as_record()['observation_time'] <= signal_time))",
+      "path": "btc_predictor.features.positioning.open_interest_growth_health.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.observation_time",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ]
+      ],
+      "expression": "(row.observation_time for row in available_rows)",
+      "path": "btc_predictor.features.positioning.open_interest_growth_health.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.as_record",
+          "reached method btc_predictor.data.derivatives.OpenInterest.as_record"
+        ],
+        [
+          "row.as_record()['available_at']",
+          "btc_predictor.data.derivatives.OpenInterest.available_at"
+        ],
+        [
+          "row.as_record()['observation_time']",
+          "btc_predictor.data.derivatives.OpenInterest.observation_time"
+        ],
+        [
+          "row.open_interest_unit",
+          "btc_predictor.data.derivatives.OpenInterest.open_interest_unit"
+        ]
+      ],
+      "expression": "(row for row in open_interest_rows if row.open_interest_unit == open_interest_unit and row.as_record()['available_at'] <= signal_time and (row.as_record()['observation_time'] <= signal_time))",
+      "path": "btc_predictor.features.positioning.open_interest_intensity.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "row.as_record",
+          "reached method btc_predictor.features.positioning.MarketCapObservation.as_record"
+        ],
+        [
+          "row.as_record()['available_at']",
+          "btc_predictor.features.positioning.MarketCapObservation.available_at"
+        ],
+        [
+          "row.as_record()['observation_time']",
+          "btc_predictor.features.positioning.MarketCapObservation.observation_time"
+        ]
+      ],
+      "expression": "(row for row in market_caps if row.as_record()['available_at'] <= signal_time and row.as_record()['observation_time'] <= signal_time)",
+      "path": "btc_predictor.features.positioning.open_interest_intensity.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.high",
+          "btc_predictor.data.ohlcv.OhlcvBar.high"
+        ]
+      ],
+      "expression": "(float(bar.high) for bar in bars)",
+      "path": "btc_predictor.features.rolling._bar_arrays.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(float(bar.low) for bar in bars)",
+      "path": "btc_predictor.features.rolling._bar_arrays.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.close",
+          "btc_predictor.data.ohlcv.OhlcvBar.close"
+        ]
+      ],
+      "expression": "(float(bar.close) for bar in bars)",
+      "path": "btc_predictor.features.rolling._bar_arrays.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(float(_decimal(value)) for value in values)",
+      "path": "btc_predictor.features.rolling._float_values.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "np.isnan",
+          "third-party numeric missingness operation"
+        ]
+      ],
+      "expression": "(None if np.isnan(value) else _float_decimal(value) for value in values)",
+      "path": "btc_predictor.features.rolling._optional_decimals.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.features.rolling._ordered_bar_series.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.setup.detect_bearish_distribution.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.setup.detect_bull_trend_continuation.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.setup.detect_bullish_reset.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "reason_code.endswith",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(reason_code.endswith('_INPUT_MISSING') or reason_code.endswith('_HISTORY_INSUFFICIENT') for reason_code in reason_codes)",
+      "path": "btc_predictor.features.setup.detect_bullish_reset.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.setup.detect_capitulation_reversal.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_record(cluster) for cluster in clusters)",
+      "path": "btc_predictor.features.structure._cluster_records.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "record.get",
+          "scalar/container method, owner expression in source"
+        ],
+        [
+          "clusters container key",
+          "btc_predictor.levels.clustering.LevelClusterResult.clusters"
+        ]
+      ],
+      "expression": "(dict(cluster) for cluster in record.get('clusters', ()))",
+      "path": "btc_predictor.features.structure._cluster_records.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "record helper key center_price",
+          "btc_predictor.levels.clustering.LevelCluster.center_price"
+        ],
+        [
+          "record helper key confluence_score",
+          "btc_predictor.levels.clustering.LevelCluster.confluence_score"
+        ],
+        [
+          "record helper key cluster_id",
+          "btc_predictor.levels.clustering.LevelCluster.cluster_id"
+        ]
+      ],
+      "expression": "lambda cluster: (_record_decimal(cluster, 'center_price'), -_record_score(cluster, 'confluence_score'), _required_string(cluster, 'cluster_id'))",
+      "path": "btc_predictor.features.structure._nearest_resistance.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "record helper key center_price",
+          "btc_predictor.levels.clustering.LevelCluster.center_price"
+        ],
+        [
+          "record helper key confluence_score",
+          "btc_predictor.levels.clustering.LevelCluster.confluence_score"
+        ],
+        [
+          "record helper key cluster_id",
+          "btc_predictor.levels.clustering.LevelCluster.cluster_id"
+        ]
+      ],
+      "expression": "lambda cluster: (_record_decimal(cluster, 'center_price'), _record_score(cluster, 'confluence_score'), _required_string(cluster, 'cluster_id'))",
+      "path": "btc_predictor.features.structure._nearest_support.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "components.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in components.values())",
+      "path": "btc_predictor.features.structure.calculate_structure_score.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "decimal_weights.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(weight < 0 for weight in decimal_weights.values())",
+      "path": "btc_predictor.features.trend._trend_score_weights.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_decimal(high) for high in highs)",
+      "path": "btc_predictor.features.trend.classify_weekly_structure.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_decimal(low) for low in lows)",
+      "path": "btc_predictor.features.trend.classify_weekly_structure.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.features.trend.classify_weekly_structure_from_weekly_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.features.trend.fifty_two_week_high_distance_from_weekly_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_decimal(price) for price in prices)",
+      "path": "btc_predictor.features.trend.moving_average_distance.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_decimal(price) for price in prices)",
+      "path": "btc_predictor.features.trend.rolling_high_distance.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_decimal(high) for high in highs)",
+      "path": "btc_predictor.features.trend.rolling_high_distance.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.features.trend.twenty_week_ma_distance_from_weekly_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.features.volatility._available_daily_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.observation_time",
+          "btc_predictor.features.volatility.RealizedVolatilityResult.observation_time"
+        ]
+      ],
+      "expression": "lambda result: result.observation_time",
+      "path": "btc_predictor.features.volatility._available_realized_volatility_results.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(1 for item in history if item < value)",
+      "path": "btc_predictor.features.volatility._percentile_rank.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(1 for item in history if item == value)",
+      "path": "btc_predictor.features.volatility._percentile_rank.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.observation_time",
+          "btc_predictor.features.volatility.RealizedVolatilityResult.observation_time"
+        ],
+        [
+          "result.realized_volatility",
+          "btc_predictor.features.volatility.RealizedVolatilityResult.realized_volatility"
+        ]
+      ],
+      "expression": "(_non_negative_decimal(result.realized_volatility, 'realized_volatility') for result in results if result.realized_volatility is not None and window_start <= result.observation_time < observation_time)",
+      "path": "btc_predictor.features.volatility._realized_volatility_history.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.volatility.calculate_capitulation_flag.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(reason_code in reason_codes for reason_code in ('CAPITULATION_EXTREME_RANGE', 'CAPITULATION_LIQUIDATION_CASCADE', 'CAPITULATION_VOLATILITY_SPIKE', 'CAPITULATION_NEGATIVE_FUNDING_FLUSH'))",
+      "path": "btc_predictor.features.volatility.calculate_capitulation_flag.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.volatility.calculate_euphoria_flag.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(reason_code in reason_codes for reason_code in ('EUPHORIA_EXTREME_RANGE', 'EUPHORIA_FUNDING_OVERHEATED', 'EUPHORIA_BASIS_OVERHEATED', 'EUPHORIA_OI_INTENSITY_EXTREME', 'EUPHORIA_VOLATILITY_SPIKE'))",
+      "path": "btc_predictor.features.volatility.calculate_euphoria_flag.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.volatility.calculate_orderliness_score.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.volatility.calculate_stress_flag.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(reason_code != 'STRESS_INPUT_MISSING' for reason_code in reason_codes)",
+      "path": "btc_predictor.features.volatility.calculate_stress_flag.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "components.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in components.values())",
+      "path": "btc_predictor.features.volatility.calculate_volatility_score.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.close",
+          "btc_predictor.data.ohlcv.OhlcvBar.close"
+        ]
+      ],
+      "expression": "(bar.close for bar in selected_bars)",
+      "path": "btc_predictor.features.volatility.realized_volatility_from_daily_bars.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(close <= 0 for close in closes)",
+      "path": "btc_predictor.features.volatility.realized_volatility_from_daily_bars.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "closes[1:]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(current / previous - Decimal('1') for previous, current in zip(closes, closes[1:]))",
+      "path": "btc_predictor.features.volatility.realized_volatility_from_daily_bars.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(float(close) for close in closes)",
+      "path": "btc_predictor.features.volatility.realized_volatility_from_daily_bars.<locals>.<genexpr>#4"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "input_values.values",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(value is None for value in input_values.values())",
+      "path": "btc_predictor.features.volatility.volatility_compression_ratio.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.levels.anchored_vwap._available_anchor_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.volume",
+          "btc_predictor.data.ohlcv.OhlcvBar.volume"
+        ]
+      ],
+      "expression": "(bar.volume for bar in matched_bars)",
+      "path": "btc_predictor.levels.anchored_vwap.calculate_anchored_vwap.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.volume",
+          "btc_predictor.data.ohlcv.OhlcvBar.volume"
+        ]
+      ],
+      "expression": "(_bar_price(bar, price_source) * bar.volume for bar in matched_bars)",
+      "path": "btc_predictor.levels.anchored_vwap.calculate_anchored_vwap.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(calculate_anchored_vwap(anchor, bars, as_of=as_of, price_source=price_source) for anchor in anchors)",
+      "path": "btc_predictor.levels.anchored_vwap.calculate_anchored_vwaps.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.anchor",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapResult.anchor"
+        ],
+        [
+          "result.anchor.anchor_timestamp",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapResult.anchor"
+        ],
+        [
+          "result.anchor.anchor_timestamp",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapAnchor.anchor_timestamp"
+        ],
+        [
+          "result.anchor.anchor_type",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapResult.anchor"
+        ],
+        [
+          "result.anchor.anchor_type",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapAnchor.anchor_type"
+        ],
+        [
+          "result.anchor.detected_at",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapResult.anchor"
+        ],
+        [
+          "result.anchor.detected_at",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapAnchor.detected_at"
+        ],
+        [
+          "result.anchor.price",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapResult.anchor"
+        ],
+        [
+          "result.anchor.price",
+          "btc_predictor.levels.anchored_vwap.AnchoredVwapAnchor.price"
+        ]
+      ],
+      "expression": "lambda result: (result.anchor.detected_at, result.anchor.anchor_timestamp, result.anchor.anchor_type, result.anchor.price)",
+      "path": "btc_predictor.levels.anchored_vwap.calculate_anchored_vwaps.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.levels.breakout._available_confirmation_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "source_level.detected_at",
+          "btc_predictor.levels.breakout.SourceLevel.detected_at"
+        ]
+      ],
+      "expression": "(source_level for source_level in source_levels if source_level.detected_at <= signal_time)",
+      "path": "btc_predictor.levels.breakout._available_source_levels.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "source_level.detected_at",
+          "btc_predictor.levels.breakout.SourceLevel.detected_at"
+        ],
+        [
+          "source_level.level_timestamp",
+          "btc_predictor.levels.breakout.SourceLevel.level_timestamp"
+        ],
+        [
+          "source_level.level_type",
+          "btc_predictor.levels.breakout.SourceLevel.level_type"
+        ],
+        [
+          "source_level.price",
+          "btc_predictor.levels.breakout.SourceLevel.price"
+        ]
+      ],
+      "expression": "lambda source_level: (source_level.detected_at, source_level.level_timestamp, source_level.level_type, source_level.price)",
+      "path": "btc_predictor.levels.breakout._available_source_levels.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "level.detected_at",
+          "btc_predictor.levels.breakout.BreakoutReclaimLevel.detected_at"
+        ],
+        [
+          "level.level_timestamp",
+          "btc_predictor.levels.breakout.BreakoutReclaimLevel.level_timestamp"
+        ],
+        [
+          "level.level_type",
+          "btc_predictor.levels.breakout.BreakoutReclaimLevel.level_type"
+        ],
+        [
+          "level.price",
+          "btc_predictor.levels.breakout.BreakoutReclaimLevel.price"
+        ]
+      ],
+      "expression": "lambda level: (level.detected_at, level.level_timestamp, level.level_type, level.price)",
+      "path": "btc_predictor.levels.breakout.detect_breakout_reclaim_levels.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "member.price",
+          "btc_predictor.levels.clustering.LevelClusterMember.price"
+        ]
+      ],
+      "expression": "(member.price for member in members)",
+      "path": "btc_predictor.levels.clustering._build_cluster.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "member.price",
+          "btc_predictor.levels.clustering.LevelClusterMember.price"
+        ]
+      ],
+      "expression": "(member.price for member in members)",
+      "path": "btc_predictor.levels.clustering._build_cluster.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "member.member_id",
+          "btc_predictor.levels.clustering.LevelClusterMember.member_id"
+        ]
+      ],
+      "expression": "lambda member: member.member_id",
+      "path": "btc_predictor.levels.clustering._build_cluster.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.member_id",
+          "btc_predictor.levels.clustering.LevelClusterMember.member_id"
+        ],
+        [
+          "member.member_id",
+          "btc_predictor.levels.clustering.LevelClusterMember.member_id"
+        ]
+      ],
+      "expression": "(member.member_id for member in sorted(members, key=lambda item: item.member_id))",
+      "path": "btc_predictor.levels.clustering._cluster_id.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.member_id",
+          "btc_predictor.levels.clustering.LevelClusterMember.member_id"
+        ]
+      ],
+      "expression": "lambda item: item.member_id",
+      "path": "btc_predictor.levels.clustering._cluster_id.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(tuple(cluster) for cluster in clusters)",
+      "path": "btc_predictor.levels.clustering._cluster_members.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.member_id",
+          "btc_predictor.levels.clustering.LevelClusterMember.member_id"
+        ],
+        [
+          "item.price",
+          "btc_predictor.levels.clustering.LevelClusterMember.price"
+        ]
+      ],
+      "expression": "lambda item: (item.price, item.member_id)",
+      "path": "btc_predictor.levels.clustering._cluster_members.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "record.get",
+          "scalar/container method, owner expression in source"
+        ],
+        [
+          "levels container key",
+          "btc_predictor.levels.volume_profile.VolumeProfileResult.levels"
+        ]
+      ],
+      "expression": "(dict(item) for item in record.get('levels', ()))",
+      "path": "btc_predictor.levels.clustering._iter_source_records.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "member.member_id",
+          "btc_predictor.levels.clustering.LevelClusterMember.member_id"
+        ],
+        [
+          "member.price",
+          "btc_predictor.levels.clustering.LevelClusterMember.price"
+        ]
+      ],
+      "expression": "lambda member: (member.price, member.member_id)",
+      "path": "btc_predictor.levels.clustering._prepare_members.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_build_cluster(raw_cluster, as_of=signal_time, reference_price=reference, cluster_distance_fraction=distance_fraction, minimum_level_strength=minimum_strength) for raw_cluster in raw_clusters)",
+      "path": "btc_predictor.levels.clustering.cluster_price_levels.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "cluster.center_price",
+          "btc_predictor.levels.clustering.LevelCluster.center_price"
+        ],
+        [
+          "cluster.zone_type",
+          "btc_predictor.levels.clustering.LevelCluster.zone_type"
+        ]
+      ],
+      "expression": "lambda cluster: (cluster.zone_type, cluster.center_price)",
+      "path": "btc_predictor.levels.clustering.cluster_price_levels.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "self.timeframes",
+          "btc_predictor.levels.strength.LevelStrengthInput.timeframes"
+        ],
+        [
+          "timeframe.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(isinstance(timeframe, str) and timeframe.strip() for timeframe in self.timeframes)",
+      "path": "btc_predictor.levels.strength.LevelStrengthInput.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "timeframe_scores.get",
+          "scalar/container method, owner expression in source"
+        ],
+        [
+          "timeframe score map",
+          "btc_predictor.config.strategy.PriceLevelParameters.level_strength_timeframe_scores"
+        ]
+      ],
+      "expression": "(timeframe_scores.get(timeframe, fallback) for timeframe in timeframes)",
+      "path": "btc_predictor.levels.strength._timeframe_score.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "component_scores[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ],
+        [
+          "normalized_weights[component_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(component_scores[component_id] * normalized_weights[component_id] for component_id in LEVEL_STRENGTH_COMPONENT_IDS)",
+      "path": "btc_predictor.levels.strength.calculate_level_strength.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.levels.swing._available_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.high",
+          "btc_predictor.data.ohlcv.OhlcvBar.high"
+        ],
+        [
+          "candidate.high",
+          "btc_predictor.data.ohlcv.OhlcvBar.high"
+        ]
+      ],
+      "expression": "(candidate.high > bar.high for bar in comparison_bars)",
+      "path": "btc_predictor.levels.swing._is_swing_high.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ],
+        [
+          "candidate.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(candidate.low < bar.low for bar in comparison_bars)",
+      "path": "btc_predictor.levels.swing._is_swing_low.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.ingested_at",
+          "btc_predictor.data.ohlcv.OhlcvBar.ingested_at"
+        ],
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(max(next_bar_timestamp(bar.timestamp, timeframe), require_utc_datetime(bar.ingested_at, 'ingested_at')) for bar in window_bars)",
+      "path": "btc_predictor.levels.swing._swing_detected_at.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "level.level_timestamp",
+          "btc_predictor.levels.swing.MonthlySwingLevel.level_timestamp"
+        ],
+        [
+          "level.level_type",
+          "btc_predictor.levels.swing.MonthlySwingLevel.level_type"
+        ]
+      ],
+      "expression": "lambda level: (level.level_timestamp, level.level_type)",
+      "path": "btc_predictor.levels.swing.detect_monthly_swing_levels.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "level.level_timestamp",
+          "btc_predictor.levels.swing.WeeklySwingLevel.level_timestamp"
+        ],
+        [
+          "level.level_type",
+          "btc_predictor.levels.swing.WeeklySwingLevel.level_type"
+        ]
+      ],
+      "expression": "lambda level: (level.level_timestamp, level.level_type)",
+      "path": "btc_predictor.levels.swing.detect_weekly_swing_levels.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.levels.volume_profile._available_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "poc_bin.index",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.index"
+        ],
+        [
+          "profile_bin.index",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.index"
+        ],
+        [
+          "profile_bin.volume",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.volume"
+        ]
+      ],
+      "expression": "(profile_bin for profile_bin in profile_bins if profile_bin.index != poc_bin.index and profile_bin.volume > 0 and (profile_bin.volume >= threshold))",
+      "path": "btc_predictor.levels.volume_profile._hvn_bins.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "profile_bin.index",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.index"
+        ],
+        [
+          "profile_bin.volume",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.volume"
+        ]
+      ],
+      "expression": "lambda profile_bin: (-profile_bin.volume, profile_bin.index)",
+      "path": "btc_predictor.levels.volume_profile._hvn_bins.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "profile_bin.index",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.index"
+        ],
+        [
+          "profile_bin.midpoint",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.midpoint"
+        ],
+        [
+          "profile_bin.volume",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.volume"
+        ]
+      ],
+      "expression": "lambda profile_bin: (-profile_bin.volume, abs(profile_bin.midpoint - reference_price), profile_bin.index)",
+      "path": "btc_predictor.levels.volume_profile._poc_bin.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "by_index[index]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(by_index[index] for index in sorted(included))",
+      "path": "btc_predictor.levels.volume_profile._value_area_bins.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.volume",
+          "btc_predictor.data.ohlcv.OhlcvBar.volume"
+        ]
+      ],
+      "expression": "(bar.volume for bar in available_bars)",
+      "path": "btc_predictor.levels.volume_profile.calculate_volume_profile_levels.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "profile_bin.volume",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.volume"
+        ]
+      ],
+      "expression": "(profile_bin.volume for profile_bin in value_area_bins)",
+      "path": "btc_predictor.levels.volume_profile.calculate_volume_profile_levels.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "profile_bin.midpoint",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.midpoint"
+        ]
+      ],
+      "expression": "(_level_from_bin(profile_bin, level_type=VOLUME_PROFILE_HVN, price=profile_bin.midpoint, detected_at=signal_time, profile_start=profile_start, profile_end=profile_end, exchange=exchange, symbol=symbol, timeframe=timeframe, provider=provider, price_source=price_source, bin_size=bin_size, bin_size_fraction=bin_fraction, total_volume=total_volume, value_area_volume=value_area_volume, value_area_fraction=value_fraction, hvn_volume_fraction=hvn_fraction, source_bar_count=len(available_bars), reason_codes=('VOLUME_PROFILE_HVN',)) for profile_bin in _hvn_bins(profile_bins, poc_bin=poc_bin, hvn_volume_fraction=hvn_fraction))",
+      "path": "btc_predictor.levels.volume_profile.calculate_volume_profile_levels.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "profile_bin.index",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.index"
+        ]
+      ],
+      "expression": "lambda profile_bin: profile_bin.index",
+      "path": "btc_predictor.levels.volume_profile.calculate_volume_profile_levels.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "profile_bin.index",
+          "btc_predictor.levels.volume_profile.VolumeProfileBin.index"
+        ]
+      ],
+      "expression": "lambda profile_bin: profile_bin.index",
+      "path": "btc_predictor.levels.volume_profile.calculate_volume_profile_levels.<locals>.<lambda>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "VOLUME_PROFILE_LEVEL_TYPES.index",
+          "scalar/container method, owner expression in source"
+        ],
+        [
+          "level.level_type",
+          "btc_predictor.levels.volume_profile.VolumeProfileLevel.level_type"
+        ],
+        [
+          "level.price",
+          "btc_predictor.levels.volume_profile.VolumeProfileLevel.price"
+        ]
+      ],
+      "expression": "lambda level: (VOLUME_PROFILE_LEVEL_TYPES.index(level.level_type), level.price)",
+      "path": "btc_predictor.levels.volume_profile.calculate_volume_profile_levels.<locals>.<lambda>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "tranche.quantity",
+          "btc_predictor.portfolio.state_machine.Tranche.quantity"
+        ]
+      ],
+      "expression": "(tranche.quantity for tranche in tranches)",
+      "path": "btc_predictor.portfolio.state_machine._average_entry.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "tranche.entry_price",
+          "btc_predictor.portfolio.state_machine.Tranche.entry_price"
+        ],
+        [
+          "tranche.quantity",
+          "btc_predictor.portfolio.state_machine.Tranche.quantity"
+        ]
+      ],
+      "expression": "(tranche.entry_price * tranche.quantity for tranche in tranches)",
+      "path": "btc_predictor.portfolio.state_machine._average_entry.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "tranche.quantity",
+          "btc_predictor.portfolio.state_machine.Tranche.quantity"
+        ]
+      ],
+      "expression": "(tranche.quantity for tranche in tranches)",
+      "path": "btc_predictor.portfolio.state_machine._ledger_quantity.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "tranche.entry_price",
+          "btc_predictor.portfolio.state_machine.Tranche.entry_price"
+        ],
+        [
+          "tranche.opened_at",
+          "btc_predictor.portfolio.state_machine.Tranche.opened_at"
+        ],
+        [
+          "tranche.tranche_number",
+          "btc_predictor.portfolio.state_machine.Tranche.tranche_number"
+        ]
+      ],
+      "expression": "(Tranche(tranche_number=tranche.tranche_number, entry_price=tranche.entry_price, quantity=quantity, opened_at=tranche.opened_at) for tranche, quantity in zip(tranches, scaled))",
+      "path": "btc_predictor.portfolio.state_machine._prorata_trim.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "scaled[index]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "lambda index: (-scaled[index], index)",
+      "path": "btc_predictor.portfolio.state_machine._prorata_trim.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in (average, stop, opened, closed))",
+      "path": "btc_predictor.portfolio.state_machine._validate_lifecycle.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.opened_at",
+          "btc_predictor.portfolio.state_machine.Tranche.opened_at"
+        ],
+        [
+          "lifecycle.tranches",
+          "btc_predictor.portfolio.state_machine.PositionLifecycle.tranches"
+        ]
+      ],
+      "expression": "(item.opened_at < opened or item.opened_at > last_event for item in lifecycle.tranches)",
+      "path": "btc_predictor.portfolio.state_machine._validate_lifecycle.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is None for value in (average, stop, opened, closed))",
+      "path": "btc_predictor.portfolio.state_machine._validate_lifecycle.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "array.shape",
+          "numpy array geometry; no independent external field"
+        ],
+        [
+          "arrays[1:]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(array.shape != shape for array in arrays[1:])",
+      "path": "btc_predictor.quant.arrays.require_same_shape.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(float(value) for value in row)",
+      "path": "btc_predictor.quant.arrays.stable_row_sum.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "name.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(not isinstance(name, str) or not name.strip() for name in normalized)",
+      "path": "btc_predictor.quant.scoring._component_names.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.contains",
+          "reached method btc_predictor.risk.budget.RiskBudgetBand.contains"
+        ],
+        [
+          "contains helper read min_entry_conviction",
+          "btc_predictor.risk.budget.RiskBudgetBand.min_entry_conviction"
+        ],
+        [
+          "contains helper read max_entry_conviction",
+          "btc_predictor.risk.budget.RiskBudgetBand.max_entry_conviction"
+        ],
+        [
+          "contains helper read risk_fraction_nav",
+          "btc_predictor.risk.budget.RiskBudgetBand.risk_fraction_nav"
+        ]
+      ],
+      "expression": "(item for item in bands if item.contains(conviction))",
+      "path": "btc_predictor.risk.budget.calculate_risk_budget.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "band.max_entry_conviction",
+          "btc_predictor.config.strategy.RiskBand.max_entry_conviction"
+        ],
+        [
+          "band.min_entry_conviction",
+          "btc_predictor.config.strategy.RiskBand.min_entry_conviction"
+        ],
+        [
+          "band.risk_fraction_nav",
+          "btc_predictor.config.strategy.RiskBand.risk_fraction_nav"
+        ],
+        [
+          "resolved.risk",
+          "btc_predictor.config.strategy.StrategyConfig.risk"
+        ],
+        [
+          "resolved.risk.schedule",
+          "btc_predictor.config.strategy.StrategyConfig.risk"
+        ],
+        [
+          "resolved.risk.schedule",
+          "btc_predictor.config.strategy.RiskConfig.schedule"
+        ]
+      ],
+      "expression": "(RiskBudgetBand(min_entry_conviction=Decimal(str(band.min_entry_conviction)), max_entry_conviction=Decimal(str(band.max_entry_conviction)) if band.max_entry_conviction is not None else None, risk_fraction_nav=Decimal(str(band.risk_fraction_nav))) for band in resolved.risk.schedule)",
+      "path": "btc_predictor.risk.budget.risk_schedule_from_config.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.tranche_id",
+          "btc_predictor.risk.exposure.TrancheRisk.tranche_id"
+        ]
+      ],
+      "expression": "(item.tranche_id for item in tranches)",
+      "path": "btc_predictor.risk.exposure._canonical_tranches.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.tranche_id",
+          "btc_predictor.risk.exposure.TrancheRisk.tranche_id"
+        ]
+      ],
+      "expression": "lambda item: item.tranche_id",
+      "path": "btc_predictor.risk.exposure._canonical_tranches.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.headroom_amount",
+          "btc_predictor.risk.exposure.RiskAtStopResult.headroom_amount"
+        ],
+        [
+          "result.risk_at_stop",
+          "btc_predictor.risk.exposure.RiskAtStopResult.risk_at_stop"
+        ],
+        [
+          "result.risk_fraction_nav",
+          "btc_predictor.risk.exposure.RiskAtStopResult.risk_fraction_nav"
+        ]
+      ],
+      "expression": "(value is not None for value in (result.risk_at_stop, result.risk_fraction_nav, result.headroom_amount))",
+      "path": "btc_predictor.risk.exposure._validate_result.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.convention",
+          "btc_predictor.risk.exposure.RiskAtStopResult.convention"
+        ],
+        [
+          "result.direction",
+          "btc_predictor.risk.exposure.RiskAtStopResult.direction"
+        ],
+        [
+          "result.tranches",
+          "btc_predictor.risk.exposure.RiskAtStopResult.tranches"
+        ],
+        [
+          "tranche.entry_price",
+          "btc_predictor.risk.exposure.TrancheRisk.entry_price"
+        ],
+        [
+          "tranche.notional",
+          "btc_predictor.risk.exposure.TrancheRisk.notional"
+        ],
+        [
+          "tranche.tranche_id",
+          "btc_predictor.risk.exposure.TrancheRisk.tranche_id"
+        ]
+      ],
+      "expression": "(_tranche_risk({'tranche_id': tranche.tranche_id, 'notional': tranche.notional, 'entry_price': tranche.entry_price}, stop=stop, direction=result.direction, convention=result.convention) for tranche in result.tranches)",
+      "path": "btc_predictor.risk.exposure._validate_result.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.tranches",
+          "btc_predictor.risk.exposure.RiskAtStopResult.tranches"
+        ],
+        [
+          "tranche.risk_contribution",
+          "btc_predictor.risk.exposure.TrancheRisk.risk_contribution"
+        ]
+      ],
+      "expression": "(tranche.risk_contribution for tranche in result.tranches)",
+      "path": "btc_predictor.risk.exposure._validate_result.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_tranche_risk(item, stop=stop, direction=direction, convention=convention) for item in tranches)",
+      "path": "btc_predictor.risk.exposure.calculate_risk_at_stop.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.risk_contribution",
+          "btc_predictor.risk.exposure.TrancheRisk.risk_contribution"
+        ]
+      ],
+      "expression": "(item.risk_contribution for item in resolved)",
+      "path": "btc_predictor.risk.exposure.calculate_risk_at_stop.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_record(item) for item in clusters)",
+      "path": "btc_predictor.risk.invalidation._cluster_records.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "record['clusters']",
+          "btc_predictor.levels.clustering.LevelClusterResult.clusters"
+        ],
+        [
+          "clusters container key",
+          "btc_predictor.levels.clustering.LevelClusterResult.clusters"
+        ]
+      ],
+      "expression": "(_record(item) for item in record['clusters'])",
+      "path": "btc_predictor.risk.invalidation._expand_cluster_container.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.cluster_id",
+          "btc_predictor.risk.invalidation.InvalidationCandidate.cluster_id"
+        ],
+        [
+          "item.distance_fraction",
+          "btc_predictor.risk.invalidation.InvalidationCandidate.distance_fraction"
+        ]
+      ],
+      "expression": "lambda item: (item.distance_fraction, item.cluster_id)",
+      "path": "btc_predictor.risk.invalidation.select_structural_invalidation.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(not _is_available(item, signal_time) for item in considered)",
+      "path": "btc_predictor.risk.reward.reward_risk_for_stop.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.price",
+          "btc_predictor.risk.reward.RewardReference.price"
+        ],
+        [
+          "tiers[reference_type]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(item for item in tiers[reference_type] if _is_available(item, signal_time) and _is_beyond_entry(item.price, entry, direction))",
+      "path": "btc_predictor.risk.reward.select_reward_reference.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "item.price",
+          "btc_predictor.risk.reward.RewardReference.price"
+        ],
+        [
+          "item.source_id",
+          "btc_predictor.risk.reward.RewardReference.source_id"
+        ]
+      ],
+      "expression": "lambda item: (abs(item.price - entry), item.source_id or '')",
+      "path": "btc_predictor.risk.reward.select_reward_reference.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "code.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(not isinstance(code, str) or not code.strip() for code in result)",
+      "path": "btc_predictor.risk.trailing._reason_codes.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in structure_fields)",
+      "path": "btc_predictor.risk.trailing._validate_result.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is None for value in structure_fields)",
+      "path": "btc_predictor.risk.trailing._validate_result.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(_fraction_decimal(value, f'schedule[{index}]') for index, value in enumerate(schedule))",
+      "path": "btc_predictor.risk.tranches.validate_tranche_schedule.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "values[input_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(input_id for input_id in ADD_REQUIREMENTS_INPUT_IDS if values[input_id] is None and _input_is_required(input_id, require_profitable_position=require_profitable_position, require_stop_improvement=require_stop_improvement))",
+      "path": "btc_predictor.signals.add_requirements._evaluate.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "self.evaluated_bar_timestamps",
+          "btc_predictor.signals.breakout_retest.BreakoutRetestTriggerResult.evaluated_bar_timestamps"
+        ]
+      ],
+      "expression": "(require_utc_datetime(value, 'evaluated_bar_timestamp') for value in self.evaluated_bar_timestamps)",
+      "path": "btc_predictor.signals.breakout_retest.BreakoutRetestTriggerResult.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value <= 0 for value in prices)",
+      "path": "btc_predictor.signals.breakout_retest.BreakoutRetestTriggerResult.as_record.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "self.source_breakout_level",
+          "btc_predictor.signals.breakout_retest.BreakoutRetestTriggerResult.source_breakout_level"
+        ],
+        [
+          "self.source_breakout_level.confirmation_timestamp",
+          "btc_predictor.signals.breakout_retest.BreakoutRetestTriggerResult.source_breakout_level"
+        ],
+        [
+          "self.source_breakout_level.confirmation_timestamp",
+          "btc_predictor.levels.breakout.BreakoutReclaimLevel.confirmation_timestamp"
+        ]
+      ],
+      "expression": "(value <= self.source_breakout_level.confirmation_timestamp for value in timestamps)",
+      "path": "btc_predictor.signals.breakout_retest.BreakoutRetestTriggerResult.as_record.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.signals.breakout_retest._available_follow_up_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(bar.timestamp for bar in evaluated)",
+      "path": "btc_predictor.signals.breakout_retest._build_result.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(bar.low for bar in evaluated)",
+      "path": "btc_predictor.signals.breakout_retest._build_result.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.high",
+          "btc_predictor.data.ohlcv.OhlcvBar.high"
+        ]
+      ],
+      "expression": "(bar.high for bar in evaluated)",
+      "path": "btc_predictor.signals.breakout_retest._build_result.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.close",
+          "btc_predictor.data.ohlcv.OhlcvBar.close"
+        ]
+      ],
+      "expression": "(bar.close for bar in evaluated)",
+      "path": "btc_predictor.signals.breakout_retest._build_result.<locals>.<genexpr>#4"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in atr_fields)",
+      "path": "btc_predictor.signals.breakout_retest._validate_result.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in retest_fields)",
+      "path": "btc_predictor.signals.breakout_retest._validate_result.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "failure.source_component",
+          "btc_predictor.signals.data_quality.DataQualityFailure.source_component"
+        ]
+      ],
+      "expression": "lambda failure: failure.source_component",
+      "path": "btc_predictor.signals.data_quality.apply_data_quality_gate.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "values[input_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(input_id for input_id in EXIT_RULE_INPUT_IDS if values[input_id] is None)",
+      "path": "btc_predictor.signals.exit_rules._evaluate.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "code.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(not isinstance(code, str) or not code.strip() for code in normalized_codes)",
+      "path": "btc_predictor.signals.exit_rules._normalize_source_reason_codes.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "values[input_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(input_id for input_id in HARD_VETO_INPUT_IDS if values[input_id] is None)",
+      "path": "btc_predictor.signals.hard_veto._evaluate.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "code.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(not isinstance(code, str) or not code.strip() for code in codes)",
+      "path": "btc_predictor.signals.hard_veto._normalize_source_reason_codes.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(not isinstance(setup, str) for setup in supplied)",
+      "path": "btc_predictor.signals.hard_veto._normalize_supported_setups.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "setup.strip",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(setup.strip() for setup in supplied)",
+      "path": "btc_predictor.signals.hard_veto._normalize_supported_setups.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(not setup for setup in normalized)",
+      "path": "btc_predictor.signals.hard_veto._normalize_supported_setups.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "setup.casefold",
+          "scalar/container method, owner expression in source"
+        ]
+      ],
+      "expression": "(setup.casefold() for setup in normalized)",
+      "path": "btc_predictor.signals.hard_veto._normalize_supported_setups.<locals>.<genexpr>#4"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "self.evaluated_bar_timestamps",
+          "btc_predictor.signals.higher_low.HigherLowTriggerResult.evaluated_bar_timestamps"
+        ]
+      ],
+      "expression": "(require_utc_datetime(value, 'evaluated_bar_timestamp') for value in self.evaluated_bar_timestamps)",
+      "path": "btc_predictor.signals.higher_low.HigherLowTriggerResult.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value <= 0 for value in prices)",
+      "path": "btc_predictor.signals.higher_low.HigherLowTriggerResult.as_record.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.signals.higher_low._available_daily_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(bar.timestamp for bar in evaluated)",
+      "path": "btc_predictor.signals.higher_low._build_result.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.high",
+          "btc_predictor.data.ohlcv.OhlcvBar.high"
+        ]
+      ],
+      "expression": "(bar.high for bar in evaluated)",
+      "path": "btc_predictor.signals.higher_low._build_result.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(bar.low for bar in evaluated)",
+      "path": "btc_predictor.signals.higher_low._build_result.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.close",
+          "btc_predictor.data.ohlcv.OhlcvBar.close"
+        ]
+      ],
+      "expression": "(bar.close for bar in evaluated)",
+      "path": "btc_predictor.signals.higher_low._build_result.<locals>.<genexpr>#4"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.high",
+          "btc_predictor.data.ohlcv.OhlcvBar.high"
+        ],
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(decision_greater(value, bar.high) if kind == 'high' else decision_less(value, bar.low) for bar in comparisons)",
+      "path": "btc_predictor.signals.higher_low._first_confirmed_extreme.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(decision_greater(candidate, value) if kind == 'high' else decision_less(candidate, value) for value in comparison_values)",
+      "path": "btc_predictor.signals.higher_low._validate_confirmed_extreme.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in source_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in source_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in pivot_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in pivot_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#4"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in low_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#5"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in low_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#6"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in confirmation_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#7"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(value is not None for value in confirmation_fields)",
+      "path": "btc_predictor.signals.higher_low._validate_stage_provenance.<locals>.<genexpr>#8"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "anchor.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ],
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(bar for bar in available if bar.timestamp > anchor.timestamp)",
+      "path": "btc_predictor.signals.higher_low.evaluate_higher_low_trigger.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(bar for bar in available if bar.timestamp > confirmation_boundary)",
+      "path": "btc_predictor.signals.higher_low.evaluate_higher_low_trigger.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.atr",
+          "btc_predictor.signals.no_chase.NoChaseResult.atr"
+        ]
+      ],
+      "expression": "(value is not None for value in (result.atr, atr_time))",
+      "path": "btc_predictor.signals.no_chase._validate_result.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "self.confirmation_bar_timestamps",
+          "btc_predictor.signals.reclaim.ReclaimTriggerResult.confirmation_bar_timestamps"
+        ]
+      ],
+      "expression": "(require_utc_datetime(value, 'confirmation_bar_timestamp') for value in self.confirmation_bar_timestamps)",
+      "path": "btc_predictor.signals.reclaim.ReclaimTriggerResult.as_record.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "self.confirmation_closes",
+          "btc_predictor.signals.reclaim.ReclaimTriggerResult.confirmation_closes"
+        ],
+        [
+          "self.confirmation_lows",
+          "btc_predictor.signals.reclaim.ReclaimTriggerResult.confirmation_lows"
+        ]
+      ],
+      "expression": "(value <= 0 for value in (*self.confirmation_lows, *self.confirmation_closes))",
+      "path": "btc_predictor.signals.reclaim.ReclaimTriggerResult.as_record.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "lambda bar: bar.timestamp",
+      "path": "btc_predictor.signals.reclaim._available_follow_up_bars.<locals>.<lambda>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "result.reason_codes",
+          "btc_predictor.signals.reclaim.ReclaimTriggerResult.reason_codes"
+        ]
+      ],
+      "expression": "(code not in RECLAIM_TRIGGER_REASON_CODES for code in result.reason_codes)",
+      "path": "btc_predictor.signals.reclaim._validate_result_identity.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(not decision_greater_equal(bar.low, hold_threshold) for bar in selected)",
+      "path": "btc_predictor.signals.reclaim.evaluate_reclaim_trigger.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.close",
+          "btc_predictor.data.ohlcv.OhlcvBar.close"
+        ]
+      ],
+      "expression": "(not decision_greater(bar.close, close_threshold) for bar in selected)",
+      "path": "btc_predictor.signals.reclaim.evaluate_reclaim_trigger.<locals>.<genexpr>#2"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.timestamp",
+          "btc_predictor.data.ohlcv.OhlcvBar.timestamp"
+        ]
+      ],
+      "expression": "(bar.timestamp for bar in selected)",
+      "path": "btc_predictor.signals.reclaim.evaluate_reclaim_trigger.<locals>.<genexpr>#3"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.low",
+          "btc_predictor.data.ohlcv.OhlcvBar.low"
+        ]
+      ],
+      "expression": "(bar.low for bar in selected)",
+      "path": "btc_predictor.signals.reclaim.evaluate_reclaim_trigger.<locals>.<genexpr>#4"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "bar.close",
+          "btc_predictor.data.ohlcv.OhlcvBar.close"
+        ]
+      ],
+      "expression": "(bar.close for bar in selected)",
+      "path": "btc_predictor.signals.reclaim.evaluate_reclaim_trigger.<locals>.<genexpr>#5"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [
+        [
+          "values[input_id]",
+          "owner-built collection/typed serialization; source assignment audited"
+        ]
+      ],
+      "expression": "(input_id for input_id in TRIM_RULE_INPUT_IDS if values[input_id] is None)",
+      "path": "btc_predictor.signals.trim._evaluate.<locals>.<genexpr>#1"
+    },
+    {
+      "basis": "all reads accounted; enclosing source and transitive helper reviewed",
+      "checks": [],
+      "expression": "(not isinstance(code, str) or not code for code in normalized_codes)",
+      "path": "btc_predictor.signals.trim._normalize_source_reason_codes.<locals>.<genexpr>#1"
+    }
+  ],
+  "A3_ruling": "OWNER_INTERNAL is correct for current nested parameters; every consumed external field must remain enumerated",
+  "RBT002A_additional_obligations": [
+    "LEVEL_VOLUME_PERCENTILE existing Rulebook section 9.2 fallback and owner-compatibility gap",
+    "E1 futures-basis constant-history equality/refusal guard"
+  ],
+  "RBT002A_undefined_ids": [
+    "ADD_MOMENTUM_SCORE",
+    "CAPITULATION_EVENT",
+    "CORRECTION_FROM_LOCAL_HIGH",
+    "DATA_RISK_EXIT_PREDICATE",
+    "DISTRIBUTION_STATE",
+    "DOWNSIDE_RETURN",
+    "FLOW_SUPPORTIVE_PREDICATE",
+    "FLOW_Z_ETF_NORM_20D",
+    "FLOW_Z_ETF_NORM_5D",
+    "FLOW_Z_FLOW_ACCEL",
+    "LEVEL_REACTION_MAGNITUDE",
+    "MEASURED_MOVE_REFERENCE",
+    "MOMENTUM_PERSISTENCE_SCORE",
+    "NEW_STRUCTURAL_CONFIRMATION",
+    "NEW_STRUCTURE_SCORE",
+    "RANGE_PERCENTILE",
+    "REGIME_INVALIDATION_PREDICATE",
+    "REGIME_SUPPORTIVE_PREDICATE",
+    "SEVERE_CROWDING_STATE",
+    "SHORT_TRIGGER",
+    "TREND_Z_20W",
+    "TREND_Z_52H",
+    "TREND_Z_M12",
+    "TREND_Z_M4",
+    "UPSIDE_RETURN"
+  ],
+  "base": "634d122",
+  "closure_criteria": {
+    "A": "PASS",
+    "B": "PASS",
+    "C": "PASS",
+    "D": "PASS"
+  },
+  "commit_created": false,
+  "coverage": {
+    "fixtures": {
+      "dataclasses": 124,
+      "functions": 1027,
+      "pytest_exit": 0,
+      "roots": 74,
+      "run": "fixtures",
+      "totals": [
+        4993,
+        7565,
+        2235,
+        3728
+      ],
+      "uncovered": {
+        "dataclasses": [],
+        "functions": []
+      }
+    },
+    "owners": {
+      "dataclasses": 124,
+      "functions": 1022,
+      "pytest_exit": 0,
+      "roots": 74,
+      "run": "owners",
+      "totals": [
+        5855,
+        7565,
+        2934,
+        3728
+      ],
+      "uncovered": {
+        "dataclasses": [],
+        "functions": []
+      }
+    }
+  },
+  "database_statements": [
+    "SELECT current_setting('default_transaction_read_only')",
+    "SELECT current_setting('transaction_read_only')",
+    "SELECT exchange,COUNT(*),COUNT(DISTINCT timestamp),MIN(timestamp),MAX(timestamp)\n          FROM raw.btc_ohlcv WHERE timeframe='1h' AND timestamp >= '2020-01-01' AND timestamp < '2026-01-01'\n          GROUP BY exchange ORDER BY exchange",
+    "WITH missing AS (\n              SELECT hour FROM generate_series(TIMESTAMPTZ '2020-01-01',TIMESTAMPTZ '2025-12-31 23:00', INTERVAL '1 hour') hour\n              WHERE NOT EXISTS (SELECT 1 FROM raw.btc_ohlcv b WHERE b.exchange=%(venue)s AND b.timeframe='1h' AND b.timestamp=hour)),\n              grouped AS (SELECT hour,hour-ROW_NUMBER() OVER (ORDER BY hour)*INTERVAL '1 hour' grp FROM missing)\n              SELECT MIN(hour),MAX(hour),COUNT(*) FROM grouped GROUP BY grp ORDER BY MIN(hour)",
+    "WITH missing AS (\n              SELECT hour FROM generate_series(TIMESTAMPTZ '2020-01-01',TIMESTAMPTZ '2025-12-31 23:00', INTERVAL '1 hour') hour\n              WHERE NOT EXISTS (SELECT 1 FROM raw.btc_ohlcv b WHERE b.exchange=%(venue)s AND b.timeframe='1h' AND b.timestamp=hour)),\n              grouped AS (SELECT hour,hour-ROW_NUMBER() OVER (ORDER BY hour)*INTERVAL '1 hour' grp FROM missing)\n              SELECT MIN(hour),MAX(hour),COUNT(*) FROM grouped GROUP BY grp ORDER BY MIN(hour)",
+    "WITH missing AS (\n              SELECT hour FROM generate_series(TIMESTAMPTZ '2020-01-01',TIMESTAMPTZ '2025-12-31 23:00', INTERVAL '1 hour') hour\n              WHERE NOT EXISTS (SELECT 1 FROM raw.btc_ohlcv b WHERE b.exchange=%(venue)s AND b.timeframe='1h' AND b.timestamp=hour)),\n              grouped AS (SELECT hour,hour-ROW_NUMBER() OVER (ORDER BY hour)*INTERVAL '1 hour' grp FROM missing)\n              SELECT MIN(hour),MAX(hour),COUNT(*) FROM grouped GROUP BY grp ORDER BY MIN(hour)",
+    "SELECT exchange,COUNT(*),MIN(timestamp),MAX(timestamp) FROM raw.btc_ohlcv\n          WHERE timestamp < '2020-01-01' GROUP BY exchange ORDER BY exchange",
+    "SELECT table_name FROM information_schema.tables WHERE table_schema='raw' ORDER BY table_name",
+    "SELECT COUNT(*) FROM raw.\"btc_ohlcv\"",
+    "SELECT COUNT(*) FROM raw.\"etf_flows\"",
+    "SELECT COUNT(*) FROM raw.\"funding_rates\"",
+    "SELECT COUNT(*) FROM raw.\"futures_basis\"",
+    "SELECT COUNT(*) FROM raw.\"generic_series\"",
+    "SELECT COUNT(*) FROM raw.\"liquidations\"",
+    "SELECT COUNT(*) FROM raw.\"open_interest\"",
+    "SELECT COUNT(*) FROM raw.\"perp_volume\"",
+    "SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='raw' AND data_type IN ('timestamp with time zone','timestamp without time zone','date') ORDER BY table_name,ordinal_position",
+    "SELECT COUNT(*) FILTER (WHERE \"timestamp\">='2026-01-01' AND \"timestamp\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"timestamp\">='2027-01-01'),MIN(\"timestamp\"),MAX(\"timestamp\") FROM raw.\"btc_ohlcv\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_date\">='2026-01-01' AND \"observation_date\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_date\">='2027-01-01'),MIN(\"observation_date\"),MAX(\"observation_date\") FROM raw.\"etf_flows\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_time\">='2026-01-01' AND \"observation_time\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_time\">='2027-01-01'),MIN(\"observation_time\"),MAX(\"observation_time\") FROM raw.\"funding_rates\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_time\">='2026-01-01' AND \"observation_time\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_time\">='2027-01-01'),MIN(\"observation_time\"),MAX(\"observation_time\") FROM raw.\"futures_basis\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_time\">='2026-01-01' AND \"observation_time\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_time\">='2027-01-01'),MIN(\"observation_time\"),MAX(\"observation_time\") FROM raw.\"generic_series\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_time\">='2026-01-01' AND \"observation_time\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_time\">='2027-01-01'),MIN(\"observation_time\"),MAX(\"observation_time\") FROM raw.\"liquidations\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_time\">='2026-01-01' AND \"observation_time\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_time\">='2027-01-01'),MIN(\"observation_time\"),MAX(\"observation_time\") FROM raw.\"open_interest\"",
+    "SELECT COUNT(*) FILTER (WHERE \"observation_time\">='2026-01-01' AND \"observation_time\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"observation_time\">='2027-01-01'),MIN(\"observation_time\"),MAX(\"observation_time\") FROM raw.\"perp_volume\"",
+    "SELECT COUNT(*),MIN(observation_time),MAX(observation_time),MIN(available_at),MAX(available_at)\n          FROM derived.btc_reference_composite WHERE available_at>='2026-01-01' ",
+    "SELECT current_setting('default_transaction_read_only')",
+    "SELECT current_setting('transaction_read_only')",
+    "/* rbt002:server_facts */ SELECT current_setting('server_version'), current_database(), current_setting('default_transaction_read_only'), current_setting('transaction_read_only')",
+    "/* rbt002:schemas */ SELECT schema_name FROM information_schema.schemata ORDER BY schema_name",
+    "/* rbt002:total_rows:raw.btc_ohlcv */ SELECT COUNT(*) FROM raw.btc_ohlcv",
+    "/* rbt002:window_counts:raw.btc_ohlcv */ SELECT \"exchange\", \"symbol\", \"timeframe\", \"provider\", COUNT(*) FILTER (WHERE \"timestamp\" < %(data_start)s), MIN(\"timestamp\") FILTER (WHERE \"timestamp\" < %(data_start)s), MAX(\"timestamp\") FILTER (WHERE \"timestamp\" < %(data_start)s), MIN(\"ingested_at\") FILTER (WHERE \"timestamp\" < %(data_start)s), MAX(\"ingested_at\") FILTER (WHERE \"timestamp\" < %(data_start)s), COUNT(*) FILTER (WHERE \"timestamp\" >= %(data_start)s AND \"timestamp\" < %(holdout_start)s), MIN(\"timestamp\") FILTER (WHERE \"timestamp\" >= %(data_start)s AND \"timestamp\" < %(holdout_start)s), MAX(\"timestamp\") FILTER (WHERE \"timestamp\" >= %(data_start)s AND \"timestamp\" < %(holdout_start)s), MIN(\"ingested_at\") FILTER (WHERE \"timestamp\" >= %(data_start)s AND \"timestamp\" < %(holdout_start)s), MAX(\"ingested_at\") FILTER (WHERE \"timestamp\" >= %(data_start)s AND \"timestamp\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"timestamp\" >= %(holdout_start)s AND \"timestamp\" < %(reserve_start)s), MIN(\"timestamp\") FILTER (WHERE \"timestamp\" >= %(holdout_start)s AND \"timestamp\" < %(reserve_start)s), MAX(\"timestamp\") FILTER (WHERE \"timestamp\" >= %(holdout_start)s AND \"timestamp\" < %(reserve_start)s), MIN(\"ingested_at\") FILTER (WHERE \"timestamp\" >= %(holdout_start)s AND \"timestamp\" < %(reserve_start)s), MAX(\"ingested_at\") FILTER (WHERE \"timestamp\" >= %(holdout_start)s AND \"timestamp\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"timestamp\" >= %(reserve_start)s), MIN(\"timestamp\") FILTER (WHERE \"timestamp\" >= %(reserve_start)s), MAX(\"timestamp\") FILTER (WHERE \"timestamp\" >= %(reserve_start)s), MIN(\"ingested_at\") FILTER (WHERE \"timestamp\" >= %(reserve_start)s), MAX(\"ingested_at\") FILTER (WHERE \"timestamp\" >= %(reserve_start)s) FROM raw.btc_ohlcv GROUP BY \"exchange\", \"symbol\", \"timeframe\", \"provider\" ORDER BY \"exchange\", \"symbol\", \"timeframe\", \"provider\"",
+    "/* rbt002:data_window_times:raw.btc_ohlcv */ SELECT \"exchange\", \"symbol\", \"timeframe\", \"provider\", \"timestamp\" FROM raw.btc_ohlcv WHERE \"timestamp\" >= %(data_start)s AND \"timestamp\" < %(holdout_start)s ORDER BY \"exchange\", \"symbol\", \"timeframe\", \"provider\", \"timestamp\"",
+    "/* rbt002:total_rows:raw.etf_flows */ SELECT COUNT(*) FROM raw.etf_flows",
+    "/* rbt002:total_rows:raw.funding_rates */ SELECT COUNT(*) FROM raw.funding_rates",
+    "/* rbt002:total_rows:raw.open_interest */ SELECT COUNT(*) FROM raw.open_interest",
+    "/* rbt002:total_rows:raw.futures_basis */ SELECT COUNT(*) FROM raw.futures_basis",
+    "/* rbt002:total_rows:raw.liquidations */ SELECT COUNT(*) FROM raw.liquidations",
+    "/* rbt002:total_rows:raw.perp_volume */ SELECT COUNT(*) FROM raw.perp_volume",
+    "/* rbt002:total_rows:raw.generic_series */ SELECT COUNT(*) FROM raw.generic_series",
+    "/* rbt002:other_time_columns */ SELECT table_schema, table_name, column_name, data_type FROM information_schema.columns WHERE table_schema IN ('derived', 'signals', 'portfolio', 'system', 'research', 'public') AND data_type IN ('timestamp with time zone', 'timestamp without time zone', 'date') ORDER BY table_schema, table_name, ordinal_position",
+    "/* rbt002:other_column:derived.btc_reference_composite.observation_time */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"observation_time\" < %(data_start)s), COUNT(*) FILTER (WHERE \"observation_time\" >= %(data_start)s AND \"observation_time\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"observation_time\" >= %(holdout_start)s AND \"observation_time\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"observation_time\" >= %(reserve_start)s), MIN(\"observation_time\"), MAX(\"observation_time\") FROM \"derived\".\"btc_reference_composite\"",
+    "/* rbt002:other_column:derived.btc_reference_composite.available_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"available_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"available_at\" >= %(data_start)s AND \"available_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"available_at\" >= %(holdout_start)s AND \"available_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"available_at\" >= %(reserve_start)s), MIN(\"available_at\"), MAX(\"available_at\") FROM \"derived\".\"btc_reference_composite\"",
+    "/* rbt002:other_column:portfolio.completed_trades.opened_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"opened_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(data_start)s AND \"opened_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(holdout_start)s AND \"opened_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(reserve_start)s), MIN(\"opened_at\"), MAX(\"opened_at\") FROM \"portfolio\".\"completed_trades\"",
+    "/* rbt002:other_column:portfolio.completed_trades.closed_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"closed_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(data_start)s AND \"closed_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(holdout_start)s AND \"closed_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(reserve_start)s), MIN(\"closed_at\"), MAX(\"closed_at\") FROM \"portfolio\".\"completed_trades\"",
+    "/* rbt002:other_column:portfolio.manual_trade_journal.journaled_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"journaled_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"journaled_at\" >= %(data_start)s AND \"journaled_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"journaled_at\" >= %(holdout_start)s AND \"journaled_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"journaled_at\" >= %(reserve_start)s), MIN(\"journaled_at\"), MAX(\"journaled_at\") FROM \"portfolio\".\"manual_trade_journal\"",
+    "/* rbt002:other_column:portfolio.manual_trade_journal.actual_entry_time */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"actual_entry_time\" < %(data_start)s), COUNT(*) FILTER (WHERE \"actual_entry_time\" >= %(data_start)s AND \"actual_entry_time\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"actual_entry_time\" >= %(holdout_start)s AND \"actual_entry_time\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"actual_entry_time\" >= %(reserve_start)s), MIN(\"actual_entry_time\"), MAX(\"actual_entry_time\") FROM \"portfolio\".\"manual_trade_journal\"",
+    "/* rbt002:other_column:portfolio.manual_trade_journal.actual_exit_time */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"actual_exit_time\" < %(data_start)s), COUNT(*) FILTER (WHERE \"actual_exit_time\" >= %(data_start)s AND \"actual_exit_time\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"actual_exit_time\" >= %(holdout_start)s AND \"actual_exit_time\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"actual_exit_time\" >= %(reserve_start)s), MIN(\"actual_exit_time\"), MAX(\"actual_exit_time\") FROM \"portfolio\".\"manual_trade_journal\"",
+    "/* rbt002:other_column:portfolio.paper_accounts.created_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"created_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(data_start)s AND \"created_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(holdout_start)s AND \"created_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(reserve_start)s), MIN(\"created_at\"), MAX(\"created_at\") FROM \"portfolio\".\"paper_accounts\"",
+    "/* rbt002:other_column:portfolio.paper_orders.created_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"created_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(data_start)s AND \"created_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(holdout_start)s AND \"created_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(reserve_start)s), MIN(\"created_at\"), MAX(\"created_at\") FROM \"portfolio\".\"paper_orders\"",
+    "/* rbt002:other_column:portfolio.paper_orders.submitted_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"submitted_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"submitted_at\" >= %(data_start)s AND \"submitted_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"submitted_at\" >= %(holdout_start)s AND \"submitted_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"submitted_at\" >= %(reserve_start)s), MIN(\"submitted_at\"), MAX(\"submitted_at\") FROM \"portfolio\".\"paper_orders\"",
+    "/* rbt002:other_column:portfolio.paper_orders.filled_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"filled_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"filled_at\" >= %(data_start)s AND \"filled_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"filled_at\" >= %(holdout_start)s AND \"filled_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"filled_at\" >= %(reserve_start)s), MIN(\"filled_at\"), MAX(\"filled_at\") FROM \"portfolio\".\"paper_orders\"",
+    "/* rbt002:other_column:portfolio.position_events.event_time */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"event_time\" < %(data_start)s), COUNT(*) FILTER (WHERE \"event_time\" >= %(data_start)s AND \"event_time\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"event_time\" >= %(holdout_start)s AND \"event_time\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"event_time\" >= %(reserve_start)s), MIN(\"event_time\"), MAX(\"event_time\") FROM \"portfolio\".\"position_events\"",
+    "/* rbt002:other_column:portfolio.positions.opened_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"opened_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(data_start)s AND \"opened_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(holdout_start)s AND \"opened_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(reserve_start)s), MIN(\"opened_at\"), MAX(\"opened_at\") FROM \"portfolio\".\"positions\"",
+    "/* rbt002:other_column:portfolio.positions.closed_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"closed_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(data_start)s AND \"closed_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(holdout_start)s AND \"closed_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(reserve_start)s), MIN(\"closed_at\"), MAX(\"closed_at\") FROM \"portfolio\".\"positions\"",
+    "/* rbt002:other_column:portfolio.stops.created_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"created_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(data_start)s AND \"created_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(holdout_start)s AND \"created_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(reserve_start)s), MIN(\"created_at\"), MAX(\"created_at\") FROM \"portfolio\".\"stops\"",
+    "/* rbt002:other_column:portfolio.tranches.opened_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"opened_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(data_start)s AND \"opened_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(holdout_start)s AND \"opened_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"opened_at\" >= %(reserve_start)s), MIN(\"opened_at\"), MAX(\"opened_at\") FROM \"portfolio\".\"tranches\"",
+    "/* rbt002:other_column:portfolio.tranches.closed_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"closed_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(data_start)s AND \"closed_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(holdout_start)s AND \"closed_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"closed_at\" >= %(reserve_start)s), MIN(\"closed_at\"), MAX(\"closed_at\") FROM \"portfolio\".\"tranches\"",
+    "/* rbt002:other_column:signals.predictor_runs.run_started_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"run_started_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"run_started_at\" >= %(data_start)s AND \"run_started_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"run_started_at\" >= %(holdout_start)s AND \"run_started_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"run_started_at\" >= %(reserve_start)s), MIN(\"run_started_at\"), MAX(\"run_started_at\") FROM \"signals\".\"predictor_runs\"",
+    "/* rbt002:other_column:signals.predictor_runs.evaluation_time */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"evaluation_time\" < %(data_start)s), COUNT(*) FILTER (WHERE \"evaluation_time\" >= %(data_start)s AND \"evaluation_time\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"evaluation_time\" >= %(holdout_start)s AND \"evaluation_time\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"evaluation_time\" >= %(reserve_start)s), MIN(\"evaluation_time\"), MAX(\"evaluation_time\") FROM \"signals\".\"predictor_runs\"",
+    "/* rbt002:other_column:signals.predictor_runs.data_available_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"data_available_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"data_available_at\" >= %(data_start)s AND \"data_available_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"data_available_at\" >= %(holdout_start)s AND \"data_available_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"data_available_at\" >= %(reserve_start)s), MIN(\"data_available_at\"), MAX(\"data_available_at\") FROM \"signals\".\"predictor_runs\"",
+    "/* rbt002:other_column:signals.recommendations.created_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"created_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(data_start)s AND \"created_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(holdout_start)s AND \"created_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(reserve_start)s), MIN(\"created_at\"), MAX(\"created_at\") FROM \"signals\".\"recommendations\"",
+    "/* rbt002:other_column:signals.recommendations.evaluation_time */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"evaluation_time\" < %(data_start)s), COUNT(*) FILTER (WHERE \"evaluation_time\" >= %(data_start)s AND \"evaluation_time\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"evaluation_time\" >= %(holdout_start)s AND \"evaluation_time\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"evaluation_time\" >= %(reserve_start)s), MIN(\"evaluation_time\"), MAX(\"evaluation_time\") FROM \"signals\".\"recommendations\"",
+    "/* rbt002:other_column:system.ingestion_audit_log.started_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"started_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"started_at\" >= %(data_start)s AND \"started_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"started_at\" >= %(holdout_start)s AND \"started_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"started_at\" >= %(reserve_start)s), MIN(\"started_at\"), MAX(\"started_at\") FROM \"system\".\"ingestion_audit_log\"",
+    "/* rbt002:other_column:system.ingestion_audit_log.ended_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"ended_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"ended_at\" >= %(data_start)s AND \"ended_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"ended_at\" >= %(holdout_start)s AND \"ended_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"ended_at\" >= %(reserve_start)s), MIN(\"ended_at\"), MAX(\"ended_at\") FROM \"system\".\"ingestion_audit_log\"",
+    "/* rbt002:other_column:system.ingestion_audit_log.created_at */ SELECT COUNT(*), COUNT(*) FILTER (WHERE \"created_at\" < %(data_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(data_start)s AND \"created_at\" < %(holdout_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(holdout_start)s AND \"created_at\" < %(reserve_start)s), COUNT(*) FILTER (WHERE \"created_at\" >= %(reserve_start)s), MIN(\"created_at\"), MAX(\"created_at\") FROM \"system\".\"ingestion_audit_log\""
+  ],
+  "date": "2026-10-02",
+  "frozen_module_manifest_digest": "7ffbf15792d33e0cd387eb995d8d733c1fa1b98b2859153957c670f796a44e8e",
+  "full_repository_command": ".venv312/bin/python -m pytest -q -W error::RuntimeWarning --basetemp=/home/wlodzimierrr/rbt002_r2_review_tmp/full",
+  "inherited_failure": {
+    "base_result": "1 failed in 1.09s",
+    "disposition": "P3 inherited, non-blocking under bounded R2 closure",
+    "node": "btc_predictor/tests/test_btc019_completion_gate.py::test_no_production_module_reads_a_research_reference_candidate",
+    "same_at_base": true
+  },
+  "input_rows": {
+    "new_nested_internal": 232,
+    "total": 3520,
+    "unchanged": 3288
+  },
+  "invalid_environment_attempt": "The /tmp full-suite attempt was stopped after EXDEV hard-link failures; no full count is claimed",
+  "inventory_digest": "108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a",
+  "live_database": {
+    "bitfinex_missing_runs": [
+      [
+        "2020-02-11 11:00:00+00:00",
+        "2020-02-11 12:00:00+00:00",
+        2
+      ],
+      [
+        "2020-08-12 21:00:00+00:00",
+        "2020-08-12 21:00:00+00:00",
+        1
+      ],
+      [
+        "2021-06-30 08:00:00+00:00",
+        "2021-06-30 09:00:00+00:00",
+        2
+      ],
+      [
+        "2021-10-13 14:00:00+00:00",
+        "2021-10-13 16:00:00+00:00",
+        3
+      ],
+      [
+        "2022-10-12 08:00:00+00:00",
+        "2022-10-12 11:00:00+00:00",
+        4
+      ],
+      [
+        "2023-03-06 10:00:00+00:00",
+        "2023-03-06 11:00:00+00:00",
+        2
+      ],
+      [
+        "2024-05-05 10:00:00+00:00",
+        "2024-05-05 11:00:00+00:00",
+        2
+      ]
+    ],
+    "bitstamp_missing_runs": [],
+    "coinbase_missing_runs": [
+      [
+        "2020-01-30 17:00:00+00:00",
+        "2020-01-30 17:00:00+00:00",
+        1
+      ],
+      [
+        "2020-09-04 23:00:00+00:00",
+        "2020-09-04 23:00:00+00:00",
+        1
+      ],
+      [
+        "2020-10-20 20:00:00+00:00",
+        "2020-10-20 20:00:00+00:00",
+        1
+      ],
+      [
+        "2023-03-04 18:00:00+00:00",
+        "2023-03-04 20:00:00+00:00",
+        3
+      ],
+      [
+        "2025-10-25 16:00:00+00:00",
+        "2025-10-25 20:00:00+00:00",
+        5
+      ]
+    ],
+    "composite_availability": [
+      [
+        3,
+        "2025-12-31 23:00:00+00:00",
+        "2025-12-31 23:00:00+00:00",
+        "2026-01-01 00:05:00+00:00",
+        "2026-01-01 00:05:00+00:00"
+      ]
+    ],
+    "guarded_select_statements": 66,
+    "pre2020": [
+      [
+        "bitfinex",
+        744,
+        "2019-12-01 00:00:00+00:00",
+        "2019-12-31 23:00:00+00:00"
+      ],
+      [
+        "bitstamp",
+        744,
+        "2019-12-01 00:00:00+00:00",
+        "2019-12-31 23:00:00+00:00"
+      ],
+      [
+        "coinbase",
+        744,
+        "2019-12-01 00:00:00+00:00",
+        "2019-12-31 23:00:00+00:00"
+      ]
+    ],
+    "raw_counts": {
+      "btc_ohlcv": 160029,
+      "etf_flows": 0,
+      "funding_rates": 0,
+      "futures_basis": 0,
+      "generic_series": 0,
+      "liquidations": 0,
+      "open_interest": 0,
+      "perp_volume": 0
+    },
+    "raw_observation_windows": [
+      [
+        "btc_ohlcv",
+        "timestamp",
+        0,
+        0,
+        "2019-12-01 00:00:00+00:00",
+        "2025-12-31 23:00:00+00:00"
+      ],
+      [
+        "etf_flows",
+        "observation_date",
+        0,
+        0,
+        null,
+        null
+      ],
+      [
+        "funding_rates",
+        "observation_time",
+        0,
+        0,
+        null,
+        null
+      ],
+      [
+        "futures_basis",
+        "observation_time",
+        0,
+        0,
+        null,
+        null
+      ],
+      [
+        "generic_series",
+        "observation_time",
+        0,
+        0,
+        null,
+        null
+      ],
+      [
+        "liquidations",
+        "observation_time",
+        0,
+        0,
+        null,
+        null
+      ],
+      [
+        "open_interest",
+        "observation_time",
+        0,
+        0,
+        null,
+        null
+      ],
+      [
+        "perp_volume",
+        "observation_time",
+        0,
+        0,
+        null,
+        null
+      ]
+    ],
+    "snapshot_equal": true,
+    "venues": [
+      [
+        "bitfinex",
+        52592,
+        52592,
+        "2020-01-01 00:00:00+00:00",
+        "2025-12-31 23:00:00+00:00"
+      ],
+      [
+        "bitstamp",
+        52608,
+        52608,
+        "2020-01-01 00:00:00+00:00",
+        "2025-12-31 23:00:00+00:00"
+      ],
+      [
+        "coinbase",
+        52597,
+        52597,
+        "2020-01-01 00:00:00+00:00",
+        "2025-12-31 23:00:00+00:00"
+      ]
+    ]
+  },
+  "named_callables": 882,
+  "nested_callables": {
+    "functions": 2,
+    "generator_expressions": 188,
+    "lambdas": 40
+  },
+  "result": "PASS WITH NON-BLOCKING FINDINGS",
+  "review_fix_commit": null,
+  "review_kind": "independent xHigh R2 re-review under V5 section 5A.7",
+  "review_ticket": "RBT-002",
+  "reviewed_correction": "812b968",
+  "reviewed_documentation": "ce5cd70",
+  "reviewed_head": "ce5cd70afeacd032edc7347783591cde87598901",
+  "safety": {
+    "bound_module_edits": 0,
+    "data_or_research_artifact_edits": 0,
+    "holdout": "NOT COLLECTED",
+    "owner_edits": 0,
+    "provider_probes": 0,
+    "purchases": 0,
+    "real_data_backtest_outcomes": 0,
+    "sealed_sample": "UNOPENED"
+  },
+  "sources": {
+    "a3_check.py": "\"\"\"Independent read-origin ledger for ALL real lambdas and generator expressions.\n\nThe discovery script extracts live scopes independently. This ledger follows\nthe real producers/annotations/assignments, and checks fields against surface\nrows rather than trusting OWNER_INTERNAL classifications.\n\"\"\"\nimport ast\nimport importlib\nimport inspect\nimport json\nimport sys\nfrom pathlib import Path\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nsys.path.insert(0,str(ROOT))\nfrom btc_predictor.research_backtest import coverage as cov, input_census as ic\naudit = json.loads(Path('/tmp/rbt002-r2-review/a3-reads.json').read_bytes())\nc = ic.discover_decision_path()\nrows = {(r.owner,r.name):r for r in cov.enumerate_input_surface(c) if r.surface == cov.SURFACE_FIELD}\ntypes = {p.rsplit('.',1)[-1]:p for p in c.types}\ndef field(type_name,name):\n    p = types[type_name]\n    assert (p,name) in rows, (p,name)\n    return p+'.'+name\n\ndef origins(i,a):\n    out = {}\n    p = a['path']\n    module = p.split('.<locals>')[0]\n    if '.config.strategy.' in p:\n        out['band'] = 'RiskBand'\n    if '.data.quality.' in p:\n        out.update(bar='OhlcvBar',config='DerivativesQualityConfig')\n        out['row'] = 'FundingRate' if i in (12,13,14) else 'OpenInterest'\n    if '.features.positioning.' in p:\n        out['row'] = 'FundingRate' if i in (42,43,56,57) else 'FuturesBasis' if i in (58,59) else 'MarketCapObservation' if i==63 else 'OpenInterest'\n    if '.features.flow.' in p:\n        out.update(flow='EtfFlow',observation='CvdObservation' if 'cvd_spread' in p else 'VolumeParticipationObservation')\n    if '.features.volatility.' in p:\n        out['result'] = 'RealizedVolatilityResult'\n    if '.levels.anchored_vwap.' in p:\n        out['result'] = 'AnchoredVwapResult'\n    if '.levels.breakout.' in p:\n        out.update(source_level='SourceLevel',level='BreakoutReclaimLevel')\n    if '.levels.clustering.' in p:\n        out.update(member='LevelClusterMember',item='LevelClusterMember',cluster='LevelCluster')\n    if '.levels.volume_profile.' in p:\n        out.update(profile_bin='VolumeProfileBin',poc_bin='VolumeProfileBin',level='VolumeProfileLevel')\n    if '.levels.swing.' in p:\n        out['level'] = 'MonthlySwingLevel' if 'monthly' in p else 'WeeklySwingLevel'\n    if '.portfolio.state_machine.' in p:\n        out.update(tranche='Tranche',item='Tranche',lifecycle='PositionLifecycle')\n    if '.risk.budget.' in p:\n        out.update(item='RiskBudgetBand',band='RiskBand',resolved='StrategyConfig')\n    if '.risk.exposure.' in p:\n        out.update(item='TrancheRisk',tranche='TrancheRisk',result='RiskAtStopResult')\n    if '.risk.invalidation.' in p:\n        out['item'] = 'InvalidationCandidate'\n    if '.risk.reward.' in p:\n        out['item'] = 'RewardReference'\n    if '.signals.data_quality.' in p:\n        out['failure'] = 'DataQualityFailure'\n    if '.signals.no_chase.' in p:\n        out['result'] = 'NoChaseResult'\n    if '.signals.reclaim.' in p:\n        out['result'] = 'ReclaimTriggerResult'\n    out.update(bar='OhlcvBar',candidate='OhlcvBar',anchor='OhlcvBar')\n    if '.as_record.' in p or '.__post_init__.' in p:\n        out['self'] = p.split('.<locals>')[0].split('.')[-2]\n    return out\n\nmethod_names = {'strip','endswith','casefold','values','items','get','index'}\nprimitive_bases = {'exchange','timeframe','reason_code','code','setup','name','item',\n                   'inputs','contributions','input_values','components','values',\n                   'decimal_weights','normalized_weights','funding_averages','averages_by_time',\n                   'growth_by_time','intensity_by_time','timeframe_scores','record','VOLUME_PROFILE_LEVEL_TYPES'}\nspecial_fields = {'AnchoredVwapResult.anchor':'AnchoredVwapAnchor',\n                  'BreakoutRetestTriggerResult.source_breakout_level':'BreakoutReclaimLevel',\n                  'StrategyConfig.risk':'RiskConfig'}\nevidence = []\nfor i,a in enumerate(audit):\n    origin = origins(i,a)\n    checks = []\n    for read in a['reads']:\n        n = ast.parse(read,mode='eval').body\n        if isinstance(n,ast.Attribute):\n            text = ast.unparse(n)\n            chain = text.split('.')\n            if chain[0] == 'np':\n                assert text == 'np.isnan'\n                checks.append([read,'third-party numeric missingness operation'])\n                continue\n            if text == 'array.shape':\n                # require_same_shape receives ndarrays produced by as_float_array;\n                # geometry derives from the already supplied numeric arrays.\n                checks.append([read,'numpy array geometry; no independent external field'])\n                continue\n            if len(chain)==2 and chain[-1] in method_names and any(call.startswith(read+'(') for call in a['calls']):\n                assert chain[0] in primitive_bases, (i,read)\n                checks.append([read,'scalar/container method, owner expression in source'])\n                continue\n            assert chain[0] in origin, (i,read,'no explicit origin')\n            t = origin[chain[0]]\n            for part in chain[1:]:\n                if part in ('as_record','contains'):\n                    assert types[t]+'.'+part in c.callables, (i,t,part)\n                    checks.append([read,'reached method '+types[t]+'.'+part])\n                else:\n                    checks.append([read,field(t,part)])\n                    t = special_fields.get(t+'.'+part,t)\n        else:\n            # Every remaining subscript is either a serialized typed field,\n            # a fixed component-map key, or an index into an owner-produced\n            # timestamp/number/record collection. Inspect producer assignments\n            # recorded in owner_source; a subscript introduces no new field.\n            assert isinstance(n,ast.Subscript)\n            text = ast.unparse(n)\n            if isinstance(n.value,ast.Call) and isinstance(n.value.func,ast.Attribute) and n.value.func.attr=='as_record':\n                var = n.value.func.value.id\n                assert isinstance(n.slice,ast.Constant)\n                checks.append([read,field(origin[var],n.slice.value)])\n            elif text == \"record['clusters']\":\n                checks.append([read,field('LevelClusterResult','clusters')])\n            else:\n                base = ast.unparse(n.value)\n                assert base in {'inputs','contributions','ordered','values','available_flows','spot_by_time','perp_by_time',\n                                'value','component_scores','normalized_weights','by_index','scaled','arrays','tiers','closes'},(i,read)\n                checks.append([read,'owner-built collection/typed serialization; source assignment audited'])\n    # Indirect key reads used by callbacks and typed container unwrappers.\n    if i in (77,78):\n        for name in ('center_price','confluence_score','cluster_id'):\n            checks.append(['record helper key '+name,field('LevelCluster',name)])\n    if i in (76,168):\n        checks.append(['clusters container key',field('LevelClusterResult','clusters')])\n    if i==123:\n        checks.append(['levels container key',field('VolumeProfileResult','levels')])\n    if i==128:\n        checks.append(['timeframe score map',field('PriceLevelParameters','level_strength_timeframe_scores')])\n    if i==158:\n        for name in ('min_entry_conviction','max_entry_conviction','risk_fraction_nav'):\n            checks.append(['contains helper read '+name,field('RiskBudgetBand',name)])\n    # Expressions without object fields consume only literal/scalar iterators,\n    # owner component maps, or passed typed objects in discovered callees.\n    evidence.append({'path':a['path'],'expression':a['expression'],'checks':checks,\n                     'basis':'all reads accounted; enclosing source and transitive helper reviewed'})\n\nassert len(evidence) == 228\nPath('/tmp/rbt002-r2-review/a3-results.json').write_text(json.dumps(evidence,indent=2))\nprint('A3 PASS: all 228 scopes audited;',sum(len(e['checks']) for e in evidence),'read-origin checks; no unenumerated external field')\n",
+    "coverage_run.py": "import ast\nimport dataclasses\nimport importlib\nimport inspect\nimport json\nimport sys\nfrom pathlib import Path\nimport coverage\nimport pytest\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nOUT = Path('/tmp/rbt002-r2-review')\nsys.path.insert(0,str(ROOT))\nfrom btc_predictor.research_backtest import input_census as ic\nc = ic.discover_decision_path()\nfiles = sorted({r.source.rsplit(':',1)[0] for r in [*c.callables.values(),*c.types.values()]})\nrun = sys.argv[1]\ncov = coverage.Coverage(branch=True,data_file=str(OUT/('.coverage-'+run)),source=[str(ROOT/'btc_predictor')])\nframes = set()\nroot_paths = set(c.root_paths)\nentered = set()\nexecuted = set()\nconstructed = set()\ndef profile(frame,event,arg):\n    if event == 'call':\n        path = str(frame.f_globals.get('__name__'))+'.'+frame.f_code.co_qualname\n        if path in root_paths:\n            entered.add(path)\n            frames.add(id(frame))\n        if frames:\n            code = frame.f_code\n            if code.co_name == '__init__':\n                instance = frame.f_locals.get('self')\n                if instance is not None and dataclasses.is_dataclass(instance) and type(instance).__module__.startswith('btc_predictor'):\n                    constructed.add(type(instance).__module__+'.'+type(instance).__qualname__)\n            if code.co_filename.startswith(str(ROOT/'btc_predictor')) and not code.co_filename.startswith(str(ROOT/'btc_predictor/tests')) and str(frame.f_globals.get('__name__')).startswith('btc_predictor'):\n                executed.add((frame.f_globals['__name__'],code))\n    elif event == 'return':\n        frames.discard(id(frame))\ncov.start()\nsys.setprofile(profile)\nif run == 'fixtures':\n    count = 0\n    for file in sorted((ROOT/'btc_predictor/tests').glob('test_research_backtest_census_trace_g*.py')):\n        module = importlib.import_module('btc_predictor.tests.'+file.stem)\n        for root,thunks in module.FIXTURES.items():\n            for thunk in thunks:\n                thunk()\n                count += 1\n    result = 0\n    assert count == 202\nelse:\n    evidence = json.loads((ROOT/'backtest_evidence/research_backtest_v1/rbt002_rereview_evidence_v1.json').read_bytes())\n    result = pytest.main(['-q','-W','error::RuntimeWarning',*evidence['owner_test_files']])\nsys.setprofile(None)\ncov.stop()\ncov.save()\ntarget = OUT/('coverage-'+run+'.json')\ncov.json_report(outfile=str(target),include=[str(ROOT/f) for f in files])\nraw = json.loads(target.read_bytes())\ntotals = [0,0,0,0]\nfor filename,data in raw['files'].items():\n    filepath = Path(filename)\n    relative = filepath.relative_to(ROOT) if filepath.is_absolute() else filepath\n    module_name = str(relative.with_suffix('')).replace('/','.')\n    spans = []\n    def walk(node,qual=''):\n        if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef)):\n            qual = qual+'.'+node.name if qual else node.name\n        if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)) and module_name+'.'+qual in c.callables:\n            spans.append((node.lineno,node.end_lineno))\n        for child in ast.iter_child_nodes(node):\n            walk(child,qual)\n    walk(ast.parse((ROOT/relative).read_text()))\n    def reached(line):\n        return any(a<=line<=b for a,b in spans)\n    all_lines = set(data['executed_lines']) | set(data['missing_lines'])\n    lines = {l for l in all_lines if reached(l)}\n    arcs = [a for a in data['executed_branches']+data['missing_branches'] if reached(a[0])]\n    absent = [a for a in data['missing_branches'] if reached(a[0])]\n    totals = [a+b for a,b in zip(totals,[len(lines&set(data['executed_lines'])),len(lines),len(arcs)-len(absent),len(arcs)])]\ntrace = ic.TracedCalls(frozenset(m+'.'+code.co_qualname for m,code in executed),frozenset(constructed),frozenset(ic.TracedCode.from_code(m,code) for m,code in executed))\nmissing = ic.uncovered_traced(c,trace)\nassert not any(missing.values()), missing\nassert len(entered) == 74\nexpected = [4993,7565,2235,3728] if run == 'fixtures' else [5855,7565,2934,3728]\nassert totals == expected, (totals,expected)\nout = {'run':run,'totals':totals,'roots':len(entered),'functions':len(executed),'dataclasses':len(constructed),'uncovered':missing,'pytest_exit':int(result)}\n(OUT/('coverage-result-'+run+'.json')).write_text(json.dumps(out,indent=2))\nprint(json.dumps(out))\nraise SystemExit(int(result))\n",
+    "database.py": "import json\nimport re\nimport sys\nfrom datetime import datetime\nfrom pathlib import Path\nfrom sqlalchemy import create_engine, event, text\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nsys.path.insert(0,str(ROOT))\nfrom btc_predictor.research.btc019_empirical import _database_url_from_environment\nfrom btc_predictor.research_backtest import coverage as cov\n\ndef main():\n    stored = json.loads((ROOT/cov.ARTIFACT_DIRECTORY/cov.INVENTORY_FILENAME).read_bytes())['database_coverage']\n    engine = create_engine(_database_url_from_environment()).execution_options(postgresql_readonly=True)\n    statements = []\n    @event.listens_for(engine, 'before_cursor_execute')\n    def guard(conn,cursor,statement,parameters,context,executemany):\n        cov.require_select_only(statement)\n        statements.append(statement)\n    @event.listens_for(engine, 'engine_connect')\n    def readonly(conn):\n        # These precede every research query on each connection.\n        assert conn.execute(text(\"SELECT current_setting('default_transaction_read_only')\")).scalar_one() == 'on'\n        assert conn.execute(text(\"SELECT current_setting('transaction_read_only')\")).scalar_one() == 'on'\n    evidence = {}\n    with engine.connect() as c:\n        def q(sql,params=None):\n            return [list(r) for r in c.execute(text(sql),params or {})]\n        evidence['venues'] = q('''SELECT exchange,COUNT(*),COUNT(DISTINCT timestamp),MIN(timestamp),MAX(timestamp)\n          FROM raw.btc_ohlcv WHERE timeframe='1h' AND timestamp >= '2020-01-01' AND timestamp < '2026-01-01'\n          GROUP BY exchange ORDER BY exchange''')\n        for venue,expected in [('bitstamp',52608),('coinbase',52597),('bitfinex',52592)]:\n            record = next(r for r in evidence['venues'] if r[0] == venue)\n            assert record[1] == record[2] == expected\n            evidence[venue+'_missing_runs'] = q('''WITH missing AS (\n              SELECT hour FROM generate_series(TIMESTAMPTZ '2020-01-01',TIMESTAMPTZ '2025-12-31 23:00', INTERVAL '1 hour') hour\n              WHERE NOT EXISTS (SELECT 1 FROM raw.btc_ohlcv b WHERE b.exchange=:venue AND b.timeframe='1h' AND b.timestamp=hour)),\n              grouped AS (SELECT hour,hour-ROW_NUMBER() OVER (ORDER BY hour)*INTERVAL '1 hour' grp FROM missing)\n              SELECT MIN(hour),MAX(hour),COUNT(*) FROM grouped GROUP BY grp ORDER BY MIN(hour)''',{'venue':venue})\n        assert sum(r[2] for r in evidence['coinbase_missing_runs']) == 11\n        assert sum(r[2] for r in evidence['bitfinex_missing_runs']) == 16\n        evidence['pre2020'] = q('''SELECT exchange,COUNT(*),MIN(timestamp),MAX(timestamp) FROM raw.btc_ohlcv\n          WHERE timestamp < '2020-01-01' GROUP BY exchange ORDER BY exchange''')\n        assert len(evidence['pre2020']) == 3 and all(r[1] == 744 for r in evidence['pre2020'])\n        tables = q(\"SELECT table_name FROM information_schema.tables WHERE table_schema='raw' ORDER BY table_name\")\n        evidence['raw_counts'] = {r[0]:q('SELECT COUNT(*) FROM raw.\"'+r[0]+'\"')[0][0] for r in tables}\n        assert all(v == 0 for k,v in evidence['raw_counts'].items() if k != 'btc_ohlcv')\n        columns = q(\"SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='raw' AND data_type IN ('timestamp with time zone','timestamp without time zone','date') ORDER BY table_name,ordinal_position\")\n        evidence['raw_observation_windows'] = []\n        for table,column in columns:\n            if column not in ('timestamp','observation_time','observation_date'):\n                continue\n            assert re.fullmatch('[a-z_]+',table) and re.fullmatch('[a-z_]+',column)\n            counts = q(f'''SELECT COUNT(*) FILTER (WHERE \"{column}\">='2026-01-01' AND \"{column}\"<'2027-01-01'),\n              COUNT(*) FILTER (WHERE \"{column}\">='2027-01-01'),MIN(\"{column}\"),MAX(\"{column}\") FROM raw.\"{table}\"''')[0]\n            assert counts[:2] == [0,0]\n            evidence['raw_observation_windows'].append([table,column,*counts])\n        evidence['composite_availability'] = q('''SELECT COUNT(*),MIN(observation_time),MAX(observation_time),MIN(available_at),MAX(available_at)\n          FROM derived.btc_reference_composite WHERE available_at>='2026-01-01' ''')\n        assert evidence['composite_availability'][0][0] == 3\n    # Execute the collect CLI, with the guard and required first queries above.\n    cov.open_research_engine = lambda: engine\n    out = Path('/tmp/rbt002-r2-review/collect')\n    cov.main(['collect','--collected-at',stored['collected_at'],'--output-dir',str(out)])\n    live = json.loads((out/cov.INVENTORY_FILENAME).read_bytes())\n    assert live['database_coverage'] == stored\n    evidence['snapshot_equal'] = True\n    evidence['guarded_select_statements'] = len(statements)\n    Path('/tmp/rbt002-r2-review/database-results.json').write_text(json.dumps(evidence,default=str,indent=2))\n    Path('/tmp/rbt002-r2-review/database-statements.json').write_text(json.dumps(statements,indent=2))\n    print(json.dumps(evidence,default=str,indent=2))\n    engine.dispose()\n\nif __name__ == '__main__':\n    try:\n        main()\n    except Exception as error:\n        # Never dump connection values or connection exception text.\n        print('DATABASE CHECK FAILED: '+type(error).__name__)\n        raise SystemExit(1)\n",
+    "determinism_scope.py": "import hashlib\nimport json\nimport os\nimport subprocess\nimport sys\nfrom pathlib import Path\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nOUT = Path('/tmp/rbt002-r2-review')\nsys.path.insert(0,str(ROOT))\nfrom btc_predictor.research_backtest import coverage as cov\nfrom btc_predictor.research import etf_calendar_isolated_scientific_worker_r5 as r5\nfrom etf_calendar_worker import protocol_r1 as protocol\nfrom btc_predictor.research.reference_composite_v5 import v5_protocol_definition\n\nfor seed in ('0','1','8675309'):\n    env = dict(os.environ,PYTHONHASHSEED=seed,PYTHONPATH=str(ROOT))\n    target = OUT/('seed-'+seed)\n    subprocess.run([str(ROOT/'.venv312/bin/python'),'-m','btc_predictor.research_backtest.coverage','rebuild',\n                    '--artifact',str(ROOT/cov.ARTIFACT_DIRECTORY/cov.INVENTORY_FILENAME),'--output-dir',str(target)],\n                   cwd=OUT,env=env,check=True,stdout=subprocess.DEVNULL)\n    for name in (cov.INVENTORY_FILENAME,cov.INVENTORY_DIGEST_FILENAME,cov.INVENTORY_REPORT_FILENAME):\n        assert (target/name).read_bytes() == (ROOT/cov.ARTIFACT_DIRECTORY/name).read_bytes(),(seed,name)\nraw = (ROOT/cov.ARTIFACT_DIRECTORY/cov.INVENTORY_FILENAME).read_bytes()\nassert hashlib.sha256(raw).hexdigest() == '108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a'\nmanifest = r5.frozen_candidate_source_manifest()\nassert protocol.manifest_digest(manifest) == '7ffbf15792d33e0cd387eb995d8d733c1fa1b98b2859153957c670f796a44e8e'\nchanges = subprocess.check_output(['git','diff','--name-only','634d122..HEAD'],cwd=ROOT,text=True).splitlines()\nassert not any(p.startswith(('data/','research_artifacts/')) for p in changes)\nbound = {entry.path for entry in manifest}\nassert len(bound) == 120\nassert not set(changes) & bound\nassert all(hashlib.sha256((ROOT/e.path).read_bytes()).hexdigest()==e.sha256 for e in manifest)\nassert v5_protocol_definition(ROOT)['definition_sha256'] == '95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89'\nprint('E PASS: all 3 artifacts identical, seeds 0/1/8675309, fresh processes, alternate cwd')\nprint('F PASS: no bound source/data/research_artifacts diff; V5 hash unchanged')\n",
+    "discovery.py": "import ast\nimport collections\nimport inspect\nimport json\nimport platform\nimport re\nimport subprocess\nimport sys\nimport types\nfrom pathlib import Path\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nsys.path.insert(0, str(ROOT))\nfrom btc_predictor.research_backtest import input_census as ic, coverage as cov\n\ndef resolve(path):\n    parts = path.split('.')\n    cut = max(i for i in range(1, len(parts)+1) if '.'.join(parts[:i]) in sys.modules)\n    obj = sys.modules['.'.join(parts[:cut])]\n    for part in parts[cut:]:\n        obj = inspect.getattr_static(obj, part)\n        if isinstance(obj, (classmethod, staticmethod)):\n            obj = obj.__func__\n        elif isinstance(obj, property):\n            obj = obj.fget\n    return obj\n\ndef descendants(code):\n    for child in code.co_consts:\n        if type(child) is types.CodeType:\n            yield child\n            yield from descendants(child)\n\ndef key(module, code):\n    positions = [(a,b,c,d) for a,b,c,d in code.co_positions()\n                 if None not in (a,b,c,d) and (a,c) != (b,d)]\n    columns = [c for a,b,c,d in positions if a == code.co_firstlineno]\n    source = str(Path(code.co_filename).relative_to(ROOT)) + ':' + str(code.co_firstlineno)\n    return module, code.co_qualname, source, min(columns, default=-1)\n\ncensus = ic.discover_decision_path()\nrows = cov.enumerate_input_surface(census)\nnamed = {p:r for p,r in census.callables.items() if p not in census.nested}\nindependent = {}\ntrees = {}\nfor p in named:\n    f = resolve(p)\n    for code in descendants(f.__code__):\n        k = key(f.__module__, code)\n        assert k not in independent\n        independent[k] = code\nassert len(named) == 882\nassert len(independent) == 230\nassert set(independent) == {r.code_key for r in census.nested.values()}\nassert collections.Counter(c.co_name for c in independent.values()) == {'held':1, 'unallocated':1, '<lambda>':40, '<genexpr>':188}\nassert platform.python_version() == '3.12.14'\nprobe = compile('def f(xs):\\n return [x for x in xs], {x for x in xs}, {x:x for x in xs}, (x for x in xs)\\n', '<pep709>', 'exec')\nobjects = list(descendants(probe))\nassert [c.co_name for c in objects] == ['f', '<genexpr>']\n\naudit = []\nfor p,r in census.nested.items():\n    if r.role not in (ic.ROLE_LAMBDA, ic.ROLE_GENERATOR_EXPRESSION):\n        continue\n    code = independent[r.code_key]\n    filename = code.co_filename\n    if filename not in trees:\n        trees[filename] = ast.parse(Path(filename).read_text())\n    kind = ast.Lambda if code.co_name == '<lambda>' else ast.GeneratorExp\n    nodes = [n for n in ast.walk(trees[filename]) if isinstance(n,kind) and n.lineno == code.co_firstlineno]\n    spans = [(a,b,c,d) for a,b,c,d in code.co_positions() if None not in (a,b,c,d) and (a,c)!=(b,d)]\n    nodes = [n for n in nodes if all((n.lineno,n.col_offset)<=(a,c) and (b,d)<=(n.end_lineno,n.end_col_offset) for a,b,c,d in spans)]\n    assert len(nodes) == 1, p\n    node = nodes[0]\n    parent_fn = resolve(r.enclosing)\n    reads = sorted(set(ast.unparse(n) for n in ast.walk(node)\n                       if isinstance(n,(ast.Attribute,ast.Subscript)) and isinstance(n.ctx,ast.Load)))\n    calls = sorted(set(ast.unparse(n) for n in ast.walk(node) if isinstance(n,ast.Call)))\n    audit.append({'path':p,'source':r.source,'expression':ast.unparse(node),\n                  'iterables':[a.expression for s in r.call_sites for a in s.arguments],\n                  'reads':reads,'calls':calls,'signature':str(inspect.signature(parent_fn)),\n                  'owner_source':inspect.getsource(parent_fn)})\nPath('/tmp/rbt002-r2-review/a3-reads.json').write_text(json.dumps(audit,indent=2))\nPath('/tmp/rbt002-r2-review/a3-reads.txt').write_text('\\n'.join(\n    f\"{i}: {a['path']}\\n  {a['expression']}\\n  over {a['iterables']}\\n  reads {a['reads']}\\n\" for i,a in enumerate(audit)))\n\ninventory_path = ROOT / cov.ARTIFACT_DIRECTORY / cov.INVENTORY_FILENAME\ncurrent_bytes = inventory_path.read_bytes()\ncurrent = json.loads(current_bytes)\nold_bytes = subprocess.check_output(['git','show', '634d122:'+str(inventory_path.relative_to(ROOT))],cwd=ROOT)\nold = json.loads(old_bytes)\nold_rows = {(r['surface'],r['owner'],r['name']):r for r in old['input_surface']['rows']}\nnew_rows = {(r['surface'],r['owner'],r['name']):r for r in current['input_surface']['rows']}\nassert len(old_rows) == 3288 and len(new_rows) == 3520\nassert all(json.dumps(v,sort_keys=True,separators=(',',':')) == json.dumps(new_rows[k],sort_keys=True,separators=(',',':')) for k,v in old_rows.items())\ndef raw_rows(raw):\n    text = raw.decode()\n    surface = re.search(r'\"input_surface\"\\s*:\\s*\\{', text)\n    start = surface.end() + re.search(r'\"rows\"\\s*:\\s*\\[', text[surface.end():]).end()\n    decoder = json.JSONDecoder()\n    result = {}\n    while True:\n        while text[start].isspace() or text[start] == ',':\n            start += 1\n        if text[start] == ']':\n            return result\n        row, end = decoder.raw_decode(text, start)\n        result[(row['surface'], row['owner'], row['name'])] = text[start:end].encode()\n        start = end\nold_raw_rows, current_raw_rows = raw_rows(old_bytes), raw_rows(current_bytes)\nassert all(raw == current_raw_rows[key] for key, raw in old_raw_rows.items())\nadded = [r for k,r in new_rows.items() if k not in old_rows]\nassert len(added) == 232 and {r['census_category'] for r in added} == {'NESTED_OWNER_INTERNAL_PARAMETER'}\nprint('A1 PASS:',len(named),'named;',collections.Counter(c.co_name for c in independent.values()),'; PEP709 PASS')\nprint('B PASS: 3288 old rows identical; 232 nested rows; total 3520')\nprint('A3 expressions for independent source audit:',len(audit))\nprint('snapshot instant:',current['database_coverage']['collected_at'])\nprint('inventory digest:',cov.inventory_digest(current))\n",
+    "final_scope.py": "import hashlib\nimport json\nimport subprocess\nimport sys\nfrom pathlib import Path\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nsys.path.insert(0, str(ROOT))\nfrom btc_predictor.research import etf_calendar_isolated_scientific_worker_r5 as r5\nfrom btc_predictor.research.reference_composite_v5 import v5_protocol_definition\nfrom etf_calendar_worker import protocol_r1 as protocol\n\ndef git(*args):\n    return subprocess.check_output(['git', *args], cwd=ROOT, text=True).splitlines()\n\nassert git('rev-parse', 'HEAD') == ['ce5cd70afeacd032edc7347783591cde87598901']\nassert git('branch', '--show-current') == ['claude/etf-worker-prospective-integration-dixlte']\nexpected = {'docs/CURRENT_STATE.md', 'docs/execution/research_backtest_track_v1.md',\n            'backtest_evidence/research_backtest_v1/rbt002_r2_rereview_evidence_v1.json'}\nwork = set(git('diff', '--name-only', 'HEAD')) | set(git('ls-files', '--others', '--exclude-standard'))\nassert work == expected, work\nchanged = set(git('diff', '--name-only', '634d122..HEAD')) | work\nassert not any(p.startswith(('data/', 'research_artifacts/')) for p in changed)\nmanifest = r5.frozen_candidate_source_manifest()\nassert len(manifest) == 120\nassert protocol.manifest_digest(manifest) == '7ffbf15792d33e0cd387eb995d8d733c1fa1b98b2859153957c670f796a44e8e'\nassert not changed & {e.path for e in manifest}\nassert all(hashlib.sha256((ROOT/e.path).read_bytes()).hexdigest() == e.sha256 for e in manifest)\nassert v5_protocol_definition(ROOT)['definition_sha256'] == '95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89'\nraw = (ROOT/'backtest_evidence/research_backtest_v1/rbt002_input_coverage_inventory_v1.json').read_bytes()\nassert hashlib.sha256(raw).hexdigest() == '108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a'\ninventory = json.loads(raw)\nevidence = json.loads((ROOT/'backtest_evidence/research_backtest_v1/rbt002_r2_rereview_evidence_v1.json').read_bytes())\nundefined = sorted(k for k,v in inventory['input_surface']['summary']['ownerless_inputs'].items() if v['kind']=='OWNERLESS_UNDEFINED')\nassert evidence['RBT002A_undefined_ids'] == undefined and len(undefined) == 25\nassert evidence['live_database']['snapshot_equal']\nassert set(evidence['closure_criteria'].values()) == {'PASS'}\nassert '7158 passed' in evidence['validation']['full-suite-same-device.log']\nassert '1 failed' in evidence['validation']['base-first-failure.log']\nroadmap = (ROOT/'docs/execution/research_backtest_track_v1.md').read_text()\nstate = (ROOT/'docs/CURRENT_STATE.md').read_text()\nfor ticket,status in [('RBT-002','DONE'),('RBT-002A','READY'),('RBT-001A','READY')]:\n    block = roadmap.split('## '+ticket+' \u2014',1)[1]\n    assert block.split('**Status:**',1)[1].lstrip().startswith('`'+status), (ticket,status)\nassert roadmap.count('### RBT-002 R2 re-review outcome') == 1\nassert '**OPEN owner questions for RBT-002A**' in state\nassert 'How should the completion spec handle the \u00a79.2' in state\nassert 'How should the spec record handling of E1' in state\nassert all(x not in roadmap for x in ('FULL_RESULT','PROOF_PAD5','PROOF_R5','BASE_FAILURES'))\nprint('Final PASS: exactly three review-record files; frozen bytes, V5 and inventory unchanged; statuses and 25 IDs consistent; no commit')\n",
+    "mutations.py": "import ast\nimport dataclasses\nimport inspect\nimport linecache\nimport sys\nimport types\nfrom pathlib import Path\nfrom unittest.mock import patch\n\nROOT = Path('/home/wlodzimierrr/bitcoin_swing')\nsys.path.insert(0,str(ROOT))\nfrom btc_predictor.research_backtest import input_census as ic, input_census_registry as reg, coverage as cov\nfrom btc_predictor.risk import trailing\n\nCASES = {\n 'computed': 'def root(value):\\n def local(item):\\n  return item\\n return local(value+2)\\n',\n 'escape': 'def root(value):\\n def local(item):\\n  return item\\n return local\\n',\n 'decorator': 'import functools\\ndef root(value):\\n @functools.cache\\n def local(item):\\n  return item\\n return local(1)\\n',\n 'rebinding': 'def root(value):\\n def local(item):\\n  return item\\n local = value\\n return local(1)\\n',\n 'nonbuiltin': 'def consumer(items,key):\\n return sorted(items,key=key)\\ndef root(value):\\n return consumer(value,key=lambda item: item)\\n',\n 'nested_class': 'def root(value):\\n class Local:\\n  def method(self,item):\\n   return item\\n return Local().method(value)\\n',\n 'deep_escape': 'def root(value):\\n def outer():\\n  def inner(item):\\n   return item\\n  return inner\\n return outer()\\n',\n}\n\ndef load(source,name):\n    filename = str(ROOT/'btc_predictor'/('r2_review_memory_'+name+'.py'))\n    module_name = 'btc_predictor.r2_review_memory_'+name\n    mod = types.ModuleType(module_name)\n    mod.__file__ = filename\n    linecache.cache[filename] = (len(source),None,source.splitlines(True),filename)\n    sys.modules[module_name] = mod\n    exec(compile(source,filename,'exec'),mod.__dict__)\n    return mod\n\nfor name,source in CASES.items():\n    module = load(source,name)\n    root = ic.DecisionPathRoot(module.__name__,'root',ic.AREA_LIFECYCLE,'Independent R2 mutation')\n    c = ic.discover_decision_path((root,))\n    externals = [r for r in c.nested.values() if r.classification == ic.NESTED_EXTERNAL]\n    assert externals, name\n    if name in ('nested_class','deep_escape'):\n        assert any(r.qualname.endswith('Local.method' if name=='nested_class' else 'outer.<locals>.inner') for r in externals)\n    # The hypothetical pinned callable/basis must still require classifications\n    # for external parameters. No real registry is changed or regenerated.\n    with patch.object(cov,'INPUT_TYPE_FIELD_CLASSIFICATIONS',{}), \\\n         patch.object(cov,'ROOT_PARAMETER_CLASSIFICATIONS',{root.path:{'value':cov._config('synthetic')}}), \\\n         patch.object(reg,'DISCOVERED_TYPES',{}), \\\n         patch.object(reg,'DISCOVERED_CALLABLES',{p:r.parameter_names for p,r in c.callables.items() if p!=root.path}), \\\n         patch.object(reg,'DISCOVERED_NESTED_CALLABLES',{p:(r.classification,r.basis) for p,r in c.nested.items()}), \\\n         patch.object(cov,'EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS',{}):\n        try:\n            cov.enumerate_input_surface(c)\n        except cov.InputSurfaceError as error:\n            assert error.code == 'UNCLASSIFIED_PARAMETER', (name,error.code)\n        else:\n            raise AssertionError(name+' accepted missing external classification')\n    print('A2',name,'PASS:',[(r.qualname,r.basis) for r in externals])\n\nbefore = ic.discover_decision_path()\nfilename = inspect.getfile(trailing)\ntree = ast.parse(Path(filename).read_text())\nowner = next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='calculate_trailing_stop')\nhelper = next(n for n in owner.body if isinstance(n,ast.FunctionDef) and n.name=='held')\nhelper.args.kwonlyargs.append(ast.arg(arg='independent_new_input'))\nhelper.args.kw_defaults.append(ast.Constant(True))\nresult = next(n for n in ast.walk(helper) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id=='_result')\nkw = next(k for k in result.keywords if k.arg=='complete')\nkw.value = ast.IfExp(ast.Name('independent_new_input',ast.Load()),kw.value,ast.Constant(False))\nast.fix_missing_locations(tree)\nns = dict(trailing.__dict__)\nexec(compile(tree,filename,'exec'),ns)\noriginal_code = trailing.calculate_trailing_stop.__code__\ntrailing.calculate_trailing_stop.__code__ = ns['calculate_trailing_stop'].__code__\ntry:\n    current = ic.discover_decision_path()\n    result,trace = ic.trace_owner_calls(lambda:trailing.calculate_trailing_stop(direction='long',previous_stop=90,structure_price=None,buffer=None))\n    path = 'btc_predictor.risk.trailing.calculate_trailing_stop.<locals>.held'\n    assert path in trace.functions\n    assert any('independent_new_input' in e for e in ic.uncovered_traced(before,trace)['functions'])\n    assert not any(ic.uncovered_traced(current,trace).values())\n    try:\n        cov.enumerate_input_surface(current)\n    except cov.InputSurfaceError as error:\n        assert error.code == 'UNCLASSIFIED_PARAMETER' and 'independent_new_input' in str(error)\n    else:\n        raise AssertionError('held input accepted')\nfinally:\n    trailing.calculate_trailing_stop.__code__ = original_code\nprint('A4 independent whole-module held mutation PASS; executed, traced, refused')\n\nmodule = load('def hidden(item):\\n return item+1\\ndef root(callback):\\n def allowed(item):\\n  return callback(item)\\n return allowed(1)\\n','allowed_callee')\nroot = ic.DecisionPathRoot(module.__name__,'root',ic.AREA_LIFECYCLE,'independent callee check')\nc = ic.discover_decision_path((root,))\nallowed = next(r for r in c.nested.values() if r.qualname.endswith('allowed'))\nassert allowed.classification == ic.NESTED_OWNER_INTERNAL\n_,trace = ic.trace_owner_calls(lambda:module.root(module.hidden))\nmissing = ic.uncovered_traced(c,trace)['functions']\nassert any(module.__name__+'.hidden' in e for e in missing)\nwithout = dataclasses.replace(c,callables={p:r for p,r in c.callables.items() if p!=allowed.path},nested={})\nassert any(allowed.path in e for e in ic.uncovered_traced(without,trace)['functions'])\nprint('A4 allowed frame callee and removed nested record are independently reported PASS')\n"
+  },
+  "v5_protocol_definition": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89",
+  "validation": {
+    "base-first-failure.log": "1 failed in 1.09s",
+    "final_scope": "PASS: exact three-file review scope; frozen bytes, V5, inventory, ticket status and 25-ID list verified after full suite",
+    "focused.log": "318 passed, 1 xfailed in 63.28s (0:01:03)",
+    "full-suite-same-device.log": "1 failed, 7158 passed, 3 skipped, 1 xfailed in 2992.82s (0:49:52)",
+    "git_diff_check": "PASS",
+    "owner-modules.log": "320 passed in 0.75s",
+    "pad5-subset.log": "5 passed, 112 deselected in 40.62s",
+    "r5-subset.log": "2 passed, 199 deselected in 26.59s",
+    "regressions.log": "1343 passed, 2 skipped in 129.48s (0:02:09)",
+    "worker-failure-base.log": "1 passed in 34.49s",
+    "worker-failure-head.log": "1 failed in 33.22s"
+  }
+}
