@@ -1,19 +1,32 @@
-> [!NOTE]
-> **SUPERSEDED 2026-10-02 by
-> [`RESEARCH_BACKTEST_POLICY_V5`](research_backtest_policy_v5.md), before any EPIC Y
-> run.** V5 re-scopes the §5A census to the external input surface, adds the
-> runtime completeness guard and sets RBT-002's bounded closure standard. V4 is
-> retained unchanged below as provenance.
+# Research Backtest Policy V5
 
-# Research Backtest Policy V4
+Policy identifier: `RESEARCH_BACKTEST_POLICY_V5`
 
-Policy identifier: `RESEARCH_BACKTEST_POLICY_V4`
-
-Status: **ADOPTED 2026-10-01 — documentation-only owner decision.
-Supersedes [`RESEARCH_BACKTEST_POLICY_V3`](research_backtest_policy_v3.md)
-before any EPIC Y run.** (V2 and V1 were superseded the same way.)
+Status: **ADOPTED 2026-10-02 — documentation-only owner decision.
+Supersedes [`RESEARCH_BACKTEST_POLICY_V4`](research_backtest_policy_v4.md)
+before any EPIC Y run.** (V3, V2 and V1 were superseded the same way.)
 
 ## Changes from earlier versions
+
+**V4 → V5 (owner decision on how RBT-002 closes).** RBT-002 failed review twice
+on the same ground: its census could not prove it had found every parameter of
+every callable it reached. The latest miss was a nested result-builder inside
+the trailing-stop owner. Every call to it supplies a fixed reason string and
+values the owner computed itself, so no caller can supply its parameters.
+
+The reviews also established that static analysis of Python code cannot prove
+universal completeness. It cannot see enclosing-local callbacks, unnamed
+Protocol implementations or `getattr` dispatch, and code that never runs gives
+no evidence at all. A missed input also cannot silently corrupt a run:
+- a missed *undefined* input reaches its owner as `None`, so the owner
+  returns an incomplete result and the decision is unevaluable;
+- a missed *defaulted* input runs the owner's own defined default.
+
+V5 therefore re-scopes §5A:
+- the census covers the **external input surface**, with its limits stated;
+- a **runtime completeness guard** in RBT-004, RBT-005 and RBT-006 backs it at
+  the point that matters;
+- RBT-002 closes on a **bounded standard** (§5A.5–§5A.7).
 
 **V3 → V4 (owner decisions on the RBT-002 blocker list).** RBT-002's
 mechanical enumeration (inventory `b7b9a20b…be3bf0`) found two kinds of gap:
@@ -98,7 +111,7 @@ Every EPIC Y artifact carries:
 ```text
 evidence_class       = RESEARCH_BACKTEST_NON_CERTIFYING
 canonical_reference  = UNRESOLVED
-policy               = RESEARCH_BACKTEST_POLICY_V4
+policy               = RESEARCH_BACKTEST_POLICY_V5
 ```
 
 EPIC Y output may **never** be used to:
@@ -280,15 +293,25 @@ incomplete result, that result propagates as the owner defines it.
 The policy may never again learn of a required input piecemeal. Before any
 collection:
 
-1. **Mechanical enumeration.** RBT-002 enumerates, from owner code and not
-   from this document, every input consumed on the champion's decision path:
-   - every field of every Entry Conviction component's input type;
-   - the core regime score and the §24 hard flags;
-   - the hard vetoes and data-quality checks;
-   - the risk, sizing and stop owners;
-   - the lifecycle, add, trim and exit owners.
-   The enumeration is a test-backed artifact that fails if an owner input type
-   gains a field it does not classify.
+1. **Mechanical enumeration of the external input surface.** RBT-002
+   enumerates, from owner code and not from this document, everything a
+   caller of the champion's decision path must or can supply:
+   - every parameter of each declared census root (the owner entry points a
+     composer calls);
+   - every field of every input-bearing type reachable from those parameters,
+     followed transitively through fields;
+   - every configuration value the reached owners read;
+   - every defaulted parameter of a reached public callable, classified as a
+     fixed owner default.
+
+   Nested, local and private helpers must still be **discovered**. Each is
+   classified `OWNER_INTERNAL` when every call site inside the owner supplies
+   only owner-computed values or literals. Otherwise it is classified as part
+   of the external surface. Nothing may be exempted from discovery.
+
+   The enumeration is a test-backed artifact that fails if a root's parameters,
+   a reachable input type's fields or a reached helper's signature change
+   without being classified.
 2. **Mapping.** Each input is mapped to a §4 shape, a §5 family, a historical
    source (an existing raw table and collector, or a named provider adapter)
    and coverage over every date on which it is evaluated.
@@ -303,6 +326,41 @@ collection:
    options are to acquire the data (including a paid source), or to define an
    explicitly versioned research strategy variant. The second is a
    strategy-semantics change under AGENTS.md and is never made silently.
+5. **Stated limits, not a universal proof.** The census claims completeness
+   for static discovery plus the runtime trace over the paths actually
+   exercised. It must list its known limits:
+   - enclosing-local callbacks;
+   - unnamed Protocol implementations;
+   - dynamic `getattr` dispatch;
+   - unexecuted branches, with their measured line and branch coverage.
+   No tracer exemption may hide an omission. An exempted frame's callees are
+   still checked against the static set.
+6. **Runtime completeness guard (binding on RBT-004, RBT-005 and RBT-006).**
+   - Every owner function a composer calls directly must be a census root.
+     This is checked statically and at runtime, with a regression in which a
+     newly added direct call fails.
+   - In every composed replay, any owner result that is incomplete or carries
+     a missing-input reason code must map to a cause accounted for in the
+     reviewed inventory or in `CHAMPION_COMPLETION_SPEC_V1`. Examples are
+     ETF warm-up (`STRUCTURALLY_UNEVALUABLE`), a named limitation, or a
+     discretionary input that is not asserted. The replays are the
+     RBT-004/RBT-005 fixtures and RBT-006's completeness-only real-data pass.
+   - An unaccounted incomplete result **fails the test** in RBT-004/RBT-005,
+     and **blocks the freeze** in RBT-006.
+   - When the guard finds a missing external input, it is added to the
+     inventory and the spec through a recorded update, never by improvising a
+     value.
+   - The guard computes no outcome beyond what each ticket already allows.
+7. **Bounded closure of RBT-002.** RBT-002 closes when an independent
+   re-review confirms all of the following:
+   - the two R1 method defects are fixed, with regressions: nested callables
+     are discovered and classified, and no tracer exemption masks an
+     omission;
+   - the external input surface is correctly classified;
+   - the §5A.5 limits are stated, with measured coverage;
+   - the live database facts are reproduced read-only.
+   Further gaps in the census *method* that do not reveal a missing external
+   input are recorded as limitations, not blockers.
 
 ## 6. Champion identity and the no-tuning rule
 
@@ -446,6 +504,6 @@ windows) and is reproducible byte-for-byte from them.
 
 ## 11. Change control
 
-Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V5`)
+Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V6`)
 recorded before the affected run. The holdout rule in §3 cannot be relaxed for
 any strategy version that has already been evaluated on the evaluation window.

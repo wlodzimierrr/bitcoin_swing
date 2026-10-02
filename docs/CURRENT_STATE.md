@@ -1312,7 +1312,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current implementation frontier:** Two post-Phase-1 workstreams now run
   in parallel. [EPIC Y](execution/research_backtest_track_v1.md), adopted
   2026-09-28 and governed since 2026-09-29 by
-  [RESEARCH_BACKTEST_POLICY_V4](policies/research_backtest_policy_v4.md), is the
+  [RESEARCH_BACKTEST_POLICY_V5](policies/research_backtest_policy_v5.md), is the
   non-certifying path to the first real-data backtest of the frozen champion.
   It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
@@ -1805,9 +1805,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** another RBT-002 R1 census
-  correction addressing named local functions/defaults and tracer ancestor
-  masking, then independent xHigh re-review. No DB configuration blocker remains.
+- **Next dependency-satisfied EPIC Y actions:** the bounded RBT-002 correction
+  R2 under policy V5 §5A.7 (owner decision 2026-10-02). It discovers and
+  classifies nested and local callables as `OWNER_INTERNAL` or external,
+  removes the tracer masking, and states the census limits with measured
+  coverage. An independent xHigh re-review on that standard follows. No DB configuration blocker remains.
   V4 data decisions and the completion-spec choice are already answered.
   RBT-002A/RBT-001A remain blocked on RBT-002 PASS; the confirmed minimum is 25
   undefined IDs plus the existing volume fallback, with no final completeness
@@ -2368,7 +2370,11 @@ BTC-019B = MIXED
 BTC_REFERENCE_COMPOSITE_V2 = FROZEN_RESEARCH_PROTOCOL
 production canonical reference = UNRESOLVED
 RESEARCH_BACKTEST_POLICY_V1 = ADOPTED 2026-09-28; SUPERSEDED before any run
-RESEARCH_BACKTEST_POLICY_V4 = ADOPTED 2026-10-01 (owner decisions on RBT-002);
+RESEARCH_BACKTEST_POLICY_V5 = ADOPTED 2026-10-02 (owner decision on how RBT-002
+closes); supersedes V4 before any run. The census covers the external input
+surface with stated limits; a runtime completeness guard binds RBT-004/005/006;
+RBT-002 closes on the bounded section 5A.7 standard
+RESEARCH_BACKTEST_POLICY_V4 = ADOPTED 2026-10-01 (owner decisions on RBT-002); SUPERSEDED before any run;
 supersedes V3 before any run (four data rules adopted verbatim; champion =
 swing_v1.2 + CHAMPION_COMPLETION_SPEC_V1, pre-registered under section 6A)
 RESEARCH_BACKTEST_POLICY_V3 = ADOPTED 2026-10-01; SUPERSEDED before any run; supersedes V2 before any run
@@ -3090,6 +3096,23 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-10-02: how RBT-002 closes.** Policy V5 records the owner's
+  decision. RBT-002 had failed twice on proving universal census completeness,
+  most recently over a nested trailing-stop result-builder whose parameters no
+  caller can supply. Complete static proof is not achievable for Python
+  (callbacks, Protocols, `getattr`, unexecuted branches). The census is
+  therefore re-scoped to the external input surface with stated limits. A
+  runtime completeness guard in RBT-004, RBT-005 and RBT-006 is the backstop:
+  - every direct owner call must be a census root;
+  - any unaccounted incomplete owner result fails the test or blocks the
+    freeze.
+  RBT-002 closes once one bounded correction (R2) passes re-review; later gaps
+  in the census method alone are limitations. Still open for RBT-002A:
+  - the §9.2 level-volume owner-compatibility gap;
+  - the frozen `futures_basis_health` constant-history defect. RBT-004 adds a
+    composer-side equality guard; an owner fix would be a cross-workstream
+    decision.
 
 - **RBT-002 review release blocker (2026-10-01): R1-RR OPEN / FAIL.** Nested
   `trailing.calculate_trailing_stop.<locals>.held` inputs are not classified;

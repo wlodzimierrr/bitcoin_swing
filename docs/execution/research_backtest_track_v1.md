@@ -6,8 +6,12 @@ and acceptance criteria. It is **not** Phase-1 execution authority: [Structured
 Tickets v2.6](bitcoin_swing_predictor_structured_tickets_v2_6.md) keeps that role
 and is not modified by this workstream. It is **not** EPIC X or BTC-019 authority.
 
-Governing policy: [`RESEARCH_BACKTEST_POLICY_V4`](../policies/research_backtest_policy_v4.md).
-It superseded V3 before any run. On the owner's RBT-002 decisions it adopts
+Governing policy: [`RESEARCH_BACKTEST_POLICY_V5`](../policies/research_backtest_policy_v5.md).
+It superseded V4 before any run, on the owner's 2026-10-02 decision. It
+re-scopes the §5A census to the external input surface with stated limits,
+adds the runtime completeness guard binding RBT-004, RBT-005 and RBT-006, and
+sets RBT-002's bounded closure standard (§5A.5–§5A.7). V4, on the owner's
+RBT-002 decisions, adopted
 four data rules verbatim (liquidation hour completeness, futures-basis
 contract, STRESS hard-veto mapping, per-window ETF fund universe). It also
 makes the pre-registered `CHAMPION_COMPLETION_SPEC_V1` part of the champion
@@ -579,6 +583,19 @@ BTC-019 untouched and sealed sample unopened; EPIC X unchanged with
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
 **Status:** `FAIL — RELEASE BLOCKING` — completed independent xHigh re-review of R1 correction `906c719` on 2026-10-01 found unclassified nested trailing-helper inputs (R1-RR). Live database reproduction passes; review-fix `a281378` corrects the AVWAP component mapping and policy identity only. Another census correction and independent re-review are required. Earlier database-blocked attempts are historical.
+
+**Owner decision, 2026-10-02 (policy V5 §5A.5–§5A.7).** RBT-002 closes on a
+bounded standard, not a proof of universal completeness. The next correction
+(R2) must:
+- discover nested, local and private callables and classify each one as
+  `OWNER_INTERNAL` or external;
+- remove the tracer exemption that masked the omission;
+- add regressions for both;
+- state the census limits with measured coverage;
+- keep the external-input classification and the live-database facts.
+The re-review then passes or fails on that standard. Gaps in the census method
+that reveal no missing external input are recorded as limitations. The runtime
+completeness guard in RBT-004, RBT-005 and RBT-006 is the backstop.
 **Dependencies:** none
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -2140,6 +2157,17 @@ Acceptance criteria:
   it.
 - The same composer can later drive the advisory and paper paths (Rulebook
   invariant 15). Adopting it there is out of scope.
+- **Composer-root guard (policy V5 §5A.6).** Every owner function the composer
+  calls directly is a census root. This is checked statically and at runtime,
+  with a regression in which a newly added direct call fails.
+- **Runtime completeness guard (V5 §5A.6).** In every fixture replay, any owner
+  result that is incomplete or carries a missing-input reason code maps to a
+  cause accounted for in the reviewed inventory or the completion spec. An
+  unaccounted one fails the test.
+- **Frozen basis defect.** `positioning.futures_basis_health` returns
+  `complete` with z = 1 on a constant history (RBT-002 re-review). The
+  composer refuses a constant owner basis history with an equality guard on
+  owner outputs, without restating the z-score, and records the refusal.
 
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
@@ -2171,6 +2199,8 @@ Acceptance criteria:
 - End-to-end: the composed champion replays the BTC-224 golden bar sequences
   without engine refusal. Its decisions are reported next to the scripted ones.
   They are not required to match, because the scenarios are scripted.
+- The composer-root and runtime completeness guards of policy V5 §5A.6 apply
+  to this composer too, with the same regressions.
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
@@ -2208,6 +2238,9 @@ Acceptance criteria:
   grid (sensitivity only) from the evaluation-window lengths, before any run.
 - Review confirms that no evaluation-window outcome was produced before the
   freeze.
+- **Runtime completeness guard (V5 §5A.6).** During the completeness-only
+  real-data pass, any incomplete owner result whose cause is not accounted for
+  in the inventory or the spec blocks the freeze.
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
@@ -2259,7 +2292,7 @@ version or any version derived from inspecting its result.
 | ticket | task | status |
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
-| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | FAIL — RELEASE BLOCKING after completed re-review of `906c719`: R1-RR nested helper inputs. Review-fix `a281378`, inventory `a68e5284...ad765d`; live database verified. Another census correction/re-review required |
+| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | FAIL — RELEASE BLOCKING after completed re-review of `906c719`: R1-RR nested helper inputs. Review-fix `a281378`, inventory `a68e5284...ad765d`; live database verified. Next: bounded correction R2 under policy V5 §5A.7 (owner decision 2026-10-02), then re-review on that standard |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — RBT-002 R1-RR correction and review PASS. Confirmed minimum 25 IDs plus existing volume fallback; final completeness withheld |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 R1-RR correction and review PASS. V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 review; plan total USD 29, nothing purchased |
