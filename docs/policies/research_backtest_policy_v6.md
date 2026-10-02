@@ -1,19 +1,52 @@
-> [!NOTE]
-> **SUPERSEDED 2026-10-02 by
-> [`RESEARCH_BACKTEST_POLICY_V6`](research_backtest_policy_v6.md), before any EPIC Y
-> run.** V6 has the completion spec define level volume, adds the RBT-004
-> futures-basis equality guard and isolates EPIC Y code from BTC-019 research
-> modules. V5 is retained unchanged below as provenance.
+# Research Backtest Policy V6
 
-# Research Backtest Policy V5
-
-Policy identifier: `RESEARCH_BACKTEST_POLICY_V5`
+Policy identifier: `RESEARCH_BACKTEST_POLICY_V6`
 
 Status: **ADOPTED 2026-10-02 — documentation-only owner decision.
-Supersedes [`RESEARCH_BACKTEST_POLICY_V4`](research_backtest_policy_v4.md)
-before any EPIC Y run.** (V3, V2 and V1 were superseded the same way.)
+Supersedes [`RESEARCH_BACKTEST_POLICY_V5`](research_backtest_policy_v5.md)
+before any EPIC Y run.** (V4, V3, V2 and V1 were superseded the same way.)
 
 ## Changes from earlier versions
+
+**V5 → V6 (owner decisions after RBT-002 closed).** The independent re-review
+of RBT-002 correction R2 passed under V5 §5A.7. It left two owner questions open
+for RBT-002A and found one inherited test failure. V6 settles all three before
+RBT-002A starts:
+
+1. **Level volume is defined by the completion spec (§6A.8).** V5 §6A.2 named
+   the Rulebook §9.2 core weights without volume as the example fallback. That
+   fallback cannot be used for this champion:
+   - the champion's configuration (`strategy_config_v2`,
+     `price_levels.level_strength_weights`, from BTC-096) scores volume at
+     0.20, and §6 forbids weight changes;
+   - the frozen level-strength owner reports a missing volume input as
+     incomplete at any weight, by design (BTC-096). It cannot run the
+     fallback without a placeholder value, which would be a zero-fill.
+
+   `LEVEL_VOLUME_PERCENTILE` is therefore an owner-less input that
+   `CHAMPION_COMPLETION_SPEC_V1` defines, for 26 defined inputs in all.
+2. **The futures-basis zero-variance defect (E1) is handled by a composer
+   guard (§6A.9).** The frozen `futures_basis_health` owner scores an exactly
+   constant basis history as complete. The RBT-004 composer refuses that case
+   instead. No owner is changed.
+3. **EPIC Y code is isolated from BTC-019 research modules (§9).** Since its
+   first commit (`ab210a5`), `research_backtest/coverage.py` has imported the
+   database helper from `btc019_empirical`. The BTC-019 isolation test forbids
+   that import outside `btc_predictor/research/`, so the full suite has one
+   failure (R2-RR-FS1). EPIC Y reads the database environment through its own
+   helper instead. The BTC-019 test is not edited.
+
+The reviewed RBT-002 inventory
+`108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` stays the
+reviewed inventory and is not regenerated for V6:
+- its `RESEARCH_BACKTEST_POLICY_V5` label records the policy it was reviewed
+  under;
+- its `RULEBOOK_FALLBACK_EXISTS` row for `LEVEL_VOLUME_PERCENTILE` is
+  superseded for the champion by §6A.8, and the spec covers that row;
+- no §4 or §5A rule the inventory applies has changed.
+
+EPIC Y ticket text that cites the §9.2 fallback for `LEVEL_VOLUME_PERCENTILE`
+is superseded by §6A.8. RBT-002A brings that text into line.
 
 **V4 → V5 (owner decision on how RBT-002 closes).** RBT-002 failed review twice
 on the same ground: its census could not prove it had found every parameter of
@@ -105,7 +138,9 @@ answer without weakening any certification gate.
 - [Rulebook v1.2](../strategy/bitcoin_swing_predictor_rulebook_v1_2.md) is **not
   modified**. This policy only invokes the Rulebook's own Phase-1 fallbacks
   (§6.2 flow `ETF_CORE`; the core regime fallback) and its §24 hard-flag effects.
-  It adds no strategy semantics.
+  It adds no strategy semantics of its own. Owner-less inputs are completed only
+  by the pre-registered `CHAMPION_COMPLETION_SPEC_V1` (§6A), which belongs to a
+  research strategy version (§6).
 - [EPIC X](../execution/post_phase1_prospective_integration_evidence_v1.md) and
   BTC-019 are **untouched**. No EPIC X ticket depends on EPIC Y. EPIC Y depends
   on exactly one EPIC X output: the reviewed `US_EQUITY_MARKET_CLOSURE_TABLE_V1`
@@ -118,7 +153,7 @@ Every EPIC Y artifact carries:
 ```text
 evidence_class       = RESEARCH_BACKTEST_NON_CERTIFYING
 canonical_reference  = UNRESOLVED
-policy               = RESEARCH_BACKTEST_POLICY_V5
+policy               = RESEARCH_BACKTEST_POLICY_V6
 ```
 
 EPIC Y output may **never** be used to:
@@ -280,7 +315,7 @@ EPIC Y. The owner `futures_basis_health` averages every row that shares an
 | Family | EPIC Y treatment |
 | --- | --- |
 | Reference price (`1h`) | Required, per venue |
-| Raw volume / spot participation | Bitstamp raw OHLCV, shared across all runs |
+| Raw volume / spot participation | Bitstamp raw OHLCV, shared across all runs. It is also the only volume source for the spec-defined `LEVEL_VOLUME_PERCENTILE` (§6A.8) |
 | ETF flows + AUM | Required for any trade; backfilled with §4 availability. **Fund universe (adopted verbatim):** per decision, pass funds = the funds with a first US trading date on or before the window's first included publication date; record each fund's launch date with its source evidence. Pre-launch rows are never invented |
 | Funding, open interest | Required. Positioning (an Entry Conviction component) has no Rulebook fallback |
 | Futures basis | **Required.** It feeds `BasisHealth` (positioning, no fallback) and the STRESS / EUPHORIA flags. It comes from the existing `futures_basis` raw table under `FUTURES_BASIS_CONTRACT_V1` (§4A), sourced from Binance COIN-M quarterly and index history ($0) |
@@ -402,8 +437,9 @@ which are the owner's decision:
      that is data availability, not outcome.
 2. **Source precedence.** For each input, use the first that applies:
    1. explicit Rulebook formulas or numbers;
-   2. explicit Rulebook fallbacks (for example the §9.2 core level-strength
-      weights without volume);
+   2. explicit Rulebook fallbacks that the champion's configuration and its
+      frozen owners can run without a placeholder value. The §9.2 core
+      level-strength weights without volume do not qualify (§6A.8);
    3. existing owner conventions and helpers (the BTC-041 prior-window z-score
       and percentile helpers; `volatility_percentile`'s 730-day window with a
       365-observation minimum; the positioning 180-day funding z-score; EPIC X
@@ -429,6 +465,62 @@ which are the owner's decision:
    the reviewed inventory is uncovered, or covered twice. The composers
    (RBT-004/RBT-005) implement the spec by calling owner helpers; the spec
    itself adds no executable formula beyond what it declares.
+8. **Level volume (`LEVEL_VOLUME_PERCENTILE`, owner decision 2026-10-02).**
+   The spec defines the `volume_percentile` input of the frozen level-strength
+   owner (`btc_predictor.levels.strength`). The configured weights stay as they
+   are: 0.20 each for timeframe, touches, reaction, volume and confluence.
+   - **Source.** Bitstamp raw `1h` volume, the shared volume source of §2, in
+     all three venue runs. No other venue's volume and no composite is used.
+   - **Quantity.** The spec defines once which hours' volume is attributed to
+     a level. It may use only:
+     - the level, touch and reaction records the existing level owners
+       produce;
+     - the shared volume series.
+     It adds no price-level detection and no volume-profile binning. A choice
+     that §6A.2 tiers 1–4 do not supply is labelled `NEW_PARAMETER`, with its
+     one-line rationale.
+   - **Normalisation.** The quantity becomes 0–100 through the spec's single
+     uniform percentile rule (§6A.3), computed against the prior window of the
+     same quantity, with the current value excluded. There is no separate
+     window, minimum or tuning for volume.
+   - **Point in time.** Only hours available at the decision instant under §4
+     are used.
+   - **Missing values.** Volume is never zero-filled. Until the percentile's
+     minimum history is met, the owner's incomplete result stands. That case
+     is a declared warm-up cause for the §5A.6 guard.
+   - **Pre-registration.** The definition is fixed before any outcome exists
+     (§6A.1). RBT-002A states its computed warm-up date. That date is an
+     availability fact; it is expected to fall well before the ETF warm-up
+     that already bounds the evaluation start (§3).
+9. **Futures-basis zero variance (E1, owner decision 2026-10-02).**
+   - *The defect.* The frozen `futures_basis_health` owner
+     (`btc_predictor/features/positioning.py`) uses Decimal sum and mean
+     rounding. That leaves a nonzero variance on an exactly constant history,
+     so the owner returns a complete score (z = 1) where it promises a
+     zero-variance refusal.
+   - *Spec duty.* The spec records this as a named limitation.
+   - *Guard.* The RBT-004 composer applies an equality guard. At each
+     decision instant it reads the owner's own point-in-time prior
+     annualized-basis history, through the owner's aggregation and history
+     helpers. A helper it calls directly becomes a classified census root
+     (§5A.6). If every value in that prior history is exactly equal, the
+     guard:
+     - refuses with `FUTURES_BASIS_ZERO_VARIANCE`;
+     - passes on no health score or z-score;
+     - records positioning as structurally unevaluable at that instant,
+       which is an accounted cause under §5A.6.
+
+     This holds whether or not the current value equals that history.
+   - *Prohibited.* The guard never reimplements the z-score and never
+     substitutes zero.
+   - *Tests.* RBT-004 tests these cases:
+     - a constant history;
+     - a current value equal to that constant history;
+     - a current value that differs from it;
+     - point-in-time exclusion of later rows;
+     - unchanged results on non-constant histories.
+   - *Owner fix.* Fixing the owner itself would need a separate
+     cross-workstream decision. None is authorized.
 
 ## 7. Known strategy-semantics limitations
 
@@ -487,7 +579,19 @@ named limitation.
     assessment hashes every JSON there.
 
   EPIC Y code lives in new modules that import the existing owners, and in new
-  test modules. A need that can only be met by editing a bound module is
+  test modules.
+- **Isolation from BTC-019 research modules.** EPIC Y modules outside
+  `btc_predictor/research/` and `btc_predictor/tests/` may not import the
+  research-only modules that
+  `btc_predictor/tests/test_btc019_completion_gate.py::test_no_production_module_reads_a_research_reference_candidate`
+  guards. These are `reference_composite`, `btc019_empirical`,
+  `btc019b_diagnostics`, `price_source_policy` and `btc019_completion_gate`.
+  The ban covers function-local imports too.
+  - EPIC Y reads the database environment through its own helper in
+    `btc_predictor/research_backtest/`. That helper reads the same five
+    `POSTGRES_*` names and never prints or persists them.
+  - The BTC-019 test is never edited, exempted or bypassed (for example by an
+    `importlib` string import). A need that can only be met by editing a bound module is
   recorded as a cross-workstream blocker for an explicit decision, never worked
   around. No database schema migration is performed.
 - Every EPIC Y implementation ticket must show that V5 still recomputes to
@@ -511,6 +615,6 @@ windows) and is reproducible byte-for-byte from them.
 
 ## 11. Change control
 
-Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V6`)
+Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V7`)
 recorded before the affected run. The holdout rule in §3 cannot be relaxed for
 any strategy version that has already been evaluated on the evaluation window.

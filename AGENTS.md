@@ -40,7 +40,7 @@ terminal and its sealed sample remains unopened.
 
 [EPIC Y](docs/execution/research_backtest_track_v1.md) controls RBT-xxx status,
 dependencies and acceptance criteria, under
-[RESEARCH_BACKTEST_POLICY_V5](docs/policies/research_backtest_policy_v5.md). Its
+[RESEARCH_BACKTEST_POLICY_V6](docs/policies/research_backtest_policy_v6.md). Its
 output is non-certifying research evidence only. It is not Phase-1, EPIC X or
 BTC-019 authority, and it never edits a file bound by an EPIC X frozen candidate
 or under `data/` or `research_artifacts/`.
