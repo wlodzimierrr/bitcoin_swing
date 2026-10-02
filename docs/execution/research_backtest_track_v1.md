@@ -582,7 +582,7 @@ BTC-019 untouched and sealed sample unopened; EPIC X unchanged with
 
 ## RBT-002 — `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1`
 
-**Status:** `FAIL — RELEASE BLOCKING` — completed independent xHigh re-review of R1 correction `906c719` on 2026-10-01 found unclassified nested trailing-helper inputs (R1-RR). Live database reproduction passes; review-fix `a281378` corrects the AVWAP component mapping and policy identity only. Another census correction and independent re-review are required. Earlier database-blocked attempts are historical.
+**Status:** `CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5 §5A.7` — bounded correction R2 (`812b968`, 2026-10-02) answers the R1-RR finding of the completed re-review of `906c719` (review-fix `a281378`). It discovers and classifies nested and local callables, removes the tracer masking, and states the census limits with measured coverage. Inventory `108ab25b...efe3a` was rebuilt from the stored snapshot. The prior `FAIL — RELEASE BLOCKING` verdict stands until the independent xHigh re-review passes on the V5 §5A.7 standard. See "Correction (R2)". Earlier database-blocked attempts are historical.
 
 **Owner decision, 2026-10-02 (policy V5 §5A.5–§5A.7).** RBT-002 closes on a
 bounded standard, not a proof of universal completeness. The next correction
@@ -674,7 +674,7 @@ Acceptance criteria:
 ### Implementation Notes
 
 **Implementation commit:** `ab210a5`
-**Status:** `FAIL — RELEASE BLOCKING` after the completed independent re-review of `906c719` (R1-RR); bounded review-fix `a281378` and latest inventory `a68e5284...ad765d`. The independent review on `9a90313` failed (`FAIL — RELEASE BLOCKING`, review-fix `0b06a85`). The R1 correction `906c719` is recorded in "Correction (R1)" after the review outcome. The original Implementation Notes below are pre-review provenance: the review outcome and the correction supersede their completeness and undefined-input claims. The reviewed inventory `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` remains at `0b06a85`; the R1 correction inventory is `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30`; after this re-review fix the current inventory is `a68e5284e99e39b113c7ed2705ca533c1c2cfc0e0a6432dde9fcd7de40ad765d`.
+**Status:** `CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5 §5A.7` — correction R2 `812b968`, inventory `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a`; see "Correction (R2)" after the re-review outcome. Before R2: `FAIL — RELEASE BLOCKING` after the completed independent re-review of `906c719` (R1-RR); bounded review-fix `a281378` and inventory `a68e5284...ad765d`. The independent review on `9a90313` failed (`FAIL — RELEASE BLOCKING`, review-fix `0b06a85`). The R1 correction `906c719` is recorded in "Correction (R1)" after the review outcome. The original Implementation Notes below are pre-review provenance: the review outcome and the correction supersede their completeness and undefined-input claims. The reviewed inventory `b4b51fc4e46fee18c4d228f985e2efaeb6db6d577916e2390ac35398aed6a106` remains at `0b06a85`; the R1 correction inventory is `0d5f70403f1df2e3600f307283de982e90e9942d5ff19c73724df0a449987e30`; after this re-review fix the current inventory is `a68e5284e99e39b113c7ed2705ca533c1c2cfc0e0a6432dde9fcd7de40ad765d`.
 **Files:** new only.
 
 - `btc_predictor/research_backtest/coverage.py` (owner module)
@@ -1993,10 +1993,235 @@ never read; BTC-019 untouched, sealed sample unopened; EPIC X unchanged,
 `POSTP1-001V2R1` still next; Epic T unchanged. Only EPIC Y's own modules, tests,
 evidence/inventory and the two handoff/roadmap documents change.
 
+### Correction (R2)
+
+**Date:** 2026-10-02. **Correction commit:** `812b968`, on base `634d122`.
+**Status:** `CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5 §5A.7`.
+This is the last census correction under the bounded closure standard of
+[`RESEARCH_BACKTEST_POLICY_V5`](../policies/research_backtest_policy_v5.md)
+§5A.5–§5A.7 (owner decision 2026-10-02). It fixes R1-RR only. No database access
+or provider probe was made: the inventory was rebuilt from its stored snapshot,
+which the 2026-10-01 re-review reproduced live.
+
+**Files.**
+
+- Changed: `input_census.py` (nested discovery and classification, tracer,
+  stated limits), `input_census_registry.py` (230 nested entries),
+  `coverage.py` (nested rows, refusals, limits, V5 label), the re-review test
+  module, and the three inventory artifacts.
+- New: `test_research_backtest_coverage_nested.py` (11 tests) and the synthetic
+  fixture owner `rbt002_r2_nested_fixture_owners.py`.
+- No owner module, EPIC X-bound file, `data/` or `research_artifacts/` file
+  changed.
+
+**Nested-callable discovery.** For every reached callable, the walk now reads
+the live code object's nested code constants, recursively. CPython compiles
+every function, lambda, generator expression and class body defined inside it
+into one of these. Each one is paired with its node in the module source by
+name and first line, and by span containment when two scopes share a line.
+It is then recorded with:
+
+- its qualified name (`co_qualname`) and a census path. A named helper keeps
+  its plain path, for example
+  `btc_predictor.risk.trailing.calculate_trailing_stop.<locals>.held`. An
+  anonymous scope, or a repeated name, carries its source-order ordinal, for
+  example `...select_reward_reference.<locals>.<lambda>#1`;
+- its parameters, from the code object, and its defaults, from the source;
+- every call site inside the owner, argument by argument.
+
+CPython 3.12 inlines list, set and dict comprehensions (PEP 709), so they have no
+code object or parameter of their own. An independent test enumerates the live
+nested code objects of all 882 named callables and requires exact equality
+with the census.
+
+**Classification (V5 §5A.1), decided from the call-site AST and recorded per
+callable.**
+
+| basis | rule | callables |
+| --- | --- | ---: |
+| `EVERY_CALL_SITE_IS_A_DIRECT_CALL_PASSING_LITERALS_OR_ENCLOSING_SCOPE_NAMES` | Every use of the local name is a direct call. Every argument is a literal (`ast.literal_eval`) or a name bound in the enclosing owner's scopes, not in an inner function and not global | 2 |
+| `KEY_FUNCTION_OF_BUILTIN_SORTED_MIN_OR_MAX_OVER_ENCLOSING_SCOPE_VALUES` | The lambda is only `key=` of an unshadowed builtin `sorted`, `min` or `max`, which applies it to the values the owner passes the builtin | 40 |
+| `GENERATOR_EXPRESSION_ITERATOR_BOUND_IN_THE_ENCLOSING_SCOPE` | The only parameter, CPython's `.0`, is the iterator of the first `for` clause, evaluated in the enclosing scope | 188 |
+
+**230 nested callables, all `OWNER_INTERNAL`; 0 `EXTERNAL`.**
+
+- `calculate_trailing_stop.<locals>.held(reason, *, candidate=None,
+  complete=True)` has 6 call sites (lines 305–330). Each passes a literal reason,
+  the local `candidate`, or the literal `complete=False`. Both defaults are
+  passed at some site (`A_REACHED_CALLER_PASSES_THIS_ARGUMENT`).
+- `next_tranche_for_position.<locals>.unallocated(reason)` has 2 call sites,
+  both literal.
+- Example lambda: `select_reward_reference.<locals>.<lambda>#1`, `key=` of
+  `sorted` over the owner's filtered tiers.
+- Example generator: `_validate_stage_provenance.<locals>.<genexpr>#1` and `#2`,
+  two on one line, told apart by span.
+
+Everything else is `EXTERNAL` and fails closed:
+
+- escaping as a value;
+- a computed or unpacked argument;
+- a decorator;
+- a rebound name;
+- a local class or its members;
+- live code that differs from its source.
+
+An external callable's defaults are never reported as fixed. The enumeration
+refuses it (`UNCLASSIFIED_PARAMETER`) until each of its parameters has an entry
+in `coverage.EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS`, which is empty. The
+registry pins each classification and basis; a change raises
+`NESTED_CLASSIFICATION_CHANGED`. A synthetic fixture owner exercises every rule.
+
+**Masking removed.** `uncovered_traced` no longer accepts a nested frame through
+its ancestor. Every executed frame must match its own static record by code
+identity (module, `co_qualname`, source line, first column) and parameter names,
+less a method's receiver. A path-only trace is still checked, without
+exemption.
+
+The reviewer's reproducer was re-run from its preserved source in the evidence
+artifact. It adds a used `independent_new_input=True` to `held` in memory, then
+executes it:
+
+| | `634d122` (before) | `812b968` (after) |
+| --- | --- | --- |
+| Surface | 3,288 rows, identical; no `held` row | Census refuses `UNCLASSIFIED_PARAMETER: ...held has unclassified inputs ['independent_new_input']` |
+| Tracer | Helper traced, `uncovered` empty | Against the pre-mutation census: reports `held` with its executed parameters differing. Against the current census: covered by its own record, which the census refuses |
+| Re-review tests with `--runxfail` | 2 failed (`KeyError`, `DID NOT RAISE`) | 2 passed, no marker |
+
+**XFAILs.**
+
+- `test_nested_trailing_helper_parameters_are_enumerated` passes unchanged.
+- `test_new_nested_live_input_is_refused` passes. Its two intermediate
+  assertions demonstrated the masked behaviour (`uncovered` empty and surface
+  unchanged) and cannot hold once the census is fixed. They are replaced by the
+  corrected expectations: the new parameter is recorded; the tracer reports it
+  against the pre-mutation census; the census refuses it by name. The mutation
+  and the proof of execution are unchanged.
+- The frozen-owner `test_nonterminating_constant_basis_refuses_zero_variance`
+  XFAIL stays (E1).
+- New: all 42 local functions and lambdas are mutated live, one at a time, and
+  each refuses `UNCLASSIFIED_PARAMETER`. `unallocated` and a lambda are also
+  refused end to end.
+
+**Stated limits (V5 §5A.5).** They are persisted in the inventory
+(`input_surface.census.limits`) and the report. The census claims completeness
+only for static discovery plus the runtime trace over the exercised paths. The
+four known limits are:
+
+- enclosing-local callbacks;
+- unnamed Protocol implementations;
+- dynamic `getattr` dispatch;
+- unexecuted branches.
+
+The backstop is the §5A.6 runtime guard in RBT-004, RBT-005 and RBT-006.
+Coverage was re-measured with coverage.py 7.16.0 (branch) on CPython 3.12.14,
+using the re-review's preserved scripts. The root-scoped tracer was extended to
+the code-identity check.
+
+| run | reached-body lines | reached-body branches | nested callables executed | strict trace |
+| --- | ---: | ---: | ---: | --- |
+| 202 fixture runs (74 roots) | 4,993/7,565 (**66.00%**) | 2,235/3,728 (**59.95%**) | 224/230 | 0 uncovered |
+| 1,699 owner tests (55 modules) | 5,855/7,565 (**77.40%**) | 2,934/3,728 (**78.70%**) | 224/230 | 0 uncovered |
+
+- The totals, module totals and both unexecuted-arc lists (1,493 and 794) are
+  identical to the re-review evidence.
+- Five generator expressions run in neither suite. Their classification rests
+  on source alone:
+  - `DerivativesQualityConfig.__post_init__` #1;
+  - `EntryConvictionResult.as_record` #1–#3;
+  - `trailing._validate_result` #1.
+
+**Inventory.** It was rebuilt from its own stored snapshot:
+`108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (was
+`a68e5284...ad765d`).
+
+- Policy label `RESEARCH_BACKTEST_POLICY_V4` → **`_V5`**: the label tracks the
+  governing policy (R7). The census version is now
+  `DECISION_PATH_STATIC_CENSUS_V2`.
+- Rows: all 3,288 previous rows are byte-identical. The 232 new rows are
+  `NESTED_OWNER_INTERNAL_PARAMETER`, for **3,520** in all; resolved call sites
+  are 1,593 (4 new direct-call shapes).
+- New census records: `nested_callables` (paths, parameters, defaults, call
+  sites, basis) and `limits`.
+- Every external-input classification is unchanged, as are the minimum
+  histories, earliest dates, family coverage, exposures, sources, blockers,
+  verdict, the USD 29 plan and the database snapshot (all byte-compared).
+- `CAPITULATION_EVENT` keeps its Structure dependency from `a281378`.
+
+**RBT-002A list: unchanged.** R2 found no `EXTERNAL` nested callable, so no new
+external input. The minimum stays at 25 undefined IDs, plus the
+`LEVEL_VOLUME_PERCENTILE` §9.2 fallback and its owner-compatibility gap:
+
+```text
+TREND_Z_M4, TREND_Z_M12, TREND_Z_20W, TREND_Z_52H
+FLOW_Z_ETF_NORM_5D, FLOW_Z_ETF_NORM_20D, FLOW_Z_FLOW_ACCEL
+RANGE_PERCENTILE, DOWNSIDE_RETURN, UPSIDE_RETURN
+LEVEL_REACTION_MAGNITUDE, SEVERE_CROWDING_STATE
+MOMENTUM_PERSISTENCE_SCORE, NEW_STRUCTURE_SCORE, ADD_MOMENTUM_SCORE
+NEW_STRUCTURAL_CONFIRMATION, REGIME_SUPPORTIVE_PREDICATE, FLOW_SUPPORTIVE_PREDICATE
+REGIME_INVALIDATION_PREDICATE, DATA_RISK_EXIT_PREDICATE
+CORRECTION_FROM_LOCAL_HIGH, DISTRIBUTION_STATE, SHORT_TRIGGER
+MEASURED_MOVE_REFERENCE, CAPITULATION_EVENT
+```
+
+**Validation (`.venv312` CPython 3.12.14).** The proof subsets ran alone.
+
+| suite | result |
+| --- | --- |
+| Focused: original 65, review 2, re-review 12, census 27, nested (new) 11, runtime trace 202 | **318 passed, 1 XFAIL** (frozen basis owner) |
+| RBT-001 | **167 passed** |
+| Closure table | **145 passed** |
+| BTC-180..185 | **282 passed** |
+| BTC-220..224 | **342 passed** |
+| Owner modules | **320 passed** |
+| V5 / corpus / ETF | **407 passed, 2 existing skips**; `v5_protocol_definition` recomputes to `95e43ee1...775a89` |
+| PAD5 preserved authority, failed R5 predecessor, namespace, child order, frozen modules | **5 passed, 112 deselected**; definition `54675984...f483` |
+| PAD4-R5 namespace and child order | **2 passed**; `b4168dc9...61c7` |
+| Coverage re-measurement | 202 fixture runs; 1,699 owner tests passed |
+| `compileall -q btc_predictor etf_calendar_worker`, `git diff --check` | PASS |
+| Rebuild byte-equality; `PYTHONHASHSEED` 0/1/8675309 from another cwd in fresh processes | all three artifacts byte-identical |
+
+The full repository suite and the full 117-test PAD5 suite were **NOT RUN**.
+
+**Design decisions for the re-review.**
+
+- *Direct calls* follow this correction's strict rule: only literals or names
+  bound in the owner's scope.
+- *Builtin `key=` lambdas and generator expressions* have no call site in the
+  owner's AST. They are classified by V5 §5A.1's "owner-computed values": the
+  builtin, or the generator protocol, supplies only values that the owner's own
+  expression evaluated. The basis records those expressions. The re-review
+  should confirm this reading.
+- Discovery starts from code objects, the runtime truth. A nested code object
+  with no matching source, or a live signature that differs from its source,
+  fails closed as `EXTERNAL`.
+- Nested defaults are recorded as their source text.
+
+**Disclosures and remaining risks.**
+
+- The four §5A.5 limits stand. The five unexecuted generator expressions are
+  classified from source alone.
+- Source-order ordinals mean that adding an anonymous scope to an owner renames
+  its siblings. The census then refuses until the registry is re-audited. Line
+  positions remain in the digest (E3).
+- The method depends on CPython 3.12 behaviour: `co_qualname`, `co_positions`
+  and inlined comprehensions.
+- The E4 composer direct-call guard, the E1 futures-basis guard and the §5A.6
+  runtime guard remain RBT-004/005/006 obligations.
+- Discovery now takes about 1.4 s, up from 0.8 s.
+
+**Safety.**
+
+- No real-data backtest outcome.
+- Holdout NOT COLLECTED; its values were never read.
+- BTC-019 untouched; sealed sample unopened.
+- EPIC X unchanged: `POSTP1-001V2R1` is still its next ticket.
+- Epic T unchanged.
+- RBT-002A, RBT-001A and RBT-004 were not started.
+
 
 ## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
 
-**Status:** `BLOCKED — RBT-002 re-review FAIL (R1-RR); awaiting another census correction and independent xHigh PASS. Confirmed minimum 25 IDs plus existing volume fallback; no completeness sign-off.`
+**Status:** `BLOCKED — awaiting the independent xHigh re-review PASS of RBT-002 correction R2 (812b968) under policy V5 §5A.7. R2 found no new external input: minimum 25 IDs plus existing volume fallback, unchanged; no completeness sign-off until that PASS.`
 **Dependencies:** RBT-002 independent review PASS, so that the list of
 owner-less inputs is confirmed complete
 **Implementation effort:** xHigh
@@ -2032,6 +2257,8 @@ Acceptance criteria:
   volume-fallback obligation. The event feeds Structure when included but
   is optional. R1-RR prevents a final completeness sign-off; the list may grow
   during the required correction. RBT-002A cannot start until RBT-002 passes.
+  Correction R2 (`812b968`) classified every nested callable `OWNER_INTERNAL`
+  and added no ID; the list stands at 25 pending its re-review.
 - **Frozen basis limitation.** Record the non-terminating constant-series
   zero-variance defect and require the owner-history equality/refusal guard
   specified in the completed re-review; disclosure alone does not authorize
@@ -2057,7 +2284,7 @@ Acceptance criteria:
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `BLOCKED — RBT-002 re-review FAIL (R1-RR); awaiting another census correction and independent xHigh PASS. Policy V4 data rules ADOPTED; RBT-001 review dependency SATISFIED.`
+**Status:** `BLOCKED — awaiting the independent xHigh re-review PASS of RBT-002 correction R2 (812b968) under policy V5 §5A.7. Policy V4 data rules ADOPTED; RBT-001 review dependency SATISFIED.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`), RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -2292,9 +2519,9 @@ version or any version derived from inspecting its result.
 | ticket | task | status |
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
-| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | FAIL — RELEASE BLOCKING after completed re-review of `906c719`: R1-RR nested helper inputs. Review-fix `a281378`, inventory `a68e5284...ad765d`; live database verified. Next: bounded correction R2 under policy V5 §5A.7 (owner decision 2026-10-02), then re-review on that standard |
-| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — RBT-002 R1-RR correction and review PASS. Confirmed minimum 25 IDs plus existing volume fallback; final completeness withheld |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 R1-RR correction and review PASS. V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
+| RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5 §5A.7 — correction `812b968` answers R1-RR (re-review of `906c719`, review-fix `a281378`): 230 nested callables discovered, all `OWNER_INTERNAL`; tracer masking removed; limits stated with measured coverage; inventory `108ab25b...efe3a` rebuilt from the stored snapshot. Next: independent xHigh re-review on that standard |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | BLOCKED — RBT-002 R2 re-review PASS. Minimum 25 IDs plus existing volume fallback, unchanged by R2; final completeness withheld until that PASS |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | BLOCKED — RBT-002 R2 re-review PASS. V4 data rules ADOPTED, RBT-001 review dependency SATISFIED |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A, RBT-002 review; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
@@ -2317,9 +2544,10 @@ and the setup path. Four source and composer semantics need a
 `BLK-STRESS-HARD-VETO-MAPPING` and `BLK-ETF-FUND-UNIVERSE`. Each blocker lists
 its proposed rule and its resolution options with their costs in the RBT-002
 Implementation Notes. The owner adopted the four V4 data rules and chose the
-completion spec on 2026-10-01. The independent review above failed the census.
-The R1 correction (`906c719`) is complete; the next EPIC Y action is its
-independent re-review, not a new owner decision.
+completion spec on 2026-10-01. The independent review above failed the census,
+and so did the re-review of the R1 correction (`906c719`). Correction R2
+(`812b968`) is complete under the policy V5 bounded standard; the next EPIC Y
+action is its independent re-review, not a new owner decision.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
 positioning score needs futures basis and BTC market cap. Policy V2 gives
@@ -2328,5 +2556,5 @@ structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
 dependency-satisfied EPIC Y work is the **independent re-review of the
-corrected RBT-002** (R1 correction `906c719`). RBT-004 remains blocked on RBT-002A review PASS.
+corrected RBT-002** (correction R2 `812b968`, under policy V5 §5A.7). RBT-004 remains blocked on RBT-002A review PASS.
 EPIC X's next ticket remains **POSTP1-001V2R1**.

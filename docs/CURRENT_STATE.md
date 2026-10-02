@@ -877,21 +877,23 @@ passed on 2026-10-01. RBT-001A now waits on the corrected RBT-002 re-review
 PASS; all four policy V4 data rules were adopted
 
 EPIC Y RBT-002 =
-FAIL — RELEASE BLOCKING after completed independent xHigh re-review of R1
-correction 906c719 at base 2157aed (2026-10-01). Database read-only gate and live
-timestamp-only reproduction PASS. R1-RR remains open: the reached local trailing
-helper held has three unclassified parameters; a newly used nested parameter
-leaves 3,288 rows unchanged and is masked by the tracer's ancestor exemption.
-Distinct review-fix a281378 corrects optional CAPITULATION_EVENT's Structure
-mapping and the stale V3 label to V4; inventory a68e5284...ad765d. Confirmed
-minimum 25 undefined IDs plus existing volume fallback, without a complete-list
-sign-off. RBT-002A/RBT-001A remain blocked. Next EPIC Y work: another census
-correction, then independent xHigh re-review. Frozen basis zero-variance defect
-reproduced; spec must record it and composer must refuse constant owner history,
-without restating a formula or editing a frozen owner. No trading outcome;
-holdout NOT COLLECTED, values never read; BTC-019 untouched, sealed sample
-unopened; EPIC X and Epic T unchanged. Detailed evidence in EPIC Y re-review
-outcome and rbt002_rereview_evidence_v1.json
+CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5 §5A.7 — bounded
+correction R2 812b968 (2026-10-02, base 634d122) answers R1-RR of the completed
+re-review of 906c719 (review-fix a281378). Static discovery now records all 230
+nested callables (2 local functions incl. held, 40 builtin key lambdas, 188
+generator expressions), all OWNER_INTERNAL with a recorded call-site basis; an
+EXTERNAL one is refused until each parameter is classified. The tracer has no
+ancestor exemption (code identity + parameter names); the reviewer's in-memory
+held mutation is refused. Limits stated with re-measured coverage: fixtures
+66.00% / 59.95%, owner tests 77.40% / 78.70% reached-body lines / branches.
+Inventory 108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a
+rebuilt from the stored snapshot, label V5; 3,288 rows unchanged + 232 nested
+rows; dates, sources, USD 29 plan and database facts byte-identical. RBT-002A
+list unchanged: 25 undefined IDs plus existing volume fallback, sign-off pending
+the re-review. RBT-002A/RBT-001A remain blocked. Frozen basis zero-variance
+defect (E1) still binds RBT-002A/RBT-004. No trading outcome; holdout NOT
+COLLECTED, values never read; BTC-019 untouched, sealed sample unopened; EPIC X
+and Epic T unchanged. Detailed evidence in EPIC Y "Correction (R2)"
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1298,7 +1300,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-10-01
+- **Last updated:** 2026-10-02
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1320,12 +1322,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   nothing in EPIC X and certifies nothing. Its first ticket, RBT-001
   `BUILD_HISTORICAL_REPLAY_INPUTS_V1`, is **DONE / independent xHigh ticket
   review PASS**, implementation `402e120`, review fix `a9773e7`. RBT-002
-  `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` is **FAIL — RELEASE BLOCKING** after
-  completed independent re-review of R1 correction `906c719`: nested helper
-  inputs remain unclassified (R1-RR). Review-fix `a281378` corrects only the
-  AVWAP mapping/policy identity, inventory `a68e5284...ad765d`; live database
-  facts are now independently verified. RBT-002A/RBT-001A remain blocked on
-  another census correction and review PASS. All four V4 data rules
+  `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` is **CORRECTED (R2) / AWAITING
+  INDEPENDENT RE-REVIEW UNDER V5 §5A.7**: correction `812b968` discovers and
+  classifies all 230 nested callables (all `OWNER_INTERNAL`), removes the
+  tracer's ancestor exemption and states the census limits with measured
+  coverage; inventory `108ab25b...efe3a` was rebuilt from the stored snapshot.
+  It answers R1-RR of the re-review of `906c719` (review-fix `a281378`; live
+  database facts independently verified). RBT-002A/RBT-001A remain blocked on
+  the R2 re-review PASS. All four V4 data rules
   and the completion-spec choice are adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
   `POSTP1-002V2A-T1` passed on 2026-09-30 at `2292388e...1d1710`;
@@ -1557,9 +1561,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** None. EPIC Y `RBT-001` remains DONE / PASS.
-  `RBT-002` is **FAIL — RELEASE BLOCKING** after the completed R1 re-review;
-  RBT-002A/RBT-001A remain blocked. Next: correct the named-local helper census
-  and obtain independent xHigh PASS. V4 owner decisions are adopted. EPIC X's
+  `RBT-002` is **CORRECTED (R2) / AWAITING INDEPENDENT RE-REVIEW UNDER V5
+  §5A.7** (correction `812b968`); RBT-002A/RBT-001A remain blocked on that PASS.
+  V4 owner decisions and the V5 bounded-closure decision are adopted. EPIC X's
   separate next action remains `POSTP1-001V2R1`, dependency-satisfied; T1 remains
   COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y `RBT-002`, 2026-10-01, **FAIL —
@@ -1584,9 +1588,26 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review-fix commit. Pre-freeze captures support coverage through 2026;
   2027 windows require V2. The detailed source/revision/search/probe evidence
   is in EPIC X's review outcome, not duplicated here
-- **Last completed implementation:** EPIC Y `RBT-002` R1 correction, commit
+- **Last completed implementation:** EPIC Y `RBT-002` correction R2, commit
+  `812b968` (2026-10-02), **awaiting independent xHigh re-review under policy V5
+  §5A.7**.
+  - Nested, local and private callables are discovered from the live nested
+    code objects and classified from their call-site AST: 230 found (2 local
+    functions, `held` among them, 40 builtin `key=` lambdas, 188 generator
+    expressions), all `OWNER_INTERNAL`, 0 `EXTERNAL`; an external one is
+    refused until each parameter is classified.
+  - The tracer's ancestor exemption is removed: frames match by code identity
+    and parameter names. The re-review's held mutation is refused; both R1
+    XFAILs pass; the frozen basis XFAIL stays.
+  - Stated §5A.5 limits with re-measured coverage (identical to the re-review)
+    persisted in the inventory; label V4 → V5; census version V2.
+  - Inventory `108ab25b...efe3a` rebuilt from the stored snapshot: 3,288 rows
+    unchanged plus 232 nested rows; every external classification, history,
+    date, source, the USD 29 plan and the database facts byte-identical.
+  - Only EPIC Y files changed. Details are in the EPIC Y "Correction (R2)"
+- **Preceding completed implementation (EPIC Y):** `RBT-002` R1 correction, commit
   `906c719`, **independent re-review FAIL (R1-RR)**. Bounded review-fix
-  `a281378` corrects the AVWAP mapping/policy identity; the census remains open.
+  `a281378` corrected the AVWAP mapping/policy identity.
   - New `input_census.py` (74 justified roots, static discovery, call-site
     default analysis, runtime tracer, left-out records) and
     `input_census_registry.py` (pinned snapshot, two-way equal to the
@@ -1805,15 +1826,19 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** the bounded RBT-002 correction
-  R2 under policy V5 §5A.7 (owner decision 2026-10-02). It discovers and
-  classifies nested and local callables as `OWNER_INTERNAL` or external,
-  removes the tracer masking, and states the census limits with measured
-  coverage. An independent xHigh re-review on that standard follows. No DB configuration blocker remains.
+- **Next dependency-satisfied EPIC Y actions:** the independent xHigh
+  re-review of RBT-002 correction R2 (`812b968`) on the policy V5 §5A.7 bounded
+  standard. It should confirm the two R1 method fixes with their regressions, the
+  external-surface classification, the stated limits with measured coverage,
+  and the live database facts (reproduced read-only on 2026-10-01). No DB
+  configuration blocker remains. Unresolved for that review: R2 classifies the
+  40 builtin `key=` lambdas and 188 generator expressions as `OWNER_INTERNAL` by
+  V5 §5A.1's "owner-computed values", since no call site in the owner's AST
+  passes their values; the review should confirm that reading.
   V4 data decisions and the completion-spec choice are already answered.
-  RBT-002A/RBT-001A remain blocked on RBT-002 PASS; the confirmed minimum is 25
-  undefined IDs plus the existing volume fallback, with no final completeness
-  sign-off. RBT-004 additionally needs the completion-spec review and its recorded
+  RBT-002A/RBT-001A remain blocked on RBT-002 PASS; the minimum is 25
+  undefined IDs plus the existing volume fallback, unchanged by R2, with no final
+  completeness sign-off until that PASS. RBT-004 additionally needs the completion-spec review and its recorded
   census direct-call/basis refusal guards. RBT-003 and RBT-005..008 retain their
   existing dependency blocks.
 - **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2R1`.
@@ -1824,6 +1849,19 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-002 R2 correction validation (2026-10-02):** `.venv312` CPython
+  3.12.14. Focused **318 passed, 1 XFAIL** (frozen basis owner): original 65,
+  review 2, re-review 12, census 27, new nested 11, runtime trace 202. RBT-001
+  **167**; closure table **145**; BTC-180..185 **282**; BTC-220..224 **342**;
+  owner modules **320**; V5/corpus/ETF **407 passed, 2 existing skips**, V5
+  recomputes to `95e43ee1...775a89`. PAD5 subset **5 passed** at
+  `54675984...f483`; PAD4-R5 namespace/order **2 passed** at `b4168dc9...61c7`.
+  Coverage re-measured on 202 fixture runs and 1,699 owner tests: identical
+  totals and arc lists, strict root-scoped trace 0 uncovered. Reproducer:
+  before refused nothing, after `UNCLASSIFIED_PARAMETER`. `compileall`,
+  `git diff --check`, rebuild byte-equality and `PYTHONHASHSEED` 0/1/8675309 /
+  alternate-cwd / fresh-process determinism pass. Full repository and full
+  117-test PAD5 suites NOT RUN
 - **RBT-002 completed re-review validation (2026-10-01):** CPython 3.12.14.
   Original focused 296 PASS; after bounded review-fix 305 PASS, **3 explicit
   XFAIL** (two R1 release blockers, frozen basis defect). Nested live-mutation
