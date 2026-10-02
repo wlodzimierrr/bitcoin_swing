@@ -66,17 +66,16 @@ def test_capitulation_avwap_feeds_structure_even_when_optional():
 
 
 def test_inventory_names_the_current_policy():
-    assert coverage.INVENTORY_POLICY_VERSION == "RESEARCH_BACKTEST_POLICY_V4"
+    # RBT-002 R2: the inventory label tracks the governing policy, now V5.
+    assert coverage.INVENTORY_POLICY_VERSION == "RESEARCH_BACKTEST_POLICY_V5"
 
 
-@pytest.mark.xfail(strict=True, reason="R1 remains release blocking: nested helper parameters have no census rows")
 def test_nested_trailing_helper_parameters_are_enumerated():
     c = input_census.discover_decision_path()
     helper = c.callables["btc_predictor.risk.trailing.calculate_trailing_stop.<locals>.held"]
     assert helper.parameter_names == ("reason", "candidate", "complete")
 
 
-@pytest.mark.xfail(strict=True, reason="R1 remains release blocking: nested live input mutation passes the census and tracer")
 def test_new_nested_live_input_is_refused(monkeypatch):
     def change(tree):
         helper = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "held")
@@ -85,13 +84,22 @@ def test_new_nested_live_input_is_refused(monkeypatch):
         argument = next(n for n in ast.walk(helper) if isinstance(n, ast.keyword) and n.arg == "complete")
         argument.value = ast.BoolOp(ast.And(), [argument.value, ast.Name("independent_new_input", ast.Load())])
     replacement = _compile_changed(trailing.calculate_trailing_stop, change)
-    before = coverage.enumerate_input_surface()
+    before = input_census.discover_decision_path()
     monkeypatch.setattr(trailing.calculate_trailing_stop, "__code__", replacement.__code__)
     c = input_census.discover_decision_path()
     _, traced = input_census.trace_owner_calls(lambda: trailing.calculate_trailing_stop(direction="long", previous_stop=90, structure_price=None, buffer=None))
     assert any(p.endswith(".<locals>.held") for p in traced.functions)
+    # R2 fix: the census now discovers the executed helper's new input, and
+    # the tracer checks that frame against its own static record instead of
+    # exempting it through calculate_trailing_stop. (Before R2 the census and
+    # tracer both stayed silent and the surface was unchanged.)
+    helper = "btc_predictor.risk.trailing.calculate_trailing_stop.<locals>.held"
+    assert c.callables[helper].parameter_names == ("reason", "candidate", "complete", "independent_new_input")
     assert input_census.uncovered_traced(c, traced) == {"functions": [], "dataclasses": []}
-    assert coverage.enumerate_input_surface(c) == before
+    stale = input_census.uncovered_traced(before, traced)["functions"]
+    assert [item for item in stale if item.startswith(helper) and "independent_new_input" in item]
+    with pytest.raises(coverage.InputSurfaceError, match="UNCLASSIFIED_PARAMETER.*independent_new_input"):
+        coverage.enumerate_input_surface(c)
     with pytest.raises(coverage.InputSurfaceError, match="UNCLASSIFIED_PARAMETER"):
         coverage.enumerate_input_surface()
 

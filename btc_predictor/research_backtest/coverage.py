@@ -18,7 +18,11 @@ no composer, score or backtest runs here.
   audited rules over the reviewed snapshot in ``input_census_registry``. An
   unclassified owner, field or parameter raises :class:`InputSurfaceError`, so
   an owner that gains an input, or a newly reached owner, fails the
-  enumeration.
+  enumeration. Since correction R2 (policy V5 section 5A.1) the surface also
+  carries every nested, local and private callable the census discovers: an
+  ``OWNER_INTERNAL`` one by the census's call-site basis, an ``EXTERNAL`` one
+  only through an explicit classification of each parameter. The census's
+  stated limits (section 5A.5) are persisted with it.
 - **Database coverage.** Read-only ``SELECT`` statements report, per raw table
   and series, counts per policy window, first and last observation, gap
   positions, provenance and timestamp semantics. Rows dated before 2020-01-01 or
@@ -137,7 +141,7 @@ from btc_predictor.signals import trim as trim_owner
 
 INVENTORY_VERSION = "INVENTORY_HISTORICAL_INPUT_COVERAGE_V1"
 INVENTORY_TICKET = "RBT-002"
-INVENTORY_POLICY_VERSION = "RESEARCH_BACKTEST_POLICY_V4"
+INVENTORY_POLICY_VERSION = "RESEARCH_BACKTEST_POLICY_V5"
 INVENTORY_AVAILABILITY_POLICY_VERSION = "HISTORICAL_REPLAY_AVAILABILITY_V2"
 DATABASE_COVERAGE_SNAPSHOT_VERSION = "RESEARCH_DATABASE_COVERAGE_SNAPSHOT_V1"
 SOURCE_PROBE_DATE = "2026-10-01"
@@ -2220,13 +2224,23 @@ class SurfaceRow:
 SURFACE_FIELD = "OWNER_INPUT_TYPE_FIELD"
 SURFACE_PARAMETER = "OWNER_CALL_SITE_PARAMETER"
 SURFACE_INTERNAL_PARAMETER = "OWNER_INTERNAL_PARAMETER"
-SURFACES = (SURFACE_FIELD, SURFACE_PARAMETER, SURFACE_INTERNAL_PARAMETER)
+SURFACE_NESTED_PARAMETER = "OWNER_NESTED_CALLABLE_PARAMETER"
+SURFACES = (SURFACE_FIELD, SURFACE_PARAMETER, SURFACE_INTERNAL_PARAMETER, SURFACE_NESTED_PARAMETER)
 
 CATEGORY_INPUT_TYPE = "COMPOSER_INPUT_TYPE"
 CATEGORY_ROOT_PARAMETER = "ROOT_PARAMETER"
 CATEGORY_INTERNAL_PARAMETER = "INTERNAL_PARAMETER"
 CATEGORY_OWNER_DEFAULT = "OWNER_DEFAULT_CONSTANT"
 CATEGORY_CONFIG_LOADER = "CONFIG_LOADER_PARAMETER"
+CATEGORY_NESTED_INTERNAL = "NESTED_OWNER_INTERNAL_PARAMETER"
+CATEGORY_NESTED_EXTERNAL = "NESTED_EXTERNAL_PARAMETER"
+
+# Policy V5 section 5A.1: a nested, local or private callable the census
+# classifies EXTERNAL is part of the external input surface, so each of its
+# parameters needs its own classification here before the enumeration accepts
+# it. The R2 census found none: every one of the 230 discovered nested
+# callables is OWNER_INTERNAL.
+EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS: dict[str, dict[str, InputClassification]] = {}
 
 _CONFIG_LOADER_MODULE = "btc_predictor.config.strategy"
 _PSEUDO_FAMILIES = (ENGINE_STATE_FAMILY, STRATEGY_CONFIG_FAMILY)
@@ -2240,6 +2254,11 @@ _M_INTERNAL = (
 )
 _SRC_INTERNAL = "passed by the reached calling owner, computed from its own classified inputs"
 _SRC_STRATEGY_CONFIG = "btc_predictor/config/strategy/default.toml (strategy_config_v2) through load_strategy_config"
+_M_NESTED_INTERNAL = (
+    "supplied only inside the enclosing owner, from literals or values that owner computed: it cannot be missing at "
+    "the composer boundary, and the enclosing owner's own missing-input handling applies"
+)
+_SRC_NESTED_INTERNAL = "supplied inside the enclosing owner at the call sites the census records, from its own classified inputs"
 
 
 def classify_owner_type(owner_type: type, classified: Mapping[str, InputClassification]) -> tuple[SurfaceRow, ...]:
@@ -2325,6 +2344,23 @@ def enumerate_input_surface(census: census_owner.DecisionPathCensus | None = Non
                 for item in record.parameters
             )
             continue
+        if path in census.nested:
+            for item in record.parameters:
+                verdict = census.default_override(path, item.name)[0] if item.has_default else None
+                classification, category = _nested_parameter(path, item, verdict, census, profiles)
+                rows.append(
+                    SurfaceRow(
+                        SURFACE_NESTED_PARAMETER,
+                        path,
+                        item.name,
+                        classification,
+                        category,
+                        default=item.default,
+                        default_override=verdict,
+                        reached_from=record.reached_from,
+                    )
+                )
+            continue
         for item in record.parameters:
             verdict = census.default_override(path, item.name)[0] if item.has_default else None
             classification, category = _internal_parameter(path, item, verdict, census, profiles)
@@ -2377,9 +2413,36 @@ def _require_classified_census(census: census_owner.DecisionPathCensus) -> None:
             _require_exact_names(path, record.parameter_names, registry_callables[path], unclassified="UNCLASSIFIED_PARAMETER")
         else:
             raise InputSurfaceError("UNCLASSIFIED_CALLABLE", f"{path} is reached from {record.reached_from} but has no classification")
+    # Nested callables keep their reviewed OWNER_INTERNAL/EXTERNAL basis; an
+    # external one needs every parameter classified (policy V5 section 5A.1).
+    registry_nested = census_registry.DISCOVERED_NESTED_CALLABLES
+    external = {path for path, nested in census.nested.items() if nested.classification == census_owner.NESTED_EXTERNAL}
+    for path, nested in census.nested.items():
+        reviewed = registry_nested.get(path)
+        if reviewed is None:
+            raise InputSurfaceError("UNCLASSIFIED_CALLABLE", f"{path} is a nested callable without a reviewed classification")
+        if reviewed != (nested.classification, nested.basis):
+            raise InputSurfaceError(
+                "NESTED_CLASSIFICATION_CHANGED",
+                f"{path} is now {nested.classification} ({nested.basis}); reviewed as {reviewed[0]} ({reviewed[1]})",
+            )
+        if path in external:
+            if path not in EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS:
+                raise InputSurfaceError(
+                    "UNCLASSIFIED_PARAMETER",
+                    f"{path} is an external nested callable ({nested.basis}) with unclassified inputs "
+                    f"{list(census.callables[path].parameter_names)}",
+                )
+            _require_exact_classification(
+                path,
+                census.callables[path].parameter_names,
+                EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS[path],
+                unclassified="UNCLASSIFIED_PARAMETER",
+            )
     # Then classifications that outlived their owner.
     stale = sorted((set(semantic) | set(registry_types)) - set(census.types))
     stale += sorted((set(ROOT_PARAMETER_CLASSIFICATIONS) - roots) | (set(registry_callables) - set(census.callables)))
+    stale += sorted((set(registry_nested) - set(census.nested)) | (set(EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS) - external))
     if stale:
         raise InputSurfaceError("STALE_CLASSIFICATION", f"classified owners the census no longer reaches: {stale}")
 
@@ -2582,6 +2645,38 @@ def _internal_parameter(
     )
 
 
+def _nested_parameter(
+    path: str,
+    item: census_owner.CensusParameter,
+    verdict: str | None,
+    census: census_owner.DecisionPathCensus,
+    profiles: Mapping[str, tuple[tuple[str, ...], tuple[str, ...]]],
+) -> tuple[InputClassification, str]:
+    """A nested callable's parameter: owner-internal by its recorded basis, or
+    the explicit classification an external one requires."""
+
+    nested = census.nested[path]
+    if nested.classification == census_owner.NESTED_EXTERNAL:
+        return EXTERNAL_NESTED_PARAMETER_CLASSIFICATIONS[path][item.name], CATEGORY_NESTED_EXTERNAL
+    families, components = _reach_profile((path,), census, profiles)
+    note = f"{nested.role} defined in {nested.enclosing}, OWNER_INTERNAL: {nested.basis}"
+    if item.has_default:
+        note += f"; default {item.default} unless a call site passes it ({verdict})"
+    return (
+        InputClassification(
+            kind=KIND_OWNER_INTERNAL,
+            shape=SHAPE_DERIVED,
+            families=families,
+            producing_owner=nested.enclosing,
+            historical_source=_SRC_NESTED_INTERNAL,
+            missing_behaviour=_M_NESTED_INTERNAL,
+            entry_components=components,
+            note=note,
+        ),
+        CATEGORY_NESTED_INTERNAL,
+    )
+
+
 def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
     """Counts by surface, category, family and kind, plus the owner-less,
     discretionary and fixed-default inputs."""
@@ -2596,6 +2691,7 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
     ownerless: dict[str, dict[str, Any]] = {}
     discretionary: dict[str, list[str]] = {}
     defaults: list[dict[str, Any]] = []
+    nested_defaults: list[dict[str, Any]] = []
     for row in rows:
         classification = row.classification
         composer_facing = row.category in (CATEGORY_INPUT_TYPE, CATEGORY_ROOT_PARAMETER)
@@ -2623,11 +2719,16 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
             discretionary.setdefault(classification.input_id or row.name, []).append(row.key)
         if row.category == CATEGORY_OWNER_DEFAULT:
             defaults.append({"owner": row.owner, "parameter": row.name, "default": row.default})
+        if row.surface == SURFACE_NESTED_PARAMETER and row.default is not None:
+            nested_defaults.append(
+                {"owner": row.owner, "parameter": row.name, "default": row.default, "default_override": row.default_override}
+            )
     return {
         "rows": len(rows),
         "owner_input_types": len({row.owner for row in rows if row.surface == SURFACE_FIELD}),
         "owner_call_sites": len({row.owner for row in rows if row.surface == SURFACE_PARAMETER}),
         "owner_internal_callables": len({row.owner for row in rows if row.surface == SURFACE_INTERNAL_PARAMETER}),
+        "owner_nested_callables": len({row.owner for row in rows if row.surface == SURFACE_NESTED_PARAMETER}),
         "count_by_surface": dict(sorted(by_surface.items())),
         "count_by_census_category": dict(sorted(by_category.items())),
         "count_by_family": dict(sorted(by_family.items())),
@@ -2646,16 +2747,20 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
         },
         "discretionary_inputs": {key: sorted(value) for key, value in sorted(discretionary.items())},
         "owner_default_constants": sorted(defaults, key=lambda item: (item["owner"], item["parameter"])),
+        "nested_callable_defaults": sorted(nested_defaults, key=lambda item: (item["owner"], item["parameter"])),
     }
 
 
 def census_record(census: census_owner.DecisionPathCensus) -> dict[str, Any]:
     """The census evidence persisted with the inventory: roots, left-out owner
-    definitions, and every reached type and callable with how it was reached."""
+    definitions, every reached type and callable with how it was reached, every
+    nested callable with its parameters, call sites and classification basis,
+    and the census's stated limits (policy V5 section 5A.5)."""
 
     categories = {path: entry[0] for path, entry in census_registry.DISCOVERED_TYPES.items()}
     return {
         "summary": census.summary(),
+        "limits": census_owner.census_limits(),
         "roots": [root.as_record() for root in census.roots],
         "left_out_owner_definitions": [
             {"definition": path, "justification": reason}
@@ -2670,7 +2775,12 @@ def census_record(census: census_owner.DecisionPathCensus) -> dict[str, Any]:
         ],
         "callables": [
             {key: value for key, value in record.as_record().items() if key != "parameters"}
-            for record in census.callables.values()
+            for path, record in census.callables.items()
+            if path not in census.nested
+        ],
+        "nested_callables": [
+            {**record.as_record(), "parameters": [item.as_record() for item in census.callables[path].parameters]}
+            for path, record in census.nested.items()
         ],
     }
 
@@ -4935,7 +5045,7 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
         "",
         "Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.",
         "",
-        "## Input surface (policy V3/V4 section 5A)",
+        "## Input surface (policy V5 section 5A)",
         "",
         f"Discovered, not listed: `{census['summary']['census_version']}` walks the owner code from "
         f"{census['summary']['roots']} hand-written roots and reaches {census['summary']['callables']} callables and "
@@ -4943,8 +5053,19 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
         f"{census['summary']['protocol_types']} protocol). {len(census['left_out_owner_definitions'])} owner-module "
         "definitions are left out, each with a recorded reason.",
         "",
+        f"Inside those callables it discovers {census['summary']['nested_callables']} nested, local and private callables "
+        f"({', '.join(f'{count} {role}' for role, count in census['summary']['nested_callables_by_role'].items())}), "
+        "each classified from its call sites inside the owner: "
+        + ", ".join(f"{count} {name}" for name, count in census['summary']['nested_callables_by_classification'].items())
+        + ".",
+        "",
+        "| nested classification basis | callables |",
+        "| --- | ---: |",
+        *(f"| {basis} | {count} |" for basis, count in census["summary"]["nested_callables_by_basis"].items()),
+        "",
         f"{summary['rows']} inputs: the fields of {summary['owner_input_types']} reached types, the parameters of "
-        f"{summary['owner_call_sites']} roots and the parameters of {summary['owner_internal_callables']} internal callables.",
+        f"{summary['owner_call_sites']} roots, the parameters of {summary['owner_internal_callables']} internal callables "
+        f"and the parameters of {summary['owner_nested_callables']} nested callables.",
         "",
         "| census category | inputs |",
         "| --- | ---: |",
@@ -4972,6 +5093,14 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
         "",
         *(f"- `{item['owner']}.{item['parameter']}` = `{item['default']}`" for item in summary["owner_default_constants"]),
         "",
+        "Nested-callable defaults (owner-internal; whether a call site inside the owner passes the argument):",
+        "",
+        *(
+            f"- `{item['owner']}.{item['parameter']}` = `{item['default']}` ({item['default_override']})"
+            for item in summary["nested_callable_defaults"]
+        ),
+        "",
+        *_limits_report(census["limits"]),
         "## Database coverage",
         "",
         "| family | venue | status | data-window rows | missing |",
@@ -5049,6 +5178,43 @@ def render_report(inventory: Mapping[str, Any], digest: str) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def _limits_report(limits: Mapping[str, Any]) -> list[str]:
+    measured = limits["measured_coverage"]
+    lines = [
+        "## Census limits (policy V5 section 5A.5)",
+        "",
+        limits["claim"],
+        "",
+        *(f"- **{item['limit']}.** {item['statement']}" for item in limits["known_limits"]),
+        "",
+        f"Measured with {measured['tool']} on {measured['measured_on']}. {measured['scope']}",
+        "",
+        "| run | reached-body lines | reached-body branches | whole reached modules: lines | whole reached modules: branches | nested callables executed |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for run in measured["runs"]:
+        cells = [
+            f"{run[name]['covered']:,}/{run[name]['total']:,} ({run[name]['percent']}%)"
+            for name in ("reached_lines", "reached_branches", "module_lines", "module_branches")
+        ]
+        executed = run["nested_callables_executed"]
+        cells.append(f"{executed['covered']}/{executed['total']}")
+        lines.append(f"| {run['run']} | " + " | ".join(cells) + " |")
+    lines += [
+        "",
+        measured["unexecuted_arcs"],
+        "",
+        measured["strict_trace"],
+        "Nested callables neither run executes (classified from source alone): "
+        + ", ".join(f"`{path}`" for path in measured["nested_never_executed"])
+        + ".",
+        "",
+        limits["backstop"],
+        "",
+    ]
+    return lines
 
 
 # --- canonical encoding --------------------------------------------------------------

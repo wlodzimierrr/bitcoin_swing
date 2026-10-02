@@ -32,6 +32,21 @@ registry with discovery.
   every dataclass constructed while a thunk runs. The census tests require the
   static census to contain every traced item.
 
+Correction R2 (policy V5 section 5A.1, 5A.5 and 5A.7):
+
+- **Nested, local and private callables.** Every function, lambda, generator
+  expression and class defined inside a reached callable's body is discovered
+  from the live code object's nested code constants, paired with its node in
+  the module source, and recorded with its qualified name, parameters,
+  defaults and every call site inside the owner. Each one is classified
+  ``OWNER_INTERNAL`` or ``EXTERNAL`` from that call-site AST, with the basis
+  recorded (:func:`_classify_nested`).
+- **No tracer exemption.** A traced frame is covered only by a static census
+  callable with the same code identity and the same parameter names; a nested
+  frame is no longer covered by its enclosing callable.
+- **Stated limits.** :data:`CENSUS_LIMITS` records what the census cannot see
+  and the measured line and branch coverage of the reached owner bodies.
+
 Everything here is structural: no input is classified, no value is read and no
 owner is modified.
 """
@@ -39,17 +54,19 @@ owner is modified.
 from __future__ import annotations
 
 import ast
+import builtins
 import dataclasses
 import dis
 import functools
 import importlib
 import inspect
+import linecache
 import sys
 import textwrap
 import types
 from collections import deque
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
@@ -59,7 +76,7 @@ from typing import Any
 import btc_predictor
 
 
-CENSUS_VERSION = "DECISION_PATH_STATIC_CENSUS_V1"
+CENSUS_VERSION = "DECISION_PATH_STATIC_CENSUS_V2"
 PACKAGE = "btc_predictor"
 # The census never walks its own tests or EPIC Y research code: neither is
 # an owner on the champion's decision path.
@@ -304,7 +321,10 @@ REF_DEFAULT = "DEFAULT"
 REF_MEMBER = "CLASS_MEMBER"
 REF_BASE = "BASE_CLASS"
 REF_FIELD = "FIELD_TYPE_OR_DEFAULT"
-REFERENCE_KINDS = (REF_ROOT, REF_CODE, REF_LOCAL_IMPORT, REF_ANNOTATION, REF_DEFAULT, REF_MEMBER, REF_BASE, REF_FIELD)
+REF_NESTED = "NESTED_DEFINITION"
+REFERENCE_KINDS = (
+    REF_ROOT, REF_CODE, REF_LOCAL_IMPORT, REF_ANNOTATION, REF_DEFAULT, REF_MEMBER, REF_BASE, REF_FIELD, REF_NESTED,
+)
 
 ROLE_FUNCTION = "FUNCTION"
 ROLE_METHOD = "METHOD"
@@ -312,6 +332,41 @@ ROLE_STATICMETHOD = "STATICMETHOD"
 ROLE_CLASSMETHOD = "CLASSMETHOD"
 ROLE_PROPERTY = "PROPERTY"
 _RECEIVER_ROLES = (ROLE_METHOD, ROLE_CLASSMETHOD, ROLE_PROPERTY)
+# Callables defined inside a reached callable's body (correction R2).
+ROLE_NESTED_FUNCTION = "NESTED_FUNCTION"
+ROLE_LAMBDA = "LAMBDA"
+ROLE_GENERATOR_EXPRESSION = "GENERATOR_EXPRESSION"
+ROLE_LOCAL_CLASS = "LOCAL_CLASS"
+NESTED_ROLES = (ROLE_NESTED_FUNCTION, ROLE_LAMBDA, ROLE_GENERATOR_EXPRESSION, ROLE_LOCAL_CLASS)
+
+# Policy V5 section 5A.1: a nested callable is owner-internal when every call
+# site inside the owner supplies only owner-computed values or literals;
+# otherwise it is part of the external input surface.
+NESTED_OWNER_INTERNAL = "OWNER_INTERNAL"
+NESTED_EXTERNAL = "EXTERNAL"
+NESTED_CLASSIFICATIONS = (NESTED_OWNER_INTERNAL, NESTED_EXTERNAL)
+BASIS_DIRECT_CALLS = "EVERY_CALL_SITE_IS_A_DIRECT_CALL_PASSING_LITERALS_OR_ENCLOSING_SCOPE_NAMES"
+BASIS_BUILTIN_KEY = "KEY_FUNCTION_OF_BUILTIN_SORTED_MIN_OR_MAX_OVER_ENCLOSING_SCOPE_VALUES"
+BASIS_GENERATOR = "GENERATOR_EXPRESSION_ITERATOR_BOUND_IN_THE_ENCLOSING_SCOPE"
+BASIS_NEVER_CALLED = "NEVER_REFERENCED_IN_THE_ENCLOSING_SCOPE"
+BASIS_ESCAPES = "ESCAPES_THE_ENCLOSING_SCOPE_AS_A_VALUE"
+BASIS_COMPUTED_ARGUMENT = "A_CALL_SITE_PASSES_A_COMPUTED_EXPRESSION"
+BASIS_UNPACKED_ARGUMENT = "A_CALL_SITE_UNPACKS_ARGUMENTS"
+BASIS_DECORATED = "DECORATED_LOCAL_FUNCTION"
+BASIS_REBOUND = "LOCAL_NAME_REBOUND_IN_THE_ENCLOSING_SCOPE"
+BASIS_LOCAL_CLASS = "LOCAL_CLASS_OR_ITS_MEMBER"
+BASIS_LIVE_CODE_DIFFERS = "LIVE_CODE_DIFFERS_FROM_ITS_SOURCE"
+OWNER_INTERNAL_BASES = (BASIS_DIRECT_CALLS, BASIS_BUILTIN_KEY, BASIS_GENERATOR, BASIS_NEVER_CALLED)
+
+FORM_DIRECT_CALL = "DIRECT_CALL"
+FORM_BUILTIN_KEY = "BUILTIN_KEY_CALLBACK"
+FORM_GENERATOR = "GENERATOR_EXPRESSION"
+ARGUMENT_LITERAL = "LITERAL"
+ARGUMENT_SCOPE_NAME = "ENCLOSING_SCOPE_NAME"
+ARGUMENT_SCOPE_EXPRESSION = "EVALUATED_IN_THE_ENCLOSING_SCOPE"
+ARGUMENT_COMPUTED = "COMPUTED_EXPRESSION"
+ARGUMENT_UNPACKED = "UNPACKED"
+_KEY_BUILTINS = frozenset({"sorted", "min", "max"})
 
 TYPE_DATACLASS = "DATACLASS"
 TYPE_PROTOCOL = "PROTOCOL"
@@ -398,8 +453,87 @@ class CallSite:
 
 
 @dataclass(frozen=True)
+class NestedArgument:
+    """One value a call site inside the owner supplies to a nested callable."""
+
+    slot: str
+    expression: str
+    basis: str
+
+    def as_record(self) -> dict[str, str]:
+        return {"slot": self.slot, "expression": self.expression, "basis": self.basis}
+
+
+@dataclass(frozen=True)
+class NestedCallSite:
+    """Where the owner supplies a nested callable's parameters.
+
+    A direct call names the callable; a builtin ``sorted``/``min``/``max``
+    applies a ``key=`` lambda to the values the owner passes it; a generator
+    expression receives the iterator of its first ``for`` clause.
+    """
+
+    form: str
+    line: int
+    callee: str
+    arguments: tuple[NestedArgument, ...]
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "form": self.form,
+            "line": self.line,
+            "callee": self.callee,
+            "arguments": [item.as_record() for item in self.arguments],
+        }
+
+
+@dataclass(frozen=True)
+class NestedCallable:
+    """A callable defined inside a reached callable's body, and its classification.
+
+    ``module``, ``qualname`` (the code object's ``co_qualname``), ``source``
+    and ``column`` identify the code object, so the tracer can match an
+    executed nested frame exactly. Its parameters are the census callable
+    record under the same path.
+    """
+
+    path: str
+    module: str
+    qualname: str
+    role: str
+    enclosing: str
+    source: str
+    column: int
+    classification: str
+    basis: str
+    call_sites: tuple[NestedCallSite, ...]
+
+    @property
+    def code_key(self) -> tuple[str, str, str, int]:
+        return (self.module, self.qualname, self.source, self.column)
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "path": self.path,
+            "qualname": self.qualname,
+            "role": self.role,
+            "enclosing": self.enclosing,
+            "source": self.source,
+            "column": self.column,
+            "classification": self.classification,
+            "basis": self.basis,
+            "call_sites": [site.as_record() for site in self.call_sites],
+        }
+
+
+@dataclass(frozen=True)
 class DecisionPathCensus:
-    """The static closure from the roots. Paths are ``module.qualname``."""
+    """The static closure from the roots. Paths are ``module.qualname``.
+
+    ``callables`` holds every reached callable, including the nested ones;
+    ``nested`` adds, for those, their enclosing owner, call sites and
+    ``OWNER_INTERNAL``/``EXTERNAL`` classification.
+    """
 
     roots: tuple[DecisionPathRoot, ...]
     callables: Mapping[str, CensusCallable]
@@ -407,21 +541,31 @@ class DecisionPathCensus:
     references: Mapping[str, tuple[tuple[str, str], ...]]
     call_sites: tuple[CallSite, ...]
     sourceless: tuple[str, ...]
+    nested: Mapping[str, NestedCallable] = field(default_factory=dict)
 
     @property
     def root_paths(self) -> tuple[str, ...]:
         return tuple(root.path for root in self.roots)
 
     @functools.cached_property
+    def nested_by_code(self) -> Mapping[tuple[str, str, str, int], tuple[str, ...]]:
+        """Nested census paths by code identity (module, co_qualname, source, column)."""
+
+        grouped: dict[tuple[str, str, str, int], list[str]] = {}
+        for path, record in self.nested.items():
+            grouped.setdefault(record.code_key, []).append(path)
+        return {key: tuple(sorted(value)) for key, value in grouped.items()}
+
+    @functools.cached_property
     def callers(self) -> Mapping[str, tuple[str, ...]]:
-        """For each node, the reached callables whose bodies name it."""
+        """For each node, the reached callables whose bodies name or define it."""
 
         callers: dict[str, set[str]] = {}
         for source, targets in self.references.items():
             if source not in self.callables:
                 continue
             for kind, target in targets:
-                if kind in (REF_CODE, REF_LOCAL_IMPORT):
+                if kind in (REF_CODE, REF_LOCAL_IMPORT, REF_NESTED):
                     callers.setdefault(target, set()).add(source)
         return {key: tuple(sorted(value)) for key, value in sorted(callers.items())}
 
@@ -469,6 +613,11 @@ class DecisionPathCensus:
             if any(target == path and kind not in (REF_ANNOTATION,) for kind, target in targets)
             and source not in sited
         )
+        nested = self.nested.get(path)
+        if nested is not None and nested.basis not in (BASIS_DIRECT_CALLS, BASIS_NEVER_CALLED):
+            # Called back by a builtin, escaping or unverifiable: a direct call
+            # site does not show every argument this callable receives.
+            unresolved = sorted({*unresolved, nested.enclosing})
         overriding = sorted(
             {
                 site.caller
@@ -487,17 +636,32 @@ class DecisionPathCensus:
     def summary(self) -> dict[str, Any]:
         dataclass_types = [item for item in self.types.values() if item.kind == TYPE_DATACLASS]
         protocol_types = [item for item in self.types.values() if item.kind == TYPE_PROTOCOL]
+        named = [item for path, item in self.callables.items() if path not in self.nested]
+        nested = list(self.nested.values())
+
+        def count(values: Iterator[str]) -> dict[str, int]:
+            counts: dict[str, int] = {}
+            for value in values:
+                counts[value] = counts.get(value, 0) + 1
+            return dict(sorted(counts.items()))
+
         return {
             "census_version": CENSUS_VERSION,
             "roots": len(self.roots),
-            "callables": len(self.callables),
+            "callables": len(named),
+            "nested_callables": len(nested),
+            "nested_callables_by_role": count(item.role for item in nested),
+            "nested_callables_by_classification": count(item.classification for item in nested),
+            "nested_callables_by_basis": count(item.basis for item in nested),
             "types": len(self.types),
             "dataclass_types": len(dataclass_types),
             "protocol_types": len(protocol_types),
             "other_classes": len(self.types) - len(dataclass_types) - len(protocol_types),
             "fields": sum(len(item.fields) for item in self.types.values()),
-            "parameters": sum(len(item.parameters) for item in self.callables.values()),
+            "parameters": sum(len(item.parameters) for item in named),
+            "nested_parameters": sum(len(self.callables[item.path].parameters) for item in nested),
             "resolved_call_sites": len(self.call_sites),
+            "nested_call_sites": sum(len(item.call_sites) for item in nested),
             "callables_without_source": list(self.sourceless),
         }
 
@@ -933,6 +1097,467 @@ def _type_fields(cls: type) -> tuple[str, tuple[str, ...]]:
     return TYPE_CLASS, ()
 
 
+# --- nested, local and private callables (correction R2) -----------------------------------
+
+
+def code_parameters(code: types.CodeType) -> tuple[tuple[str, str], ...]:
+    """A code object's parameters as ``(name, kind)`` in signature order.
+
+    The kinds are ``inspect.Parameter`` kind names. A generator expression's
+    only parameter is CPython's implicit iterator ``.0``.
+    """
+
+    names = code.co_varnames
+    positional = code.co_argcount
+    keyword_only = code.co_kwonlyargcount
+    out = [(name, "POSITIONAL_ONLY") for name in names[: code.co_posonlyargcount]]
+    out += [(name, "POSITIONAL_OR_KEYWORD") for name in names[code.co_posonlyargcount : positional]]
+    index = positional + keyword_only
+    if code.co_flags & inspect.CO_VARARGS:
+        out.append((names[index], "VAR_POSITIONAL"))
+        index += 1
+    out += [(name, "KEYWORD_ONLY") for name in names[positional : positional + keyword_only]]
+    if code.co_flags & inspect.CO_VARKEYWORDS:
+        out.append((names[index], "VAR_KEYWORD"))
+    return tuple(out)
+
+
+def code_source(code: types.CodeType) -> str:
+    """``path:line`` of a code object, relative to the repository like every census source."""
+
+    try:
+        relative = Path(code.co_filename).resolve().relative_to(_PACKAGE_DIRECTORY.parent)
+    except ValueError:
+        relative = Path(Path(code.co_filename).name)
+    return f"{relative.as_posix()}:{code.co_firstlineno}"
+
+
+def _source_positions(code: types.CodeType) -> list[tuple[int, int, int, int]]:
+    """Instruction positions that cover source text (the zero-width ``RESUME`` marker excluded)."""
+
+    return [
+        (line, end_line, column, end_column)
+        for line, end_line, column, end_column in code.co_positions()
+        if None not in (line, end_line, column, end_column) and (line, column) != (end_line, end_column)
+    ]
+
+
+def code_column(code: types.CodeType) -> int:
+    """The first column an instruction of ``code`` covers on its first line (-1 if none).
+
+    Two anonymous scopes on one source line differ here.
+    """
+
+    columns = [column for line, _, column, _ in _source_positions(code) if line == code.co_firstlineno]
+    return min(columns) if columns else -1
+
+
+_SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.GeneratorExp, ast.ClassDef)
+# CPython 3.12 compiles list, set and dict comprehensions inline (PEP 709): they
+# have no code object of their own, but they still scope their targets.
+_INLINED_COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp)
+_COMPREHENSION_SCOPES = (ast.GeneratorExp, *_INLINED_COMPREHENSIONS)
+
+
+def _scope_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Lambda):
+        return "<lambda>"
+    if isinstance(node, ast.GeneratorExp):
+        return "<genexpr>"
+    return node.name  # type: ignore[attr-defined]
+
+
+def _scope_first_line(node: ast.AST) -> int:
+    lines = [node.lineno]  # type: ignore[attr-defined]
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        lines += [decorator.lineno for decorator in node.decorator_list]
+    return min(lines)
+
+
+def _scope_own_parts(node: ast.AST) -> list[ast.AST]:
+    """The parts of a scope node compiled into that scope's own code."""
+
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return list(node.body)
+    if isinstance(node, ast.Lambda):
+        return [node.body]
+    if isinstance(node, _COMPREHENSION_SCOPES):
+        first, *rest = node.generators
+        elements = [node.key, node.value] if isinstance(node, ast.DictComp) else [node.elt]
+        return [*elements, first.target, *first.ifs, *(part for item in rest for part in (item.target, item.iter, *item.ifs))]
+    return []
+
+
+def _scope_outer_parts(node: ast.AST) -> list[ast.AST]:
+    """The parts of a scope node evaluated in the scope that encloses it."""
+
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        arguments = node.args
+        parts: list[ast.AST] = [*arguments.defaults, *(item for item in arguments.kw_defaults if item is not None)]
+        if isinstance(node, ast.Lambda):
+            return parts
+        every = (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
+        parts += [item.annotation for item in every if item is not None and item.annotation is not None]
+        return [*node.decorator_list, *parts, *([node.returns] if node.returns is not None else [])]
+    if isinstance(node, _COMPREHENSION_SCOPES):
+        return [node.generators[0].iter]
+    if isinstance(node, ast.ClassDef):
+        return [*node.decorator_list, *node.bases, *(keyword.value for keyword in node.keywords)]
+    return []
+
+
+def _child_scopes(node: ast.AST) -> list[ast.AST]:
+    """Scope nodes whose code objects are constants of ``node``'s own code."""
+
+    found: list[ast.AST] = []
+
+    def visit(item: ast.AST) -> None:
+        if isinstance(item, _SCOPE_NODES):
+            found.append(item)
+            for part in _scope_outer_parts(item):
+                visit(part)
+            return
+        for child in ast.iter_child_nodes(item):
+            visit(child)
+
+    for part in _scope_own_parts(node):
+        visit(part)
+    return found
+
+
+def _walk_scoped(scope: ast.AST) -> Iterator[tuple[ast.AST, tuple[ast.AST, ...]]]:
+    """Every node inside ``scope``'s own code with the scopes between it and ``scope``."""
+
+    def visit(item: ast.AST, stack: tuple[ast.AST, ...]) -> Iterator[tuple[ast.AST, tuple[ast.AST, ...]]]:
+        yield item, stack
+        if isinstance(item, (*_SCOPE_NODES, *_INLINED_COMPREHENSIONS)):
+            for part in _scope_outer_parts(item):
+                yield from visit(part, stack)
+            for part in _scope_own_parts(item):
+                yield from visit(part, (*stack, item))
+            return
+        for child in ast.iter_child_nodes(item):
+            yield from visit(child, stack)
+
+    for part in _scope_own_parts(scope):
+        yield from visit(part, ())
+
+
+def _scope_bindings(scope: ast.AST) -> frozenset[str]:
+    """Names a scope binds: its parameters, assignment, loop, import, ``with``,
+    ``except`` and ``match`` targets and the local functions and classes it
+    defines. Names it declares ``global`` are not bound."""
+
+    bound: set[str] = set()
+    declared_global: set[str] = set()
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        arguments = scope.args
+        every = (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
+        bound.update(item.arg for item in every if item is not None)
+
+    def visit(item: ast.AST) -> None:
+        if isinstance(item, ast.Name) and isinstance(item.ctx, (ast.Store, ast.Del)):
+            bound.add(item.id)
+        elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bound.add(item.name)
+        elif isinstance(item, (ast.Import, ast.ImportFrom)):
+            bound.update(alias.asname or alias.name.split(".")[0] for alias in item.names)
+        elif isinstance(item, ast.Global):
+            declared_global.update(item.names)
+        elif isinstance(item, ast.ExceptHandler) and item.name:
+            bound.add(item.name)
+        elif isinstance(item, (ast.MatchAs, ast.MatchStar)) and item.name:
+            bound.add(item.name)
+        elif isinstance(item, ast.MatchMapping) and item.rest:
+            bound.add(item.rest)
+        if isinstance(item, (*_SCOPE_NODES, *_INLINED_COMPREHENSIONS)):
+            for part in _scope_outer_parts(item):
+                visit(part)
+            if isinstance(item, _COMPREHENSION_SCOPES):
+                # an assignment expression in a comprehension binds in this scope
+                bound.update(
+                    target.target.id
+                    for target in ast.walk(item)
+                    if isinstance(target, ast.NamedExpr) and isinstance(target.target, ast.Name)
+                )
+            return
+        for child in ast.iter_child_nodes(item):
+            visit(child)
+
+    for part in _scope_own_parts(scope):
+        visit(part)
+    return frozenset(bound - declared_global)
+
+
+@functools.lru_cache(maxsize=None)
+def _module_scope_index(filename: str) -> Mapping[tuple[str, int], tuple[ast.AST, ...]]:
+    """Every scope node of a source file by (name, first line)."""
+
+    text = "".join(linecache.getlines(filename))
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return {}
+    index: dict[tuple[str, int], list[ast.AST]] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, _SCOPE_NODES):
+            index.setdefault((_scope_name(node), _scope_first_line(node)), []).append(node)
+    return {key: tuple(value) for key, value in index.items()}
+
+
+def _span_contains(node: ast.AST, code: types.CodeType) -> bool:
+    start = (_scope_first_line(node), 0) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) else (
+        node.lineno, node.col_offset  # type: ignore[attr-defined]
+    )
+    end = (node.end_lineno, node.end_col_offset)  # type: ignore[attr-defined]
+    positions = _source_positions(code)
+    return bool(positions) and all(start <= (line, column) and (end_line, end_column) <= end for line, end_line, column, end_column in positions)
+
+
+def _pick_node(code: types.CodeType, candidates: Sequence[ast.AST]) -> ast.AST | None:
+    if len(candidates) == 1:
+        return candidates[0]
+    containing = [node for node in candidates if _span_contains(node, code)]
+    return containing[0] if len(containing) == 1 else None
+
+
+def _source_node(code: types.CodeType) -> ast.AST | None:
+    """The scope node of a reached function's code in its module source, if the live code still matches it."""
+
+    candidates = _module_scope_index(code.co_filename).get((code.co_name, code.co_firstlineno), ())
+    return _pick_node(code, candidates)
+
+
+def _match_child_scopes(
+    parent_code: types.CodeType, parent_node: ast.AST | None
+) -> list[tuple[types.CodeType, ast.AST | None]]:
+    """Pair each nested code constant with its source node (``None`` when the
+    live code no longer matches its source)."""
+
+    children = [constant for constant in parent_code.co_consts if isinstance(constant, types.CodeType)]
+    if parent_node is None:
+        return [(child, None) for child in children]
+    candidates: dict[tuple[str, int], list[ast.AST]] = {}
+    for node in _child_scopes(parent_node):
+        candidates.setdefault((_scope_name(node), _scope_first_line(node)), []).append(node)
+    matched: list[tuple[types.CodeType, ast.AST | None]] = []
+    used: set[int] = set()
+    for child in children:
+        options = [node for node in candidates.get((child.co_name, child.co_firstlineno), ()) if id(node) not in used]
+        node = _pick_node(child, options)
+        if node is not None:
+            used.add(id(node))
+        matched.append((child, node))
+    return matched
+
+
+def _source_parameters(node: ast.AST | None) -> tuple[tuple[str, ...] | None, dict[str, str]]:
+    """Parameter names and default expressions as the source declares them."""
+
+    if isinstance(node, ast.GeneratorExp):
+        return (".0",), {}
+    if isinstance(node, ast.ClassDef):
+        return (), {}
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        return None, {}
+    arguments = node.args
+    positional = [*arguments.posonlyargs, *arguments.args]
+    defaults = {
+        item.arg: ast.unparse(default)
+        for item, default in zip(positional[len(positional) - len(arguments.defaults) :], arguments.defaults)
+    }
+    defaults.update(
+        {item.arg: ast.unparse(default) for item, default in zip(arguments.kwonlyargs, arguments.kw_defaults) if default is not None}
+    )
+    names = tuple(
+        item.arg
+        for item in (*positional, arguments.vararg, *arguments.kwonlyargs, arguments.kwarg)
+        if item is not None
+    )
+    return names, defaults
+
+
+class _ScopeContext:
+    """Parents, enclosing scopes and name occurrences inside one scope's own code."""
+
+    def __init__(self, scope: ast.AST, chain: tuple[frozenset[str], ...], namespace: Mapping[str, Any]) -> None:
+        self.scope = scope
+        self.chain = chain
+        self.namespace = namespace
+        self.parents: dict[ast.AST, ast.AST] = {}
+        self.stacks: dict[ast.AST, tuple[ast.AST, ...]] = {}
+        self.names: dict[str, list[ast.Name]] = {}
+        self._bindings: dict[ast.AST, frozenset[str]] = {}
+        for node, stack in _walk_scoped(scope):
+            self.stacks[node] = stack
+            for child in ast.iter_child_nodes(node):
+                self.parents.setdefault(child, node)
+            if isinstance(node, ast.Name):
+                self.names.setdefault(node.id, []).append(node)
+
+    def bindings(self, scope: ast.AST) -> frozenset[str]:
+        if scope not in self._bindings:
+            self._bindings[scope] = _scope_bindings(scope)
+        return self._bindings[scope]
+
+    def shadowed(self, name: str, node: ast.AST) -> bool:
+        """Whether ``name`` at ``node`` refers to a binding of a scope inside this one."""
+
+        return any(name in self.bindings(scope) for scope in self.stacks[node])
+
+    def argument(self, slot: str, expression: ast.AST, at: ast.AST, *, unpacked: bool = False) -> NestedArgument:
+        text = ast.unparse(expression)
+        if unpacked or isinstance(expression, ast.Starred):
+            return NestedArgument(slot, text, ARGUMENT_UNPACKED)
+        try:
+            ast.literal_eval(expression)
+        except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+            pass
+        else:
+            return NestedArgument(slot, text, ARGUMENT_LITERAL)
+        if isinstance(expression, ast.Name):
+            for scope in reversed(self.stacks[at]):
+                if expression.id in self.bindings(scope):
+                    # a comprehension target iterates values computed in this
+                    # owner; an inner function's own name is not the owner's
+                    basis = ARGUMENT_SCOPE_NAME if isinstance(scope, _COMPREHENSION_SCOPES) else ARGUMENT_COMPUTED
+                    return NestedArgument(slot, text, basis)
+            if any(expression.id in bound for bound in self.chain):
+                return NestedArgument(slot, text, ARGUMENT_SCOPE_NAME)
+        return NestedArgument(slot, text, ARGUMENT_COMPUTED)
+
+    def is_builtin(self, function: ast.AST, names: frozenset[str]) -> bool:
+        return (
+            isinstance(function, ast.Name)
+            and function.id in names
+            and not self.shadowed(function.id, function)
+            and not any(function.id in bound for bound in self.chain)
+            and function.id not in self.namespace
+            and hasattr(builtins, function.id)
+        )
+
+
+def _classify_named(name: str, context: _ScopeContext) -> tuple[str, str, tuple[NestedCallSite, ...]]:
+    """A local function (or lambda bound to a local name) by its uses in the enclosing scope."""
+
+    sites: list[NestedCallSite] = []
+    external: str | None = None
+    definitions = sum(
+        1
+        for node, stack in context.stacks.items()
+        if not stack
+        and (
+            (isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == name)
+            or (isinstance(node, ast.Name) and node.id == name and isinstance(node.ctx, (ast.Store, ast.Del)))
+        )
+    )
+    if definitions > 1:
+        external = BASIS_REBOUND
+    for occurrence in context.names.get(name, ()):
+        if context.shadowed(name, occurrence) or isinstance(occurrence.ctx, (ast.Store, ast.Del)):
+            continue
+        call = context.parents.get(occurrence)
+        if not (isinstance(call, ast.Call) and call.func is occurrence):
+            external = external or BASIS_ESCAPES
+            continue
+        arguments = [context.argument(str(index), item, call) for index, item in enumerate(call.args)]
+        arguments += [
+            context.argument(keyword.arg or "**", keyword.value, call, unpacked=keyword.arg is None)
+            for keyword in call.keywords
+        ]
+        sites.append(NestedCallSite(FORM_DIRECT_CALL, call.lineno, name, tuple(arguments)))
+    bases = {argument.basis for site in sites for argument in site.arguments}
+    if external is not None:
+        return NESTED_EXTERNAL, external, tuple(sites)
+    if ARGUMENT_UNPACKED in bases:
+        return NESTED_EXTERNAL, BASIS_UNPACKED_ARGUMENT, tuple(sites)
+    if ARGUMENT_COMPUTED in bases:
+        return NESTED_EXTERNAL, BASIS_COMPUTED_ARGUMENT, tuple(sites)
+    if not sites:
+        return NESTED_OWNER_INTERNAL, BASIS_NEVER_CALLED, ()
+    return NESTED_OWNER_INTERNAL, BASIS_DIRECT_CALLS, tuple(sites)
+
+
+def _classify_nested(node: ast.AST, context: _ScopeContext) -> tuple[str, str, tuple[NestedCallSite, ...]]:
+    """``OWNER_INTERNAL`` or ``EXTERNAL`` for a callable defined in ``context.scope``, decided from the AST.
+
+    Owner-internal means every value its parameters receive is supplied inside
+    the enclosing owner:
+
+    - a local function called only directly, every argument a literal or a
+      name bound in the enclosing owner's scopes;
+    - a lambda passed only as ``key=`` to builtin ``sorted``, ``min`` or
+      ``max``, which applies it to the values the owner passes the builtin;
+    - a generator expression, whose only parameter is the iterator of its
+      first ``for`` clause, evaluated in the enclosing scope.
+
+    Anything else (escaping as a value, a computed or unpacked argument, a
+    decorator, a rebound name, a local class) is external.
+    """
+
+    if isinstance(node, ast.GeneratorExp):
+        iterable = node.generators[0].iter
+        argument = NestedArgument(".0", f"iter({ast.unparse(iterable)})", ARGUMENT_SCOPE_EXPRESSION)
+        return NESTED_OWNER_INTERNAL, BASIS_GENERATOR, (NestedCallSite(FORM_GENERATOR, iterable.lineno, "<genexpr>", (argument,)),)
+    if isinstance(node, ast.ClassDef):
+        return NESTED_EXTERNAL, BASIS_LOCAL_CLASS, ()
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if node.decorator_list:
+            return NESTED_EXTERNAL, BASIS_DECORATED, ()
+        return _classify_named(node.name, context)
+    parent = context.parents.get(node)
+    if isinstance(parent, ast.keyword) and parent.arg == "key":
+        call = context.parents.get(parent)
+        if isinstance(call, ast.Call) and context.is_builtin(call.func, _KEY_BUILTINS):
+            arguments = tuple(context.argument(str(index), item, call) for index, item in enumerate(call.args))
+            unpacked = any(item.basis == ARGUMENT_UNPACKED for item in arguments) or any(k.arg is None for k in call.keywords)
+            site = NestedCallSite(
+                FORM_BUILTIN_KEY,
+                call.lineno,
+                call.func.id,  # type: ignore[attr-defined]
+                tuple(
+                    item if item.basis == ARGUMENT_UNPACKED else dataclasses.replace(item, basis=ARGUMENT_SCOPE_EXPRESSION)
+                    for item in arguments
+                ),
+            )
+            if unpacked:
+                return NESTED_EXTERNAL, BASIS_UNPACKED_ARGUMENT, (site,)
+            return NESTED_OWNER_INTERNAL, BASIS_BUILTIN_KEY, (site,)
+    if (
+        isinstance(parent, ast.Assign)
+        and len(parent.targets) == 1
+        and isinstance(parent.targets[0], ast.Name)
+        and parent.value is node
+        and not context.stacks.get(parent, ())
+    ):
+        return _classify_named(parent.targets[0].id, context)
+    return NESTED_EXTERNAL, BASIS_ESCAPES, ()
+
+
+def _nested_role(code: types.CodeType, node: ast.AST | None) -> str:
+    if isinstance(node, ast.ClassDef):
+        return ROLE_LOCAL_CLASS
+    if isinstance(node, ast.Lambda) or code.co_name == "<lambda>":
+        return ROLE_LAMBDA
+    if isinstance(node, ast.GeneratorExp) or code.co_name == "<genexpr>":
+        return ROLE_GENERATOR_EXPRESSION
+    if node is None and not code.co_flags & inspect.CO_NEWLOCALS:
+        return ROLE_LOCAL_CLASS
+    return ROLE_NESTED_FUNCTION
+
+
+def _nested_call_site(caller: str, callee: str, site: NestedCallSite) -> CallSite:
+    positional = [item for item in site.arguments if item.slot.isdigit()]
+    return CallSite(
+        caller=caller,
+        callee=callee,
+        positional=sum(1 for item in positional if item.basis != ARGUMENT_UNPACKED),
+        keywords=tuple(sorted(item.slot for item in site.arguments if not item.slot.isdigit() and item.slot != "**")),
+        star_args=any(item.basis == ARGUMENT_UNPACKED for item in positional),
+        star_kwargs=any(item.slot == "**" for item in site.arguments),
+    )
+
+
 class _Walker:
     def __init__(self) -> None:
         self.functions: dict[str, types.FunctionType] = {}
@@ -942,6 +1567,8 @@ class _Walker:
         self.call_sites: list[CallSite] = []
         self.sourceless: list[str] = []
         self.queue: deque[Any] = deque()
+        self.nested: dict[str, NestedCallable] = {}
+        self.nested_callables: dict[str, CensusCallable] = {}
 
     def offer(self, value: Any, parent: str, kind: str) -> None:
         candidates = {}
@@ -1005,6 +1632,87 @@ class _Walker:
             self._record_call_sites(path, tree, namespace)
         for default in (*(function.__defaults__ or ()), *(function.__kwdefaults__ or {}).values()):
             self.offer(default, path, REF_DEFAULT)
+        if any(isinstance(constant, types.CodeType) for constant in function.__code__.co_consts):
+            module = function.__globals__.get("__name__", function.__module__)
+            self._visit_nested(function.__code__, _source_node(function.__code__), path, (), module, function.__globals__, False)
+
+    def _visit_nested(
+        self,
+        parent_code: types.CodeType,
+        parent_node: ast.AST | None,
+        parent_path: str,
+        chain: tuple[frozenset[str], ...],
+        module: str,
+        namespace: Mapping[str, Any],
+        in_local_class: bool,
+    ) -> None:
+        """Discover and classify every callable defined in ``parent_code``.
+
+        Its body's references and call sites are already the enclosing reached
+        callable's; this records the nested callable itself, so its parameters
+        are enumerated and the tracer can match its frames.
+        """
+
+        pairs = _match_child_scopes(parent_code, parent_node)
+        if not pairs:
+            return
+        context = None
+        if parent_node is not None:
+            chain = (_scope_bindings(parent_node), *chain)
+            context = _ScopeContext(parent_node, chain, namespace)
+        groups: dict[str, list[tuple[types.CodeType, ast.AST | None]]] = {}
+        for child, node in pairs:
+            groups.setdefault(child.co_name, []).append((child, node))
+        for name, members in sorted(groups.items()):
+            members.sort(key=lambda item: (item[0].co_firstlineno, code_column(item[0])))
+            for index, (child, node) in enumerate(members, start=1):
+                prefix = parent_code.co_qualname + "."
+                relative = (
+                    child.co_qualname[len(parent_code.co_qualname) :]
+                    if child.co_qualname.startswith(prefix)
+                    else f".<locals>.{child.co_name}"
+                )
+                # anonymous scopes, and repeated names, carry their source-order ordinal
+                suffix = f"#{index}" if name.startswith("<") or len(members) > 1 else ""
+                path = f"{parent_path}{relative}{suffix}"
+                role = _nested_role(child, node)
+                parameters = code_parameters(child)
+                source_names, defaults = _source_parameters(node)
+                matches = node is not None and source_names == tuple(item for item, _ in parameters)
+                if in_local_class or role == ROLE_LOCAL_CLASS:
+                    classification, basis, sites = NESTED_EXTERNAL, BASIS_LOCAL_CLASS, ()
+                elif not matches or context is None:
+                    classification, basis, sites = NESTED_EXTERNAL, BASIS_LIVE_CODE_DIFFERS, ()
+                else:
+                    classification, basis, sites = _classify_nested(node, context)  # type: ignore[arg-type]
+                records = []
+                position = 0
+                for item, kind in parameters:
+                    positional = kind in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")
+                    default = defaults.get(item) if matches else None
+                    records.append(CensusParameter(item, kind, position if positional else None, default is not None, default))
+                    position += 1 if positional else 0
+                source = code_source(child)
+                self.nested_callables[path] = CensusCallable(path, role, parent_path, REF_NESTED, source, tuple(records))
+                self.nested[path] = NestedCallable(
+                    path=path,
+                    module=module,
+                    qualname=child.co_qualname,
+                    role=role,
+                    enclosing=parent_path,
+                    source=source,
+                    column=code_column(child),
+                    classification=classification,
+                    basis=basis,
+                    call_sites=sites,
+                )
+                self.references.setdefault(parent_path, [])
+                if (REF_NESTED, path) not in self.references[parent_path]:
+                    self.references[parent_path].append((REF_NESTED, path))
+                self.call_sites.extend(_nested_call_site(parent_path, path, site) for site in sites if site.form == FORM_DIRECT_CALL)
+                self._visit_nested(
+                    child, node if matches else None, path, chain, module, namespace, in_local_class or role == ROLE_LOCAL_CLASS
+                )
 
     def _record_call_sites(self, caller: str, tree: ast.AST, namespace: Mapping[str, Any]) -> None:
         for node in ast.walk(tree):
@@ -1077,6 +1785,10 @@ def discover_decision_path(roots: Sequence[DecisionPathRoot] = DECISION_PATH_ROO
             source=_source_location(function),
             parameters=_parameters(function, role),
         )
+    clashing = sorted(set(callables) & set(walker.nested_callables))
+    if clashing:
+        raise CensusError("CONFLICTING_OWNER_OBJECTS", f"a nested callable shares a path with a reached owner: {clashing}")
+    callables = dict(sorted({**callables, **walker.nested_callables}.items()))
     census_types = {}
     for path, cls in sorted(walker.classes.items()):
         kind_name, fields = _type_fields(cls)
@@ -1103,6 +1815,7 @@ def discover_decision_path(roots: Sequence[DecisionPathRoot] = DECISION_PATH_ROO
         references=references,
         call_sites=sites,
         sourceless=tuple(sorted(walker.sourceless)),
+        nested=dict(sorted(walker.nested.items())),
     )
 
 
@@ -1151,9 +1864,29 @@ def unreached_owner_definitions(census: DecisionPathCensus) -> dict[str, str]:
 
 
 @dataclass(frozen=True)
+class TracedCode:
+    """One executed code object: its identity and its parameter names."""
+
+    module: str
+    qualname: str
+    source: str
+    column: int
+    parameters: tuple[str, ...]
+
+    @classmethod
+    def from_code(cls, module: str, code: types.CodeType) -> TracedCode:
+        return cls(module, code.co_qualname, code_source(code), code_column(code), tuple(name for name, _ in code_parameters(code)))
+
+    @property
+    def key(self) -> tuple[str, str, str, int]:
+        return (self.module, self.qualname, self.source, self.column)
+
+
+@dataclass(frozen=True)
 class TracedCalls:
     functions: frozenset[str]
     dataclasses: frozenset[str]
+    code: frozenset[TracedCode] = frozenset()
 
 
 def trace_owner_calls(thunk: Callable[[], Any]) -> tuple[Any, TracedCalls]:
@@ -1161,11 +1894,15 @@ def trace_owner_calls(thunk: Callable[[], Any]) -> tuple[Any, TracedCalls]:
     every ``btc_predictor`` dataclass constructed, via ``sys.setprofile``.
 
     A function is recorded as ``module.co_qualname``; nested functions,
-    lambdas and generator expressions keep their ``<locals>`` qualname.
+    lambdas and generator expressions keep their ``<locals>`` qualname. Each
+    executed code object is also recorded with its identity and parameter
+    names, so :func:`uncovered_traced` can check it against its own static
+    record.
     """
 
     functions: set[str] = set()
     constructed: set[str] = set()
+    executed: set[tuple[str, types.CodeType]] = set()
 
     def profile(frame: types.FrameType, event: str, arg: Any) -> None:
         if event != "call":
@@ -1180,6 +1917,7 @@ def trace_owner_calls(thunk: Callable[[], Any]) -> tuple[Any, TracedCalls]:
         module = frame.f_globals.get("__name__")
         if in_scope_module(module):
             functions.add(f"{module}.{code.co_qualname}")
+            executed.add((module, code))
 
     previous = sys.getprofile()
     sys.setprofile(profile)
@@ -1187,25 +1925,151 @@ def trace_owner_calls(thunk: Callable[[], Any]) -> tuple[Any, TracedCalls]:
         result = thunk()
     finally:
         sys.setprofile(previous)
-    return result, TracedCalls(frozenset(functions), frozenset(constructed))
+    code = frozenset(TracedCode.from_code(module, item) for module, item in executed)
+    return result, TracedCalls(frozenset(functions), frozenset(constructed), code)
 
 
 def uncovered_traced(census: DecisionPathCensus, traced: TracedCalls) -> dict[str, list[str]]:
     """Traced items the static census does not contain.
 
-    A traced nested function, lambda or generator expression is covered by the
-    census node whose body defines it.
+    There is no exemption (policy V5 section 5A.5). A traced nested function,
+    lambda or generator expression is covered only by its own static nested
+    record, never by the callable that encloses it. Each executed code object
+    must match a census callable by identity and by parameter names (less a
+    method's receiver), so a callable whose live signature differs from the
+    static census is reported too.
     """
 
-    def covered(path: str) -> bool:
-        if path in census.callables:
-            return True
-        parts = path.split(".<locals>")
-        return any(".<locals>".join(parts[: index + 1]) in census.callables for index in range(len(parts) - 1))
+    nested_paths = {f"{record.module}.{record.qualname}" for record in census.nested.values()}
+    named = {path for path in census.callables if path not in census.nested}
+    missing = {path for path in traced.functions if path not in named and path not in nested_paths}
+    for code in traced.code:
+        plain = f"{code.module}.{code.qualname}"
+        candidates = census.nested_by_code.get(code.key) or ((plain,) if plain in named else ())
+        if not candidates:
+            missing.add(f"{plain} at {code.source}: not in the static census")
+            continue
+        expected = []
+        for path in candidates:
+            record = census.callables[path]
+            expected.append(record.parameter_names)
+            receiver = record.role in _RECEIVER_ROLES and path not in census.nested
+            if (code.parameters[1:] if receiver else code.parameters) == record.parameter_names:
+                break
+        else:
+            missing.add(f"{candidates[0]}: executed parameters {code.parameters} differ from the static census {expected[0]}")
+    return {
+        "functions": sorted(missing),
+        "dataclasses": sorted(path for path in traced.dataclasses if path not in census.types),
+    }
+
+
+# --- stated limits (policy V5 section 5A.5) -------------------------------------------------
+
+CENSUS_LIMITS_VERSION = "DECISION_PATH_CENSUS_LIMITS_V1"
+CENSUS_COMPLETENESS_CLAIM = (
+    "The census claims completeness only for static discovery plus the runtime trace over the paths the fixture runs "
+    "and the owner tests actually exercise; it is not a universal proof (policy V5 section 5A.5). Static discovery "
+    "walks every reached callable's bytecode, annotations, defaults, members and nested code, and classifies every "
+    "nested, local and private callable it defines. The tracer has no exemption: every executed frame, nested or "
+    "not, must match a statically discovered callable by code identity and parameter names."
+)
+KNOWN_LIMITS: tuple[tuple[str, str], ...] = (
+    (
+        "ENCLOSING_LOCAL_CALLBACKS",
+        "A callable an owner receives as a value (a parameter or local variable holding a callback) is invisible to "
+        "static discovery, which resolves names only in module globals, closure cells and function-local imports. "
+        "Every function, lambda, generator expression and class defined inside a reached body is discovered and "
+        "classified; a received callback is caught only if a traced run executes it.",
+    ),
+    (
+        "UNNAMED_PROTOCOL_IMPLEMENTATIONS",
+        "A method on a concrete class that no reached code names, such as a caller-supplied implementation of a "
+        "Protocol, is not discovered. The one reached Protocol, btc_predictor.levels.breakout.SourceLevel, is "
+        "field-only, and its supported implementations (the weekly and monthly swing levels) are reached.",
+    ),
+    (
+        "DYNAMIC_GETATTR_DISPATCH",
+        "A getattr with a computed name is not resolved. Every reached owner getattr reads a field, property or "
+        "as_record of a reached class or a field of an enumerated configuration dataclass (R1 audit, confirmed by the "
+        "re-review pattern audit).",
+    ),
+    (
+        "UNEXECUTED_BRANCHES",
+        "Code that never runs gives no runtime evidence. The measured line and branch coverage of the reached owner "
+        "bodies is recorded below; an unexecuted arc is covered by static discovery alone.",
+    ),
+)
+MEASURED_COVERAGE: Mapping[str, Any] = {
+    "tool": "coverage.py 7.16.0 (branch measurement) on CPython 3.12.14",
+    "measured_on": "2026-10-02",
+    "scope": (
+        "Reached-body figures count the statements and branch arcs inside the source bodies of the reached named "
+        "callables, which contain every nested callable; whole-module figures also count unreached definitions and "
+        "module initialisation of the 50 reached source modules."
+    ),
+    "runs": (
+        {
+            "run": "fixture runs",
+            "description": "the 202 deterministic fixture runs of the nine census trace modules, covering all 74 roots",
+            "reached_lines": {"covered": 4993, "total": 7565, "percent": "66.00"},
+            "reached_branches": {"covered": 2235, "total": 3728, "percent": "59.95"},
+            "module_lines": {"covered": 4993, "total": 11539, "percent": "43.27"},
+            "module_branches": {"covered": 2235, "total": 4140, "percent": "53.99"},
+            "nested_callables_executed": {"covered": 224, "total": 230},
+        },
+        {
+            "run": "owner tests",
+            "description": (
+                "the 1,699 existing owner tests in the 55 modules listed under owner_test_files in "
+                "rbt002_rereview_evidence_v1.json"
+            ),
+            "reached_lines": {"covered": 5855, "total": 7565, "percent": "77.40"},
+            "reached_branches": {"covered": 2934, "total": 3728, "percent": "78.70"},
+            "module_lines": {"covered": 6480, "total": 11539, "percent": "56.16"},
+            "module_branches": {"covered": 3149, "total": 4140, "percent": "76.06"},
+            "nested_callables_executed": {"covered": 224, "total": 230},
+        },
+    ),
+    "strict_trace": (
+        "Under both runs a root-scoped tracer checked every executed frame against the static census by code identity "
+        "and parameter names, with no exemption: 0 uncovered functions and 0 uncovered dataclasses."
+    ),
+    "nested_never_executed": (
+        "btc_predictor.data.quality.DerivativesQualityConfig.__post_init__.<locals>.<genexpr>#1",
+        "btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#1",
+        "btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#2",
+        "btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#3",
+        "btc_predictor.risk.trailing._validate_result.<locals>.<genexpr>#1",
+    ),
+    "unexecuted_arcs": (
+        "1,493 reached-body branch arcs never run under the fixtures and 794 never run under the owner tests. Their "
+        "complete source-line to target-line lists are in backtest_evidence/research_backtest_v1/"
+        "rbt002_rereview_evidence_v1.json under coverage.runs.{fixtures,owners}.files.*.unexecuted_branches; the R2 "
+        "re-measurement reproduced those lists exactly."
+    ),
+}
+RUNTIME_GUARD_BACKSTOP = (
+    "Backstop: the runtime completeness guard of policy V5 section 5A.6, binding on RBT-004, RBT-005 and RBT-006. Every "
+    "owner function a composer calls directly must be a census root, and any incomplete owner result or missing-input "
+    "reason code in a composed replay must map to a cause in the reviewed inventory or CHAMPION_COMPLETION_SPEC_V1; an "
+    "unaccounted one fails the test (RBT-004/RBT-005) or blocks the freeze (RBT-006)."
+)
+
+
+def census_limits() -> dict[str, Any]:
+    """The census's stated limits and measured coverage, persisted with the inventory."""
 
     return {
-        "functions": sorted(path for path in traced.functions if not covered(path)),
-        "dataclasses": sorted(path for path in traced.dataclasses if path not in census.types),
+        "version": CENSUS_LIMITS_VERSION,
+        "claim": CENSUS_COMPLETENESS_CLAIM,
+        "known_limits": [{"limit": name, "statement": statement} for name, statement in KNOWN_LIMITS],
+        "measured_coverage": {
+            **{key: value for key, value in MEASURED_COVERAGE.items() if key not in ("runs", "nested_never_executed")},
+            "runs": [dict(run) for run in MEASURED_COVERAGE["runs"]],
+            "nested_never_executed": list(MEASURED_COVERAGE["nested_never_executed"]),
+        },
+        "backstop": RUNTIME_GUARD_BACKSTOP,
     }
 
 
