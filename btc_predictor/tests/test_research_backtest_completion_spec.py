@@ -55,7 +55,10 @@ from btc_predictor.research_backtest.completion_spec import CompletionSpecError
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / "backtest_evidence" / "research_backtest_v1"
 RULEBOOK = ROOT / "docs" / "strategy" / "bitcoin_swing_predictor_rulebook_v1_2.md"
-FROZEN_SPEC_SHA256 = "9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f"
+# RBT-004 rebind to the regenerated inventory (RBT-002 E3); only the bound
+# inventory digest changed. The reviewed RBT-002A digest was
+# 9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f.
+FROZEN_SPEC_SHA256 = "787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0"
 
 # The confirmed RBT-002 R2 list (25 undefined ids) plus LEVEL_VOLUME_PERCENTILE.
 CONFIRMED_IDS = {
@@ -371,7 +374,9 @@ def test_helper_census_status_matches_the_reviewed_roots(definition: dict[str, A
     roots = {item["root"] for item in spec.bound_inventory()["input_surface"]["census"]["roots"]}
     census = definition["helpers_by_census_status"]
     assert census["CENSUS_ROOT"] and set(census["CENSUS_ROOT"]) <= roots
-    assert not set(census["PROMOTE_TO_CENSUS_ROOT"]) & roots
+    # RBT-004 promoted every helper the spec marks PROMOTE_TO_CENSUS_ROOT; the bound
+    # (rebound) inventory lists each as a census root
+    assert set(census["PROMOTE_TO_CENSUS_ROOT"]) <= roots
     assert not set(census["CLASSIFIED_INPUT_SOURCE"]) & roots
     assert definition["composer_roots_to_promote"] == census["PROMOTE_TO_CENSUS_ROOT"]
     assert set(definition["composer_roots_to_promote"]) == {

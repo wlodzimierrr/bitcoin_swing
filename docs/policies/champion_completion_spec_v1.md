@@ -12,8 +12,8 @@ only**, made under
 | Research strategy identifier | `swing_v1.2+completion_v1` = `swing_v1.2` / `strategy_config_v2` / `default_phase1` plus this spec |
 | Scope | EPIC Y research backtests only. Not `swing_v1.2` for advisory, paper, EPIC X or BTC-019 use; adopting it anywhere else needs that workstream's own decision (policy V7 section 6) |
 | Machine-readable definition | `btc_predictor/research_backtest/completion_spec.py` (typed) → canonical sorted JSON `backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json` |
-| Definition SHA-256 | `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f` (`champion_completion_spec_v1.json.sha256`) |
-| Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V7) |
+| Definition SHA-256 | `787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0` (`champion_completion_spec_v1.json.sha256`), the RBT-004 rebind of the reviewed `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f` |
+| Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `250f9470b0586f091744c65bcb3d7e48c25ec4fe01ec7bcc79a9fda1a061cb17`, regenerated offline by RBT-004 after promoting the 14 section 8 helpers to census roots. It replaces `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V7); only its census section changed |
 | Evidence class | `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED` |
 
 This document explains the definition. **The machine-readable definition is
@@ -330,6 +330,17 @@ to a rule, element, citation or warm-up fact changes the definition digest and
 needs a new spec version (`CHAMPION_COMPLETION_SPEC_V2`). That version must be
 recorded before the run it affects (policy V7 sections 6 and 11). The spec
 cannot be re-derived after any EPIC Y outcome exists.
+
+**RBT-004 rebind (2026-10-03, RBT-002 finding E3).** Promoting the 14
+section 8 helpers to census roots changed the inventory's census, so RBT-004
+regenerated the inventory offline from its own snapshot and rebound this V1
+definition to it. Only two leaves changed, and both only by the inventory
+digest: `bound_inventory.sha256` and the copy of that digest in
+`pre_registration.data_consulted[0]`. Every entry, rule, guard, accounted
+cause, warm-up fact and census-status list is byte-identical. The canonical
+diff is in [rbt004_spec_rebind_evidence_v1.json](../../backtest_evidence/research_backtest_v1/rbt004_spec_rebind_evidence_v1.json).
+No rule, element, citation or warm-up fact changed, so this is not a
+`CHAMPION_COMPLETION_SPEC_V2`.
 
 Independent review: [report](../../backtest_evidence/research_backtest_v1/rbt002a_review_report_v1.md),
 [availability and validation evidence](../../backtest_evidence/research_backtest_v1/rbt002a_review_evidence_v1.json).

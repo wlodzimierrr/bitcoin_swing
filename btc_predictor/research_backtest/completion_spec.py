@@ -75,7 +75,11 @@ SPEC_EXCLUDED_USES = ("ADVISORY", "PAPER_TRADING", "EPIC_X", "BTC_019")
 
 # The reviewed RBT-002 inventory this spec covers (policy V7 section 6A: "as
 # confirmed by its independent review"). Changing it needs an explicit rebind.
-BOUND_INVENTORY_SHA256 = "108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a"
+# RBT-004 rebind (RBT-002 E3): promoting the 14 section 8 helpers to census roots
+# regenerated the inventory offline from its own snapshot; only its census
+# section changed. Previously bound:
+# 108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a.
+BOUND_INVENTORY_SHA256 = "250f9470b0586f091744c65bcb3d7e48c25ec4fe01ec7bcc79a9fda1a061cb17"
 BOUND_INVENTORY_VERSION = coverage.INVENTORY_VERSION
 BOUND_INVENTORY_FILENAME = coverage.INVENTORY_FILENAME
 

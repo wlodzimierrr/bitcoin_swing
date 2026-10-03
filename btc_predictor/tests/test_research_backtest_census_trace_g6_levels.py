@@ -32,6 +32,7 @@ from decimal import Decimal
 
 from btc_predictor.config.strategy import STRUCTURE_SCORE_CONTRACT_VERSION, load_strategy_config
 from btc_predictor.data import OhlcvBar
+from btc_predictor.data.ohlcv import next_bar_timestamp
 from btc_predictor.features.structure import calculate_structure_score_from_clusters
 from btc_predictor.levels.anchored_vwap import (
     CapitulationEvent,
@@ -614,6 +615,21 @@ def structure_score_support_missing():
     return _structure(resistances, entry=entry, stop=SYNTHETIC_STOP, level_strength_result=strength)
 
 
+# --- RBT-004: CHAMPION_COMPLETION_SPEC_V1 helpers promoted to census roots -----------
+# The composer calls these helpers directly (policy V7 sections 5A.6 and 6A), so each
+# is a decision-path root with its own deterministic trace fixtures.
+
+
+def next_bar_timestamp_weekly_pivot():
+    level = _weekly_levels()[0]
+    return next_bar_timestamp(level.level_timestamp, level.timeframe)
+
+
+def next_bar_timestamp_monthly_pivot():
+    level = _monthly_levels()[0]
+    return next_bar_timestamp(level.level_timestamp, level.timeframe)
+
+
 FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
     "btc_predictor.levels.swing.detect_weekly_swing_levels": (
         weekly_swings_detected,
@@ -660,6 +676,10 @@ FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
         structure_score_complete,
         structure_score_level_strength_missing,
         structure_score_support_missing,
+    ),
+    "btc_predictor.data.ohlcv.next_bar_timestamp": (
+        next_bar_timestamp_weekly_pivot,
+        next_bar_timestamp_monthly_pivot,
     ),
 }
 

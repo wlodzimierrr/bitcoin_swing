@@ -49,6 +49,8 @@ from btc_predictor.features.volatility import (
     EuphoriaFlagResult,
     calculate_euphoria_flag,
 )
+from btc_predictor.quant.comparisons import decision_greater_equal
+from btc_predictor.quant.transforms import normal_cdf_score
 from btc_predictor.portfolio.state_machine import (
     ENTER,
     PENDING_ENTRY,
@@ -648,6 +650,31 @@ def exit_not_triggered() -> ExitSignalResult:
     )
 
 
+# --- RBT-004: CHAMPION_COMPLETION_SPEC_V1 helpers promoted to census roots -----------
+# The composer calls these helpers directly (policy V7 sections 5A.6 and 6A), so each
+# is a decision-path root with its own deterministic trace fixtures.
+
+
+def normal_cdf_score_momentum_persistence():
+    """MOMENTUM_PERSISTENCE_SCORE / ADD_MOMENTUM_SCORE: 100 * Phi(z) of a trend z-score."""
+
+    return normal_cdf_score(float(Decimal("0.75")))
+
+
+def normal_cdf_score_negative_z():
+    return normal_cdf_score(float(Decimal("-1.25")))
+
+
+def decision_greater_equal_flow_supportive():
+    """FLOW_SUPPORTIVE_PREDICATE: decision_greater_equal(FlowScore, 60)."""
+
+    return decision_greater_equal(Decimal("62.5"), Decimal("60"))
+
+
+def decision_greater_equal_flow_unsupportive():
+    return decision_greater_equal(Decimal("59.5"), Decimal("60"))
+
+
 FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
     "btc_predictor.features.hold.calculate_hold_score": (
         hold_score_complete,
@@ -686,6 +713,14 @@ FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
         exit_structural_stop,
         exit_inputs_missing,
         exit_not_triggered,
+    ),
+    "btc_predictor.quant.transforms.normal_cdf_score": (
+        normal_cdf_score_momentum_persistence,
+        normal_cdf_score_negative_z,
+    ),
+    "btc_predictor.quant.comparisons.decision_greater_equal": (
+        decision_greater_equal_flow_supportive,
+        decision_greater_equal_flow_unsupportive,
     ),
 }
 

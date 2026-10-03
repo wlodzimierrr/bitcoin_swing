@@ -68,6 +68,7 @@ from btc_predictor.data import (
     expected_etf_publication_dates,
     missing_bar_timestamps,
 )
+from btc_predictor.data import ohlcv as ohlcv_owner
 from btc_predictor.data import quality as quality_owner
 from btc_predictor.features import add as add_owner
 from btc_predictor.features import entry as entry_owner
@@ -76,6 +77,7 @@ from btc_predictor.features import hold as hold_owner
 from btc_predictor.features import momentum as momentum_owner
 from btc_predictor.features import positioning as positioning_owner
 from btc_predictor.features import regime as regime_owner
+from btc_predictor.features import rolling as rolling_owner
 from btc_predictor.features import setup as setup_owner
 from btc_predictor.features import structure as structure_owner
 from btc_predictor.features import trend as trend_owner
@@ -88,6 +90,8 @@ from btc_predictor.levels import swing as swing_owner
 from btc_predictor.levels import volume_profile as volume_profile_owner
 from btc_predictor.research import prospective_integration_corpus as epic_x_corpus
 from btc_predictor.portfolio import state_machine as state_machine_owner
+from btc_predictor.quant import comparisons as comparisons_owner
+from btc_predictor.quant import transforms as transforms_owner
 from btc_predictor.research.us_equity_market_closures import (
     COVERAGE_END as CLOSURE_TABLE_COVERAGE_END,
     COVERAGE_START as CLOSURE_TABLE_COVERAGE_START,
@@ -248,6 +252,9 @@ KIND_CONFIG = "STRATEGY_CONFIG"
 KIND_DISCRETIONARY = "DISCRETIONARY"
 KIND_ABSENT = "ABSENT_RULEBOOK_FALLBACK"
 KIND_OWNER_INTERNAL = "OWNER_INTERNAL_DATAFLOW"
+# A value CHAMPION_COMPLETION_SPEC_V1 declares (part of the champion identity,
+# policy V7 section 6), such as the uniform z-score minimum (RBT-004).
+KIND_SPEC_VALUE = "COMPLETION_SPEC_VALUE"
 INPUT_KINDS = (
     KIND_RAW,
     KIND_DERIVED,
@@ -259,6 +266,7 @@ INPUT_KINDS = (
     KIND_DISCRETIONARY,
     KIND_ABSENT,
     KIND_OWNER_INTERNAL,
+    KIND_SPEC_VALUE,
 )
 OWNERLESS = "OWNERLESS"
 
@@ -528,6 +536,26 @@ def _config(note: str = "owner keyword default or the strategy configuration val
         producing_owner="btc_predictor.config.StrategyConfig",
         historical_source=_SRC_CONFIG,
         missing_behaviour="never missing: a declared constant of the frozen champion configuration",
+        note=note,
+    )
+
+
+_SRC_COMPLETION_SPEC = (
+    "backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json (CHAMPION_COMPLETION_SPEC_V1, "
+    "policy V7 section 6A)"
+)
+
+
+def _spec_value(note: str) -> InputClassification:
+    """A parameter value CHAMPION_COMPLETION_SPEC_V1 itself declares (RBT-004)."""
+
+    return InputClassification(
+        kind=KIND_SPEC_VALUE,
+        shape=SHAPE_NOT_APPLICABLE,
+        families=(STRATEGY_CONFIG_FAMILY,),
+        producing_owner="CHAMPION_COMPLETION_SPEC_V1",
+        historical_source=_SRC_COMPLETION_SPEC,
+        missing_behaviour="never missing: a value CHAMPION_COMPLETION_SPEC_V1 declares (champion identity, policy V7 section 6)",
         note=note,
     )
 
@@ -1432,6 +1460,31 @@ _P_NAV = _state("the replay account NAV", "required argument")
 _P_CURRENT_PRICE = dataclasses.replace(_P_HOURLY_VENUE, entry_components=(), note="the replay bar price at the decision")
 
 
+# Completion-spec helper inputs (RBT-004): the owner series and quantities the
+# spec's uniform rules normalise, and the positioning zero-variance guards.
+_SPEC_Z_SERIES = (
+    "the owner series CHAMPION_COMPLETION_SPEC_V1 z-scores: btc_predictor.features.momentum (MOMENTUM_4W, MOMENTUM_12W), "
+    "btc_predictor.features.trend (MA_DISTANCE_20W, HIGH_DISTANCE_52W) and btc_predictor.features.flow (ETF_NORM_5D, "
+    "ETF_NORM_20D, FLOW_ACCEL)"
+)
+_SPEC_PERCENTILE_SERIES = (
+    "the daily quantities CHAMPION_COMPLETION_SPEC_V1 ranks: RANGE_PERCENTILE's true range over the prior close "
+    "(btc_predictor.features.rolling.true_ranges) and LEVEL_VOLUME_PERCENTILE's Bitstamp 1h volume sums"
+)
+_M_GUARD_ROWS = (
+    "the owner's own visible rows; none -> the owner already refused (*_INPUT_MISSING) and the policy V7 "
+    "section 6A.9 guard does not run"
+)
+_M_GUARD_HISTORY = (
+    "read from the owner result R the guard checks; the guard runs only when R has a z-score, so this is never "
+    "missing there"
+)
+_NCDF_DEFAULT = (
+    "fixed owner default: CHAMPION_COMPLETION_SPEC_V1 '100 * Phi(z)' is the standard normal CDF on 0-100 "
+    "(mean 0, standard deviation 1, minimum 0, maximum 100, nan_policy raise)"
+)
+
+
 def _up(owner: Any, missing: str, families: tuple[str, ...], components: tuple[str, ...] = (), **kwargs: Any) -> InputClassification:
     return _derived(owner, missing, families, components, **kwargs)
 
@@ -2175,6 +2228,199 @@ _ROOT_CALL_SITES: tuple[tuple[Callable[..., Any], dict[str, InputClassification]
         anchored_vwap_owner.anchored_vwap_anchor_from_capitulation_event,
         {"event": _ownerless("CAPITULATION_EVENT", _M_CAPITULATION_EVENT, _PRICE, (_STRUCTURE,), note=_CAPITULATION_EVENT_NOTE)},
     ),
+    # CHAMPION_COMPLETION_SPEC_V1 section 8 helpers (promoted by RBT-004). Every
+    # parameter is a value the spec declares, a fixed owner default or an input
+    # this inventory already enumerates; none is a new external input.
+    (
+        rolling_owner.rolling_zscore,
+        {
+            "values": _up(
+                _SPEC_Z_SERIES,
+                "x None, fewer than 20 defined prior observations or an exactly constant history: the helper is not "
+                "called and the z-score stays None (accounted causes <ID>_INPUT_MISSING, <ID>_INSUFFICIENT_HISTORY, "
+                "<ID>_ZERO_VARIANCE)",
+                (REFERENCE_PRICE_FAMILY, ETF_FLOW_FAMILY, MARKET_CLOSURE_FAMILY),
+                (_TREND, _FLOW),
+                note="UNIFORM_ZSCORE_V1 (*H, x): the last 20 defined prior native observations of the owner series, then the current value",
+            ),
+            "window": _spec_value("UNIFORM_ZSCORE_V1 window = len(H), the 20 prior defined native observations"),
+            "min_periods": _spec_value("UNIFORM_ZSCORE_V1 minimum of 20 prior observations"),
+            "sample": _spec_value("UNIFORM_ZSCORE_V1 population standard deviation (sample=False, ddof 0)"),
+        },
+    ),
+    (
+        rolling_owner.rolling_percentile,
+        {
+            "values": _up(
+                _SPEC_PERCENTILE_SERIES,
+                "x None or fewer than 365 prior daily observations in [D - 730 days, D): the helper is not called and "
+                "the percentile stays None (accounted causes RANGE_PERCENTILE_* and LEVEL_VOLUME_PERCENTILE_*)",
+                (REFERENCE_PRICE_FAMILY, SHARED_VOLUME_FAMILY),
+                (_VOLATILITY, _STRUCTURE),
+                note="UNIFORM_PERCENTILE_V1 (*H, x): H selected by observation time in [D - 730 days, D), then the current value",
+            ),
+            "window": _spec_value("UNIFORM_PERCENTILE_V1 window = len(H), the defined daily observations in [D - 730 days, D)"),
+            "min_periods": _spec_value("UNIFORM_PERCENTILE_V1 minimum of 365 prior daily observations"),
+        },
+    ),
+    (
+        rolling_owner.true_ranges,
+        {"bars": dataclasses.replace(_P_DAILY, entry_components=(_VOLATILITY,), note="1d canonical bars (RANGE_PERCENTILE)")},
+    ),
+    (
+        momentum_owner.price_momentum_from_daily_bars,
+        {
+            "bars": dataclasses.replace(_P_DAILY, entry_components=(_VOLATILITY,), note="1d canonical bars (DOWNSIDE_RETURN, UPSIDE_RETURN)"),
+            "lookback_periods": _spec_value("RETURN_HORIZON_DAILY_BARS = 7 (DOWNSIDE_RETURN and UPSIDE_RETURN)"),
+        },
+    ),
+    (
+        ohlcv_owner.next_bar_timestamp,
+        {
+            "timestamp": _up(
+                _SWING_LEVEL_PRODUCERS,
+                "a member without a swing record has no pivot bar: LEVEL_VOLUME_PERCENTILE_NO_SWING_MEMBER",
+                _PRICE,
+                (_STRUCTURE,),
+                role=ROLE_OBSERVATION_TIME,
+                note="the swing member's level_timestamp (the start of its pivot bar)",
+            ),
+            "timeframe": _up(
+                _SWING_LEVEL_PRODUCERS,
+                "a member without a swing record has no pivot bar: LEVEL_VOLUME_PERCENTILE_NO_SWING_MEMBER",
+                _PRICE,
+                (_STRUCTURE,),
+                note="the swing member's timeframe (1w or 1mo)",
+            ),
+        },
+    ),
+    (
+        positioning_owner._futures_basis_averages_by_time,
+        {
+            "futures_basis_rows": _raw(
+                (FUTURES_BASIS_FAMILY,),
+                SHAPE_SNAPSHOT,
+                ROLE_VALUE,
+                _SRC_BASIS,
+                _M_GUARD_ROWS,
+                (_POSITIONING,),
+                note="the rows futures_basis_health sees: available_at <= t and observation_time <= t",
+            ),
+        },
+    ),
+    (
+        positioning_owner._futures_basis_history,
+        {
+            "averages_by_time": _up(positioning_owner._futures_basis_averages_by_time, _M_GUARD_HISTORY, (FUTURES_BASIS_FAMILY,), (_POSITIONING,)),
+            "observation_time": _up(
+                positioning_owner.futures_basis_health, _M_GUARD_HISTORY, (FUTURES_BASIS_FAMILY,), (_POSITIONING,),
+                role=ROLE_OBSERVATION_TIME, note="R.observation_time",
+            ),
+            "zscore_window_days": _up(
+                positioning_owner.futures_basis_health, _M_GUARD_HISTORY, (FUTURES_BASIS_FAMILY,), (_POSITIONING,),
+                note="R.zscore_window_days (the owner default)",
+            ),
+        },
+    ),
+    (
+        positioning_owner._funding_averages_by_time,
+        {
+            "funding_rates": _raw(
+                (FUNDING_RATE_FAMILY,),
+                SHAPE_SETTLEMENT,
+                ROLE_VALUE,
+                _SRC_FUNDING,
+                _M_GUARD_ROWS,
+                (_POSITIONING,),
+                note="the rows funding_health sees: available_at <= t and observation_time <= t",
+            ),
+            "average_window_days": _up(
+                positioning_owner.funding_health, _M_GUARD_HISTORY, (FUNDING_RATE_FAMILY,), (_POSITIONING,),
+                note="R.average_window_days (the owner default)",
+            ),
+        },
+    ),
+    (
+        positioning_owner._funding_average_history,
+        {
+            "funding_averages": _up(positioning_owner._funding_averages_by_time, _M_GUARD_HISTORY, (FUNDING_RATE_FAMILY,), (_POSITIONING,)),
+            "observation_time": _up(
+                positioning_owner.funding_health, _M_GUARD_HISTORY, (FUNDING_RATE_FAMILY,), (_POSITIONING,),
+                role=ROLE_OBSERVATION_TIME, note="R.observation_time",
+            ),
+            "zscore_window_days": _up(
+                positioning_owner.funding_health, _M_GUARD_HISTORY, (FUNDING_RATE_FAMILY,), (_POSITIONING,),
+                note="R.zscore_window_days (the owner default)",
+            ),
+        },
+    ),
+    (
+        positioning_owner._aggregate_open_interest_by_time,
+        {
+            "open_interest_rows": _raw(
+                (OPEN_INTEREST_FAMILY,),
+                SHAPE_SNAPSHOT,
+                ROLE_VALUE,
+                _SRC_OI,
+                _M_GUARD_ROWS,
+                (_POSITIONING,),
+                note="the rows open_interest_growth_health sees: R.open_interest_unit, available_at <= t and observation_time <= t",
+            ),
+        },
+    ),
+    (
+        positioning_owner._open_interest_growth_by_time,
+        {
+            "aggregate_by_time": _up(positioning_owner._aggregate_open_interest_by_time, _M_GUARD_HISTORY, (OPEN_INTEREST_FAMILY,), (_POSITIONING,)),
+            "growth_window_days": _up(
+                positioning_owner.open_interest_growth_health, _M_GUARD_HISTORY, (OPEN_INTEREST_FAMILY,), (_POSITIONING,),
+                note="R.growth_window_days (the owner default)",
+            ),
+        },
+    ),
+    (
+        positioning_owner._oi_growth_history,
+        {
+            "growth_by_time": _up(positioning_owner._open_interest_growth_by_time, _M_GUARD_HISTORY, (OPEN_INTEREST_FAMILY,), (_POSITIONING,)),
+            "observation_time": _up(
+                positioning_owner.open_interest_growth_health, _M_GUARD_HISTORY, (OPEN_INTEREST_FAMILY,), (_POSITIONING,),
+                role=ROLE_OBSERVATION_TIME, note="R.observation_time",
+            ),
+            "zscore_window_days": _up(
+                positioning_owner.open_interest_growth_health, _M_GUARD_HISTORY, (OPEN_INTEREST_FAMILY,), (_POSITIONING,),
+                note="R.zscore_window_days (the owner default)",
+            ),
+        },
+    ),
+    (
+        transforms_owner.normal_cdf_score,
+        {
+            "values": _up(
+                rolling_owner.rolling_zscore,
+                "TREND_Z_M12 or TREND_Z_M4 None: not called; MOMENTUM_PERSISTENCE_SCORE / ADD_MOMENTUM_SCORE None "
+                "(HOLD_SCORE_INPUT_MISSING / ADD_SCORE_INPUT_MISSING)",
+                _PRICE,
+                note="the TREND_Z_M12 (Hold) or TREND_Z_M4 (Add) z-score at t",
+            ),
+            "mean": _config(_NCDF_DEFAULT),
+            "standard_deviation": _config(_NCDF_DEFAULT),
+            "minimum": _config(_NCDF_DEFAULT),
+            "maximum": _config(_NCDF_DEFAULT),
+            "nan_policy": _config(_NCDF_DEFAULT),
+        },
+    ),
+    (
+        comparisons_owner.decision_greater_equal,
+        {
+            "left": _up(
+                flow_owner.calculate_flow_score,
+                "an incomplete FlowScore: not called; FLOW_SUPPORTIVE_PREDICATE None (ADD_REQUIREMENTS_INPUT_MISSING)",
+                (ETF_FLOW_FAMILY, MARKET_CLOSURE_FAMILY),
+                note="FlowScoreResult.score",
+            ),
+            "right": _spec_value("FLOW_SUPPORTIVE_PREDICATE threshold 60 (Rulebook 6.2 Supportive band floor)"),
+        },
+    ),
 )
 
 
@@ -2189,6 +2435,88 @@ def _root_parameter_table() -> dict[str, dict[str, InputClassification]]:
 
 
 ROOT_PARAMETER_CLASSIFICATIONS: dict[str, dict[str, InputClassification]] = _root_parameter_table()
+
+_P_REPLAY_WINDOW = _state(
+    "the replay window (policy V7 section 3 DATA_WINDOW)",
+    "required; a record outside the admitted window is refused, never read",
+    source="policy V7 section 3; btc_predictor.research_backtest.replay_inputs.DATA_WINDOW",
+)
+_P_CLOSURE_BOUND = _config(
+    "fixed owner constant: US_EQUITY_MARKET_CLOSURE_TABLE_V1 coverage (COVERAGE_START, COVERAGE_END), loaded once "
+    "and passed whole to every ETF flow window; the flow owner reads only dates on or before each window's end"
+)
+
+# Every parameter of every input_census.CLASSIFIED_INPUT_SOURCES helper (RBT-004).
+# Each maps to an input this inventory already enumerates (the same
+# classification as the owner parameter it feeds), a fixed owner default or a
+# policy-fixed value. The enumeration requires the keys to be exactly the
+# classified sources and each signature to match.
+INPUT_SOURCE_PARAMETER_CLASSIFICATIONS: dict[str, dict[str, InputClassification]] = {
+    "btc_predictor.research_backtest.replay_inputs.replay_market_bars_at": {
+        "replay_bars": _P_HOURLY_VENUE,
+        "decision_at": _P_INSTANT,
+        "window": _P_REPLAY_WINDOW,
+        "timeframes": _config("fixed owner default: the canonical 1d, 1w and 1mo market bars"),
+    },
+    "btc_predictor.research_backtest.replay_inputs.build_shared_replay_snapshot": {
+        "window": _P_REPLAY_WINDOW,
+        "volume_bars": _P_HOURLY_VOLUME,
+        "etf_flows": ROOT_PARAMETER_CLASSIFICATIONS["btc_predictor.features.flow.five_day_etf_flow"]["flows"],
+        "etf_source_publication_times": dataclasses.replace(
+            ROOT_PARAMETER_CLASSIFICATIONS["btc_predictor.features.flow.five_day_etf_flow"]["flows"],
+            role=ROLE_AVAILABILITY,
+            note="the ETF source's own publication or revision times (policy V7 section 4 DAILY_PUBLISHED)",
+        ),
+        "funding_rates": ROOT_PARAMETER_CLASSIFICATIONS["btc_predictor.features.positioning.funding_health"]["funding_rates"],
+        "open_interest": ROOT_PARAMETER_CLASSIFICATIONS["btc_predictor.features.positioning.open_interest_growth_health"][
+            "open_interest_rows"
+        ],
+        "perp_volumes": ROOT_PARAMETER_CLASSIFICATIONS["btc_predictor.features.flow.spot_perp_participation_from_rows"][
+            "perp_volumes"
+        ],
+        "etf_market_holidays": ROOT_PARAMETER_CLASSIFICATIONS["btc_predictor.features.flow.five_day_etf_flow"]["market_holidays"],
+    },
+    "btc_predictor.research.us_equity_market_closures.load_closures": {
+        "start": _P_CLOSURE_BOUND,
+        "end": _P_CLOSURE_BOUND,
+    },
+}
+
+
+def classified_input_source_record() -> list[dict[str, Any]]:
+    """The classified input sources with every parameter's classification.
+
+    Refuses a source that is also a root, an unclassified or stale source and a
+    signature that no longer matches its classifications.
+    """
+
+    sources = {source.path: source for source in census_owner.CLASSIFIED_INPUT_SOURCES}
+    if len(sources) != len(census_owner.CLASSIFIED_INPUT_SOURCES):
+        raise InputSurfaceError("DUPLICATE_INPUT_SOURCE", "a classified input source is listed twice")
+    rooted = sorted(set(sources) & {root.path for root in census_owner.DECISION_PATH_ROOTS})
+    if rooted:
+        raise InputSurfaceError("INPUT_SOURCE_IS_A_ROOT", f"classified input sources must not be roots: {rooted}")
+    missing = sorted(set(sources) - set(INPUT_SOURCE_PARAMETER_CLASSIFICATIONS))
+    if missing:
+        raise InputSurfaceError("UNCLASSIFIED_PARAMETER", f"input sources without parameter classifications: {missing}")
+    stale = sorted(set(INPUT_SOURCE_PARAMETER_CLASSIFICATIONS) - set(sources))
+    if stale:
+        raise InputSurfaceError("STALE_CLASSIFICATION", f"classified input sources no longer listed: {stale}")
+    records = []
+    for path, source in sorted(sources.items()):
+        function = source.resolve()
+        if _owner_path(function) != path:
+            raise InputSurfaceError("INPUT_SOURCE_MOVED", f"{path} resolves to {_owner_path(function)}")
+        rows = classify_owner_callable(function, INPUT_SOURCE_PARAMETER_CLASSIFICATIONS[path])
+        records.append(
+            {
+                **source.as_record(),
+                "parameters": [
+                    {"name": row.name, **row.classification.as_record()} for row in rows
+                ],
+            }
+        )
+    return records
 
 
 @dataclass(frozen=True)
@@ -2752,7 +3080,8 @@ def input_surface_summary(rows: Sequence[SurfaceRow]) -> dict[str, Any]:
 
 
 def census_record(census: census_owner.DecisionPathCensus) -> dict[str, Any]:
-    """The census evidence persisted with the inventory: roots, left-out owner
+    """The census evidence persisted with the inventory: roots, the classified
+    input sources with their parameter classifications (RBT-004), left-out owner
     definitions, every reached type and callable with how it was reached, every
     nested callable with its parameters, call sites and classification basis,
     and the census's stated limits (policy V5 section 5A.5)."""
@@ -2762,6 +3091,7 @@ def census_record(census: census_owner.DecisionPathCensus) -> dict[str, Any]:
         "summary": census.summary(),
         "limits": census_owner.census_limits(),
         "roots": [root.as_record() for root in census.roots],
+        "classified_input_sources": classified_input_source_record(),
         "left_out_owner_definitions": [
             {"definition": path, "justification": reason}
             for path, reason in sorted(census_owner.LEFT_OUT_OWNER_DEFINITIONS.items())

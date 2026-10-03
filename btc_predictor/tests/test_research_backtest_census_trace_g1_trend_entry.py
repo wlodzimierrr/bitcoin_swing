@@ -23,6 +23,7 @@ from decimal import Decimal
 
 from btc_predictor.config.strategy import StrategyConfig, load_strategy_config
 from btc_predictor.data.ohlcv import OhlcvBar
+from btc_predictor.features.rolling import rolling_zscore
 from btc_predictor.features.entry import (
     EntryConvictionInput,
     calculate_entry_conviction,
@@ -407,6 +408,30 @@ def weekly_structure_unordered_input() -> object:
 
 # --- registry ------------------------------------------------------------------------
 
+# --- RBT-004: CHAMPION_COMPLETION_SPEC_V1 helpers promoted to census roots -----------
+# The composer calls these helpers directly (policy V7 sections 5A.6 and 6A), so each
+# is a decision-path root with its own deterministic trace fixtures.
+
+
+def _uniform_history(series: tuple[Decimal | None, ...], size: int = 20) -> tuple[tuple[Decimal, ...], Decimal]:
+    defined = [value for value in series if value is not None]
+    return tuple(defined[-size - 1 : -1]), defined[-1]
+
+
+def rolling_zscore_momentum_history():
+    """UNIFORM_ZSCORE_V1 over the 4-week momentum series: 20 prior observations, then x."""
+
+    history, current = _uniform_history(four_week_momentum_from_daily_bars(_daily_bars(120)))
+    return rolling_zscore((*history, current), window=len(history), min_periods=20, sample=False)
+
+
+def rolling_zscore_short_history():
+    """Fewer than the minimum prior observations: the helper returns no z-score."""
+
+    history, current = _uniform_history(four_week_momentum_from_daily_bars(_daily_bars(40)), size=10)
+    return rolling_zscore((*history, current), window=20, min_periods=20, sample=False)
+
+
 FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
     "btc_predictor.features.entry.calculate_entry_conviction": (
         entry_conviction_complete,
@@ -444,6 +469,10 @@ FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
         weekly_structure_all_labels,
         weekly_structure_single_week_incomplete,
         weekly_structure_unordered_input,
+    ),
+    "btc_predictor.features.rolling.rolling_zscore": (
+        rolling_zscore_momentum_history,
+        rolling_zscore_short_history,
     ),
 }
 

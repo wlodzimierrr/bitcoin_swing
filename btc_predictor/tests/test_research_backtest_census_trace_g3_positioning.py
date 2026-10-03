@@ -37,6 +37,15 @@ from btc_predictor.features.positioning import (
     open_interest_growth_health,
     open_interest_intensity,
 )
+from btc_predictor.features.positioning import (
+    _aggregate_open_interest_by_time,
+    _funding_average_history,
+    _funding_averages_by_time,
+    _futures_basis_averages_by_time,
+    _futures_basis_history,
+    _oi_growth_history,
+    _open_interest_growth_by_time,
+)
 
 _ROOT = "btc_predictor.features.positioning."
 
@@ -377,6 +386,65 @@ def calculate_crowding_flag_clear():
     )
 
 
+# --- RBT-004: CHAMPION_COMPLETION_SPEC_V1 helpers promoted to census roots -----------
+# The composer calls these helpers directly (policy V7 sections 5A.6 and 6A), so each
+# is a decision-path root with its own deterministic trace fixtures.
+
+
+def _visible(rows, *, unit: str | None = None):
+    """The owner's own two-field visibility predicate (and OI unit filter)."""
+
+    return tuple(
+        row
+        for row in rows
+        if (unit is None or row.open_interest_unit == unit)
+        and row.as_record()["available_at"] <= _AS_OF
+        and row.as_record()["observation_time"] <= _AS_OF
+    )
+
+
+def futures_basis_averages_visible_rows():
+    return _futures_basis_averages_by_time(_visible(_basis_rows()))
+
+
+def futures_basis_history_owner_window():
+    result = futures_basis_health(_basis_rows(), as_of=_AS_OF)
+    averages = _futures_basis_averages_by_time(_visible(_basis_rows()))
+    return _futures_basis_history(
+        averages, observation_time=result.observation_time, zscore_window_days=result.zscore_window_days
+    )
+
+
+def funding_averages_visible_rows():
+    result = funding_health(_funding_rows(), as_of=_AS_OF)
+    return _funding_averages_by_time(_visible(_funding_rows()), average_window_days=result.average_window_days)
+
+
+def funding_average_history_owner_window():
+    result = funding_health(_funding_rows(), as_of=_AS_OF)
+    averages = _funding_averages_by_time(_visible(_funding_rows()), average_window_days=result.average_window_days)
+    return _funding_average_history(
+        averages, observation_time=result.observation_time, zscore_window_days=result.zscore_window_days
+    )
+
+
+def aggregate_open_interest_visible_rows():
+    return _aggregate_open_interest_by_time(_visible(_oi_rows(), unit=_OI_UNIT))
+
+
+def open_interest_growth_owner_window():
+    result = open_interest_growth_health(_oi_rows(), as_of=_AS_OF, open_interest_unit=_OI_UNIT)
+    aggregate = _aggregate_open_interest_by_time(_visible(_oi_rows(), unit=result.open_interest_unit))
+    return _open_interest_growth_by_time(aggregate, growth_window_days=result.growth_window_days)
+
+
+def oi_growth_history_owner_window():
+    result = open_interest_growth_health(_oi_rows(), as_of=_AS_OF, open_interest_unit=_OI_UNIT)
+    aggregate = _aggregate_open_interest_by_time(_visible(_oi_rows(), unit=result.open_interest_unit))
+    growth = _open_interest_growth_by_time(aggregate, growth_window_days=result.growth_window_days)
+    return _oi_growth_history(growth, observation_time=result.observation_time, zscore_window_days=result.zscore_window_days)
+
+
 FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
     _ROOT + "calculate_positioning_score": (
         calculate_positioning_score_complete,
@@ -407,6 +475,13 @@ FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
         calculate_crowding_flag_input_missing,
         calculate_crowding_flag_clear,
     ),
+    _ROOT + "_futures_basis_averages_by_time": (futures_basis_averages_visible_rows,),
+    _ROOT + "_futures_basis_history": (futures_basis_history_owner_window,),
+    _ROOT + "_funding_averages_by_time": (funding_averages_visible_rows,),
+    _ROOT + "_funding_average_history": (funding_average_history_owner_window,),
+    _ROOT + "_aggregate_open_interest_by_time": (aggregate_open_interest_visible_rows,),
+    _ROOT + "_open_interest_growth_by_time": (open_interest_growth_owner_window,),
+    _ROOT + "_oi_growth_history": (oi_growth_history_owner_window,),
 }
 
 

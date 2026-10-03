@@ -26,6 +26,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import importlib
+import inspect
 import pkgutil
 import sys
 import types
@@ -192,8 +193,14 @@ def test_every_unreached_owner_definition_is_left_out_with_a_reason() -> None:
     unreached = input_census.unreached_owner_definitions(_census())
     assert set(unreached) == set(input_census.LEFT_OUT_OWNER_DEFINITIONS)
     assert all(reason.strip() for reason in input_census.LEFT_OUT_OWNER_DEFINITIONS.values())
-    # the generic rolling helpers stay candidates for the completion spec, not inputs
-    assert "btc_predictor.features.rolling.rolling_zscore" in input_census.LEFT_OUT_OWNER_DEFINITIONS
+    # RBT-004: the rolling helpers CHAMPION_COMPLETION_SPEC_V1 selected are roots now;
+    # the generic helpers it did not select stay left out with their reason
+    roots = {root.path for root in input_census.DECISION_PATH_ROOTS}
+    for selected in ("rolling_zscore", "rolling_percentile", "true_ranges"):
+        path = f"btc_predictor.features.rolling.{selected}"
+        assert path in roots and path not in input_census.LEFT_OUT_OWNER_DEFINITIONS
+    for unselected in ("historical_normalize", "rolling_volatility"):
+        assert f"btc_predictor.features.rolling.{unselected}" in input_census.LEFT_OUT_OWNER_DEFINITIONS
 
 
 def test_every_part_of_the_package_is_owner_scope_or_out_of_scope_with_a_reason() -> None:
@@ -525,3 +532,123 @@ def test_canonical_defaults_are_order_free_and_id_free() -> None:
     assert input_census.canonical_default(Decimal("0.30")) == "Decimal('0.30')"
     assert input_census.canonical_default(_fixture_fixed) == input_census.owner_path(_fixture_fixed)
     assert "0x" not in input_census.canonical_default(object())
+
+
+# --- RBT-004: the promoted completion-spec roots and the classified input sources ----------
+
+PROMOTED_SPEC_ROOTS = {
+    "btc_predictor.data.ohlcv.next_bar_timestamp",
+    "btc_predictor.features.momentum.price_momentum_from_daily_bars",
+    "btc_predictor.features.positioning._aggregate_open_interest_by_time",
+    "btc_predictor.features.positioning._funding_average_history",
+    "btc_predictor.features.positioning._funding_averages_by_time",
+    "btc_predictor.features.positioning._futures_basis_averages_by_time",
+    "btc_predictor.features.positioning._futures_basis_history",
+    "btc_predictor.features.positioning._oi_growth_history",
+    "btc_predictor.features.positioning._open_interest_growth_by_time",
+    "btc_predictor.features.rolling.rolling_percentile",
+    "btc_predictor.features.rolling.rolling_zscore",
+    "btc_predictor.features.rolling.true_ranges",
+    "btc_predictor.quant.comparisons.decision_greater_equal",
+    "btc_predictor.quant.transforms.normal_cdf_score",
+}
+SPEC_INPUT_SOURCES = {
+    "btc_predictor.research.us_equity_market_closures.load_closures",
+    "btc_predictor.research_backtest.replay_inputs.build_shared_replay_snapshot",
+    "btc_predictor.research_backtest.replay_inputs.replay_market_bars_at",
+}
+
+
+def test_the_spec_section_8_helpers_are_roots_and_no_longer_internal() -> None:
+    from btc_predictor.research_backtest import completion_spec
+
+    roots = {root.path for root in input_census.DECISION_PATH_ROOTS}
+    assert len(input_census.DECISION_PATH_ROOTS) == 88
+    assert set(completion_spec.spec_definition()["composer_roots_to_promote"]) == PROMOTED_SPEC_ROOTS
+    assert PROMOTED_SPEC_ROOTS <= roots
+    assert not PROMOTED_SPEC_ROOTS & set(input_census_registry.DISCOVERED_CALLABLES)
+    assert PROMOTED_SPEC_ROOTS <= set(coverage.ROOT_PARAMETER_CLASSIFICATIONS)
+
+
+def test_every_promoted_root_parameter_is_a_spec_value_an_owner_default_or_an_enumerated_input() -> None:
+    # The Part A rule: no promoted root may introduce a new external input or an
+    # owner-less value; each parameter maps to a spec-declared value, a fixed owner
+    # default, or an input family the inventory already enumerates.
+    enumerated = set(coverage.POLICY_FAMILIES)
+    for path in sorted(PROMOTED_SPEC_ROOTS):
+        for name, classification in coverage.ROOT_PARAMETER_CLASSIFICATIONS[path].items():
+            assert classification.kind in (
+                coverage.KIND_SPEC_VALUE,
+                coverage.KIND_CONFIG,
+                coverage.KIND_DERIVED,
+                coverage.KIND_RAW,
+            ), (path, name, classification.kind)
+            if classification.kind == coverage.KIND_SPEC_VALUE:
+                assert classification.producing_owner == "CHAMPION_COMPLETION_SPEC_V1", (path, name)
+            if classification.kind in (coverage.KIND_DERIVED, coverage.KIND_RAW):
+                assert set(classification.families) <= enumerated, (path, name, classification.families)
+
+
+def test_the_classified_input_sources_are_the_spec_sources_and_never_roots() -> None:
+    from btc_predictor.research_backtest import completion_spec
+
+    sources = {source.path for source in input_census.CLASSIFIED_INPUT_SOURCES}
+    spec_sources = set(completion_spec.spec_definition()["helpers_by_census_status"]["CLASSIFIED_INPUT_SOURCE"])
+    assert sources == spec_sources == SPEC_INPUT_SOURCES
+    assert not sources & {root.path for root in input_census.DECISION_PATH_ROOTS}
+    assert set(coverage.INPUT_SOURCE_PARAMETER_CLASSIFICATIONS) == sources
+    resolved = {source.path: source.resolve() for source in input_census.CLASSIFIED_INPUT_SOURCES}
+    for record in coverage.classified_input_source_record():
+        names = [item["name"] for item in record["parameters"]]
+        assert names == list(inspect.signature(resolved[record["source"]]).parameters)
+        assert all(item["kind"] != coverage.KIND_OWNERLESS_UNDEFINED for item in record["parameters"])
+
+
+def test_the_persisted_inventory_records_the_classified_input_sources() -> None:
+    import json
+    from pathlib import Path
+
+    persisted = json.loads((Path("backtest_evidence/research_backtest_v1") / coverage.INVENTORY_FILENAME).read_bytes())
+    assert persisted["input_surface"]["census"]["classified_input_sources"] == coverage.classified_input_source_record()
+
+
+def test_an_input_source_signature_change_fails_its_classification(monkeypatch: pytest.MonkeyPatch) -> None:
+    path = "btc_predictor.research.us_equity_market_closures.load_closures"
+    grown = dict(coverage.INPUT_SOURCE_PARAMETER_CLASSIFICATIONS)
+    grown[path] = {**grown[path], "new_input": grown[path]["start"]}
+    monkeypatch.setattr(coverage, "INPUT_SOURCE_PARAMETER_CLASSIFICATIONS", grown)
+    with pytest.raises(InputSurfaceError) as raised:
+        coverage.classified_input_source_record()
+    assert raised.value.code == "STALE_CLASSIFICATION"
+    shrunk = dict(coverage.INPUT_SOURCE_PARAMETER_CLASSIFICATIONS)
+    shrunk[path] = {"start": grown[path]["start"]}
+    monkeypatch.setattr(coverage, "INPUT_SOURCE_PARAMETER_CLASSIFICATIONS", shrunk)
+    with pytest.raises(InputSurfaceError) as raised:
+        coverage.classified_input_source_record()
+    assert raised.value.code == "UNCLASSIFIED_PARAMETER"
+
+
+def test_an_input_source_listed_as_a_root_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    rooted = input_census.ClassifiedInputSource("btc_predictor.risk.reward", "reward_risk_for_stop", "fixture")
+    monkeypatch.setattr(input_census, "CLASSIFIED_INPUT_SOURCES", (*input_census.CLASSIFIED_INPUT_SOURCES, rooted))
+    with pytest.raises(InputSurfaceError) as raised:
+        coverage.classified_input_source_record()
+    assert raised.value.code == "INPUT_SOURCE_IS_A_ROOT"
+
+
+def test_an_unclassified_or_missing_input_source_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    extra = input_census.ClassifiedInputSource(
+        "btc_predictor.research_backtest.replay_inputs", "modelled_bar_available_at", "fixture"
+    )
+    monkeypatch.setattr(input_census, "CLASSIFIED_INPUT_SOURCES", (*input_census.CLASSIFIED_INPUT_SOURCES, extra))
+    with pytest.raises(InputSurfaceError) as raised:
+        coverage.classified_input_source_record()
+    assert raised.value.code == "UNCLASSIFIED_PARAMETER"
+    monkeypatch.setattr(input_census, "CLASSIFIED_INPUT_SOURCES", input_census.CLASSIFIED_INPUT_SOURCES[:-2])
+    with pytest.raises(InputSurfaceError) as raised:
+        coverage.classified_input_source_record()
+    assert raised.value.code == "STALE_CLASSIFICATION"
+    missing = input_census.ClassifiedInputSource("btc_predictor.research_backtest.replay_inputs", "no_such_source", "x")
+    with pytest.raises(input_census.CensusError) as refused:
+        missing.resolve()
+    assert refused.value.code == "INPUT_SOURCE_NOT_FOUND"

@@ -25,6 +25,8 @@ from decimal import Decimal
 from btc_predictor.config.strategy import load_strategy_config
 from btc_predictor.data import OhlcvBar
 from btc_predictor.features import volatility as vol
+from btc_predictor.features.momentum import price_momentum_from_daily_bars
+from btc_predictor.features.rolling import rolling_percentile, true_ranges
 
 
 _CHAMPION = load_strategy_config()
@@ -480,6 +482,48 @@ def euphoria_confirmation_missing() -> vol.EuphoriaFlagResult:
     )
 
 
+# --- RBT-004: CHAMPION_COMPLETION_SPEC_V1 helpers promoted to census roots -----------
+# The composer calls these helpers directly (policy V7 sections 5A.6 and 6A), so each
+# is a decision-path root with its own deterministic trace fixtures.
+
+
+def true_ranges_daily():
+    return true_ranges(_daily_bars(40))
+
+
+def true_ranges_after_a_missing_session():
+    bars = _daily_bars(40)
+    return true_ranges(bars[:20] + bars[21:])
+
+
+def _range_fractions(bars: tuple[OhlcvBar, ...]) -> tuple[Decimal, ...]:
+    # RANGE_PERCENTILE's TR(d) / close(d - 1 day); the first bar has no prior close.
+    ranges = true_ranges(bars)
+    return tuple(ranges[index] / bars[index - 1].close for index in range(1, len(bars)) if ranges[index] is not None)
+
+
+def rolling_percentile_range_fraction():
+    fractions = _range_fractions(_daily_bars(400))
+    history, current = fractions[-366:-1], fractions[-1]
+    return rolling_percentile((*history, current), window=len(history), min_periods=365)
+
+
+def rolling_percentile_tied_history():
+    """A flat market: every range fraction ties, so the prior midrank is 50."""
+
+    fractions = _range_fractions(_daily_bars(400, flat=True))
+    history, current = fractions[-366:-1], fractions[-1]
+    return rolling_percentile((*history, current), window=len(history), min_periods=365)
+
+
+def price_momentum_seven_day_return():
+    return price_momentum_from_daily_bars(_daily_bars(40), lookback_periods=7)
+
+
+def price_momentum_short_history():
+    return price_momentum_from_daily_bars(_daily_bars(5), lookback_periods=7)
+
+
 FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
     _ROOT + "calculate_volatility_score": (
         volatility_score_complete,
@@ -520,6 +564,18 @@ FIXTURES: dict[str, tuple[Callable[[], object], ...]] = {
         euphoria_flagged,
         euphoria_input_missing,
         euphoria_confirmation_missing,
+    ),
+    "btc_predictor.features.rolling.true_ranges": (
+        true_ranges_daily,
+        true_ranges_after_a_missing_session,
+    ),
+    "btc_predictor.features.rolling.rolling_percentile": (
+        rolling_percentile_range_fraction,
+        rolling_percentile_tied_history,
+    ),
+    "btc_predictor.features.momentum.price_momentum_from_daily_bars": (
+        price_momentum_seven_day_return,
+        price_momentum_short_history,
     ),
 }
 

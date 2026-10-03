@@ -7,9 +7,12 @@ types (``AnchoredVwapAnchor``, ``OhlcvQualityConfig``,
 (``select_reward_reference.major_timeframes``). This module replaces that
 registry with discovery.
 
-- **Roots.** :data:`DECISION_PATH_ROOTS` is the only hand-written list: the
+- **Roots.** :data:`DECISION_PATH_ROOTS` is the hand-written list of the
   owner entry points the RBT-004/RBT-005 composers call on the champion's
-  decision path, each with the Rulebook area that puts it there.
+  decision path, each with the Rulebook area that puts it there. RBT-004
+  promoted the 14 CHAMPION_COMPLETION_SPEC_V1 section 8 helpers. The spec's
+  input sources are listed separately in :data:`CLASSIFIED_INPUT_SOURCES`:
+  their parameters are classified, but they are not walked as owners.
 - **Static closure.** :func:`discover_decision_path` walks ``btc_predictor``
   from the roots with ``inspect`` and the CPython bytecode and AST of each
   reached function. A node reaches every function, method and class it names
@@ -307,6 +310,97 @@ DECISION_PATH_ROOTS: tuple[DecisionPathRoot, ...] = (
     _root("levels.anchored_vwap", "calculate_anchored_vwaps", AREA_LEVEL_PRODUCERS, "Rulebook 9.1 anchored VWAP levels"),
     _root("levels.clustering", "cluster_price_levels", AREA_LEVEL_PRODUCERS, "Rulebook 9.2 support/resistance clusters"),
     _root("levels.strength", "calculate_level_strength_from_cluster", AREA_LEVEL_PRODUCERS, "Rulebook 9.2 level strength"),
+    # CHAMPION_COMPLETION_SPEC_V1 section 8 helpers, promoted by RBT-004 (policy V7
+    # sections 5A.6 and 6A.9): the composers call each one directly to implement a
+    # spec entry or a positioning zero-variance guard, so each is a root.
+    _root("features.rolling", "rolling_zscore", AREA_ENTRY_CONVICTION,
+          "CHAMPION_COMPLETION_SPEC_V1 UNIFORM_ZSCORE_V1: the trend (TREND_Z_*) and flow (FLOW_Z_*) z-scores"),
+    _root("features.rolling", "rolling_percentile", AREA_ENTRY_CONVICTION,
+          "CHAMPION_COMPLETION_SPEC_V1 UNIFORM_PERCENTILE_V1: RANGE_PERCENTILE (volatility) and LEVEL_VOLUME_PERCENTILE (structure)"),
+    _root("features.rolling", "true_ranges", AREA_ENTRY_CONVICTION,
+          "CHAMPION_COMPLETION_SPEC_V1 RANGE_PERCENTILE: the BTC-041 true range of each visible daily bar"),
+    _root("features.momentum", "price_momentum_from_daily_bars", AREA_ENTRY_CONVICTION,
+          "CHAMPION_COMPLETION_SPEC_V1 DOWNSIDE_RETURN and UPSIDE_RETURN: the signed 7-day return R_7 (orderliness and the hard flags)"),
+    _root("data.ohlcv", "next_bar_timestamp", AREA_ENTRY_CONVICTION,
+          "CHAMPION_COMPLETION_SPEC_V1 LEVEL_VOLUME_PERCENTILE: the close boundary of a swing member's pivot bar (structure)"),
+    _root("features.positioning", "_futures_basis_averages_by_time", AREA_ENTRY_CONVICTION,
+          "FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's per-observation basis averages"),
+    _root("features.positioning", "_futures_basis_history", AREA_ENTRY_CONVICTION,
+          "FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's prior annualized-basis history"),
+    _root("features.positioning", "_funding_averages_by_time", AREA_ENTRY_CONVICTION,
+          "FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's trailing funding averages"),
+    _root("features.positioning", "_funding_average_history", AREA_ENTRY_CONVICTION,
+          "FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's prior funding-average history"),
+    _root("features.positioning", "_aggregate_open_interest_by_time", AREA_ENTRY_CONVICTION,
+          "OI_GROWTH_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's aggregate open interest per observation"),
+    _root("features.positioning", "_open_interest_growth_by_time", AREA_ENTRY_CONVICTION,
+          "OI_GROWTH_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's open-interest growth per observation"),
+    _root("features.positioning", "_oi_growth_history", AREA_ENTRY_CONVICTION,
+          "OI_GROWTH_ZERO_VARIANCE_GUARD_V1 (policy V7 section 6A.9): the owner's prior open-interest growth history"),
+    _root("quant.transforms", "normal_cdf_score", AREA_LIFECYCLE,
+          "CHAMPION_COMPLETION_SPEC_V1 MOMENTUM_PERSISTENCE_SCORE and ADD_MOMENTUM_SCORE: 100 * Phi(z) (Hold and Add)"),
+    _root("quant.comparisons", "decision_greater_equal", AREA_LIFECYCLE,
+          "CHAMPION_COMPLETION_SPEC_V1 FLOW_SUPPORTIVE_PREDICATE: decision_greater_equal(FlowScore, 60) (add requirements)"),
+)
+
+
+@dataclass(frozen=True)
+class ClassifiedInputSource:
+    """A non-owner function the composer calls directly to obtain its inputs.
+
+    CHAMPION_COMPLETION_SPEC_V1 names these ``CLASSIFIED_INPUT_SOURCE``: they
+    deliver point-in-time input records and compute no decision value, so they
+    are not decision-path roots and the census does not walk their bodies. Each
+    parameter is classified (``coverage.INPUT_SOURCE_PARAMETER_CLASSIFICATIONS``)
+    and persisted with the inventory, and a signature change fails it.
+    """
+
+    module: str
+    qualname: str
+    justification: str
+
+    def __post_init__(self) -> None:
+        if not self.justification.strip():
+            raise ValueError("every classified input source needs a justification")
+
+    @property
+    def path(self) -> str:
+        return f"{self.module}.{self.qualname}"
+
+    def resolve(self) -> Any:
+        try:
+            owner: Any = importlib.import_module(self.module)
+            for part in self.qualname.split("."):
+                owner = getattr(owner, part)
+        except (ImportError, AttributeError) as error:
+            raise CensusError("INPUT_SOURCE_NOT_FOUND", f"{self.path}: {error}") from None
+        if not isinstance(owner, types.FunctionType):
+            raise CensusError("INPUT_SOURCE_NOT_A_FUNCTION", self.path)
+        return owner
+
+    def as_record(self) -> dict[str, str]:
+        return {"source": self.path, "justification": self.justification}
+
+
+# The spec's CLASSIFIED_INPUT_SOURCE helpers (CHAMPION_COMPLETION_SPEC_V1 section 8).
+CLASSIFIED_INPUT_SOURCES: tuple[ClassifiedInputSource, ...] = (
+    ClassifiedInputSource(
+        "btc_predictor.research_backtest.replay_inputs",
+        "replay_market_bars_at",
+        "RBT-001 point-in-time 1d/1w/1mo bars at the decision instant: it calls BTC-040 build_canonical_market_bars "
+        "with the decision instant as cutoff, so the composer never calls that owner directly",
+    ),
+    ClassifiedInputSource(
+        "btc_predictor.research_backtest.replay_inputs",
+        "build_shared_replay_snapshot",
+        "RBT-001 shared non-price replay snapshot, including the Bitstamp 1h volume LEVEL_VOLUME_PERCENTILE reads",
+    ),
+    ClassifiedInputSource(
+        "btc_predictor.research.us_equity_market_closures",
+        "load_closures",
+        "the hash-verified US_EQUITY_MARKET_CLOSURE_TABLE_V1 loader (POSTP1-002V2A-T1 PASS); every ETF flow window "
+        "receives it as market_holidays (policy V7 section 5)",
+    ),
 )
 
 
@@ -2002,20 +2096,22 @@ KNOWN_LIMITS: tuple[tuple[str, str], ...] = (
 )
 MEASURED_COVERAGE: Mapping[str, Any] = {
     "tool": "coverage.py 7.16.0 (branch measurement) on CPython 3.12.14",
-    "measured_on": "2026-10-02",
+    "measured_on": "2026-10-03",
     "scope": (
         "Reached-body figures count the statements and branch arcs inside the source bodies of the reached named "
         "callables, which contain every nested callable; whole-module figures also count unreached definitions and "
-        "module initialisation of the 50 reached source modules."
+        "module initialisation of the 50 reached source modules. RBT-004 re-measured the 88-root census (the 74 "
+        "RBT-002 roots plus the 14 promoted CHAMPION_COMPLETION_SPEC_V1 helpers); the 74-root RBT-002 R2 "
+        "measurement of 2026-10-02 remains in rbt002_rereview_evidence_v1.json."
     ),
     "runs": (
         {
             "run": "fixture runs",
-            "description": "the 202 deterministic fixture runs of the nine census trace modules, covering all 74 roots",
-            "reached_lines": {"covered": 4993, "total": 7565, "percent": "66.00"},
-            "reached_branches": {"covered": 2235, "total": 3728, "percent": "59.95"},
-            "module_lines": {"covered": 4993, "total": 11539, "percent": "43.27"},
-            "module_branches": {"covered": 2235, "total": 4140, "percent": "53.99"},
+            "description": "the 223 deterministic fixture runs of the nine census trace modules, covering all 88 roots",
+            "reached_lines": {"covered": 5029, "total": 7609, "percent": "66.09"},
+            "reached_branches": {"covered": 2238, "total": 3732, "percent": "59.97"},
+            "module_lines": {"covered": 5029, "total": 11539, "percent": "43.58"},
+            "module_branches": {"covered": 2238, "total": 4140, "percent": "54.06"},
             "nested_callables_executed": {"covered": 224, "total": 230},
         },
         {
@@ -2024,8 +2120,8 @@ MEASURED_COVERAGE: Mapping[str, Any] = {
                 "the 1,699 existing owner tests in the 55 modules listed under owner_test_files in "
                 "rbt002_rereview_evidence_v1.json"
             ),
-            "reached_lines": {"covered": 5855, "total": 7565, "percent": "77.40"},
-            "reached_branches": {"covered": 2934, "total": 3728, "percent": "78.70"},
+            "reached_lines": {"covered": 5891, "total": 7609, "percent": "77.42"},
+            "reached_branches": {"covered": 2936, "total": 3732, "percent": "78.67"},
             "module_lines": {"covered": 6480, "total": 11539, "percent": "56.16"},
             "module_branches": {"covered": 3149, "total": 4140, "percent": "76.06"},
             "nested_callables_executed": {"covered": 224, "total": 230},
@@ -2043,10 +2139,10 @@ MEASURED_COVERAGE: Mapping[str, Any] = {
         "btc_predictor.risk.trailing._validate_result.<locals>.<genexpr>#1",
     ),
     "unexecuted_arcs": (
-        "1,493 reached-body branch arcs never run under the fixtures and 794 never run under the owner tests. Their "
+        "1,494 reached-body branch arcs never run under the fixtures and 796 never run under the owner tests. Their "
         "complete source-line to target-line lists are in backtest_evidence/research_backtest_v1/"
-        "rbt002_rereview_evidence_v1.json under coverage.runs.{fixtures,owners}.files.*.unexecuted_branches; the R2 "
-        "re-measurement reproduced those lists exactly."
+        "rbt004_census_coverage_evidence_v1.json under runs.{fixtures,owners}.files.*.unexecuted_branches, measured "
+        "with the RBT-002 R2 reviewer scripts it records."
     ),
 }
 RUNTIME_GUARD_BACKSTOP = (
@@ -2084,8 +2180,8 @@ _RAW_SERIES_VARIANT = (
     "point-in-time daily bars"
 )
 _ROLLING_HELPER = (
-    "BTC-041 generic prior-window helper that no decision-path owner calls. It is a candidate convention for "
-    "CHAMPION_COMPLETION_SPEC_V1 (policy V4 section 6A.2), not a current input"
+    "BTC-041 generic prior-window helper that no decision-path owner or composer calls. CHAMPION_COMPLETION_SPEC_V1 "
+    "selected rolling_zscore, rolling_percentile and true_ranges (census roots since RBT-004), not this helper"
 )
 _FACTOR_AUDIT = "Rulebook 4.1 factor-separation audit tooling, run by tests and reports; it feeds no decision"
 _PERSISTENCE = (
@@ -2115,10 +2211,7 @@ LEFT_OUT_OWNER_DEFINITIONS: dict[str, str] = {
     "btc_predictor.features.momentum.four_week_momentum": _RAW_SERIES_VARIANT.format(root="four_week_momentum_from_daily_bars"),
     "btc_predictor.features.momentum.twelve_week_momentum": _RAW_SERIES_VARIANT.format(root="twelve_week_momentum_from_daily_bars"),
     "btc_predictor.features.rolling.historical_normalize": _ROLLING_HELPER,
-    "btc_predictor.features.rolling.rolling_percentile": _ROLLING_HELPER,
     "btc_predictor.features.rolling.rolling_volatility": _ROLLING_HELPER,
-    "btc_predictor.features.rolling.rolling_zscore": _ROLLING_HELPER,
-    "btc_predictor.features.rolling.true_ranges": _ROLLING_HELPER,
     "btc_predictor.features.scoring_contracts.FactorOverlapAudit": _FACTOR_AUDIT,
     "btc_predictor.features.scoring_contracts.FactorOverlapAudit.as_record": _FACTOR_AUDIT,
     "btc_predictor.features.scoring_contracts.FactorOverlapAudit.mechanically_clean": _FACTOR_AUDIT,

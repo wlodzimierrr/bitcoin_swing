@@ -97,7 +97,9 @@ def test_every_nested_code_object_of_every_reached_callable_is_discovered() -> N
 def test_the_nested_census_classifies_all_230_callables_as_owner_internal() -> None:
     census = _census()
     summary = census.summary()
-    assert summary["callables"] == 882
+    # 882 reviewed under RBT-002 R2; RBT-004 added the 3 promoted rolling helpers and
+    # the 3 quant.rolling callables they reach
+    assert summary["callables"] == 888
     assert summary["nested_callables"] == 230
     assert summary["nested_callables_by_role"] == {
         input_census.ROLE_GENERATOR_EXPRESSION: 188,

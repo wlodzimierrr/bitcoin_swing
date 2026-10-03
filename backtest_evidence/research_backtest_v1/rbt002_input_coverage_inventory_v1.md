@@ -1,13 +1,13 @@
 # RBT-002 historical input coverage inventory
 
 `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` under `RESEARCH_BACKTEST_POLICY_V5`. Evidence class `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED`.
-Inventory SHA-256 `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
+Inventory SHA-256 `250f9470b0586f091744c65bcb3d7e48c25ec4fe01ec7bcc79a9fda1a061cb17` over the canonical bytes of `rbt002_input_coverage_inventory_v1.json`.
 
 Nothing here is a trading outcome. Holdout and pre-2020 rows were only counted.
 
 ## Input surface (policy V5 section 5A)
 
-Discovered, not listed: `DECISION_PATH_STATIC_CENSUS_V2` walks the owner code from 74 hand-written roots and reaches 882 callables and 159 types (156 dataclasses, 1 protocol). 82 owner-module definitions are left out, each with a recorded reason.
+Discovered, not listed: `DECISION_PATH_STATIC_CENSUS_V2` walks the owner code from 88 hand-written roots and reaches 888 callables and 159 types (156 dataclasses, 1 protocol). 79 owner-module definitions are left out, each with a recorded reason.
 
 Inside those callables it discovers 230 nested, local and private callables (188 GENERATOR_EXPRESSION, 40 LAMBDA, 2 NESTED_FUNCTION), each classified from its call sites inside the owner: 230 OWNER_INTERNAL.
 
@@ -17,51 +17,52 @@ Inside those callables it discovers 230 nested, local and private callables (188
 | GENERATOR_EXPRESSION_ITERATOR_BOUND_IN_THE_ENCLOSING_SCOPE | 188 |
 | KEY_FUNCTION_OF_BUILTIN_SORTED_MIN_OR_MAX_OVER_ENCLOSING_SCOPE_VALUES | 40 |
 
-3520 inputs: the fields of 157 reached types, the parameters of 74 roots, the parameters of 662 internal callables and the parameters of 230 nested callables.
+3539 inputs: the fields of 157 reached types, the parameters of 88 roots, the parameters of 654 internal callables and the parameters of 230 nested callables.
 
 | census category | inputs |
 | --- | ---: |
 | COMPOSER_INPUT_TYPE | 259 |
 | CONFIG_LOADER_PARAMETER | 79 |
 | ENGINE_STATE | 34 |
-| INTERNAL_PARAMETER | 1407 |
+| INTERNAL_PARAMETER | 1394 |
 | NESTED_OWNER_INTERNAL_PARAMETER | 232 |
 | OWNER_CONFIG | 15 |
-| OWNER_DEFAULT_CONSTANT | 23 |
+| OWNER_DEFAULT_CONSTANT | 20 |
 | OWNER_OUTPUT | 948 |
-| ROOT_PARAMETER | 367 |
+| ROOT_PARAMETER | 402 |
 | STRATEGY_CONFIG | 156 |
 
 | family | raw leaf inputs | inputs drawing on the family (direct or upstream) |
 | --- | ---: | ---: |
-| BTC_MARKET_CAP | 5 | 889 |
+| BTC_MARKET_CAP | 5 | 886 |
 | CVD | 0 | 35 |
-| DISCRETIONARY_ASSERTION | 0 | 119 |
+| DISCRETIONARY_ASSERTION | 0 | 117 |
 | ENGINE_STATE | 0 | 137 |
-| ETF_FLOW_AND_AUM | 11 | 876 |
-| FUNDING_RATE | 12 | 952 |
-| FUTURES_BASIS | 12 | 900 |
-| LIQUIDATIONS | 13 | 941 |
+| ETF_FLOW_AND_AUM | 11 | 905 |
+| FUNDING_RATE | 13 | 950 |
+| FUTURES_BASIS | 13 | 898 |
+| LIQUIDATIONS | 13 | 939 |
 | MACRO_ONCHAIN_LIQUIDITY | 0 | 3 |
-| OPEN_INTEREST | 13 | 985 |
+| OPEN_INTEREST | 14 | 983 |
 | PERP_VOLUME | 13 | 95 |
-| REFERENCE_PRICE_1H | 25 | 2429 |
-| SHARED_RAW_VOLUME_1H | 14 | 1205 |
-| STRATEGY_CONFIG | 0 | 483 |
-| US_EQUITY_MARKET_CLOSURES | 2 | 816 |
+| REFERENCE_PRICE_1H | 25 | 2438 |
+| SHARED_RAW_VOLUME_1H | 14 | 1223 |
+| STRATEGY_CONFIG | 0 | 492 |
+| US_EQUITY_MARKET_CLOSURES | 2 | 846 |
 
 | kind | inputs |
 | --- | ---: |
 | ABSENT_RULEBOOK_FALLBACK | 11 |
-| DERIVED_BY_OWNER | 1149 |
+| COMPLETION_SPEC_VALUE | 7 |
+| DERIVED_BY_OWNER | 1169 |
 | DISCRETIONARY | 7 |
 | ENGINE_STATE | 108 |
 | OWNERLESS_CERTIFIED_DEFINITION | 3 |
 | OWNERLESS_RULEBOOK_FALLBACK | 2 |
 | OWNERLESS_UNDEFINED | 43 |
-| OWNER_INTERNAL_DATAFLOW | 1639 |
-| RAW_HISTORICAL | 104 |
-| STRATEGY_CONFIG | 454 |
+| OWNER_INTERNAL_DATAFLOW | 1626 |
+| RAW_HISTORICAL | 107 |
+| STRATEGY_CONFIG | 456 |
 
 Owner-less inputs:
 
@@ -106,15 +107,12 @@ Owner keyword defaults that no reached caller overrides (fixed constants of the 
 - `btc_predictor.quant.rolling.realized_volatility.min_periods` = `None`
 - `btc_predictor.quant.rolling.realized_volatility.nan_policy` = `'raise'`
 - `btc_predictor.quant.rolling.realized_volatility.sample` = `False`
+- `btc_predictor.quant.rolling.rolling_percentile.nan_policy` = `'raise'`
+- `btc_predictor.quant.rolling.rolling_zscore.nan_policy` = `'raise'`
 - `btc_predictor.quant.rolling.true_range.nan_policy` = `'raise'`
 - `btc_predictor.quant.scoring.weighted_score.weight_tolerance` = `1e-06`
 - `btc_predictor.quant.transforms.gaussian_health.maximum` = `100.0`
 - `btc_predictor.quant.transforms.gaussian_health.nan_policy` = `'raise'`
-- `btc_predictor.quant.transforms.normal_cdf_score.maximum` = `100.0`
-- `btc_predictor.quant.transforms.normal_cdf_score.mean` = `0.0`
-- `btc_predictor.quant.transforms.normal_cdf_score.minimum` = `0.0`
-- `btc_predictor.quant.transforms.normal_cdf_score.nan_policy` = `'raise'`
-- `btc_predictor.quant.transforms.normal_cdf_score.standard_deviation` = `1.0`
 - `btc_predictor.quant.transforms.percentile_to_health.higher_is_healthier` = `False`
 - `btc_predictor.quant.transforms.percentile_to_health.nan_policy` = `'raise'`
 - `btc_predictor.risk.reward.select_reward_reference.major_timeframes` = `('1w', '1mo')`
@@ -133,14 +131,14 @@ The census claims completeness only for static discovery plus the runtime trace 
 - **DYNAMIC_GETATTR_DISPATCH.** A getattr with a computed name is not resolved. Every reached owner getattr reads a field, property or as_record of a reached class or a field of an enumerated configuration dataclass (R1 audit, confirmed by the re-review pattern audit).
 - **UNEXECUTED_BRANCHES.** Code that never runs gives no runtime evidence. The measured line and branch coverage of the reached owner bodies is recorded below; an unexecuted arc is covered by static discovery alone.
 
-Measured with coverage.py 7.16.0 (branch measurement) on CPython 3.12.14 on 2026-10-02. Reached-body figures count the statements and branch arcs inside the source bodies of the reached named callables, which contain every nested callable; whole-module figures also count unreached definitions and module initialisation of the 50 reached source modules.
+Measured with coverage.py 7.16.0 (branch measurement) on CPython 3.12.14 on 2026-10-03. Reached-body figures count the statements and branch arcs inside the source bodies of the reached named callables, which contain every nested callable; whole-module figures also count unreached definitions and module initialisation of the 50 reached source modules. RBT-004 re-measured the 88-root census (the 74 RBT-002 roots plus the 14 promoted CHAMPION_COMPLETION_SPEC_V1 helpers); the 74-root RBT-002 R2 measurement of 2026-10-02 remains in rbt002_rereview_evidence_v1.json.
 
 | run | reached-body lines | reached-body branches | whole reached modules: lines | whole reached modules: branches | nested callables executed |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| fixture runs | 4,993/7,565 (66.00%) | 2,235/3,728 (59.95%) | 4,993/11,539 (43.27%) | 2,235/4,140 (53.99%) | 224/230 |
-| owner tests | 5,855/7,565 (77.40%) | 2,934/3,728 (78.70%) | 6,480/11,539 (56.16%) | 3,149/4,140 (76.06%) | 224/230 |
+| fixture runs | 5,029/7,609 (66.09%) | 2,238/3,732 (59.97%) | 5,029/11,539 (43.58%) | 2,238/4,140 (54.06%) | 224/230 |
+| owner tests | 5,891/7,609 (77.42%) | 2,936/3,732 (78.67%) | 6,480/11,539 (56.16%) | 3,149/4,140 (76.06%) | 224/230 |
 
-1,493 reached-body branch arcs never run under the fixtures and 794 never run under the owner tests. Their complete source-line to target-line lists are in backtest_evidence/research_backtest_v1/rbt002_rereview_evidence_v1.json under coverage.runs.{fixtures,owners}.files.*.unexecuted_branches; the R2 re-measurement reproduced those lists exactly.
+1,494 reached-body branch arcs never run under the fixtures and 796 never run under the owner tests. Their complete source-line to target-line lists are in backtest_evidence/research_backtest_v1/rbt004_census_coverage_evidence_v1.json under runs.{fixtures,owners}.files.*.unexecuted_branches, measured with the RBT-002 R2 reviewer scripts it records.
 
 Under both runs a root-scoped tracer checked every executed frame against the static census by code identity and parameter names, with no exemption: 0 uncovered functions and 0 uncovered dataclasses.
 Nested callables neither run executes (classified from source alone): `btc_predictor.data.quality.DerivativesQualityConfig.__post_init__.<locals>.<genexpr>#1`, `btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#1`, `btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#2`, `btc_predictor.features.entry.EntryConvictionResult.as_record.<locals>.<genexpr>#3`, `btc_predictor.risk.trailing._validate_result.<locals>.<genexpr>#1`.
