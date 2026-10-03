@@ -116,6 +116,23 @@ def test_an_empty_variable_counts_as_missing(monkeypatch: pytest.MonkeyPatch) ->
     assert isinstance(raised.value, ValueError)
 
 
+@pytest.mark.parametrize("name", ["POSTGRES_USER", "POSTGRES_PASSWORD"])
+def test_non_utf8_credentials_never_enter_an_encoder_exception(name, monkeypatch, capsys):
+    secret = "synthetic-private-credential-\udcff"
+    _set_environment(monkeypatch, {**_VALUES, name: secret})
+    with pytest.raises(DatabaseEnvironmentError) as raised:
+        database_url_from_environment()
+    error = raised.value
+    assert error.missing == ()
+    assert error.invalid == (name,)
+    assert str(error) == f"invalid PostgreSQL environment variables: {[name]}"
+    assert error.__cause__ is None and error.__context__ is None
+    assert not hasattr(error, "object")
+    assert "synthetic-private-credential" not in repr(error)
+    assert "synthetic-private-credential" not in repr(vars(error))
+    assert capsys.readouterr() == ("", "")
+
+
 def test_the_helper_never_prints_or_logs(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     _set_environment(monkeypatch, _VALUES)
     database_url_from_environment()

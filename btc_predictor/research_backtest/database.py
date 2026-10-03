@@ -25,9 +25,12 @@ DATABASE_ENVIRONMENT_NAMES = (
 class DatabaseEnvironmentError(ValueError):
     """Some ``POSTGRES_*`` variables are unset or empty; only their names are kept."""
 
-    def __init__(self, missing: tuple[str, ...]) -> None:
+    def __init__(self, missing: tuple[str, ...], *, invalid: tuple[str, ...] = ()) -> None:
         self.missing = missing
-        super().__init__(f"missing PostgreSQL environment variables: {list(missing)}")
+        self.invalid = invalid
+        message = (f"invalid PostgreSQL environment variables: {list(invalid)}" if invalid
+                   else f"missing PostgreSQL environment variables: {list(missing)}")
+        super().__init__(message)
 
 
 def database_url_from_environment() -> str:
@@ -41,6 +44,16 @@ def database_url_from_environment() -> str:
     missing = tuple(name for name in DATABASE_ENVIRONMENT_NAMES if not os.getenv(name))
     if missing:
         raise DatabaseEnvironmentError(missing)
+    # POSIX environment decoding can expose non-UTF-8 bytes as surrogates.
+    # quote_plus would raise UnicodeEncodeError retaining the credential in
+    # .object and repr. Detect those code points before invoking the encoder,
+    # without ever constructing a value-bearing exception or exception chain.
+    invalid = tuple(
+        name for name in ("POSTGRES_USER", "POSTGRES_PASSWORD")
+        if any("\ud800" <= char <= "\udfff" for char in os.environ[name])
+    )
+    if invalid:
+        raise DatabaseEnvironmentError((), invalid=invalid)
     return (
         f"postgresql+psycopg://{quote_plus(os.environ['POSTGRES_USER'])}:"
         f"{quote_plus(os.environ['POSTGRES_PASSWORD'])}@{os.environ['POSTGRES_HOST']}:"

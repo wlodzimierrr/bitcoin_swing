@@ -2752,6 +2752,15 @@ Input sources to classify: `replay_market_bars_at`,
 - This is separate from review-fix RBT002A-R1; no owner module is edited.
 
 **Independent review corrections (2026-10-03).**
+- RBT002A-R3 (P2): a POSIX non-UTF-8 credential reached quote_plus and
+  raised UnicodeEncodeError retaining the complete credential in .object.
+  Detect surrogate code points before encoding; invalid credentials now
+  raise DatabaseEnvironmentError retaining names only, with no context/cause
+  exception. Two independent synthetic user/password regressions pin it;
+  database/coverage/BTC-019 gate checks: 113 passed. Normal URL quoting is
+  unchanged. Resulting spec digest (unchanged by this helper fix):
+  `123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe`.
+
 - RBT002A-R2 (P2): the new AST isolation scan missed relative importlib
   string imports and aliases of import_module. In-memory nested relative and
   aliased-import mutations returned an empty offender list before correction.
