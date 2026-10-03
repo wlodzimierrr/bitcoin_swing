@@ -2462,8 +2462,8 @@ Acceptance criteria:
 
 **Implementation commits:**
 - Part 0, `75fc7e6`: the R2-RR-FS1 BTC-019 isolation fix (policy V6 §9).
-- Part 1: the RBT-002A commit that carries these notes. Its hash is recorded in
-  CURRENT_STATE.
+- Part 1, `09d14dc`: the spec module, frozen definition, tests, policy document
+  and these notes.
 
 **Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW`. Definition digest
 `d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd`, bound to

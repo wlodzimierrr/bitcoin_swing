@@ -900,7 +900,8 @@ IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — 2026-10-03, under
 RESEARCH_BACKTEST_POLICY_V6 §6A. Part 0 commit 75fc7e6 fixes R2-RR-FS1: EPIC Y
 reads the database environment through its own research_backtest.database
 helper. The BTC-019 isolation test passes unedited, and the full suite is
-7185 passed, 3 skipped, 1 xfailed, 0 failed. CHAMPION_COMPLETION_SPEC_V1
+7185 passed, 3 skipped, 1 xfailed, 0 failed. Part 1 commit 09d14dc
+(full suite 7267 passed, 3 skipped, 1 xfailed, 0 failed). CHAMPION_COMPLETION_SPEC_V1
 (research id swing_v1.2+completion_v1, EPIC Y only) is frozen at
 d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd and bound to
 inventory 108ab25b...efe3a. It covers 26 inputs: 22 defined, 2 omitted by
@@ -1613,7 +1614,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review**.
   - Part 0 `75fc7e6` (R2-RR-FS1): new `research_backtest/database.py` helper;
     no BTC-019 research import in EPIC Y; AST isolation regression.
-  - Part 1: `research_backtest/completion_spec.py`, the canonical JSON
+  - Part 1 `09d14dc`: `research_backtest/completion_spec.py`, the canonical JSON
     `champion_completion_spec_v1.json` (digest `d9f9b334...a80fd`), 82 tests and
     `docs/policies/champion_completion_spec_v1.md`.
   - **Coverage:** 26 inputs (22 defined, 2 omitted, 2 inert); 17
