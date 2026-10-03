@@ -1334,8 +1334,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Authoritative execution roadmap:** [Structured Tickets v2.6](execution/bitcoin_swing_predictor_structured_tickets_v2_6.md)
 - **Current implementation frontier:** Two post-Phase-1 workstreams now run
   in parallel. [EPIC Y](execution/research_backtest_track_v1.md), adopted
-  2026-09-28 and governed since 2026-10-02 by
-  [RESEARCH_BACKTEST_POLICY_V6](policies/research_backtest_policy_v6.md), is the
+  2026-09-28 and governed since 2026-10-03 by
+  [RESEARCH_BACKTEST_POLICY_V7](policies/research_backtest_policy_v7.md), is the
   non-certifying path to the first real-data backtest of the frozen champion.
   It runs one required venue per replay, uses 2020-01-01..2025-12-31 data and a
   2026-H1 holdout opened once, and is strictly additive: it never edits an EPIC
@@ -1583,8 +1583,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-002A, IMPLEMENTED / AWAITING
-  INDEPENDENT xHIGH REVIEW (2026-10-03). Two owner rulings are closure
-  preconditions (see Next actions). RBT-001 and RBT-002 are DONE / PASS, and
+  INDEPENDENT xHIGH REVIEW (2026-10-03). Both closure-precondition owner
+  rulings were made on 2026-10-03 (policy V7). Ruling 2 needs a recorded spec
+  update with a new digest before closure (see Next actions). RBT-001 and RBT-002 are DONE / PASS, and
   RBT-001A is READY. EPIC X's separate next action remains POSTP1-001V2R1; T1
   remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-002, 2026-10-02,
@@ -1866,11 +1867,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
     settled by policy V6: the volume owner-compatibility gap by §6A.8 (a
     spec-defined level volume), and E1 handling by §6A.9 (the RBT-004 guard
     contract `FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1`).
-  - **New owner rulings, closure preconditions for RBT-002A:**
-    - (1) accept or replace the disclosed `MOMENTUM_PERSISTENCE_SCORE` overlap
-      with Trend (Rulebook 4.1/32.17);
-    - (2) keep the E1 class in `funding_health` / `open_interest_growth_health`
-      as a named limitation, or extend §6A.9.
+  - **Owner rulings on RBT-002A's closure preconditions: ANSWERED
+    2026-10-03 (policy V7).**
+    - (1) The `MOMENTUM_PERSISTENCE_SCORE` overlap with Trend is ACCEPTED
+      unchanged (V7 §6A.10). Rulebook §4.1's validation condition is met by a
+      required non-selecting ablation in the RBT-007 report (V7 §8), frozen by
+      RBT-006.
+    - (2) The §6A.9 equality guard is EXTENDED to `funding_health` and
+      `open_interest_growth_health`, with their own reason codes. The spec's
+      guard contract and its named limitation must be updated inside RBT-002A,
+      with a new digest, before it closes. The independent review applies
+      that update.
   - **Other reviewable rulings** are listed in the spec's `surfaced_for_review`.
   - **Downstream.** RBT-004 needs the RBT-002A review PASS. RBT-003 and
     RBT-005..008 stay blocked on their remaining dependencies. No downstream
@@ -3217,12 +3224,16 @@ unopened with no automatic dependency that would ever open it.
   - any unaccounted incomplete owner result fails the test or blocks the
     freeze.
   RBT-002's independent R2 re-review PASSED on 2026-10-02; later census-method
-  gaps alone remain limitations. Two **OPEN owner questions for RBT-002A**:
-  - How should the completion spec handle the §9.2 level-volume fallback when
-    the frozen owner still refuses absent volume even at zero weight?
-  - How should the spec record handling of E1, the frozen futures-basis
-    constant-history defect, within the required RBT-004 owner-history equality/
-    refusal guard? An owner fix requires a separate cross-workstream decision.
+  gaps alone remain limitations. Its two owner questions for RBT-002A were
+  **ANSWERED 2026-10-02 by policy V6**:
+  - the §9.2 level-volume gap: §6A.8 has the completion spec define
+    `LEVEL_VOLUME_PERCENTILE` from Bitstamp hourly volume, with configured
+    weights unchanged;
+  - E1: the §6A.9 RBT-004 composer equality guard. No owner fix is
+    authorized.
+  RBT-002A's own two closure-precondition rulings were **ANSWERED 2026-10-03
+  by policy V7**: Momentum Persistence accepted with a required ablation, and
+  the guard extended to funding and OI growth.
 
 - **RBT-002 R1-RR CLOSED (2026-10-02):** independent R2 re-review PASS
   under V5 §5A.7. The nested held signature and call sites are classified;

@@ -1,20 +1,48 @@
-> [!NOTE]
-> **SUPERSEDED 2026-10-03 by
-> [`RESEARCH_BACKTEST_POLICY_V7`](research_backtest_policy_v7.md), before any EPIC Y
-> run.** V7 accepts the completion spec's Momentum Persistence definition with
-> a required non-selecting ablation, and extends the §6A.9 zero-variance guard
-> to all three positioning owners. V6 is retained unchanged below as
-> provenance.
+# Research Backtest Policy V7
 
-# Research Backtest Policy V6
+Policy identifier: `RESEARCH_BACKTEST_POLICY_V7`
 
-Policy identifier: `RESEARCH_BACKTEST_POLICY_V6`
-
-Status: **ADOPTED 2026-10-02 — documentation-only owner decision.
-Supersedes [`RESEARCH_BACKTEST_POLICY_V5`](research_backtest_policy_v5.md)
-before any EPIC Y run.** (V4, V3, V2 and V1 were superseded the same way.)
+Status: **ADOPTED 2026-10-03 — documentation-only owner decision.
+Supersedes [`RESEARCH_BACKTEST_POLICY_V6`](research_backtest_policy_v6.md)
+before any EPIC Y run.** (V5, V4, V3, V2 and V1 were superseded the same way.)
 
 ## Changes from earlier versions
+
+**V6 → V7 (owner rulings on RBT-002A's closure preconditions).**
+`CHAMPION_COMPLETION_SPEC_V1` (implementation `09d14dc`, digest
+`d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd`) raised two
+questions for the owner. Both are answered before its independent review:
+
+1. **Momentum Persistence overlap: accepted, with a required ablation
+   (§6A.10, §8).**
+   - Rulebook §20 gives `MomentumPersistence` 0.1333333 of Hold Score but
+     never defines it. The spec defines it as `100 * Phi(TREND_Z_M12)`.
+   - `Z_M12` already reaches Hold through Trend, so the factor is counted
+     twice.
+   - Rulebook §4.1 allows that overlap only when it is explicitly
+     intentional, quantified, versioned and validated by ablation or
+     sensitivity research. The spec supplies the first three.
+   - V7 accepts the definition unchanged. It makes validation a required,
+     non-selecting ablation in the RBT-007 report.
+2. **The zero-variance guard covers the whole owner class (§6A.9).** Three
+   positioning owners share the Decimal z-score helper that causes E1:
+   - `funding_health`;
+   - `futures_basis_health`;
+   - `open_interest_growth_health`.
+
+   V6 guarded only futures basis. V7 applies the same exact-equality guard to
+   all three, each with the owner's own zero-variance reason code. That
+   follows the RBT-002 re-review's E1 ruling: disclosing a false complete
+   score does not justify accepting it.
+
+**Effect on the spec.** Ruling 1 needs no spec change. Ruling 2 changes:
+- the spec's guard contract, which must cover all three owners;
+- its named limitation for funding and OI growth, which becomes a guarded
+  case.
+
+That update is applied inside RBT-002A, before it closes, as a recorded spec
+change with a new digest. No real-data outcome exists, so pre-registration
+(§6A.1) is unaffected.
 
 **V5 → V6 (owner decisions after RBT-002 closed).** The independent re-review
 of RBT-002 correction R2 passed under V5 §5A.7. It left two owner questions open
@@ -161,7 +189,7 @@ Every EPIC Y artifact carries:
 ```text
 evidence_class       = RESEARCH_BACKTEST_NON_CERTIFYING
 canonical_reference  = UNRESOLVED
-policy               = RESEARCH_BACKTEST_POLICY_V6
+policy               = RESEARCH_BACKTEST_POLICY_V7
 ```
 
 EPIC Y output may **never** be used to:
@@ -500,35 +528,60 @@ which are the owner's decision:
      (§6A.1). RBT-002A states its computed warm-up date. That date is an
      availability fact; it is expected to fall well before the ETF warm-up
      that already bounds the evaluation start (§3).
-9. **Futures-basis zero variance (E1, owner decision 2026-10-02).**
-   - *The defect.* The frozen `futures_basis_health` owner
-     (`btc_predictor/features/positioning.py`) uses Decimal sum and mean
-     rounding. That leaves a nonzero variance on an exactly constant history,
-     so the owner returns a complete score (z = 1) where it promises a
-     zero-variance refusal.
-   - *Spec duty.* The spec records this as a named limitation.
-   - *Guard.* The RBT-004 composer applies an equality guard. At each
-     decision instant it reads the owner's own point-in-time prior
-     annualized-basis history, through the owner's aggregation and history
+9. **Positioning zero variance (E1; owner decisions 2026-10-02 for futures
+   basis, extended 2026-10-03 to the whole class).**
+   - *The defect.* Three frozen owners in `btc_predictor/features/positioning.py`
+     call the same Decimal `_zscore` helper:
+
+     | owner | prior history it z-scores | its own zero-variance reason code |
+     | --- | --- | --- |
+     | `funding_health` | the 7-day funding averages | `FUNDING_HEALTH_ZERO_VARIANCE` |
+     | `futures_basis_health` | the annualized-basis averages | `FUTURES_BASIS_ZERO_VARIANCE` |
+     | `open_interest_growth_health` | the OI growth values | `OI_GROWTH_ZERO_VARIANCE` |
+
+     Decimal sum and mean rounding can leave a nonzero variance on an exactly
+     constant history. The owner then returns a complete score (z = 1) where
+     it promises a zero-variance refusal. The RBT-002 re-review reproduced
+     this for futures basis. The other two share the helper and the risk.
+   - *Spec duty.* The spec defines the guard contract for all three owners,
+     as one generalized contract or one contract per owner. Each owner's
+     residual risk is recorded as a guarded limitation.
+   - *Guard.* The RBT-004 composer applies an equality guard to each of the
+     three owners. At each decision instant it reads that owner's own
+     point-in-time prior history, through the owner's aggregation and history
      helpers. A helper it calls directly becomes a classified census root
      (§5A.6). If every value in that prior history is exactly equal, the
      guard:
-     - refuses with `FUTURES_BASIS_ZERO_VARIANCE`;
+     - refuses with that owner's own reason code from the table;
      - passes on no health score or z-score;
-     - records positioning as structurally unevaluable at that instant,
-       which is an accounted cause under §5A.6.
+     - records the positioning component as structurally unevaluable at that
+       instant, which is an accounted cause under §5A.6.
 
      This holds whether or not the current value equals that history.
    - *Prohibited.* The guard never reimplements the z-score and never
-     substitutes zero.
-   - *Tests.* RBT-004 tests these cases:
+     substitutes zero. It uses no tolerance: only exact Decimal equality.
+   - *Tests.* RBT-004 tests these cases for each of the three owners:
      - a constant history;
      - a current value equal to that constant history;
      - a current value that differs from it;
      - point-in-time exclusion of later rows;
      - unchanged results on non-constant histories.
-   - *Owner fix.* Fixing the owner itself would need a separate
+   - *Owner fix.* Fixing any of the owners would need a separate
      cross-workstream decision. None is authorized.
+10. **Momentum Persistence (owner decision 2026-10-03).**
+    - *Ruling.* The spec's `MOMENTUM_PERSISTENCE_SCORE = 100 * Phi(TREND_Z_M12)`
+      is accepted unchanged.
+    - *Overlap.* The factor reaches Hold twice:
+      - through Trend: Hold weight 0.2666667 on Trend, whose argument
+        carries `0.30 Z_M12`;
+      - directly: Hold weight 0.1333333.
+
+      The overlap is intentional, quantified by these weights, and versioned
+      by `CHAMPION_COMPLETION_SPEC_V1`.
+    - *Validation.* Rulebook §4.1's fourth condition is met by the required
+      ablation in §8. The ablation is reported, never selected.
+    - *Changes.* Changing the definition after any result exists creates a
+      new strategy version (§6).
 
 ## 7. Known strategy-semantics limitations
 
@@ -574,6 +627,21 @@ named limitation.
   dispersion across the three venues.
 - Input coverage: per-family coverage and gap counts, `REVISION_HISTORY_UNAVAILABLE`
   counts and the §7 limitation exposure counts.
+- **Momentum Persistence ablation (§6A.10).** This is the validation that
+  Rulebook §4.1 requires. It is labelled `SENSITIVITY_ONLY_NOT_SELECTION`.
+  - *The variant.* Hold Score without the `MomentumPersistence` term, with the
+    other four weights re-normalized proportionally. That is the same
+    re-normalization Rulebook §20 used when it removed Regime. RBT-006 freezes
+    the variant together with the champion.
+  - *What is reported.* For the evaluation window only, per venue, under the
+    `base` cost rung:
+    1. the number of Hold evaluations whose §20 action band differs between
+       the champion and the variant;
+    2. a full replay with the variant, beside the champion's §28 primary
+       metrics, with trade counts.
+  - *Limits.* The ablation never runs on the holdout, never replaces the
+    champion and never selects a variant. A later change in response to it is
+    a new strategy version (§6).
 
 ## 9. Integrity, isolation and review standard
 
@@ -623,6 +691,6 @@ windows) and is reproducible byte-for-byte from them.
 
 ## 11. Change control
 
-Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V7`)
+Any change to §2–§8 requires a new policy version (`RESEARCH_BACKTEST_POLICY_V8`)
 recorded before the affected run. The holdout rule in §3 cannot be relaxed for
 any strategy version that has already been evaluated on the evaluation window.

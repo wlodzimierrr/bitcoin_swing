@@ -6,9 +6,16 @@ and acceptance criteria. It is **not** Phase-1 execution authority: [Structured
 Tickets v2.6](bitcoin_swing_predictor_structured_tickets_v2_6.md) keeps that role
 and is not modified by this workstream. It is **not** EPIC X or BTC-019 authority.
 
-Governing policy: [`RESEARCH_BACKTEST_POLICY_V6`](../policies/research_backtest_policy_v6.md).
-It superseded V5 before any run, on the owner's 2026-10-02 decisions after the
-RBT-002 R2 re-review PASS:
+Governing policy: [`RESEARCH_BACKTEST_POLICY_V7`](../policies/research_backtest_policy_v7.md).
+It superseded V6 before any run, on the owner's 2026-10-03 rulings on RBT-002A's
+two closure preconditions:
+- the spec's Momentum Persistence definition is accepted, and the RBT-007 report
+  must include a non-selecting ablation of it (§6A.10, §8);
+- the §6A.9 zero-variance equality guard covers all three positioning owners
+  that share the Decimal z-score: funding, futures basis and OI growth.
+
+V6 had superseded V5 before any run, on the owner's 2026-10-02 decisions after
+the RBT-002 R2 re-review PASS:
 - the completion spec defines `LEVEL_VOLUME_PERCENTILE` (§6A.8);
 - an RBT-004 composer guard refuses the futures-basis zero-variance case (E1,
   §6A.9);
@@ -2383,7 +2390,28 @@ test or changing a frozen owner.
 
 ## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
 
-**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — CHAMPION_COMPLETION_SPEC_V1 frozen at d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd under policy V6 §6A; 26 inputs covered (22 defined, 2 omitted by ruling, 2 inert); two owner rulings are closure preconditions (see Implementation Notes).`
+**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — CHAMPION_COMPLETION_SPEC_V1 frozen at d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd under policy V6 §6A; 26 inputs covered (22 defined, 2 omitted by ruling, 2 inert). Both closure-precondition owner rulings were made on 2026-10-03 (policy V7); ruling 2 requires a recorded spec update (guard contract for all three positioning owners, new digest) inside this ticket before closure.`
+
+**Prior status provenance (superseded 2026-10-03):** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — CHAMPION_COMPLETION_SPEC_V1 frozen at d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd under policy V6 §6A; 26 inputs covered (22 defined, 2 omitted by ruling, 2 inert); two owner rulings are closure preconditions (see Implementation Notes).`
+
+**Owner rulings (2026-10-03, policy V7).** The spec's two closure
+preconditions are decided:
+1. **Momentum Persistence overlap: ACCEPTED** (V7 §6A.10). The spec's
+   `MOMENTUM_PERSISTENCE_SCORE = 100 * Phi(TREND_Z_M12)` stands unchanged.
+   Rulebook §4.1's validation condition is met by a required, non-selecting
+   ablation in the RBT-007 report (V7 §8). No spec change.
+2. **Funding and OI-growth zero variance: GUARDED** (V7 §6A.9). The equality
+   guard extends to `funding_health` (`FUNDING_HEALTH_ZERO_VARIANCE`) and
+   `open_interest_growth_health` (`OI_GROWTH_ZERO_VARIANCE`), beside futures
+   basis. The spec's guard contract and its named limitation for these two
+   owners must be updated before closure, as a recorded spec change with a new
+   digest. The other definitions and the frozen rules are unchanged. RBT-004
+   must also promote the funding and OI-growth history helpers it calls to
+   census roots.
+
+Items 3–9 that the spec surfaced are not owner preconditions. They are
+review items for the independent RBT-002A review, which may fix a genuine
+defect or record a limitation.
 
 **Prior status provenance (superseded):** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7. Confirmed 25 undefined IDs plus the existing LEVEL_VOLUME_PERCENTILE §9.2 fallback and owner-compatibility gap; E1 handling remains an explicit completion-spec obligation.`
 
@@ -2825,7 +2853,9 @@ fixes what this composer must do for the 26 owner-less inputs:
   beyond owner calls; "no new formulas" admits exactly that list.
 - **E1 guard.** `FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1` (policy V6 §6A.9)
   specifies the futures-basis zero-variance guard, its five tests and its
-  prohibitions.
+  prohibitions. Policy V7 §6A.9 extends the guard to `funding_health` and
+  `open_interest_growth_health`; the spec's contract is updated within
+  RBT-002A before it closes.
 
 Acceptance criteria:
 
@@ -2873,6 +2903,11 @@ Acceptance criteria:
   `complete` with z = 1 on a constant history (RBT-002 re-review). The
   composer refuses a constant owner basis history with an equality guard on
   owner outputs, without restating the z-score, and records the refusal.
+- **Positioning zero-variance guard (policy V7 §6A.9).** The same exact-equality
+  guard applies to `funding_health` and `open_interest_growth_health`. Each
+  refuses with its owner's own reason code (`FUNDING_HEALTH_ZERO_VARIANCE`,
+  `OI_GROWTH_ZERO_VARIANCE`). Each owner gets the five required tests. Every
+  history helper the composer calls is promoted to a census root.
 
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
@@ -2952,6 +2987,9 @@ Acceptance criteria:
   outcome is computed or inspected.
 - Pre-registers the BTC-182 walk-forward fold scheme and the threshold-sweep
   grid (sensitivity only) from the evaluation-window lengths, before any run.
+- Freezes the Momentum Persistence ablation variant (policy V7 §6A.10, §8)
+  with the champion: Hold Score without that term, the other four weights
+  re-normalized proportionally, labelled `SENSITIVITY_ONLY_NOT_SELECTION`.
 - Review confirms that no evaluation-window outcome was produced before the
   freeze.
 - **Runtime completeness guard (V6 §5A.6).** During the completeness-only
@@ -2984,6 +3022,12 @@ Acceptance criteria:
   available at the decision instant.
 - The report states the evidence class, its prohibited uses and every named
   limitation in its first section.
+- **Momentum Persistence ablation (policy V7 §8).** The report includes the
+  frozen variant, on the evaluation window only, per venue, under `base`. It
+  shows the count of Hold evaluations whose §20 action band differs, and a
+  full variant replay beside the champion's §28 metrics with trade counts,
+  labelled `SENSITIVITY_ONLY_NOT_SELECTION`. It never runs on the holdout and
+  never selects a variant.
 - No parameter changes, whatever the result.
 
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
@@ -3009,7 +3053,7 @@ version or any version derived from inspecting its result.
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
-| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — spec `d9f9b334...a80fd` under V6 §6A (26 inputs; level volume per §6A.8; E1 guard contract per §6A.9); Part 0 `75fc7e6` fixes R2-RR-FS1; two owner rulings are closure preconditions; recommended next action is its independent review |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — spec `d9f9b334...a80fd` under V6 §6A (26 inputs; level volume per §6A.8; E1 guard contract per §6A.9); Part 0 `75fc7e6` fixes R2-RR-FS1; both owner rulings made 2026-10-03 (policy V7: Momentum Persistence accepted with a required ablation; zero-variance guard extended to funding and OI growth, needing a recorded spec update with a new digest before closure); next: independent xHigh review, which applies that spec update |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V6 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
