@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from btc_predictor.features.rolling import rolling_percentile, rolling_zscore
+from btc_predictor.features import positioning
 from btc_predictor.quant import rolling as quant_rolling
 from btc_predictor.research_backtest import completion_spec as spec
 
@@ -100,3 +101,52 @@ def test_time_selected_history_maps_to_row_count_without_backfilling_gaps():
     expected = (sum(h < 4 for h in history) + .5 * sum(h == 4 for h in history)) / len(history) * 100
     actual = rolling_percentile([*history, Decimal(4)], window=len(history), min_periods=365)[-1]
     assert float(actual) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "guard,owner,reason,helpers",
+    [
+        ("FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1", "futures_basis_health", "FUTURES_BASIS_ZERO_VARIANCE",
+         {"_futures_basis_averages_by_time", "_futures_basis_history"}),
+        ("FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1", "funding_health", "FUNDING_HEALTH_ZERO_VARIANCE",
+         {"_funding_averages_by_time", "_funding_average_history"}),
+        ("OI_GROWTH_ZERO_VARIANCE_GUARD_V1", "open_interest_growth_health", "OI_GROWTH_ZERO_VARIANCE",
+         {"_aggregate_open_interest_by_time", "_open_interest_growth_by_time", "_oi_growth_history"}),
+    ],
+)
+def test_v7_guard_contract_is_owner_specific(guard, owner, reason, helpers):
+    records = {item.guard_id: item.as_record() for item in spec.POSITIONING_GUARDS}
+    record = records[guard]
+    promoted = {item["symbol"].rsplit(".", 1)[-1] for item in record["history_helpers"] if item["census"] == "PROMOTE_TO_CENSUS_ROOT"}
+    assert promoted == helpers
+    assert all(callable(getattr(positioning, name)) for name in helpers)
+    assert f"{owner}(rows, as_of=t)" in record["clauses"]["1_owner_result"]
+    assert reason in record["clauses"]["6_refusal"]
+    assert "no health score" in record["clauses"]["6_refusal"]
+    assert "no z-score" in record["clauses"]["6_refusal"]
+    assert "STRUCTURALLY_UNEVALUABLE" in record["clauses"]["7_structural_unevaluability"]
+    assert "Decimal ==" in record["clauses"]["5_equality"]
+    assert "whether or not" in record["clauses"]["5_equality"]
+    assert "available_at" in record["clauses"]["3_visible_rows"]
+    assert "observation_time" in record["clauses"]["3_visible_rows"]
+    assert len(record["required_tests"]) == 5
+    assert "equal" in record["required_tests"][1]
+    assert "different" in record["required_tests"][2]
+    assert "point-in-time" in record["required_tests"][3]
+    assert "non-constant" in record["required_tests"][4]
+
+
+def test_v7_guard_roots_and_accepted_overlap_are_frozen():
+    record = spec.spec_definition()
+    assert record["policy"] == "RESEARCH_BACKTEST_POLICY_V7"
+    assert len(record["positioning_zero_variance_guards"]) == 3
+    assert len(record["composer_roots_to_promote"]) == 14
+    limitations = {item["limitation_id"]: item["statement"] for item in record["named_limitations"]}
+    assert "Guarded limitation" in limitations["E1_CLASS_FUNDING_AND_OI_GROWTH"]
+    overlap = limitations["MOMENTUM_PERSISTENCE_OVERLAP"]
+    assert "ACCEPTED unchanged" in overlap
+    assert "RBT-006" in overlap and "RBT-007" in overlap
+    assert "SENSITIVITY_ONLY_NOT_SELECTION" in overlap
+    assert "never on holdout" in overlap
+    assert "ACCEPTED" in record["surfaced_for_review"][0]
+    assert "GUARDED" in record["surfaced_for_review"][1]

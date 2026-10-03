@@ -1,6 +1,6 @@
 """``CHAMPION_COMPLETION_SPEC_V1``: the frozen completion spec (RBT-002A).
 
-Policy ``RESEARCH_BACKTEST_POLICY_V6`` section 6A makes this pre-registered,
+Policy ``RESEARCH_BACKTEST_POLICY_V7`` section 6A makes this pre-registered,
 versioned spec part of the EPIC Y research champion
 ``swing_v1.2+completion_v1``. It defines, once each, the 26 inputs the
 reviewed RBT-002 inventory marks owner-less: its 25 ``OWNERLESS_UNDEFINED``
@@ -61,7 +61,7 @@ from btc_predictor.research_backtest.replay_inputs import (
 
 SPEC_VERSION = "CHAMPION_COMPLETION_SPEC_V1"
 SPEC_TICKET = "RBT-002A"
-SPEC_POLICY_VERSION = "RESEARCH_BACKTEST_POLICY_V6"
+SPEC_POLICY_VERSION = "RESEARCH_BACKTEST_POLICY_V7"
 SPEC_POLICY_DOCUMENT = "docs/policies/champion_completion_spec_v1.md"
 RESEARCH_STRATEGY_ID = "swing_v1.2+completion_v1"
 CHAMPION_BASE_IDENTITY = {
@@ -72,7 +72,7 @@ CHAMPION_BASE_IDENTITY = {
 SPEC_SCOPE = "EPIC_Y_RESEARCH_BACKTEST_ONLY"
 SPEC_EXCLUDED_USES = ("ADVISORY", "PAPER_TRADING", "EPIC_X", "BTC_019")
 
-# The reviewed RBT-002 inventory this spec covers (policy V6 section 6A: "as
+# The reviewed RBT-002 inventory this spec covers (policy V7 section 6A: "as
 # confirmed by its independent review"). Changing it needs an explicit rebind.
 BOUND_INVENTORY_SHA256 = "108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a"
 BOUND_INVENTORY_VERSION = coverage.INVENTORY_VERSION
@@ -104,7 +104,7 @@ SOURCE_POLICY_RULING = "POLICY_RULING"
 # Choices the governing policy itself fixes for this spec (for example section
 # 6A.8's Bitstamp volume source and unchanged weights, section 6A.9's guard).
 # They bind the spec; they are not a section 6A.2 tier.
-SOURCE_POLICY_MANDATE = "POLICY_V6_MANDATE"
+SOURCE_POLICY_MANDATE = "POLICY_V7_MANDATE"
 ELEMENT_SOURCE_CLASSES = (*SOURCE_CLASSES, SOURCE_POLICY_MANDATE, SOURCE_POLICY_RULING)
 
 DISPOSITION_DEFINED = "DEFINED"
@@ -126,7 +126,7 @@ EXCLUDED_OWNERLESS = {
     "LIQUIDATION_PERCENTILE": (
         "OWNERLESS_CERTIFIED_DEFINITION",
         "reused by reference from EPIC X PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1 under "
-        "HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1 (policy V6 section 4A); RBT-002 records it, the spec does not",
+        "HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1 (policy V7 section 4A); RBT-002 records it, the spec does not",
     ),
 }
 OWNERLESS_KINDS = (*COVERED_INVENTORY_KINDS, "OWNERLESS_CERTIFIED_DEFINITION")
@@ -321,7 +321,7 @@ def check_coverage(entries: Sequence[Any], inventory: Mapping[str, Any]) -> None
 # Nothing below reads a market value. The observation instants come from the
 # inventory's persisted coverage snapshot through RBT-002's own primitives
 # (venue_bar_series, projected_shared_series and the minimum-history rules), so
-# every date is a coverage fact (policy V6 section 6A.1).
+# every date is a coverage fact (policy V7 section 6A.1).
 
 
 def _requirements_by_id() -> dict[str, coverage.HistoryRequirement]:
@@ -534,7 +534,7 @@ H_BARS = Helper(
 )
 H_SHARED_VOLUME_BARS = Helper(
     "btc_predictor.research_backtest.replay_inputs.build_shared_replay_snapshot",
-    "SharedReplaySnapshot.volume_bars: the SHARED_RAW_VOLUME_1H Bitstamp 1h bars (policy V6 section 2), each hour "
+    "SharedReplaySnapshot.volume_bars: the SHARED_RAW_VOLUME_1H Bitstamp 1h bars (policy V7 section 2), each hour "
     "used only when replay_inputs.modelled_bar_available_at(bar) <= t",
     CLASSIFIED_INPUT_SOURCE,
 )
@@ -545,7 +545,7 @@ H_NEXT_BAR = Helper(
 )
 H_CLOSURES = Helper(
     "btc_predictor.research.us_equity_market_closures.load_closures",
-    "US_EQUITY_MARKET_CLOSURE_TABLE_V1 passed as market_holidays to every ETF window (policy V6 section 5)",
+    "US_EQUITY_MARKET_CLOSURE_TABLE_V1 passed as market_holidays to every ETF window (policy V7 section 5)",
     CLASSIFIED_INPUT_SOURCE,
 )
 H_ZSCORE = Helper(
@@ -624,13 +624,13 @@ UNIFORM_ZSCORE = UniformRule(
                 "btc_predictor/quant/rolling.py:436 (sample=False -> ddof 0)"),
         Element("zero_variance", "exactly constant H refuses (None)", SOURCE_OWNER_CONVENTION,
                 "btc_predictor/features/positioning.py:1266-1267 (volatility == 0 refuses; FUNDING_HEALTH_ZERO_VARIANCE); "
-                "btc_predictor/quant/rolling.py:108 (deviations != 0); exact equality, the test policy V6 section 6A.9 "
+                "btc_predictor/quant/rolling.py:108 (deviations != 0); exact equality, the test policy V7 section 6A.9 "
                 "prescribes for futures basis"),
         Element("missing_history_points", "skipped, never zero-filled", SOURCE_OWNER_CONVENTION,
                 "btc_predictor/features/flow.py:1019 (_latest_zscore skips None history values); Rulebook v1.2 "
                 "section 4.2 line 391"),
         Element("helper", "btc_predictor.features.rolling.rolling_zscore", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/rolling.py:62 (BTC-041 prior-window z-score; policy V6 section 6A.2 tier 3)"),
+                "btc_predictor/features/rolling.py:62 (BTC-041 prior-window z-score; policy V7 section 6A.2 tier 3)"),
     ),
     helpers=(H_ZSCORE,),
     exceptions=(),
@@ -669,7 +669,7 @@ UNIFORM_PERCENTILE = UniformRule(
                 "btc_predictor/features/volatility.py:1967-1973 _percentile_rank; btc_predictor/quant/rolling.py:142"),
         Element("series", "the quantity observed once per UTC day", SOURCE_OWNER_CONVENTION,
                 "btc_predictor/features/volatility.py:1112 volatility_percentile over daily RV_20 results; EPIC X "
-                "LIQUIDATION_PERCENTILE one observation per UTC census day (policy V6 section 4A)"),
+                "LIQUIDATION_PERCENTILE one observation per UTC census day (policy V7 section 4A)"),
         Element("window", "730 days, half-open [D - 730 days, D)", SOURCE_OWNER_CONVENTION,
                 "btc_predictor/features/volatility.py:136, :1924-1929; Rulebook v1.2 section 8.1 line 861 (2yr)"),
         Element("prior_window_exclusion", "the current observation D is never in H", SOURCE_OWNER_CONVENTION,
@@ -679,7 +679,7 @@ UNIFORM_PERCENTILE = UniformRule(
         Element("missing_history_points", "skipped, never zero-filled", SOURCE_OWNER_CONVENTION,
                 "btc_predictor/features/volatility.py:1928 (realized_volatility is not None)"),
         Element("helper", "btc_predictor.features.rolling.rolling_percentile", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/rolling.py:81 (BTC-041 prior-window percentile; policy V6 section 6A.2 tier 3)"),
+                "btc_predictor/features/rolling.py:81 (BTC-041 prior-window percentile; policy V7 section 6A.2 tier 3)"),
     ),
     helpers=(H_PERCENTILE,),
     exceptions=(),
@@ -697,7 +697,7 @@ def _normalisation(rule: UniformRule) -> Element:
     inherited = [item.name for item in rule.elements if item.source_class == SOURCE_NEW_PARAMETER]
     rationale = f"inherits the uniform rule's NEW_PARAMETER element(s): {', '.join(inherited)}." if inherited else ""
     return Element(
-        "normalisation", rule.rule_id, governing, f"uniform rule {rule.rule_id} (policy V6 section 6A.3)", rationale
+        "normalisation", rule.rule_id, governing, f"uniform rule {rule.rule_id} (policy V7 section 6A.3)", rationale
     )
 
 
@@ -721,13 +721,13 @@ _FLOW_MISSING = (
 )
 _BAR_PIT = (
     "Only canonical bars whose close boundary and modelled availability are at or before t (BTC-040 "
-    "build_canonical_market_bars with data_available_at=t; policy V6 section 4 INTERVAL). The history values come "
+    "build_canonical_market_bars with data_available_at=t; policy V7 section 4 INTERVAL). The history values come "
     "from the same visible bars, so nothing after t enters."
 )
 _ETF_PIT = (
-    "Only EtfFlow rows with available_at <= t (DAILY_PUBLISHED, T+2 00:00, policy V6 section 4; flow.py:854-856). "
+    "Only EtfFlow rows with available_at <= t (DAILY_PUBLISHED, T+2 00:00, policy V7 section 4; flow.py:854-856). "
     "Each history value D' is the owner called with as_of=t and end_date=D', the per-window fund universe of "
-    "policy V6 section 5 and market_holidays = US_EQUITY_MARKET_CLOSURE_TABLE_V1; every value uses the information "
+    "policy V7 section 5 and market_holidays = US_EQUITY_MARKET_CLOSURE_TABLE_V1; every value uses the information "
     "set at t."
 )
 
@@ -755,7 +755,7 @@ def _trend_z(input_id: str, field: str, line: int, upstream: str, owner: str, ow
         entry_components=("trend",),
         accounted_causes=_causes(input_id, "INPUT_MISSING", "INSUFFICIENT_HISTORY", "ZERO_VARIANCE"),
         notes=(
-            f"{owner_line}: the owner's lookback counts rows, so an omitted bar is read as contiguous (the policy V6 "
+            f"{owner_line}: the owner's lookback counts rows, so an omitted bar is read as contiguous (the policy V7 "
             "section 7 row-versus-session limitation class); disclosed, not changed.",
         ),
     )
@@ -782,7 +782,7 @@ def _flow_z(input_id: str, field: str, upstream: str, owner_call: str, formula: 
         accounted_causes=_causes(input_id, "INPUT_MISSING", "INSUFFICIENT_HISTORY", "ZERO_VARIANCE"),
         notes=(
             "ETF_CORE always also records FLOW_SCORE_P1_INPUT_MISSING (CVD absent; Rulebook 6.2 Phase 1 fallback, "
-            "policy V6 section 5); that is an accounted cause, not a spec gap.",
+            "policy V7 section 5); that is an accounted cause, not a spec gap.",
         ),
     )
 
@@ -856,7 +856,7 @@ _H_RETURN = Helper(
     PROMOTE_TO_CENSUS_ROOT,
 )
 _RETURN_NOTE = (
-    "The owner helper counts rows, so a 7-row lookback across an omitted daily bar spans 8 days (policy V6 section 7 "
+    "The owner helper counts rows, so a 7-row lookback across an omitted daily bar spans 8 days (policy V7 section 7 "
     "row-versus-session limitation class); disclosed, not changed."
 )
 
@@ -930,7 +930,7 @@ def _volatility_entries() -> tuple[SpecEntry, ...]:
             missing_input=(
                 "Fewer than 8 visible daily rows gives None: ORDERLINESS_INPUT_MISSING (incomplete Entry Conviction), "
                 "STRESS_INPUT_MISSING and CAPITULATION_INPUT_MISSING. With a non-DISCRETIONARY STRESS input missing, the "
-                "V4 STRESS mapping (policy V6 section 7, DISCRETIONARY-only) does not apply, so the composer's "
+                "V4 STRESS mapping (policy V7 section 7, DISCRETIONARY-only) does not apply, so the composer's "
                 "conservative reading is stress_flagged=None (HARD_VETO_INPUT_MISSING, fail closed). Never zero-filled."
             ),
             warm_up=WarmUp(WARMUP_INHERITS, ("DAILY_RETURN_7",), "7 daily rows after the first visible daily bar"),
@@ -1063,9 +1063,9 @@ def _structure_entries() -> tuple[SpecEntry, ...]:
             ),
             elements=(
                 Element("source", "Bitstamp raw 1h volume in all three venue runs", SOURCE_POLICY_MANDATE,
-                        "policy V6 section 6A.8 'Source' and section 2 (shared volume source)"),
+                        "policy V7 section 6A.8 'Source' and section 2 (shared volume source)"),
                 Element("weights", "price_levels.level_strength_weights unchanged at 0.20 each", SOURCE_POLICY_MANDATE,
-                        "policy V6 section 6A.8; btc_predictor/config/strategy/default.toml:141-146"),
+                        "policy V7 section 6A.8; btc_predictor/config/strategy/default.toml:141-146"),
                 Element("attribution_span", "the member's pivot bar [level_timestamp, next_bar_timestamp(level_timestamp, timeframe))",
                         SOURCE_NEW_PARAMETER, "btc_predictor/levels/swing.py:29 WeeklySwingLevel.level_timestamp / timeframe",
                         "These are the hours in which the level's price printed, read from level-record fields alone; no owner produces touch or reaction records."),
@@ -1079,13 +1079,13 @@ def _structure_entries() -> tuple[SpecEntry, ...]:
             helpers=(_H_LEVEL_STRENGTH, _H_CLUSTERS, _H_WEEKLY_SWINGS, _H_MONTHLY_SWINGS, H_SHARED_VOLUME_BARS, H_NEXT_BAR, H_PERCENTILE),
             point_in_time=(
                 "Every hour used ends at or before e, the pivot bar's close, which is before the member's detected_at "
-                "and so before t; Bitstamp 1h bars are available at their close (policy V6 section 4 INTERVAL). The "
+                "and so before t; Bitstamp 1h bars are available at their close (policy V7 section 4 INTERVAL). The "
                 "percentile is anchored at e, so it is fixed once computed and does not drift with later volume."
             ),
             missing_input=(
                 _LEVEL_MISSING + " A member whose pivot bar closes before the computed warm-up date has no percentile; "
                 "under the strict minimum any cluster containing one stays incomplete (declared warm-up cause "
-                "LEVEL_VOLUME_PERCENTILE_WARM_UP), because policy V6 section 3 forbids pre-2020 history. A later pivot "
+                "LEVEL_VOLUME_PERCENTILE_WARM_UP), because policy V7 section 3 forbids pre-2020 history. A later pivot "
                 "whose comparators fall below 365 because of Bitstamp hour gaps is LEVEL_VOLUME_PERCENTILE_INSUFFICIENT_HISTORY."
             ),
             warm_up=WarmUp(WARMUP_LEVEL_VOLUME, ("SHARED_RAW_VOLUME_1H", "WEEKLY_SWING_LEVELS", "MONTHLY_SWING_LEVELS"),
@@ -1094,14 +1094,14 @@ def _structure_entries() -> tuple[SpecEntry, ...]:
             entry_components=("structure",),
             accounted_causes=_causes("LEVEL_VOLUME_PERCENTILE", "INPUT_MISSING", "NO_SWING_MEMBER", "WARM_UP", "INSUFFICIENT_HISTORY"),
             notes=(
-                "Policy V6 section 6A.8 supersedes the inventory's RULEBOOK_FALLBACK_EXISTS row and its note 'Do not "
+                "Policy V7 section 6A.8 supersedes the inventory's RULEBOOK_FALLBACK_EXISTS row and its note 'Do not "
                 "define a new volume percentile' for this champion: the Rulebook 9.2 no-volume weights cannot run in "
                 "the frozen owner without a placeholder.",
                 "No price-level detection and no volume-profile binning: only level-record fields and the shared "
                 "volume series are read.",
                 "AVWAP and volume-profile members carry no printed pivot bar and are out of scope. Whether RBT-004 "
                 "clusters them is its composition decision (their bars are as the reviewed inventory classifies them, "
-                "Bitstamp raw OHLCV shared by all runs, policy V6 section 2). If it does, a nearest support cluster "
+                "Bitstamp raw OHLCV shared by all runs, policy V7 section 2). If it does, a nearest support cluster "
                 "holding only such members gives None (NO_SWING_MEMBER), so Structure is incomplete; surfaced.",
             ),
         ),
@@ -1174,14 +1174,14 @@ def _lifecycle_entries() -> tuple[SpecEntry, ...]:
                 Consumer("btc_predictor.signals.hard_veto.HardVetoInput.severe_crowding_flagged", "btc_predictor/signals/hard_veto.py:55 HardVetoInput.severe_crowding_flagged"),
             ),
             rule=(
-                "C = calculate_crowding_flag(CrowdingFlagInput(funding z from funding_health, basis z from the "
+                "C = calculate_crowding_flag(CrowdingFlagInput(funding z from the V7-guarded funding_health, basis z from the "
                 "E1-guarded futures_basis_health, OI-intensity percentile from open_interest_intensity), thresholds from "
                 "strategy_config.positioning_flags.crowding). SEVERE_CROWDING_STATE = C.flagged if C.complete else None. "
                 "The same value goes to the hard veto and to Setup A; C.reason_codes are passed as source evidence."
             ),
             elements=(
                 Element("mapping", "severe crowding = the existing CROWDING flag", SOURCE_POLICY_MANDATE,
-                        "policy V6 section 6A.5 ('severe crowding = the existing CROWDING flag'); Rulebook v1.2 section 11 "
+                        "policy V7 section 6A.5 ('severe crowding = the existing CROWDING flag'); Rulebook v1.2 section 11 "
                         "line 1230, section 14 line 1488, section 24 line 1958"),
                 Element("owner_output", "CrowdingFlagResult.flagged", SOURCE_OWNER_CONVENTION,
                         "btc_predictor/features/positioning.py:860 calculate_crowding_flag"),
@@ -1242,7 +1242,7 @@ def _lifecycle_entries() -> tuple[SpecEntry, ...]:
                 "(Hold weight 0.2666667 on 100 * Phi(... + 0.30 * Z_M12 + ...)) and directly (Hold weight 0.1333333 on "
                 "100 * Phi(Z_M12)). This spec makes the overlap explicit, quantified and versioned; validation by "
                 "ablation cannot precede pre-registration. No overlap-free owner output exists, and a distinct "
-                "persistence measure would be a new indicator. Surfaced for the owner and the independent review.",
+                "persistence measure would be a new indicator. ACCEPTED unchanged by policy V7 section 6A.10; RBT-006/RBT-007 implement the required section 8 ablation.",
             ),
         ),
         SpecEntry(
@@ -1528,7 +1528,7 @@ def _exit_setup_entries() -> tuple[SpecEntry, ...]:
             rule="Inert short-side input: distribution_flagged=None at every decision instant; detect_bearish_distribution is still called.",
             elements=(
                 Element("ruling", "INERT", _P,
-                        "policy V6 section 6A.6 (long-only; short-only inputs stay inert and are listed); "
+                        "policy V7 section 6A.6 (long-only; short-only inputs stay inert and are listed); "
                         "btc_predictor/config/strategy/default.toml:283 allow_short_trades = false",
                         "Setup D is short-only and the engine refuses short intents, so no value is defined; None keeps the owner's incomplete result standing."),
             ),
@@ -1550,7 +1550,7 @@ def _exit_setup_entries() -> tuple[SpecEntry, ...]:
             rule="Inert short-side input: short_trigger_confirmed=None at every decision instant.",
             elements=(
                 Element("ruling", "INERT", _P,
-                        "policy V6 section 6A.6; btc_predictor/config/strategy/default.toml:283 allow_short_trades = false; "
+                        "policy V7 section 6A.6; btc_predictor/config/strategy/default.toml:283 allow_short_trades = false; "
                         "Rulebook v1.2 section 12 (long-only triggers)",
                         "Defining a mirrored trigger would be a new indicator (section 6A.4) for a direction the engine refuses."),
             ),
@@ -1661,9 +1661,9 @@ E1_GUARD = GuardContract(
         ("4_history", "A = _futures_basis_averages_by_time(rows_t); H = _futures_basis_history(A, observation_time=R.observation_time, zscore_window_days=R.zscore_window_days). The composer asserts len(H) == R.history_observation_count and max(A) == R.observation_time; a mismatch is a composer defect and fails its test."),
         ("5_equality", "If every element of H is exactly equal under Decimal == (all(h == H[0] for h in H)), the guard refuses. This holds whether or not the current value R.annualized_basis_rate_avg equals H[0]."),
         ("6_refusal", "On refusal: record FUTURES_BASIS_ZERO_VARIANCE with R as evidence, and pass no health score and no z-score anywhere: PositioningScoreInput.basis_health, CrowdingFlagInput.basis_zscore, StressFlagInput.basis_zscore and EuphoriaFlagInput.basis_zscore all receive None."),
-        ("7_structural_unevaluability", "Positioning is recorded as STRUCTURALLY_UNEVALUABLE at t with cause FUTURES_BASIS_ZERO_VARIANCE, an accounted cause under policy V6 section 5A.6; the incomplete Entry Conviction, regime, CROWDING (SEVERE_CROWDING_STATE None, so the hard veto fails closed) and, while a position is open, Hold and Add map to it. StressFlagInput.basis_zscore and EuphoriaFlagInput.basis_zscore None are attributed per field to the same cause: STRESS then reads stress_flagged=None (STRESS_NON_DISCRETIONARY_MISSING), and EUPHORIA's basis leg cannot fire (fewer NO ADD suppressions, disclosed)."),
+        ("7_structural_unevaluability", "Positioning is recorded as STRUCTURALLY_UNEVALUABLE at t with cause FUTURES_BASIS_ZERO_VARIANCE, an accounted cause under policy V7 section 5A.6; the incomplete Entry Conviction, regime, CROWDING (SEVERE_CROWDING_STATE None, so the hard veto fails closed) and, while a position is open, Hold and Add map to it. StressFlagInput.basis_zscore and EuphoriaFlagInput.basis_zscore None are attributed per field to the same cause: STRESS then reads stress_flagged=None (STRESS_NON_DISCRETIONARY_MISSING), and EUPHORIA's basis leg cannot fire (fewer NO ADD suppressions, disclosed)."),
         ("8_pass_through", "Otherwise R.health_score and R.annualized_basis_zscore pass unchanged; the guard's only numeric operation is the equality test."),
-        ("9_census", "_futures_basis_averages_by_time and _futures_basis_history are promoted to classified census roots before RBT-004 calls them (policy V6 sections 5A.6, 6A.9)."),
+        ("9_census", "_futures_basis_averages_by_time and _futures_basis_history are promoted to classified census roots before RBT-004 calls them (policy V7 sections 5A.6, 6A.9)."),
     ),
     required_tests=(
         "a constant history refuses FUTURES_BASIS_ZERO_VARIANCE and passes no health or z to any of the four consumers",
@@ -1679,16 +1679,77 @@ E1_GUARD = GuardContract(
         "editing btc_predictor/features/positioning.py without a separate cross-workstream decision",
     ),
     citations=(
-        "policy V6 section 6A.9",
+        "policy V7 section 6A.9",
         "btc_predictor/features/positioning.py:551 futures_basis_health, :1111 _futures_basis_averages_by_time, :1130 _futures_basis_history, :1260 _zscore, :1340 _average",
         "docs/execution/research_backtest_track_v1.md RBT-002 re-review finding E1",
     ),
 )
 
 
+def _additional_positioning_guard(
+    owner: str, reason: str, z_field: str, visible_rows: str, history: str,
+    helpers: tuple[tuple[str, str], ...], consumers: str, citation: str,
+) -> GuardContract:
+    """Declarative V7 contract, using each owner's own history construction."""
+
+    return GuardContract(
+        guard_id=f"{reason}_GUARD_V1",
+        implemented_by="RBT-004 (COMPOSE_CHAMPION_ENTRY_DECISION_V1)",
+        limitation=f"Guarded frozen-owner E1-class limitation: {owner} shares _zscore/_average; exact constant non-terminating prior history can be scored complete. Disclosure alone does not authorize accepting a false score.",
+        history_helpers=(
+            Helper(f"btc_predictor.features.positioning.{owner}", "R = the owner result at t with owner defaults and the classified input unit", CENSUS_ROOT),
+            *(Helper(f"btc_predictor.features.positioning.{name}", use, PROMOTE_TO_CENSUS_ROOT) for name, use in helpers),
+        ),
+        clauses=(
+            ("1_owner_result", f"At decision instant t, R = {owner}(rows, as_of=t) with owner defaults; open_interest_growth_health also receives the classified open_interest_unit."),
+            ("2_owner_refusal_stands", f"If R.{z_field} is None, R stands unchanged and the guard never relabels an owner refusal."),
+            ("3_visible_rows", visible_rows),
+            ("4_history", history + " Assert len(H) == R.history_observation_count and the latest owner observation time equals R.observation_time; a mismatch is a composer defect and fails its test."),
+            ("5_equality", "If every element of H is exactly equal under Decimal == (all(h == H[0] for h in H)), refuse whether or not the current owner quantity equals H[0]. No tolerance."),
+            ("6_refusal", f"On refusal record {reason}, keep R as evidence, and pass no health score and no z-score anywhere; {consumers} receive None. No score or z is recomputed."),
+            ("7_structural_unevaluability", f"Record the positioning component as STRUCTURALLY_UNEVALUABLE at t with cause {reason}, accounted under policy V7 section 5A.6. Attribute every downstream incomplete input to the same cause, including Entry Conviction, core regime, Hold and Add; preserve the existing hard-flag missing-input behavior."),
+            ("8_pass_through", f"Otherwise R.health_score and R.{z_field} pass unchanged. The guard uses only exact equality on owner-produced values."),
+            ("9_census", "Every directly called history helper in history_helpers is promoted to a classified census root before RBT-004 calls it (policy V7 sections 5A.6, 6A.9)."),
+        ),
+        required_tests=(
+            f"a constant prior history refuses {reason}, with no health score or z-score passed on",
+            "a current value equal to the constant prior history refuses",
+            "a current value different from the constant prior history refuses",
+            "point-in-time exclusion: available_at > t or observation_time > t rows never join H; OI unit filtering is preserved",
+            "non-constant histories give results identical to the owner's",
+        ),
+        prohibited=E1_GUARD.prohibited,
+        citations=("policy V7 section 6A.9", citation, "btc_predictor/features/positioning.py:1260 _zscore, :1340 _average"),
+    )
+
+
+FUNDING_GUARD = _additional_positioning_guard(
+    "funding_health", "FUNDING_HEALTH_ZERO_VARIANCE", "funding_zscore",
+    "rows_t = rows whose as_record()['available_at'] <= t and as_record()['observation_time'] <= t, exactly as funding_health (positioning.py:480-485).",
+    "A = _funding_averages_by_time(rows_t, average_window_days=R.average_window_days); H = _funding_average_history(A, observation_time=R.observation_time, zscore_window_days=R.zscore_window_days).",
+    (("_funding_averages_by_time", "A = the owner's trailing 7-day funding averages at each visible settlement"),
+     ("_funding_average_history", "H = the owner's prior funding averages in [R.observation_time - R.zscore_window_days, R.observation_time)")),
+    "PositioningScoreInput.funding_health, CrowdingFlagInput.funding_zscore, StressFlagInput.funding_zscore, CapitulationFlagInput.funding_zscore and EuphoriaFlagInput.funding_zscore",
+    "btc_predictor/features/positioning.py:460 funding_health, :1048 _funding_averages_by_time, :1087 _funding_average_history",
+)
+
+OI_GROWTH_GUARD = _additional_positioning_guard(
+    "open_interest_growth_health", "OI_GROWTH_ZERO_VARIANCE", "oi_growth_zscore",
+    "rows_t = rows whose open_interest_unit == R.open_interest_unit, as_record()['available_at'] <= t and as_record()['observation_time'] <= t, exactly as open_interest_growth_health (positioning.py:653-660).",
+    "A = _aggregate_open_interest_by_time(rows_t); G = _open_interest_growth_by_time(A, growth_window_days=R.growth_window_days); H = _oi_growth_history(G, observation_time=R.observation_time, zscore_window_days=R.zscore_window_days).",
+    (("_aggregate_open_interest_by_time", "A = the owner's unit-filtered aggregate OI per visible observation"),
+     ("_open_interest_growth_by_time", "G = the owner's growth values using its own 7-day prior-OI selection"),
+     ("_oi_growth_history", "H = the owner's defined prior growth values in [R.observation_time - R.zscore_window_days, R.observation_time)")),
+    "PositioningScoreInput.oi_health and every potential consumer of oi_growth_zscore",
+    "btc_predictor/features/positioning.py:632 open_interest_growth_health, :1144 _aggregate_open_interest_by_time, :1212 _open_interest_growth_by_time, :1232 _oi_growth_history",
+)
+
+POSITIONING_GUARDS = (E1_GUARD, FUNDING_GUARD, OI_GROWTH_GUARD)
+
+
 # --- declared arithmetic, limitations and the pre-registration record -------------------------------
 
-# Policy V6 section 6A.7: the composers implement the spec by calling owner
+# Policy V7 section 6A.7: the composers implement the spec by calling owner
 # helpers. This is the complete list of arithmetic the spec declares on top of
 # owner calls; RBT-004/RBT-005's "no new formulas" admits exactly these.
 DECLARED_ARITHMETIC = (
@@ -1706,13 +1767,13 @@ DECLARED_ARITHMETIC = (
 
 NAMED_LIMITATIONS = (
     ("E1_FUTURES_BASIS_ZERO_VARIANCE", "Frozen owner defect; refused by the RBT-004 guard FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1."),
-    ("E1_CLASS_FUNDING_AND_OI_GROWTH", "funding_health (positioning.py:516) and open_interest_growth_health (positioning.py:694) call the same Decimal _zscore/_average; an exactly constant non-terminating 180-day history would give the same false-complete z. Policy V6 section 6A.9 authorises a guard for futures basis only; this spec neither extends nor ignores it. Open owner question."),
-    ("MOMENTUM_PERSISTENCE_OVERLAP", "Z_M12 reaches Hold through Trend and directly (see MOMENTUM_PERSISTENCE_SCORE); explicit, quantified and versioned here, not validated by ablation. Open owner question."),
+    ("E1_CLASS_FUNDING_AND_OI_GROWTH", "Guarded limitation under policy V7 section 6A.9: funding_health and open_interest_growth_health share Decimal _zscore/_average. RBT-004 must implement FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1 and OI_GROWTH_ZERO_VARIANCE_GUARD_V1 over each owner's own PIT prior history, with no health or z passed on and structural unevaluability recorded."),
+    ("MOMENTUM_PERSISTENCE_OVERLAP", "Z_M12 reaches Hold through Trend and directly (see MOMENTUM_PERSISTENCE_SCORE); ACCEPTED unchanged under policy V7 section 6A.10; explicit, quantified and versioned. RBT-006 freezes the required Hold-without-MomentumPersistence proportional-weight ablation; RBT-007 reports action-band disagreements and full variant replay on the evaluation window only, per venue at base costs, SENSITIVITY_ONLY_NOT_SELECTION (V7 section 8), never on holdout."),
     ("REACTION_UNIT", "Rulebook 9.2 measures reaction relative to ATR; the frozen strength owner takes a price fraction (full score 0.10). The spec feeds the owner's unit."),
     ("LEVEL_STRENGTH_OWNER_TABLES", "The frozen strength owner's timeframe table and linear touch score differ from Rulebook 9.2; unchanged."),
     ("FLOW_OWNER_BANDS", "The flow owner's interpretation labels (80/65/45/30) differ from Rulebook 6.2 (75/60/45/30); FLOW_SUPPORTIVE_PREDICATE reads the score, not the label."),
-    ("ROW_BASED_LOOKBACKS", "Momentum, MA-distance, 52-week-high and R_7 owners count rows, so an omitted bar is read as contiguous (analogous to the policy V6 section 7 limitations). Obligation: RBT-006/RBT-007 report, per venue, the count of decision instants at which such a lookback spans an omitted bar."),
-    ("SEVERE_CROWDING_IS_CROWDING", "Every CROWDING instant vetoes a new trade (policy V6 section 6A.5), so the CROWDING entry-quality penalty never acts on a new trade."),
+    ("ROW_BASED_LOOKBACKS", "Momentum, MA-distance, 52-week-high and R_7 owners count rows, so an omitted bar is read as contiguous (analogous to the policy V7 section 7 limitations). Obligation: RBT-006/RBT-007 report, per venue, the count of decision instants at which such a lookback spans an omitted bar."),
+    ("SEVERE_CROWDING_IS_CROWDING", "Every CROWDING instant vetoes a new trade (policy V7 section 6A.5), so the CROWDING entry-quality penalty never acts on a new trade."),
     ("LEVEL_VOLUME_PRE_WARM_UP_PIVOTS", "A swing member whose pivot bar closes before the computed volume warm-up date never gets a percentile; under the strict minimum a cluster containing one stays incomplete."),
     ("STRESS_NON_DISCRETIONARY_MISSING", "The V4 STRESS mapping covers only a DISCRETIONARY-only missing input; when a spec input (DOWNSIDE_RETURN) or an E1 refusal leaves STRESS incomplete, the conservative composer reading is stress_flagged=None (hard veto fails closed). RBT-004 must state it."),
     ("UNMODELLED_ADD_AND_REDUCE_RULES", "Rulebook 21 line 1823 'hold quality', 7.5 'PositioningScore >= 70 to add' and 23 'distribution' as a reduce reason have no owner consumer and no inventory input; outside this spec, flagged for RBT-005."),
@@ -1721,8 +1782,8 @@ NAMED_LIMITATIONS = (
 )
 
 SURFACED_FOR_REVIEW = (
-    "MOMENTUM_PERSISTENCE_SCORE overlap with Trend (Rulebook 4.1/32.17): accept as explicit/quantified/versioned with validation deferred to SENSITIVITY_ONLY_NOT_SELECTION reporting, or choose a new persistence indicator, or leave Hold incomplete (owner decision; a closure precondition for RBT-002A).",
-    "E1-class risk in funding_health and open_interest_growth_health: extend the section 6A.9 guard or record as a named limitation only (owner decision).",
+    "ACCEPTED: MOMENTUM_PERSISTENCE_SCORE overlap with Trend, unchanged by owner ruling (policy V7 section 6A.10). Required ablation frozen by RBT-006 and reported by RBT-007 under section 8; evaluation window only, per venue/base costs, never selected or run on holdout.",
+    "GUARDED: E1 class in funding_health and open_interest_growth_health under policy V7 section 6A.9, beside futures basis. Each owner has its own history helpers, refusal reason and five required RBT-004 tests.",
     "UNIFORM_ZSCORE_V1 window: 730 days with 30 observations; the positioning 180 days cannot hold 30 weekly observations and the flow owner's 20-observation count window was rejected (recent change, cadence-dependent horizon, earlier start).",
     "DOWNSIDE_RETURN/UPSIDE_RETURN horizon of 7 daily bars versus 1: section 6A.5 is not monotone across consumers (CAPITULATION enables Setup C).",
     "RANGE_PERCENTILE quantity: true range over the prior close (scale-free) rather than raw price-unit true range; neither is owner-fixed and section 6A.5 is not monotone.",
@@ -1738,7 +1799,7 @@ PRE_REGISTRATION = {
         "(per-venue missing-hour runs, first and last instants), the selected sources' measured depth and cadence, "
         "the earliest-evaluable facts, the input-surface rows and the census roots",
         "owner source code, strategy configuration (btc_predictor/config/strategy/default.toml), Rulebook v1.2, "
-        "policy V6 and the EPIC Y track document",
+        "policy V7 and the EPIC Y track document",
         "synthetic fixtures in the tests only",
     ],
     "database_connected": False,
@@ -2024,7 +2085,7 @@ def compute_warm_up(entries: Sequence[SpecEntry], inventory: Mapping[str, Any]) 
 def _all_helpers(entries: Sequence[SpecEntry]) -> list[Helper]:
     helpers = [helper for rule in UNIFORM_RULES for helper in rule.helpers]
     helpers += [helper for entry in entries for helper in entry.helpers]
-    helpers += list(E1_GUARD.history_helpers)
+    helpers += [helper for guard in POSITIONING_GUARDS for helper in guard.history_helpers]
     return helpers
 
 
@@ -2128,6 +2189,7 @@ def spec_definition() -> dict[str, Any]:
         "entries": entry_records,
         "new_parameters": new_parameters,
         "e1_guard": E1_GUARD.as_record(),
+        "positioning_zero_variance_guards": [guard.as_record() for guard in POSITIONING_GUARDS],
         "declared_arithmetic": list(DECLARED_ARITHMETIC),
         "helpers_by_census_status": census,
         "composer_roots_to_promote": census[PROMOTE_TO_CENSUS_ROOT],

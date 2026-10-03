@@ -5,15 +5,15 @@ Policy identifier: `CHAMPION_COMPLETION_SPEC_V1`
 Status: **FROZEN PRE-REGISTRATION DEFINITION (RBT-002A), awaiting the
 independent xHigh review.** A narrow, versioned strategy policy for **EPIC Y
 only**, made under
-[`RESEARCH_BACKTEST_POLICY_V6`](research_backtest_policy_v6.md) section 6A.
+[`RESEARCH_BACKTEST_POLICY_V7`](research_backtest_policy_v7.md) section 6A.
 
 | Item | Value |
 | --- | --- |
 | Research strategy identifier | `swing_v1.2+completion_v1` = `swing_v1.2` / `strategy_config_v2` / `default_phase1` plus this spec |
-| Scope | EPIC Y research backtests only. Not `swing_v1.2` for advisory, paper, EPIC X or BTC-019 use; adopting it anywhere else needs that workstream's own decision (policy V6 section 6) |
+| Scope | EPIC Y research backtests only. Not `swing_v1.2` for advisory, paper, EPIC X or BTC-019 use; adopting it anywhere else needs that workstream's own decision (policy V7 section 6) |
 | Machine-readable definition | `btc_predictor/research_backtest/completion_spec.py` (typed) → canonical sorted JSON `backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json` |
-| Definition SHA-256 | `6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19` (`champion_completion_spec_v1.json.sha256`) |
-| Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V6) |
+| Definition SHA-256 | `123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe` (`champion_completion_spec_v1.json.sha256`) |
+| Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V7) |
 | Evidence class | `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED` |
 
 This document explains the definition. **The machine-readable definition is
@@ -24,7 +24,7 @@ citation and rationale is in the JSON, entry by entry.
 
 The reviewed RBT-002 inventory marks 26 inputs of the champion's decision path
 owner-less: 25 `OWNERLESS_UNDEFINED` inputs and `LEVEL_VOLUME_PERCENTILE`,
-whose Rulebook 9.2 fallback row policy V6 section 6A.8 supersedes for this
+whose Rulebook 9.2 fallback row policy V7 section 6A.8 supersedes for this
 champion. Without definitions, Trend, Flow, Volatility and Structure could never
 be complete, so every decision would be structurally unevaluable. The spec
 defines each of the 26 exactly once:
@@ -99,7 +99,7 @@ Two other conventions were considered and rejected (recorded in the JSON as
 | `LEVEL_REACTION_MAGNITUDE` | DEFINED | NEW_PARAMETER | min over the cluster's swing members of the net move from the pivot to the close of the swing owner's last confirming bar, as a fraction of price (the owner's unit) |
 | `LEVEL_VOLUME_PERCENTILE` | DEFINED | NEW_PARAMETER | min over the cluster's swing members of `UNIFORM_PERCENTILE_V1` of the member's pivot-bar Bitstamp volume against the same-length trailing Bitstamp volume observed at each prior UTC day (section 4) |
 | `CAPITULATION_EVENT` | OMITTED | POLICY_RULING | no event anchor is built (AVWAP optional, Rulebook 9.2/9.4; no owner yields an event) |
-| `SEVERE_CROWDING_STATE` | DEFINED | CONFIG | `CROWDING.flagged if CROWDING.complete else None` (policy V6 section 6A.5; trim owner's convention) |
+| `SEVERE_CROWDING_STATE` | DEFINED | CONFIG | `CROWDING.flagged if CROWDING.complete else None` (policy V7 section 6A.5; trim owner's convention) |
 | `MOMENTUM_PERSISTENCE_SCORE` | DEFINED | NEW_PARAMETER | `100 * Phi(TREND_Z_M12)` (overlap with Trend disclosed, section 6) |
 | `ADD_MOMENTUM_SCORE` | DEFINED | NEW_PARAMETER | `100 * Phi(TREND_Z_M4)` (Add holds no Trend) |
 | `NEW_STRUCTURE_SCORE` | DEFINED | NEW_PARAMETER | the Structure owner's score at the add's reference price under the raised trailing stop |
@@ -146,7 +146,7 @@ rationale in the JSON `new_parameters` list.
     incomplete, a declared cause. This is data-dependent, so it is reported as a
     lower bound.
 
-## 5. Futures-basis zero variance (E1, section 6A.9)
+## 5. Positioning zero variance (E1 class, V7 section 6A.9)
 
 **The limitation.** The frozen `futures_basis_health` owner returns a complete
 score for an exactly constant non-terminating history. It does so because of
@@ -177,12 +177,29 @@ Decimal rounding in its `_average`.
 **Prohibited:** restating the z-score, any placeholder or tolerance, and an
 owner edit.
 
+
+The funding and OI-growth contracts follow the same five stages and carry
+five required tests per owner, with no tolerance or restated z-score:
+
+| Owner / refusal reason | Its own prior-history construction |
+| --- | --- |
+| `funding_health` / `FUNDING_HEALTH_ZERO_VARIANCE` | `_funding_averages_by_time(rows_t, average_window_days=R.average_window_days)` then `_funding_average_history(..., observation_time=R.observation_time, zscore_window_days=R.zscore_window_days)` |
+| `open_interest_growth_health` / `OI_GROWTH_ZERO_VARIANCE` | Filter `rows_t` by `R.open_interest_unit`; `_aggregate_open_interest_by_time`, `_open_interest_growth_by_time(..., growth_window_days=R.growth_window_days)`, then `_oi_growth_history(..., observation_time=R.observation_time, zscore_window_days=R.zscore_window_days)` |
+
+Both visibility timestamps must be at or before t. History count and latest
+observation are cross-checked against R. Exact constant history refuses
+whether the current value equals it or differs. No health or z-score is
+passed on; structural unevaluability is recorded with that owner's reason.
+Funding suppression also covers CAPITULATION's funding leg. Original owner
+refusals stand; nonconstant owner results pass unchanged. All five additional
+history helpers become classified census roots before RBT-004 calls them.
+
 ## 6. Named limitations and items surfaced for review
 
 **Limitations.** The JSON `named_limitations` lists all 13 in full:
 - E1 itself;
 - the same Decimal z-score class in `funding_health` and
-  `open_interest_growth_health`, which section 6A.9 does not cover;
+  `open_interest_growth_health`, both guarded under V7 section 6A.9;
 - the momentum-persistence overlap;
 - the reaction unit (a price fraction, against the Rulebook's ATR);
 - the frozen level-strength tables;
@@ -199,16 +216,18 @@ owner edit.
 Row-based lookbacks carry a reporting obligation: RBT-006/RBT-007 report, per
 venue, how many decision instants have such a lookback spanning an omitted bar.
 
-**Surfaced, not silently resolved (AGENTS.md):**
-1. **`MOMENTUM_PERSISTENCE_SCORE` overlaps Trend.** Z_M12 reaches Hold inside
-   Trend (Hold weight 0.2666667 on `100 * Phi(... + 0.30 Z_M12 + ...)`) and
-   directly (Hold weight 0.1333333). Rulebook 4.1/32.17 allow this only when
-   the overlap is explicit, quantified, versioned *and validated*. This spec
-   supplies the first three. No overlap-free owner output exists; a distinct
-   persistence measure would be a new indicator. The owner decides whether to
-   accept it.
-2. **The E1 class in funding and OI-growth z-scores.** Should the section 6A.9
-   guard extend to them?
+**Owner-ruled (2026-10-03, V7):**
+1. **Momentum Persistence: ACCEPTED unchanged** (V7 section 6A.10). The
+   definition remains `100 * Phi(TREND_Z_M12)`. RBT-006 freezes the required
+   ablation without that term and with proportional renormalization of the
+   other four weights; RBT-007 reports action-band disagreements and a full
+   variant replay, evaluation window only, per venue at base costs,
+   `SENSITIVITY_ONLY_NOT_SELECTION`, never on holdout (V7 section 8).
+2. **Funding and OI-growth E1 class: GUARDED** (V7 section 6A.9). All three
+   guards are frozen in `positioning_zero_variance_guards`; the original basis
+   contract is also retained as `e1_guard`.
+
+**Items for independent review:**
 3. **The `REGIME_INVALIDATION_PREDICATE` band.** Section 6A.5 is not monotone
    for exits.
 4. **`CORRECTION_FROM_LOCAL_HIGH`** reads 'local high' as the trailing 52-week
@@ -226,8 +245,7 @@ venue, how many decision instants have such a lookback spanning an omitted bar.
    producer, which it shares with the trail; each structure offers one add
    instant.
 
-Item 1 is a closure precondition: RBT-002A is not DONE until the owner rules
-on it.
+Items 1–2 are settled owner rulings; independent review must confirm V7 conformance before closure.
 
 ## 7. Declared arithmetic (section 6A.7)
 
@@ -259,6 +277,11 @@ RBT-004/RBT-005's "no new formulas" criterion admits exactly these.
 - `features.positioning._futures_basis_averages_by_time`
 - `features.positioning._futures_basis_history`
 - `data.ohlcv.next_bar_timestamp`
+- `features.positioning._funding_averages_by_time`
+- `features.positioning._funding_average_history`
+- `features.positioning._aggregate_open_interest_by_time`
+- `features.positioning._open_interest_growth_by_time`
+- `features.positioning._oi_growth_history`
 
 **Input sources to classify:**
 - `research_backtest.replay_inputs.replay_market_bars_at` (wraps BTC-040
@@ -286,7 +309,7 @@ That is 43 days after the inventory's lower bound of 2024-02-10.
   selected support cluster holds a pre-warm-up pivot depends on prices, which
   this pre-registration does not read.
 
-This is an availability fact (policy V6 section 6A.8), not a stop.
+This is an availability fact (policy V7 section 6A.8), not a stop.
 
 Other components:
 
@@ -303,7 +326,7 @@ Other components:
 - the bound inventory's availability and coverage facts;
 - owner code;
 - configuration;
-- Rulebook v1.2, policy V6 and the EPIC Y track;
+- Rulebook v1.2, policy V7 and the EPIC Y track;
 - synthetic fixtures, in tests only.
 
 **Not done:** no database connection, no market value read, and no score,
@@ -316,5 +339,5 @@ Until the independent RBT-002A review passes, review fixes may revise this V1
 definition, and each revision carries a new digest. After that PASS, any change
 to a rule, element, citation or warm-up fact changes the definition digest and
 needs a new spec version (`CHAMPION_COMPLETION_SPEC_V2`). That version must be
-recorded before the run it affects (policy V6 sections 6 and 11). The spec
+recorded before the run it affects (policy V7 sections 6 and 11). The spec
 cannot be re-derived after any EPIC Y outcome exists.

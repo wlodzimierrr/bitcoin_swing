@@ -54,7 +54,7 @@ from btc_predictor.research_backtest.completion_spec import CompletionSpecError
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / "backtest_evidence" / "research_backtest_v1"
 RULEBOOK = ROOT / "docs" / "strategy" / "bitcoin_swing_predictor_rulebook_v1_2.md"
-FROZEN_SPEC_SHA256 = "6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19"
+FROZEN_SPEC_SHA256 = "123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe"
 
 # The confirmed RBT-002 R2 list (25 undefined ids) plus LEVEL_VOLUME_PERCENTILE.
 CONFIRMED_IDS = {
@@ -227,7 +227,7 @@ def test_the_definition_is_identical_under_hash_seeds_another_cwd_and_a_fresh_pr
 def test_the_definition_header_carries_identity_and_scope(definition: dict[str, Any]) -> None:
     assert definition["spec_version"] == "CHAMPION_COMPLETION_SPEC_V1"
     assert definition["research_strategy_id"] == "swing_v1.2+completion_v1"
-    assert definition["policy"] == "RESEARCH_BACKTEST_POLICY_V6"
+    assert definition["policy"] == "RESEARCH_BACKTEST_POLICY_V7"
     assert definition["scope"] == "EPIC_Y_RESEARCH_BACKTEST_ONLY"
     assert set(definition["excluded_uses"]) == {"ADVISORY", "PAPER_TRADING", "EPIC_X", "BTC_019"}
     assert definition["evidence_class"] == "RESEARCH_BACKTEST_NON_CERTIFYING"
@@ -309,7 +309,7 @@ def _citations(definition: dict[str, Any]) -> list[str]:
     texts = [element["citation"] for entry in definition["entries"] for element in entry["elements"]]
     texts += [element["citation"] for rule in definition["uniform_rules"] for element in rule["elements"]]
     texts += [consumer["location"] for entry in definition["entries"] for consumer in entry["consumers"]]
-    texts += list(definition["e1_guard"]["citations"])
+    texts += [citation for guard in definition["positioning_zero_variance_guards"] for citation in guard["citations"]]
     return texts
 
 
@@ -378,6 +378,11 @@ def test_helper_census_status_matches_the_reviewed_roots(definition: dict[str, A
         "btc_predictor.features.momentum.price_momentum_from_daily_bars",
         "btc_predictor.features.positioning._futures_basis_averages_by_time",
         "btc_predictor.features.positioning._futures_basis_history",
+        "btc_predictor.features.positioning._funding_averages_by_time",
+        "btc_predictor.features.positioning._funding_average_history",
+        "btc_predictor.features.positioning._aggregate_open_interest_by_time",
+        "btc_predictor.features.positioning._open_interest_growth_by_time",
+        "btc_predictor.features.positioning._oi_growth_history",
         "btc_predictor.features.rolling.rolling_percentile",
         "btc_predictor.features.rolling.rolling_zscore",
         "btc_predictor.features.rolling.true_ranges",

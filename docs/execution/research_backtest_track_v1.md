@@ -2736,6 +2736,21 @@ Input sources to classify: `replay_market_bars_at`,
 - **Unchanged after review:** the 730-day window, the range quantity and the
   momentum-persistence rule. Each is recorded and surfaced instead.
 
+**V7 conformance update (owner-ruled, not a review finding).**
+- Rebound the spec to `RESEARCH_BACKTEST_POLICY_V7`.
+- All three positioning guards are frozen under `positioning_zero_variance_guards`;
+  the original basis contract is retained as `e1_guard`. Funding uses
+  `_funding_averages_by_time` and `_funding_average_history`; OI growth uses
+  `_aggregate_open_interest_by_time`, `_open_interest_growth_by_time` and
+  `_oi_growth_history`. These five additional helpers make 14 roots to promote.
+- Each contract uses its own PIT prior history and exact Decimal equality,
+  refuses its own reason with no health/z passed on, records structural
+  unevaluability, and names five RBT-004 tests. The two owners' limitation is
+  guarded. Momentum Persistence is ACCEPTED unchanged; V7 §6A.10/§8 and
+  RBT-006/RBT-007's required non-selecting evaluation-only ablation are cited.
+- New digest: `123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe`.
+- This is separate from review-fix RBT002A-R1; no owner module is edited.
+
 **Independent review corrections (2026-10-03).**
 - RBT002A-R1 (P1): uniform exact-constant refusal and time-to-row helper
   application are explicit mandatory stages. Resulting spec digest:
