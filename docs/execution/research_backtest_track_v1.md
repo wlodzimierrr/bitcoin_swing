@@ -6,9 +6,17 @@ and acceptance criteria. It is **not** Phase-1 execution authority: [Structured
 Tickets v2.6](bitcoin_swing_predictor_structured_tickets_v2_6.md) keeps that role
 and is not modified by this workstream. It is **not** EPIC X or BTC-019 authority.
 
-Governing policy: [`RESEARCH_BACKTEST_POLICY_V5`](../policies/research_backtest_policy_v5.md).
-It superseded V4 before any run, on the owner's 2026-10-02 decision. It
-re-scopes the §5A census to the external input surface with stated limits,
+Governing policy: [`RESEARCH_BACKTEST_POLICY_V6`](../policies/research_backtest_policy_v6.md).
+It superseded V5 before any run, on the owner's 2026-10-02 decisions after the
+RBT-002 R2 re-review PASS:
+- the completion spec defines `LEVEL_VOLUME_PERCENTILE` (§6A.8);
+- an RBT-004 composer guard refuses the futures-basis zero-variance case (E1,
+  §6A.9);
+- EPIC Y code is isolated from the BTC-019 research modules (§9).
+
+The champion's completion spec is
+[`CHAMPION_COMPLETION_SPEC_V1`](../policies/champion_completion_spec_v1.md)
+(RBT-002A). V5 had superseded V4 before any run. It re-scopes the §5A census to the external input surface with stated limits,
 adds the runtime completeness guard binding RBT-004, RBT-005 and RBT-006, and
 sets RBT-002's bounded closure standard (§5A.5–§5A.7). V4, on the owner's
 RBT-002 decisions, adopted
@@ -2375,7 +2383,20 @@ test or changing a frozen owner.
 
 ## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
 
-**Status:** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7. Confirmed 25 undefined IDs plus the existing LEVEL_VOLUME_PERCENTILE §9.2 fallback and owner-compatibility gap; E1 handling remains an explicit completion-spec obligation.`
+**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — CHAMPION_COMPLETION_SPEC_V1 frozen at d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd under policy V6 §6A; 26 inputs covered (22 defined, 2 omitted by ruling, 2 inert); two owner rulings are closure preconditions (see Implementation Notes).`
+
+**Prior status provenance (superseded):** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7. Confirmed 25 undefined IDs plus the existing LEVEL_VOLUME_PERCENTILE §9.2 fallback and owner-compatibility gap; E1 handling remains an explicit completion-spec obligation.`
+
+**Policy V6 note (2026-10-02, recorded 2026-10-03).** Policy V6 supersedes two
+pieces of wording in this ticket's original text below for this champion. The
+original text is kept as history.
+- "level volume (or the Rulebook §9.2 core weights without volume)" and
+  "Separately account for the existing Rulebook §9.2 volume fallback": V6 §6A.8
+  makes `LEVEL_VOLUME_PERCENTILE` a spec-defined input. The §9.2 no-volume
+  fallback cannot run, because the frozen strength owner refuses a missing
+  volume at any weight and §6 forbids weight changes. The spec covers 26 inputs.
+- "policy V4 §6A": the binding rules are policy V6 §6A, including §6A.8 (level
+  volume) and §6A.9 (E1 guard).
 **Dependencies:** RBT-002 independent review PASS (SATISFIED, R2 under V5 §5A.7),
 so that the owner-less list is confirmed for the bounded census; later inputs
 are handled through the §5A.6 guard
@@ -2437,9 +2458,292 @@ Acceptance criteria:
 - **Freezing.** The definition is frozen by hash and byte-identical under
   `PYTHONHASHSEED` 0/1/8675309, an alternate cwd and a fresh process.
 
+### Implementation Notes
+
+**Implementation commits:**
+- Part 0, `75fc7e6`: the R2-RR-FS1 BTC-019 isolation fix (policy V6 §9).
+- Part 1: the RBT-002A commit that carries these notes. Its hash is recorded in
+  CURRENT_STATE.
+
+**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW`. Definition digest
+`d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd`, bound to
+inventory `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a`.
+**Two owner rulings are closure preconditions** (see "Surfaced for the owner").
+Under AGENTS.md, RBT-002A is not DONE until both are recorded and the
+independent review passes.
+
+**Part 0 (R2-RR-FS1).**
+- **Change.** New `btc_predictor/research_backtest/database.py`, function
+  `database_url_from_environment()`:
+  - reads the same five `POSTGRES_*` names;
+  - builds `postgresql+psycopg://` with `quote_plus` user and password;
+  - raises `DatabaseEnvironmentError` (a `ValueError`) naming missing variables
+    only;
+  - prints, logs and persists nothing.
+  - `coverage.open_research_engine` uses it; its read-only behaviour is
+    unchanged.
+  - No `research_backtest` module imports a BTC-019 research-only module any
+    longer.
+- **Tests.** `test_research_backtest_coverage.py` patches the new helper and
+  asserts it is called once. New `test_research_backtest_database.py` holds 26
+  tests:
+  - helper quoting;
+  - missing names, listed without any value;
+  - empty-as-missing;
+  - no print, log or write;
+  - an AST walk over every `research_backtest` module, covering nested and
+    relative imports and `importlib`/`__import__` string imports, self-tested on
+    each form.
+- **BTC-019 isolation test.** `test_btc019_completion_gate.py` is not edited.
+  Its isolation test failed at `0de7d4c` (1 failed) and passes after the fix.
+- **Regression.** The inventory rebuilds byte-identical at `108ab25b...efe3a`.
+  Full suite after Part 0: **7185 passed, 3 skipped, 1 xfailed, 0 failed**
+  (2999.46s). The prior baseline was 1 failed / 7158 passed.
+
+**Files (Part 1, all new except docs):**
+- `btc_predictor/research_backtest/completion_spec.py`: the typed definition,
+  bound-inventory loader, coverage check, warm-up simulation, writer and CLI
+  (`write | verify | digest`);
+- `backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json` and
+  its `.sha256`: the canonical sorted JSON;
+- `btc_predictor/tests/test_research_backtest_completion_spec.py` (82 tests);
+- `docs/policies/champion_completion_spec_v1.md`: the narrow versioned policy,
+  EPIC Y scope only, research id `swing_v1.2+completion_v1`;
+- docs: this block, the track header, RBT-001A/004/005/006 authority references,
+  `INDEX.md` and `CURRENT_STATE.md`.
+
+**Coverage (policy V6 §6A.7, §6A.8).**
+- **What is covered.** Every row of the bound inventory with kind
+  `OWNERLESS_UNDEFINED` (25 IDs, 43 rows) or `OWNERLESS_RULEBOOK_FALLBACK`
+  (`LEVEL_VOLUME_PERCENTILE`, 2 rows) is covered exactly once, occurrence by
+  occurrence. That is 26 entries and 45 rows.
+- **What is excluded.** `LIQUIDATION_PERCENTILE`
+  (`OWNERLESS_CERTIFIED_DEFINITION`) is excluded explicitly.
+- **What the coverage check refuses**, all tested:
+  - an uncovered row;
+  - an input or occurrence covered twice;
+  - an ID that is not in the inventory;
+  - a row without an ID;
+  - a kind conflict;
+  - a changed certified set;
+  - a changed inventory digest (`INVENTORY_DIGEST_MISMATCH`: rebind explicitly,
+    never ignore).
+
+| Input | Disposition / governing class | Rule (summary) | Bitstamp | Coinbase | Bitfinex | Moves the earliest date |
+| --- | --- | --- | --- | --- | --- | --- |
+| `TREND_Z_M4` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over `MOMENTUM_4W` | 2020-02-29 | 2020-03-01 | 2020-03-01 | no |
+| `TREND_Z_M12` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over `MOMENTUM_12W` | 2020-04-25 | 2020-04-26 | 2020-04-26 | no |
+| `TREND_Z_20W` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over weekly `MA_DISTANCE_20W` | 2020-12-21 | 2021-01-11 | 2021-01-04 | no |
+| `TREND_Z_52H` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over weekly `HIGH_DISTANCE_52W` | 2021-08-02 | 2021-08-23 | 2021-08-23 | no (binds Trend) |
+| `FLOW_Z_ETF_NORM_5D` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over ETFNorm_5 per publication day | 2024-03-03 | 2024-03-03 | 2024-03-03 | no |
+| `FLOW_Z_ETF_NORM_20D` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over ETFNorm_20 | 2024-03-24 | 2024-03-24 | 2024-03-24 | **yes** |
+| `FLOW_Z_FLOW_ACCEL` | DEFINED / NEW_PARAMETER | `UNIFORM_ZSCORE_V1` over FlowAccel | 2024-03-24 | 2024-03-24 | 2024-03-24 | **yes** |
+| `RANGE_PERCENTILE` | DEFINED / NEW_PARAMETER | `UNIFORM_PERCENTILE_V1` of TR / prior close | 2021-01-02 | 2021-01-08 | 2021-01-06 | no |
+| `DOWNSIDE_RETURN` | DEFINED / NEW_PARAMETER | R_7 = P_t / P_(t-7) - 1 (signed) | 2020-01-09 | 2020-01-09 | 2020-01-09 | no |
+| `UPSIDE_RETURN` | DEFINED / NEW_PARAMETER | the same R_7 | 2020-01-09 | 2020-01-09 | 2020-01-09 | no |
+| `LEVEL_REACTION_MAGNITUDE` | DEFINED / NEW_PARAMETER | min over swing members of net move to the last confirming close / price | 2020-02-24 | 2020-03-02 | 2020-03-02 | no |
+| `LEVEL_VOLUME_PERCENTILE` | DEFINED / NEW_PARAMETER | min over swing members of `UNIFORM_PERCENTILE_V1` of pivot-bar Bitstamp volume | 2021-02-01 (lower bound) | 2021-02-01 (lb) | 2021-02-01 (lb) | no |
+| `CAPITULATION_EVENT` | OMITTED / POLICY_RULING | no event anchor built | — | — | — | no |
+| `SEVERE_CROWDING_STATE` | DEFINED / CONFIG | `CROWDING.flagged if complete else None` | 2020-10-02 | 2020-10-02 | 2020-10-02 | no |
+| `MOMENTUM_PERSISTENCE_SCORE` | DEFINED / NEW_PARAMETER | 100 * Phi(TREND_Z_M12) (overlap disclosed) | 2020-04-25 | 2020-04-26 | 2020-04-26 | no |
+| `ADD_MOMENTUM_SCORE` | DEFINED / NEW_PARAMETER | 100 * Phi(TREND_Z_M4) | 2020-02-29 | 2020-03-01 | 2020-03-01 | no |
+| `NEW_STRUCTURE_SCORE` | DEFINED / NEW_PARAMETER | Structure owner at the add price under the raised stop | 2021-02-01 (lb) | 2021-02-01 (lb) | 2021-02-01 (lb) | no |
+| `NEW_STRUCTURAL_CONFIRMATION` | DEFINED / NEW_PARAMETER | trail advanced on a HIGHER_LOW after the last ENTER/ADD | 2020-02-24 | 2020-03-02 | 2020-03-02 | no |
+| `REGIME_SUPPORTIVE_PREDICATE` | DEFINED / CONFIG | smoothed regime BULL or STRONG_BULL (>= 65) | 2024-03-24 | 2024-03-24 | 2024-03-24 | no |
+| `FLOW_SUPPORTIVE_PREDICATE` | DEFINED / RULEBOOK | FlowScore >= 60 | 2024-03-24 | 2024-03-24 | 2024-03-24 | no |
+| `REGIME_INVALIDATION_PREDICATE` | DEFINED / NEW_PARAMETER | smoothed regime < 45 and entry regime was not | 2024-03-24 | 2024-03-24 | 2024-03-24 | no |
+| `DATA_RISK_EXIT_PREDICATE` | DEFINED / OWNER_CONVENTION | False (Rulebook 24) | — | — | — | no |
+| `CORRECTION_FROM_LOCAL_HIGH` | DEFINED / NEW_PARAMETER | -HIGH_DISTANCE_52W | 2021-01-04 | 2021-01-25 | 2021-01-18 | no |
+| `DISTRIBUTION_STATE` | INERT / POLICY_RULING | None | — | — | — | no |
+| `SHORT_TRIGGER` | INERT / POLICY_RULING | None | — | — | — | no |
+| `MEASURED_MOVE_REFERENCE` | OMITTED / POLICY_RULING | measured_move=None | — | — | — | no |
+
+Dates are each input's first availability (UTC). "lb" marks a data-dependent
+lower bound. Every entry records its consumers (owner path and `file:symbol`),
+the source class and exact citation of every element, its helpers with their
+census status, its point-in-time rule, its missing-input behaviour (never
+filled) and its accounted §5A.6 causes.
+
+**Uniform rules (§6A.3), with no exceptions.**
+- **`UNIFORM_ZSCORE_V1`:**
+  - native owner series, latest visible observation D;
+  - history `[D - 730 days, D)`, current excluded, None skipped;
+  - at least 30 prior values; population SD;
+  - an exactly constant history refuses;
+  - helper: BTC-041 `rolling_zscore`.
+  - The window is a `NEW_PARAMETER`. On native weekly series the positioning
+    180 days holds at most 25 prior weekly values, so the weekly trend
+    z-scores could never complete. Two other conventions are recorded as
+    rejected alternatives: the flow owner's 20-observation count window, and
+    daily-instant sampling.
+  - The BTC-041 helper returns None for every exactly constant history tested
+    (sizes 30–730), so the E1 class cannot recur in spec-defined z-scores.
+- **`UNIFORM_PERCENTILE_V1`:** `volatility_percentile`'s convention unchanged:
+  - daily observations, `[D - 730 days, D)`;
+  - at least 365 prior values; midrank; current excluded;
+  - helper: BTC-041 `rolling_percentile`.
+
+**Rulings.**
+- **Optional inputs.** `MEASURED_MOVE_REFERENCE` is OMITTED: tier 4 is only
+  consulted when tiers 1–3 fail, so omitting it provably trades less.
+  `CAPITULATION_EVENT` is OMITTED: no owner yields an event, and AVWAP is
+  optional under Rulebook 9.2/9.4.
+- **Long-only.** `SHORT_TRIGGER` and `DISTRIBUTION_STATE` are INERT (`None`).
+- **Severe crowding.** `SEVERE_CROWDING_STATE` is the existing CROWDING flag,
+  gated on its completeness.
+- **Level volume (§6A.8).**
+  - **Source:** Bitstamp 1h volume, the RBT-001 shared snapshot.
+  - **Quantity:** from swing-level records only, as the pivot bar's volume,
+    against the same-length trailing volume at each prior UTC day. No level
+    detection and no volume-profile binning.
+  - **Normalisation:** the uniform percentile rule. Weights are unchanged at
+    0.20.
+  - **Computed warm-up:** a weekly pivot bar closing on or after 2021-01-11
+    (369 comparators), detected from 2021-02-01; a monthly pivot from January
+    2021, detected from 2021-04-01.
+- **E1 (§6A.9).** Recorded as a named limitation. The RBT-004 contract is
+  `FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1`:
+  - the history comes from `_futures_basis_averages_by_time` and
+    `_futures_basis_history`, both promoted to census roots;
+  - the refusal is exact Decimal equality, whether or not the current value
+    equals the history;
+  - it refuses `FUTURES_BASIS_ZERO_VARIANCE` and passes no health or z-score to
+    any of positioning, CROWDING, STRESS or EUPHORIA;
+  - it records structural unevaluability;
+  - it carries five required tests.
+  - It does not reimplement the z-score, use a placeholder or tolerance, or edit
+    the owner.
+
+**NEW_PARAMETERs (17), each with its one-line rationale in the JSON:**
+- the z window (730 days);
+- the range quantity (TR / prior close);
+- the return horizon of 7 daily bars (used by both DOWNSIDE and UPSIDE);
+- for level reaction: price point, member scope and aggregation;
+- for level volume: attribution span, comparator series, member scope and
+  aggregation;
+- the horizons of momentum persistence (M12) and add momentum (M4);
+- the evaluation point of new structure;
+- the newness reference of new structural confirmation;
+- the entry-context condition of regime invalidation;
+- the reading of the Setup B local high as the 52-week high.
+
+**Earliest evaluable date** (Entry Conviction plus core regime, all venues):
+**no earlier than 2024-03-24**, against the inventory's 2024-02-10 lower bound
+(+43 days). The binding entries are `FLOW_Z_ETF_NORM_20D` and
+`FLOW_Z_FLOW_ACCEL`. Entry Conviction is a data-dependent lower bound through
+Structure. Per policy V6 §6A.8 this is an availability fact, not a stop.
+
+**Composer census roots RBT-004/RBT-005 must promote:**
+- `rolling_zscore`
+- `rolling_percentile`
+- `true_ranges`
+- `price_momentum_from_daily_bars`
+- `normal_cdf_score`
+- `decision_greater_equal`
+- `next_bar_timestamp`
+- `_futures_basis_averages_by_time`
+- `_futures_basis_history`
+
+Input sources to classify: `replay_market_bars_at`,
+`build_shared_replay_snapshot` and `load_closures`.
+
+**Surfaced for the owner (AGENTS.md: not silently resolved).**
+
+*Closure preconditions:*
+1. **`MOMENTUM_PERSISTENCE_SCORE` overlaps Trend** (Rulebook 4.1/32.17).
+   Z_M12 reaches Hold through Trend and directly. The overlap is explicit,
+   quantified and versioned here but not validated. No overlap-free owner output
+   exists. The owner chooses one of:
+   - accept, with validation deferred to `SENSITIVITY_ONLY_NOT_SELECTION`
+     reporting;
+   - authorise a new persistence indicator;
+   - leave Hold incomplete.
+2. **The E1 class in `funding_health` and `open_interest_growth_health`.** The
+   owner chooses one of:
+   - keep it as a named limitation only;
+   - extend §6A.9 in a policy V7.
+
+*Recorded rulings open to review:*
+- the z window (730 days);
+- the 7-day return horizon (§6A.5 is not monotone through CAPITULATION/Setup C);
+- the range quantity;
+- the regime-invalidation band and entry-context exemption;
+- the 52-week local high (weekly resolution);
+- level families RBT-004 may cluster (a VP- or AVWAP-only support leaves
+  Structure incomplete);
+- the trailing-structure producer of `NEW_STRUCTURAL_CONFIRMATION`, with one add
+  instant per structure.
+
+**Pre-registration (§6A.1).**
+- **Data consulted:** the bound inventory's availability and coverage facts
+  (coverage snapshot, selected-source depth, earliest-evaluable facts,
+  input-surface rows, census roots); owner code; configuration; Rulebook v1.2;
+  policy V6; this track; synthetic fixtures in tests.
+- **Not done:** no database connection and no environment read. No market
+  value, score, signal, trade or performance figure was computed or inspected.
+- **Holdout and BTC-019:** holdout NOT COLLECTED; BTC-019 untouched, sealed
+  sample unopened.
+
+**Pre-freeze review (internal; not the required independent review).**
+- **Review.** A five-lens adversarial review (policy, citations, owner
+  semantics, warm-up, red team), with one refuting skeptic per lens, found 39
+  items. 34 were confirmed or partly confirmed. A verification pass and a
+  completeness critic followed.
+- **Fixes.**
+  - the level-volume source helper (`build_canonical_market_bars` cannot yield
+    1h bars);
+  - `NEW_STRUCTURE_SCORE` missing-input causes under STRUCTURE_SCORE_V1_2;
+  - the return-horizon rationale (not monotone);
+  - never-filled statements on every entry;
+  - helper census statuses;
+  - citations;
+  - lower-bound propagation and per-entry binding flags;
+  - a primitives-drift refusal;
+  - synthetic gap and boundary tests;
+  - the higher-low structure timestamp mapping.
+- **Unchanged after review:** the 730-day window, the range quantity and the
+  momentum-persistence rule. Each is recorded and surfaced instead.
+
+**Validation** (`.venv312` CPython 3.12.14; proof subsets run alone):
+
+| Suite | Result |
+| --- | --- |
+| Focused: spec + database | **108 passed** |
+| RBT-002 suites (coverage, census, nested, review, re-review, nine traces) + BTC-019 gate | **317 + 1 xfail** (known E1) and **16 passed** |
+| RBT-001 | **167 passed** |
+| Closure table | **145 passed** |
+| BTC-180..185 | **282 passed** |
+| BTC-220..224 | **342 passed** |
+| Owner modules | **320 passed** |
+| V5/corpus/ETF | **407 passed, 2 existing skips**; `v5_protocol_definition` = `95e43ee1...775a89` |
+| PAD5 preserved-authority subset | **5 passed, 112 deselected** |
+| PAD4-R5 namespace/child-order | **2 passed** |
+| Inventory rebuild from its snapshot | byte-identical, `108ab25b...efe3a` |
+| Spec determinism | byte-identical under `PYTHONHASHSEED` 0/1/8675309, another cwd, a fresh process; SHA-256 recomputed |
+| `compileall -q btc_predictor etf_calendar_worker`; `git diff --check` | PASS |
+| Full repository suite after Part 1 | **7267 passed, 3 skipped, 1 xfailed, 0 failed** (3053.57s) |
+
+**Design decisions.**
+- **Typed definition.** The definition is typed and declarative. Each element
+  carries its own §6A.2 class, and an entry's governing class is the
+  lowest-precedence tier it needs. Choices policy V6 itself fixes are labelled
+  `POLICY_V6_MANDATE`. The omitted and inert entries are `POLICY_RULING`.
+- **Warm-up.** Warm-up is computed by RBT-002's own primitives over the
+  inventory snapshot. Spec series are injected into RBT-002's requirement graph,
+  and the computation refuses if those primitives drift from the inventory.
+- **Reuse of owner conventions.** Owner conventions are reused verbatim (owner
+  constants are read, not restated).
+
+**Remaining risks.**
+- the two closure-precondition owner rulings above;
+- the level-family choice and the trailing-structure producer, deferred to
+  RBT-004/RBT-005 and recorded as obligations in their blocks;
+- data-dependent Structure completeness for pre-warm-up pivots;
+- the same-class E1 risk in funding and OI growth.
+
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7. Policy V4 data rules ADOPTED and governed by V5.`
+**Status:** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7. Policy V4 data rules ADOPTED and governed by V6.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`),
 RBT-002 independent R2 re-review PASS (SATISFIED under V5 §5A.7)
 **Implementation effort:** high
@@ -2505,6 +2809,24 @@ point-in-time inputs into either one `ARM_ENTRY` `BacktestIntent` or a recorded
    R/R filter;
 6. invalidation, the volatility buffer and the initial stop (BTC-140..142).
 
+**Completion-spec obligations (RBT-002A, recorded 2026-10-03; binding once its
+review passes).** `CHAMPION_COMPLETION_SPEC_V1`
+(`backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json`)
+fixes what this composer must do for the 26 owner-less inputs:
+- **Rules.** Each input's rule, helpers and accounted §5A.6 causes are given
+  per entry.
+- **Census roots to promote** before any direct call:
+  `features.rolling.rolling_zscore`, `rolling_percentile`, `true_ranges`;
+  `features.momentum.price_momentum_from_daily_bars`;
+  `quant.transforms.normal_cdf_score`; `quant.comparisons.decision_greater_equal`;
+  `data.ohlcv.next_bar_timestamp`; `features.positioning._futures_basis_averages_by_time`
+  and `_futures_basis_history`.
+- **Declared arithmetic.** It is the complete list of arithmetic the spec allows
+  beyond owner calls; "no new formulas" admits exactly that list.
+- **E1 guard.** `FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1` (policy V6 §6A.9)
+  specifies the futures-basis zero-variance guard, its five tests and its
+  prohibitions.
+
 Acceptance criteria:
 
 - **No new formulas.** Every numeric value comes from an owner call. Review
@@ -2540,10 +2862,10 @@ Acceptance criteria:
   it.
 - The same composer can later drive the advisory and paper paths (Rulebook
   invariant 15). Adopting it there is out of scope.
-- **Composer-root guard (policy V5 §5A.6).** Every owner function the composer
+- **Composer-root guard (policy V6 §5A.6).** Every owner function the composer
   calls directly is a census root. This is checked statically and at runtime,
   with a regression in which a newly added direct call fails.
-- **Runtime completeness guard (V5 §5A.6).** In every fixture replay, any owner
+- **Runtime completeness guard (V6 §5A.6).** In every fixture replay, any owner
   result that is incomplete or carries a missing-input reason code maps to a
   cause accounted for in the reviewed inventory or the completion spec. An
   unaccounted one fails the test.
@@ -2567,6 +2889,17 @@ The in-position half. From the hold score and lifecycle state it emits `TRAIL`,
 - BTC-150..158 lifecycle, pyramiding and add requirements;
 - exit and trim rules.
 
+**Completion-spec obligations (RBT-002A, recorded 2026-10-03; binding once its
+review passes).**
+- **Inputs.** `CHAMPION_COMPLETION_SPEC_V1` defines the Hold and Add components
+  and the add/exit predicates this composer consumes.
+- **Add sequencing.** Evaluate an add on the lifecycle before the same instant's
+  `STOP_MOVE`. One trailing-structure producer serves both the trail and
+  `NEW_STRUCTURAL_CONFIRMATION`. The structure's `level_timestamp` is its own
+  bar's timestamp, never a source swing's.
+- **Regime invalidation.** `REGIME_INVALIDATION_PREDICATE` needs the
+  entry-instant regime classification persisted in the decision ledger.
+
 Acceptance criteria:
 
 - The same no-new-formula, point-in-time, decision-ledger, determinism and
@@ -2582,7 +2915,7 @@ Acceptance criteria:
 - End-to-end: the composed champion replays the BTC-224 golden bar sequences
   without engine refusal. Its decisions are reported next to the scripted ones.
   They are not required to match, because the scenarios are scripted.
-- The composer-root and runtime completeness guards of policy V5 §5A.6 apply
+- The composer-root and runtime completeness guards of policy V6 §5A.6 apply
   to this composer too, with the same regressions.
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
@@ -2621,7 +2954,7 @@ Acceptance criteria:
   grid (sensitivity only) from the evaluation-window lengths, before any run.
 - Review confirms that no evaluation-window outcome was produced before the
   freeze.
-- **Runtime completeness guard (V5 §5A.6).** During the completeness-only
+- **Runtime completeness guard (V6 §5A.6).** During the completeness-only
   real-data pass, any incomplete owner result whose cause is not accounted for
   in the inventory or the spec blocks the freeze.
 
@@ -2676,8 +3009,8 @@ version or any version derived from inspecting its result.
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
-| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | READY — confirmed 25 undefined IDs plus existing §9.2 volume fallback/owner-compatibility gap; E1 handling required; recommended next ticket |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V5 |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — spec `d9f9b334...a80fd` under V6 §6A (26 inputs; level volume per §6A.8; E1 guard contract per §6A.9); Part 0 `75fc7e6` fixes R2-RR-FS1; two owner rulings are closure preconditions; recommended next action is its independent review |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V6 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
@@ -2703,7 +3036,8 @@ Implementation Notes. The owner adopted the four V4 data rules and chose the
 completion spec on 2026-10-01. The independent review above failed the census,
 and so did the re-review of the R1 correction (`906c719`). Correction R2
 (`812b968`) passed independent re-review under the policy V5 bounded standard.
-RBT-002A is next, with RBT-001A also READY; the four adopted data choices stay fixed.
+RBT-002A is now implemented under policy V6 (spec `d9f9b334...a80fd`) and awaits its independent
+xHigh review; RBT-001A is also READY; the four adopted data choices stay fixed.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
 positioning score needs futures basis and BTC market cap. Policy V2 gives
@@ -2711,7 +3045,7 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-002A**, with **RBT-001A** also READY
-after the RBT-002 R2 re-review PASS under policy V5 §5A.7. RBT-004 remains
-blocked on RBT-002A review PASS.
+dependency-satisfied EPIC Y work is the **independent xHigh review of RBT-002A**
+(implemented 2026-10-03 under policy V6), with **RBT-001A** also READY. RBT-004
+remains blocked on the RBT-002A review PASS.
 EPIC X's next ticket remains **POSTP1-001V2R1**.
