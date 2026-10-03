@@ -12,7 +12,7 @@ only**, made under
 | Research strategy identifier | `swing_v1.2+completion_v1` = `swing_v1.2` / `strategy_config_v2` / `default_phase1` plus this spec |
 | Scope | EPIC Y research backtests only. Not `swing_v1.2` for advisory, paper, EPIC X or BTC-019 use; adopting it anywhere else needs that workstream's own decision (policy V6 section 6) |
 | Machine-readable definition | `btc_predictor/research_backtest/completion_spec.py` (typed) → canonical sorted JSON `backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json` |
-| Definition SHA-256 | `d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd` (`champion_completion_spec_v1.json.sha256`) |
+| Definition SHA-256 | `6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19` (`champion_completion_spec_v1.json.sha256`) |
 | Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V6) |
 | Evidence class | `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED` |
 
@@ -53,7 +53,7 @@ flow z-scores):
   the current observation is never in H;
 - an exactly constant H refuses (zero variance), so the refusal never depends
   on float or Decimal rounding;
-- computed by the BTC-041 `features.rolling.rolling_zscore`.
+- computed by the BTC-041 `features.rolling.rolling_zscore` only after the exact-equality guard refuses constant histories. The frozen `application_contract` selects history by time first, then calls the row helper with `window=len(H)`, the declared minimum and `sample=False`. The percentile helper likewise receives `window=len(H)` after time selection. Gaps never extend the time window.
 
 **`UNIFORM_PERCENTILE_V1`**, for every undefined percentile (range and level
 volume): the midrank `(less + 0.5 * equal) / n * 100` of a quantity observed once

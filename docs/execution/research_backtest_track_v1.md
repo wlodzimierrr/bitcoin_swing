@@ -2604,8 +2604,12 @@ filled) and its accounted §5A.6 causes.
     z-scores could never complete. Two other conventions are recorded as
     rejected alternatives: the flow owner's 20-observation count window, and
     daily-instant sampling.
-  - The BTC-041 helper returns None for every exactly constant history tested
-    (sizes 30–730), so the E1 class cannot recur in spec-defined z-scores.
+  - Review correction RBT002A-R1: an explicit original-value equality guard
+    must run before float conversion or the BTC-041 helper. The former tests
+    characterized the native accumulator only: a 64-bit accumulator returns
+    -1 for 730 copies of 1/3. The frozen application contract now refuses
+    without a helper call and adapts time-selected H with window=len(H).
+    Synthetic independent regressions cover both accumulator widths.
 - **`UNIFORM_PERCENTILE_V1`:** `volatility_percentile`'s convention unchanged:
   - daily observations, `[D - 730 days, D)`;
   - at least 365 prior values; midrank; current excluded;
@@ -2731,6 +2735,14 @@ Input sources to classify: `replay_market_bars_at`,
   - the higher-low structure timestamp mapping.
 - **Unchanged after review:** the 730-day window, the range quantity and the
   momentum-persistence rule. Each is recorded and surfaced instead.
+
+**Independent review corrections (2026-10-03).**
+- RBT002A-R1 (P1): uniform exact-constant refusal and time-to-row helper
+  application are explicit mandatory stages. Resulting spec digest:
+  `6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19`.
+  Regression: `test_research_backtest_completion_spec_review.py`, full-size
+  non-terminating constants on native and 64-bit accumulators; helper-call
+  witness, nonconstant parity and time-boundary/gap witness.
 
 **Validation** (`.venv312` CPython 3.12.14; proof subsets run alone):
 

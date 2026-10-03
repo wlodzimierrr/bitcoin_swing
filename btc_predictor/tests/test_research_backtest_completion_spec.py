@@ -54,7 +54,7 @@ from btc_predictor.research_backtest.completion_spec import CompletionSpecError
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / "backtest_evidence" / "research_backtest_v1"
 RULEBOOK = ROOT / "docs" / "strategy" / "bitcoin_swing_predictor_rulebook_v1_2.md"
-FROZEN_SPEC_SHA256 = "d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd"
+FROZEN_SPEC_SHA256 = "6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19"
 
 # The confirmed RBT-002 R2 list (25 undefined ids) plus LEVEL_VOLUME_PERCENTILE.
 CONFIRMED_IDS = {

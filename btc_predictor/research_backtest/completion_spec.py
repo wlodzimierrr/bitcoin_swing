@@ -207,6 +207,7 @@ class UniformRule:
     helpers: tuple[Helper, ...]
     exceptions: tuple[str, ...] = ()
     rejected_alternatives: tuple[str, ...] = ()
+    application_contract: tuple[tuple[str, str], ...] = ()
 
     def as_record(self) -> dict[str, Any]:
         return {
@@ -217,6 +218,7 @@ class UniformRule:
             "helpers": [item.as_record() for item in self.helpers],
             "exceptions": list(self.exceptions),
             "rejected_alternatives": list(self.rejected_alternatives),
+            "application_contract": dict(self.application_contract),
         }
 
 
@@ -643,6 +645,14 @@ UNIFORM_ZSCORE = UniformRule(
         "Sampling every quantity at each daily decision instant (180 days, 30 samples): weights each weekly value about "
         "seven times and each weekend-straddling ETF day three times, and starts earlier (trades more).",
     ),
+    application_contract=(
+        ("history_selection", "Select H by observation time in [D - 730 days, D), after PIT visibility filtering; skip None, never extend the time window to replace gaps."),
+        ("missing_or_short", "If x is None or len(H) < 30, return None without calling rolling_zscore."),
+        ("constant_history_predicate", "all(h == H[0] for h in H)"),
+        ("constant_history_refusal", "Evaluate exact equality on the original owner values BEFORE float conversion or rolling_zscore; if true, return None without calling the helper, whether or not x equals H[0]. No tolerance."),
+        ("owner_call", "Otherwise call rolling_zscore((*H, x), window=len(H), min_periods=30, sample=False) and use only its last result. The row window is the count of the already time-selected H, never 730 rows."),
+        ("required_tests", "Non-terminating constant histories at full window size (0.1, 1/3, 0.015*365/90), equal and different current values, no helper invocation on refusal, both native and 64-bit longdouble; time-boundary and gap exclusion; nonconstant owner parity. RBT-004 implements and tests this contract."),
+    ),
 )
 
 UNIFORM_PERCENTILE = UniformRule(
@@ -673,6 +683,11 @@ UNIFORM_PERCENTILE = UniformRule(
     ),
     helpers=(H_PERCENTILE,),
     exceptions=(),
+    application_contract=(
+        ("history_selection", "Select H by observation time in [D - 730 days, D), after PIT visibility filtering; skip None, never extend the time window to replace gaps."),
+        ("missing_or_short", "If x is None or len(H) < 365, return None without calling rolling_percentile."),
+        ("owner_call", "Otherwise call rolling_percentile((*H, x), window=len(H), min_periods=365) and use only its last result. No padding, zero-fill or fixed 730-row lookback."),
+    ),
 )
 UNIFORM_RULES = (UNIFORM_ZSCORE, UNIFORM_PERCENTILE)
 
