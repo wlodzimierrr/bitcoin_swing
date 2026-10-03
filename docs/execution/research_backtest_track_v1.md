@@ -2752,6 +2752,15 @@ Input sources to classify: `replay_market_bars_at`,
 - This is separate from review-fix RBT002A-R1; no owner module is edited.
 
 **Independent review corrections (2026-10-03).**
+- RBT002A-R2 (P2): the new AST isolation scan missed relative importlib
+  string imports and aliases of import_module. In-memory nested relative and
+  aliased-import mutations returned an empty offender list before correction.
+  Resolve relative names against the package argument and recognize importer
+  aliases; four new mutations pin the correction. No actual guarded import
+  exists and the original BTC-019 test stays byte-unchanged.
+  Resulting spec digest (unchanged by this test-only fix):
+  `123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe`.
+
 - RBT002A-R1 (P1): uniform exact-constant refusal and time-to-row helper
   application are explicit mandatory stages. Resulting spec digest:
   `6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19`.

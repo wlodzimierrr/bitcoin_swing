@@ -17,6 +17,7 @@ and every alias of a multi-name ``import``). Nothing here touches a database.
 from __future__ import annotations
 
 import ast
+from importlib.util import resolve_name
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -159,7 +160,12 @@ def research_only_imports(source: str, *, package: str = RESEARCH_BACKTEST_PACKA
     """Every BTC-019 research-only module ``source`` imports, in any form, at any depth."""
 
     found = []
-    for node in ast.walk(ast.parse(source)):
+    tree = ast.parse(source)
+    importer_names = set(_DYNAMIC_IMPORTERS)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module in {"importlib", "importlib.util"}:
+            importer_names.update(alias.asname or alias.name for alias in node.names if alias.name in _DYNAMIC_IMPORTERS)
+    for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             targets = [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom):
@@ -168,13 +174,30 @@ def research_only_imports(source: str, *, package: str = RESEARCH_BACKTEST_PACKA
         elif isinstance(node, ast.Call):
             function = node.func
             name = function.attr if isinstance(function, ast.Attribute) else getattr(function, "id", "")
-            if name not in _DYNAMIC_IMPORTERS:
+            if name not in importer_names:
                 continue
             targets = [
                 argument.value
                 for argument in [*node.args, *(keyword.value for keyword in node.keywords)]
                 if isinstance(argument, ast.Constant) and isinstance(argument.value, str)
             ]
+            # import_module resolves leading dots against its package argument,
+            # which may be a literal or the module's own __package__. Resolve
+            # that form before applying the guarded-module identity check.
+            package_arg = next((kw.value for kw in node.keywords if kw.arg == "package"),
+                               node.args[1] if len(node.args) > 1 else None)
+            relative_package = package
+            if isinstance(package_arg, ast.Constant) and isinstance(package_arg.value, str):
+                relative_package = package_arg.value
+            resolved = []
+            for target in targets:
+                if target.startswith("."):
+                    try:
+                        target = resolve_name(target, relative_package)
+                    except (ImportError, ValueError):
+                        pass  # An invalid relative import has no module identity.
+                resolved.append(target)
+            targets = resolved
         else:
             continue
         found += [target for target in targets if _is_research_only(target)]
@@ -217,6 +240,14 @@ def test_no_research_backtest_module_imports_a_btc019_research_module() -> None:
         ("import importlib\nimportlib.import_module('btc_predictor.research.btc019_empirical')\n",
          "btc_predictor.research.btc019_empirical"),
         ("__import__('btc_predictor.research.price_source_policy')\n", "btc_predictor.research.price_source_policy"),
+        ("def f():\n    import importlib\n    return importlib.import_module('..research.btc019_empirical', __package__)\n",
+         "btc_predictor.research.btc019_empirical"),
+        ("import importlib as loader\nloader.import_module('.reference_composite', 'btc_predictor.research')\n",
+         "btc_predictor.research.reference_composite"),
+        ("from importlib import import_module as load\nload('btc_predictor.research.btc019_empirical')\n",
+         "btc_predictor.research.btc019_empirical"),
+        ("from importlib import import_module as load\nload(name='..research.price_source_policy', package=__package__)\n",
+         "btc_predictor.research.price_source_policy"),
     ],
 )
 def test_the_isolation_scan_finds_every_import_form(source: str, expected: str) -> None:
