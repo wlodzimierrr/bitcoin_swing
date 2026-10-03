@@ -44,6 +44,7 @@ from typing import Any
 import pytest
 
 from btc_predictor.features import positioning as positioning_owner
+from btc_predictor.features import flow as flow_owner
 from btc_predictor.features import volatility as volatility_owner
 from btc_predictor.features.rolling import rolling_percentile, rolling_zscore
 from btc_predictor.research_backtest import completion_spec as spec
@@ -54,7 +55,7 @@ from btc_predictor.research_backtest.completion_spec import CompletionSpecError
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = ROOT / "backtest_evidence" / "research_backtest_v1"
 RULEBOOK = ROOT / "docs" / "strategy" / "bitcoin_swing_predictor_rulebook_v1_2.md"
-FROZEN_SPEC_SHA256 = "123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe"
+FROZEN_SPEC_SHA256 = "9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f"
 
 # The confirmed RBT-002 R2 list (25 undefined ids) plus LEVEL_VOLUME_PERCENTILE.
 CONFIRMED_IDS = {
@@ -251,7 +252,7 @@ def test_one_z_rule_and_one_percentile_rule(entries: dict[str, spec.SpecEntry]) 
     for rule in spec.UNIFORM_RULES:
         assert rule.exceptions == ()
     rejected = " ".join(spec.UNIFORM_ZSCORE.rejected_alternatives)
-    assert "180 days" in rejected and "20 observations" in rejected and "daily decision instant" in rejected
+    assert "180 days" in rejected and "730 days/30" in rejected and "20/20" in rejected
     # The z-score inputs that reuse a z value carry no window of their own.
     for key in ("MOMENTUM_PERSISTENCE_SCORE", "ADD_MOMENTUM_SCORE"):
         assert entries[key].uniform_rule is None
@@ -259,13 +260,13 @@ def test_one_z_rule_and_one_percentile_rule(entries: dict[str, spec.SpecEntry]) 
 
 
 def test_the_uniform_rules_use_the_owner_numbers() -> None:
-    assert spec.UNIFORM_ZSCORE_WINDOW_DAYS == 730 == volatility_owner.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
-    assert spec.UNIFORM_ZSCORE_MIN_OBSERVATIONS == 30 == positioning_owner.DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS
+    assert spec.UNIFORM_ZSCORE_WINDOW_OBSERVATIONS == 20 == flow_owner.spot_perp_cvd_spread.__kwdefaults__["zscore_window_periods"]
+    assert spec.UNIFORM_ZSCORE_MIN_OBSERVATIONS == 20
     assert spec.UNIFORM_PERCENTILE_WINDOW_DAYS == 730
     assert spec.UNIFORM_PERCENTILE_MIN_OBSERVATIONS == 365 == volatility_owner.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS
     z = {element.name: element for element in spec.UNIFORM_ZSCORE.elements}
-    assert z["window"].source_class == spec.SOURCE_NEW_PARAMETER
-    assert "730 days" in z["window"].value and "30" == z["minimum_prior_observations"].value
+    assert z["window"].source_class == spec.SOURCE_OWNER_CONVENTION
+    assert "20 prior" in z["window"].value and "20" == z["minimum_prior_observations"].value
     assert z["degrees_of_freedom"].value.startswith("0")
     pct = {element.name: element for element in spec.UNIFORM_PERCENTILE.elements}
     assert pct["minimum_prior_observations"].value == "365" and "730 days" in pct["window"].value
@@ -281,7 +282,7 @@ def test_every_element_has_a_source_class_and_citation_and_new_parameters_a_rati
         if element["source_class"] in (spec.SOURCE_NEW_PARAMETER, spec.SOURCE_POLICY_RULING):
             assert element["rationale"].strip(), element["name"]
             assert "\n" not in element["rationale"]
-    assert len(definition["new_parameters"]) == 17
+    assert len(definition["new_parameters"]) == 16
     for item in definition["new_parameters"]:
         assert item["rationale"].strip() and item["citation"].strip()
 
@@ -499,16 +500,16 @@ def test_the_earliest_evaluable_effect_is_disclosed(definition: dict[str, Any]) 
         assert effect["inventory_lower_bound_available_at"] == "2024-02-10T00:00:00+00:00"
         assert effect["spec_completed_status"] == "DATA_DEPENDENT_LOWER_BOUND"
         assert effect["lower_bound_due_to"] == ["structure"]
-        assert effect["spec_completed_available_at"] == "2024-03-24T00:00:00+00:00"
-        assert effect["days_later_than_inventory_lower_bound"] == 43
+        assert effect["spec_completed_available_at"] == "2024-03-10T00:00:00+00:00"
+        assert effect["days_later_than_inventory_lower_bound"] == 29
         assert "flow" in effect["binding_components"]
         assert effect["binding_entries"] == ["FLOW_Z_ETF_NORM_20D", "FLOW_Z_FLOW_ACCEL"]
         facts = definition["warm_up"]["by_venue"][venue]
         assert facts["core_regime"]["status"] == "EVALUABLE"
-        assert facts["core_regime"]["available_at"] == "2024-03-24T00:00:00+00:00"
+        assert facts["core_regime"]["available_at"] == "2024-03-10T00:00:00+00:00"
         entries = definition["warm_up"]["by_venue"][venue]["entries"]
-        assert entries["FLOW_Z_ETF_NORM_20D"]["available_at"] == "2024-03-24T00:00:00+00:00"
-        assert entries["FLOW_Z_ETF_NORM_5D"]["available_at"] == "2024-03-03T00:00:00+00:00"
+        assert entries["FLOW_Z_ETF_NORM_20D"]["available_at"] == "2024-03-10T00:00:00+00:00"
+        assert entries["FLOW_Z_ETF_NORM_5D"]["available_at"] == "2024-02-17T00:00:00+00:00"
 
 
 def test_every_entry_has_a_warm_up_record_per_venue(definition: dict[str, Any]) -> None:

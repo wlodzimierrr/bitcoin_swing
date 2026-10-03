@@ -43,6 +43,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
+from btc_predictor.features import flow as flow_owner
 from btc_predictor.features import positioning as positioning_owner
 from btc_predictor.features import volatility as volatility_owner
 from btc_predictor.levels import swing as swing_owner
@@ -588,70 +589,59 @@ UNIFORM_ZSCORE = UniformRule(
     rule_id=_Z_RULE,
     kind="ZSCORE",
     statement=(
-        "At decision instant t, let x be the owner value of the input's quantity at its latest observation D visible "
-        "at t (the owners' latest-available convention). H is the owner values of the same quantity at the prior "
-        "observations D' of its native series with D - 730 days <= D' < D, computed from the same point-in-time "
-        "inputs; incomplete (None) values are skipped, never filled. z = (x - mean(H)) / sd(H) with the population "
-        "standard deviation (ddof 0). z is None when x is None, when len(H) < 30, or when every value of H is "
-        "exactly equal (zero variance; the refusal does not depend on float rounding). Otherwise z is computed by "
-        "the BTC-041 helper. Nothing is zero-filled; None leaves the consuming owner's incomplete result standing."
+        "At decision instant t, x is the owner value at its latest visible native observation D. H is the last "
+        "20 defined owner values of the same quantity at native observations strictly before D, after PIT visibility "
+        "filtering. None history values are skipped, never filled. Require 20 prior observations; use population "
+        "standard deviation (ddof 0), current excluded. Exactly constant H refuses by original-value exact equality "
+        "BEFORE float conversion or calling the BTC-041 helper, whether or not x equals the history. Otherwise "
+        "rolling_zscore((*H, x), window=len(H), min_periods=20, sample=False)[-1] supplies z. Missing or refused z "
+        "leaves the consuming owner incomplete. This is the existing Flow/CVD observation-count convention, "
+        "unchanged and uniform on daily, weekly and publication-day native series. Calendar duration varies with "
+        "cadence and gaps explicitly; there is no time-based z window or daily repetition of weekly values."
     ),
     elements=(
         Element("form", "(x - mean) / sd over trailing history", SOURCE_RULEBOOK,
-                "Rulebook v1.2 section 5.1 lines 413-421 (Z_M4 = (M_4 - mu)/sigma, 'Normalize using trailing "
-                "historical data'), line 435 (Z_M12 = zscore(M_12)); section 6.2 line 641 (z(ETFNorm_5), "
-                "z(ETFNorm_20), z(FlowAccel))"),
-        Element("series", "the quantity's native owner series, one value per owner observation", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/positioning.py:1087 _funding_average_history (one 7-day average per settlement); "
-                "btc_predictor/features/volatility.py:1918 _realized_volatility_history (one RV_20 per daily result)"),
-        Element("current_value", "the owner value at the latest observation visible at t", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/positioning.py:486 (observation_time = latest visible observation)"),
-        Element("window", "730 days, half-open [D - 730 days, D), anchored at the current observation D",
-                SOURCE_NEW_PARAMETER,
-                "value from Rulebook v1.2 section 8.1 line 861 (VolPercentile = Percentile(RV_20, 2yr)) and "
-                "btc_predictor/features/volatility.py:136 DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS = 730; the 180-day "
-                "z window of Rulebook section 7.1 line 697 / positioning.py:83 is not adoptable",
-                "180 days holds at most 25 prior weekly observations, so weekly z-scores could never reach 30; 730 days is "
-                "the Rulebook's other normalisation window; the flow owner's 20-observation count window was rejected."),
-        Element("prior_window_exclusion", "the current observation D is never in H", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/positioning.py:1087-1098 (window_start <= t < observation_time); "
-                "btc_predictor/quant/rolling.py:347 _prior_windows"),
-        Element("minimum_prior_observations", "30", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/positioning.py:84 DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS = 30 (also :88 basis, "
-                ":93 OI growth)"),
+                "Rulebook v1.2 section 5.1 lines 413-421 and line 435; section 6.2 line 641"),
+        Element("series", "one value per native owner observation", SOURCE_OWNER_CONVENTION,
+                "btc_predictor/features/flow.py:1011 _latest_zscore (defined native prior observations); "
+                "btc_predictor/features/positioning.py:1087 _funding_average_history"),
+        Element("current_value", "owner value at the latest visible observation D", SOURCE_OWNER_CONVENTION,
+                "btc_predictor/features/positioning.py:486 (latest visible observation)"),
+        Element("window", "20 prior defined native observations", SOURCE_OWNER_CONVENTION,
+                "btc_predictor/features/flow.py:606 spot_perp_cvd_spread (zscore_window_periods=20), "
+                ":471 spot_perp_participation_from_rows, :1011 _latest_zscore"),
+        Element("prior_window_exclusion", "current D excluded", SOURCE_OWNER_CONVENTION,
+                "btc_predictor/features/flow.py:1019 values[:-1]; btc_predictor/quant/rolling.py:347 _prior_windows"),
+        Element("minimum_prior_observations", "20", SOURCE_OWNER_CONVENTION,
+                "btc_predictor/features/flow.py:617-621 (min_zscore_periods=None resolves to zscore_window_periods)"),
         Element("degrees_of_freedom", "0 (population standard deviation)", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/positioning.py:1260-1264 (variance / len(history)); "
+                "btc_predictor/features/flow.py:1023-1025 (variance / len(history)); "
                 "btc_predictor/quant/rolling.py:436 (sample=False -> ddof 0)"),
-        Element("zero_variance", "exactly constant H refuses (None)", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/positioning.py:1266-1267 (volatility == 0 refuses; FUNDING_HEALTH_ZERO_VARIANCE); "
-                "btc_predictor/quant/rolling.py:108 (deviations != 0); exact equality, the test policy V7 section 6A.9 "
-                "prescribes for futures basis"),
+        Element("zero_variance", "exactly constant H refuses before the helper", SOURCE_OWNER_CONVENTION,
+                "btc_predictor/features/flow.py:1027-1028; policy V7 section 6A.9 exact-equality refusal class; "
+                "the frozen application_contract uses original values before conversion"),
         Element("missing_history_points", "skipped, never zero-filled", SOURCE_OWNER_CONVENTION,
-                "btc_predictor/features/flow.py:1019 (_latest_zscore skips None history values); Rulebook v1.2 "
-                "section 4.2 line 391"),
+                "btc_predictor/features/flow.py:1019 (skips None before selecting the last window observations)"),
         Element("helper", "btc_predictor.features.rolling.rolling_zscore", SOURCE_OWNER_CONVENTION,
                 "btc_predictor/features/rolling.py:62 (BTC-041 prior-window z-score; policy V7 section 6A.2 tier 3)"),
     ),
     helpers=(H_ZSCORE,),
     exceptions=(),
     rejected_alternatives=(
-        "The positioning convention unchanged (180 days, 30 observations; positioning.py:83-84): infeasible on native "
-        "weekly series, whose [D - 180 days, D) holds at most 25 prior observations.",
-        "The flow owner's count window (20 observations, minimum 20; flow.py:477 spot_perp_participation_from_rows, :1011 "
-        "_latest_zscore; EPIC X's certified CVD window, prospective_integration_corpus.py:3265): a 20-row window over "
-        "overlapping 5/20-day sums or 28/84-day returns measures recent change rather than 'trailing historical data' "
-        "(Rulebook 5.1), spans 20 days or 20 weeks depending on cadence, and starts the flow z-scores earlier "
-        "(2024-03-10 against 2024-03-24), which trades more (section 6A.5).",
-        "Sampling every quantity at each daily decision instant (180 days, 30 samples): weights each weekly value about "
-        "seven times and each weekend-straddling ETF day three times, and starts earlier (trades more).",
+        "Positioning's 180 days with 30 prior observations (positioning.py:83-84) is infeasible uniformly on native "
+        "weekly series: at most 25 observations fit. Its funding-specific Rulebook scope remains unchanged.",
+        "The original NEW_PARAMETER 730 days/30 observations bypassed the applicable feasible Flow/CVD 20/20 "
+        "owner convention. Later warm-up and cadence preferences do not override policy V7 section 6A.2.",
+        "Daily decision-instant repetition of weekly or publication-day owner values weights the same observation "
+        "multiple times; native observation counting preserves the existing owner convention.",
     ),
     application_contract=(
-        ("history_selection", "Select H by observation time in [D - 730 days, D), after PIT visibility filtering; skip None, never extend the time window to replace gaps."),
-        ("missing_or_short", "If x is None or len(H) < 30, return None without calling rolling_zscore."),
+        ("history_selection", "After PIT visibility filtering, select the last 20 defined native owner observations strictly before D; skip None, never repeat observations or fill gaps. This is explicitly observation-count based, not 730 days."),
+        ("missing_or_short", "If x is None or len(H) < 20, return None without calling rolling_zscore."),
         ("constant_history_predicate", "all(h == H[0] for h in H)"),
         ("constant_history_refusal", "Evaluate exact equality on the original owner values BEFORE float conversion or rolling_zscore; if true, return None without calling the helper, whether or not x equals H[0]. No tolerance."),
-        ("owner_call", "Otherwise call rolling_zscore((*H, x), window=len(H), min_periods=30, sample=False) and use only its last result. The row window is the count of the already time-selected H, never 730 rows."),
-        ("required_tests", "Non-terminating constant histories at full window size (0.1, 1/3, 0.015*365/90), equal and different current values, no helper invocation on refusal, both native and 64-bit longdouble; time-boundary and gap exclusion; nonconstant owner parity. RBT-004 implements and tests this contract."),
+        ("owner_call", "Otherwise call rolling_zscore((*H, x), window=len(H), min_periods=20, sample=False) and use only its last result."),
+        ("required_tests", "Non-terminating constants (0.1, 1/3, 0.015*365/90) at the full 20-observation window, plus the original 730-observation counterexample; equal and different current values, no helper invocation on refusal, native and 64-bit accumulators; PIT/gap counting and nonconstant owner parity. RBT-004 implements and tests this contract."),
     ),
 )
 
@@ -708,14 +698,14 @@ def _causes(input_id: str, *suffixes: str) -> tuple[str, ...]:
 # --- trend and flow z-scores (UNIFORM_ZSCORE_V1) ---------------------------------------------------
 
 _TREND_MISSING = (
-    "x None, len(H) < 30 or an exactly constant H gives z = None. TrendScoreInput has no None path "
+    "x None, len(H) < 20 or an exactly constant H gives z = None. TrendScoreInput has no None path "
     "(btc_predictor/features/trend.py:57-62; calculate_trend_score raises RuntimeError at :136), so the composer does "
     "not call calculate_trend_score and passes trend_score=None to every consumer: ENTRY_CONVICTION_INPUT_MISSING, "
     "REGIME_SCORE_CORE_INPUT_MISSING, BULL_TREND_CONTINUATION_INPUT_MISSING / BULLISH_RESET_INPUT_MISSING and "
     "HOLD_SCORE_INPUT_MISSING stand, and the decision is STRUCTURALLY_UNEVALUABLE. Never zero-filled."
 )
 _FLOW_MISSING = (
-    "x None, len(H) < 30 or an exactly constant H gives z = None: calculate_flow_score records "
+    "x None, len(H) < 20 or an exactly constant H gives z = None: calculate_flow_score records "
     "FLOW_SCORE_CORE_INPUT_MISSING with score None (btc_predictor/features/flow.py:716-718, :751), so Entry "
     "Conviction and the core regime are incomplete and the decision is STRUCTURALLY_UNEVALUABLE. Never zero-filled."
 )
@@ -740,7 +730,7 @@ def _trend_z(input_id: str, field: str, line: int, upstream: str, owner: str, ow
         consumers=(Consumer(f"btc_predictor.features.trend.TrendScoreInput.{field}", f"btc_predictor/features/trend.py:{line} TrendScoreInput.{field}"),),
         rule=(
             f"z of {upstream} under {_Z_RULE}: x is the last element of {owner} over the canonical bars visible at t; "
-            f"H is the same owner series at the observations in [D - 730 days, D)."
+            f"H is the last 20 defined prior observations of the same native owner series."
         ),
         elements=(formula, _normalisation(UNIFORM_ZSCORE)),
         helpers=(
@@ -769,7 +759,7 @@ def _flow_z(input_id: str, field: str, upstream: str, owner_call: str, formula: 
         consumers=(Consumer(f"btc_predictor.features.flow.FlowScoreInput.{field}", f"btc_predictor/features/flow.py:304 FlowScoreInput.{field}"),),
         rule=(
             f"z of {upstream} under {_Z_RULE}: x = {owner_call} at its latest US publication day D visible at t; H is "
-            "the same quantity at the US publication days D' in [D - 730 days, D), each with end_date=D'. All three "
+            "the same quantity at the last 20 defined prior US publication days D', each with end_date=D'. All three "
             "flow z-scores at one decision are anchored at the same D."
         ),
         elements=(formula, _normalisation(UNIFORM_ZSCORE)),
@@ -1753,7 +1743,7 @@ POSITIONING_GUARDS = (E1_GUARD, FUNDING_GUARD, OI_GROWTH_GUARD)
 # helpers. This is the complete list of arithmetic the spec declares on top of
 # owner calls; RBT-004/RBT-005's "no new formulas" admits exactly these.
 DECLARED_ARITHMETIC = (
-    "select a quantity's history by observation-time window [D - 730 days, D) and skip None values (uniform rules)",
+    "select the last 20 defined prior native observations (uniform z-score); select prior daily history by time [D - 730 days, D) (uniform percentile); skip None and never fill gaps",
     "exact equality of every history value (uniform z-score refusal; E1 guard)",
     "TR(d) / close(d - 1 day) (RANGE_PERCENTILE)",
     "negation of the HIGH_DISTANCE_52W value (CORRECTION_FROM_LOCAL_HIGH)",
@@ -1772,7 +1762,7 @@ NAMED_LIMITATIONS = (
     ("REACTION_UNIT", "Rulebook 9.2 measures reaction relative to ATR; the frozen strength owner takes a price fraction (full score 0.10). The spec feeds the owner's unit."),
     ("LEVEL_STRENGTH_OWNER_TABLES", "The frozen strength owner's timeframe table and linear touch score differ from Rulebook 9.2; unchanged."),
     ("FLOW_OWNER_BANDS", "The flow owner's interpretation labels (80/65/45/30) differ from Rulebook 6.2 (75/60/45/30); FLOW_SUPPORTIVE_PREDICATE reads the score, not the label."),
-    ("ROW_BASED_LOOKBACKS", "Momentum, MA-distance, 52-week-high and R_7 owners count rows, so an omitted bar is read as contiguous (analogous to the policy V7 section 7 limitations). Obligation: RBT-006/RBT-007 report, per venue, the count of decision instants at which such a lookback spans an omitted bar."),
+    ("ROW_BASED_LOOKBACKS", "Momentum, MA-distance, 52-week-high and R_7 owners count rows, so an omitted bar is read as contiguous (analogous to the policy V7 section 7 limitations). Obligation: RBT-006/RBT-007 report, per venue, the count of decision instants at which such a lookback spans an omitted bar. Uniform z-score history intentionally counts 20 defined native observations; calendar span varies with cadence and gaps and must be reported, never disguised as a fixed day window."),
     ("SEVERE_CROWDING_IS_CROWDING", "Every CROWDING instant vetoes a new trade (policy V7 section 6A.5), so the CROWDING entry-quality penalty never acts on a new trade."),
     ("LEVEL_VOLUME_PRE_WARM_UP_PIVOTS", "A swing member whose pivot bar closes before the computed volume warm-up date never gets a percentile; under the strict minimum a cluster containing one stays incomplete."),
     ("STRESS_NON_DISCRETIONARY_MISSING", "The V4 STRESS mapping covers only a DISCRETIONARY-only missing input; when a spec input (DOWNSIDE_RETURN) or an E1 refusal leaves STRESS incomplete, the conservative composer reading is stress_flagged=None (hard veto fails closed). RBT-004 must state it."),
@@ -1784,7 +1774,7 @@ NAMED_LIMITATIONS = (
 SURFACED_FOR_REVIEW = (
     "ACCEPTED: MOMENTUM_PERSISTENCE_SCORE overlap with Trend, unchanged by owner ruling (policy V7 section 6A.10). Required ablation frozen by RBT-006 and reported by RBT-007 under section 8; evaluation window only, per venue/base costs, never selected or run on holdout.",
     "GUARDED: E1 class in funding_health and open_interest_growth_health under policy V7 section 6A.9, beside futures basis. Each owner has its own history helpers, refusal reason and five required RBT-004 tests.",
-    "UNIFORM_ZSCORE_V1 window: 730 days with 30 observations; the positioning 180 days cannot hold 30 weekly observations and the flow owner's 20-observation count window was rejected (recent change, cadence-dependent horizon, earlier start).",
+    "CORRECTED under V7 section 6A.2: UNIFORM_ZSCORE_V1 adopts the existing feasible Flow/CVD 20-prior-observation/minimum-20 convention uniformly. 180-day/30 is infeasible weekly; 730-day/30 was an unauthorized lower-tier bypass, not an owner question.",
     "DOWNSIDE_RETURN/UPSIDE_RETURN horizon of 7 daily bars versus 1: section 6A.5 is not monotone across consumers (CAPITULATION enables Setup C).",
     "RANGE_PERCENTILE quantity: true range over the prior close (scale-free) rather than raw price-unit true range; neither is owner-fixed and section 6A.5 is not monotone.",
     "REGIME_INVALIDATION_PREDICATE band: Mild Bear or below with a non-bear entry context; bear-entered positions are exempt for life; alternative: bear and strictly below the entry label.",
@@ -1813,9 +1803,9 @@ PRE_REGISTRATION = {
 # --- computed warm-up ------------------------------------------------------------------------------
 
 # Numbers the warm-up simulation applies, each read from its owner (the uniform
-# z-score window takes the volatility owner's 730 days as its NEW_PARAMETER).
-UNIFORM_ZSCORE_WINDOW_DAYS = volatility_owner.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
-UNIFORM_ZSCORE_MIN_OBSERVATIONS = positioning_owner.DEFAULT_FUNDING_MIN_ZSCORE_OBSERVATIONS
+# z-score window and minimum use the existing Flow/CVD observation-count convention).
+UNIFORM_ZSCORE_WINDOW_OBSERVATIONS = flow_owner.spot_perp_cvd_spread.__kwdefaults__["zscore_window_periods"]
+UNIFORM_ZSCORE_MIN_OBSERVATIONS = (flow_owner.spot_perp_cvd_spread.__kwdefaults__["min_zscore_periods"] or UNIFORM_ZSCORE_WINDOW_OBSERVATIONS)
 UNIFORM_PERCENTILE_WINDOW_DAYS = volatility_owner.DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
 UNIFORM_PERCENTILE_MIN_OBSERVATIONS = volatility_owner.DEFAULT_VOLATILITY_PERCENTILE_MIN_OBSERVATIONS
 RETURN_HORIZON_DAILY_BARS = 7
@@ -1824,7 +1814,7 @@ SWING_RIGHT_BARS = {
     "1mo": swing_owner.DEFAULT_MONTHLY_SWING_RIGHT_BARS,
 }
 _RULE_PARAMETERS = {
-    _Z_RULE: (UNIFORM_ZSCORE_WINDOW_DAYS, UNIFORM_ZSCORE_MIN_OBSERVATIONS),
+    _Z_RULE: (UNIFORM_ZSCORE_WINDOW_OBSERVATIONS, UNIFORM_ZSCORE_MIN_OBSERVATIONS),
     _PCT_RULE: (UNIFORM_PERCENTILE_WINDOW_DAYS, UNIFORM_PERCENTILE_MIN_OBSERVATIONS),
 }
 DAILY_TRUE_RANGE_FRACTION = "DAILY_TRUE_RANGE_FRACTION"
@@ -2005,9 +1995,10 @@ def compute_warm_up(entries: Sequence[SpecEntry], inventory: Mapping[str, Any]) 
                     window_days, minimum = _RULE_PARAMETERS[entry.warm_up.rule_id or ""]
                     base = _upstream_series(upstream[0], requirements, series, computed)
                     computed[entry.input_id] = (
-                        trailing_window_series(entry.input_id, base, window=timedelta(days=window_days), min_prior=minimum)
-                        if base is not None
-                        else None
+                        (coverage.ObservationSeries(entry.input_id, base.observations[minimum:], base.basis, base.source)
+                         if entry.warm_up.rule_id == _Z_RULE else
+                         trailing_window_series(entry.input_id, base, window=timedelta(days=window_days), min_prior=minimum))
+                        if base is not None else None
                     )
                 elif kind == WARMUP_INHERITS:
                     members = [_upstream_series(name, requirements, series, computed) for name in upstream]

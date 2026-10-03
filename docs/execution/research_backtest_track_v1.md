@@ -2752,6 +2752,19 @@ Input sources to classify: `replay_market_bars_at`,
 - This is separate from review-fix RBT002A-R1; no owner module is edited.
 
 **Independent review corrections (2026-10-03).**
+- RBT002A-R4 (P1): the new 730-day/30 z rule bypassed the feasible existing
+  Flow/CVD 20-prior-observation/minimum-20 convention (V7 §6A.2). Apply that
+  existing rule unchanged and uniformly to all seven native z inputs; retain
+  exact equality, population SD, prior exclusion and no fills. Rejecting
+  180/30 as weekly-infeasible (25 maximum) is sound, but does not authorize
+  rejecting 20/20 for cadence preferences or a later warm-up. Independent
+  owner-default/parity/cadence regressions pin the correction.
+- Revised warm-up: all 26 per-entry records independently recompute from
+  inventory facts; lower bound 2024-03-10, +29 days from inventory. Original
+  730/30 dates and 2024-03-24 (+43) are preserved in review evidence.
+- R4 resulting spec digest: `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f`.
+  There are now 16 NEW_PARAMETER elements; promoted roots remain 14.
+
 - RBT002A-R3 (P2): a POSIX non-UTF-8 credential reached quote_plus and
   raised UnicodeEncodeError retaining the complete credential in .object.
   Detect surrogate code points before encoding; invalid credentials now

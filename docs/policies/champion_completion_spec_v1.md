@@ -12,7 +12,7 @@ only**, made under
 | Research strategy identifier | `swing_v1.2+completion_v1` = `swing_v1.2` / `strategy_config_v2` / `default_phase1` plus this spec |
 | Scope | EPIC Y research backtests only. Not `swing_v1.2` for advisory, paper, EPIC X or BTC-019 use; adopting it anywhere else needs that workstream's own decision (policy V7 section 6) |
 | Machine-readable definition | `btc_predictor/research_backtest/completion_spec.py` (typed) → canonical sorted JSON `backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json` |
-| Definition SHA-256 | `123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe` (`champion_completion_spec_v1.json.sha256`) |
+| Definition SHA-256 | `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f` (`champion_completion_spec_v1.json.sha256`) |
 | Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V7) |
 | Evidence class | `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED` |
 
@@ -41,58 +41,44 @@ It computes no score, signal, trade or outcome.
 
 ## 2. Uniform rules (section 6A.3)
 
-**`UNIFORM_ZSCORE_V1`**, for every undefined z-score (the four trend and three
-flow z-scores):
+**`UNIFORM_ZSCORE_V1`**, uniformly for the four Trend and three Flow inputs:
 
-- current value x: the owner's value of the quantity at its latest observation
-  D visible at the decision instant t (the owners' latest-available convention);
-- history H: the owner's values at the prior observations D' of the quantity's
-  **native series** (daily bar, weekly bar or US publication day) with
-  `D - 730 days <= D' < D`; incomplete values are skipped, never filled;
-- minimum 30 prior observations; population standard deviation (ddof 0);
-  the current observation is never in H;
-- an exactly constant H refuses (zero variance), so the refusal never depends
-  on float or Decimal rounding;
-- computed by the BTC-041 `features.rolling.rolling_zscore` only after the exact-equality guard refuses constant histories. The frozen `application_contract` selects history by time first, then calls the row helper with `window=len(H)`, the declared minimum and `sample=False`. The percentile helper likewise receives `window=len(H)` after time selection. Gaps never extend the time window.
+- x is the latest visible native owner observation D;
+- H is the last **20 defined prior native observations**, current excluded,
+  after PIT filtering; incomplete values are skipped and never filled;
+- minimum 20; population SD (ddof 0), no per-input exceptions;
+- exact original-value equality refuses a constant H before float conversion
+  or calling the BTC-041 helper, whether x equals H or differs;
+- otherwise call `rolling_zscore((*H, x), window=len(H), min_periods=20,
+  sample=False)` and take the last result.
 
-**`UNIFORM_PERCENTILE_V1`**, for every undefined percentile (range and level
-volume): the midrank `(less + 0.5 * equal) / n * 100` of a quantity observed once
-per UTC day against its prior observations in `[D - 730 days, D)`, at least 365
-of them, current excluded, computed by the BTC-041 `rolling_percentile`. This is
-`volatility_percentile`'s convention unchanged.
+This adopts the existing Flow/CVD **20-observation/minimum-20 owner
+convention** unchanged (flow.py `spot_perp_cvd_spread`, `_latest_zscore`).
+Calendar span varies with native cadence and gaps; weekly values are never
+repeated daily. This is explicit observation counting, with no time-based z
+window.
 
-No exceptions: the Rulebook distinguishes no input's normalisation.
+**Review correction RBT002A-R4 (V7 section 6A.2).** The original 730-day/30
+`NEW_PARAMETER` bypassed that applicable, feasible owner convention. The
+180-day/30 positioning convention cannot fit 30 weekly observations (maximum
+25); that valid observation did not authorize the lower-tier new window.
+The original rejection of 20 observations because of cadence, recent change
+or earlier availability is not permitted by source precedence. The original
+26-entry calendar audit independently reproduced 2024-03-24. The corrected
+rule moves the lower bound to 2024-03-10; no outcome informed the correction.
 
-**Why 730 days for z-scores (a `NEW_PARAMETER`).** The policy-named positioning
-convention is 180 days with 30 observations. On native series that convention
-cannot be met by the two weekly trend quantities: `[D - 180 days, D)` holds at
-most 25 prior weekly observations. With it, `TREND_Z_20W` and `TREND_Z_52H`
-would never be complete and the evaluation window would be empty on every
-venue. The spec keeps the positioning minimum (30), population SD, prior-window
-exclusion and zero-variance refusal. It takes the window from the Rulebook's
-only other normalisation window (section 8.1, `Percentile(RV_20, 2yr)`, the
-volatility owner's 730 days). This starts later than lowering the minimum,
-which also governs the binding flow warm-up, so it trades less (section 6A.5).
-
-Two other conventions were considered and rejected (recorded in the JSON as
-`rejected_alternatives`):
-
-- The flow owner's 20-observation count window (minimum 20). It is the window
-  of the participation/CVD z-scores and EPIC X's certified CVD window. A
-  20-row window over overlapping 5/20-day sums or 28/84-day returns measures
-  recent change rather than "trailing historical data" (Rulebook 5.1). It
-  spans 20 days or 20 weeks depending on cadence. It would also start the flow
-  z-scores earlier (2024-03-10 instead of 2024-03-24), which trades more.
-- Sampling each quantity at every daily decision instant. It would weight each
-  weekly value about seven times and each weekend-straddling ETF day three
-  times, and would trade more.
+**`UNIFORM_PERCENTILE_V1`** remains unchanged: a daily quantity's prior
+midrank `(less + 0.5 * equal) / n * 100` over `[D - 730 days, D)`, at least
+365 defined observations, current excluded. Select history by observation
+**time first**, then call `rolling_percentile((*H, x), window=len(H),
+min_periods=365)`. Gaps never extend or shorten the time window silently.
 
 ## 3. The 26 entries
 
 | Input | Disposition | Governing class | Rule (summary) |
 | --- | --- | --- | --- |
-| `TREND_Z_M4`, `TREND_Z_M12`, `TREND_Z_20W`, `TREND_Z_52H` | DEFINED | NEW_PARAMETER (via the z window) | `UNIFORM_ZSCORE_V1` over the owner's `MOMENTUM_4W`, `MOMENTUM_12W`, `MA_DISTANCE_20W`, `HIGH_DISTANCE_52W` series |
-| `FLOW_Z_ETF_NORM_5D`, `FLOW_Z_ETF_NORM_20D`, `FLOW_Z_FLOW_ACCEL` | DEFINED | NEW_PARAMETER (via the z window) | `UNIFORM_ZSCORE_V1` over ETFNorm_5, ETFNorm_20, FlowAccel per US publication day; history values with `end_date=D'`, the per-window fund universe and the closure table; one anchor date D |
+| `TREND_Z_M4`, `TREND_Z_M12`, `TREND_Z_20W`, `TREND_Z_52H` | DEFINED | OWNER_CONVENTION (existing 20/20 z rule) | `UNIFORM_ZSCORE_V1` over the owner's `MOMENTUM_4W`, `MOMENTUM_12W`, `MA_DISTANCE_20W`, `HIGH_DISTANCE_52W` series |
+| `FLOW_Z_ETF_NORM_5D`, `FLOW_Z_ETF_NORM_20D`, `FLOW_Z_FLOW_ACCEL` | DEFINED | OWNER_CONVENTION (existing 20/20 z rule) | `UNIFORM_ZSCORE_V1` over ETFNorm_5, ETFNorm_20, FlowAccel per US publication day; history values with `end_date=D'`, the per-window fund universe and the closure table; one anchor date D |
 | `RANGE_PERCENTILE` | DEFINED | NEW_PARAMETER | `UNIFORM_PERCENTILE_V1` of `TR(d) / close(d - 1 day)` (BTC-041 true range over the prior close); one value to Orderliness, CAPITULATION and EUPHORIA |
 | `DOWNSIDE_RETURN` | DEFINED | NEW_PARAMETER | `R_7 = P_t / P_(t-7) - 1` (signed) via `price_momentum_from_daily_bars(lookback_periods=7)`; one value to Orderliness, STRESS, CAPITULATION |
 | `UPSIDE_RETURN` | DEFINED | NEW_PARAMETER | the same `R_7` to EUPHORIA |
@@ -114,7 +100,7 @@ Two other conventions were considered and rejected (recorded in the JSON as
 
 The governing class is the lowest-precedence section 6A.2 tier any element of
 the entry needs. Each element carries its own class and exact citation in the
-JSON. There are **17 `NEW_PARAMETER` elements**, each with its one-line
+JSON. There are **16 `NEW_PARAMETER` elements**, each with its one-line
 rationale in the JSON `new_parameters` list.
 
 ## 4. Level volume (section 6A.8)
@@ -232,8 +218,8 @@ venue, how many decision instants have such a lookback spanning an omitted bar.
    for exits.
 4. **`CORRECTION_FROM_LOCAL_HIGH`** reads 'local high' as the trailing 52-week
    high, at weekly resolution.
-5. **The z-score window of 730 days** (section 2), with the rejected
-   alternatives.
+5. **Source precedence: CORRECTED** by adopting the existing 20/20 owner
+   convention uniformly; the 730/30 bypass is removed (section 2).
 6. **The return horizon of 7 daily bars.** Section 6A.5 is not monotone across
    consumers: a longer horizon fires Orderliness, STRESS and EUPHORIA more
    (fewer trades and adds) but also CAPITULATION, which enables Setup C.
@@ -299,11 +285,11 @@ Warm-up is computed from the bound inventory's coverage facts only, using
 RBT-002's own simulation primitives (`compute_warm_up`).
 
 On **all three venues**, the earliest instant at which every Entry Conviction
-component and the core regime are complete is **no earlier than 2024-03-24**.
-That is 43 days after the inventory's lower bound of 2024-02-10.
+component and the core regime are complete is **no earlier than 2024-03-10**.
+That is 29 days after the inventory's lower bound of 2024-02-10.
 
 - **Binding entries:** `FLOW_Z_ETF_NORM_20D` and `FLOW_Z_FLOW_ACCEL`, which
-  need 30 prior publication days after ETFNorm_20's first value.
+  need 20 prior publication days after ETFNorm_20's first value.
 - **Core regime:** complete from that date.
 - **Entry Conviction:** a data-dependent lower bound, because whether the
   selected support cluster holds a pre-warm-up pivot depends on prices, which
