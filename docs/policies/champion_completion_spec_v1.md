@@ -2,8 +2,8 @@
 
 Policy identifier: `CHAMPION_COMPLETION_SPEC_V1`
 
-Status: **FROZEN PRE-REGISTRATION DEFINITION (RBT-002A), awaiting the
-independent xHigh review.** A narrow, versioned strategy policy for **EPIC Y
+Status: **FROZEN PRE-REGISTRATION DEFINITION (RBT-002A), independent xHigh
+review PASS / DONE (2026-10-03).** A narrow, versioned strategy policy for **EPIC Y
 only**, made under
 [`RESEARCH_BACKTEST_POLICY_V7`](research_backtest_policy_v7.md) section 6A.
 
@@ -213,7 +213,7 @@ venue, how many decision instants have such a lookback spanning an omitted bar.
    guards are frozen in `positioning_zero_variance_guards`; the original basis
    contract is also retained as `e1_guard`.
 
-**Items for independent review:**
+**Reviewed items (rulings in the independent review report):**
 3. **The `REGIME_INVALIDATION_PREDICATE` band.** Section 6A.5 is not monotone
    for exits.
 4. **`CORRECTION_FROM_LOCAL_HIGH`** reads 'local high' as the trailing 52-week
@@ -231,13 +231,16 @@ venue, how many decision instants have such a lookback spanning an omitted bar.
    producer, which it shares with the trail; each structure offers one add
    instant.
 
-Items 1–2 are settled owner rulings; independent review must confirm V7 conformance before closure.
+Items 1–2 are settled owner rulings. Independent review confirmed V7
+conformance; items 3–9 are ruled SOUND, FIXED or recorded LIMITATION in the
+ticket review outcome and report.
 
 ## 7. Declared arithmetic (section 6A.7)
 
 The only arithmetic the composers add to owner calls is listed in the JSON
 `declared_arithmetic`:
-- history selection by observation-time window;
+- selection of prior PIT observations: the last 20 for z, or the declared
+  observation-time window for percentile;
 - an exact-equality test;
 - `TR / prior close`;
 - a sign flip;
@@ -301,7 +304,7 @@ Other components:
 
 | Component | Earliest complete |
 | --- | --- |
-| Trend | Bitstamp 2021-08-02; Coinbase and Bitfinex 2021-08-23 |
+| Trend | Bitstamp 2021-05-24; Coinbase 2021-06-14; Bitfinex 2021-06-07 |
 | Volatility | 2022-05-29 (liquidations) |
 | Positioning | 2020-10-02 |
 | Structure | 2021-02-01 (lower bound) |
@@ -327,3 +330,9 @@ to a rule, element, citation or warm-up fact changes the definition digest and
 needs a new spec version (`CHAMPION_COMPLETION_SPEC_V2`). That version must be
 recorded before the run it affects (policy V7 sections 6 and 11). The spec
 cannot be re-derived after any EPIC Y outcome exists.
+
+Independent review: [report](../../backtest_evidence/research_backtest_v1/rbt002a_review_report_v1.md),
+[availability and validation evidence](../../backtest_evidence/research_backtest_v1/rbt002a_review_evidence_v1.json).
+Four distinct review-fix commits and the separate owner-ruled V7 conformance
+commit are recorded in the ticket outcome. The final digest above is reviewed;
+no database or outcome was used.

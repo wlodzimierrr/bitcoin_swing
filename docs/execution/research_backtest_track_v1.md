@@ -2390,7 +2390,7 @@ test or changing a frozen owner.
 
 ## RBT-002A — `DEFINE_CHAMPION_COMPLETION_SPEC_V1`
 
-**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — CHAMPION_COMPLETION_SPEC_V1 frozen at d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd under policy V6 §6A; 26 inputs covered (22 defined, 2 omitted by ruling, 2 inert). Both closure-precondition owner rulings were made on 2026-10-03 (policy V7); ruling 2 requires a recorded spec update (guard contract for all three positioning owners, new digest) inside this ticket before closure.`
+**Status:** `DONE / INDEPENDENT xHIGH REVIEW PASS — CHAMPION_COMPLETION_SPEC_V1 9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f under V7; four distinct review fixes complete; owner-ruling conformance 700b924 applied; full repository suite has 0 failures (2026-10-03).`
 
 **Prior status provenance (superseded 2026-10-03):** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — CHAMPION_COMPLETION_SPEC_V1 frozen at d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd under policy V6 §6A; 26 inputs covered (22 defined, 2 omitted by ruling, 2 inert); two owner rulings are closure preconditions (see Implementation Notes).`
 
@@ -2493,12 +2493,16 @@ Acceptance criteria:
 - Part 1, `09d14dc`: the spec module, frozen definition, tests, policy document
   and these notes.
 
-**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW`. Definition digest
-`d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd`, bound to
-inventory `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a`.
-**Two owner rulings are closure preconditions** (see "Surfaced for the owner").
-Under AGENTS.md, RBT-002A is not DONE until both are recorded and the
-independent review passes.
+**Current status:** `DONE / INDEPENDENT xHIGH REVIEW PASS` (2026-10-03).
+Final reviewed digest `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f`, inventory `108ab25b...efe3a` unchanged.
+V7 conformance `700b924`; review fixes `352bba0`, `496a947`, `5b75882`,
+`42459e6`. The current contract uses the existing uniform 20/20 observation
+z rule, 16 NEW_PARAMETER elements, 14 roots to promote and all three guards.
+The corrected lower bound is 2024-03-10; the original 2024-03-24 and all 78
+original dates independently reproduced. Final focused checks: 146 passed.
+The original implementation snapshot below is retained as provenance; the
+current machine definition and review outcome govern the reviewed contract.
+Both earlier owner preconditions are answered and applied under V7.
 
 **Part 0 (R2-RR-FS1).**
 - **Change.** New `btc_predictor/research_backtest/database.py`, function
@@ -2827,9 +2831,92 @@ Input sources to classify: `replay_market_bars_at`,
 - data-dependent Structure completeness for pre-warm-up pivots;
 - the same-class E1 risk in funding and OI growth.
 
+
+### RBT-002A review outcome
+
+**Date:** 2026-10-03. **Review:** independent xHigh under `prompts/review_ticket.md`.
+**Reviewed implementation:** Part 0 `75fc7e6`, Part 1 `09d14dc`, docs `ffce350`,
+on owner-policy context `84a0de1`. V6/V7 owner decisions were not reviewed.
+**Result: PASS / DONE.** Four genuine defects fixed,
+with separate review-fix commits; no known correctness-critical ambiguity remains.
+
+| ID / severity / disposition | Location and reproducer / independent regression | Commit |
+| --- | --- | --- |
+| RBT002A-R1 / P1 FIXED | `completion_spec.UNIFORM_ZSCORE.application_contract`. With a 64-bit accumulator, 730 equal 1/3 values produce -1 (annualized basis +1) instead of refusal. Explicit original-value equality now precedes float conversion/helper call. Full current/original windows, 0.1/1/3/annualized constants, current equal/different, both widths, no-call witness, exact tiny difference, gap/time adapter and nonconstant parity in `test_research_backtest_completion_spec_review.py`. | `352bba0` |
+| RBT002A-R2 / P2 FIXED | `test_research_backtest_database.research_only_imports`. Nested relative `import_module('..research.btc019_empirical', __package__)` and aliased imports returned no offenders. Resolve relative strings and importer aliases; four independent mutations now report guarded identities. No actual guarded import; original BTC-019 test byte-unchanged. | `496a947` |
+| RBT002A-R3 / P2 FIXED | `database.database_url_from_environment`. Surrogate-bearing synthetic credentials caused UnicodeEncodeError retaining the full value in `.object`. Precheck before encoding; raised error holds variable names only, no context/cause. User/password independent regressions, unchanged ordinary quoted URL. | `5b75882` |
+| RBT002A-R4 / P1 FIXED | `completion_spec.UNIFORM_ZSCORE` source precedence. 180/30 is weekly-infeasible (25 max); the feasible existing Flow/CVD 20/20 convention was nevertheless rejected for cadence/recent-change/availability preferences. V7 §6A.2 does not permit that bypass. Adopt 20 prior defined native observations/minimum 20 uniformly, retain population/prior/PIT/equality/no-fill rules. Independent signature, owner-parity/cadence and 26-entry calendar regressions. | `42459e6` |
+
+**Part 0:** PASS after R2/R3; exactly five POSTGRES names, same quoted URL,
+name-only errors, no value-bearing exception chain/log/artifact. Seven EPIC Y
+modules pass the mutation-tested AST scan. Original BTC-019 test SHA-256
+`6e4127b4dd7365cd45bb86cd781e114f653b6c69bc5a54b24ed99ebc260d2d96` is unchanged.
+
+**A–L acceptance:** A coverage, B precedence after R4, C uniformity/exact
+refusal after R1/R4, D owner predicates/thresholds, E same-quantity Bitstamp
+level volume, F optional/inert rulings, G all positioning guard contracts,
+H 14 roots/complete arithmetic, I independent original+corrected date matrices,
+J synthetic/PIT/no-DB pre-registration, K rulings below and L fresh-process
+seed/cwd determinism PASS. Original 26 entries/45 occurrences and excluded
+LIQUIDATION_PERCENTILE unchanged. Sixteen genuine NEW_PARAMETER elements
+remain; all have scope-specific precedence audits and rationales.
+
+**K rulings (human spec §6 numbering):**
+
+| Item | Ruling |
+| --- | --- |
+| 3 Regime invalidation | LIMITATION: existing band/threshold mapping is sound; the bear-entry lifetime exemption and non-monotone exit/trade-count effect remain explicit. |
+| 4 Local high | LIMITATION: existing 52-week high, weekly resolution/row-gap exposure; no new detector. |
+| 5 730-day z window | DEFECT / FIXED R4: the existing feasible 20/20 owner convention has priority. It is not an owner question. |
+| 6 Seven-day return | LIMITATION: explicit new horizon, no higher-tier source fixes this return input; CAPITULATION/Setup C prevents a global trades-less theorem. |
+| 7 Range fraction | SOUND with recorded non-monotone flag effects: owner TR/prior close is an explicit new scale-free quantity, with no applicable higher-tier RANGE_PERCENTILE quantity. |
+| 8 Level families | LIMITATION / RBT-004 obligation: VP/AVWAP-only support has no swing member; composition is fixed before any run/freeze. |
+| 9 New structure | SOUND: trail/higher-low owner outputs, own structure timestamp, strict last ENTER/ADD newness; evaluate before STOP_MOVE; one opportunity per consumed structure. |
+
+Items 1–2 stay owner-ruled under V7, never reopened. Measured-move omission
+provably removes only tier-4 rescue eligibility at the same decision/context;
+it is not claimed to prove a global path-dependent replay trade count.
+LEVEL_VOLUME_PERCENTILE compares the same Q_L(d)=sum([d-L,d)) quantity,
+member-specific fixed L, prior daily observations, current excluded; overlapping
+comparators are declared, no new detector/binning or zero-fill.
+
+**Step 4:** owner-ruled conformance commit **`700b924`**, separate from findings.
+V7 rebind; three own-PIT-history exact equality contracts, five tests per owner,
+no health/z on refusal, structural unevaluability; funding/OI guarded limitation;
+five extra named history helpers (14 roots total); Momentum Persistence ACCEPTED
+unchanged with mandatory RBT-006 freeze / RBT-007 evaluation-only base-cost
+per-venue `SENSITIVITY_ONLY_NOT_SELECTION` ablation. Step-4 digest
+`123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe`.
+
+**Final spec digest:**
+`9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f`.
+Inventory unchanged `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a`.
+Original dates independently match the exact d9f9b334 artifact: lower bound
+2024-03-24 (+43 days). Corrected dates independently match the final artifact:
+2024-03-10 (+29), still DATA_DEPENDENT_LOWER_BOUND through Structure.
+
+**Validation:** final focused **146 passed**; RBT-001/RBT-002/closure **630 passed,
+1 existing E1 XFAIL**; BTC-180..185/BTC-220..224/owners/parity **1,068 passed**;
+V5/corpus **492 passed, 2 existing skips**; final PAD5 preserved-authority subset
+**5 passed**; compileall/diff check PASS. **Full: 7,305 passed, 3 skipped, 1 xfailed, 0 failed in 3023.38s.**
+Spec deterministic under 0/1/8675309, fresh process/alternate cwd; all three
+inventory artifacts byte-identical. V5 independently remains
+`95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`.
+Earlier full attempts interrupted for new corrections are not complete baselines.
+
+Complete report, exact digest chain, A–L evidence, commands and both 78-record
+calendar matrices: [review report](../../backtest_evidence/research_backtest_v1/rbt002a_review_report_v1.md),
+[JSON evidence](../../backtest_evidence/research_backtest_v1/rbt002a_review_evidence_v1.json),
+[offline reproducer](../../backtest_evidence/research_backtest_v1/rbt002a_review_reproducer_v1.py).
+No database, environment file or real-data value/outcome; holdout NOT COLLECTED;
+BTC-019 untouched/sealed sample unopened; no owner/config/bound-module/data/
+research_artifacts edit. EPIC X's next remains POSTP1-001V2R1.
+Recommended next dependency-satisfied ticket: **RBT-004 (READY)**, with **RBT-001A also READY**.
+
+
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7. Policy V4 data rules ADOPTED and governed by V6.`
+**Status:** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7. Policy V4 data rules ADOPTED and governed by V7.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`),
 RBT-002 independent R2 re-review PASS (SATISFIED under V5 §5A.7)
 **Implementation effort:** high
@@ -2875,8 +2962,8 @@ Acceptance criteria:
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
-**Status:** `BLOCKED — awaiting the RBT-002A review PASS (completion spec)`
-**Dependencies:** RBT-002A independent review PASS. Without the spec, every
+**Status:** `READY — RBT-002A independent xHigh review PASS under V7; completion spec 9819f84a...5013f (2026-10-03)`
+**Dependencies:** RBT-002A independent review PASS (SATISFIED, 2026-10-03). Without the spec, every
 composed Entry Conviction is structurally incomplete.
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -2906,14 +2993,17 @@ fixes what this composer must do for the 26 owner-less inputs:
   `features.momentum.price_momentum_from_daily_bars`;
   `quant.transforms.normal_cdf_score`; `quant.comparisons.decision_greater_equal`;
   `data.ohlcv.next_bar_timestamp`; `features.positioning._futures_basis_averages_by_time`
-  and `_futures_basis_history`.
+  and `_futures_basis_history`; `features.positioning._funding_averages_by_time`,
+  `_funding_average_history`, `_aggregate_open_interest_by_time`,
+  `_open_interest_growth_by_time` and `_oi_growth_history` (14 total).
 - **Declared arithmetic.** It is the complete list of arithmetic the spec allows
   beyond owner calls; "no new formulas" admits exactly that list.
 - **E1 guard.** `FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1` (policy V6 §6A.9)
   specifies the futures-basis zero-variance guard, its five tests and its
   prohibitions. Policy V7 §6A.9 extends the guard to `funding_health` and
   `open_interest_growth_health`; the spec's contract is updated within
-  RBT-002A before it closes.
+  RBT-002A, V7 conformance commit `700b924`; all three owner-specific contracts
+  are frozen in `positioning_zero_variance_guards`, each with five required tests.
 
 Acceptance criteria:
 
@@ -3111,10 +3201,10 @@ version or any version derived from inspecting its result.
 | --- | --- | --- |
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
-| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — spec `d9f9b334...a80fd` under V6 §6A (26 inputs; level volume per §6A.8; E1 guard contract per §6A.9); Part 0 `75fc7e6` fixes R2-RR-FS1; both owner rulings made 2026-10-03 (policy V7: Momentum Persistence accepted with a required ablation; zero-variance guard extended to funding and OI growth, needing a recorded spec update with a new digest before closure); next: independent xHigh review, which applies that spec update |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V6 |
+| RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
-| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | BLOCKED — RBT-002A review PASS (completion spec) |
+| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | READY — RBT-002A independent xHigh review PASS; V7 completion spec `9819f84a...5013f` |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
@@ -3138,8 +3228,9 @@ Implementation Notes. The owner adopted the four V4 data rules and chose the
 completion spec on 2026-10-01. The independent review above failed the census,
 and so did the re-review of the R1 correction (`906c719`). Correction R2
 (`812b968`) passed independent re-review under the policy V5 bounded standard.
-RBT-002A is now implemented under policy V6 (spec `d9f9b334...a80fd`) and awaits its independent
-xHigh review; RBT-001A is also READY; the four adopted data choices stay fixed.
+RBT-002A is DONE / independent xHigh review PASS under policy V7 (final spec
+`9819f84a...5013f`). RBT-004 and RBT-001A are READY; the four adopted data
+choices stay fixed.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
 positioning score needs futures basis and BTC market cap. Policy V2 gives
@@ -3147,7 +3238,7 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is the **independent xHigh review of RBT-002A**
-(implemented 2026-10-03 under policy V6), with **RBT-001A** also READY. RBT-004
-remains blocked on the RBT-002A review PASS.
+dependency-satisfied EPIC Y work is **RBT-004**, with **RBT-001A** also READY.
+RBT-002A closed after independent xHigh review PASS and the separate V7
+owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

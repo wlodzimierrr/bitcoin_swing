@@ -1,0 +1,293 @@
+{
+  "availability_matrix": {
+    "BITFINEX": {
+      "ADD_MOMENTUM_SCORE": "2020-02-20T00:00:00+00:00",
+      "CAPITULATION_EVENT": null,
+      "CORRECTION_FROM_LOCAL_HIGH": "2021-01-18T00:00:00+00:00",
+      "DATA_RISK_EXIT_PREDICATE": null,
+      "DISTRIBUTION_STATE": null,
+      "DOWNSIDE_RETURN": "2020-01-09T00:00:00+00:00",
+      "FLOW_SUPPORTIVE_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_20D": "2024-03-10T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_5D": "2024-02-17T00:00:00+00:00",
+      "FLOW_Z_FLOW_ACCEL": "2024-03-10T00:00:00+00:00",
+      "LEVEL_REACTION_MAGNITUDE": "2020-03-02T00:00:00+00:00",
+      "LEVEL_VOLUME_PERCENTILE": "2021-02-01T00:00:00+00:00",
+      "MEASURED_MOVE_REFERENCE": null,
+      "MOMENTUM_PERSISTENCE_SCORE": "2020-04-16T00:00:00+00:00",
+      "NEW_STRUCTURAL_CONFIRMATION": "2020-03-02T00:00:00+00:00",
+      "NEW_STRUCTURE_SCORE": "2021-02-01T00:00:00+00:00",
+      "RANGE_PERCENTILE": "2021-01-06T00:00:00+00:00",
+      "REGIME_INVALIDATION_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "REGIME_SUPPORTIVE_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "SEVERE_CROWDING_STATE": "2020-10-02T00:00:00+00:00",
+      "SHORT_TRIGGER": null,
+      "TREND_Z_20W": "2020-10-26T00:00:00+00:00",
+      "TREND_Z_52H": "2021-06-07T00:00:00+00:00",
+      "TREND_Z_M12": "2020-04-16T00:00:00+00:00",
+      "TREND_Z_M4": "2020-02-20T00:00:00+00:00",
+      "UPSIDE_RETURN": "2020-01-09T00:00:00+00:00"
+    },
+    "BITSTAMP": {
+      "ADD_MOMENTUM_SCORE": "2020-02-19T00:00:00+00:00",
+      "CAPITULATION_EVENT": null,
+      "CORRECTION_FROM_LOCAL_HIGH": "2021-01-04T00:00:00+00:00",
+      "DATA_RISK_EXIT_PREDICATE": null,
+      "DISTRIBUTION_STATE": null,
+      "DOWNSIDE_RETURN": "2020-01-09T00:00:00+00:00",
+      "FLOW_SUPPORTIVE_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_20D": "2024-03-10T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_5D": "2024-02-17T00:00:00+00:00",
+      "FLOW_Z_FLOW_ACCEL": "2024-03-10T00:00:00+00:00",
+      "LEVEL_REACTION_MAGNITUDE": "2020-02-24T00:00:00+00:00",
+      "LEVEL_VOLUME_PERCENTILE": "2021-02-01T00:00:00+00:00",
+      "MEASURED_MOVE_REFERENCE": null,
+      "MOMENTUM_PERSISTENCE_SCORE": "2020-04-15T00:00:00+00:00",
+      "NEW_STRUCTURAL_CONFIRMATION": "2020-02-24T00:00:00+00:00",
+      "NEW_STRUCTURE_SCORE": "2021-02-01T00:00:00+00:00",
+      "RANGE_PERCENTILE": "2021-01-02T00:00:00+00:00",
+      "REGIME_INVALIDATION_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "REGIME_SUPPORTIVE_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "SEVERE_CROWDING_STATE": "2020-10-02T00:00:00+00:00",
+      "SHORT_TRIGGER": null,
+      "TREND_Z_20W": "2020-10-12T00:00:00+00:00",
+      "TREND_Z_52H": "2021-05-24T00:00:00+00:00",
+      "TREND_Z_M12": "2020-04-15T00:00:00+00:00",
+      "TREND_Z_M4": "2020-02-19T00:00:00+00:00",
+      "UPSIDE_RETURN": "2020-01-09T00:00:00+00:00"
+    },
+    "COINBASE": {
+      "ADD_MOMENTUM_SCORE": "2020-02-20T00:00:00+00:00",
+      "CAPITULATION_EVENT": null,
+      "CORRECTION_FROM_LOCAL_HIGH": "2021-01-25T00:00:00+00:00",
+      "DATA_RISK_EXIT_PREDICATE": null,
+      "DISTRIBUTION_STATE": null,
+      "DOWNSIDE_RETURN": "2020-01-09T00:00:00+00:00",
+      "FLOW_SUPPORTIVE_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_20D": "2024-03-10T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_5D": "2024-02-17T00:00:00+00:00",
+      "FLOW_Z_FLOW_ACCEL": "2024-03-10T00:00:00+00:00",
+      "LEVEL_REACTION_MAGNITUDE": "2020-03-02T00:00:00+00:00",
+      "LEVEL_VOLUME_PERCENTILE": "2021-02-01T00:00:00+00:00",
+      "MEASURED_MOVE_REFERENCE": null,
+      "MOMENTUM_PERSISTENCE_SCORE": "2020-04-16T00:00:00+00:00",
+      "NEW_STRUCTURAL_CONFIRMATION": "2020-03-02T00:00:00+00:00",
+      "NEW_STRUCTURE_SCORE": "2021-02-01T00:00:00+00:00",
+      "RANGE_PERCENTILE": "2021-01-08T00:00:00+00:00",
+      "REGIME_INVALIDATION_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "REGIME_SUPPORTIVE_PREDICATE": "2024-03-10T00:00:00+00:00",
+      "SEVERE_CROWDING_STATE": "2020-10-02T00:00:00+00:00",
+      "SHORT_TRIGGER": null,
+      "TREND_Z_20W": "2020-11-02T00:00:00+00:00",
+      "TREND_Z_52H": "2021-06-14T00:00:00+00:00",
+      "TREND_Z_M12": "2020-04-16T00:00:00+00:00",
+      "TREND_Z_M4": "2020-02-20T00:00:00+00:00",
+      "UPSIDE_RETURN": "2020-01-09T00:00:00+00:00"
+    }
+  },
+  "btc019_completion_test_byte_unchanged": true,
+  "btc019_sealed_sample": "UNOPENED",
+  "coverage_mutations": {
+    "duplicate_row": "OCCURRENCES_DIFFER",
+    "inventory_digest_change": "INVENTORY_DIGEST_MISMATCH (independent persisted-digest mutation in test_research_backtest_completion_spec.py)",
+    "stale_id": "OWNERLESS_INPUT_UNCOVERED",
+    "uncovered_row": "OWNERLESS_INPUT_UNCOVERED"
+  },
+  "credential_exception_regression": {
+    "exception_chain": null,
+    "surrogate_precheck": true,
+    "values_in_raised_exception": false
+  },
+  "data_used": "bound inventory availability facts, authorized closure dates, owner source, synthetic values only",
+  "database_connected": false,
+  "epic_x_next_ticket": "POSTP1-001V2R1",
+  "holdout": "NOT COLLECTED",
+  "inventory_sha256": "108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a",
+  "next_ticket": "RBT-004 (READY); RBT-001A also READY",
+  "original_730_day_30_observation_availability_matrix": {
+    "BITFINEX": {
+      "ADD_MOMENTUM_SCORE": "2020-03-01T00:00:00+00:00",
+      "CAPITULATION_EVENT": null,
+      "CORRECTION_FROM_LOCAL_HIGH": "2021-01-18T00:00:00+00:00",
+      "DATA_RISK_EXIT_PREDICATE": null,
+      "DISTRIBUTION_STATE": null,
+      "DOWNSIDE_RETURN": "2020-01-09T00:00:00+00:00",
+      "FLOW_SUPPORTIVE_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_20D": "2024-03-24T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_5D": "2024-03-03T00:00:00+00:00",
+      "FLOW_Z_FLOW_ACCEL": "2024-03-24T00:00:00+00:00",
+      "LEVEL_REACTION_MAGNITUDE": "2020-03-02T00:00:00+00:00",
+      "LEVEL_VOLUME_PERCENTILE": "2021-02-01T00:00:00+00:00",
+      "MEASURED_MOVE_REFERENCE": null,
+      "MOMENTUM_PERSISTENCE_SCORE": "2020-04-26T00:00:00+00:00",
+      "NEW_STRUCTURAL_CONFIRMATION": "2020-03-02T00:00:00+00:00",
+      "NEW_STRUCTURE_SCORE": "2021-02-01T00:00:00+00:00",
+      "RANGE_PERCENTILE": "2021-01-06T00:00:00+00:00",
+      "REGIME_INVALIDATION_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "REGIME_SUPPORTIVE_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "SEVERE_CROWDING_STATE": "2020-10-02T00:00:00+00:00",
+      "SHORT_TRIGGER": null,
+      "TREND_Z_20W": "2021-01-04T00:00:00+00:00",
+      "TREND_Z_52H": "2021-08-23T00:00:00+00:00",
+      "TREND_Z_M12": "2020-04-26T00:00:00+00:00",
+      "TREND_Z_M4": "2020-03-01T00:00:00+00:00",
+      "UPSIDE_RETURN": "2020-01-09T00:00:00+00:00"
+    },
+    "BITSTAMP": {
+      "ADD_MOMENTUM_SCORE": "2020-02-29T00:00:00+00:00",
+      "CAPITULATION_EVENT": null,
+      "CORRECTION_FROM_LOCAL_HIGH": "2021-01-04T00:00:00+00:00",
+      "DATA_RISK_EXIT_PREDICATE": null,
+      "DISTRIBUTION_STATE": null,
+      "DOWNSIDE_RETURN": "2020-01-09T00:00:00+00:00",
+      "FLOW_SUPPORTIVE_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_20D": "2024-03-24T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_5D": "2024-03-03T00:00:00+00:00",
+      "FLOW_Z_FLOW_ACCEL": "2024-03-24T00:00:00+00:00",
+      "LEVEL_REACTION_MAGNITUDE": "2020-02-24T00:00:00+00:00",
+      "LEVEL_VOLUME_PERCENTILE": "2021-02-01T00:00:00+00:00",
+      "MEASURED_MOVE_REFERENCE": null,
+      "MOMENTUM_PERSISTENCE_SCORE": "2020-04-25T00:00:00+00:00",
+      "NEW_STRUCTURAL_CONFIRMATION": "2020-02-24T00:00:00+00:00",
+      "NEW_STRUCTURE_SCORE": "2021-02-01T00:00:00+00:00",
+      "RANGE_PERCENTILE": "2021-01-02T00:00:00+00:00",
+      "REGIME_INVALIDATION_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "REGIME_SUPPORTIVE_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "SEVERE_CROWDING_STATE": "2020-10-02T00:00:00+00:00",
+      "SHORT_TRIGGER": null,
+      "TREND_Z_20W": "2020-12-21T00:00:00+00:00",
+      "TREND_Z_52H": "2021-08-02T00:00:00+00:00",
+      "TREND_Z_M12": "2020-04-25T00:00:00+00:00",
+      "TREND_Z_M4": "2020-02-29T00:00:00+00:00",
+      "UPSIDE_RETURN": "2020-01-09T00:00:00+00:00"
+    },
+    "COINBASE": {
+      "ADD_MOMENTUM_SCORE": "2020-03-01T00:00:00+00:00",
+      "CAPITULATION_EVENT": null,
+      "CORRECTION_FROM_LOCAL_HIGH": "2021-01-25T00:00:00+00:00",
+      "DATA_RISK_EXIT_PREDICATE": null,
+      "DISTRIBUTION_STATE": null,
+      "DOWNSIDE_RETURN": "2020-01-09T00:00:00+00:00",
+      "FLOW_SUPPORTIVE_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_20D": "2024-03-24T00:00:00+00:00",
+      "FLOW_Z_ETF_NORM_5D": "2024-03-03T00:00:00+00:00",
+      "FLOW_Z_FLOW_ACCEL": "2024-03-24T00:00:00+00:00",
+      "LEVEL_REACTION_MAGNITUDE": "2020-03-02T00:00:00+00:00",
+      "LEVEL_VOLUME_PERCENTILE": "2021-02-01T00:00:00+00:00",
+      "MEASURED_MOVE_REFERENCE": null,
+      "MOMENTUM_PERSISTENCE_SCORE": "2020-04-26T00:00:00+00:00",
+      "NEW_STRUCTURAL_CONFIRMATION": "2020-03-02T00:00:00+00:00",
+      "NEW_STRUCTURE_SCORE": "2021-02-01T00:00:00+00:00",
+      "RANGE_PERCENTILE": "2021-01-08T00:00:00+00:00",
+      "REGIME_INVALIDATION_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "REGIME_SUPPORTIVE_PREDICATE": "2024-03-24T00:00:00+00:00",
+      "SEVERE_CROWDING_STATE": "2020-10-02T00:00:00+00:00",
+      "SHORT_TRIGGER": null,
+      "TREND_Z_20W": "2021-01-11T00:00:00+00:00",
+      "TREND_Z_52H": "2021-08-23T00:00:00+00:00",
+      "TREND_Z_M12": "2020-04-26T00:00:00+00:00",
+      "TREND_Z_M4": "2020-03-01T00:00:00+00:00",
+      "UPSIDE_RETURN": "2020-01-09T00:00:00+00:00"
+    }
+  },
+  "original_date_matrix_verified_against_exact_original_artifact": true,
+  "original_reviewed_spec_sha256": "d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd",
+  "real_data_value_computed": false,
+  "review_fix_commits": {
+    "RBT002A-R1": "352bba0",
+    "RBT002A-R2": "496a947",
+    "RBT002A-R3": "5b75882",
+    "RBT002A-R4": "42459e6"
+  },
+  "reviewed_implementation_commits": {
+    "documentation": "ffce350",
+    "part_0": "75fc7e6",
+    "part_1": "09d14dc",
+    "policy_context": "84a0de1"
+  },
+  "source_precedence_counterexample": {
+    "disposition": "FIXED: existing Flow/CVD 20-prior-observation/minimum-20 convention adopted uniformly in 42459e6, without new values",
+    "existing_owner": "btc_predictor.features.flow.spot_perp_cvd_spread",
+    "existing_rule": "20 prior native observations, minimum 20, population, current excluded",
+    "feasible_on_daily_weekly_and_publication_cadences": true,
+    "finding": "Rejecting 180/30 as infeasible is sound. It does not authorize bypassing the feasible existing 20/20 z convention for NEW_PARAMETER 730/30 under V7 section 6A.2.",
+    "positioning_180_day_weekly_capacity": 25,
+    "synthetic_owner_result_complete": true
+  },
+  "spec_determinism": {
+    "alternate_cwd": "/tmp",
+    "byte_identical": true,
+    "fresh_process": true,
+    "seeds": [
+      0,
+      1,
+      8675309
+    ],
+    "sha256": "9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f"
+  },
+  "spec_digest_chain": {
+    "RBT002A-R1": "6af8bdc94ee963ad76efdb5576c800972da8d4792fe1ff9b3b327bfbed7efc19",
+    "RBT002A-R2": "123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe",
+    "RBT002A-R3": "123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe",
+    "RBT002A-R4": "9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f",
+    "V7_conformance": "123590d1d5bf7f33f3748358b10bbf25e854782e065e7c2cd9c9c2df423a78fe",
+    "original": "d9f9b334abfba52b5f5af6a2eefe60616cec170568dbd7c5b310403cef7a80fd"
+  },
+  "spec_sha256": "9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f",
+  "ticket_status": "DONE",
+  "v5_protocol_definition_sha256": "95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89",
+  "v7_conformance_commit": "700b924",
+  "validation": {
+    "PAD5_preserved_authority": {
+      "deselected": 112,
+      "failed": 0,
+      "final_repeat_seconds": 48.09,
+      "passed": 5
+    },
+    "RBT001_RBT002_closures": {
+      "failed": 0,
+      "final_repeat_seconds": 68.69,
+      "passed": 630,
+      "xfailed": 1
+    },
+    "V5_corpus": {
+      "failed": 0,
+      "passed": 492,
+      "skipped": 2
+    },
+    "database_review_fix": {
+      "failed": 0,
+      "passed": 113
+    },
+    "focused_spec_database": {
+      "failed": 0,
+      "passed": 146
+    },
+    "full_suite": {
+      "command": ".venv312/bin/python -m pytest -q -W error::RuntimeWarning --basetemp=/home/wlodzimierrr/rbt002a-review-scratch/closure-full",
+      "duration_seconds": 3023.38,
+      "failed": 0,
+      "passed": 7305,
+      "result": "PASS",
+      "skipped": 3,
+      "xfailed": 1
+    },
+    "owners_and_engine": {
+      "failed": 0,
+      "passed": 1068
+    }
+  },
+  "verdict": "PASS",
+  "volume_pivots": {
+    "1mo": [
+      "2021-02-01T00:00:00+00:00",
+      "2021-04-01T00:00:00+00:00",
+      366
+    ],
+    "1w": [
+      "2021-01-11T00:00:00+00:00",
+      "2021-02-01T00:00:00+00:00",
+      369
+    ]
+  }
+}
