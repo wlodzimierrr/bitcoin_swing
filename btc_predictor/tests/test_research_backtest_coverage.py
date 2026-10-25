@@ -327,11 +327,13 @@ def test_the_real_surface_reports_these_owner_less_inputs() -> None:
 
 def test_no_production_code_produces_the_owner_less_entry_inputs() -> None:
     # The trend and flow owners take pre-normalised z-scores; nothing in
-    # production constructs those inputs or computes the level/orderliness ones.
+    # production constructs those inputs or computes the level/orderliness ones,
+    # except the RBT-004 entry composer, which implements CHAMPION_COMPLETION_SPEC_V1.
+    composer = ROOT / "btc_predictor" / "research_backtest" / "entry_composer.py"
     production = [
         path
         for path in (ROOT / "btc_predictor").rglob("*.py")
-        if "tests" not in path.parts and path.name != "coverage.py"
+        if "tests" not in path.parts and path.name != "coverage.py" and path != composer
     ]
     # The level-strength owner forwards its own caller's value; no caller supplies one.
     patterns = {
@@ -340,9 +342,11 @@ def test_no_production_code_produces_the_owner_less_entry_inputs() -> None:
         "OrderlinessScoreInput(": set(),
         "reaction_magnitude_fraction=": {"strength.py"},
     }
+    composer_source = composer.read_text(encoding="utf-8")
     for pattern, owners in patterns.items():
         offenders = [str(path) for path in production if path.name not in owners and pattern in path.read_text(encoding="utf-8")]
         assert offenders == [], pattern
+        assert pattern in composer_source, pattern
 
 
 def test_the_trend_owner_has_no_none_handling_for_its_z_scores() -> None:
