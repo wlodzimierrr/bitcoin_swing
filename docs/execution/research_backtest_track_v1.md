@@ -2962,7 +2962,7 @@ Acceptance criteria:
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
-**Status:** `READY — RBT-002A independent xHigh review PASS under V7; completion spec 9819f84a...5013f (2026-10-03)`
+**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — Part A 8ce3e74, Part B 910dec7 + e158de9 (2026-10-25); completion spec rebound 787ddfa2...ca2620f0, inventory 250f9470...a061cb17`
 **Dependencies:** RBT-002A independent review PASS (SATISFIED, 2026-10-03). Without the spec, every
 composed Entry Conviction is structurally incomplete.
 **Implementation effort:** xHigh
@@ -3057,9 +3057,327 @@ Acceptance criteria:
   `OI_GROWTH_ZERO_VARIANCE`). Each owner gets the five required tests. Every
   history helper the composer calls is promoted to a census root.
 
+### Implementation Notes
+
+**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW` (2026-10-25). The
+required independent xHigh ticket review follows separately; this block is the
+implementer's record, not a closure.
+
+**Commits:**
+- Part A, `8ce3e74` (2026-10-03): census roots, classified input sources,
+  re-measured coverage, offline inventory regeneration and spec rebind.
+- Part B, `910dec7`: `btc_predictor/research_backtest/entry_composer.py` and
+  `composer_boundary.py` (new), the fixtures `rbt004_composer_fixtures.py`,
+  eight `test_research_backtest_entry_composer*` modules, and one RBT-002 test
+  narrowed to name the composer (below).
+- Part B follow-up, `e158de9`: the Setup B reclaim freshness test on a natural
+  reclaim (test only; no production change).
+- Docs, this documentation commit: this block, the tasks table and `CURRENT_STATE.md`.
+
+**Digests (RBT-002 E3 rebind):**
+
+| Artifact | Before | After |
+| --- | --- | --- |
+| Inventory `rbt002_input_coverage_inventory_v1.json` | `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` | `250f9470b0586f091744c65bcb3d7e48c25ec4fe01ec7bcc79a9fda1a061cb17` |
+| Spec `champion_completion_spec_v1.json` | `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f` | `787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0` |
+
+- **Rebind proof** (`rbt004_spec_rebind_evidence_v1.json`): 2,327 leaves with
+  identical paths. Exactly two leaves changed, `bound_inventory.sha256` and the
+  inventory citation text, each only by the inventory digest. Every entry,
+  rule, guard, cause and warm-up fact is byte-identical; every other top-level
+  section keeps its hash. The coverage test still covers exactly 26 entries.
+- **Inventory regeneration**: `coverage rebuild` from its own snapshot, sockets
+  refused. Only the input-surface census, rows and summary changed: 46 root
+  rows added, 27 internal rows removed, 36 provenance-only changes. No new
+  external input; the owner-less set is identical.
+- Both artifacts rebuild byte-identical under `PYTHONHASHSEED` 0, 1 and 8675309,
+  from an alternate working directory, in fresh processes with network
+  connections refused (re-checked 2026-10-25).
+
+**Census roots (Part A).** 74 → 88 `DECISION_PATH_ROOTS`: the 14 spec section 8
+helpers (`features.rolling.rolling_zscore`, `rolling_percentile`,
+`true_ranges`; `features.momentum.price_momentum_from_daily_bars`;
+`data.ohlcv.next_bar_timestamp`; the seven positioning history helpers;
+`quant.transforms.normal_cdf_score`; `quant.comparisons.decision_greater_equal`).
+Every new parameter maps to a spec-declared value (new kind
+`COMPLETION_SPEC_VALUE`: `window=len(H)`, minimum 20, `sample=False`; percentile
+`window=len(H)`, minimum 365; `lookback_periods=7`; the Flow Supportive 60), a
+fixed owner default, or an input the inventory already enumerates. The three
+`CLASSIFIED_INPUT_SOURCE` helpers (`replay_market_bars_at`,
+`build_shared_replay_snapshot`, `load_closures`) stay non-roots with classified,
+drift-checked parameters. The registry has 888 callables, 230 nested and 159
+types; coverage is re-measured for 88 roots
+(`rbt004_census_coverage_evidence_v1.json`). RBT-004 calls 12 of the 14 directly;
+`normal_cdf_score` and `decision_greater_equal` serve RBT-005's Hold/ADD inputs.
+
+**Owner rulings (2026-10-03, asked under the ticket's STOP rule; the
+recommended option each time).** No Rulebook, policy or spec text fixed these
+composition points:
+
+1. **Entry zone.** The `ARM_ENTRY` zone is the point `[P_t, P_t]`. `P_t` is the
+   close of the hourly bar that closes at the decision instant, and the owner's
+   initial stop has `entry_price == P_t`. The next bar fills only if it trades
+   through `P_t`; otherwise the entry is `MISSED`.
+2. **Setup C.** CAPITULATION reaches Setup C through the V4 mapping (`flagged`
+   when the only missing input is the DISCRETIONARY `systemic_shock`; `None` if
+   any other input is missing), with a 14-day (`max_confirmation_lag_days`)
+   episode memory. `capitulation_detected_at` is the first instant of the
+   consecutive flagged run.
+3. **Data quality.** The last completed UTC day: the venue's hourly bars over
+   `[t - 24h, t - 1h]`; funding, OI and perp-volume rows observed in
+   `(t - 24h, t]`; the BTC-031 owner default configurations.
+4. **No stop.** When no long archetype yields a complete initial stop, a data
+   cause (`STRUCTURAL_INVALIDATION_INPUT_MISSING`,
+   `VOLATILITY_BUFFER_INPUT_MISSING`, `INITIAL_STOP_INPUT_MISSING`) gives
+   `STRUCTURALLY_UNEVALUABLE`; otherwise the cause is geometry, giving
+   `NO_TRADE / NO_VALID_STRUCTURAL_STOP` (when Structure is the only incomplete
+   component).
+5. **Setup clash.** Setup C with A or B gives `NO_TRADE /
+   SETUP_GEOMETRY_CONFLICT`. A and B share one geometry and trade once,
+   labelled A.
+6. **Triggers fire fresh at the decision instant.** Setup B: the latest reclaim
+   level detected by `t`, true only when its trigger confirmed with
+   `detected_at == t`, `None` while pending, otherwise false. Setup C: the latest
+   weekly swing low's higher-low trigger, with `confirmation_at = R.detected_at`
+   and `detected_at == t`; `HIGHER_LOW_SOURCE_BAR_MISSING` gives `None`.
+7. **Setup B histories use native cadence**: funding and OI health at the prior
+   daily instants, recomputed by the owners (with the guard); FlowAccel at the
+   prior US publication days.
+8. **Accepted composition defaults**, each a design decision for the review:
+   level families are weekly and monthly swings plus breakout/reclaim levels
+   (Rulebook 9.4's Phase-1 list; no volume-profile or AVWAP members);
+   `cluster_atr=None`; R/R references are resistance clusters, weekly swing
+   highs and breakout/reclaim levels as range highs, with no measured move; the
+   no-chase zone is the invalidation-selected support cluster; veto booleans are
+   `X if complete else None`; the V4 STRESS mapping covers the veto and Setups A
+   and D; decisions run at 00:00 UTC; the liquidation percentile is a typed
+   point-in-time input; EC below 80 is `NO_TRADE`; breakout-retest is not called
+   (no setup consumer); Setup D is called with inert inputs and never trades.
+
+**Composition order** (`_DecisionRun.run`; the ticket's steps 1–6 in the order
+the owners' inputs force):
+
+0. *Point in time.* Only replay inputs with modelled availability `<= t` are
+   read: hourly bars by `ingested_at` (the RBT-001 modelled availability),
+   shared rows by `available_at`, the owners' own two-field predicate for the
+   guards. `replay_market_bars_at` derives the 1d/1w/1mo bars. `P_t` is the
+   close of the hourly bar closing at `t`; without it the instant is
+   `STRUCTURALLY_UNEVALUABLE / DECISION_INSTANT_PRICE_BAR_MISSING`.
+1. *Components.*
+   - Trend: momentum, MA-distance, 52-week-high and weekly-structure owners;
+     `UNIFORM_ZSCORE_V1` on each native series; `calculate_trend_score` only
+     when all four z-scores and the structure score exist (the owner has no
+     `None` path).
+   - Flow, `ETF_CORE` with CVD absent: D is the owner's own latest visible
+     publication date; the publication calendar is paged from the owner's
+     `included_observation_dates`; every window passes the funds launched by its
+     first included publication date and the loaded
+     `US_EQUITY_MARKET_CLOSURE_TABLE_V1`; the three z-scores follow
+     `UNIFORM_ZSCORE_V1` over prior publication days.
+   - Positioning: `funding_health`, `futures_basis_health`,
+     `open_interest_growth_health` (USD) behind the three §6A.9 guards, plus
+     `open_interest_intensity`.
+   - Volatility: RV 7/20/60, `volatility_percentile` over the RV_20 history,
+     compression, orderliness from `RANGE_PERCENTILE`, `DOWNSIDE_RETURN` (R_7)
+     and the last completed UTC day's `LIQUIDATION_PERCENTILE`.
+2. *Regime and flags.* Core regime (macro and on-chain declared unavailable:
+   `CORE_MARKET_ONLY`), smoothing from the previous ledger row's smoothed score,
+   classification (persisted on every row as RBT-005's `K_entry`); STRESS,
+   CROWDING (`SEVERE_CROWDING_STATE = flagged if complete else None`),
+   CAPITULATION and EUPHORIA, with every DISCRETIONARY input `None`.
+3. *Geometry, then Structure.* For A, B and C: clusters → invalidation
+   (NEAREST for A/B, FARTHEST for C) → volatility buffer → initial stop →
+   BTC-143 R/R. The structure owner needs a stop, so Structure follows: its own
+   support selection, the spec's level inputs (`LEVEL_REACTION_MAGNITUDE`,
+   `LEVEL_VOLUME_PERCENTILE`), level strength, then the score per complete stop
+   (STRUCTURE_SCORE_V1_2 is stop-independent; a difference is a composer
+   defect).
+4. *Entry Conviction and band*; an incomplete EC is `STRUCTURALLY_UNEVALUABLE`
+   with each incomplete component and its accounted causes (or ruling 4's
+   `NO_TRADE`). An open position records `NO_TRADE / POSITION_ALREADY_OPEN` after
+   the regime chain and flags.
+5. *Setups and gates.* Triggers, the four detectors, the clash rulings; then
+   no-chase, the hard veto (with `DATA_QUALITY_FAIL`) and the data-quality gate.
+6. *Intent.* `BacktestIntent(ARM_ENTRY, long, [P_t, P_t], initial stop, EC)`;
+   the composer refuses a stop whose entry price, direction or identity
+   disagrees with the decision.
+
+**Decision ledger (`CHAMPION_ENTRY_DECISION_LEDGER_V1`).** One
+`EntryDecisionRow` per daily instant: `decision_at`, `venue`, `outcome`
+(`ARM_ENTRY`, `NO_TRADE`, `STRUCTURALLY_UNEVALUABLE`), `reasons`, `position_open`,
+`setup`, `detected_setups`, `entry_conviction`, `entry_action`, `regime`
+(model, score, smoothed, previous smoothed, classification, complete),
+`components` (five, `None` when incomplete), `flags` (STRESS/CROWDING/
+CAPITULATION/EUPHORIA with the mapped values and reason codes), `unevaluable`
+(component → accounted causes), `guard_refusals`, `owner_reason_codes` (every
+consumed owner result: feature id, completeness, reason codes), `unaccounted`,
+`features` (the 33 BTC-048 columns), `data_quality` (window, failures, gate),
+`intent`, `capitulation_flag_state`. Nothing is zero-filled: a missing value is
+JSON `null`. `ledger_bytes()` is canonical JSON with a header naming the ledger,
+composer, research strategy id, spec version and digest, champion identity,
+venue and closure table. `decide()` is engine-agnostic (Rulebook invariant 15);
+`__call__` is the BTC-180 adapter.
+
+**Positioning guards (policy V7 §6A.9, the three frozen contracts).** When the
+owner result has a z-score, the composer rebuilds the owner's own prior history
+from the visible rows with the promoted helpers, asserts
+`len(H) == history_observation_count` and the owner's latest observation time,
+and refuses an exactly constant `H` (`all(h == H[0] for h in H)`, Decimal, no
+tolerance) with the owner's own code. A refusal passes no health score or
+z-score to any consumer and records a `GuardRefusal` (guard, owner, code,
+history count, observation time, and the per-field `withheld_inputs` of clause
+6, which attributes each downstream `None` to the guard's cause). Positioning
+is then `STRUCTURALLY_UNEVALUABLE` with that accounted cause. An owner's own
+refusal stands unchanged. The Setup B prior-instant health histories apply the
+same guard at each instant.
+
+**Census boundary (RBT-002 E4, §5A.6; `composer_boundary.py`,
+`COMPOSER_CENSUS_CALL_BOUNDARY_V1`).** The static alias-resolving census of the
+composer finds 0 refusals: 65 roots, 2 classified input sources, 18 classified
+constructors (the composer-facing owner input types, each classified field by
+field, and `BacktestIntent`), the `run_metadata` accessor, `as_record`
+serializers and the EPIC Y `canonical_json_bytes`/`sha256_hex`. Refused: a
+non-root owner function, an unclassified owner constructor, any callable held in
+a local, container or subscript, `getattr`/`partial`/`operator`/`importlib`/
+`eval` dispatch, and an owner callable used as a value. The runtime
+direct-caller profile over the warm-up, `NO_TRADE`, `ARM_ENTRY`, guard-refusal
+and BTC-180 engine paths finds no violation, and every static root is
+exercised there except, at most, `evaluate_reclaim_trigger` (called only when a
+reclaim level exists; its freshness rule is tested separately, on a natural
+reclaim). The
+composer reads a replay record's `available_at` and `observation_time` through
+its `as_record`, exactly as the positioning owners' inline predicate does.
+
+**Runtime completeness guard (§5A.6).** `CAUSE_ACCOUNTING` (113 entries) maps
+every reason code the composition can emit to a spec entry's accounted cause, a
+spec guard, an inventory row whose missing behaviour names it, or an inventory
+minimum-history input; a test verifies each against the bound artifacts. Every
+consumed and auxiliary owner result is checked: an incomplete result needs an
+accounted code, and any missing-input code must be accounted. Every fixture
+replay in the eight modules asserts `unaccounted == ()`; injected unknown codes
+are reported.
+
+**Design decisions beyond the rulings (for the review).**
+- *ETF anchor and calendar pages.* D comes from one owner call with
+  `end_date=None`, and the calendar from 20-day owner windows; both run without
+  a fund list and their window values are never consumed, so the anchor is
+  audited with the auxiliary results, not ledgered.
+- *Setup C unknowns.* An instant with no ledger row, or a `None` flag state, is
+  unknown, never "not flagged": with no flag in the window an unknown gives
+  `None`; a run preceded by an unknown instant has no determined start, so
+  `capitulation_detected_at` is `None` and the detector reports its input
+  missing (it trades less). The first 14 days of any ledger therefore cannot
+  confirm Setup C.
+- *Liquidation percentile.* Only the UTC day ending at `t` (an `INTERVAL`
+  value modelled available at its end, §4); an older day is never substituted.
+- *Engine adapter.* A missed midnight (no 23:00 bar) is backfilled as the
+  missing-bar row with the position state the engine last reported; a skipped
+  midnight whose decision bar the composer can see is a `COMPOSER_DEFECT`
+  rather than a silently dropped decision. Hourly availability must be
+  nondecreasing in bar order. A missing-bar row keeps the ledger schema, and the
+  regime chain then re-seeds under the owner's own missing-previous handling.
+- *VOL_PERCENTILE history.* RV_20 is computed only for daily bars inside a
+  superset of the owner's own default window (plus one day); the owner selects
+  its history, and parity with the full history is tested.
+- *RBT-002 test.* `test_no_production_code_produces_the_owner_less_entry_inputs`
+  now exempts exactly `research_backtest/entry_composer.py`, stays strict for
+  every other production module, and asserts the composer contains each
+  pattern.
+
+**Tests (eight modules, 175 tests, all passing).**
+
+| Module | Proves |
+| --- | --- |
+| `…_guards` | per owner: the frozen owner's complete z on a non-terminating constant; the five required tests (constant, current equal, current different, point-in-time exclusion of rows observed or available after `t` and of another OI unit, non-constant pass-through); no downstream health/z and per-field attribution; CROWDING/STRESS fail closed; exact-equality without tolerance; no restated z; owner refusals stand; the Setup B history guard; `UNIFORM_ZSCORE_V1` (0.1, 1/3, 0.015·365/90 at 20 and 730 observations, both accumulator widths, the 64-bit counterexample, no helper call on refusal, gaps, last-20 selection, parity) and `UNIFORM_PERCENTILE_V1` (time window boundaries, minimum, missing) |
+| `…_boundary` | the static census, allowed constructors/accessors/value methods, traced runtime calls on every outcome path, static/runtime agreement, and mutations (direct helper, alias, module attribute, getattr, dict, partial, callback, local alias, unclassified constructor, importlib) that fail statically and at runtime |
+| `…_flow` | every ETF window gets the loaded closure table; the listed-holiday window is complete with it and `ETF_FLOW_INPUT_MISSING` without; the per-window fund universe; pre-launch windows never invented; an unrecorded fund is refused; independent z recomputation over publication days; `ETF_CORE` with CVD absent; Setup B's native FlowAccel history; a late revision never changes `t` |
+| `…_pit` | the point-in-time property over four seeds and every family, including an armed entry, with converse controls |
+| `…_entry_composer` | one row per instant; nothing zero-filled; canonical, deterministic ledger (two composers; fresh processes under three hash seeds from another cwd); decision API refusals; the engine adapter at midnights; missed-midnight backfill and the skipped-bar defect; engine-prefix independence; cause accounting against the artifacts and injected unknown codes; identity and input refusals; liquidation handling; regime chaining; open positions; the Setup C episode cases |
+| `…_archetypes` | Setup A arms end to end (point zone, owner stop, EC, `K_entry`) and fills through BTC-180; NEAREST/FARTHEST geometry; A+B trades once as A; B reaches the gates on its own geometry (no-chase veto); C arms on its episode and FARTHEST zone with STRESS mapped but non-blocking; C with A is a conflict; Setup D inert, never short; higher-low freshness on real owner output; reclaim freshness on real owner output (one natural reclaim: pending `None`, fresh `True`, stale `False`) |
+| `…_vetoes` | the `HardVetoInput` mapping and V4 STRESS evidence; STRESS fail-closed and non-blocking config; derivatives and OHLCV `DATA_QUALITY_FAIL` (veto and gate, window bounds); no-chase; the R/R filter and no-reward-reference cause; severe crowding against A and as a veto for B; EC below band; no-stop geometry (`NO_TRADE`) and data cause (`STRUCTURALLY_UNEVALUABLE`) |
+| `…_parity` | BTC-048 column order, matrix reproduction, batch Entry Conviction equal to each single score, and 25 single-owner features equal to direct owner calls |
+
+*Input interventions.* A smooth synthetic market does not produce a fresh
+reclaim, or a 12 % capitulation, together with EC >= 80 and R/R >= 2 (an offline
+scan of 48 parameter sets and 13,440 decisions found natural Setup A entries, 83
+fresh higher-low confirmations with Setup C R/R at most 0.74, and one fresh
+reclaim with every other Setup B condition failing, which the reclaim freshness
+test uses without intervention). The B and C fixtures
+therefore substitute only named inputs at named instants and always call the
+real owners: `BullishResetInput.entry_trigger_confirmed`;
+`CapitulationFlagInput` values at three earlier instants (the composer's own
+mapping, ledger and episode do the rest); the higher-low result's `triggered`
+and `detected_at` (the composer's freshness rule then confirms);
+`StressFlagInput` (to make Setup A ineligible); `CapitulationReversalInput` for
+the C-with-A clash; and `CrowdingFlagInput` for severe crowding.
+
+**Validation (2026-10-25, `.venv312` CPython 3.12.14).**
+
+- Composer: the eight `test_research_backtest_entry_composer*` modules
+  together, **174 passed** in 1151s (guards 65, core 32, boundary 28, vetoes
+  13, flow 12, archetypes 9, point in time 9, parity 6). A first combined run
+  exposed a test-isolation leak (an intervention patch entered before the
+  recording context restored a recording wrapper into the composer
+  namespace); the context order is fixed and the boundary test now names any
+  such leak. The follow-up reclaim freshness test (`e158de9`) then passed with
+  the archetypes and boundary modules together (**38 passed**: archetypes 10,
+  boundary 28), and two crude substitutes of the composer's rule (a stale
+  confirmation counted as True; a pending one as False) each fail it.
+- Other EPIC Y suites (census, nine traces, coverage, spec, spec review,
+  database, replay, RBT-001): **659 passed, 1 known frozen-basis XFAIL**;
+  RBT-001 alone **167 passed**.
+- Closure table **145**; BTC-180..185 **282** (the recorded eight modules; 330
+  with `test_backtest_parameter_surfaces`); BTC-220..224 including the golden
+  scenarios **342**; owner modules **320**; all passed.
+- Full repository (alone, `-W error::RuntimeWarning`) at `e158de9`:
+  7,508 passed, 3 skipped, 1 xfailed, 0 failed in 4124.31s.
+  Collected tests 7,309 at `15c235f` -> 7,512: the 175 composer tests plus 28
+  in Part A's census, trace and spec tests. A first full run, at `910dec7`
+  with an uncommitted draft of the reclaim test whose instants were wrong (one
+  never reached the setups and none confirmed), gave 7,507 passed, 3 skipped,
+  1 xfailed and that draft's 1 failure; the corrected test is `e158de9`.
+- EPIC X V5 definition recomputes to
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`; PAD5
+  preserved-authority subset **5 passed, 112 deselected** and PAD4-R5 **2
+  passed**, each run alone.
+- Inventory (three artifacts) and spec rebuild byte-identical under
+  `PYTHONHASHSEED` 0, 1, 8675309, from an alternate cwd, in fresh processes
+  with network connections refused: `250f9470...a061cb17`,
+  `787ddfa2...ca2620f0`.
+- `compileall -q btc_predictor etf_calendar_worker` and `git diff --check` PASS.
+- An offline exploratory scan of 48 `trending_close` parameter sets (13,440
+  synthetic decisions) found no unaccounted cause; it chose the fixtures and
+  is not a test.
+
+**Remaining risks and ambiguities (surfaced for the review).**
+- *Spec text.* The frozen spec's `rolling_zscore` helper `use` text still says
+  `min_periods=30` / `len(H) >= 30`, while the rule statement, application
+  contract and elements say 20. The composer follows the controlling statement
+  and contract (20); the frozen spec is not edited.
+- *STRESS fail-closed branch.* Every non-DISCRETIONARY STRESS input also feeds
+  an Entry Conviction component, so in composition a missing one makes the
+  instant unevaluable before the veto; the fail-closed veto is proven at the
+  owner level (`STRESS_NON_DISCRETIONARY_MISSING`).
+- *Setup C completeness.* The owner reports `CAPITULATION_REVERSAL_INPUT_MISSING`
+  whenever there is no capitulation or confirmation (their times are `None`), so
+  Setup C is incomplete at nearly every instant; accounted.
+- *Liquidation feed.* No producer of the typed `LIQUIDATION_PERCENTILE` exists
+  yet (RBT-001A/RBT-003); the futures-basis and market-cap families also have no
+  reviewed replay builder yet.
+- *Tooling.* `coverage rebuild`'s default `--artifact` is relative to the
+  working directory; the determinism check passes it explicitly.
+- No real-data value, score, signal, trade or outcome was computed; no database
+  connection; holdout NOT COLLECTED; BTC-019 untouched, sealed sample unopened;
+  EPIC X unchanged (`POSTP1-001V2R1` remains its next ticket); no owner, config,
+  EPIC X-bound, `data/` or `research_artifacts/` edit.
+
+Recommended next dependency-satisfied ticket: the **independent xHigh RBT-004
+review**; **RBT-001A** remains READY. RBT-005 stays blocked until that review
+passes.
+
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
-**Status:** `BLOCKED — awaiting RBT-004`
+**Status:** `BLOCKED — awaiting the RBT-004 independent xHigh review`
 **Dependencies:** RBT-004
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -3204,8 +3522,8 @@ version or any version derived from inspecting its result.
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
-| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | READY — RBT-002A independent xHigh review PASS; V7 completion spec `9819f84a...5013f` |
-| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 |
+| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 175 composer tests; full suite 7,508 passed, 3 skipped, 1 xfailed, 0 failed in 4124.31s |
+| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 independent xHigh review |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
@@ -3229,8 +3547,9 @@ completion spec on 2026-10-01. The independent review above failed the census,
 and so did the re-review of the R1 correction (`906c719`). Correction R2
 (`812b968`) passed independent re-review under the policy V5 bounded standard.
 RBT-002A is DONE / independent xHigh review PASS under policy V7 (final spec
-`9819f84a...5013f`). RBT-004 and RBT-001A are READY; the four adopted data
-choices stay fixed.
+`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0`). RBT-004 is
+IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW and RBT-001A is READY; the four
+adopted data choices stay fixed.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
 positioning score needs futures basis and BTC market cap. Policy V2 gives
@@ -3238,7 +3557,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-004**, with **RBT-001A** also READY.
+dependency-satisfied EPIC Y work is the **independent xHigh RBT-004 review**, with
+**RBT-001A** also READY.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

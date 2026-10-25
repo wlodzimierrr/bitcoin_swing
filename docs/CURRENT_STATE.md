@@ -907,10 +907,27 @@ owners have exact prior-history refusal contracts, with five RBT-004 tests
 each. Momentum Persistence accepted with the required evaluation-only ablation.
 Independent availability lower bound: 2024-03-10 (+29); original 2024-03-24
 (+43) and all original dates retained in review evidence. Focused 146 passed;
-full repository: 7,305 passed, 3 skipped, 1 xfailed, 0 failed in 3023.38s. RBT-004 READY; RBT-001A also READY.
+full repository: 7,305 passed, 3 skipped, 1 xfailed, 0 failed in 3023.38s. RBT-004 then implemented (below); RBT-001A also READY.
 No owner/config/EPIC X-bound/data/research_artifacts edits, database connection,
 real-data values or outcome; holdout NOT COLLECTED, BTC-019 sealed sample
 UNOPENED. EPIC X next remains POSTP1-001V2R1.
+
+EPIC Y RBT-004 =
+IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW (2026-10-25), policy V7.
+COMPOSE_CHAMPION_ENTRY_DECISION_V1: Part A `8ce3e74` promoted the 14 spec
+roots (74 -> 88) and rebound the spec to the regenerated inventory, offline:
+inventory `108ab25b...efe3a` -> `250f9470...a061cb17`, spec `9819f84a...5013f`
+-> `787ddfa2...ca2620f0` (only the inventory digest changed; every
+definition, rule, guard and cause byte-identical). Part B `910dec7` (test
+follow-up `e158de9`) adds `research_backtest/entry_composer.py` and
+`composer_boundary.py`: one ledger row per daily instant (ARM_ENTRY /
+NO_TRADE / STRUCTURALLY_UNEVALUABLE), the three V7 section 6A.9 guards,
+ETF_CORE flow on the loaded closure table, the static/runtime census boundary
+and the section 5A.6 completeness guard. The owner's eight 2026-10-03
+composition rulings are applied. 175 composer tests; full repository
+7,508 passed, 3 skipped, 1 xfailed, 0 failed in 4124.31s.
+Synthetic fixtures only: no database, no real-data value or outcome, holdout
+NOT COLLECTED, BTC-019 untouched, EPIC X unchanged.
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1317,7 +1334,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-10-03
+- **Last updated:** 2026-10-25
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1350,8 +1367,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   separate owner-ruled V7 conformance commit are complete. All 26 entries are
   covered; the existing uniform 20/20 observation z convention, three guarded
   positioning owners and the non-selecting Momentum Persistence ablation are
-  frozen. **RBT-004 is READY**, with **RBT-001A also READY**. All four V4 data
-  choices stay adopted. The rest of this field
+  frozen. **RBT-004 is IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW**
+  (Part A `8ce3e74`, Part B `910dec7` + `e158de9`; spec rebound to
+  `787ddfa2...ca2620f0`, inventory `250f9470...a061cb17`), with **RBT-001A
+  also READY**. All four V4 data choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
   `POSTP1-002V2A-T1` passed on 2026-09-30 at `2292388e...1d1710`;
   `POSTP1-001V2R1` is now dependency-satisfied. RBT-006's table dependency is
@@ -1581,8 +1600,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-002A is DONE / PASS;
-  RBT-004 and RBT-001A are READY. EPIC X's separate next action remains
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-004 is IMPLEMENTED / AWAITING
+  INDEPENDENT xHIGH REVIEW (not closed until that review passes); RBT-001A is
+  READY. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-002A, 2026-10-03,
   **independent xHigh PASS / DONE**. Reviewed `75fc7e6`, `09d14dc`, `ffce350`
@@ -1610,7 +1630,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review-fix commit. Pre-freeze captures support coverage through 2026;
   2027 windows require V2. The detailed source/revision/search/probe evidence
   is in EPIC X's review outcome, not duplicated here
-- **Last completed implementation:** EPIC Y `RBT-002A`
+- **Last completed implementation:** EPIC Y `RBT-004`
+  `COMPOSE_CHAMPION_ENTRY_DECISION_V1` (2026-10-25), **IMPLEMENTED / AWAITING
+  INDEPENDENT xHIGH REVIEW**. Part A `8ce3e74` (roots, inventory regeneration,
+  spec rebind), Part B `910dec7` (composer, census boundary, fixtures and eight
+  test modules) and its test follow-up `e158de9` (Setup B reclaim
+  freshness). Composition order, ledger schema, guards, census, rulings,
+  design decisions, the input-intervention fixtures and surfaced ambiguities
+  are in EPIC Y's RBT-004 Implementation Notes.
+- **Preceding completed implementation (EPIC Y):** `RBT-002A`
   `DEFINE_CHAMPION_COMPLETION_SPEC_V1` (2026-10-03), **DONE / independent xHigh
   review PASS**. Original Part 0 `75fc7e6`, Part 1 `09d14dc`; review fixes
   `352bba0`, `496a947`, `5b75882`, `42459e6`; V7 conformance `700b924`.
@@ -1858,19 +1886,18 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** **RBT-004 (READY)**, entry
-  decision composition against reviewed completion spec `9819f84a...5013f`.
-  **RBT-001A is also READY**. RBT-002A independent xHigh review PASS closed
-  the spec dependency on 2026-10-03.
-  - V7's owner rulings are applied in distinct conformance commit `700b924`:
-    Momentum Persistence accepted unchanged with the RBT-006 freeze /
-    RBT-007 non-selecting evaluation-only ablation; exact zero-variance guards
-    extended to funding and OI growth beside basis, using each owner's own
-    history helpers. All three composer contracts and five cases per owner
-    bind RBT-004. Four review defects are fixed; no owner question remains.
-  - Downstream composers must promote the 14 declared roots and enforce the
-    direct-call/runtime completeness guards. RBT-003 and RBT-005..008 remain
-    blocked on their own dependencies; no downstream ticket was implemented.
+- **Next dependency-satisfied EPIC Y actions:** the **independent xHigh
+  RBT-004 review** of Part A `8ce3e74` and Part B under the ticket's Review
+  requirement; **RBT-001A is also READY**. RBT-005 stays blocked until the
+  RBT-004 review passes; RBT-003 and RBT-006..008 remain blocked on their own
+  dependencies.
+  - The owner's eight RBT-004 composition rulings (2026-10-03) are applied
+    and recorded in the RBT-004 notes; no owner question is open.
+  - Surfaced for the review: the frozen spec's `rolling_zscore` helper text
+    says `min_periods=30` while its rule and application contract say 20 (the
+    composer follows 20); Setup B/C detection is shown with named input
+    interventions because the synthetic market does not reach those states
+    (the reclaim freshness rule itself is tested on a natural reclaim).
 - **Other ready tickets:** In EPIC X, none besides `POSTP1-001V2R1`.
   POSTP1-003R3, POSTP1-004 and collection remain blocked; BTC-019
   remains terminal and untouched with its sealed sample unopened, and Epic T
@@ -1879,6 +1906,20 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-004 implementation validation (2026-10-25):** `.venv312` CPython
+  3.12.14. Composer modules together **174 passed**, then the follow-up
+  reclaim test with the archetypes and boundary modules **38 passed**; other
+  EPIC Y suites **659 passed, 1 known frozen-basis XFAIL** (RBT-001 167);
+  closure 145, BTC-180..185 282, BTC-220..224 342, owners 320, all passed.
+  Full repository at `e158de9`, alone:
+  7,508 passed, 3 skipped, 1 xfailed, 0 failed in 4124.31s
+  (7,512 collected: +175 composer, +28 Part A). V5 definition
+  `95e43ee1...775a89` unchanged; PAD5 preserved-authority subset 5 passed, 112
+  deselected; PAD4-R5 2 passed.
+  Inventory and spec rebuild byte-identical across seeds 0/1/8675309, an
+  alternate cwd and fresh processes with network refused
+  (`250f9470...a061cb17`, `787ddfa2...ca2620f0`). `compileall` and
+  `git diff --check` PASS. No database, real-data value or outcome.
 - **RBT-002A final independent review validation (2026-10-03):** `.venv312`
   CPython 3.12.14. Spec/review/database **146 passed**; research replay,
   census/coverage/nine traces and closure **630 passed, 1 known frozen-basis
@@ -2283,7 +2324,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** RBT-002 correction R2
+- **Last relevant implementation/review commits:** EPIC Y RBT-004 Part A
+  `8ce3e74` and Part B `910dec7` + `e158de9`, with this documentation
+  commit; awaiting the independent xHigh review. Earlier: RBT-002 correction R2
   `812b968`, implementation documentation `ce5cd70`, base `634d122`;
   independent R2 re-review **PASS under V5 §5A.7** recorded in the working tree
   on 2026-10-02, with no review-fix or commit as requested. Inventory
@@ -3197,6 +3240,20 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-10-03: RBT-004 composition points.** Asked under the ticket's
+  STOP rule before Part B, each with options; the owner chose every
+  recommended option: the point entry zone, Setup C's V4 mapping with a 14-day
+  episode, last-completed-day data quality, the no-stop cause split, trading
+  less on a C-with-A/B clash, fresh triggers, native-cadence Setup B histories,
+  and the listed composition defaults. Recorded in the RBT-004 notes; the
+  independent review checks the implementation, not new rulings.
+- **Surfaced by RBT-004 (non-blocking, for its review):** the frozen
+  `CHAMPION_COMPLETION_SPEC_V1` lists `rolling_zscore`'s use as
+  `min_periods=30` / `len(H) >= 30`, contradicting its own UNIFORM_ZSCORE_V1
+  statement, application contract and elements (20). The composer follows the
+  controlling 20/20 rule; the spec is not edited (that would change its frozen
+  digest).
 
 - **ANSWERED 2026-10-02: how RBT-002 closes.** Policy V5 records the owner's
   decision. RBT-002 had failed twice on proving universal census completeness,
