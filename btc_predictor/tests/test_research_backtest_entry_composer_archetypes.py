@@ -9,8 +9,10 @@ interventions**, each named in its test: the real owner is always called, and
 only the stated composer-supplied input (or, for the higher-low trigger, the
 stated trigger fields) is substituted at the stated instant. Everything else -
 the composer's mappings, the 14-day episode, the freshness rules, geometry, the
-gates and the intent - runs unchanged. Setup D is inert and never trades
-(policy V7 section 6A.6, long-only).
+gates and the intent - runs unchanged. The reclaim freshness rule itself is
+tested without intervention, on a natural reclaim that confirms at one instant
+and is stale at the next. Setup D is inert and never trades (policy V7 section
+6A.6, long-only).
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from btc_predictor.features.setup import (
     BULLISH_RESET_SETUP,
     CAPITULATION_REVERSAL_SETUP,
 )
+from btc_predictor.levels.breakout import RECLAIM_LEVEL_TYPE
 from btc_predictor.levels.swing import WEEKLY_SWING_LOW
 from btc_predictor.research_backtest import entry_composer
 from btc_predictor.risk.invalidation import SELECTION_FARTHEST, SELECTION_NEAREST
@@ -350,3 +353,48 @@ def test_the_higher_low_confirmation_must_be_fresh(triggers):
     source = fresh_trigger.args[0]
     assert source.level_type == WEEKLY_SWING_LOW
     assert source.detected_at <= utc(2024, 7, 22)
+
+
+@pytest.fixture(scope="module")
+def reclaims():
+    # A market whose reclaim level (detected 2024-11-02) confirms naturally on
+    # 2024-11-03 (found by the offline scan); no input is substituted.
+    inputs = _market(0.18, 35.0, 0.0003, utc(2024, 11, 10)).build()
+    found = {}
+    for instant in (utc(2024, 11, 2), utc(2024, 11, 3), utc(2024, 11, 4)):
+        with recording("evaluate_reclaim_trigger", "detect_bullish_reset") as calls:
+            EntryComposer(inputs, strategy_config=CONFIG).decide(instant)
+        found[instant] = calls
+    return found
+
+
+def test_the_reclaim_trigger_must_be_fresh(reclaims):
+    """Setup B's entry_trigger_confirmed (owner ruling: fresh at this instant): the
+    latest reclaim level's trigger, None while pending, True only when confirmed
+    with detected_at == t."""
+
+    def observed(instant):
+        calls = reclaims[instant]
+        (trigger,) = calls["evaluate_reclaim_trigger"]
+        (reset,) = calls["detect_bullish_reset"]
+        return trigger.args[0], trigger.result, reset.args[0].entry_trigger_confirmed
+
+    pending_level, pending, pending_confirmed = observed(utc(2024, 11, 2))
+    fresh_level, fresh, fresh_confirmed = observed(utc(2024, 11, 3))
+    stale_level, stale, stale_confirmed = observed(utc(2024, 11, 4))
+    # the same reclaim level (only its source bar count grows) is evaluated each time
+    def key(level):
+        return level.level_type, level.level_timestamp, level.confirmation_timestamp, level.detected_at, level.price
+
+    assert key(pending_level) == key(fresh_level) == key(stale_level)
+    assert pending_level.level_type == RECLAIM_LEVEL_TYPE
+    assert pending_level.detected_at == utc(2024, 11, 2)
+    # pending: the owner's result is incomplete, so the input is unknown
+    assert not pending.complete
+    assert pending_confirmed is None
+    # fresh: confirmed and detected at t
+    assert fresh.complete and fresh.triggered and fresh.detected_at == utc(2024, 11, 3)
+    assert fresh_confirmed is True
+    # stale: the owner keeps reporting the earlier confirmation, which no longer confirms
+    assert stale.complete and stale.triggered and stale.detected_at == utc(2024, 11, 3)
+    assert stale_confirmed is False
