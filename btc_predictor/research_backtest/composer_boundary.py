@@ -19,11 +19,14 @@ proofs; RBT-004 applies them to ``entry_composer`` and RBT-005 can reuse them.
   - an owner function or constructor used as a value rather than called;
   - any binding the module namespace does not show: a function-local import, a
     ``global``/``nonlocal`` statement, a local binding (assignment, parameter,
-    loop/``with``/``except`` target, comprehension variable, nested ``def``)
-    that shadows a module-level or builtin callable, and an attribute
-    assignment to a name the census trusts for an unresolved method call. Names
-    resolve against the module's live namespace, so such a rebinding would let
-    a call show one callee and run another (RBT-004 review F4).
+    loop/``with``/``except`` target, comprehension variable, nested ``def``),
+    dunder-named or not, that shadows a module-level or builtin callable, an
+    attribute assignment to a name the census trusts for an unresolved method
+    call, and any dunder attribute except a read of ``__name__`` or
+    ``__qualname__`` and ``super().__init__`` (``self.__dict__[...]`` or
+    ``object.__setattr__`` could rebind a trusted name). Names resolve against
+    the module's live namespace, so such a rebinding would let a call show one
+    callee and run another (RBT-004 review F4, re-review N1).
 - **Runtime direct-caller check** (:func:`trace_direct_calls`). A profiler
   records every ``btc_predictor`` function entered, and every owner dataclass
   constructed, directly from a frame of the composer file. Pure-Python
@@ -83,6 +86,7 @@ REFUSED_LOCAL_IMPORT = "FUNCTION_LOCAL_IMPORT"
 REFUSED_SCOPE_REBINDING = "GLOBAL_OR_NONLOCAL_REBINDING"
 REFUSED_SHADOWED_NAME = "LOCAL_BINDING_SHADOWS_A_MODULE_CALLABLE"
 REFUSED_TRUSTED_NAME_REBOUND = "TRUSTED_METHOD_NAME_REBOUND"
+REFUSED_DUNDER_ATTRIBUTE = "REFLECTIVE_DUNDER_ATTRIBUTE"
 
 # Composer-facing owner input types (classified field by field in
 # coverage.INPUT_TYPE_FIELD_CLASSIFICATIONS) and the engine intent: the only
@@ -122,6 +126,11 @@ ALLOWED_VALUE_METHODS: frozenset[str] = frozenset(
         "weekday", "utcoffset", "encode", "decode", "time", "__init__",
     }
 )
+# The only dunder attributes a composer may name: a value's type name, read,
+# and ``super().__init__``. Any other (``__dict__``, ``__setattr__``,
+# ``__class__``, ``__globals__``, ...) is reflective access that can rebind what a
+# call shows (RBT-004 re-review N1).
+_ALLOWED_DUNDER_READS = frozenset({"__name__", "__qualname__"})
 # Refused dynamic-dispatch builtins and standard-library callables.
 _REFUSED_BUILTINS = frozenset({"getattr", "setattr", "delattr", "eval", "exec", "compile", "__import__", "globals", "locals", "vars"})
 _REFUSED_STDLIB = frozenset(
@@ -255,9 +264,29 @@ def _enclosing_scopes(tree: ast.AST) -> dict[int, ast.AST | None]:
     return scopes
 
 
-def _shadows_a_callable(name: str, namespace: Mapping[str, Any]) -> bool:
-    if name.startswith("__") and name.endswith("__"):
+def _is_dunder(name: str) -> bool:
+    return name.startswith("__") and name.endswith("__")
+
+
+def _allowed_dunder(node: ast.Attribute) -> bool:
+    if not isinstance(node.ctx, ast.Load):
         return False
+    if node.attr in _ALLOWED_DUNDER_READS:
+        return True
+    value = node.value
+    return (
+        node.attr == "__init__"
+        and isinstance(value, ast.Call)
+        and isinstance(value.func, ast.Name)
+        and value.func.id == "super"
+        and not value.args
+        and not value.keywords
+    )
+
+
+def _shadows_a_callable(name: str, namespace: Mapping[str, Any]) -> bool:
+    # A dunder name is not exempt: a module-level root imported under one is
+    # shadowed like any other (RBT-004 re-review N1).
     if name in namespace:
         value = namespace[name]
         return callable(value) or isinstance(value, types.ModuleType)
@@ -279,6 +308,10 @@ def _binding_refusals(tree: ast.AST, namespace: Mapping[str, Any], trusted_attri
             continue
         if isinstance(node, (ast.Global, ast.Nonlocal)):
             refusals.append(StaticRefusal(line, ast.unparse(node)[:160], REFUSED_SCOPE_REBINDING, ", ".join(node.names)))
+            continue
+        if isinstance(node, ast.Attribute) and _is_dunder(node.attr) and not _allowed_dunder(node):
+            expression = ast.unparse(node)[:160]
+            refusals.append(StaticRefusal(line, expression, REFUSED_DUNDER_ATTRIBUTE, expression))
             continue
         if isinstance(node, ast.Attribute) and isinstance(node.ctx, (ast.Store, ast.Del)) and node.attr in trusted_attributes:
             refusals.append(StaticRefusal(line, ast.unparse(node)[:160], REFUSED_TRUSTED_NAME_REBOUND, node.attr))

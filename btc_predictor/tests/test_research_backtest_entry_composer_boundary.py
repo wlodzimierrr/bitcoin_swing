@@ -320,6 +320,27 @@ STATIC_MUTATIONS = {
         "self._keep(self.t.date(), window_days=5, market_holidays=())\n",
         {(boundary.REFUSED_TRUSTED_NAME_REBOUND, "_keep")},
     ),
+    # RBT-004 re-review N1: a dunder name is shadowed like any other, and
+    # reflective dunder access cannot rebind a trusted name.
+    "dunder-named local shadowing a root": (
+        "from btc_predictor.features.flow import five_day_etf_flow as __root__\n"
+        "from btc_predictor.features import flow as flow_module\n",
+        "__root__ = flow_module.__dict__['_trailing_publication_dates']\n"
+        "__root__(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_SHADOWED_NAME, "__root__")},
+    ),
+    "trusted method name rebound through __dict__": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "self.__dict__['_keep'] = flow_module.__dict__['_trailing_publication_dates']\n"
+        "self._keep(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_DUNDER_ATTRIBUTE, "self.__dict__")},
+    ),
+    "trusted method name rebound through object.__setattr__": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "object.__setattr__(self, '_keep', flow_module.__dict__['_trailing_publication_dates'])\n"
+        "self._keep(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_DUNDER_ATTRIBUTE, "object.__setattr__")},
+    ),
 }
 
 

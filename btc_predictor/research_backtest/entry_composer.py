@@ -67,10 +67,12 @@ Nothing is zero-filled. A missing input propagates as its owner defines it.
 Every incomplete owner result and every missing-input reason code is mapped to
 an accounted cause (:data:`CAUSE_ACCOUNTING`) in the reviewed inventory or the
 spec. An unaccounted one is recorded on its ledger row, and the RBT-004 tests
-fail on it (policy V7 section 5A.6). One is known and owner-accepted: exactly
-constant closes give the volatility owner's ``VOL_COMPRESSION_ZERO_DENOMINATOR``,
-which no bound artifact names, so it stays reported as unaccounted (RBT-004
-review F5, owner ruling 2026-10-31). Reason codes a typed replay input carries
+fail on it (policy V7 section 5A.6). One is known and owner-accepted: a zero
+60-day realized volatility (exactly constant closes, or one identical daily
+return across the window) gives the volatility owner's
+``VOL_COMPRESSION_ZERO_DENOMINATOR``, which no bound artifact names, so it stays
+reported as unaccounted (RBT-004 review F5, owner ruling 2026-10-31; re-review
+N2). Reason codes a typed replay input carries
 are kept on the row as provenance (``input_reason_codes``).
 """
 
