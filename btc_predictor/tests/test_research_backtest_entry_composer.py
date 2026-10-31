@@ -232,6 +232,42 @@ def test_a_missed_midnight_is_backfilled_as_unevaluable(inputs):
     assert result.bar_count == len(bars)
 
 
+@pytest.mark.parametrize(
+    ("missing", "end"),
+    [
+        # the run's first midnight has no bar
+        (utc(2024, 4, 7, 23), utc(2024, 4, 9, 2)),
+        # the run's last midnight has no bar; callbacks continue after it
+        (utc(2024, 4, 8, 23), utc(2024, 4, 9, 5)),
+    ],
+    ids=["first-midnight", "last-midnight"],
+)
+def test_a_missed_midnight_at_either_end_of_a_run_gets_its_row(missing, end):
+    """RBT-004 review F2: every decision instant the run crosses has a row."""
+
+    gapped = Scenario(missing_hours=(missing,)).build()
+    composer = EntryComposer(gapped, strategy_config=CONFIG)
+    bars = _engine_bars(gapped, utc(2024, 4, 7, 20), end)
+    run_backtest(bars, strategy=composer, strategy_config=CONFIG, symbol=bars[0].symbol)
+    rows = {row.decision_at: row for row in composer.ledger}
+    assert sorted(rows) == [utc(2024, 4, 8), utc(2024, 4, 9)]
+    skipped = rows[missing + HOUR]
+    assert skipped.outcome == OUTCOME_STRUCTURALLY_UNEVALUABLE and skipped.reasons == (CAUSE_DECISION_PRICE_BAR_MISSING,)
+    assert skipped.position_open is False and skipped.intent is None and skipped.unaccounted == ()
+    (decided,) = (row for instant, row in rows.items() if instant != missing + HOUR)
+    assert decided.reasons != (CAUSE_DECISION_PRICE_BAR_MISSING,)
+
+
+def test_engine_callbacks_must_strictly_increase(inputs):
+    composer = EntryComposer(inputs, strategy_config=CONFIG)
+    bars = _engine_bars(inputs, utc(2024, 4, 8, 19), utc(2024, 4, 8, 22))
+    run_backtest(bars, strategy=composer, strategy_config=CONFIG, symbol=bars[0].symbol)
+    with pytest.raises(EntryComposerError) as refused:
+        run_backtest(bars, strategy=composer, strategy_config=CONFIG, symbol=bars[0].symbol)
+    assert refused.value.code == "COMPOSER_DEFECT"
+    assert composer.ledger == ()
+
+
 def test_an_engine_that_skips_a_visible_decision_bar_is_a_composer_defect(inputs):
     composer = EntryComposer(inputs, strategy_config=CONFIG)
     # The engine's bars omit the 23:00 bar the composer's replay inputs contain.
@@ -325,6 +361,27 @@ def test_composer_unaccounted_causes_are_collected(ledger):
     assert ledger["composer"].unaccounted_causes() == ()
 
 
+def test_constant_prices_leave_the_compression_refusal_unaccounted(inputs):
+    """RBT-004 review F5, owner ruling 2026-10-31: fail loud, no artifact change.
+
+    Exactly constant closes give the frozen volatility owner's
+    ``VOL_COMPRESSION_ZERO_DENOMINATOR`` (zero RV_60). No bound artifact names
+    that code, so the completeness guard keeps reporting it as unaccounted.
+    This pins the accepted limitation; it does not account for the code.
+    """
+
+    code = "VOL_COMPRESSION_ZERO_DENOMINATOR"
+    flat_bars = tuple(replace(bar, open=Decimal(100), high=Decimal(101), low=Decimal(99), close=Decimal(100)) for bar in inputs.dataset.price_bars)
+    flat = with_inputs(inputs, dataset=replace(inputs.dataset, price_bars=flat_bars))
+    row = EntryComposer(flat, strategy_config=CONFIG).decide(utc(2024, 4, 9)).row
+    assert row.owner_reason_codes["volatility_compression"] == {"feature_id": "VOL_COMPRESSION_RATIO", "complete": False, "reason_codes": [code]}
+    assert row.unaccounted == (f"volatility_compression:{code}",)
+    assert row.outcome == OUTCOME_STRUCTURALLY_UNEVALUABLE and "VOLATILITY_INCOMPLETE" in row.reasons
+    assert accounted_cause(code) is None and accounted_cause(code, "VOL_COMPRESSION_RATIO") is None
+    for name in ("rbt002_input_coverage_inventory_v1.json", "champion_completion_spec_v1.json"):
+        assert code not in (ARTIFACTS / name).read_text(encoding="utf-8")
+
+
 # --- inputs and identity ------------------------------------------------------------------------
 
 
@@ -385,6 +442,37 @@ def test_a_missing_liquidation_percentile_leaves_orderliness_incomplete(inputs):
     composer = EntryComposer(inputs, strategy_config=CONFIG)
     run = _DecisionRun(composer, instant, position_open=False)
     assert run._liquidation_percentile() == next(item.liquidation_percentile for item in inputs.liquidation_percentiles if item.observation_date == date(2024, 4, 8))
+
+
+def test_a_liquidation_records_own_reason_codes_are_kept_as_provenance(inputs):
+    """RBT-004 review F6: the producer's codes reach the ledger; the value's accounting is unchanged."""
+
+    instant, day = utc(2024, 4, 9), date(2024, 4, 8)
+
+    def decide_with(**changes):
+        rows = tuple(replace(item, **changes) if item.observation_date == day else item for item in inputs.liquidation_percentiles)
+        return EntryComposer(with_inputs(inputs, liquidation_percentiles=rows), strategy_config=CONFIG).decide(instant).row
+
+    baseline = EntryComposer(inputs, strategy_config=CONFIG).decide(instant).row
+    feed = decide_with(liquidation_percentile=None, reason_codes=("LIQUIDATION_FEED_UNAVAILABLE",))
+    other = decide_with(liquidation_percentile=None, reason_codes=("SYNTHETIC_PRODUCER_REFUSAL",))
+    assert baseline.input_reason_codes == {} and baseline.as_record()["input_reason_codes"] == {}
+    assert feed.input_reason_codes == {"LIQUIDATION_PERCENTILE": ("LIQUIDATION_FEED_UNAVAILABLE",)}
+    assert other.input_reason_codes == {"LIQUIDATION_PERCENTILE": ("SYNTHETIC_PRODUCER_REFUSAL",)}
+    assert feed.as_record()["input_reason_codes"] == {"LIQUIDATION_PERCENTILE": ["LIQUIDATION_FEED_UNAVAILABLE"]}
+    # two producer causes no longer give the same ledger record
+    assert feed.as_record() != other.as_record()
+    for row in (feed, other):
+        volatility = {item.component: item.causes for item in row.unevaluable}["volatility"]
+        assert CAUSE_LIQUIDATION_PERCENTILE_MISSING in volatility and row.unaccounted == ()
+    # a present value keeps its codes too, and is consumed unchanged
+    annotated = decide_with(reason_codes=("SYNTHETIC_PRODUCER_NOTE",))
+    assert annotated.input_reason_codes == {"LIQUIDATION_PERCENTILE": ("SYNTHETIC_PRODUCER_NOTE",)}
+    assert annotated.features == baseline.features and annotated.outcome == baseline.outcome
+    # a record not yet available at t is not read, so its codes are not either
+    late = decide_with(reason_codes=("SYNTHETIC_LATE",), available_at=utc(2024, 4, 9, 1))
+    assert late.input_reason_codes == {}
+    assert CAUSE_LIQUIDATION_PERCENTILE_MISSING in {item.component: item.causes for item in late.unevaluable}["volatility"]
 
 
 # --- the regime chain and the open position ------------------------------------------------------

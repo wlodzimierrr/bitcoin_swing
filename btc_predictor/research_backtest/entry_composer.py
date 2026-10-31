@@ -13,10 +13,12 @@ directly is a census root or a classified input source
 the day's 23:00 hourly bar (the RBT-001 control convention). The backtest
 adapter (:meth:`EntryComposer.__call__`) acts only on those callbacks. A
 midnight the engine never offers, because its hourly bar is missing, is logged
-as ``STRUCTURALLY_UNEVALUABLE`` with the 1h-gap cause and the position state
-the engine last reported. A skipped midnight whose decision bar the composer
-can see is a composer defect: the engine's bars differ from the replay inputs,
-and the decision is never silently dropped.
+at the first callback after it as ``STRUCTURALLY_UNEVALUABLE`` with the 1h-gap
+cause and the position the previous callback reported, which is the position
+at that instant; this holds at the start and end of a run too. A skipped
+midnight whose decision bar the composer can see is a composer defect: the
+engine's bars differ from the replay inputs, and the decision is never silently
+dropped.
 
 **Composition order** (ticket steps 1-6, in the order the owners' inputs force;
 Rulebook sections 2, 3 and 26):
@@ -41,7 +43,10 @@ Rulebook sections 2, 3 and 26):
    BTC-143 R/R). It must precede Structure, because the structure owner
    requires a stop, and the setup detectors, because they need the R/R. Then
    the entry triggers and setup detection.
-4. Entry Conviction and its action band.
+4. Entry Conviction and its action band. An incomplete component makes the
+   instant ``STRUCTURALLY_UNEVALUABLE`` (or ruling 4's geometry ``NO_TRADE``)
+   whether or not a position is open; an open position replaces only a
+   complete decision, with ``NO_TRADE / POSITION_ALREADY_OPEN``.
 5. No-chase, the hard veto (with ``DATA_QUALITY_FAIL`` and the V4 STRESS
    mapping) and the data-quality gate.
 6. The ``ARM_ENTRY`` intent with the BTC-140..142 initial stop.
@@ -62,7 +67,11 @@ Nothing is zero-filled. A missing input propagates as its owner defines it.
 Every incomplete owner result and every missing-input reason code is mapped to
 an accounted cause (:data:`CAUSE_ACCOUNTING`) in the reviewed inventory or the
 spec. An unaccounted one is recorded on its ledger row, and the RBT-004 tests
-fail on it (policy V7 section 5A.6).
+fail on it (policy V7 section 5A.6). One is known and owner-accepted: exactly
+constant closes give the volatility owner's ``VOL_COMPRESSION_ZERO_DENOMINATOR``,
+which no bound artifact names, so it stays reported as unaccounted (RBT-004
+review F5, owner ruling 2026-10-31). Reason codes a typed replay input carries
+are kept on the row as provenance (``input_reason_codes``).
 """
 
 from __future__ import annotations
@@ -617,6 +626,10 @@ class EntryDecisionRow:
     features: Mapping[str, Decimal | None]
     data_quality: Mapping[str, Any]
     intent: Mapping[str, Any] | None
+    # reason codes a typed replay input carried for the record visible at the
+    # instant, as provenance (RBT-004 review F6); the value's own accounting is
+    # unchanged
+    input_reason_codes: Mapping[str, tuple[str, ...]]
     capitulation_flag_state: bool | None = None
 
     def as_record(self) -> dict[str, Any]:
@@ -641,6 +654,7 @@ class EntryDecisionRow:
                 "features": self.features,
                 "data_quality": self.data_quality,
                 "intent": self.intent,
+                "input_reason_codes": {name: list(codes) for name, codes in self.input_reason_codes.items()},
                 "capitulation_flag_state": self.capitulation_flag_state,
             }
         )
@@ -660,6 +674,13 @@ class EntryDecision:
 def is_daily_decision_instant(instant: datetime) -> bool:
     moment = _utc(instant, "instant")
     return moment.hour == 0 and moment.minute == 0 and moment.second == 0 and moment.microsecond == 0
+
+
+def _next_decision_instant(instant: datetime) -> datetime:
+    """The first UTC midnight strictly after ``instant``."""
+
+    moment = _utc(instant, "instant")
+    return datetime(moment.year, moment.month, moment.day, tzinfo=UTC) + _DAY
 
 
 class EntryComposer:
@@ -698,7 +719,8 @@ class EntryComposer:
         # dates on or before each window's end, so later closures never matter.
         self._market_holidays = load_closures(CLOSURE_TABLE_COVERAGE_START, CLOSURE_TABLE_COVERAGE_END)
         self._ledger: list[EntryDecisionRow] = []
-        self._last_decision_at: datetime | None = None
+        # the engine adapter's previous callback: its instant and reported position
+        self._last_callback_at: datetime | None = None
         self._last_position_open = False
         # Exact memos. Every replay input is immutable, and an owner result at a
         # past instant reads only what was visible then, so it never changes.
@@ -739,25 +761,35 @@ class EntryComposer:
         return tuple((row.decision_at.isoformat(), code) for row in self._ledger for code in row.unaccounted)
 
     def __call__(self, context: BacktestContext) -> BacktestIntent | None:
-        """The BTC-180 strategy callback: decide at daily decision instants only."""
+        """The BTC-180 strategy callback: decide at daily decision instants only.
 
-        as_of = context.as_of
-        # The position at a missed midnight is the one the previous callback saw:
-        # the engine processes no bar between that callback and this one's bar.
-        position_before = self._last_position_open
-        self._last_position_open = context.position_open
-        if not is_daily_decision_instant(as_of):
-            return None
-        if self._last_decision_at is not None:
-            missed = self._last_decision_at + _DAY
+        A decision instant strictly between two callbacks had no bar closing at
+        it, so the engine offered no callback there. It is recorded at the first
+        callback after it, as the missing-bar row, with the position the previous
+        callback reported: the engine processes no bar between that callback and
+        the missed instant, so that is the position at the instant, and nothing
+        later can change it (RBT-004 review F1). Every crossed instant is
+        recorded, at the start and the end of a run too (F2); instants before the
+        first callback lie outside the run.
+        """
+
+        as_of = _utc(context.as_of, "as_of")
+        previous_at, previous_open = self._last_callback_at, self._last_position_open
+        if previous_at is not None and as_of <= previous_at:
+            raise EntryComposerError("COMPOSER_DEFECT", "engine callbacks must strictly increase")
+        self._last_callback_at, self._last_position_open = as_of, context.position_open
+        if previous_at is not None:
+            missed = _next_decision_instant(previous_at)
             while missed < as_of:
-                decision = self.decide(missed, position_open=position_before)
+                decision = self.decide(missed, position_open=previous_open)
                 if decision.row.reasons != (CAUSE_DECISION_PRICE_BAR_MISSING,):
                     # The engine skipped a midnight whose decision bar the composer
                     # sees: its bars differ from the replay inputs. Never drop it.
                     raise EntryComposerError("COMPOSER_DEFECT", f"the engine offered no callback at {missed.isoformat()}, which has a decision bar")
                 self._append(decision)
                 missed += _DAY
+        if not is_daily_decision_instant(as_of):
+            return None
         decision = self.decide(as_of, position_open=context.position_open)
         if decision.intent is not None and context.bar.close != decision.intent.entry_zone_upper:
             raise EntryComposerError("COMPOSER_DEFECT", "the decision price differs from the engine's decision bar close")
@@ -785,7 +817,6 @@ class EntryComposer:
         if self._ledger and decision.row.decision_at <= self._ledger[-1].decision_at:
             raise EntryComposerError("DECISION_ORDER", "ledger rows must strictly increase")
         self._ledger.append(decision.row)
-        self._last_decision_at = decision.row.decision_at
 
     def _visible_hourly(self, instant: datetime) -> tuple[OhlcvBar, ...]:
         end = bisect.bisect_right(self._hourly_available, instant)
@@ -816,6 +847,7 @@ class _DecisionRun:
         self.gate_record: dict[str, Any] | None = None
         self.capitulation_now: bool | None = None
         self.calendar: list[date] = []
+        self.input_reason_codes: dict[str, tuple[str, ...]] = {}
 
     # -- recording ----------------------------------------------------------------
 
@@ -879,13 +911,16 @@ class _DecisionRun:
         )
         components = dict(zip(COMPONENT_NAMES, (trend, flow, positioning, volatility, structure)))
 
-        if self.position_open:
-            return self._finish(OUTCOME_NO_TRADE, (REASON_POSITION_ALREADY_OPEN,), components, regime, flags, conviction, action)
+        # Completeness is classified first, open position or not: a row is
+        # STRUCTURALLY_UNEVALUABLE wherever a component is incomplete (RBT-004
+        # review F3). An open position only replaces a complete decision.
         if not conviction.complete:
             missing = [name for name, value in components.items() if value is None]
             if missing == ["structure"] and geometry["no_stop_cause"] == "GEOMETRY":
                 return self._finish(OUTCOME_NO_TRADE, (REASON_NO_VALID_STRUCTURAL_STOP,), components, regime, flags, conviction, action)
             return self._finish(OUTCOME_STRUCTURALLY_UNEVALUABLE, tuple(f"{name.upper()}_INCOMPLETE" for name in missing), components, regime, flags, conviction, action)
+        if self.position_open:
+            return self._finish(OUTCOME_NO_TRADE, (REASON_POSITION_ALREADY_OPEN,), components, regime, flags, conviction, action)
 
         setups = self._setups(regime, flags, geometry, structure, conviction)
         detected = tuple(name for name in LONG_ARCHETYPES if setups[name].detected)
@@ -923,6 +958,7 @@ class _DecisionRun:
             features=dict(self.features),
             data_quality=self.data_quality,
             intent=None,
+            input_reason_codes={},
             capitulation_flag_state=None,
         )
         return EntryDecision(row, None)
@@ -1315,7 +1351,13 @@ class _DecisionRun:
         """
 
         item = self.c._liquidations.get((self.t - _DAY).date())
-        if item is None or item.available_at > self.t or item.liquidation_percentile is None:
+        if item is None or item.available_at > self.t:
+            self._cause("volatility", CAUSE_LIQUIDATION_PERCENTILE_MISSING)
+            return None
+        if item.reason_codes:
+            # the producer's own codes, kept as provenance (RBT-004 review F6)
+            self.input_reason_codes["LIQUIDATION_PERCENTILE"] = tuple(item.reason_codes)
+        if item.liquidation_percentile is None:
             self._cause("volatility", CAUSE_LIQUIDATION_PERCENTILE_MISSING)
             return None
         return item.liquidation_percentile
@@ -2098,6 +2140,7 @@ class _DecisionRun:
             features=dict(self.features),
             data_quality={**self.data_quality, "gate": self.gate_record},
             intent=intent_record,
+            input_reason_codes=dict(self.input_reason_codes),
             capitulation_flag_state=self.capitulation_now,
         )
         return EntryDecision(row, intent)

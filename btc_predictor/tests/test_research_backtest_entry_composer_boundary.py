@@ -283,6 +283,43 @@ STATIC_MUTATIONS = {
         "importlib.import_module('btc_predictor.features.flow')\n",
         {(boundary.REFUSED_DYNAMIC, "importlib.import_module")},
     ),
+    # RBT-004 review F4: bindings the module namespace does not show. Each call
+    # below would otherwise be classified by the module-level name it reuses.
+    "function-local import under a root's name": (
+        "",
+        "from btc_predictor.features.flow import _trailing_publication_dates as five_day_etf_flow\n"
+        "five_day_etf_flow(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_LOCAL_IMPORT, "btc_predictor.features.flow._trailing_publication_dates")},
+    ),
+    "local assignment shadowing a root": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "five_day_etf_flow = flow_module.__dict__['_trailing_publication_dates']\n"
+        "five_day_etf_flow(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_SHADOWED_NAME, "five_day_etf_flow")},
+    ),
+    "local assignment shadowing a builtin": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "sorted = flow_module.__dict__['_trailing_publication_dates']\nsorted(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_SHADOWED_NAME, "sorted")},
+    ),
+    "parameter shadowing a root": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "def run_helper(five_day_etf_flow):\n"
+        "    return five_day_etf_flow(self.t.date(), window_days=5, market_holidays=())\n"
+        "run_helper(flow_module.__dict__['_trailing_publication_dates'])\n",
+        {(boundary.REFUSED_SHADOWED_NAME, "five_day_etf_flow")},
+    ),
+    "global rebinding of a root": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "global five_day_etf_flow\nfive_day_etf_flow = flow_module.__dict__['_trailing_publication_dates']\n",
+        {(boundary.REFUSED_SCOPE_REBINDING, "five_day_etf_flow")},
+    ),
+    "trusted method name rebound": (
+        "from btc_predictor.features import flow as flow_module\n",
+        "self._keep = flow_module.__dict__['_trailing_publication_dates']\n"
+        "self._keep(self.t.date(), window_days=5, market_holidays=())\n",
+        {(boundary.REFUSED_TRUSTED_NAME_REBOUND, "_keep")},
+    ),
 }
 
 

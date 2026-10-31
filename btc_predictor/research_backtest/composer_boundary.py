@@ -16,7 +16,14 @@ proofs; RBT-004 applies them to ``entry_composer`` and RBT-005 can reuse them.
     dict dispatch);
   - ``getattr``, ``functools.partial``, ``operator`` getters, ``eval``/``exec``
     and ``importlib`` dispatch;
-  - an owner function or constructor used as a value rather than called.
+  - an owner function or constructor used as a value rather than called;
+  - any binding the module namespace does not show: a function-local import, a
+    ``global``/``nonlocal`` statement, a local binding (assignment, parameter,
+    loop/``with``/``except`` target, comprehension variable, nested ``def``)
+    that shadows a module-level or builtin callable, and an attribute
+    assignment to a name the census trusts for an unresolved method call. Names
+    resolve against the module's live namespace, so such a rebinding would let
+    a call show one callee and run another (RBT-004 review F4).
 - **Runtime direct-caller check** (:func:`trace_direct_calls`). A profiler
   records every ``btc_predictor`` function entered, and every owner dataclass
   constructed, directly from a frame of the composer file. Pure-Python
@@ -72,6 +79,10 @@ REFUSED_UNRESOLVED = "UNRESOLVED_CALLABLE"
 REFUSED_VALUE_METHOD = "UNCLASSIFIED_METHOD_CALL"
 REFUSED_OWNER_AS_VALUE = "OWNER_CALLABLE_USED_AS_A_VALUE"
 REFUSED_FOREIGN = "UNCLASSIFIED_PACKAGE_CALLABLE"
+REFUSED_LOCAL_IMPORT = "FUNCTION_LOCAL_IMPORT"
+REFUSED_SCOPE_REBINDING = "GLOBAL_OR_NONLOCAL_REBINDING"
+REFUSED_SHADOWED_NAME = "LOCAL_BINDING_SHADOWS_A_MODULE_CALLABLE"
+REFUSED_TRUSTED_NAME_REBOUND = "TRUSTED_METHOD_NAME_REBOUND"
 
 # Composer-facing owner input types (classified field by field in
 # coverage.INPUT_TYPE_FIELD_CLASSIFICATIONS) and the engine intent: the only
@@ -228,6 +239,72 @@ def _module_local_callables(tree: ast.AST) -> tuple[frozenset[str], frozenset[st
     return frozenset(functions), frozenset(methods)
 
 
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
+
+def _enclosing_scopes(tree: ast.AST) -> dict[int, ast.AST | None]:
+    """Each node's innermost enclosing function, class, lambda or comprehension (None at module level)."""
+
+    scopes: dict[int, ast.AST | None] = {}
+    pending: list[tuple[ast.AST, ast.AST | None]] = [(tree, None)]
+    while pending:
+        node, scope = pending.pop()
+        scopes[id(node)] = scope
+        inner = node if isinstance(node, _SCOPES) else scope
+        pending.extend((child, inner) for child in ast.iter_child_nodes(node))
+    return scopes
+
+
+def _shadows_a_callable(name: str, namespace: Mapping[str, Any]) -> bool:
+    if name.startswith("__") and name.endswith("__"):
+        return False
+    if name in namespace:
+        value = namespace[name]
+        return callable(value) or isinstance(value, types.ModuleType)
+    return callable(getattr(builtins, name, None))
+
+
+def _binding_refusals(tree: ast.AST, namespace: Mapping[str, Any], trusted_attributes: frozenset[str]) -> list[StaticRefusal]:
+    """Bindings the module namespace does not show (see the module docstring)."""
+
+    scopes = _enclosing_scopes(tree)
+    refusals: list[StaticRefusal] = []
+    for node in ast.walk(tree):
+        scope = scopes[id(node)]
+        line = getattr(node, "lineno", 0)
+        if isinstance(node, (ast.Import, ast.ImportFrom)) and scope is not None:
+            module = f"{node.module}." if isinstance(node, ast.ImportFrom) and node.module else ""
+            for alias in node.names:
+                refusals.append(StaticRefusal(line, ast.unparse(node)[:160], REFUSED_LOCAL_IMPORT, f"{module}{alias.name}"))
+            continue
+        if isinstance(node, (ast.Global, ast.Nonlocal)):
+            refusals.append(StaticRefusal(line, ast.unparse(node)[:160], REFUSED_SCOPE_REBINDING, ", ".join(node.names)))
+            continue
+        if isinstance(node, ast.Attribute) and isinstance(node.ctx, (ast.Store, ast.Del)) and node.attr in trusted_attributes:
+            refusals.append(StaticRefusal(line, ast.unparse(node)[:160], REFUSED_TRUSTED_NAME_REBOUND, node.attr))
+            continue
+        if scope is None:
+            continue
+        names: tuple[str, ...] = ()
+        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            names = (node.id,)
+        elif isinstance(node, ast.arg):
+            names = (node.arg,)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            names = (node.name,)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and not isinstance(scope, ast.ClassDef):
+            # a nested definition binds a local name; a method binds a class attribute
+            names = (node.name,)
+        elif isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name:
+            names = (node.name,)
+        elif isinstance(node, ast.MatchMapping) and node.rest:
+            names = (node.rest,)
+        for name in names:
+            if _shadows_a_callable(name, namespace):
+                refusals.append(StaticRefusal(line, name, REFUSED_SHADOWED_NAME, name))
+    return refusals
+
+
 def _classify_object(obj: Any, module_name: str) -> tuple[str | None, str, str]:
     """(accepted kind or None, refusal reason, target path) for a resolved callee."""
 
@@ -339,6 +416,11 @@ def static_call_census(module: types.ModuleType) -> StaticCallCensus:
             continue
         if isinstance(obj, (types.FunctionType, staticmethod, classmethod, functools.partial)):
             refusals.append(StaticRefusal(node.lineno, text(node), REFUSED_OWNER_AS_VALUE, _path(obj)))
+
+    # The classification above resolves names in the module namespace; any
+    # binding that namespace does not show is refused rather than trusted.
+    trusted = local_methods | ALLOWED_VALUE_METHODS | ALLOWED_SERIALIZER_NAMES | {"run_metadata"}
+    refusals.extend(_binding_refusals(tree, namespace, frozenset(trusted)))
     return StaticCallCensus(
         module=module.__name__,
         calls=tuple(sorted(calls, key=lambda call: (call.line, call.expression))),

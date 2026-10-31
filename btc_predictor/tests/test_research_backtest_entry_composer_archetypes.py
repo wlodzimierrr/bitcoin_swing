@@ -34,6 +34,7 @@ from btc_predictor.levels.swing import WEEKLY_SWING_LOW
 from btc_predictor.research_backtest import entry_composer
 from btc_predictor.risk.invalidation import SELECTION_FARTHEST, SELECTION_NEAREST
 from btc_predictor.research_backtest.entry_composer import (
+    CAUSE_DECISION_PRICE_BAR_MISSING,
     LONG_ARCHETYPES,
     OUTCOME_ARM_ENTRY,
     OUTCOME_NO_TRADE,
@@ -226,6 +227,37 @@ def test_the_armed_entry_fills_through_the_engine():
     after = [row for row in rows if row.decision_at > utc(2024, 3, 31)]
     assert after and all(row.position_open and row.reasons == (REASON_POSITION_ALREADY_OPEN,) for row in after if row.position_open)
     assert any(row.position_open for row in after)
+
+
+def test_a_missed_midnight_keeps_the_position_it_had_then():
+    """RBT-004 review F1: a later stop never rewrites an earlier missed-midnight row.
+
+    The armed entry fills on 2024-03-31 at 01:00. The bar closing at 2024-04-02
+    00:00 is absent, and a later bar's low stops the position at 13:00 that
+    day; the missed midnight's row must still record the open position.
+    """
+
+    missing, crash = utc(2024, 4, 1, 23), utc(2024, 4, 2, 12)
+    market = _market(0.07, 80.0, 0.0003, utc(2024, 4, 5)).build()
+    bars = tuple(replace(bar, low=Decimal(1)) if bar.timestamp == crash else bar for bar in market.dataset.price_bars if bar.timestamp != missing)
+    composer = EntryComposer(replace(market, dataset=replace(market.dataset, price_bars=bars)), strategy_config=CONFIG)
+    seen = {}
+
+    def strategy(context):
+        seen[context.as_of] = context.position_open
+        return composer(context)
+
+    engine_bars = tuple(bar for bar in bars if utc(2024, 3, 24, 23) <= bar.timestamp < utc(2024, 4, 4, 1))
+    result = run_backtest(engine_bars, strategy=strategy, strategy_config=CONFIG, symbol=engine_bars[0].symbol)
+    stops = [event.occurred_at for event in result.events if event.event_type == "STOP_EXECUTION" and event.status == "EXECUTED"]
+    assert stops == [utc(2024, 4, 2, 13)]
+    # the engine's own view: open before the missed midnight, flat from the stop
+    assert utc(2024, 4, 2) not in seen and seen[utc(2024, 4, 1, 23)] is True and seen[utc(2024, 4, 2, 13)] is False
+    rows = {row.decision_at: row for row in composer.ledger}
+    skipped = rows[utc(2024, 4, 2)]
+    assert skipped.reasons == (CAUSE_DECISION_PRICE_BAR_MISSING,) and skipped.intent is None
+    assert skipped.position_open is True
+    assert rows[utc(2024, 4, 1)].position_open is True and rows[utc(2024, 4, 3)].position_open is False
 
 
 # --- Setups A and B together, and B alone -------------------------------------------------------

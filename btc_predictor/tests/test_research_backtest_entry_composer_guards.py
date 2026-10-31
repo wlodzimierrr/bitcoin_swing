@@ -267,6 +267,23 @@ def test_a_constant_history_refuses_with_the_owners_own_code(key, constant_runs)
 
 
 @pytest.mark.parametrize("key", sorted(GUARDS))
+def test_an_open_position_keeps_the_structural_refusal(key, constant_runs):
+    """RBT-004 review F3: an open position never hides a refused component."""
+
+    guard = GUARDS[key]
+    flat = constant_runs[key]["row"]
+    opened = entry_composer.EntryComposer(constant_runs[key]["inputs"], strategy_config=CONFIG).decide(T, position_open=True).row
+    assert opened.position_open is True and flat.position_open is False
+    assert opened.outcome == flat.outcome == OUTCOME_STRUCTURALLY_UNEVALUABLE
+    assert opened.reasons == flat.reasons and "POSITIONING_INCOMPLETE" in opened.reasons
+    assert opened.unevaluable == flat.unevaluable
+    assert guard.code in {item.component: item.causes for item in opened.unevaluable}["positioning"]
+    assert opened.guard_refusals == flat.guard_refusals
+    assert opened.features[guard.z_feature] is None and opened.features[guard.health_feature] is None
+    assert opened.intent is None and opened.unaccounted == ()
+
+
+@pytest.mark.parametrize("key", sorted(GUARDS))
 def test_a_refused_owner_reaches_no_downstream_input(key, constant_runs):
     calls = constant_runs[key]["calls"]
     row = constant_runs[key]["row"]
