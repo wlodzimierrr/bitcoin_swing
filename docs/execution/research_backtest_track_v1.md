@@ -2962,7 +2962,7 @@ Acceptance criteria:
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
-**Status:** `IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — Part A 8ce3e74, Part B 910dec7 + e158de9 (2026-10-25); completion spec rebound 787ddfa2...ca2620f0, inventory 250f9470...a061cb17`
+**Status:** `INDEPENDENT xHIGH REVIEW FAIL (2026-10-31) — review-fix in progress; implemented Part A 8ce3e74, Part B 910dec7 + e158de9 (2026-10-25); completion spec rebound 787ddfa2...ca2620f0, inventory 250f9470...a061cb17`
 **Dependencies:** RBT-002A independent review PASS (SATISFIED, 2026-10-03). Without the spec, every
 composed Entry Conviction is structurally incomplete.
 **Implementation effort:** xHigh
@@ -3375,6 +3375,47 @@ Recommended next dependency-satisfied ticket: the **independent xHigh RBT-004
 review**; **RBT-001A** remains READY. RBT-005 stays blocked until that review
 passes.
 
+### RBT-004 review outcome
+
+**Date:** 2026-10-31. **Review:** independent xHigh ticket review, run at the
+owner's request by the OpenAI Codex CLI (0.162.1, model `gpt-6.1-sol`,
+reasoning `xhigh`) in a detached worktree at `1b0d83d`, against Part A
+`8ce3e74`, Part B `910dec7`, follow-up `e158de9`, documentation `1b0d83d` and
+base `15c235f`. Report-only: a workspace-write sandbox with network disabled,
+no database, no `.env*` file, synthetic fixtures only; its worktree stayed
+clean. The session stopped once at a usage limit (2026-10-25) and was resumed
+on 2026-10-31, when every interim finding was re-run.
+**Result: FAIL.** RBT-004 is not DONE and RBT-005 stays blocked. No owner
+ruling was reopened; no frozen owner edit or new formula is needed.
+
+**Findings.** Locations refer to `1b0d83d`.
+
+| ID / severity | Location | Current versus expected behavior; impact | Reproducer and required correction |
+| --- | --- | --- | --- |
+| F1 / **P1 OPEN** | `entry_composer.py:747`, `:754` | The engine adapter backfills a missed midnight only at the next midnight callback, with the `position_open` reported just before that later midnight. A position open at the missed instant and stopped afterwards is recorded flat: the row uses state from after its decision instant. | Remove the 2024-04-01 23:00 bar from a market whose Setup A entry fills 2024-03-31 01:00 and whose stop executes 2024-04-02 13:00: the 2024-04-02 row says `position_open=False`. Backfill each crossed instant with the state known at that instant; regression: a later stop cannot change the earlier row. |
+| F2 / **P1 OPEN** | `entry_composer.py:749`, `:751` | Backfill needs an earlier ledger row and a later midnight callback, so a missed midnight at the start or end of an engine run never gets a row, against one row per decision instant. | Engine run from 2024-04-07 20:00 without the 04-07 23:00 bar: the ledger has only 04-09. Run to 2024-04-09 05:00 without the 04-08 23:00 bar: only 04-08. Process crossed midnights on every callback; regressions at both boundaries. |
+| F3 / **P1 OPEN** | `entry_composer.py:882`, `:2064` | With `position_open=True` the decision returns `NO_TRADE / POSITION_ALREADY_OPEN` before the completeness decision, and `_finish` drops the component causes, so a guard refusal leaves `unevaluable` empty. The criterion requires `STRUCTURALLY_UNEVALUABLE` wherever an Entry Conviction component is incomplete. Health and z stay withheld. | Constant basis (0.015·365/90) at 2024-04-09: flat gives `STRUCTURALLY_UNEVALUABLE / POSITIONING_INCOMPLETE` with the refusal; open gives `NO_TRADE` with an empty `unevaluable`. Keep the structural status and its causes while suppressing entry; open-position cases for all three guards. |
+| F4 / **P2 OPEN** | `composer_boundary.py:296` | The static census resolves every called name against module globals. A function-local import (`from btc_predictor.features.flow import _trailing_publication_dates as five_day_etf_flow`) or a local assignment reusing a root's name is classified as that root, with no refusal; only the runtime trace sees the real helper. | Either mutation inside `_DecisionRun._trend`: static refusals `()`, runtime violation `FUNCTION btc_predictor.features.flow._trailing_publication_dates`. Refuse function-local imports and local bindings that shadow module-level names; add both mutations to the static tests. |
+| F5 / **P2 — owner ruling 2026-10-31: accepted limitation, fail loud** | `entry_composer.py:384` (cause accounting) | Constant closes give the frozen owner's incomplete `VOL_COMPRESSION_ZERO_DENOMINATOR`. Neither the inventory nor the spec names that code, so the completeness guard reports it as unaccounted. The guard is conservative; no unsafe score results. | Flat OHLC (100/101/99/100) at 2024-04-09: `unaccounted = ("volatility_compression:VOL_COMPRESSION_ZERO_DENOMINATOR",)`. Owner ruling: no frozen-artifact change; the code stays reported as unaccounted, a test pins that, and the limitation is recorded (it needs exactly constant prices). |
+| F6 / **P2 OPEN** | `entry_composer.py:1317` | A typed liquidation record with `liquidation_percentile=None` maps to `LIQUIDATION_PERCENTILE_INPUT_MISSING`, but the record's own reason codes are dropped: two different producer causes give byte-identical ledgers. | A 2024-04-08 record carrying `LIQUIDATION_FEED_UNAVAILABLE` or any other code. Preserve the supplied codes in the row as provenance; the missing value stays accounted under the existing cause. |
+
+**Checks that passed.** No new formulas; the hard vetoes, archetypes and
+long-only direction; BTC-048 parity; the loaded closure table and per-window
+fund universe; the reusable `decide`/`record` API; the frozen-basis guard
+without a restated z-score. The Setup B/C input interventions are accepted as
+scoped branch fixtures using the real owners, with the natural reclaim and
+higher-low fixtures verifying trigger freshness. The narrowed RBT-002 test
+still refuses a mutation in another production module. Inventory and spec
+rebuilt byte-identical under three hash seeds from an alternate cwd; the
+rebind changed only the inventory digest and its citation. No protected path
+changed. Codex's runs (`.venv312`, one process at a time): guards and boundary
+93 passed; flow and parity 18 passed; archetypes, vetoes and point in time 32
+passed; selected core and census contracts 36 passed, 3 deselected;
+`git diff --check` clean. The full suite was not rerun.
+
+**Next.** A distinct review-fix commit for F1–F4 and F6, with F5's pinning
+test, then an independent xHigh re-review.
+
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
 **Status:** `BLOCKED — awaiting the RBT-004 independent xHigh review`
@@ -3522,7 +3563,7 @@ version or any version derived from inspecting its result.
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
-| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 175 composer tests; full suite 7,508 passed, 3 skipped, 1 xfailed, 0 failed in 4124.31s |
+| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | INDEPENDENT xHIGH REVIEW FAIL (2026-10-31): three P1, three P2 (F5 owner-accepted); review-fix in progress — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 175 composer tests; full suite 7,508 passed, 3 skipped, 1 xfailed, 0 failed in 4124.31s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 independent xHigh review |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
@@ -3547,8 +3588,9 @@ completion spec on 2026-10-01. The independent review above failed the census,
 and so did the re-review of the R1 correction (`906c719`). Correction R2
 (`812b968`) passed independent re-review under the policy V5 bounded standard.
 RBT-002A is DONE / independent xHigh review PASS under policy V7 (final spec
-`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0`). RBT-004 is
-IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW and RBT-001A is READY; the four
+`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0`). RBT-004's
+independent xHigh review FAILED (2026-10-31) and its review-fix is in progress;
+RBT-001A is READY; the four
 adopted data choices stay fixed.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
@@ -3557,8 +3599,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is the **independent xHigh RBT-004 review**, with
-**RBT-001A** also READY.
+dependency-satisfied EPIC Y work is the **RBT-004 review-fix and independent
+xHigh re-review**, with **RBT-001A** also READY.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
