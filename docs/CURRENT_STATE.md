@@ -913,8 +913,9 @@ real-data values or outcome; holdout NOT COLLECTED, BTC-019 sealed sample
 UNOPENED. EPIC X next remains POSTP1-001V2R1.
 
 EPIC Y RBT-004 =
-IMPLEMENTED (2026-10-25), policy V7; independent xHigh review FAIL
-(2026-10-31); review-fix `514449c` awaits the independent xHigh re-review.
+DONE (2026-10-31), policy V7: independent xHigh re-review PASS WITH
+NON-BLOCKING FINDINGS after the review FAIL and review-fix `514449c`; N1/N2
+fixed in `6318234`. Implemented 2026-10-25.
 COMPOSE_CHAMPION_ENTRY_DECISION_V1: Part A `8ce3e74` promoted the 14 spec
 roots (74 -> 88) and rebound the spec to the regenerated inventory, offline:
 inventory `108ab25b...efe3a` -> `250f9470...a061cb17`, spec `9819f84a...5013f`
@@ -935,7 +936,12 @@ unevaluability) and three P2 (static census local bindings; an unaccounted
 zero-volatility compression code, owner-accepted as fail-loud; dropped
 liquidation reason codes). Review-fix `514449c` fixes F1-F4 and F6 and pins F5;
 190 composer tests; full repository 7,523 passed, 3 skipped, 1 xfailed,
-0 failed in 4239.22s (the 7,508 baseline plus the 15 new tests).
+0 failed in 4239.22s (the 7,508 baseline plus the 15 new tests). The
+re-review (same Codex session) found F1-F3 and F6 fixed and F5 pinned, with
+two non-blocking findings, fixed in `6318234`: N1 (P2) static census gaps for
+dunder-named locals and reflective dunder access; N2 (P3) the F5 condition is
+a zero 60-day realized volatility. 193 composer tests; full repository
+7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s. RBT-005 is READY.
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1375,15 +1381,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   separate owner-ruled V7 conformance commit are complete. All 26 entries are
   covered; the existing uniform 20/20 observation z convention, three guarded
   positioning owners and the non-selecting Momentum Persistence ablation are
-  frozen. **RBT-004's independent xHigh review FAILED (2026-10-31); review-fix
-  `514449c` awaits the independent xHigh re-review** (Part A `8ce3e74`, Part B
+  frozen. **RBT-004 is DONE / independent xHigh re-review PASS WITH
+  NON-BLOCKING FINDINGS** (2026-10-31; review FAIL fixed in `514449c`, N1/N2
+  in `6318234`; Part A `8ce3e74`, Part B
   `910dec7` + `e158de9`; spec rebound to `787ddfa2...ca2620f0`, inventory
-  `250f9470...a061cb17`), with **RBT-001A also READY**. All four V4 data
+  `250f9470...a061cb17`); **RBT-005 and RBT-001A are READY**. All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
   `POSTP1-002V2A-T1` passed on 2026-09-30 at `2292388e...1d1710`;
   `POSTP1-001V2R1` is now dependency-satisfied. RBT-006's table dependency is
-  satisfied, but its RBT-003/RBT-005 dependencies remain blocked. Collection
+  satisfied, but its RBT-003/RBT-005 dependencies are not done. Collection
   stays unauthorized. Phase-1 implementation is complete and
   BTC-019 is terminal, so the frontier has moved to the new post-Phase-1
   workstream [EPIC X](execution/post_phase1_prospective_integration_evidence_v1.md).
@@ -1609,11 +1616,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** EPIC Y RBT-004, review-fix `514449c` awaiting
-  the independent xHigh re-review (review FAIL 2026-10-31: three P1, three P2);
-  RBT-001A is READY. EPIC X's separate next action remains
+- **Current IN_PROGRESS ticket:** none in EPIC Y; RBT-004 closed DONE on
+  2026-10-31, and RBT-005 and RBT-001A are READY. EPIC X's separate next
+  action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-004, 2026-10-31,
+- **Most recent completed review:** EPIC Y RBT-004 re-review, 2026-10-31,
+  **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE** (same Codex
+  session, report-only) of review-fix `514449c` and docs `3e0571d`. F1-F3 and
+  F6 FIXED, F5 pinned as ruled; N1 (P2) and N2 (P3) fixed after the PASS in
+  `6318234`. Details in EPIC Y's RBT-004 re-review outcome.
+- **Preceding completed review (EPIC Y):** RBT-004, 2026-10-31,
   **independent xHigh FAIL** (OpenAI Codex CLI at the owner's request,
   report-only) against `8ce3e74`, `910dec7`, `e158de9` and `1b0d83d`. Findings,
   evidence and the F5 owner ruling are in EPIC Y's RBT-004 review outcome.
@@ -1899,10 +1911,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** the **independent xHigh
-  RBT-004 re-review** of review-fix `514449c`; **RBT-001A is also READY**.
-  RBT-005 stays blocked until the RBT-004 review passes; RBT-003 and
-  RBT-006..008 remain blocked on their own dependencies.
+- **Next dependency-satisfied EPIC Y actions:** **RBT-005**
+  `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` (READY now that RBT-004 is DONE)
+  and **RBT-001A** (READY). RBT-003 and RBT-006..008 remain blocked on their
+  own dependencies.
   - The owner's eight RBT-004 composition rulings (2026-10-03) are applied
     and recorded in the RBT-004 notes; no owner question is open.
   - Surfaced for the review: the frozen spec's `rolling_zscore` helper text
@@ -1918,6 +1930,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-004 non-blocking fix validation (2026-10-31):** `.venv312` CPython
+  3.12.14. The eight composer modules 193 passed in 1241.27s; full repository at
+  `6318234`, alone:
+  7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s.
+  No owner, config, spec, inventory or evidence change; no database,
+  real-data value or outcome.
 - **RBT-004 review-fix validation (2026-10-31):** `.venv312` CPython 3.12.14.
   The eight composer modules 190 passed in 1214.88s; full repository at
   `514449c`, alone: 7,523 passed, 3 skipped, 1 xfailed, 0 failed in 4239.22s
@@ -2342,10 +2360,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** EPIC Y RBT-004 review-fix
-  `514449c` (review FAIL recorded in `156b587`), on Part A `8ce3e74`, Part B
-  `910dec7` + `e158de9` and docs `1b0d83d`; awaiting the independent xHigh
-  re-review. Earlier: RBT-002 correction R2
+- **Last relevant implementation/review commits:** EPIC Y RBT-004
+  non-blocking fix `6318234` with this documentation commit (re-review PASS,
+  DONE); review-fix `514449c` and its docs `3e0571d` (review FAIL recorded in
+  `156b587`); Part A `8ce3e74`, Part B `910dec7` + `e158de9` and docs
+  `1b0d83d`. Earlier: RBT-002 correction R2
   `812b968`, implementation documentation `ce5cd70`, base `634d122`;
   independent R2 re-review **PASS under V5 §5A.7** recorded in the working tree
   on 2026-10-02, with no review-fix or commit as requested. Inventory
@@ -3260,9 +3279,10 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
-- **ANSWERED 2026-10-31: RBT-004 review finding F5.** Constant closes give the
-  frozen volatility owner's `VOL_COMPRESSION_ZERO_DENOMINATOR`, which neither
-  the bound inventory nor the spec names. The owner chose fail-loud: no
+- **ANSWERED 2026-10-31: RBT-004 review finding F5.** A zero 60-day realized
+  volatility (constant closes, or one identical daily return; re-review N2)
+  gives the frozen volatility owner's `VOL_COMPRESSION_ZERO_DENOMINATOR`, which
+  neither the bound inventory nor the spec names. The owner chose fail-loud: no
   frozen-artifact change; the completeness guard keeps reporting it as
   unaccounted, a test pins that, and it is recorded as an accepted limitation.
 

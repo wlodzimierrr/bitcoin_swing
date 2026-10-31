@@ -2962,7 +2962,7 @@ Acceptance criteria:
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
-**Status:** `REVIEW-FIX 514449c (2026-10-31) / AWAITING INDEPENDENT xHIGH RE-REVIEW — review FAIL 2026-10-31; implemented Part A 8ce3e74, Part B 910dec7 + e158de9 (2026-10-25); completion spec rebound 787ddfa2...ca2620f0, inventory 250f9470...a061cb17`
+**Status:** `DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review-fix 514449c, non-blocking fix 6318234; review FAIL 2026-10-31; implemented Part A 8ce3e74, Part B 910dec7 + e158de9 (2026-10-25); completion spec rebound 787ddfa2...ca2620f0, inventory 250f9470...a061cb17`
 **Dependencies:** RBT-002A independent review PASS (SATISFIED, 2026-10-03). Without the spec, every
 composed Entry Conviction is structurally incomplete.
 **Implementation effort:** xHigh
@@ -3074,7 +3074,9 @@ implementer's record, not a closure.
   reclaim (test only; no production change).
 - Docs, `1b0d83d`: this block, the tasks table and `CURRENT_STATE.md`.
 - Review-fix, `514449c` (2026-10-31): findings F1-F4 and F6 of the review below,
-  and F5's pinning test; the statements below are current after it.
+  and F5's pinning test.
+- Non-blocking fix, `6318234` (2026-10-31): re-review findings N1 and N2; the
+  statements below are current after it.
 
 **Digests (RBT-002 E3 rebind):**
 
@@ -3246,8 +3248,10 @@ non-root owner function, an unclassified owner constructor, any callable held in
 a local, container or subscript, `getattr`/`partial`/`operator`/`importlib`/
 `eval` dispatch, an owner callable used as a value, and any binding the module
 namespace does not show (a function-local import, `global`/`nonlocal`, a local
-binding shadowing a module-level or builtin callable, an assignment to a name
-the census trusts for an unresolved method call). The runtime
+binding, dunder-named or not, shadowing a module-level or builtin callable, an
+assignment to a name the census trusts for an unresolved method call, and any
+dunder attribute except a `__name__`/`__qualname__` read and
+`super().__init__`). The runtime
 direct-caller profile over the warm-up, `NO_TRADE`, `ARM_ENTRY`, guard-refusal
 and BTC-180 engine paths finds no violation, and every static root is
 exercised there except, at most, `evaluate_reclaim_trigger` (called only when a
@@ -3264,7 +3268,8 @@ consumed and auxiliary owner result is checked: an incomplete result needs an
 accounted code, and any missing-input code must be accounted. Every fixture
 replay in the eight modules asserts `unaccounted == ()`, except one test that
 pins the owner-accepted `VOL_COMPRESSION_ZERO_DENOMINATOR` of exactly constant
-closes as unaccounted (review F5); injected unknown codes are reported.
+closes, one case of a zero 60-day realized volatility, as unaccounted (review
+F5); injected unknown codes are reported.
 
 **Design decisions beyond the rulings (for the review).**
 - *ETF anchor and calendar pages.* D comes from one owner call with
@@ -3296,12 +3301,12 @@ closes as unaccounted (review F5); injected unknown codes are reported.
   every other production module, and asserts the composer contains each
   pattern.
 
-**Tests (eight modules, 190 tests, all passing).**
+**Tests (eight modules, 193 tests, all passing).**
 
 | Module | Proves |
 | --- | --- |
 | `…_guards` | per owner: the frozen owner's complete z on a non-terminating constant; the five required tests (constant, current equal, current different, point-in-time exclusion of rows observed or available after `t` and of another OI unit, non-constant pass-through); no downstream health/z and per-field attribution; CROWDING/STRESS fail closed; exact-equality without tolerance; no restated z; owner refusals stand; the Setup B history guard; an open position keeps each guard's structural refusal (F3); `UNIFORM_ZSCORE_V1` (0.1, 1/3, 0.015·365/90 at 20 and 730 observations, both accumulator widths, the 64-bit counterexample, no helper call on refusal, gaps, last-20 selection, parity) and `UNIFORM_PERCENTILE_V1` (time window boundaries, minimum, missing) |
-| `…_boundary` | the static census, allowed constructors/accessors/value methods, traced runtime calls on every outcome path, static/runtime agreement, and mutations (direct helper, alias, module attribute, getattr, dict, partial, callback, local alias, unclassified constructor, importlib) that fail statically and at runtime; the review F4 bindings (function-local import, local assignment shadowing a root or a builtin, a shadowing parameter, `global` rebinding, a trusted method name rebound) fail statically |
+| `…_boundary` | the static census, allowed constructors/accessors/value methods, traced runtime calls on every outcome path, static/runtime agreement, and mutations (direct helper, alias, module attribute, getattr, dict, partial, callback, local alias, unclassified constructor, importlib) that fail statically and at runtime; the review F4 bindings (function-local import, local assignment shadowing a root or a builtin, a shadowing parameter, `global` rebinding, a trusted method name rebound) fail statically, as do the re-review N1 forms (a dunder-named local shadowing a root, a trusted name rebound through `self.__dict__` or `object.__setattr__`) |
 | `…_flow` | every ETF window gets the loaded closure table; the listed-holiday window is complete with it and `ETF_FLOW_INPUT_MISSING` without; the per-window fund universe; pre-launch windows never invented; an unrecorded fund is refused; independent z recomputation over publication days; `ETF_CORE` with CVD absent; Setup B's native FlowAccel history; a late revision never changes `t` |
 | `…_pit` | the point-in-time property over four seeds and every family, including an armed entry, with converse controls |
 | `…_entry_composer` | one row per instant; nothing zero-filled; canonical, deterministic ledger (two composers; fresh processes under three hash seeds from another cwd); decision API refusals; the engine adapter at midnights; missed-midnight backfill and the skipped-bar defect; engine-prefix independence; cause accounting against the artifacts and injected unknown codes; identity and input refusals; liquidation handling and its producer reason codes as provenance (F6); the owner-accepted unaccounted compression code of constant closes (F5); missed midnights at either end of a run (F2) and strictly increasing callbacks; regime chaining; open positions; the Setup C episode cases |
@@ -3376,10 +3381,12 @@ the C-with-A clash; and `CrowdingFlagInput` for severe crowding.
 - *Liquidation feed.* No producer of the typed `LIQUIDATION_PERCENTILE` exists
   yet (RBT-001A/RBT-003); the futures-basis and market-cap families also have no
   reviewed replay builder yet.
-- *Accepted limitation (review F5, owner ruling 2026-10-31).* Exactly constant
-  closes give the frozen volatility owner's `VOL_COMPRESSION_ZERO_DENOMINATOR`,
-  which no bound artifact names; the completeness guard keeps reporting it as
-  unaccounted, and a test pins that.
+- *Accepted limitation (review F5, owner ruling 2026-10-31).* A zero 60-day
+  realized volatility gives the frozen volatility owner's
+  `VOL_COMPRESSION_ZERO_DENOMINATOR`, which no bound artifact names; the
+  completeness guard keeps reporting it as unaccounted. Exactly constant closes
+  are the pinned case; one identical daily return across the window, such as
+  doubling closes, is another (re-review N2).
 - *Tooling.* `coverage rebuild`'s default `--artifact` is relative to the
   working directory; the determinism check passes it explicitly.
 - No real-data value, score, signal, trade or outcome was computed; no database
@@ -3411,8 +3418,8 @@ ruling was reopened; no frozen owner edit or new formula is needed.
 | F1 / **P1 FIXED** | `entry_composer.py:747`, `:754` | The engine adapter backfills a missed midnight only at the next midnight callback, with the `position_open` reported just before that later midnight. A position open at the missed instant and stopped afterwards is recorded flat: the row uses state from after its decision instant. | Remove the 2024-04-01 23:00 bar from a market whose Setup A entry fills 2024-03-31 01:00 and whose stop executes 2024-04-02 13:00: the 2024-04-02 row says `position_open=False`. Backfill each crossed instant with the state known at that instant; regression: a later stop cannot change the earlier row. |
 | F2 / **P1 FIXED** | `entry_composer.py:749`, `:751` | Backfill needs an earlier ledger row and a later midnight callback, so a missed midnight at the start or end of an engine run never gets a row, against one row per decision instant. | Engine run from 2024-04-07 20:00 without the 04-07 23:00 bar: the ledger has only 04-09. Run to 2024-04-09 05:00 without the 04-08 23:00 bar: only 04-08. Process crossed midnights on every callback; regressions at both boundaries. |
 | F3 / **P1 FIXED** | `entry_composer.py:882`, `:2064` | With `position_open=True` the decision returns `NO_TRADE / POSITION_ALREADY_OPEN` before the completeness decision, and `_finish` drops the component causes, so a guard refusal leaves `unevaluable` empty. The criterion requires `STRUCTURALLY_UNEVALUABLE` wherever an Entry Conviction component is incomplete. Health and z stay withheld. | Constant basis (0.015·365/90) at 2024-04-09: flat gives `STRUCTURALLY_UNEVALUABLE / POSITIONING_INCOMPLETE` with the refusal; open gives `NO_TRADE` with an empty `unevaluable`. Keep the structural status and its causes while suppressing entry; open-position cases for all three guards. |
-| F4 / **P2 FIXED** | `composer_boundary.py:296` | The static census resolves every called name against module globals. A function-local import (`from btc_predictor.features.flow import _trailing_publication_dates as five_day_etf_flow`) or a local assignment reusing a root's name is classified as that root, with no refusal; only the runtime trace sees the real helper. | Either mutation inside `_DecisionRun._trend`: static refusals `()`, runtime violation `FUNCTION btc_predictor.features.flow._trailing_publication_dates`. Refuse function-local imports and local bindings that shadow module-level names; add both mutations to the static tests. |
-| F5 / **P2 — owner ruling 2026-10-31: accepted limitation, fail loud** | `entry_composer.py:384` (cause accounting) | Constant closes give the frozen owner's incomplete `VOL_COMPRESSION_ZERO_DENOMINATOR`. Neither the inventory nor the spec names that code, so the completeness guard reports it as unaccounted. The guard is conservative; no unsafe score results. | Flat OHLC (100/101/99/100) at 2024-04-09: `unaccounted = ("volatility_compression:VOL_COMPRESSION_ZERO_DENOMINATOR",)`. Owner ruling: no frozen-artifact change; the code stays reported as unaccounted, a test pins that, and the limitation is recorded (it needs exactly constant prices). |
+| F4 / **P2 FIXED** (residual N1 fixed in `6318234`) | `composer_boundary.py:296` | The static census resolves every called name against module globals. A function-local import (`from btc_predictor.features.flow import _trailing_publication_dates as five_day_etf_flow`) or a local assignment reusing a root's name is classified as that root, with no refusal; only the runtime trace sees the real helper. | Either mutation inside `_DecisionRun._trend`: static refusals `()`, runtime violation `FUNCTION btc_predictor.features.flow._trailing_publication_dates`. Refuse function-local imports and local bindings that shadow module-level names; add both mutations to the static tests. |
+| F5 / **P2 — owner ruling 2026-10-31: accepted limitation, fail loud** | `entry_composer.py:384` (cause accounting) | Constant closes give the frozen owner's incomplete `VOL_COMPRESSION_ZERO_DENOMINATOR`. Neither the inventory nor the spec names that code, so the completeness guard reports it as unaccounted. The guard is conservative; no unsafe score results. | Flat OHLC (100/101/99/100) at 2024-04-09: `unaccounted = ("volatility_compression:VOL_COMPRESSION_ZERO_DENOMINATOR",)`. Owner ruling: no frozen-artifact change; the code stays reported as unaccounted, a test pins that, and the limitation is recorded (it needs a zero 60-day realized volatility, of which constant prices are one case; re-review N2). |
 | F6 / **P2 FIXED** | `entry_composer.py:1317` | A typed liquidation record with `liquidation_percentile=None` maps to `LIQUIDATION_PERCENTILE_INPUT_MISSING`, but the record's own reason codes are dropped: two different producer causes give byte-identical ledgers. | A 2024-04-08 record carrying `LIQUIDATION_FEED_UNAVAILABLE` or any other code. Preserve the supplied codes in the row as provenance; the missing value stays accounted under the existing cause. |
 
 **Checks that passed.** No new formulas; the hard vetoes, archetypes and
@@ -3459,11 +3466,57 @@ without a midnight was accepted silently). Validation: the eight composer
 modules 190 passed in 1214.88s; full repository 7,523 passed, 3 skipped,
 1 xfailed, 0 failed in 4239.22s (the 7,508 baseline plus the 15 new tests).
 
-**Next.** The independent xHigh re-review of `514449c`.
+### RBT-004 re-review outcome
+
+**Date:** 2026-10-31. **Review:** independent xHigh re-review by the same Codex
+CLI session (`gpt-6.1-sol`, reasoning `xhigh`), resumed in its detached
+worktree at `3e0571d` under the same report-only rules; its worktree stayed
+clean. **Reviewed:** review-fix `514449c` and documentation `3e0571d`, against
+the FAIL at `1b0d83d`.
+**Result: PASS WITH NON-BLOCKING FINDINGS. RBT-004 is DONE.** F1, F2, F3 and F6
+are fixed and F5 is pinned as ruled; no new blocking defect was found. RBT-005
+is READY.
+
+| Finding | Re-review status and evidence |
+| --- | --- |
+| F1 | **FIXED.** The March 31 entry / April 2 13:00 stop probe: the missed April 2 row now says `position_open=True` (`False` at `1b0d83d`). |
+| F2 | **FIXED.** Both boundary probes now give the April 8 and April 9 rows; each loses its missed row at `1b0d83d`. |
+| F3 | **FIXED.** The three open-position guard regressions pass; an independent basis probe keeps `STRUCTURALLY_UNEVALUABLE` and its causes; ruling 4's `NO_TRADE / NO_VALID_STRUCTURAL_STOP` is unchanged. |
+| F4 | **FIXED for the reviewed probes**; residual N1 below. |
+| F5 | **PINNED AS RULED.** The pin keeps exactly `volatility_compression:VOL_COMPRESSION_ZERO_DENOMINATOR` unaccounted; no frozen artifact changed. Its record is corrected by N2. |
+| F6 | **FIXED.** Visible producer codes survive in `input_reason_codes`; a record available after `t` contributes none; the missing value's accounting is unchanged. |
+
+Further probes: consecutive missed midnights are appended at the first later
+callback; duplicate and backward callbacks fail; a skipped visible decision bar
+fails before the next midnight; flat and open-position chains keep identical
+features, regime smoothing, flags and Setup C episode state. The new F1, both
+F2, F3, F6 and callback-ordering regressions detect the old implementation.
+
+| ID / severity | Location (`3e0571d`) | Finding | Disposition |
+| --- | --- | --- | --- |
+| N1 / **P2 FIXED** | `composer_boundary.py:259` | The F4 binding check exempted dunder names: a root imported at module scope as `__root__` and rebound in `_trend` to a non-root helper gave no static refusal and was classified as `five_day_etf_flow`. Assigning a helper through `self.__dict__['_keep']` also passed statically. The runtime trace caught both. | Fixed in `6318234`: a dunder name is shadowed like any other, and every dunder attribute except a `__name__`/`__qualname__` read and `super().__init__` is refused (`REFLECTIVE_DUNDER_ATTRIBUTE`). Three static mutations (Codex's two and `object.__setattr__`) give no refusal at `514449c` and the targeted refusal after the fix. |
+| N2 / **P3 FIXED** | this block, F5 record | The F5 record said the limitation needs exactly constant prices; closes `2**i` (one constant return) also give `RV60 = 0` and the same code. | The record, the accepted-limitation bullet and the composer docstring now name a zero 60-day realized volatility, with constant closes as the pinned case. No behaviour change. |
+
+Codex's runs (`.venv312`, one process at a time): core module, open-position
+guards, F1 regression, static mutations and census checks 59 passed;
+archetypes, both no-stop classifications, selected point-in-time and boundary
+controls 18 passed; four probe scripts passed; `git diff --check` clean. It
+did not rerun the full suite. No owner question was raised.
+
+**Non-blocking fix:** `6318234` (2026-10-31), made after the PASS as the owner
+chose, without a further re-review. It changes `composer_boundary.py`, the
+composer docstring and the boundary tests only; no owner, configuration, spec,
+inventory or evidence artifact. It only adds static refusals; the composer's
+own census stays refusal-free. Validation: the eight composer modules
+193 passed in 1241.27s; full repository at `6318234`, alone:
+7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s.
+
+Recommended next dependency-satisfied tickets: **RBT-005** (READY) and
+**RBT-001A** (READY).
 
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
-**Status:** `BLOCKED — awaiting the RBT-004 independent xHigh review`
+**Status:** `READY — RBT-004 DONE (independent xHigh re-review PASS, 2026-10-31)`
 **Dependencies:** RBT-004
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -3608,8 +3661,8 @@ version or any version derived from inspecting its result.
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
-| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | REVIEW-FIX `514449c` / AWAITING INDEPENDENT xHIGH RE-REVIEW — review FAIL (2026-10-31): three P1, three P2 (F5 owner-accepted) — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`, review-fix `514449c`; 190 composer tests; full suite 7,523 passed, 3 skipped, 1 xfailed, 0 failed in 4239.22s |
-| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | BLOCKED — RBT-004 independent xHigh review |
+| RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
+| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | READY — RBT-004 DONE |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
@@ -3633,9 +3686,9 @@ completion spec on 2026-10-01. The independent review above failed the census,
 and so did the re-review of the R1 correction (`906c719`). Correction R2
 (`812b968`) passed independent re-review under the policy V5 bounded standard.
 RBT-002A is DONE / independent xHigh review PASS under policy V7 (final spec
-`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0`). RBT-004's
-independent xHigh review FAILED (2026-10-31); review-fix `514449c` awaits the
-independent xHigh re-review; RBT-001A is READY; the four
+`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0`). RBT-004 is
+DONE after its independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS
+(2026-10-31); RBT-005 and RBT-001A are READY; the four
 adopted data choices stay fixed.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
@@ -3644,8 +3697,7 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is the **independent xHigh RBT-004 re-review**,
-with **RBT-001A** also READY.
+dependency-satisfied EPIC Y work is **RBT-005** and **RBT-001A**, both READY.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
