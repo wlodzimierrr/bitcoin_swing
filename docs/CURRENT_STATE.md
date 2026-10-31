@@ -914,7 +914,7 @@ UNOPENED. EPIC X next remains POSTP1-001V2R1.
 
 EPIC Y RBT-004 =
 IMPLEMENTED (2026-10-25), policy V7; independent xHigh review FAIL
-(2026-10-31), review-fix in progress.
+(2026-10-31); review-fix `514449c` awaits the independent xHigh re-review.
 COMPOSE_CHAMPION_ENTRY_DECISION_V1: Part A `8ce3e74` promoted the 14 spec
 roots (74 -> 88) and rebound the spec to the regenerated inventory, offline:
 inventory `108ab25b...efe3a` -> `250f9470...a061cb17`, spec `9819f84a...5013f`
@@ -933,7 +933,9 @@ NOT COLLECTED, BTC-019 untouched, EPIC X unchanged. The independent review
 position state, missed first/last midnights, an open position hiding structural
 unevaluability) and three P2 (static census local bindings; an unaccounted
 zero-volatility compression code, owner-accepted as fail-loud; dropped
-liquidation reason codes).
+liquidation reason codes). Review-fix `514449c` fixes F1-F4 and F6 and pins F5;
+190 composer tests; full repository 7,523 passed, 3 skipped, 1 xfailed,
+0 failed in 4239.22s (the 7,508 baseline plus the 15 new tests).
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1373,9 +1375,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   separate owner-ruled V7 conformance commit are complete. All 26 entries are
   covered; the existing uniform 20/20 observation z convention, three guarded
   positioning owners and the non-selecting Momentum Persistence ablation are
-  frozen. **RBT-004's independent xHigh review FAILED (2026-10-31); its
-  review-fix is in progress** (Part A `8ce3e74`, Part B `910dec7` +
-  `e158de9`; spec rebound to `787ddfa2...ca2620f0`, inventory
+  frozen. **RBT-004's independent xHigh review FAILED (2026-10-31); review-fix
+  `514449c` awaits the independent xHigh re-review** (Part A `8ce3e74`, Part B
+  `910dec7` + `e158de9`; spec rebound to `787ddfa2...ca2620f0`, inventory
   `250f9470...a061cb17`), with **RBT-001A also READY**. All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1607,9 +1609,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** EPIC Y RBT-004 review-fix, after the
-  independent xHigh review FAIL of 2026-10-31 (three P1, three P2); RBT-001A is
-  READY. EPIC X's separate next action remains
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-004, review-fix `514449c` awaiting
+  the independent xHigh re-review (review FAIL 2026-10-31: three P1, three P2);
+  RBT-001A is READY. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-004, 2026-10-31,
   **independent xHigh FAIL** (OpenAI Codex CLI at the owner's request,
@@ -1897,11 +1899,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** the **RBT-004 review-fix**
-  (F1-F4 and F6, plus F5's pinning test), then its **independent xHigh
-  re-review**; **RBT-001A is also READY**. RBT-005 stays blocked until the
-  RBT-004 review passes; RBT-003 and RBT-006..008 remain blocked on their own
-  dependencies.
+- **Next dependency-satisfied EPIC Y actions:** the **independent xHigh
+  RBT-004 re-review** of review-fix `514449c`; **RBT-001A is also READY**.
+  RBT-005 stays blocked until the RBT-004 review passes; RBT-003 and
+  RBT-006..008 remain blocked on their own dependencies.
   - The owner's eight RBT-004 composition rulings (2026-10-03) are applied
     and recorded in the RBT-004 notes; no owner question is open.
   - Surfaced for the review: the frozen spec's `rolling_zscore` helper text
@@ -1917,6 +1918,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-004 review-fix validation (2026-10-31):** `.venv312` CPython 3.12.14.
+  The eight composer modules 190 passed in 1214.88s; full repository at
+  `514449c`, alone: 7,523 passed, 3 skipped, 1 xfailed, 0 failed in 4239.22s
+  (the 7,508 baseline plus the 15 new tests).
+  No owner, config, spec, inventory or evidence change; no database,
+  real-data value or outcome.
 - **RBT-004 implementation validation (2026-10-25):** `.venv312` CPython
   3.12.14. Composer modules together **174 passed**, then the follow-up
   reclaim test with the archetypes and boundary modules **38 passed**; other
@@ -2335,9 +2342,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** EPIC Y RBT-004 Part A
-  `8ce3e74` and Part B `910dec7` + `e158de9`, with this documentation
-  commit; awaiting the independent xHigh review. Earlier: RBT-002 correction R2
+- **Last relevant implementation/review commits:** EPIC Y RBT-004 review-fix
+  `514449c` (review FAIL recorded in `156b587`), on Part A `8ce3e74`, Part B
+  `910dec7` + `e158de9` and docs `1b0d83d`; awaiting the independent xHigh
+  re-review. Earlier: RBT-002 correction R2
   `812b968`, implementation documentation `ce5cd70`, base `634d122`;
   independent R2 re-review **PASS under V5 §5A.7** recorded in the working tree
   on 2026-10-02, with no review-fix or commit as requested. Inventory
