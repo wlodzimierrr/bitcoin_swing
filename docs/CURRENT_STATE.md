@@ -1616,8 +1616,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none in EPIC Y; RBT-004 closed DONE on
-  2026-10-31, and RBT-005 and RBT-001A are READY. EPIC X's separate next
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-005
+  `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`; its three owner composition
+  rulings (2026-11-01) are recorded and implementation is in progress.
+  RBT-004 closed DONE on 2026-10-31; RBT-001A is READY. EPIC X's separate next
   action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-004 re-review, 2026-10-31,
@@ -1912,8 +1914,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
 - **Next dependency-satisfied EPIC Y actions:** **RBT-005**
-  `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` (READY now that RBT-004 is DONE)
-  and **RBT-001A** (READY). RBT-003 and RBT-006..008 remain blocked on their
+  `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` (IN_PROGRESS; owner rulings
+  recorded 2026-11-01) and **RBT-001A** (READY). RBT-003 and RBT-006..008 remain blocked on their
   own dependencies.
   - The owner's eight RBT-004 composition rulings (2026-10-03) are applied
     and recorded in the RBT-004 notes; no owner question is open.
@@ -3278,6 +3280,14 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-01: RBT-005 composition points.** Asked before
+  implementation; the owner chose every recommended option. An add is
+  evaluated before the stop moves; its `TRAIL` is emitted at t and the `ADD`
+  at the first callback after the raised stop is installed. One intent per
+  decision with priority `EXIT` > `TRIM` > `TRAIL`/`ADD`. The three unmodelled
+  add and reduce rules are recorded as a named limitation, not enforced.
+  Details in the RBT-005 block.
 
 - **ANSWERED 2026-10-31: RBT-004 review finding F5.** A zero 60-day realized
   volatility (constant closes, or one identical daily return; re-review N2)

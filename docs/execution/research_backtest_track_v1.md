@@ -3516,7 +3516,7 @@ Recommended next dependency-satisfied tickets: **RBT-005** (READY) and
 
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
-**Status:** `READY — RBT-004 DONE (independent xHigh re-review PASS, 2026-10-31)`
+**Status:** `IN_PROGRESS — owner composition rulings recorded (2026-11-01); implementation not yet committed`
 **Dependencies:** RBT-004
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -3557,6 +3557,31 @@ Acceptance criteria:
   They are not required to match, because the scenarios are scripted.
 - The composer-root and runtime completeness guards of policy V6 §5A.6 apply
   to this composer too, with the same regressions.
+
+**Owner composition rulings (2026-11-01, asked before implementation; the
+recommended option each time).** No Rulebook, policy or spec text fixed these
+points:
+
+1. **Add with its trail.** Every add that passes comes with a trailing stop
+   that advances on the same higher low, and the engine queues one intent per
+   decision. At the daily decision t the add is evaluated on the lifecycle
+   before the stop moves (spec `NEW_STRUCTURAL_CONFIRMATION`) and the `TRAIL`
+   is emitted. At the first engine callback after the raised stop is
+   installed, the `ADD` follows, carrying the requirements evaluated at t. If
+   the trail is refused or held, the position closes, or its state changes
+   first, the `ADD` is dropped and the reason recorded (Rulebook 26 "Raise Stop
+   -> ADD"; risk stays bounded at the raised stop).
+2. **One intent per decision: `EXIT` > `TRIM` > `TRAIL`/`ADD`.** An exit
+   overrides everything. A trim precedes a trail or add, and an add that would
+   otherwise pass is recorded as suppressed. A trail deferred by a trim does
+   not consume its higher low, so it can still apply at the next decision.
+3. **Unmodelled add and reduce rules: recorded, not enforced.** Rulebook 21
+   "hold quality", 7.5 "PositioningScore >= 70 to add" and 23 "distribution" as
+   a reduce reason (spec limitation `UNMODELLED_ADD_AND_REDUCE_RULES`) have no
+   owner consumer. The composer applies exactly BTC-154's eight add
+   requirements plus policy V7 §7's Rulebook 24 NO ADDING, records the three as
+   a named limitation, and leaves exposure counts to RBT-007. Enforcing them
+   would need a new versioned spec and policy.
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
@@ -3662,7 +3687,7 @@ version or any version derived from inspecting its result.
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
-| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | READY — RBT-004 DONE |
+| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | IN_PROGRESS — owner composition rulings recorded (2026-11-01); implementation in progress |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
@@ -3697,7 +3722,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-005** and **RBT-001A**, both READY.
+dependency-satisfied EPIC Y work is **RBT-005** (IN_PROGRESS) and **RBT-001A**
+(READY).
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
