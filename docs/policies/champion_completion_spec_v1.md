@@ -12,7 +12,7 @@ only**, made under
 | Research strategy identifier | `swing_v1.2+completion_v1` = `swing_v1.2` / `strategy_config_v2` / `default_phase1` plus this spec |
 | Scope | EPIC Y research backtests only. Not `swing_v1.2` for advisory, paper, EPIC X or BTC-019 use; adopting it anywhere else needs that workstream's own decision (policy V7 section 6) |
 | Machine-readable definition | `btc_predictor/research_backtest/completion_spec.py` (typed) → canonical sorted JSON `backtest_evidence/research_backtest_v1/champion_completion_spec_v1.json` |
-| Definition SHA-256 | `787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0` (`champion_completion_spec_v1.json.sha256`), the RBT-004 rebind of the reviewed `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f` |
+| Definition SHA-256 | `9a619596af43e2955db8859fabc10e99073f528257a701d838a06a09615f6313` (`champion_completion_spec_v1.json.sha256`): RBT-005's named-limitation update of the RBT-004 rebind `787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0`, itself a rebind of the reviewed `9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f` (section 11) |
 | Bound inventory | `rbt002_input_coverage_inventory_v1.json`, `250f9470b0586f091744c65bcb3d7e48c25ec4fe01ec7bcc79a9fda1a061cb17`, regenerated offline by RBT-004 after promoting the 14 section 8 helpers to census roots. It replaces `108ab25b2240a76befc0f685cc684175e5207561d978bad099869fb0cc5efe3a` (reviewed under V5; kept by V7); only its census section changed |
 | Evidence class | `RESEARCH_BACKTEST_NON_CERTIFYING`, canonical reference `UNRESOLVED` |
 
@@ -182,7 +182,7 @@ history helpers become classified census roots before RBT-004 calls them.
 
 ## 6. Named limitations and items surfaced for review
 
-**Limitations.** The JSON `named_limitations` lists all 13 in full:
+**Limitations.** The JSON `named_limitations` lists all 14 in full:
 - E1 itself;
 - the same Decimal z-score class in `funding_health` and
   `open_interest_growth_health`, both guarded under V7 section 6A.9;
@@ -197,7 +197,10 @@ history helpers become classified census roots before RBT-004 calls them.
 - add and reduce rules that no owner consumes;
 - level families RBT-004 may cluster (volume-profile or AVWAP-only support
   clusters leave both level inputs `None`);
-- one add instant per confirmed structure.
+- one add instant per confirmed structure;
+- an exhausted tranche schedule: once a position holds every scheduled
+  tranche, the tranche owner's `TRANCHE_SIZING_SCHEDULE_EXHAUSTED` is the
+  schedule's own limit, not a missing input (added by RBT-005, section 11).
 
 Row-based lookbacks carry a reporting obligation: RBT-006/RBT-007 report, per
 venue, how many decision instants have such a lookback spanning an omitted bar.
@@ -342,8 +345,22 @@ diff is in [rbt004_spec_rebind_evidence_v1.json](../../backtest_evidence/researc
 No rule, element, citation or warm-up fact changed, so this is not a
 `CHAMPION_COMPLETION_SPEC_V2`.
 
+**RBT-005 named limitation (2026-11-01, owner review ruling 7).** RBT-005's
+independent review found that an exhausted tranche schedule, the frozen tranche
+owner's `TRANCHE_SIZING_SCHEDULE_EXHAUSTED`, was accounted for by no inventory
+or spec text, so the policy V7 section 5A.6 guard could not accept it. Policy V7
+section 5A.6 names a named limitation as an accounted cause, and the owner ruled
+that a recorded update adds one: `TRANCHE_SCHEDULE_EXHAUSTED`, appended to
+`named_limitations`. Exactly two leaves were added, that item's id and
+statement; no leaf changed or was removed, and every other top-level section is
+byte-identical, as is the bound inventory. A named limitation is none of a rule,
+element, citation or warm-up fact, so this stays V1, and no EPIC Y outcome
+exists yet. The canonical comparison is in
+[rbt005_spec_rebind_evidence_v1.json](../../backtest_evidence/research_backtest_v1/rbt005_spec_rebind_evidence_v1.json).
+
 Independent review: [report](../../backtest_evidence/research_backtest_v1/rbt002a_review_report_v1.md),
 [availability and validation evidence](../../backtest_evidence/research_backtest_v1/rbt002a_review_evidence_v1.json).
 Four distinct review-fix commits and the separate owner-ruled V7 conformance
-commit are recorded in the ticket outcome. The final digest above is reviewed;
-no database or outcome was used.
+commit are recorded in the ticket outcome. That review covered the RBT-002A
+digest; each later rebind is reviewed with its ticket (RBT-004 PASS; RBT-005
+pending its re-review). No database or outcome was used.

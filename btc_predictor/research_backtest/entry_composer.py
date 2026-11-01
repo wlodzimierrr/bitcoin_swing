@@ -221,8 +221,9 @@ ENTRY_COMPOSER_VERSION = "COMPOSE_CHAMPION_ENTRY_DECISION_V1"
 ENTRY_COMPOSER_TICKET = "RBT-004"
 LEDGER_VERSION = "CHAMPION_ENTRY_DECISION_LEDGER_V1"
 # The CHAMPION_COMPLETION_SPEC_V1 definition this composer implements, as rebound
-# by RBT-004 Part A (tests compare it with the persisted digest).
-COMPLETION_SPEC_SHA256 = "787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0"
+# by RBT-004 Part A and by RBT-005's named limitation (owner review ruling 7;
+# tests compare it with the persisted digest).
+COMPLETION_SPEC_SHA256 = "9a619596af43e2955db8859fabc10e99073f528257a701d838a06a09615f6313"
 
 OUTCOME_ARM_ENTRY = "ARM_ENTRY"
 OUTCOME_NO_TRADE = "NO_TRADE"
@@ -288,6 +289,7 @@ AUTHORITY_SPEC_ENTRY = "CHAMPION_COMPLETION_SPEC_V1_ENTRY"
 AUTHORITY_SPEC_GUARD = "CHAMPION_COMPLETION_SPEC_V1_GUARD"
 AUTHORITY_INVENTORY_ROW = "INVENTORY_ROW"
 AUTHORITY_INVENTORY_MINIMUM_HISTORY = "INVENTORY_MINIMUM_HISTORY"
+AUTHORITY_SPEC_NAMED_LIMITATION = "CHAMPION_COMPLETION_SPEC_V1_NAMED_LIMITATION"
 
 
 @dataclass(frozen=True)
@@ -300,6 +302,9 @@ class AccountedCause:
     - ``INVENTORY_ROW``: ``reference`` is a row key, and ``cause`` must appear in
       that row's missing behaviour.
     - ``INVENTORY_MINIMUM_HISTORY``: ``reference`` is a minimum-history input id.
+    - ``SPEC_NAMED_LIMITATION``: ``reference`` is a spec named-limitation id, and
+      ``cause`` must appear in its statement (policy V7 section 5A.6 names a named
+      limitation as an accounted cause).
     """
 
     authority: str

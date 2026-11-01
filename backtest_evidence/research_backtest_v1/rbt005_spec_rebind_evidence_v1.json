@@ -1,0 +1,58 @@
+{
+  "authority": "RBT-005 owner review ruling 7 (2026-11-01): an exhausted tranche schedule becomes a named limitation of CHAMPION_COMPLETION_SPEC_V1 through a recorded update and rebind; policy V7 section 5A.6 names a named limitation as an accounted cause. A named limitation is none of a rule, element, citation or warm-up fact (spec section 11), so the definition stays V1.",
+  "date": "2026-11-01",
+  "evidence": "RBT005_SPEC_NAMED_LIMITATION_REBIND_V1",
+  "inventory": {
+    "sha256": "250f9470b0586f091744c65bcb3d7e48c25ec4fe01ec7bcc79a9fda1a061cb17",
+    "unchanged": true
+  },
+  "regeneration": "python -m btc_predictor.research_backtest.completion_spec write (offline); verify and digest rebuild it byte for byte under PYTHONHASHSEED 0, 1 and 2024 from another working directory",
+  "spec": {
+    "added_named_limitation": {
+      "limitation_id": "TRANCHE_SCHEDULE_EXHAUSTED",
+      "statement": "Once a position holds every tranche of the frozen schedule, next_tranche_for_position returns an incomplete result with TRANCHE_SIZING_SCHEDULE_EXHAUSTED: the schedule's own limit, not a missing input. No further add is possible; RBT-005 records the add NOT_EVALUATED with ADD_NO_FURTHER_TRANCHE and accounts the code to this limitation."
+    },
+    "leaf_count_after": 2329,
+    "leaf_count_before": 2327,
+    "leaves_added": [
+      "named_limitations[13].limitation_id",
+      "named_limitations[13].statement"
+    ],
+    "leaves_changed": [],
+    "leaves_removed": [],
+    "named_limitations_after": 14,
+    "named_limitations_before": 13,
+    "new_sha256": "9a619596af43e2955db8859fabc10e99073f528257a701d838a06a09615f6313",
+    "previous_named_limitations_sha256": "9feecfbbbc3830ff38b8d9d87376b1087c4ff8fdbb2108a03d0cc4095b63bfc6",
+    "previous_sha256": "787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0",
+    "top_level_sections_identical": true,
+    "unchanged_section_sha256": {
+      "bound_inventory": "eeea5bd2b13e9e4231ce62471a1a803bb4c315df4371802ee5faf190913dcf96",
+      "canonical_reference": "add6c7dc690c6b0e33cb0387722419cbbe82d16d61a5f653e5ca5396ce945593",
+      "champion_base_identity": "8ed957c3064823432e62580306603ba6cb61c2efb7c5fb6cc7069a3dc2813dfa",
+      "composer_roots_to_promote": "ff09cfde7f7c14a559cfd40171eaa1772a9e4c4d31565ac7e14bf4e2b77e1feb",
+      "coverage": "447431f3ed22d08731c6d1ced579869e8cd650eb9226985fc7c6e48aab41ada7",
+      "declared_arithmetic": "55d578482a614532ef5bccd8ef68a95a174ed221f946129d3d62e839007a7aee",
+      "e1_guard": "315beacd08d91c98aca000291bcfbfabf65a85c6caead844e01432e59c286317",
+      "earliest_evaluable_effect": "a596a9983dbe9830efd2b8586266e6d357298a30fc8bfd625bad2115f14f8cf5",
+      "entries": "4972d9361916c494324d88f08fde1de4f015940fe58e488d2aeea751ecd7cb36",
+      "evidence_class": "ac2d6dfca933ab26e691a3d2d49a5e49b7f91c5744e14ac54e1bce5a8dbb3e52",
+      "excluded_uses": "dcb98f5993479cd99796b530764ed3804b9b3bd16148f633036fac5d3ba4fc36",
+      "helpers_by_census_status": "768f13d4e5f036e2cb46f7ccabdef0d677315d4c3caee6c6e40b0dbfadca6be8",
+      "new_parameters": "6081e98499b708ec85031962ab3b7aed13003e06105ea26113070bf5ecfee5b6",
+      "policy": "cf7f83d6dbe89c07d61270dd66fe18861a5db66ed5374c524855590ca9973dcd",
+      "policy_document": "f4e9cd29e33dab5695e914d8a3effff8aff25ffc22aeabea0eee80033b39ed54",
+      "positioning_zero_variance_guards": "94165f57e319036dbac28ac8dc18d78de599b951aa90d2c0434fb16c9d91d972",
+      "pre_registration": "4082974af8b0e76c50ca19b690437093f4a1cd47cd848bce80bbe902712cf313",
+      "research_strategy_id": "5534b114c2e284b47f56be734fb5178b29e4dbd59c09a8e9fde8c66c6e652e88",
+      "scope": "a6708564213bb4399a1f180e58463dd6e25b22d1f336b091f8c1fefcb53082d7",
+      "source_class_precedence": "78a0bc22a2bec781f23c74cd7db9cd2c896db2cb4abd141349d977a412b68036",
+      "spec_version": "c17db1f4af9972923d8e431d7d05f2a419a69efd96e053168d72fc46c8255cbb",
+      "surfaced_for_review": "3fe56cdfccd5bf84164d558d05feffafdc54a0cb0b6b0164e84b2aab8a0837e4",
+      "ticket": "02a34379e35eddc4890d3c91d6261c904caa9fef0dbe8526382642f3a283e21d",
+      "uniform_rules": "6e436f694559ec583713921eedef24bf0a11b91fdf1eecdb00a88891ccaaae45",
+      "warm_up": "3307545f2d601f315389a88e660ca80eea4f8b4f998f98352046a4cf98ef0813"
+    }
+  },
+  "ticket": "RBT-005"
+}

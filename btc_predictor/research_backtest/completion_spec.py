@@ -1773,6 +1773,8 @@ NAMED_LIMITATIONS = (
     ("UNMODELLED_ADD_AND_REDUCE_RULES", "Rulebook 21 line 1823 'hold quality', 7.5 'PositioningScore >= 70 to add' and 23 'distribution' as a reduce reason have no owner consumer and no inventory input; outside this spec, flagged for RBT-005."),
     ("LEVEL_FAMILIES_NOT_RULED", "If RBT-004 clusters volume-profile or AVWAP members, a nearest support cluster holding only such members has no swing member, so both level inputs are None and Structure is incomplete (NO_SWING_MEMBER). The family choice is RBT-004's; surfaced."),
     ("ONE_ADD_PER_STRUCTURE", "A confirmed higher low the trail accepts at an instant where another add requirement fails is consumed by that STOP_MOVE and cannot confirm a later add."),
+    # RBT-005 owner review ruling 7 (2026-11-01): a recorded update and rebind of this V1 definition
+    ("TRANCHE_SCHEDULE_EXHAUSTED", "Once a position holds every tranche of the frozen schedule, next_tranche_for_position returns an incomplete result with TRANCHE_SIZING_SCHEDULE_EXHAUSTED: the schedule's own limit, not a missing input. No further add is possible; RBT-005 records the add NOT_EVALUATED with ADD_NO_FURTHER_TRANCHE and accounts the code to this limitation."),
 )
 
 SURFACED_FOR_REVIEW = (

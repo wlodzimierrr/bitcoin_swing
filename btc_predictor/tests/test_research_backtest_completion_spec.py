@@ -49,7 +49,7 @@ from btc_predictor.features import volatility as volatility_owner
 from btc_predictor.features.rolling import rolling_percentile, rolling_zscore
 from btc_predictor.research_backtest import completion_spec as spec
 from btc_predictor.research_backtest import coverage
-from btc_predictor.research_backtest.completion_spec import CompletionSpecError
+from btc_predictor.research_backtest.completion_spec import CompletionSpecError, canonical_json_bytes, sha256_hex
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,7 +58,10 @@ RULEBOOK = ROOT / "docs" / "strategy" / "bitcoin_swing_predictor_rulebook_v1_2.m
 # RBT-004 rebind to the regenerated inventory (RBT-002 E3); only the bound
 # inventory digest changed. The reviewed RBT-002A digest was
 # 9819f84a6ec89f6c39dc1c5215edeae4898f91ebea30eccd5698ca11da65013f.
-FROZEN_SPEC_SHA256 = "787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0"
+# RBT-005 rebind (owner review ruling 7, 2026-11-01): one named limitation
+# appended, TRANCHE_SCHEDULE_EXHAUSTED; the RBT-004 digest was
+# 787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0.
+FROZEN_SPEC_SHA256 = "9a619596af43e2955db8859fabc10e99073f528257a701d838a06a09615f6313"
 
 # The confirmed RBT-002 R2 list (25 undefined ids) plus LEVEL_VOLUME_PERCENTILE.
 CONFIRMED_IDS = {
@@ -203,6 +206,27 @@ def test_the_persisted_definition_rebuilds_byte_for_byte() -> None:
     assert digest == FROZEN_SPEC_SHA256 == spec.spec_sha256()
     assert (ARTIFACTS / spec.SPEC_DIGEST_FILENAME).read_text(encoding="ascii") == f"{digest}  {spec.SPEC_FILENAME}\n"
     assert spec.verify_persisted() == digest
+
+
+def test_the_rbt005_rebind_only_appended_the_exhausted_schedule_limitation() -> None:
+    evidence = json.loads((ARTIFACTS / "rbt005_spec_rebind_evidence_v1.json").read_text())
+    record = spec.spec_definition()
+    proof = evidence["spec"]
+    assert (proof["previous_sha256"], proof["new_sha256"]) == (
+        "787ddfa26391a1956ed8ee92209308b95797536e0906844d9811f9e8ca2620f0",
+        FROZEN_SPEC_SHA256,
+    )
+    # every other section is byte-identical to the RBT-004 definition
+    assert set(proof["unchanged_section_sha256"]) == set(record) - {"named_limitations"}
+    for section, digest in proof["unchanged_section_sha256"].items():
+        assert sha256_hex(canonical_json_bytes(record[section])) == digest, section
+    *kept, added = record["named_limitations"]
+    assert sha256_hex(canonical_json_bytes(kept)) == proof["previous_named_limitations_sha256"]
+    assert added == proof["added_named_limitation"]
+    assert added["limitation_id"] == "TRANCHE_SCHEDULE_EXHAUSTED"
+    assert "TRANCHE_SIZING_SCHEDULE_EXHAUSTED" in added["statement"] and "not a missing input" in added["statement"]
+    assert (proof["leaves_changed"], proof["leaves_removed"]) == ([], [])
+    assert evidence["inventory"] == {"sha256": record["bound_inventory"]["sha256"], "unchanged": True}
 
 
 def test_the_definition_is_canonical_sorted_json() -> None:
