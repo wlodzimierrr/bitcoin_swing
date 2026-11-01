@@ -16,12 +16,14 @@ import os
 import subprocess
 import sys
 from contextlib import contextmanager
+from dataclasses import fields as dataclass_fields
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
 import pytest
 
+from btc_predictor.features.flow import FlowScoreInput
 from btc_predictor.features.regime import REGIME_CLASSIFICATION_LABELS
 from btc_predictor.portfolio.state_machine import ADD, apply_position_event
 from btc_predictor.quant.transforms import normal_cdf_score
@@ -205,8 +207,10 @@ def test_a_missing_prior_flow_leaves_the_other_trim_triggers_to_the_owner(natura
 
     instant = ARMED_AT + 1 * DAY
     item = natural.captured[instant]
-    with intervening_management("calculate_hold_score", trend_score=Decimal("45"), flow_score=Decimal("45"), positioning_score=Decimal("45"),
-                                structure_score=Decimal("45"), momentum_persistence_score=Decimal("45")):
+    with recording_management("trim_rules_from_results") as calls, intervening_management(
+        "calculate_hold_score", trend_score=Decimal("45"), flow_score=Decimal("45"), positioning_score=Decimal("45"),
+        structure_score=Decimal("45"), momentum_persistence_score=Decimal("45"),
+    ):
         decision = ManagementComposer(natural.champion.entry).decide(
             item.decision, lifecycle=item.lifecycle, nav=item.nav, armed=item.armed, prior_flow=None
         )
@@ -217,6 +221,14 @@ def test_a_missing_prior_flow_leaves_the_other_trim_triggers_to_the_owner(natura
     # the prior flow is the flow owner's own result with every input missing: no value improvised
     unavailable = decision.row.owner_reason_codes["trim_prior_flow_unavailable"]
     assert unavailable["feature_id"] == "FLOW_SCORE" and unavailable["complete"] is False
+    # re-review N1: whatever route built it (a constructor, a replace, a mutation), the
+    # prior flow the trim owner received holds no input value and produced none
+    (call,) = calls["trim_rules_from_results"]
+    received = call.kwargs["prior_flow"]
+    assert received.complete is False
+    assert all(getattr(received.inputs, item.name) is None for item in dataclass_fields(FlowScoreInput))
+    assert (received.raw_score, received.score, received.interpretation) == (None, None, None)
+    assert received.contributions and all(value is None for value in received.contributions.values())
     assert decision.row.unaccounted == ()
 
 
