@@ -14,6 +14,7 @@ from __future__ import annotations
 import pytest
 
 from btc_predictor.tests.rbt005_management_fixtures import (
+    HOUR,
     TRAIL_AT,
     Interventions,
     add_score_lifted,
@@ -78,3 +79,21 @@ def test_a_pending_add_is_composed_from_its_instant_alone():
     management, entry, events = _upto(baseline, TRAIL_AT)
     assert _upto(run, TRAIL_AT) == (management, entry, events)
     assert run.rows()[TRAIL_AT].add["intent"] == baseline.rows()[TRAIL_AT].add["intent"] is not None
+
+
+def test_the_adds_risk_recheck_reads_nothing_after_its_callback():
+    """Owner review ruling 4: the re-check at TRAIL_AT + 1h reads only what is available then."""
+
+    baseline = trail_add_run()
+    market = management_market(end=utc(2024, 4, 8))
+    inputs = market.build()
+    callback = TRAIL_AT + HOUR
+
+    def setup(interventions: Interventions) -> None:
+        higher_low_at(interventions, inputs, {TRAIL_AT})
+        add_score_lifted(interventions, {TRAIL_AT})
+
+    run = managed_run(market, engine_end=callback + 2 * HOUR, setup=setup, modify=lambda built: perturb_after(built, callback, 0))
+    (followup,) = run.champion.add_followups
+    assert followup.resolved_at == callback and followup.risk_recheck is not None
+    assert followup.as_record() == baseline.champion.add_followups[0].as_record()

@@ -2,8 +2,8 @@
 
 Every decision owner function the management composer calls directly must be a
 census root, proven statically (the alias-resolving AST census) and at runtime
-(a direct-caller profile over a composed replay and over TRIM and EXIT
-decisions). Each refused dispatch form is introduced by mutation and must fail
+(a direct-caller profile over a composed replay, TRIM and EXIT decisions and the
+pending ADD's risk re-check at its callback). Each refused dispatch form is introduced by mutation and must fail
 both checks, as for the entry composer.
 """
 
@@ -24,13 +24,17 @@ from btc_predictor.research_backtest import composer_boundary as boundary
 from btc_predictor.research_backtest import coverage, entry_composer, management_composer
 from btc_predictor.risk import trailing as trailing_owner
 from btc_predictor.tests.rbt005_management_fixtures import (
+    HOUR,
     TRAIL_AT,
     Interventions,
+    callback_context,
     engine_bars,
     higher_low_at,
     managed_run,
     management_market,
     natural_run,
+    pending_trail_add,
+    resolver_holding,
     utc,
 )
 from btc_predictor.tests.test_research_backtest_entry_composer_boundary import MANAGEMENT_CONSTRUCTORS
@@ -44,6 +48,8 @@ HOLD_ANCHOR = '        structure = self._structure_at("hold_structure", self.lif
 EXPECTED_ROOTS = {
     "btc_predictor.features.add.calculate_add_score",
     "btc_predictor.features.add.risk_improvement_component_score",
+    # the trim owner's prior flow when the prior instant had no decision bar (review F2)
+    "btc_predictor.features.flow.calculate_flow_score",
     "btc_predictor.features.hold.calculate_hold_score",
     "btc_predictor.quant.comparisons.decision_greater_equal",
     "btc_predictor.quant.transforms.normal_cdf_score",
@@ -81,7 +87,8 @@ def test_every_owner_the_composer_calls_is_a_census_root(census):
 
 def test_its_constructors_are_the_classified_in_position_inputs(census):
     constructed = {call.target for call in census.calls if call.kind == boundary.KIND_CONSTRUCTOR}
-    assert constructed == MANAGEMENT_CONSTRUCTORS | {"btc_predictor.backtest.engine.BacktestIntent"}
+    # FlowScoreInput: the flow owner's every-input-missing result for an absent prior flow (review F2)
+    assert constructed == MANAGEMENT_CONSTRUCTORS | {"btc_predictor.backtest.engine.BacktestIntent", "btc_predictor.features.flow.FlowScoreInput"}
     for target in MANAGEMENT_CONSTRUCTORS:
         assert target in coverage.INPUT_TYPE_FIELD_CLASSIFICATIONS, target
     # together the two composers use every allowance
@@ -107,15 +114,19 @@ def test_value_methods_and_accessors_are_bounded(census):
 
 @pytest.fixture(scope="module")
 def traced():
-    """A composed replay (ARM_ENTRY, HOLD, TRAIL), then TRIM and EXIT decisions.
+    """A composed replay (ARM_ENTRY, HOLD, TRAIL), TRIM and EXIT decisions, and the ADD at its callback.
 
     The replay's only intervention is the entry composer's higher-low result, so
     nothing stands between the management composer and its owners; the add is
-    evaluated in full (blocked by its own score). The ADD follow-up itself calls
-    no owner and is shown in the rulings tests.
+    evaluated in full (blocked by its own score). The pending ADD's callback,
+    with its risk re-check (owner review ruling 4), is traced on the resolver
+    from the trail-and-add replay's state, built outside the trace.
     """
 
     natural = natural_run()  # built outside the trace
+    pending = pending_trail_add()
+    resolver = resolver_holding(pending)
+    callback = callback_context(pending.moved)
     market = management_market(end=utc(2024, 4, 6))
     inputs = market.build()
 
@@ -135,6 +146,15 @@ def traced():
     decisions["trim"], traces["trim"] = boundary.trace_direct_calls(lambda: natural.redecide(trim_at), COMPOSER_FILE)
     bear = replace(natural.captured[trim_at].decision.composition.regime_classification, regime="BEAR")
     decisions["exit"], traces["exit"] = boundary.trace_direct_calls(lambda: natural.redecide(trim_at, regime_classification=bear), COMPOSER_FILE)
+    item = natural.captured[trim_at]
+    decisions["no_prior_flow"], traces["no_prior_flow"] = boundary.trace_direct_calls(
+        lambda: management_composer.ManagementComposer(natural.champion.entry).decide(
+            item.decision, lifecycle=item.lifecycle, nav=item.nav, armed=item.armed, prior_flow=None
+        ),
+        COMPOSER_FILE,
+    )
+    decisions["add"], traces["add"] = boundary.trace_direct_calls(lambda: resolver._resolve_pending(callback, TRAIL_AT + HOUR), COMPOSER_FILE)
+    decisions["add_followups"] = resolver.add_followups
     return traces, decisions
 
 
@@ -146,7 +166,11 @@ def test_the_traced_paths_cover_every_management_outcome(traced):
     trail = next(row for row in replay.champion.ledger if row.outcome == "TRAIL")
     assert trail.add["evaluated"] is True and trail.add["reasons"] == ["ADD_REQUIREMENTS_ADD_SCORE_BELOW_MINIMUM"]
     assert decisions["trim"].row.outcome == "TRIM" and decisions["exit"].row.outcome == "EXIT"
-    for row in (*replay.champion.ledger, decisions["trim"].row, decisions["exit"].row):
+    assert decisions["no_prior_flow"].row.owner_reason_codes["trim_prior_flow_unavailable"]["complete"] is False
+    (followup,) = decisions["add_followups"]
+    assert decisions["add"].action == "ADD" and followup.risk_recheck["within_maximum"] is True
+    assert followup.unaccounted == ()
+    for row in (*replay.champion.ledger, decisions["trim"].row, decisions["exit"].row, decisions["no_prior_flow"].row):
         assert row.unaccounted == ()
 
 
@@ -166,7 +190,7 @@ def test_runtime_and_static_roots_agree(traced, census):
     assert functions - serializers - epic_y - accessors <= census.roots_called
     assert census.roots_called - functions == set()
     constructors = {call.path for calls in traces.values() for call in calls if call.kind == "CONSTRUCTOR"}
-    assert constructors == MANAGEMENT_CONSTRUCTORS | {"btc_predictor.backtest.engine.BacktestIntent"}
+    assert constructors == MANAGEMENT_CONSTRUCTORS | {"btc_predictor.backtest.engine.BacktestIntent", "btc_predictor.features.flow.FlowScoreInput"}
 
 
 # --- mutation regressions: static ----------------------------------------------------------

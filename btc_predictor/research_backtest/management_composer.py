@@ -32,7 +32,12 @@ per decision instant with an open position.
    ``DATA_RISK_EXIT_PREDICATE = False``, and the manual research override never
    asserted (``None``, the inventory's replay value).
 3. *Trim* (``trim_rules_from_results``): the prior decision instant's
-   ``FlowScoreResult`` as the prior flow.
+   ``FlowScoreResult`` as the prior flow. When that instant had no decision bar
+   no flow was composed for it; the trim owner takes a ``FlowScoreResult`` and
+   maps an incomplete one to ``prior_flow_score = None`` ->
+   ``TRIM_INPUT_MISSING`` with its other triggers still evaluated (the bound
+   inventory rows), so the composer passes the flow owner's own result with
+   every input missing: no value is improvised.
 4. *Trail* (``trail_stop_for_position``): the confirmed higher low ``C_t`` from
    the one BTC-122 producer Setup C also reads
    (:func:`~btc_predictor.research_backtest.entry_composer.latest_higher_low`),
@@ -47,13 +52,25 @@ per decision instant with an open position.
 - the add is evaluated before the stop moves; the ``TRAIL`` is emitted at t and
   the ``ADD``, carrying the requirements evaluated at t, at the first engine
   callback after the raised stop is installed. If the trail was not applied,
-  the position closed or changed, or that callback is itself a decision
-  instant, the ``ADD`` is dropped and the reason recorded;
+  the position closed or changed (any accepted transition but the ADD's own
+  trail), or that callback is itself a decision instant, the ``ADD`` is dropped
+  and the reason recorded;
 - one intent per decision, ``EXIT`` > ``TRIM`` > ``TRAIL``/``ADD``; an add that
   would otherwise go ahead is recorded as suppressed, and a deferred trail does
   not consume its higher low;
 - the three unmodelled add and reduce rules (spec limitation
   ``UNMODELLED_ADD_AND_REDUCE_RULES``) are recorded, not enforced.
+
+**Owner review rulings applied (2026-11-01, after the independent review):**
+- ruling 4: at the callback that emits the ``ADD``, its projected risk at the
+  stop is computed again with the same owners at that callback's closed bar,
+  installed stop and NAV; over the ceiling, or incomplete, the ``ADD`` is
+  dropped with its reason. The frozen engine fills at the next bar's open, so a
+  gap at that open stays a recorded limitation;
+- ruling 6: an unknown STRESS or EUPHORIA blocks the add, and
+  ``ADD_SUPERSEDED_BY_DECISION`` stands (both ratified);
+- ruling 7: an exhausted tranche schedule is the spec named limitation
+  ``TRANCHE_SCHEDULE_EXHAUSTED``.
 
 **Design decisions (for the review).**
 - *Rulebook 24 NO ADDING* reads each flag as the hard veto does: STRESS through
@@ -70,7 +87,8 @@ per decision instant with an open position.
   the decision bar's NAV, then ``initial_position_size_for_trade``), and the
   projected add tranche is priced at ``P_t``, as the entry stop is.
 - *An exhausted tranche schedule* is the frozen schedule's own limit, not a
-  missing input: it is accounted to the schedule's inventory row.
+  missing input: it is accounted to the spec named limitation (ruling 7). A
+  missing stop on an open position is accounted nowhere: it fails loud.
 
 Nothing is zero-filled. Every incomplete owner result and every missing-input
 code maps to an accounted cause (:data:`MANAGEMENT_CAUSE_ACCOUNTING`, then the
@@ -96,6 +114,7 @@ from btc_predictor.backtest.engine import (
     BacktestIntent,
 )
 from btc_predictor.features.add import AddScoreInput, calculate_add_score, risk_improvement_component_score
+from btc_predictor.features.flow import FlowScoreInput, calculate_flow_score
 from btc_predictor.features.hold import HoldScoreInput, calculate_hold_score
 from btc_predictor.portfolio.state_machine import ADD, ENTER, STOP_MOVE
 from btc_predictor.quant.comparisons import decision_greater_equal
@@ -104,6 +123,7 @@ from btc_predictor.research_backtest.completion_spec import CHAMPION_BASE_IDENTI
 from btc_predictor.research_backtest.entry_composer import (
     AUTHORITY_INVENTORY_ROW,
     AUTHORITY_SPEC_ENTRY,
+    AUTHORITY_SPEC_NAMED_LIMITATION,
     CAUSE_DECISION_PRICE_BAR_MISSING,
     COMPLETION_SPEC_SHA256,
     AccountedCause,
@@ -158,6 +178,9 @@ DROP_SUPERSEDED_BY_DECISION = "ADD_SUPERSEDED_BY_DECISION"
 DROP_POSITION_CLOSED = "ADD_POSITION_CLOSED"
 DROP_POSITION_CHANGED = "ADD_POSITION_CHANGED"
 DROP_TRAIL_NOT_APPLIED = "ADD_TRAIL_NOT_APPLIED"
+# owner review ruling 4: the ADD's projected risk at the stop, again at the callback that emits it
+DROP_RISK_EXCEEDED_AT_CALLBACK = "ADD_RISK_AT_STOP_EXCEEDED_AT_CALLBACK"
+DROP_RISK_RECHECK_INCOMPLETE = "ADD_RISK_RECHECK_INCOMPLETE"
 
 # Spec values, each checked against the frozen spec text by the RBT-005 tests.
 # FLOW_SUPPORTIVE_PREDICATE: decision_greater_equal(F.score, 60) (Rulebook 6.2 'Supportive').
@@ -210,11 +233,12 @@ MANAGEMENT_CAUSE_ACCOUNTING: Mapping[str, AccountedCause] = {
     # the manual research override is never asserted in a replay (inventory: DISCRETIONARY)
     "EXIT_INPUT_MISSING": _row("btc_predictor.signals.exit_rules.exit_rules_for_position.manual_research_override", "EXIT_INPUT_MISSING"),
     "TRAILING_STOP_BUFFER_INCOMPLETE": _row("btc_predictor.risk.trailing.trail_stop_for_position.buffer", "no trail candidate"),
-    "RISK_AT_STOP_INPUT_MISSING": _row("btc_predictor.risk.exposure.calculate_risk_at_stop.stop_price", "fail closed"),
-    # the frozen tranche schedule's own limit, not a missing input
-    "TRANCHE_SIZING_SCHEDULE_EXHAUSTED": _row(
-        "btc_predictor.risk.tranches.next_tranche_for_position.schedule", "a declared constant of the frozen champion configuration"
+    # the frozen tranche schedule's own limit, not a missing input (spec named limitation, owner review ruling 7)
+    "TRANCHE_SIZING_SCHEDULE_EXHAUSTED": AccountedCause(
+        AUTHORITY_SPEC_NAMED_LIMITATION, "TRANCHE_SCHEDULE_EXHAUSTED", "TRANCHE_SIZING_SCHEDULE_EXHAUSTED"
     ),
+    # RISK_AT_STOP_INPUT_MISSING is deliberately absent: an open position always has a
+    # standing stop, and the inventory's "fail closed" covers only a closed lifecycle
 }
 
 # On a complete owner result only these codes signal a missing input; on an
@@ -308,6 +332,9 @@ class AddFollowUp:
     outcome: str
     reasons: tuple[str, ...]
     intent: Mapping[str, Any] | None
+    # owner review ruling 4: the risk re-check at this callback (None if the ADD was dropped before it)
+    risk_recheck: Mapping[str, Any] | None = None
+    unaccounted: tuple[str, ...] = ()
 
     def as_record(self) -> dict[str, Any]:
         return _jsonable(
@@ -317,6 +344,8 @@ class AddFollowUp:
                 "outcome": self.outcome,
                 "reasons": list(self.reasons),
                 "intent": self.intent,
+                "risk_recheck": self.risk_recheck,
+                "unaccounted": list(self.unaccounted),
             }
         )
 
@@ -403,7 +432,9 @@ class ManagementComposer:
         return sha256_hex(self.ledger_bytes())
 
     def unaccounted_causes(self) -> tuple[tuple[str, str], ...]:
-        return tuple((row.decision_at.isoformat(), code) for row in self._ledger for code in row.unaccounted)
+        rows = [(row.decision_at.isoformat(), code) for row in self._ledger for code in row.unaccounted]
+        followups = [(item.resolved_at.isoformat(), code) for item in self._followups for code in item.unaccounted]
+        return tuple(rows + followups)
 
     def __call__(self, context: BacktestContext) -> BacktestIntent | None:
         """The BTC-180 strategy callback.
@@ -506,25 +537,77 @@ class ManagementComposer:
         if pending is None:
             return None
         lifecycle = context.lifecycle
-        applied = any(
-            item.event == STOP_MOVE and item.accepted and item.event_time > pending.decision_at and item.stop_price == pending.stop_price
-            for item in lifecycle.transitions
-        )
+        later = [item for item in lifecycle.transitions if item.accepted and item.event_time > pending.decision_at]
+        moved = [item for item in later if item.event == STOP_MOVE and item.stop_price == pending.stop_price]
         if is_daily_decision_instant(as_of):
             reason = DROP_SUPERSEDED_BY_DECISION
         elif lifecycle.quantity <= 0 or lifecycle.opened_at != pending.opened_at:
             reason = DROP_POSITION_CLOSED
-        elif lifecycle.quantity != pending.quantity:
+        elif lifecycle.quantity != pending.quantity or len(later) != len(moved):
+            # any accepted transition but the ADD's own trail changes the position (ruling 1)
             reason = DROP_POSITION_CHANGED
-        elif not applied or lifecycle.stop_price != pending.stop_price:
+        elif not moved or lifecycle.stop_price != pending.stop_price:
             reason = DROP_TRAIL_NOT_APPLIED
         else:
             reason = None
         if reason is not None:
             self._followups.append(AddFollowUp(pending.decision_at, as_of, FOLLOWUP_ADD_DROPPED, (reason,), None))
             return None
-        self._followups.append(AddFollowUp(pending.decision_at, as_of, FOLLOWUP_ADD_EMITTED, (), _intent_record(pending.intent)))
+        recheck, drop, unaccounted = self._recheck_risk(context, lifecycle)
+        if drop:
+            self._followups.append(AddFollowUp(pending.decision_at, as_of, FOLLOWUP_ADD_DROPPED, drop, None, recheck, unaccounted))
+            return None
+        self._followups.append(
+            AddFollowUp(pending.decision_at, as_of, FOLLOWUP_ADD_EMITTED, (), _intent_record(pending.intent), recheck, unaccounted)
+        )
         return pending.intent
+
+    def _recheck_risk(self, context: BacktestContext, lifecycle: Any) -> tuple[dict[str, Any], tuple[str, ...], tuple[str, ...]]:
+        """Owner review ruling 4: the ADD's projected risk at the stop, at this callback.
+
+        The same owners as at t (``next_tranche_for_position``, then
+        ``calculate_risk_at_stop``), at the close of the bar this callback
+        serves, with the installed stop and this callback's NAV. The engine then
+        fills at the next bar's open; a gap at that open is the recorded
+        limitation.
+        """
+
+        armed = self._armed_for(lifecycle)
+        price = context.bar.close
+        tranche = next_tranche_for_position(
+            lifecycle, armed.position_size, entry_price=price, config=self._config, config_metadata=self._metadata
+        )
+        results: dict[str, Any] = {"recheck_tranche": tranche}
+        risk = None
+        if tranche.allocation is not None:
+            risk = calculate_risk_at_stop(
+                (*lifecycle.tranches, {"tranche_id": "projected_add", "quantity": tranche.allocation.quantity, "entry_price": price}),
+                stop_price=lifecycle.stop_price,
+                nav=context.nav,
+                direction=lifecycle.direction,
+                config=self._config,
+                config_metadata=self._metadata,
+            )
+            results["recheck_risk_at_stop"] = risk
+        record = {
+            "bar_timestamp": context.bar.timestamp,
+            "price": price,
+            "stop_price": lifecycle.stop_price,
+            "nav": context.nav,
+            "projected_risk_fraction_nav": risk.risk_fraction_nav if risk is not None else None,
+            "within_maximum": risk.within_maximum if risk is not None else None,
+            "owner_reason_codes": {
+                label: {"feature_id": result.feature_id, "complete": result.complete, "reason_codes": list(result.reason_codes)}
+                for label, result in sorted(results.items())
+            },
+        }
+        if risk is None or not tranche.complete or not risk.complete:
+            drop = (DROP_RISK_RECHECK_INCOMPLETE, *_unique(code for result in results.values() for code in result.reason_codes))
+        elif not risk.within_maximum:
+            drop = (DROP_RISK_EXCEEDED_AT_CALLBACK,)
+        else:
+            drop = ()
+        return record, drop, _unaccounted_results(results)
 
     def _missing_bar_row(self, instant: datetime, lifecycle: Any) -> ManagementDecisionRow:
         return ManagementDecisionRow(
@@ -595,7 +678,7 @@ class _ManagementRun:
             intent = self._intent(EXIT_ACTION, exit_reason=exit_signal.exit_reasons[0])
             if add["go"]:
                 add_record = {**add_record, "outcome": "SUPPRESSED", "reasons": [*add_record["reasons"], REASON_ADD_SUPPRESSED_BY_EXIT]}
-        elif trim is not None and trim.signal:
+        elif trim.signal:
             outcome, reasons = OUTCOME_TRIM, tuple(trim.reason_codes)
             intent = self._intent(TRIM_ACTION, trim_signal=trim)
             if add["go"]:
@@ -625,7 +708,7 @@ class _ManagementRun:
             regime=self.regime_record,
             hold=self.hold_record,
             exit_rules=_signal_record(exit_signal, exit_reasons=list(exit_signal.exit_reasons)),
-            trim=_signal_record(trim) if trim is not None else {"evaluated": False, "reasons": [CAUSE_DECISION_PRICE_BAR_MISSING]},
+            trim=_signal_record(trim, prior_flow_causes=list(self.composer_causes.get("trim", ()))),
             trail=trail_record,
             add=add_record,
             unevaluable=self._unevaluable(hold),
@@ -729,11 +812,31 @@ class _ManagementRun:
 
     # -- 3: Trim (Rulebook 23; BTC-157) --------------------------------------------------
 
-    def _trim(self, hold: Any) -> Any | None:
-        if self.prior_flow is None:
-            # the prior decision instant had no decision bar, so it has no flow score
+    def _trim(self, hold: Any) -> Any:
+        prior_flow = self.prior_flow
+        if prior_flow is None:
+            # The prior decision instant had no decision bar, so no flow was composed for it.
+            # The trim owner takes a FlowScoreResult and maps an incomplete one to
+            # prior_flow_score None: "None -> TRIM_INPUT_MISSING; complete False, the other
+            # triggers still evaluate" (bound inventory rows trim_rules_from_results.prior_flow
+            # and TrimRuleInput.prior_flow_score). The flow owner's own result with every input
+            # missing says exactly that; no value is improvised.
             self._cause("trim", CAUSE_DECISION_PRICE_BAR_MISSING)
-            return None
+            prior_flow = self._keep(
+                "trim_prior_flow_unavailable",
+                calculate_flow_score(
+                    FlowScoreInput(
+                        etf_norm_5_zscore=None,
+                        etf_norm_20_zscore=None,
+                        flow_accel_zscore=None,
+                        cvd_spread_zscore=None,
+                        spot_dominance_zscore=None,
+                    ),
+                    core_weights=dict(self.config.scoring_weights.core_flow),
+                    full_weights=dict(self.config.scoring_weights.full_flow),
+                    config_metadata=self.metadata,
+                ),
+            )
         return self._keep(
             "trim",
             trim_rules_from_results(
@@ -742,7 +845,7 @@ class _ManagementRun:
                 euphoria=self.composition.euphoria,
                 crowding=self.composition.crowding,
                 current_flow=self.composition.flow,
-                prior_flow=self.prior_flow,
+                prior_flow=prior_flow,
                 strategy_config=self.config,
             ),
         )
@@ -986,20 +1089,27 @@ class _ManagementRun:
         return tuple(items)
 
     def _unaccounted(self) -> tuple[str, ...]:
-        missing = []
-        for label, result in self.results.items():
-            codes = tuple(result.reason_codes)
-            if not result.complete:
-                if not any(accounted_cause(code, result.feature_id) is not None for code in codes):
-                    missing.append(f"{label}:{'|'.join(codes) or 'INCOMPLETE_WITHOUT_REASON'}")
-            for code in codes:
-                if any(marker in code for marker in _MISSING_MARKERS) and accounted_cause(code, result.feature_id) is None:
-                    missing.append(f"{label}:{code}")
+        missing = list(_unaccounted_results(self.results))
         for component, codes in self.composer_causes.items():
             for code in codes:
                 if accounted_cause(code) is None:
                     missing.append(f"{component}:{code}")
         return _unique(missing)
+
+
+def _unaccounted_results(results: Mapping[str, Any]) -> tuple[str, ...]:
+    """Owner results whose incompleteness or missing-input codes have no accounted cause (V7 section 5A.6)."""
+
+    missing = []
+    for label, result in results.items():
+        codes = tuple(result.reason_codes)
+        if not result.complete:
+            if not any(accounted_cause(code, result.feature_id) is not None for code in codes):
+                missing.append(f"{label}:{'|'.join(codes) or 'INCOMPLETE_WITHOUT_REASON'}")
+        for code in codes:
+            if any(marker in code for marker in _MISSING_MARKERS) and accounted_cause(code, result.feature_id) is None:
+                missing.append(f"{label}:{code}")
+    return _unique(missing)
 
 
 # --- records ------------------------------------------------------------------------------

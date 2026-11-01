@@ -29,6 +29,7 @@ from btc_predictor.research_backtest import completion_spec, entry_composer, man
 from btc_predictor.research_backtest.entry_composer import (
     AUTHORITY_INVENTORY_ROW,
     AUTHORITY_SPEC_ENTRY,
+    AUTHORITY_SPEC_NAMED_LIMITATION,
     CAUSE_DECISION_PRICE_BAR_MISSING,
     COMPLETION_SPEC_SHA256,
     OUTCOME_ARM_ENTRY,
@@ -59,9 +60,12 @@ from btc_predictor.tests.rbt005_management_fixtures import (
     DAY,
     FILLED_AT,
     HOUR,
+    TRAIL_AT,
     managed_run,
     management_market,
     natural_run,
+    trail_add_interventions,
+    trail_add_run,
     utc,
 )
 
@@ -180,17 +184,40 @@ def test_the_trim_reads_the_prior_decision_instants_flow(natural):
     assert trim.kwargs["current_flow"] is natural.captured[ARMED_AT + 3 * DAY].decision.composition.flow
 
 
-def test_a_missing_decision_bar_while_open_gets_its_row_and_the_next_trim_waits(gapped):
+def test_a_missing_decision_bar_while_open_gets_its_row_and_the_next_trim_still_evaluates(gapped):
     rows = gapped.rows()
     skipped = rows[MISSING_HOUR + HOUR]
     assert skipped.outcome == OUTCOME_STRUCTURALLY_UNEVALUABLE and skipped.reasons == (CAUSE_DECISION_PRICE_BAR_MISSING,)
     assert skipped.position["quantity"] > 0 and skipped.intent is None and skipped.unaccounted == ()
     assert skipped.unevaluable[0].component == "decision_instant"
     after = rows[skipped.decision_at + DAY]
-    # the trim owner's prior flow is the prior decision's, which had no decision bar
-    assert after.trim == {"evaluated": False, "reasons": [CAUSE_DECISION_PRICE_BAR_MISSING]}
-    assert after.outcome != OUTCOME_TRIM and after.unaccounted == ()
+    # the prior decision had no decision bar, so no prior flow; the trim owner still runs with None
+    # (bound inventory: "None -> TRIM_INPUT_MISSING; complete False, the other triggers still evaluate")
+    assert after.trim["evaluated"] is True and after.trim["complete"] is False
+    assert "TRIM_INPUT_MISSING" in after.trim["reason_codes"]
+    assert after.trim["prior_flow_causes"] == [CAUSE_DECISION_PRICE_BAR_MISSING]
+    assert after.unaccounted == ()
     assert all(row.unaccounted == () for row in rows.values())
+
+
+def test_a_missing_prior_flow_leaves_the_other_trim_triggers_to_the_owner(natural):
+    """Review F2: with no prior flow, a Hold of 45 still trims on the Hold band."""
+
+    instant = ARMED_AT + 1 * DAY
+    item = natural.captured[instant]
+    with intervening_management("calculate_hold_score", trend_score=Decimal("45"), flow_score=Decimal("45"), positioning_score=Decimal("45"),
+                                structure_score=Decimal("45"), momentum_persistence_score=Decimal("45")):
+        decision = ManagementComposer(natural.champion.entry).decide(
+            item.decision, lifecycle=item.lifecycle, nav=item.nav, armed=item.armed, prior_flow=None
+        )
+    assert decision.row.hold["score"] > CONFIG.hold_thresholds.exit_below
+    assert decision.row.outcome == OUTCOME_TRIM
+    assert {"TRIM_INPUT_MISSING", "TRIM_HOLD_SCORE_BAND"} <= set(decision.row.trim["reason_codes"])
+    assert decision.row.trim["prior_flow_causes"] == [CAUSE_DECISION_PRICE_BAR_MISSING]
+    # the prior flow is the flow owner's own result with every input missing: no value improvised
+    unavailable = decision.row.owner_reason_codes["trim_prior_flow_unavailable"]
+    assert unavailable["feature_id"] == "FLOW_SCORE" and unavailable["complete"] is False
+    assert decision.row.unaccounted == ()
 
 
 # --- determinism and serialisation -----------------------------------------------------------
@@ -323,15 +350,32 @@ def _inventory_rows():
     return rows
 
 
+# The one inventory citation by phrase rather than by the code itself: the row
+# states the owner's behaviour for a missing buffer, and a test below shows the
+# owner's code for it through the real owners.
+PHRASE_CITATIONS = {"TRAILING_STOP_BUFFER_INCOMPLETE": "None -> no trail candidate"}
+
+
 def test_every_management_accounted_cause_is_backed_by_a_bound_artifact():
     rows = _inventory_rows()
-    assert len(MANAGEMENT_CAUSE_ACCOUNTING) == 15
+    limitations = {item["limitation_id"]: item["statement"] for item in SPEC["named_limitations"]}
+    assert len(MANAGEMENT_CAUSE_ACCOUNTING) == 14
     for code, cause in MANAGEMENT_CAUSE_ACCOUNTING.items():
         if cause.authority == AUTHORITY_SPEC_ENTRY:
             assert cause.cause in ENTRIES[cause.reference]["accounted_causes"], code
+        elif cause.authority == AUTHORITY_SPEC_NAMED_LIMITATION:
+            # the limitation names the very code it accounts for
+            assert cause.cause == code and code in limitations[cause.reference], code
         else:
             assert cause.authority == AUTHORITY_INVENTORY_ROW
-            assert any(cause.cause in (row.get("missing_behaviour") or "") for row in rows[cause.reference]), code
+            texts = [row.get("missing_behaviour") or "" for row in rows[cause.reference]]
+            if code in PHRASE_CITATIONS:
+                assert cause.cause in PHRASE_CITATIONS[code] and PHRASE_CITATIONS[code] in texts, code
+            else:
+                # the row names the very code it accounts for
+                assert cause.cause == code and any(code in text for text in texts), code
+    # review F5: a missing stop on an open position is accounted nowhere (it fails loud)
+    assert accounted_cause("RISK_AT_STOP_INPUT_MISSING") is None
     # management first, then the entry composer's table
     assert accounted_cause("HOLD_SCORE_INPUT_MISSING") == MANAGEMENT_CAUSE_ACCOUNTING["HOLD_SCORE_INPUT_MISSING"]
     assert accounted_cause(CAUSE_DECISION_PRICE_BAR_MISSING) == entry_composer.accounted_cause(CAUSE_DECISION_PRICE_BAR_MISSING)
@@ -377,6 +421,39 @@ def test_an_incomplete_result_with_no_accounted_code_is_reported(natural):
     assert "trailing_stop:TRAILING_STOP_SOMETHING_NEW" in decision.row.unaccounted
 
 
+def test_a_missing_stop_on_an_open_position_is_unaccounted(natural):
+    """Review F5: the closed-lifecycle "fail closed" text does not account for an open position's missing stop."""
+
+    real = management_composer.calculate_risk_at_stop
+
+    def missing_stop(tranches, **kwargs):
+        return real(tranches, **{**kwargs, "stop_price": None})
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(management_composer, "calculate_risk_at_stop", missing_stop)
+        decision = natural.redecide(ARMED_AT + 1 * DAY)
+    assert decision.row.owner_reason_codes["risk_at_stop_current"]["reason_codes"] == ["RISK_AT_STOP_INPUT_MISSING"]
+    assert "risk_at_stop_current:RISK_AT_STOP_INPUT_MISSING" in decision.row.unaccounted
+
+
+def test_a_missing_buffer_holds_the_trail_with_its_accounted_code():
+    """The phrase citation: the inventory's "None -> no trail candidate", through the real owners."""
+
+    run = trail_add_run()
+    real = management_composer.volatility_buffer_for_invalidation
+
+    def no_atr(levels, **kwargs):
+        return real(levels, **{**kwargs, "atr": None})
+
+    with trail_add_interventions(run.inputs), pytest.MonkeyPatch.context() as patch:
+        patch.setattr(management_composer, "volatility_buffer_for_invalidation", no_atr)
+        decision = run.redecide(TRAIL_AT)
+    assert decision.row.owner_reason_codes["trailing_buffer"]["complete"] is False
+    assert decision.row.trail["structure"] is not None and decision.row.trail["advanced"] is False
+    assert decision.row.trail["reason_codes"] == ["TRAILING_STOP_BUFFER_INCOMPLETE"]
+    assert decision.row.outcome != "TRAIL" and decision.row.unaccounted == ()
+
+
 def test_composer_unaccounted_causes_are_collected(natural):
     assert natural.champion.unaccounted_causes() == ()
 
@@ -398,7 +475,9 @@ def test_an_exhausted_tranche_schedule_is_the_schedules_limit_not_a_missing_inpu
     )
     assert decision.row.add["outcome"] == "NOT_EVALUATED"
     assert decision.row.add["reasons"] == ["ADD_NO_FURTHER_TRANCHE", "TRANCHE_SIZING_SCHEDULE_EXHAUSTED"]
-    assert accounted_cause("TRANCHE_SIZING_SCHEDULE_EXHAUSTED").reference == "btc_predictor.risk.tranches.next_tranche_for_position.schedule"
+    # owner review ruling 7: the spec named limitation, not the schedule's "never missing" inventory row
+    cause = accounted_cause("TRANCHE_SIZING_SCHEDULE_EXHAUSTED")
+    assert (cause.authority, cause.reference) == (AUTHORITY_SPEC_NAMED_LIMITATION, "TRANCHE_SCHEDULE_EXHAUSTED")
     assert decision.row.unaccounted == ()
 
 

@@ -7,6 +7,11 @@
    higher low for the next decision.
 3. The unmodelled add and reduce rules are recorded, not enforced.
 
+Owner review rulings (2026-11-01): 4. the ADD's projected risk at the stop is
+checked again at the callback that emits it; 6(b). a pending ADD whose first
+callback is a decision instant is superseded. Review F4: any accepted transition
+but the ADD's own trail drops it.
+
 Branches the synthetic market does not reach are shown with named
 interventions (a stated owner input or result at a stated instant; the real
 owners always run).
@@ -20,8 +25,11 @@ from decimal import Decimal
 import pytest
 
 from btc_predictor.research_backtest import entry_composer, management_composer
+from btc_predictor.portfolio.state_machine import DEFEND, apply_position_event
 from btc_predictor.research_backtest.management_composer import (
+    DROP_POSITION_CHANGED,
     DROP_POSITION_CLOSED,
+    DROP_RISK_EXCEEDED_AT_CALLBACK,
     DROP_SUPERSEDED_BY_DECISION,
     DROP_TRAIL_NOT_APPLIED,
     FOLLOWUP_ADD_DROPPED,
@@ -37,18 +45,22 @@ from btc_predictor.research_backtest.management_composer import (
 )
 from btc_predictor.risk.trailing import apply_trailing_stop
 from btc_predictor.tests.rbt005_management_fixtures import (
+    CONFIG,
     DAY,
     ENGINE_START,
     HOUR,
     TRAIL_AT,
     Interventions,
     add_score_lifted,
+    callback_context,
     decision_price,
     engine_bars,
     higher_low_at,
     managed_run,
     management_market,
     natural_run,
+    pending_trail_add,
+    resolver_holding,
     trail_add_run,
     utc,
 )
@@ -184,11 +196,122 @@ def test_a_pending_add_is_dropped_with_its_reason(dropped, name, reason, resolve
     assert run.champion.unaccounted_causes() == ()
 
 
+def test_a_state_change_after_the_trail_drops_the_add():
+    """Review F4: an accepted DEFEND at the same quantity and stop is a state change (ruling 1)."""
+
+    pending = pending_trail_add()
+    defended = apply_position_event(pending.moved, event=DEFEND, event_time=TRAIL_AT + HOUR)
+    assert defended.accepted and defended.state != pending.moved.state
+    assert (defended.quantity, defended.stop_price) == (pending.moved.quantity, pending.moved.stop_price)
+    champion = resolver_holding(pending)
+    assert champion._resolve_pending(callback_context(defended), TRAIL_AT + HOUR) is None
+    (followup,) = champion.add_followups
+    assert followup.outcome == FOLLOWUP_ADD_DROPPED and followup.reasons == (DROP_POSITION_CHANGED,)
+    # control: the same callback with only the trail installed emits the ADD
+    control = resolver_holding(pending)
+    assert control._resolve_pending(callback_context(pending.moved), TRAIL_AT + HOUR) == pending.decision.pending_add
+
+
+def test_a_decision_instant_supersedes_an_add_whose_trail_is_installed():
+    """Owner review ruling 6(b): the fresh decision decides, even with the ADD's trail applied."""
+
+    pending = pending_trail_add()
+    champion = resolver_holding(pending)
+    assert champion._resolve_pending(callback_context(pending.moved, TRAIL_AT + DAY), TRAIL_AT + DAY) is None
+    (followup,) = champion.add_followups
+    assert followup.reasons == (DROP_SUPERSEDED_BY_DECISION,) and followup.risk_recheck is None
+
+
 def test_the_dropped_trails_engine_record(dropped):
     expired = [event.status for event in dropped["not_applied"].events(event_type="INTENT", action="TRAIL")]
     assert expired == ["QUEUED", "EXPIRED"]
     stopped = [event for event in dropped["closed"].events(event_type="STOP_EXECUTION") if event.status == "EXECUTED"]
     assert [event.occurred_at for event in stopped] == [TRAIL_AT + HOUR]
+
+
+# --- review ruling 4: the ADD's risk at the stop, again at its callback ---------------------------
+
+
+def _scaled(bar, factor):
+    return replace(bar, open=bar.open * factor, high=bar.high * factor, low=bar.low * factor, close=bar.close * factor)
+
+
+@pytest.fixture(scope="module")
+def moved_prices():
+    """The trail-and-add market with a 10% rise during the callback's bar, or at the fill bar's open."""
+
+    market = management_market(end=utc(2024, 4, 4))
+    inputs = market.build()
+    rise = Decimal("1.10")
+
+    def during_callback_bar(built):
+        # the bar the callback serves (TRAIL_AT -> +1h) opens unchanged and closes 10% higher
+        bars = tuple(
+            replace(bar, high=bar.high * rise, close=bar.close * rise) if bar.timestamp == TRAIL_AT
+            else _scaled(bar, rise) if bar.timestamp > TRAIL_AT else bar
+            for bar in built.dataset.price_bars
+        )
+        return replace(built, dataset=replace(built.dataset, price_bars=bars))
+
+    def at_fill_open(built):
+        # every bar from the ADD's fill bar on is 10% higher: invisible at the callback
+        bars = tuple(_scaled(bar, rise) if bar.timestamp >= TRAIL_AT + HOUR else bar for bar in built.dataset.price_bars)
+        return replace(built, dataset=replace(built.dataset, price_bars=bars))
+
+    runs = {}
+    for name, modify in (("callback", during_callback_bar), ("fill", at_fill_open)):
+        runs[name] = managed_run(market, engine_end=TRAIL_AT + 3 * HOUR, setup=_trail_and_add(inputs), modify=modify)
+    return runs
+
+
+def _maximum_marked_risk(run):
+    return max(point.risk_fraction_nav for point in run.result.equity_curve if point.risk_fraction_nav is not None)
+
+
+def test_the_add_rechecks_its_risk_at_the_callback_that_emits_it(trail_add):
+    (followup,) = trail_add.champion.add_followups
+    recheck = followup.risk_recheck
+    bar = next(bar for bar in trail_add.inputs.dataset.price_bars if bar.ingested_at == TRAIL_AT + HOUR)
+    # the bar this callback serves, the installed stop, this callback's NAV
+    assert (recheck["bar_timestamp"], recheck["price"]) == (bar.timestamp, bar.close)
+    assert recheck["stop_price"] == Decimal(trail_add.rows()[TRAIL_AT].intent["trailing_stop"]["stop_price"])
+    assert recheck["within_maximum"] is True and followup.unaccounted == ()
+    assert recheck["projected_risk_fraction_nav"] <= CONFIG.risk.max_risk_at_stop_fraction_nav
+    assert {item["complete"] for item in recheck["owner_reason_codes"].values()} == {True}
+    # the resolver alone, from the same state, records the same re-check
+    pending = pending_trail_add()
+    champion = resolver_holding(pending)
+    assert champion._resolve_pending(callback_context(pending.moved), TRAIL_AT + HOUR) == pending.decision.pending_add
+    assert champion.add_followups[0].risk_recheck == recheck
+
+
+def test_an_add_whose_risk_exceeds_the_ceiling_at_its_callback_is_dropped(moved_prices):
+    """Review F1: approved at t, the ADD is dropped when the price has moved by its callback."""
+
+    run = moved_prices["callback"]
+    ceiling = CONFIG.risk.max_risk_at_stop_fraction_nav
+    assert Decimal(run.rows()[TRAIL_AT].add["projected_risk_fraction_nav"]) <= ceiling
+    (followup,) = run.champion.add_followups
+    assert followup.outcome == FOLLOWUP_ADD_DROPPED and followup.reasons == (DROP_RISK_EXCEEDED_AT_CALLBACK,)
+    assert followup.risk_recheck["within_maximum"] is False and followup.risk_recheck["projected_risk_fraction_nav"] > ceiling
+    assert not run.events(action="ADD") and _maximum_marked_risk(run) <= ceiling
+    assert run.champion.unaccounted_causes() == ()
+
+
+def test_a_gap_at_the_fill_bars_open_is_the_recorded_limitation(moved_prices):
+    """Owner review ruling 4's residual: the frozen engine fills at the next bar's open, unseen at the callback.
+
+    The re-check passes on the callback's bar, the engine fills 10% higher and
+    risk at the stop ends above the ceiling. This pins the recorded limitation;
+    it changes only with a fill-time check in a new engine version.
+    """
+
+    run = moved_prices["fill"]
+    (followup,) = run.champion.add_followups
+    assert followup.outcome == FOLLOWUP_ADD_EMITTED and followup.risk_recheck["within_maximum"] is True
+    (executed,) = [event for event in run.events(event_type="ADD_EXECUTION") if event.status == "EXECUTED"]
+    assert Decimal(executed.evidence["reference_price"]) > followup.risk_recheck["price"] * Decimal("1.09")
+    assert _maximum_marked_risk(run) > CONFIG.risk.max_risk_at_stop_fraction_nav
 
 
 # --- ruling 2: one intent per decision, EXIT > TRIM > TRAIL/ADD -----------------------------------

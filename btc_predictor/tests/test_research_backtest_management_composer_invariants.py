@@ -1,35 +1,49 @@
-"""RBT-005 BTC-222 risk invariants over composed replays, and the BTC-224 golden replays.
+"""RBT-005 BTC-222 risk invariants over composed replays, the end-to-end replay and the golden plumbing.
 
 Over every composed replay (the composed champion driving BTC-180): never
 average down, stops never widen, and aggregate risk at the stop stays within
 the configured ceiling at every bar. The engine refuses none of the champion's
-intents.
+intents. The replays include the end-to-end one: entry, TRAIL, ADD, the natural
+TRIMs and a composed EXIT (owner review ruling 5), with mutations that show a
+broken management half fails it.
 
-The golden scenarios replay their recorded bar sequences with the composed
-champion as the strategy. The golden fixture carries daily prices only: no
-hourly replay bars, ETF flows or derivatives, so the champion's replay inputs
-hold nothing for those dates and every golden instant is the accounted
-``STRUCTURALLY_UNEVALUABLE`` missing-input row. No owner is evaluated on that
-real history before the RBT-006 freeze. Its decisions are reported next to the
-scripted ones; they are not required to match.
+The golden scenarios are plumbing replays only (owner review ruling 5,
+2026-11-01). The golden fixture is real BTC history with daily prices only and
+no champion value is computed on real prices before the RBT-006 freeze, so the
+champion's replay inputs hold nothing for those dates and every golden instant
+is the accounted ``STRUCTURALLY_UNEVALUABLE`` missing-input row: the tests show
+the engine runs the composed champion over each golden bar sequence without
+refusal, and nothing about its management. RBT-007 reports the frozen
+champion's decisions on the golden periods next to the scripted ones.
 """
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 
 import pytest
 
 from btc_predictor.backtest.engine import run_backtest
-from btc_predictor.portfolio.state_machine import ADD, ENTER
+from btc_predictor.portfolio.state_machine import ADD, ENTER, EXIT, STOP_MOVE, TRIM
+from btc_predictor.research_backtest import management_composer
 from btc_predictor.research_backtest.entry_composer import CAUSE_DECISION_PRICE_BAR_MISSING, OUTCOME_STRUCTURALLY_UNEVALUABLE, EntryComposer
 from btc_predictor.research_backtest.management_composer import ManagementComposer
 from btc_predictor.risk.exposure import calculate_risk_at_stop
 from btc_predictor.tests import test_golden_scenarios as golden
 from btc_predictor.tests.rbt004_composer_fixtures import Scenario
-from btc_predictor.tests.rbt005_management_fixtures import CONFIG, natural_run, trail_add_run, utc
+from btc_predictor.tests.rbt005_management_fixtures import (
+    CONFIG,
+    EXIT_AT,
+    TRAIL_AT,
+    end_to_end_replay,
+    end_to_end_run,
+    natural_run,
+    trail_add_run,
+    utc,
+)
 
-REPLAYS = {"natural": natural_run, "trail_add": trail_add_run}
+REPLAYS = {"natural": natural_run, "trail_add": trail_add_run, "end_to_end": end_to_end_run}
 
 
 @pytest.fixture(scope="module", params=sorted(REPLAYS))
@@ -57,7 +71,7 @@ def test_a_composed_replay_never_averages_down(replay):
         total = quantity + transition.requested_quantity
         average = ((average or Decimal("0")) * quantity + transition.price * transition.requested_quantity) / total
         quantity = total
-    assert adds == (1 if replay is trail_add_run() else 0)
+    assert adds == (0 if replay is natural_run() else 1)
 
 
 def test_a_composed_replay_never_widens_a_stop(replay):
@@ -77,7 +91,68 @@ def test_the_engine_refuses_none_of_the_champions_intents(replay):
     assert replay.champion.unaccounted_causes() == () and replay.champion.entry.unaccounted_causes() == ()
 
 
-# --- the BTC-224 golden replays ----------------------------------------------------------------
+# --- the end-to-end replay (owner review ruling 5) ---------------------------------------------
+
+
+def _end_to_end_failures(run):
+    """What the end-to-end replay must show, as a list of failures (empty when it does)."""
+
+    failures = []
+    events = [item.event for item in run.result.final_lifecycle.transitions if item.accepted]
+    if events[:3] != [ENTER, STOP_MOVE, ADD]:
+        failures.append(f"entry, trail and add expected first: {events[:3]}")
+    if TRIM not in events[3:-1]:
+        failures.append(f"no composed TRIM before the exit: {events}")
+    if events[-1:] != [EXIT]:
+        failures.append(f"the position must end on a composed EXIT: {events[-1:]}")
+    outcomes = {row.decision_at: row.outcome for row in run.champion.ledger}
+    if outcomes.get(TRAIL_AT) != "TRAIL" or outcomes.get(EXIT_AT) != "EXIT":
+        failures.append(f"TRAIL and EXIT rows expected: {outcomes.get(TRAIL_AT)}, {outcomes.get(EXIT_AT)}")
+    exits = [event for event in run.result.events if event.action == "EXIT" and event.status == "EXECUTED"]
+    if [event.source_id for event in exits] != [f"rbt005:BITSTAMP:exit:{EXIT_AT.isoformat()}"]:
+        failures.append(f"the composed EXIT must execute once: {[event.source_id for event in exits]}")
+    if [row for row in run.champion.ledger if row.decision_at > EXIT_AT]:
+        failures.append("a management row after the exit")
+    if not [row for row in run.champion.entry.ledger if row.decision_at > EXIT_AT]:
+        failures.append("the entry half must decide again once flat")
+    if run.champion.unaccounted_causes() or run.champion.entry.unaccounted_causes():
+        failures.append("unaccounted causes")
+    return failures
+
+
+def test_the_composed_champion_runs_end_to_end():
+    run = end_to_end_run()
+    assert _end_to_end_failures(run) == []
+    assert "BACKTEST_INTENT_REFUSED" not in run.result.reason_codes
+    assert run.champion.ledger[-1].intent["exit_reason"] == "HOLD_SCORE_COLLAPSE"
+
+
+def test_a_management_half_that_never_acts_fails_the_end_to_end_replay():
+    real = management_composer._ManagementRun.run
+
+    def silenced(self):
+        decision = real(self)
+        return replace(decision, intent=None, pending_add=None)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(management_composer._ManagementRun, "run", silenced)
+        run = end_to_end_replay()
+    assert _end_to_end_failures(run)
+
+
+def test_a_management_half_that_breaks_fails_the_end_to_end_replay():
+    """The review's mutation: every management decision raises; the golden plumbing still passes it."""
+
+    def broken(self):
+        raise AssertionError("every management decision is deliberately broken")
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(management_composer._ManagementRun, "run", broken)
+        with pytest.raises(AssertionError, match="deliberately broken"):
+            end_to_end_replay()
+
+
+# --- the BTC-224 golden plumbing replays (owner review ruling 5) ----------------------------------
 
 
 @pytest.fixture(scope="module")
@@ -87,7 +162,7 @@ def champion_inputs():
 
 
 @pytest.mark.parametrize("scenario_id", golden.SCENARIO_IDS)
-def test_the_champion_replays_each_golden_sequence_without_engine_refusal(scenario_id, champion_inputs):
+def test_each_golden_sequence_replays_through_the_composed_champion_as_plumbing(scenario_id, champion_inputs):
     scenario = golden.scenario_by_id(scenario_id)
     bars = golden.scenario_bars(scenario_id)
     champion = ManagementComposer(EntryComposer(champion_inputs, strategy_config=CONFIG))

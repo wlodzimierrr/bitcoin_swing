@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from decimal import Decimal
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
@@ -28,7 +28,8 @@ import pytest
 from btc_predictor.backtest.engine import BacktestResult, run_backtest
 from btc_predictor.research_backtest import entry_composer, management_composer
 from btc_predictor.research_backtest.entry_composer import EntryComposer, EntryComposerInputs, EntryDecision
-from btc_predictor.research_backtest.management_composer import ArmedEntry, ManagementComposer, ManagementDecision
+from btc_predictor.research_backtest.management_composer import ArmedEntry, ManagementComposer, ManagementDecision, _PendingAdd
+from btc_predictor.risk.trailing import apply_trailing_stop
 from btc_predictor.tests.rbt004_composer_fixtures import CONFIG, DAY, HOUR, Scenario, trending_close, utc
 
 ARMED_AT = utc(2024, 3, 31)
@@ -257,8 +258,86 @@ def trail_add_run() -> ManagedRun:
     return managed_run(market, engine_end=utc(2024, 4, 5, 6), setup=setup)
 
 
+# --- the end-to-end replay (owner review ruling 5) ------------------------------------------
+
+# The Hold Score collapses at EXIT_AT: every component at 20, below the owner's
+# exit threshold, so the exit owner composes HOLD_SCORE_COLLAPSE.
+EXIT_AT = utc(2024, 4, 7)
+HOLD_COLLAPSE = {
+    "trend_score": Decimal("20"), "flow_score": Decimal("20"), "positioning_score": Decimal("20"),
+    "structure_score": Decimal("20"), "momentum_persistence_score": Decimal("20"),
+}
+
+
+def end_to_end_replay() -> ManagedRun:
+    """Entry, TRAIL, the ADD, the natural TRIMs and a composed EXIT, through BTC-180.
+
+    The trail-and-add interventions of :func:`trail_add_run` at TRAIL_AT, and the
+    Hold collapse at EXIT_AT; every other instant is the synthetic market's own.
+    """
+
+    market = management_market(end=utc(2024, 4, 10))
+    inputs = market.build()
+
+    def setup(interventions: Interventions) -> None:
+        higher_low_at(interventions, inputs, {TRAIL_AT})
+        add_score_lifted(interventions, {TRAIL_AT})
+        interventions.inputs(management_composer, "calculate_hold_score", {EXIT_AT}, **HOLD_COLLAPSE)
+
+    return managed_run(market, engine_end=utc(2024, 4, 8, 6), setup=setup)
+
+
+@functools.lru_cache(maxsize=None)
+def end_to_end_run() -> ManagedRun:
+    return end_to_end_replay()
+
+
+# --- the pending ADD at its callback (owner ruling 1, review rulings 4 and 6) --------------
+
+
+@dataclass(frozen=True)
+class PendingTrailAdd:
+    """The TRAIL_AT decision of :func:`trail_add_run` and its lifecycle once the TRAIL is installed."""
+
+    decision: ManagementDecision
+    captured: Captured
+    moved: Any
+
+
+def pending_trail_add() -> PendingTrailAdd:
+    run = trail_add_run()
+    item = run.captured[TRAIL_AT]
+    with trail_add_interventions(run.inputs):
+        decision = run.redecide(TRAIL_AT)
+    # the engine installs the TRAIL on the next bar, as it did in the replay
+    moved = apply_trailing_stop(item.lifecycle, decision.intent.trailing_stop, event_time=TRAIL_AT + HOUR)
+    return PendingTrailAdd(decision, item, moved)
+
+
+def resolver_holding(pending: PendingTrailAdd) -> ManagementComposer:
+    """A fresh composer in the state the replay left before TRAIL_AT + 1h: the armed entry and the pending ADD."""
+
+    run = trail_add_run()
+    champion = ManagementComposer(run.champion.entry)
+    champion._armed = dict(run.champion._armed)
+    trail = pending.decision.intent.trailing_stop
+    lifecycle = pending.captured.lifecycle
+    champion._pending = _PendingAdd(TRAIL_AT, pending.decision.pending_add, trail.stop_price, lifecycle.opened_at, lifecycle.quantity)
+    return champion
+
+
+def callback_context(lifecycle: Any, at: datetime = TRAIL_AT + HOUR) -> SimpleNamespace:
+    """The engine context fields the resolver reads at the callback ``at``: the bar closing then, NAV and lifecycle."""
+
+    run = trail_add_run()
+    bar = next(bar for bar in run.inputs.dataset.price_bars if bar.ingested_at == at)
+    nav = next(point.nav for point in run.result.equity_curve if point.as_of == at)
+    return SimpleNamespace(lifecycle=lifecycle, bar=bar, nav=nav)
+
+
 __all__ = [
-    "ARMED_AT", "CONFIG", "DAY", "ENGINE_START", "FILLED_AT", "HOUR", "TRAIL_AT", "Captured", "Interventions", "ManagedRun",
-    "add_score_lifted", "decision_price", "engine_bars", "higher_low_at", "managed_run", "management_market", "natural_run",
-    "trail_add_interventions", "trail_add_run", "utc",
+    "ARMED_AT", "CONFIG", "DAY", "ENGINE_START", "EXIT_AT", "FILLED_AT", "HOLD_COLLAPSE", "HOUR", "TRAIL_AT", "Captured",
+    "Interventions", "ManagedRun", "PendingTrailAdd", "add_score_lifted", "callback_context", "decision_price",
+    "end_to_end_replay", "end_to_end_run", "engine_bars", "higher_low_at", "managed_run", "management_market",
+    "natural_run", "pending_trail_add", "resolver_holding", "trail_add_interventions", "trail_add_run", "utc",
 ]
