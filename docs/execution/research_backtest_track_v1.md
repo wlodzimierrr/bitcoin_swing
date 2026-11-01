@@ -2916,7 +2916,7 @@ Recommended next dependency-satisfied ticket: **RBT-004 (READY)**, with **RBT-00
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `READY — RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7. Policy V4 data rules ADOPTED and governed by V7.`
+**Status:** `IN_PROGRESS — owner rulings recorded (2026-11-01); implementation not yet committed. RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7; policy V4 data rules ADOPTED and governed by V7.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`),
 RBT-002 independent R2 re-review PASS (SATISFIED under V5 §5A.7)
 **Implementation effort:** high
@@ -2938,6 +2938,40 @@ Extend the reviewed builder from `HISTORICAL_REPLAY_AVAILABILITY_V1` to `_V2`
   reproducible.
 - New tests cover each shape's boundaries and a point-in-time property test
   through the real owners.
+
+**Owner rulings (2026-11-01, asked before implementation; the recommended
+option each time).** Policy V7 and the adopted data rules left these points
+open:
+
+1. **RBT-001A produces `LIQUIDATION_PERCENTILE`.** No executable owner
+   computes it; EPIC X froze it only as the contract
+   `PROSPECTIVE_LIQUIDATION_PERCENTILE_ADAPTER_V1`. The builder shapes the
+   hourly per-side Kraken Futures `PI_XBTUSD` rows (`INTERVAL`, available at
+   the hour's end), applies `HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1` day
+   completeness, and executes that contract by reference: its window (730
+   days, half-open), minimum (365 prior observations), current day excluded
+   from its own history, unusable days excluded from both value and history,
+   and the midrank convention through the volatility owner's
+   `_percentile_rank`, all imported, nothing restated. It emits the entry
+   composer's `LiquidationPercentileObservation`: day D is observed at
+   D 00:00 (the owner's bar-start convention, so 730 prior days) and available
+   at D+1 00:00.
+2. **A corroboration disagreement refuses the build.** RBT-003's Kraken
+   adapter supplies one typed record per hour (status, the result of the
+   comparison with Kraken's hourly liquidation-volume series, an evidence
+   digest), and the builder checks them against the liquidation rows. The rule
+   says the series "must agree within rounding", so any disagreeing hour fails
+   the build with a refusal code; nothing is approximated, and RBT-003 must
+   resolve or re-acquire before a dataset can freeze.
+3. **Basis rows within 7 days of expiry are excluded and recorded.**
+   `FUTURES_BASIS_CONTRACT_V1` excludes them and the raw table may hold them,
+   so the builder drops each from the replay inputs (the owner averages every
+   row sharing an `observation_time`) and lists it in the manifest with
+   `FUTURES_BASIS_WITHIN_7D_OF_EXPIRY`. Rows that break the rest of the
+   contract are refused: not at an hour close, not a Binance COIN-M `BTCUSD`
+   quarterly, or an annualized rate that does not equal
+   `basis_rate * 365 days / (expiry - t)` at the raw table's 18 decimal
+   places.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
@@ -4110,7 +4144,7 @@ version or any version derived from inspecting its result.
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | IN_PROGRESS — owner rulings recorded (2026-11-01); implementation in progress |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
@@ -4151,8 +4185,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-001A** (READY); RBT-006 stays
-blocked on RBT-003.
+dependency-satisfied EPIC Y work is **RBT-001A** (IN_PROGRESS; owner rulings
+recorded 2026-11-01); RBT-006 stays blocked on RBT-003.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

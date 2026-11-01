@@ -1648,9 +1648,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-005
-  `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` closed DONE on 2026-11-01 and
-  RBT-004 on 2026-10-31; RBT-001A is READY. EPIC X's separate next action remains
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-001A
+  `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`; its three owner rulings (2026-11-01) are
+  recorded and implementation is in progress. RBT-005 closed DONE on
+  2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-005 re-review, 2026-11-01,
   **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE** (same Codex
@@ -1953,7 +1954,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-001A** (READY).
+- **Next dependency-satisfied EPIC Y action:** **RBT-001A** (IN_PROGRESS;
+  owner rulings recorded 2026-11-01).
   RBT-006 stays blocked until RBT-003 is done (RBT-005 DONE 2026-11-01);
   RBT-003, RBT-007 and RBT-008 remain blocked on their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -3347,6 +3349,15 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-01: RBT-001A scope points.** Asked before
+  implementation; the owner chose every recommended option. RBT-001A produces
+  `LIQUIDATION_PERCENTILE` by executing EPIC X's frozen adapter contract by
+  reference over `HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1` days (day D
+  observed at D 00:00, available D+1 00:00). A disagreement with Kraken's
+  hourly liquidation-volume series refuses the build. Futures-basis rows within
+  7 days of expiry are excluded and recorded; other contract breaches are
+  refused. Details in the RBT-001A block.
 
 - **ANSWERED 2026-11-01: RBT-005 review questions.** The owner chose every
   recommended option: the ADD re-checks its risk at the callback that emits
