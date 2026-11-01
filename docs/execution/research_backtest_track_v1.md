@@ -3519,7 +3519,7 @@ Recommended next dependency-satisfied tickets: **RBT-005** (READY) and
 
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
-**Status:** `IMPLEMENTED; independent xHigh review FAIL (2026-11-01) fixed in 56ab0ca, f69140f and 5052cbb; AWAITING INDEPENDENT xHIGH RE-REVIEW — Part A 0856352, Part B 8fdd5a3; owner rulings 1b52760; owner review rulings 4-7 (2026-11-01)`
+**Status:** `DONE (2026-11-01) — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS; review FAIL fixed in 56ab0ca, f69140f and 5052cbb; N1 fixed in dddd6a6 — Part A 0856352, Part B 8fdd5a3; owner rulings 1b52760; owner review rulings 4-7 (2026-11-01)`
 **Dependencies:** RBT-004
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -3630,10 +3630,11 @@ criterion as stated; the review outcome below records the findings.
 
 ### RBT-005 Implementation Notes
 
-**Status:** `IMPLEMENTED; review FAIL fixed (2026-11-01); AWAITING
-INDEPENDENT xHIGH RE-REVIEW`. This block is the implementer's record, current
-after the review-fix (`56ab0ca`, `f69140f`, `5052cbb`); the RBT-005 review outcome below
-records the findings and the fix. It is not a closure.
+**Status:** `DONE (2026-11-01)`: independent xHigh re-review PASS WITH
+NON-BLOCKING FINDINGS. This block is the implementer's record, current after
+the review-fix (`56ab0ca`, `f69140f`, `5052cbb`) and the N1 fix (`dddd6a6`); the
+RBT-005 review and re-review outcomes below record the findings, the fixes and
+the closure.
 
 **Commits:**
 - Rulings record, `1b52760`: the three owner composition rulings above.
@@ -3654,7 +3655,10 @@ records the findings and the fix. It is not a closure.
 - Review-fix, `f69140f`: the composer and test corrections (F1-F5, rulings 4-6).
 - Review-fix, `5052cbb`: the owner-less input guard scoped to the every-input-missing
   flow input (F2).
-- Docs, this documentation commit: the review-fix record and these notes.
+- Docs, `2431246`: the review-fix record and these notes.
+- Non-blocking fix, `dddd6a6`: re-review N1, the runtime check of the prior flow
+  the trim owner receives.
+- Docs, this documentation commit: the re-review outcome and the closure.
 
 No inventory, owner, configuration, `data/` or `research_artifacts/` change:
 every management root was already a census root, so no Part A promotion was
@@ -3788,7 +3792,7 @@ composer passes their codes as exit and add evidence. The flags test
 
 | Module | Proves |
 | --- | --- |
-| `…_management_composer` | one management row per open instant beside the entry row; HOLD/TRIM with every trim executed; the position and its armed entry (K_entry, source id, opened at); the armed BTC-145 size equals the engine's first tranche; Hold read from the composition (Structure equals the entry path's; persistence `100 * Phi(Z_M12)`); the prior flow; a missing decision bar while open and the trim that still evaluates; a missing prior flow leaving the Hold-band trim to the owner (F2); canonical ledger naming both halves; digest stable across hash seeds and working directories; decide API refusals; regime invalidation (bear now, not bear at entry; exempt; unknown `K_entry` never False); a Hold collapse exit; the exit's bar extreme, data risk and override; the spec values against the frozen spec; accounting backed by the bound artifacts (each inventory citation names its code, the one phrase citation shown through the owners, the named limitation), injected unknown and silent incomplete codes reported, a missing open-position stop unaccounted (F5), the exhausted schedule |
+| `…_management_composer` | one management row per open instant beside the entry row; HOLD/TRIM with every trim executed; the position and its armed entry (K_entry, source id, opened at); the armed BTC-145 size equals the engine's first tranche; Hold read from the composition (Structure equals the entry path's; persistence `100 * Phi(Z_M12)`); the prior flow; a missing decision bar while open and the trim that still evaluates; a missing prior flow leaving the Hold-band trim to the owner, with no value in the prior flow it receives (F2, re-review N1); canonical ledger naming both halves; digest stable across hash seeds and working directories; decide API refusals; regime invalidation (bear now, not bear at entry; exempt; unknown `K_entry` never False); a Hold collapse exit; the exit's bar extreme, data risk and override; the spec values against the frozen spec; accounting backed by the bound artifacts (each inventory citation names its code, the one phrase citation shown through the owners, the named limitation), injected unknown and silent incomplete codes reported, a missing open-position stop unaccounted (F5), the exhausted schedule |
 | `…_rulings` | the TRAIL at t, the trail applied at t+1h, the ADD queued then and executed at t+2h with the requirements evaluated at t; on the post-move lifecycle the same higher low is already used (the spec's sequencing note); the next decision needs a newer structure; the three drop reasons through the engine; a trim defers the trail and suppresses the add; an exit overrides a trim and a trail and suppresses an add; a deferred trail's higher low applies at the next decision; hold 60-70 and Positioning below 70 do not block an add; a state change after the trail drops the ADD (F4); an installed trail at a decision callback is superseded (ruling 6); the ADD's risk re-check recorded at its callback, a price rise by the callback dropping it, and the fill-bar gap pinned as the limitation (ruling 4, F1) |
 | `…_flags` | the baseline add goes ahead; STRESS, CROWDING and EUPHORIA each block it with `RULEBOOK_24_NO_ADDING_ENFORCED`; an unknown STRESS or EUPHORIA blocks it with `RULEBOOK_24_FLAG_STATE_UNKNOWN`, an unknown CROWDING through BTC-154 too; `DATA_QUALITY_FAIL` blocks the add and is not an exit; through the engine no ADD reaches it while STRESS is active |
 | `…_invariants` | over the natural, trail-and-add and end-to-end replays: never average down, stops never widen, risk at the stop within the configured ceiling at every bar, no engine refusal; the end-to-end replay (entry, TRAIL, ADD, TRIMs, a composed EXIT) and two mutations of the management half that fail it; each of the six BTC-224 golden sequences as plumbing (ruling 5) |
@@ -3836,8 +3840,8 @@ score, signal, trade or outcome was computed; no database connection; holdout
 NOT COLLECTED; BTC-019 untouched, sealed sample unopened; EPIC X unchanged
 (`POSTP1-001V2R1` remains its next ticket).
 
-Recommended next dependency-satisfied ticket: the **independent xHigh RBT-005
-re-review**; **RBT-001A** remains READY.
+Recommended next dependency-satisfied ticket: **RBT-001A** (READY); RBT-006
+stays blocked on RBT-003.
 
 ### RBT-005 review outcome
 
@@ -3952,9 +3956,56 @@ read the re-check record the fix adds. Validation: the six management modules
 full repository at `f69140f`, alone: 7,630 passed, 1 failed, 3 skipped, 1 xfailed in 4695.76s; the one failure, `test_no_production_code_produces_the_owner_less_entry_inputs`, is the owner-less input guard, tripped by the F2 construction and scoped by `5052cbb` (the full suite was not rerun after it); the coverage module at `5052cbb`
 66 passed in 22.69s.
 
+### RBT-005 re-review outcome
+
+**Date:** 2026-11-01. **Review:** independent xHigh re-review by the same Codex
+CLI session (`gpt-6.1-sol`, reasoning `xhigh`), resumed in its detached
+worktree at `2431246` under the same report-only rules; its worktree stayed
+clean. **Reviewed:** review-fix `56ab0ca`, `f69140f` and `5052cbb` and
+documentation `2431246`, against the FAIL at `d81d4b4` and owner review
+rulings 4-7.
+**Result: PASS WITH NON-BLOCKING FINDINGS. RBT-005 is DONE.** F1-F5 are fixed
+(F1 and F3 as ruled); no new blocking defect was found.
+
+| Finding | Re-review status and evidence |
+| --- | --- |
+| F1 | **FIXED as ruled** (ruling 4). A 10% rise during the callback's bar now drops the ADD with `ADD_RISK_AT_STOP_EXCEEDED_AT_CALLBACK`; an incomplete re-check also drops it and keeps its unaccounted causes. The re-check reads that callback's closed bar, installed stop and NAV. The review's own gap at the fill bar's open still executes, at 1.556898% of NAV: the ruled residual, pinned by a test. |
+| F2 | **FIXED.** Before/after probes change HOLD -> TRIM for both a Hold of 45 and an active CROWDING with no prior flow. The every-input-missing `FlowScoreInput` gives the owner's incomplete result, which the trim owner maps to `prior_flow_score = None`: a faithful reading of the two inventory rows, with no invented value or fallback. |
+| F3 | **FIXED as ruled** (ruling 5). The synthetic replay runs ENTER -> STOP_MOVE -> ADD -> four TRIMs -> EXIT, and both management mutations fail it. The golden tests are plumbing only, and RBT-007 carries the reporting obligation. |
+| F4 | **FIXED.** An accepted `DEFEND` probe changes ADD_EMITTED -> `ADD_POSITION_CHANGED`; the trail-only control still emits the ADD, and a stress-cost replay with 50 funding events executes it, so funding does not trip the transition check. |
+| F5 | **FIXED.** A missing open-position stop is unaccounted; the exhausted schedule cites `TRANCHE_SCHEDULE_EXHAUSTED`. An independent comparison with the previous JSON confirms only that named limitation was appended; the other sections and the inventory are unchanged. |
+
+The before/after probes loaded the pre-fix composer from `56ab0ca` and
+reproduced the F2, F4 and F5 failures. The resolver's runtime boundary is
+exercised, all 16 direct roots are covered, and the point-in-time tests pass.
+The documentation was found accurate, including the full suite's failure at
+`f69140f` and the absence of a full rerun after `5052cbb`.
+
+| ID / severity | Location (`2431246`) | Finding | Disposition |
+| --- | --- | --- | --- |
+| N1 / **P2 FIXED** | `test_research_backtest_coverage.py:352`, `:365` | The guards check only how the every-input-missing `FlowScoreInput` is constructed: wrapping that construction in `dataclasses.replace` inserts values with neither guard nor the static census failing (three core fields at 1 gave a complete flow, score 84.13; one field also passed both guards). The current composer supplies five literal `None`s, so this is a test-protection gap, not a current unsourced value. | Fixed in `dddd6a6`: the runtime F2 regression records the trim owner's call and asserts the prior `FlowScoreResult` it received is incomplete, holds `None` in every input field and has no raw score, score, interpretation or contribution value, whatever route built it. A replace of one core field, of the three core fields or of one P1 field each fails it. |
+
+Codex's runs (`.venv312`, one process at a time): the six management modules
+100 passed in 539.39s; both spec modules and the coverage module 181 passed in
+44.83s; the before/after findings probes and the guard probes passed (the five
+reported mutations rejected, the replacement bypass reproduced); the spec
+rebuilds to `9a619596...15f6313` with the inventory at
+`250f9470...a061cb17`; `git diff --check` clean. It did not rerun the full
+suite. No owner question was raised.
+
+**Non-blocking fix:** `dddd6a6` (2026-11-01), made after the PASS as the owner
+chose, without a further re-review. It changes
+`test_research_backtest_management_composer.py` only; no composer, owner,
+configuration, spec, inventory or evidence change. Validation: the six
+management modules and the coverage module 166 passed in 546.55s; full repository at
+`dddd6a6`, alone: 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s.
+
+Recommended next dependency-satisfied ticket: **RBT-001A** (READY). RBT-006
+stays blocked on RBT-003.
+
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
-**Status:** `BLOCKED — awaiting RBT-003 and RBT-005; closure-table dependency SATISFIED`
+**Status:** `BLOCKED — awaiting RBT-003; RBT-005 DONE (2026-11-01); closure-table dependency SATISFIED`
 **Dependencies:** RBT-003, RBT-005, `POSTP1-002V2A-T1` PASS (closure table,
 **SATISFIED 2026-09-30** at `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`)
 **Implementation effort:** high
@@ -4062,8 +4113,8 @@ version or any version derived from inspecting its result.
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
-| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | IMPLEMENTED; independent xHigh review FAIL (2026-11-01) fixed in `56ab0ca`, `f69140f` and `5052cbb`, AWAITING INDEPENDENT xHIGH RE-REVIEW (owner review rulings 4-7) — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `f69140f` 7,630 passed, 1 failed (the owner-less input guard, scoped by `5052cbb`), 3 skipped, 1 xfailed in 4695.76s |
-| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
+| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
+| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
@@ -4089,7 +4140,8 @@ RBT-002A is DONE / independent xHigh review PASS under policy V7 (final spec
 `9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0` and by
 RBT-005's named limitation to `9a619596...15f6313`). RBT-004 is
 DONE after its independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS
-(2026-10-31); RBT-005's review-fix awaits its re-review and RBT-001A is READY;
+(2026-10-31); RBT-005 is DONE after its independent xHigh re-review PASS WITH
+NON-BLOCKING FINDINGS (2026-11-01); RBT-001A is READY;
 the four
 adopted data choices stay fixed.
 
@@ -4099,8 +4151,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is the **independent xHigh RBT-005
-re-review**, with **RBT-001A** also READY.
+dependency-satisfied EPIC Y work is **RBT-001A** (READY); RBT-006 stays
+blocked on RBT-003.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
