@@ -26,6 +26,7 @@ holdout is read; no database or network is touched.
 
 from __future__ import annotations
 
+import ast
 import dataclasses
 import functools
 import json
@@ -49,7 +50,8 @@ from btc_predictor.features import trend as trend_owner
 from btc_predictor.features import volatility as volatility_owner
 from btc_predictor.research import prospective_integration_corpus as epic_x_corpus
 from btc_predictor.research.us_equity_market_closures import load_closures
-from btc_predictor.research_backtest import coverage, input_census
+from btc_predictor.research_backtest import composer_boundary, coverage, input_census
+from btc_predictor.research_backtest import management_composer
 from btc_predictor.research_backtest.coverage import (
     CoverageError,
     InputClassification,
@@ -330,6 +332,9 @@ def test_no_production_code_produces_the_owner_less_entry_inputs() -> None:
     # production constructs those inputs or computes the level/orderliness ones,
     # except the RBT-004 entry composer, which implements CHAMPION_COMPLETION_SPEC_V1.
     composer = ROOT / "btc_predictor" / "research_backtest" / "entry_composer.py"
+    # The RBT-005 management composer is exempt only from the flow-input pattern,
+    # and only for constructions that carry no value (checked below).
+    management = ROOT / "btc_predictor" / "research_backtest" / "management_composer.py"
     production = [
         path
         for path in (ROOT / "btc_predictor").rglob("*.py")
@@ -344,9 +349,36 @@ def test_no_production_code_produces_the_owner_less_entry_inputs() -> None:
     }
     composer_source = composer.read_text(encoding="utf-8")
     for pattern, owners in patterns.items():
-        offenders = [str(path) for path in production if path.name not in owners and pattern in path.read_text(encoding="utf-8")]
+        scanned = [path for path in production if not (path == management and pattern == "FlowScoreInput(")]
+        offenders = [str(path) for path in scanned if path.name not in owners and pattern in path.read_text(encoding="utf-8")]
         assert offenders == [], pattern
         assert pattern in composer_source, pattern
+
+
+def test_the_management_composer_constructs_only_the_every_input_missing_flow_input() -> None:
+    # RBT-005 review-fix (F2): with no prior decision bar there is no prior flow, and
+    # the trim owner takes only a FlowScoreResult, mapping an incomplete one to
+    # prior_flow_score None. The composer passes the flow owner's own result with
+    # every input None. That produces no owner-less input value; anything else would.
+    # The composer census resolves every call through the module's namespace, so an
+    # aliased construction is found as well as a literal one.
+    census = composer_boundary.static_call_census(management_composer)
+    target = f"{flow_owner.FlowScoreInput.__module__}.{flow_owner.FlowScoreInput.__qualname__}"
+    constructions = {(call.line, call.expression) for call in census.calls if call.target == target}
+    source = Path(management_composer.__file__).read_text(encoding="utf-8")
+    calls = [
+        node
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call) and (node.lineno, ast.unparse(node.func)[:160]) in constructions
+    ]
+    fields = {item.name for item in dataclasses.fields(flow_owner.FlowScoreInput)}
+    assert calls and {(call.lineno, ast.unparse(call.func)[:160]) for call in calls} == constructions
+    # every textual construction is one of those calls
+    assert source.count("FlowScoreInput(") <= len(calls)
+    for call in calls:
+        assert call.args == []
+        assert sorted(keyword.arg for keyword in call.keywords) == sorted(fields)
+        assert all(isinstance(keyword.value, ast.Constant) and keyword.value.value is None for keyword in call.keywords)
 
 
 def test_the_trend_owner_has_no_none_handling_for_its_z_scores() -> None:
