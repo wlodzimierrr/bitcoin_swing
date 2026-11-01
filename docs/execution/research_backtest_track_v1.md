@@ -3519,7 +3519,7 @@ Recommended next dependency-satisfied tickets: **RBT-005** (READY) and
 
 ## RBT-005 — `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`
 
-**Status:** `IMPLEMENTED (2026-11-01); independent xHigh review FAIL (2026-11-01), review-fix in progress — Part A 0856352, Part B 8fdd5a3; owner rulings 1b52760; owner review rulings 4-7 (2026-11-01)`
+**Status:** `IMPLEMENTED; independent xHigh review FAIL (2026-11-01) fixed in 56ab0ca, f69140f and 5052cbb; AWAITING INDEPENDENT xHIGH RE-REVIEW — Part A 0856352, Part B 8fdd5a3; owner rulings 1b52760; owner review rulings 4-7 (2026-11-01)`
 **Dependencies:** RBT-004
 **Implementation effort:** xHigh
 **Review:** independent xHigh ticket review
@@ -3630,10 +3630,10 @@ criterion as stated; the review outcome below records the findings.
 
 ### RBT-005 Implementation Notes
 
-**Status:** `IMPLEMENTED (2026-11-01); independent xHigh review FAIL
-(2026-11-01)`. This block is the implementer's record of `d81d4b4`, not a
-closure; the RBT-005 review outcome below records the findings, and the
-review-fix is in progress.
+**Status:** `IMPLEMENTED; review FAIL fixed (2026-11-01); AWAITING
+INDEPENDENT xHIGH RE-REVIEW`. This block is the implementer's record, current
+after the review-fix (`56ab0ca`, `f69140f`, `5052cbb`); the RBT-005 review outcome below
+records the findings and the fix. It is not a closure.
 
 **Commits:**
 - Rulings record, `1b52760`: the three owner composition rulings above.
@@ -3647,12 +3647,20 @@ review-fix is in progress.
 - Part B, `8fdd5a3`: `btc_predictor/research_backtest/management_composer.py`,
   the fixtures `rbt005_management_fixtures.py` and six
   `test_research_backtest_management_composer*` modules.
-- Docs, this documentation commit: this block, the RBT-004 commit list, the
-  tasks table and `CURRENT_STATE.md`.
+- Docs, `d81d4b4`: this block, the RBT-004 commit list, the tasks table and
+  `CURRENT_STATE.md`.
+- Review FAIL record, `14665aa`: the findings and owner review rulings 4-7.
+- Review-fix, `56ab0ca`: the spec named limitation and rebind (ruling 7).
+- Review-fix, `f69140f`: the composer and test corrections (F1-F5, rulings 4-6).
+- Review-fix, `5052cbb`: the owner-less input guard scoped to the every-input-missing
+  flow input (F2).
+- Docs, this documentation commit: the review-fix record and these notes.
 
-No inventory, spec, owner, configuration, evidence, `data/` or
-`research_artifacts/` change: every management root was already a census root,
-so no Part A promotion or rebind was needed.
+No inventory, owner, configuration, `data/` or `research_artifacts/` change:
+every management root was already a census root, so no Part A promotion was
+needed. The review-fix rebinds the spec once, for one appended named
+limitation (ruling 7; `787ddfa2...ca2620f0` -> `9a619596...15f6313`, proof in
+`rbt005_spec_rebind_evidence_v1.json`).
 
 **What the composer does.** `ManagementComposer(EntryComposer(...))` is the
 champion's BTC-180 strategy: the entry composer decides while flat, this
@@ -3672,7 +3680,9 @@ is composed twice):
    asserted (`None`, the inventory's replay value); the data-quality gate's
    codes as evidence.
 3. *Trim* (`trim_rules_from_results`): the prior decision instant's
-   `FlowScoreResult` as the prior flow.
+   `FlowScoreResult` as the prior flow; when that instant had no decision bar,
+   the flow owner's own result with every input missing (`TRIM_INPUT_MISSING`;
+   the owner's other triggers still evaluate, review F2).
 4. *Trail* (`trail_stop_for_position`): `C_t` from the one BTC-122 higher-low
    producer Setup C reads, identified by its own bar; the BTC-141 buffer of a
    structure with no zone.
@@ -3696,8 +3706,12 @@ record keeps what became of each pending `ADD`.
 1. `TRAIL` at t; the `ADD` (requirements evaluated at t) at the first engine
    callback after the raised stop is installed. Dropped, with its reason, if
    the trail was not applied (`ADD_TRAIL_NOT_APPLIED`), the position closed
-   (`ADD_POSITION_CLOSED`) or changed (`ADD_POSITION_CHANGED`), or that callback
-   is itself a decision instant (`ADD_SUPERSEDED_BY_DECISION`).
+   (`ADD_POSITION_CLOSED`) or changed (`ADD_POSITION_CHANGED`: any accepted
+   transition but its own trail, review F4), or that callback is itself a
+   decision instant (`ADD_SUPERSEDED_BY_DECISION`, ratified by review ruling
+   6). Review ruling 4 adds a risk re-check at that callback:
+   `ADD_RISK_AT_STOP_EXCEEDED_AT_CALLBACK` or `ADD_RISK_RECHECK_INCOMPLETE`
+   drops the ADD, and the follow-up records the re-check.
 2. `EXIT` > `TRIM` > `TRAIL`/`ADD`: a suppressed add records
    `ADD_SUPPRESSED_BY_EXIT`/`ADD_SUPPRESSED_BY_TRIM`, a deferred trail
    `TRAIL_DEFERRED_BY_EXIT`/`TRAIL_DEFERRED_BY_TRIM`, and a deferred trail's
@@ -3715,7 +3729,7 @@ record keeps what became of each pending `ADD`.
   `systemic_euphoria` is missing). An active flag records
   `RULEBOOK_24_NO_ADDING_ENFORCED`; an unknown one also blocks the add (fail
   closed, as BTC-154 and the hard veto do) and records
-  `RULEBOOK_24_FLAG_STATE_UNKNOWN`. Each gate (BTC-154, data quality, Rulebook
+  `RULEBOOK_24_FLAG_STATE_UNKNOWN` (ratified by owner review ruling 6). Each gate (BTC-154, data quality, Rulebook
   24) is recorded independently.
 - *Hold Structure.* STRUCTURE_SCORE_V1_2 carries no R/R weight, so the score at
   `P_t` does not depend on the stop the owner requires; the standing stop is
@@ -3729,20 +3743,26 @@ record keeps what became of each pending `ADD`.
   the engine's first tranche against it. The position is linked to its armed
   row through the `ENTER` transition's source id.
 - *An exhausted tranche schedule* is the frozen schedule's own limit, not a
-  missing input: `TRANCHE_SIZING_SCHEDULE_EXHAUSTED` is accounted to the
-  inventory row `next_tranche_for_position.schedule` ("a declared constant of
-  the frozen champion configuration"), and the add is `NOT_EVALUATED` with
-  `ADD_NO_FURTHER_TRANCHE`.
+  missing input: `TRANCHE_SIZING_SCHEDULE_EXHAUSTED` is accounted to the spec
+  named limitation `TRANCHE_SCHEDULE_EXHAUSTED` (review ruling 7; it first
+  cited the schedule's "never missing" inventory row, review F5), and the add
+  is `NOT_EVALUATED` with `ADD_NO_FURTHER_TRANCHE`. A missing stop on an open
+  position is accounted nowhere and fails loud (review F5).
 - *The prior flow* is the previous decision instant's `FlowScoreResult`; when
-  that instant had no decision bar, the trim is not evaluated and records
-  `DECISION_INSTANT_PRICE_BAR_MISSING`.
-- *The golden replays.* The BTC-224 fixture carries daily prices only, with no
-  hourly replay bars, ETF flows or derivatives. The engine replays each golden
-  sequence with the composed champion as its strategy; the champion's replay
-  inputs hold nothing for those dates, so every golden instant is the accounted
-  `STRUCTURALLY_UNEVALUABLE` missing-input row. No owner is evaluated on that
-  real history before the RBT-006 freeze. The test reports the champion's
-  decisions next to the scripted ones.
+  that instant had no decision bar, no flow was composed for it and the trim
+  owner receives the flow owner's own result with every input missing: it maps
+  it to `prior_flow_score = None`, gives `TRIM_INPUT_MISSING` and still
+  evaluates its Hold-band and CROWDING triggers, as the bound inventory rows
+  state (review F2). The row's trim record names the missing bar in
+  `prior_flow_causes`.
+- *The golden replays are plumbing only* (owner review ruling 5). The BTC-224
+  fixture is real history with daily prices only, and no champion value is
+  computed on real prices before the RBT-006 freeze, so the champion's replay
+  inputs hold nothing for those dates: every golden instant is the accounted
+  `STRUCTURALLY_UNEVALUABLE` row and the tests show only that the engine runs
+  the composed champion over each sequence without refusal. RBT-007 reports
+  the frozen champion's golden decisions next to the scripted ones; RBT-005
+  proves the composed path on the synthetic end-to-end replay.
 
 **Defect found and fixed before commit.** The data-quality gate's
 `reason_codes` are `RecommendationReasonCode` records, not strings; the
@@ -3764,22 +3784,26 @@ composer passes their codes as exit and add evidence. The flags test
   every instant. Both are accounted; both triggers' other reasons still
   evaluate.
 
-**Tests (six modules, 84 tests, all passing).**
+**Tests (six modules, 100 tests, all passing; 16 added by the review-fix; plus one coverage guard test, `5052cbb`).**
 
 | Module | Proves |
 | --- | --- |
-| `…_management_composer` | one management row per open instant beside the entry row; HOLD/TRIM with every trim executed; the position and its armed entry (K_entry, source id, opened at); the armed BTC-145 size equals the engine's first tranche; Hold read from the composition (Structure equals the entry path's; persistence `100 * Phi(Z_M12)`); the prior flow; a missing decision bar while open and the trim that waits; canonical ledger naming both halves; digest stable across hash seeds and working directories; decide API refusals; regime invalidation (bear now, not bear at entry; exempt; unknown `K_entry` never False); a Hold collapse exit; the exit's bar extreme, data risk and override; the spec values against the frozen spec; accounting backed by the bound artifacts, injected unknown and silent incomplete codes reported, the exhausted schedule |
-| `…_rulings` | the TRAIL at t, the trail applied at t+1h, the ADD queued then and executed at t+2h with the requirements evaluated at t; on the post-move lifecycle the same higher low is already used (the spec's sequencing note); the next decision needs a newer structure; the three drop reasons through the engine; a trim defers the trail and suppresses the add; an exit overrides a trim and a trail and suppresses an add; a deferred trail's higher low applies at the next decision; hold 60-70 and Positioning below 70 do not block an add |
+| `…_management_composer` | one management row per open instant beside the entry row; HOLD/TRIM with every trim executed; the position and its armed entry (K_entry, source id, opened at); the armed BTC-145 size equals the engine's first tranche; Hold read from the composition (Structure equals the entry path's; persistence `100 * Phi(Z_M12)`); the prior flow; a missing decision bar while open and the trim that still evaluates; a missing prior flow leaving the Hold-band trim to the owner (F2); canonical ledger naming both halves; digest stable across hash seeds and working directories; decide API refusals; regime invalidation (bear now, not bear at entry; exempt; unknown `K_entry` never False); a Hold collapse exit; the exit's bar extreme, data risk and override; the spec values against the frozen spec; accounting backed by the bound artifacts (each inventory citation names its code, the one phrase citation shown through the owners, the named limitation), injected unknown and silent incomplete codes reported, a missing open-position stop unaccounted (F5), the exhausted schedule |
+| `…_rulings` | the TRAIL at t, the trail applied at t+1h, the ADD queued then and executed at t+2h with the requirements evaluated at t; on the post-move lifecycle the same higher low is already used (the spec's sequencing note); the next decision needs a newer structure; the three drop reasons through the engine; a trim defers the trail and suppresses the add; an exit overrides a trim and a trail and suppresses an add; a deferred trail's higher low applies at the next decision; hold 60-70 and Positioning below 70 do not block an add; a state change after the trail drops the ADD (F4); an installed trail at a decision callback is superseded (ruling 6); the ADD's risk re-check recorded at its callback, a price rise by the callback dropping it, and the fill-bar gap pinned as the limitation (ruling 4, F1) |
 | `…_flags` | the baseline add goes ahead; STRESS, CROWDING and EUPHORIA each block it with `RULEBOOK_24_NO_ADDING_ENFORCED`; an unknown STRESS or EUPHORIA blocks it with `RULEBOOK_24_FLAG_STATE_UNKNOWN`, an unknown CROWDING through BTC-154 too; `DATA_QUALITY_FAIL` blocks the add and is not an exit; through the engine no ADD reaches it while STRESS is active |
-| `…_invariants` | over composed replays: never average down, stops never widen, risk at the stop within the configured ceiling at every bar, no engine refusal; each of the six BTC-224 golden sequences replays without engine refusal, decisions reported next to the scripted ones |
-| `…_boundary` | the static census (no refusal, exactly the 15 roots, the four classified constructors, bounded value methods), the runtime trace over a composed replay and TRIM/EXIT decisions (no violation, every static root exercised), and nine static and seven runtime mutations that fail |
-| `…_pit` | every family perturbed after the cutoff (RBT-004's `perturb_after`, two seeds) leaves every management row, entry row and engine event up to the cutoff byte-identical, and changes what follows; the pending add is composed from its instant alone |
+| `…_invariants` | over the natural, trail-and-add and end-to-end replays: never average down, stops never widen, risk at the stop within the configured ceiling at every bar, no engine refusal; the end-to-end replay (entry, TRAIL, ADD, TRIMs, a composed EXIT) and two mutations of the management half that fail it; each of the six BTC-224 golden sequences as plumbing (ruling 5) |
+| `…_boundary` | the static census (no refusal, exactly the 16 roots, the five classified constructors, bounded value methods), the runtime trace over a composed replay, TRIM/EXIT decisions, a trim without a prior flow and the ADD's risk re-check (no violation, every static root exercised), and nine static and seven runtime mutations that fail |
+| `…_pit` | every family perturbed after the cutoff (RBT-004's `perturb_after`, two seeds) leaves every management row, entry row and engine event up to the cutoff byte-identical, and changes what follows; the pending add is composed from its instant alone; the ADD's risk re-check reads nothing after its callback |
 
 Part A adds four tests to the RBT-004 core module (the adapter step and its
 composition, a missing-bar decision composes nothing, Structure at a stop,
 the trailing producer), so the RBT-004 modules count 197.
 
 **Validation (`.venv312`, CPython 3.12.14).**
+- Review-fix (`f69140f`): the six management modules 100 passed in 521.30s; all fourteen
+  composer modules 297 passed in 1750.47s; the two spec modules 115 passed in 20.12s; full repository
+  at `f69140f`, alone: 7,630 passed, 1 failed, 3 skipped, 1 xfailed in 4695.76s; the one failure, `test_no_production_code_produces_the_owner_less_entry_inputs`, is the owner-less input guard, tripped by the F2 construction and scoped by `5052cbb` (the full suite was not rerun after it). After `5052cbb`: the coverage module 66 passed in 22.69s.
+- Implementation (`8fdd5a3`), below.
 - All fourteen composer modules together: 281 passed in 1632.48s.
 - V5 definition: 95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89 unchanged.
 - PAD5 preserved-authority subset: 5 passed, 112 deselected in 40.28s; PAD4-R5: 2 passed in 25.31s.
@@ -3791,22 +3815,29 @@ the trailing producer), so the RBT-004 modules count 197.
 - *No new formulas, point in time, decision ledger, determinism, census
   boundary:* the core, boundary and point-in-time modules above.
 - *Rulebook 24 NO ADDING:* the flags module; the `DEFEND` mapping is not chosen.
-- *BTC-222 invariants over composed replays:* the invariants module.
-- *BTC-224 golden replays without engine refusal, reported next to the
-  scripted decisions:* the invariants module (design decision above).
+- *BTC-222 invariants over composed replays:* the invariants module, over
+  three composed replays including the end-to-end one. The ADD's risk
+  re-check (ruling 4) holds the ceiling up to its callback; a gap at the fill
+  bar's open is the recorded limitation.
+- *BTC-224 golden replays (amended by owner review ruling 5):* plumbing
+  replays without engine refusal in the invariants module; the composed path
+  end to end on the synthetic replay; RBT-007 reports the golden decisions
+  next to the scripted ones.
 - *Composer-root and runtime completeness guards with the same regressions:*
   the boundary module and the core module's accounting tests.
 
 **Limitations.** The three unmodelled rules (ruling 3); the frozen owner
-behaviours above; the golden replays evaluate nothing (no replay inputs for
-those dates); the ADD is priced and its projected risk tested at `P_t`, while
-the engine fills at the next bar's open, as for the entry. No real-data value,
+behaviours above; the golden replays are plumbing only until RBT-007
+(ruling 5); the ADD's projected risk is tested at `P_t` and again at its
+callback's bar (ruling 4), while the frozen engine fills at the next bar's
+open, so a gap at that open (or the cost model's slippage) can carry risk at
+the stop above the ceiling, pinned by a test. No real-data value,
 score, signal, trade or outcome was computed; no database connection; holdout
 NOT COLLECTED; BTC-019 untouched, sealed sample unopened; EPIC X unchanged
 (`POSTP1-001V2R1` remains its next ticket).
 
 Recommended next dependency-satisfied ticket: the **independent xHigh RBT-005
-review**; **RBT-001A** remains READY.
+re-review**; **RBT-001A** remains READY.
 
 ### RBT-005 review outcome
 
@@ -3825,11 +3856,11 @@ the ticket block); no correction needs a frozen owner edit or a new formula.
 
 | ID / severity | Location | Current versus expected behavior; impact | Reproducer and required correction |
 | --- | --- | --- | --- |
-| F1 / **P1** | `management_composer.py:851`, `:526` | The ADD is authorized on projected risk at `P_t`, and the pending ADD carries that authorization unchanged, while the engine sizes and fills the tranche at a later bar's open. No frozen owner checks the ceiling at the fill; BTC-222 tests adds only at the projected price. | Trail/add fixture with every bar from `TRAIL_AT + 1h` scaled by 1.10: projected risk at t 0.2877% of NAV, the ADD executes, realized risk 1.5569% against the 1% ceiling. Ruling 4: re-check at the callback that emits the ADD; pin the fill-bar gap as a limitation. |
-| F2 / **P1** | `management_composer.py:732` | When the prior instant had no decision bar, `_trim` returns before calling the owner, so the Hold-band and CROWDING triggers are suppressed with the flow comparison. The bound row `trim_rules_from_results.prior_flow` reads "None -> TRIM_INPUT_MISSING; complete False, the other triggers still evaluate"; `test_a_missing_decision_bar_while_open_gets_its_row_and_the_next_trim_waits` pins the suppression. | Hold 45 with prior flow None: the owner signals `TRIM_HOLD_SCORE_BAND`, the composer records `HOLD` with the trim not evaluated and nothing unaccounted. Pass None to the owner. |
-| F3 / **P1** | `test_research_backtest_management_composer_invariants.py:84` | The golden replays' inputs hold nothing for the golden dates and the test requires an empty management ledger: no management decision or intent reaches the engine. The composed invariant replays execute no `EXIT`. | With `_ManagementRun.run` replaced by a function that raises, all six golden tests still pass. Ruling 5: plumbing replays only before the freeze, the golden decisions in RBT-007, and a synthetic end-to-end replay with a failing mutation in RBT-005. |
-| F4 / **P2** | `management_composer.py:517` | The pending-ADD resolver checks quantity and opening only, not lifecycle state; ruling 1 drops the ADD when the position's state changes first. | Trail installed, then an accepted `DEFEND` at the same quantity and stop: the resolver emits the ADD. Drop on any accepted transition after t other than the ADD's own trail. |
-| F5 / **P2** | `management_composer.py:213`, `:215`; `test_research_backtest_management_composer.py:334` | Two accounted causes cite text that does not establish them: `RISK_AT_STOP_INPUT_MISSING` the closed-lifecycle "fail closed", `TRANCHE_SIZING_SCHEDULE_EXHAUSTED` the schedule's "never missing". The backing test checks substrings only. | A missing stop in the open position's risk calculation gives `unaccounted=()`. Drop the risk-at-stop entry, so a missing stop on an open position fails loud; ruling 7 makes the exhausted schedule a named limitation of the spec. |
+| F1 / **P1 FIXED** (ruling 4) | `management_composer.py:851`, `:526` | The ADD is authorized on projected risk at `P_t`, and the pending ADD carries that authorization unchanged, while the engine sizes and fills the tranche at a later bar's open. No frozen owner checks the ceiling at the fill; BTC-222 tests adds only at the projected price. | Trail/add fixture with every bar from `TRAIL_AT + 1h` scaled by 1.10: projected risk at t 0.2877% of NAV, the ADD executes, realized risk 1.5569% against the 1% ceiling. Ruling 4: re-check at the callback that emits the ADD; pin the fill-bar gap as a limitation. |
+| F2 / **P1 FIXED** | `management_composer.py:732` | When the prior instant had no decision bar, `_trim` returns before calling the owner, so the Hold-band and CROWDING triggers are suppressed with the flow comparison. The bound row `trim_rules_from_results.prior_flow` reads "None -> TRIM_INPUT_MISSING; complete False, the other triggers still evaluate"; `test_a_missing_decision_bar_while_open_gets_its_row_and_the_next_trim_waits` pins the suppression. | Hold 45 with prior flow None: the owner signals `TRIM_HOLD_SCORE_BAND`, the composer records `HOLD` with the trim not evaluated and nothing unaccounted. Pass None to the owner. |
+| F3 / **P1 FIXED as ruled** (ruling 5) | `test_research_backtest_management_composer_invariants.py:84` | The golden replays' inputs hold nothing for the golden dates and the test requires an empty management ledger: no management decision or intent reaches the engine. The composed invariant replays execute no `EXIT`. | With `_ManagementRun.run` replaced by a function that raises, all six golden tests still pass. Ruling 5: plumbing replays only before the freeze, the golden decisions in RBT-007, and a synthetic end-to-end replay with a failing mutation in RBT-005. |
+| F4 / **P2 FIXED** | `management_composer.py:517` | The pending-ADD resolver checks quantity and opening only, not lifecycle state; ruling 1 drops the ADD when the position's state changes first. | Trail installed, then an accepted `DEFEND` at the same quantity and stop: the resolver emits the ADD. Drop on any accepted transition after t other than the ADD's own trail. |
+| F5 / **P2 FIXED** (ruling 7) | `management_composer.py:213`, `:215`; `test_research_backtest_management_composer.py:334` | Two accounted causes cite text that does not establish them: `RISK_AT_STOP_INPUT_MISSING` the closed-lifecycle "fail closed", `TRANCHE_SIZING_SCHEDULE_EXHAUSTED` the schedule's "never missing". The backing test checks substrings only. | A missing stop in the open position's risk calculation gives `unaccounted=()`. Drop the risk-at-stop entry, so a missing stop on an open position fails loud; ruling 7 makes the exhausted schedule a named limitation of the spec. |
 
 **Checks that passed.** Every numeric value comes from an owner or a declared
 spec helper (Hold and Add transforms, structure, risk improvement, projected
@@ -3848,6 +3879,78 @@ matched. Codex's runs (`.venv312`, one process at a time): the six management
 modules 84 passed in 421.16s; an entry core/static-boundary selection plus six
 scratch golden mutations 73 passed, 11 deselected in 159.35s; `git diff
 --check` clean. The full suite was not rerun.
+
+**Distinct review-fix:** `56ab0ca`, `f69140f` and `5052cbb` (2026-11-01).
+- `56ab0ca` (ruling 7, F5): `TRANCHE_SCHEDULE_EXHAUSTED` is appended to the
+  spec's named limitations and the spec rebound `787ddfa2...ca2620f0` ->
+  `9a619596...15f6313`. Two leaves were added and nothing else changed
+  (`rbt005_spec_rebind_evidence_v1.json`, pinned by
+  `test_the_rbt005_rebind_only_appended_the_exhausted_schedule_limitation`);
+  the entry composer's spec pin follows, with the accounting authority
+  `SPEC_NAMED_LIMITATION`. No inventory, owner or configuration change.
+- `f69140f` changes only `management_composer.py`, the RBT-005 fixtures and five
+  RBT-005 test modules:
+  - F1 (ruling 4): at the callback that emits the ADD,
+    `next_tranche_for_position` and `calculate_risk_at_stop` run again at that
+    callback's closed bar, installed stop and NAV. Over the ceiling
+    (`ADD_RISK_AT_STOP_EXCEEDED_AT_CALLBACK`) or incomplete
+    (`ADD_RISK_RECHECK_INCOMPLETE`), the ADD is dropped. The follow-up records
+    the re-check, and its unaccounted codes join the guard.
+  - F2: the trim owner always runs. When the prior instant had no decision
+    bar, no flow was composed for it, and the frozen owner refuses a literal
+    `None` (it takes a `FlowScoreResult` and maps an incomplete one to
+    `prior_flow_score = None`). The composer passes the flow owner's own
+    result with every input missing (`calculate_flow_score`, a census root,
+    now the composer's 16th direct root; `FlowScoreInput` its fifth
+    constructor), so the owner gives `TRIM_INPUT_MISSING` and evaluates its
+    other triggers, as the bound inventory rows state. No value is improvised;
+    the row's trim record names the missing bar in `prior_flow_causes`.
+    Surfaced for the re-review: the call-site row
+    `trim_rules_from_results.prior_flow` reads "None -> TRIM_INPUT_MISSING"
+    although the owner refuses `None`; it describes the mapped
+    `TrimRuleInput.prior_flow_score`. The inventory is not changed.
+  - F3 (ruling 5): the golden tests are relabelled as plumbing; the end-to-end
+    replay (entry, TRAIL, ADD, four TRIMs, a composed `HOLD_SCORE_COLLAPSE`
+    EXIT) joins the BTC-222 replays, and two mutations of the management half
+    fail it (one is the review's).
+  - F4: any accepted transition after t other than the ADD's own trail is
+    `ADD_POSITION_CHANGED`.
+  - F5: `RISK_AT_STOP_INPUT_MISSING` leaves the accounting table, so an open
+    position's missing stop fails loud; the exhausted schedule cites the named
+    limitation. The accounting test now requires each inventory citation to
+    name its own code; the one phrase citation (the trail buffer's "None -> no
+    trail candidate") is shown through the real owners.
+  - The runtime boundary trace now covers the re-check, and a point-in-time
+    test shows it reads nothing after its callback.
+- `5052cbb` changes only `test_research_backtest_coverage.py`. The full suite at
+  `f69140f` failed only the owner-less input guard
+  `test_no_production_code_produces_the_owner_less_entry_inputs`: the F2
+  construction puts `FlowScoreInput(` in the management composer. The guard's
+  production scan now exempts that composer from the flow pattern only (the
+  trend, orderliness and level patterns still scan it), and the new
+  `test_the_management_composer_constructs_only_the_every_input_missing_flow_input`
+  requires every `FlowScoreInput` construction the composer census finds
+  (aliases resolved) to take no positional argument and name every field with
+  the literal `None`. Five mutations fail it: a value, an omitted field, a
+  positional call, an aliased construction and a trend pattern. This is a
+  change to an existing RBT-002 test (amended once before by RBT-004),
+  surfaced for the re-review.
+
+Regressions: `test_a_missing_prior_flow_leaves_the_other_trim_triggers_to_the_owner`
+and the corrected missing-bar test (F2);
+`test_a_state_change_after_the_trail_drops_the_add` (F4);
+`test_a_missing_stop_on_an_open_position_is_unaccounted` and the strengthened
+accounting test (F5); `test_an_add_whose_risk_exceeds_the_ceiling_at_its_callback_is_dropped`
+and `test_the_add_rechecks_its_risk_at_the_callback_that_emits_it` (F1);
+`test_a_gap_at_the_fill_bars_open_is_the_recorded_limitation` (ruling 4's
+residual, the review's own probe); the end-to-end replay and its two mutations
+(F3); `test_a_decision_instant_supersedes_an_add_whose_trail_is_installed`
+(ruling 6b, with the trail applied as the review asked). The F2, F4 and F5
+regressions were run against the pre-fix composer and fail there; the F1 tests
+read the re-check record the fix adds. Validation: the six management modules
+100 passed in 521.30s; all fourteen composer modules 297 passed in 1750.47s; the two spec modules 115 passed in 20.12s;
+full repository at `f69140f`, alone: 7,630 passed, 1 failed, 3 skipped, 1 xfailed in 4695.76s; the one failure, `test_no_production_code_produces_the_owner_less_entry_inputs`, is the owner-less input guard, tripped by the F2 construction and scoped by `5052cbb` (the full suite was not rerun after it); the coverage module at `5052cbb`
+66 passed in 22.69s.
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
@@ -3959,7 +4062,7 @@ version or any version derived from inspecting its result.
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | READY — RBT-002 R2 re-review PASS and RBT-001 review PASS; adopted V4 data rules governed by V7 |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
-| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | IMPLEMENTED; independent xHigh review FAIL (2026-11-01), review-fix in progress (owner review rulings 4-7) — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; 84 management tests (+4 RBT-004); full suite 7,614 passed, 3 skipped, 1 xfailed, 0 failed in 4569.77s |
+| RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | IMPLEMENTED; independent xHigh review FAIL (2026-11-01) fixed in `56ab0ca`, `f69140f` and `5052cbb`, AWAITING INDEPENDENT xHIGH RE-REVIEW (owner review rulings 4-7) — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `f69140f` 7,630 passed, 1 failed (the owner-less input guard, scoped by `5052cbb`), 3 skipped, 1 xfailed in 4695.76s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003, RBT-005; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
@@ -3983,9 +4086,11 @@ completion spec on 2026-10-01. The independent review above failed the census,
 and so did the re-review of the R1 correction (`906c719`). Correction R2
 (`812b968`) passed independent re-review under the policy V5 bounded standard.
 RBT-002A is DONE / independent xHigh review PASS under policy V7 (final spec
-`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0`). RBT-004 is
+`9819f84a...5013f`, rebound by RBT-004 Part A to `787ddfa2...ca2620f0` and by
+RBT-005's named limitation to `9a619596...15f6313`). RBT-004 is
 DONE after its independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS
-(2026-10-31); RBT-005 and RBT-001A are READY; the four
+(2026-10-31); RBT-005's review-fix awaits its re-review and RBT-001A is READY;
+the four
 adopted data choices stay fixed.
 
 **Answered EPIC Y decision recorded by RBT-001.** Rulebook section 7.5's
@@ -3994,8 +4099,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is the **RBT-005 review-fix** and its
-independent xHigh re-review, with **RBT-001A** also READY.
+dependency-satisfied EPIC Y work is the **independent xHigh RBT-005
+re-review**, with **RBT-001A** also READY.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

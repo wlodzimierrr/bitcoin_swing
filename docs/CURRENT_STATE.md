@@ -945,7 +945,7 @@ a zero 60-day realized volatility. 193 composer tests; full repository
 
 EPIC Y RBT-005 =
 IMPLEMENTED (2026-11-01), policy V7; independent xHigh review FAIL
-(2026-11-01), review-fix in progress.
+(2026-11-01) fixed in `56ab0ca`, `f69140f` and `5052cbb`; awaiting the independent re-review.
 COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1: owner rulings `1b52760` (TRAIL at t,
 the ADD at the next callback; EXIT > TRIM > TRAIL/ADD; unmodelled rules
 recorded). Part A `0856352` hands the entry run's composition to the
@@ -962,7 +962,8 @@ suppresses the other trim triggers; vacuous golden replays) and two P2 (the
 pending ADD ignores a state change; two cause citations). The owner's review
 rulings 4-7 (2026-11-01) set the corrections, including a spec named
 limitation for an exhausted tranche schedule and the golden replays moved to
-RBT-007.
+RBT-007. The review-fix rebinds the spec to `9a619596...15f6313` (one appended
+named limitation); 100 management tests; full repository at `f69140f` 7,630 passed, 1 failed (the owner-less input guard, scoped by `5052cbb`), 3 skipped, 1 xfailed in 4695.76s.
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1407,8 +1408,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   in `6318234`; Part A `8ce3e74`, Part B
   `910dec7` + `e158de9`; spec rebound to `787ddfa2...ca2620f0`, inventory
   `250f9470...a061cb17`); **RBT-005's independent xHigh review FAILED
-  (2026-11-01); its review-fix is in progress** (Part A `0856352`, Part B
-  `8fdd5a3`); **RBT-001A is READY**.
+  (2026-11-01); its review-fix (`56ab0ca`, `f69140f`, `5052cbb`; spec now
+  `9a619596...15f6313`) awaits the independent re-review** (Part A `0856352`,
+  Part B `8fdd5a3`); **RBT-001A is READY**.
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1643,7 +1645,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-005
   `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`, implemented (Part A `0856352`,
   Part B `8fdd5a3`); its independent xHigh review FAILED on 2026-11-01 and the
-  review-fix (owner review rulings 4-7) is in progress. RBT-004 closed
+  review-fix (`56ab0ca`, `f69140f`, `5052cbb`; owner review rulings 4-7) awaits the
+  independent xHigh re-review. RBT-004 closed
   DONE on 2026-10-31; RBT-001A is READY. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-005, 2026-11-01,
@@ -1942,9 +1945,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** the **RBT-005 review-fix**
-  (owner review rulings 4-7) and its independent xHigh re-review, and
-  **RBT-001A** (READY). RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y actions:** the **independent xHigh
+  RBT-005 re-review** of the review-fix (`56ab0ca`, `f69140f`, `5052cbb`), and **RBT-001A**
+  (READY). RBT-006 stays blocked until
   RBT-005 is DONE and RBT-003 is done; RBT-003, RBT-007 and RBT-008 remain
   blocked on their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -1967,6 +1970,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-005 review-fix validation (2026-11-01):** `.venv312` CPython
+  3.12.14. The six management modules 100 passed in 521.30s; all fourteen composer modules
+  297 passed in 1750.47s; the two spec modules 115 passed in 20.12s; full repository at `f69140f`, alone:
+  7,630 passed, 1 failed, 3 skipped, 1 xfailed in 4695.76s; the one failure, `test_no_production_code_produces_the_owner_less_entry_inputs`, is the owner-less input guard, tripped by the F2 construction and scoped by `5052cbb` (the full suite was not rerun after it); the coverage module at `5052cbb` 66 passed in 22.69s. The spec rebuilds to `9a619596...15f6313` under three hash seeds
+  from another directory. No database, real-data value or outcome.
 - **RBT-005 implementation validation (2026-11-01):** `.venv312` CPython
   3.12.14. All fourteen composer modules together:
   281 passed in 1632.48s.
@@ -2408,8 +2416,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-005 Part A
   `0856352` and Part B `8fdd5a3` with docs `d81d4b4` (rulings `1b52760`);
-  the review FAIL and owner review rulings 4-7 are recorded in this
-  documentation commit. Before them, RBT-004
+  the review FAIL and owner review rulings 4-7 in `14665aa`; review-fix
+  `56ab0ca` (spec named limitation and rebind), `f69140f` (composer) and `5052cbb`
+  (coverage guard) with this
+  documentation commit, awaiting the independent xHigh re-review. Before them, RBT-004
   non-blocking fix `6318234` and its docs `d728bcd` (re-review PASS,
   DONE); review-fix `514449c` and its docs `3e0571d` (review FAIL recorded in
   `156b587`); Part A `8ce3e74`, Part B `910dec7` + `e158de9` and docs
