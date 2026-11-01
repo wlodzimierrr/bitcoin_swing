@@ -944,7 +944,8 @@ a zero 60-day realized volatility. 193 composer tests; full repository
 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s. RBT-005 is READY.
 
 EPIC Y RBT-005 =
-IMPLEMENTED (2026-11-01), policy V7; awaiting the independent xHigh review.
+IMPLEMENTED (2026-11-01), policy V7; independent xHigh review FAIL
+(2026-11-01), review-fix in progress.
 COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1: owner rulings `1b52760` (TRAIL at t,
 the ADD at the next callback; EXIT > TRIM > TRAIL/ADD; unmodelled rules
 recorded). Part A `0856352` hands the entry run's composition to the
@@ -954,7 +955,14 @@ Hold, exit, trim, trail and add through census roots only, Rulebook 24 NO
 ADDING, one management row per open instant. No inventory, spec or owner
 change. 84 management tests (+4 RBT-004, now 197); full repository
 7,614 passed, 3 skipped, 1 xfailed, 0 failed in 4569.77s.
-Synthetic fixtures only: no database, no real-data value or outcome.
+Synthetic fixtures only: no database, no real-data value or outcome. The
+independent review (Codex CLI, report-only) found three P1 (an ADD filled away
+from its decision price can exceed the risk ceiling; a missing prior flow
+suppresses the other trim triggers; vacuous golden replays) and two P2 (the
+pending ADD ignores a state change; two cause citations). The owner's review
+rulings 4-7 (2026-11-01) set the corrections, including a spec named
+limitation for an exhausted tranche schedule and the golden replays moved to
+RBT-007.
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1398,8 +1406,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   NON-BLOCKING FINDINGS** (2026-10-31; review FAIL fixed in `514449c`, N1/N2
   in `6318234`; Part A `8ce3e74`, Part B
   `910dec7` + `e158de9`; spec rebound to `787ddfa2...ca2620f0`, inventory
-  `250f9470...a061cb17`); **RBT-005 is IMPLEMENTED (Part A `0856352`, Part B
-  `8fdd5a3`), awaiting its independent xHigh review; RBT-001A is READY**.
+  `250f9470...a061cb17`); **RBT-005's independent xHigh review FAILED
+  (2026-11-01); its review-fix is in progress** (Part A `0856352`, Part B
+  `8fdd5a3`); **RBT-001A is READY**.
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1633,10 +1642,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-005
   `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1`, implemented (Part A `0856352`,
-  Part B `8fdd5a3`) and awaiting its independent xHigh review. RBT-004 closed
+  Part B `8fdd5a3`); its independent xHigh review FAILED on 2026-11-01 and the
+  review-fix (owner review rulings 4-7) is in progress. RBT-004 closed
   DONE on 2026-10-31; RBT-001A is READY. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-004 re-review, 2026-10-31,
+- **Most recent completed review:** EPIC Y RBT-005, 2026-11-01,
+  **independent xHigh FAIL** (OpenAI Codex CLI at the owner's request,
+  report-only) against `1b52760`, `0856352`, `8fdd5a3` and `d81d4b4`: three P1
+  and two P2 findings, and four owner questions answered as review rulings
+  4-7. Details in EPIC Y's RBT-005 review outcome.
+- **Preceding completed review (EPIC Y):** RBT-004 re-review, 2026-10-31,
   **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE** (same Codex
   session, report-only) of review-fix `514449c` and docs `3e0571d`. F1-F3 and
   F6 FIXED, F5 pinned as ruled; N1 (P2) and N2 (P3) fixed after the PASS in
@@ -1927,8 +1942,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y actions:** the **independent xHigh
-  RBT-005 review**, and **RBT-001A** (READY). RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y actions:** the **RBT-005 review-fix**
+  (owner review rulings 4-7) and its independent xHigh re-review, and
+  **RBT-001A** (READY). RBT-006 stays blocked until
   RBT-005 is DONE and RBT-003 is done; RBT-003, RBT-007 and RBT-008 remain
   blocked on their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2391,8 +2407,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-005 Part A
-  `0856352` and Part B `8fdd5a3` with this documentation commit (rulings
-  `1b52760`), awaiting the independent xHigh review. Before them, RBT-004
+  `0856352` and Part B `8fdd5a3` with docs `d81d4b4` (rulings `1b52760`);
+  the review FAIL and owner review rulings 4-7 are recorded in this
+  documentation commit. Before them, RBT-004
   non-blocking fix `6318234` and its docs `d728bcd` (re-review PASS,
   DONE); review-fix `514449c` and its docs `3e0571d` (review FAIL recorded in
   `156b587`); Part A `8ce3e74`, Part B `910dec7` + `e158de9` and docs
@@ -3310,6 +3327,15 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-01: RBT-005 review questions.** The owner chose every
+  recommended option: the ADD re-checks its risk at the callback that emits
+  it, with the fill-bar gap a pinned limitation; the BTC-224 golden replays
+  are plumbing-only before the freeze and move to RBT-007, with a synthetic
+  end-to-end replay in RBT-005; an unknown STRESS/EUPHORIA blocks the add and
+  `ADD_SUPERSEDED_BY_DECISION` stands; an exhausted tranche schedule becomes a
+  spec named limitation with a rebind. Details in the RBT-005 block (rulings
+  4-7).
 
 - **ANSWERED 2026-11-01: RBT-005 composition points.** Asked before
   implementation; the owner chose every recommended option. An add is
