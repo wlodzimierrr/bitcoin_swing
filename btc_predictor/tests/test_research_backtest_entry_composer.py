@@ -290,6 +290,69 @@ def test_the_composer_reads_its_own_replay_inputs_not_the_engine_prefix(inputs):
     assert long_row.components == short_row.components and long_row.flags == short_row.flags
 
 
+# --- the composition the RBT-005 management composer reads ------------------------------------------
+
+
+def test_the_adapter_step_returns_the_recorded_decision_with_its_composition(inputs):
+    composer = EntryComposer(inputs, strategy_config=CONFIG)
+    bars = _engine_bars(inputs, utc(2024, 4, 7, 20), utc(2024, 4, 9, 6))
+    returned = []
+
+    def strategy(context):
+        decision = composer.step(context)
+        if decision is not None:
+            returned.append((context, decision))
+        return decision.intent if decision is not None else None
+
+    run_backtest(bars, strategy=strategy, strategy_config=CONFIG, symbol=bars[0].symbol)
+    assert [decision.row for _, decision in returned] == list(composer.ledger)
+    assert [context.as_of for context, _ in returned] == [utc(2024, 4, 8), utc(2024, 4, 9)]
+    for context, decision in returned:
+        composition, row = decision.composition, decision.row
+        assert composition.decision_at == row.decision_at == context.as_of
+        assert composition.decision_bar == context.bar and composition.price == context.bar.close
+        # the very owner results the row records, not a second composition
+        assert (composition.flow.score if composition.flow.complete else None) == row.components["flow"]
+        assert composition.trend_score == row.components["trend"]
+        assert composition.positioning_score == row.components["positioning"]
+        assert composition.regime_classification.regime == row.regime["classification"]
+        assert composition.stress_mapped == row.flags["stress"]["mapped"]
+        assert composition.crowding.flagged == row.flags["crowding"]["flagged"]
+        assert composition.euphoria.flagged == row.flags["euphoria"]["flagged"]
+        assert set(composition.trend_z) == {"TREND_Z_M4", "TREND_Z_M12", "TREND_Z_20W", "TREND_Z_52H"}
+        assert bool(composition.quality_failures) == row.data_quality["data_quality_fail"]
+
+
+def test_a_missing_bar_decision_composes_nothing():
+    gapped = Scenario(missing_hours=(utc(2024, 4, 8, 23),)).build()
+    decision = EntryComposer(gapped, strategy_config=CONFIG).decide(utc(2024, 4, 9))
+    assert decision.row.reasons == (CAUSE_DECISION_PRICE_BAR_MISSING,) and decision.composition is None
+
+
+def test_structure_at_a_stop_is_the_entry_structure_and_records_nothing(inputs):
+    composer = EntryComposer(inputs, strategy_config=CONFIG)
+    decision = composer.decide(utc(2024, 4, 9))
+    row, composition = decision.row, decision.composition
+    assert row.components["structure"] is not None
+    before = row.as_record()
+    stops = [result.stop_price for label, result in composition.run.results.items() if label.startswith("stop:") and result.complete]
+    # STRUCTURE_SCORE_V1_2 carries no R/R weight, so any stop gives the row's score
+    for stop in (*stops, composition.price / 2):
+        at = entry_composer.structure_score_at(composition, stop)
+        assert at.result.complete and at.result.score == row.components["structure"]
+        assert at.selection.selection.support_cluster_id == composition.run.results["structure_selection"].selection.support_cluster_id
+        assert at.level_strength == composition.run.results["level_strength"]
+    assert row.as_record() == before
+
+
+def test_the_trailing_producer_is_setup_cs_higher_low(inputs):
+    composer = EntryComposer(inputs, strategy_config=CONFIG)
+    with recording("evaluate_higher_low_trigger") as calls:
+        decision = composer.decide(utc(2024, 4, 9))
+    assert len(calls["evaluate_higher_low_trigger"]) == 1
+    assert entry_composer.latest_higher_low(decision.composition) == calls["evaluate_higher_low_trigger"][0].result
+
+
 # --- the runtime completeness guard and its accounting (policy V7 section 5A.6) -------------------
 
 

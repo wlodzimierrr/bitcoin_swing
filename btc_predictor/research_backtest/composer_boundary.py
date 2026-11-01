@@ -2,7 +2,8 @@
 
 RBT-002 re-review finding E4 requires every decision owner function a composer
 calls directly to be a census root, proven two ways. This module provides both
-proofs; RBT-004 applies them to ``entry_composer`` and RBT-005 can reuse them.
+proofs; RBT-004 applies them to ``entry_composer`` and RBT-005 to
+``management_composer``.
 
 - **Static, alias-resolving call census** (:func:`static_call_census`). The
   composer module's AST is read, and every call target is resolved in the
@@ -109,6 +110,9 @@ ALLOWED_CONSTRUCTORS: Mapping[str, str] = {
     "btc_predictor.features.setup.CapitulationReversalInput": "Rulebook 11 Setup C input, fields classified",
     "btc_predictor.features.setup.BearishDistributionInput": "Rulebook 11 Setup D input (inert), fields classified",
     "btc_predictor.signals.hard_veto.HardVetoInput": "Rulebook 14 hard-veto input, fields classified",
+    "btc_predictor.features.hold.HoldScoreInput": "Rulebook 20 Hold Score input, fields classified",
+    "btc_predictor.features.add.AddScoreInput": "Rulebook 21 Add Score input, fields classified",
+    "btc_predictor.risk.trailing.ConfirmedTrailingStructure": "Rulebook 22 trailing-structure input (RBT-005's producer), fields classified",
     "btc_predictor.backtest.engine.BacktestIntent": "the BTC-180 decision record the backtest adapter returns",
 }
 ALLOWED_SERIALIZER_NAMES: frozenset[str] = frozenset({"as_record"})

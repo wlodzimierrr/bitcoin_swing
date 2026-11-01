@@ -663,11 +663,50 @@ class EntryDecisionRow:
 
 
 @dataclass(frozen=True)
+class EntryComposition:
+    """What the decision run composed at one evaluated instant (not ledgered).
+
+    The RBT-005 management composer reads the in-position half's shared inputs
+    here instead of composing them a second time: the same owner results the
+    entry row records. ``run`` is the private decision run; only this module's
+    functions (:func:`structure_score_at`, :func:`latest_higher_low`) use it.
+    """
+
+    decision_at: datetime
+    price: Decimal
+    decision_bar: OhlcvBar
+    trend_score: Decimal | None
+    trend_z: Mapping[str, Decimal | None]
+    flow: Any  # the FlowScoreResult at t
+    positioning_score: Decimal | None
+    regime_classification: Any  # the RegimeClassificationResult of the smoothed score at t
+    stress: Any  # the StressFlagResult
+    stress_mapped: bool | None  # policy V7 section 7 V4 mapping, as the hard veto reads it
+    crowding: Any  # the CrowdingFlagResult
+    euphoria: Any  # the EuphoriaFlagResult
+    quality_failures: tuple[Any, ...]
+    atr: Decimal | None
+    run: Any
+
+
+@dataclass(frozen=True)
+class StructureAtStop:
+    """The v1.2 Structure Score at ``P_t`` under one stop, as the entry path composes it."""
+
+    selection: Any  # the owner's own support selection (pass 1)
+    level_strength: Any | None
+    result: Any  # the StructureScoreResult
+    causes: tuple[str, ...]  # the spec's level-input causes (LEVEL_REACTION_MAGNITUDE, LEVEL_VOLUME_PERCENTILE)
+
+
+@dataclass(frozen=True)
 class EntryDecision:
     """The decision at one instant: its ledger row and, for ARM_ENTRY, the intent."""
 
     row: EntryDecisionRow
     intent: BacktestIntent | None
+    # None for a missing-bar instant, whose run composed nothing
+    composition: EntryComposition | None = None
 
 
 # --- composer -------------------------------------------------------------------------
@@ -678,7 +717,7 @@ def is_daily_decision_instant(instant: datetime) -> bool:
     return moment.hour == 0 and moment.minute == 0 and moment.second == 0 and moment.microsecond == 0
 
 
-def _next_decision_instant(instant: datetime) -> datetime:
+def next_decision_instant(instant: datetime) -> datetime:
     """The first UTC midnight strictly after ``instant``."""
 
     moment = _utc(instant, "instant")
@@ -740,6 +779,14 @@ class EntryComposer:
     def closure_table_version(self) -> str:
         return CLOSURE_TABLE_VERSION
 
+    @property
+    def strategy_config(self) -> StrategyConfig:
+        return self._config
+
+    @property
+    def venue(self) -> str:
+        return self._venue
+
     def ledger_records(self) -> list[dict[str, Any]]:
         return [row.as_record() for row in self._ledger]
 
@@ -763,7 +810,15 @@ class EntryComposer:
         return tuple((row.decision_at.isoformat(), code) for row in self._ledger for code in row.unaccounted)
 
     def __call__(self, context: BacktestContext) -> BacktestIntent | None:
-        """The BTC-180 strategy callback: decide at daily decision instants only.
+        """The BTC-180 strategy callback: decide at daily decision instants only."""
+
+        decision = self.step(context)
+        return decision.intent if decision is not None else None
+
+    def step(self, context: BacktestContext) -> EntryDecision | None:
+        """One engine callback: record every crossed instant, then decide at a decision instant.
+
+        Returns the recorded decision at a daily decision instant, else None.
 
         A decision instant strictly between two callbacks had no bar closing at
         it, so the engine offered no callback there. It is recorded at the first
@@ -781,7 +836,7 @@ class EntryComposer:
             raise EntryComposerError("COMPOSER_DEFECT", "engine callbacks must strictly increase")
         self._last_callback_at, self._last_position_open = as_of, context.position_open
         if previous_at is not None:
-            missed = _next_decision_instant(previous_at)
+            missed = next_decision_instant(previous_at)
             while missed < as_of:
                 decision = self.decide(missed, position_open=previous_open)
                 if decision.row.reasons != (CAUSE_DECISION_PRICE_BAR_MISSING,):
@@ -796,7 +851,7 @@ class EntryComposer:
         if decision.intent is not None and context.bar.close != decision.intent.entry_zone_upper:
             raise EntryComposerError("COMPOSER_DEFECT", "the decision price differs from the engine's decision bar close")
         self._append(decision)
-        return decision.intent
+        return decision
 
     def decide(self, as_of: datetime, *, position_open: bool = False) -> EntryDecision:
         """Compose the entry decision at one daily decision instant (no ledger write)."""
@@ -850,6 +905,7 @@ class _DecisionRun:
         self.capitulation_now: bool | None = None
         self.calendar: list[date] = []
         self.input_reason_codes: dict[str, tuple[str, ...]] = {}
+        self.composition: EntryComposition | None = None
 
     # -- recording ----------------------------------------------------------------
 
@@ -912,6 +968,23 @@ class _DecisionRun:
             }
         )
         components = dict(zip(COMPONENT_NAMES, (trend, flow, positioning, volatility, structure)))
+        self.composition = EntryComposition(
+            decision_at=self.t,
+            price=self.price,
+            decision_bar=hourly[-1],
+            trend_score=trend,
+            trend_z=dict(self.trend_z),
+            flow=self.flow_result,
+            positioning_score=positioning,
+            regime_classification=self.results["regime_classification"],
+            stress=self.stress_result,
+            stress_mapped=self.stress_flagged,
+            crowding=self.crowding_result,
+            euphoria=self.results["euphoria"],
+            quality_failures=tuple(self.quality_failures),
+            atr=self.atr,
+            run=self,
+        )
 
         # Completeness is classified first, open position or not: a row is
         # STRUCTURALLY_UNEVALUABLE wherever a component is incomplete (RBT-004
@@ -1622,45 +1695,14 @@ class _DecisionRun:
                         if not item[key].complete and (code in _STOP_DATA_CAUSES) == data:
                             self._cause("structure", code)
             return None
-        structure_kwargs = {
-            "version": STRUCTURE_SCORE_CONTRACT_VERSION,
-            "weights": dict(self.config.scoring_weights.structure_score),
-            "entry_location_full_score_distance_fraction": self.config.price_levels.entry_location_full_score_distance_fraction,
-            "entry_location_zero_score_distance_fraction": self.config.price_levels.entry_location_zero_score_distance_fraction,
-            "rr_minimum": self.config.price_levels.rr_minimum,
-            "rr_preferred_min": self.config.price_levels.rr_preferred_min,
-            "rr_preferred_max": self.config.price_levels.rr_preferred_max,
-            "config_metadata": self.metadata,
-        }
+        structure_kwargs = self._structure_kwargs()
         first_stop = geometry["per_setup"][complete[0]]["stop"].stop_price
-        # Pass 1: the structure owner's own support selection (it needs no level strength).
-        probe = self._keep(
-            "structure_selection",
-            calculate_structure_score_from_clusters(self.clusters, entry_price=self.price, stop_price=first_stop, **structure_kwargs),
-        )
-        support_id = probe.selection.support_cluster_id
-        support = next((cluster for cluster in self.clusters.clusters if cluster.cluster_id == support_id), None)
-        strength = None
-        if support is not None:
-            reaction, reaction_cause = self._level_reaction(support)
-            volume, volume_cause = self._level_volume(support)
-            for cause in (reaction_cause, volume_cause):
-                if cause is not None:
-                    self._cause("structure", cause)
-            levels_config = self.config.price_levels
-            strength = self._keep(
-                "level_strength",
-                calculate_level_strength_from_cluster(
-                    support,
-                    reaction_magnitude_fraction=reaction,
-                    volume_percentile=volume,
-                    weights=dict(levels_config.level_strength_weights),
-                    timeframe_scores=dict(levels_config.level_strength_timeframe_scores),
-                    touch_count_full=levels_config.level_strength_touch_count_full,
-                    reaction_full_fraction=levels_config.level_strength_reaction_full_fraction,
-                    config_metadata=self.metadata,
-                ),
-            )
+        probe, strength, causes = self._support_structure(first_stop)
+        self._keep("structure_selection", probe)
+        for cause in causes:
+            self._cause("structure", cause)
+        if strength is not None:
+            self._keep("level_strength", strength)
         scores = set()
         self.structure_results = {}
         for setup in complete:
@@ -1679,6 +1721,44 @@ class _DecisionRun:
         if len(scores) != 1:
             raise EntryComposerError("COMPOSER_DEFECT", "STRUCTURE_SCORE_V1_2 differs between archetype stops")
         return scores.pop()
+
+    def _structure_kwargs(self) -> dict[str, Any]:
+        return {
+            "version": STRUCTURE_SCORE_CONTRACT_VERSION,
+            "weights": dict(self.config.scoring_weights.structure_score),
+            "entry_location_full_score_distance_fraction": self.config.price_levels.entry_location_full_score_distance_fraction,
+            "entry_location_zero_score_distance_fraction": self.config.price_levels.entry_location_zero_score_distance_fraction,
+            "rr_minimum": self.config.price_levels.rr_minimum,
+            "rr_preferred_min": self.config.price_levels.rr_preferred_min,
+            "rr_preferred_max": self.config.price_levels.rr_preferred_max,
+            "config_metadata": self.metadata,
+        }
+
+    def _support_structure(self, stop_price: Decimal) -> tuple[Any, Any | None, tuple[str, ...]]:
+        """Pass 1 at ``stop_price``: the structure owner's own support selection (it
+        needs no level strength), then the spec's level inputs and level strength
+        for that support. Records nothing; returns (selection, strength, causes)."""
+
+        probe = calculate_structure_score_from_clusters(self.clusters, entry_price=self.price, stop_price=stop_price, **self._structure_kwargs())
+        support_id = probe.selection.support_cluster_id
+        support = next((cluster for cluster in self.clusters.clusters if cluster.cluster_id == support_id), None)
+        if support is None:
+            return probe, None, ()
+        reaction, reaction_cause = self._level_reaction(support)
+        volume, volume_cause = self._level_volume(support)
+        causes = tuple(cause for cause in (reaction_cause, volume_cause) if cause is not None)
+        levels_config = self.config.price_levels
+        strength = calculate_level_strength_from_cluster(
+            support,
+            reaction_magnitude_fraction=reaction,
+            volume_percentile=volume,
+            weights=dict(levels_config.level_strength_weights),
+            timeframe_scores=dict(levels_config.level_strength_timeframe_scores),
+            touch_count_full=levels_config.level_strength_touch_count_full,
+            reaction_full_fraction=levels_config.level_strength_reaction_full_fraction,
+            config_metadata=self.metadata,
+        )
+        return probe, strength, causes
 
     def _swing_members(self, cluster: Any) -> list[Any]:
         return [m for m in cluster.members if m.feature_id in (WEEKLY_SWING_LEVEL_FEATURE_ID, MONTHLY_SWING_LEVEL_FEATURE_ID)]
@@ -1780,33 +1860,43 @@ class _DecisionRun:
     def _higher_low_trigger(self) -> tuple[bool | None, datetime | None]:
         """Setup C confirmation (owner ruling; spec NEW_STRUCTURAL_CONFIRMATION precedent)."""
 
-        lows = [level for level in self.weekly_levels if level.level_type == WEEKLY_SWING_LOW and level.detected_at <= self.t]
-        if not lows:
+        result = self._latest_higher_low()
+        if result is None:
             return False, None
-        source = max(lows, key=lambda item: (item.detected_at, item.level_timestamp))
-        higher_low_config = self.config.entry_triggers.higher_low
-        result = self._keep(
-            "higher_low_trigger",
-            evaluate_higher_low_trigger(
-                source,
-                self.daily,
-                as_of=self.t,
-                pivot_left_bars=higher_low_config.pivot_left_bars,
-                pivot_right_bars=higher_low_config.pivot_right_bars,
-                higher_low_left_bars=higher_low_config.higher_low_left_bars,
-                higher_low_right_bars=higher_low_config.higher_low_right_bars,
-                max_pattern_bars=higher_low_config.max_pattern_bars,
-                max_breakout_bars=higher_low_config.max_breakout_bars,
-                higher_low_buffer_fraction=higher_low_config.higher_low_buffer_fraction,
-                pivot_break_buffer_fraction=higher_low_config.pivot_break_buffer_fraction,
-                config_metadata=self.metadata,
-            ),
-        )
+        self._keep("higher_low_trigger", result)
         if "HIGHER_LOW_SOURCE_BAR_MISSING" in result.reason_codes:
             return None, None
         if result.triggered and result.detected_at == self.t:
             return True, result.detected_at
         return False, None
+
+    def _latest_higher_low(self) -> Any | None:
+        """The BTC-122 higher-low result R on the latest weekly swing low S visible at t.
+
+        One producer for Setup C's confirmation and RBT-005's trail and add (spec
+        ``NEW_STRUCTURAL_CONFIRMATION``). None when no swing low is visible.
+        Records nothing.
+        """
+
+        lows = [level for level in self.weekly_levels if level.level_type == WEEKLY_SWING_LOW and level.detected_at <= self.t]
+        if not lows:
+            return None
+        source = max(lows, key=lambda item: (item.detected_at, item.level_timestamp))
+        higher_low_config = self.config.entry_triggers.higher_low
+        return evaluate_higher_low_trigger(
+            source,
+            self.daily,
+            as_of=self.t,
+            pivot_left_bars=higher_low_config.pivot_left_bars,
+            pivot_right_bars=higher_low_config.pivot_right_bars,
+            higher_low_left_bars=higher_low_config.higher_low_left_bars,
+            higher_low_right_bars=higher_low_config.higher_low_right_bars,
+            max_pattern_bars=higher_low_config.max_pattern_bars,
+            max_breakout_bars=higher_low_config.max_breakout_bars,
+            higher_low_buffer_fraction=higher_low_config.higher_low_buffer_fraction,
+            pivot_break_buffer_fraction=higher_low_config.pivot_break_buffer_fraction,
+            config_metadata=self.metadata,
+        )
 
     def _capitulation_episode(self) -> tuple[bool | None, datetime | None]:
         """Owner ruling: CAPITULATION flagged at any decision instant in the last 14 days.
@@ -2145,7 +2235,31 @@ class _DecisionRun:
             input_reason_codes=dict(self.input_reason_codes),
             capitulation_flag_state=self.capitulation_now,
         )
-        return EntryDecision(row, intent)
+        return EntryDecision(row, intent, self.composition)
+
+
+# --- the in-position half's reads of a composition (RBT-005) ---------------------------------
+
+
+def structure_score_at(composition: EntryComposition, stop_price: Decimal) -> StructureAtStop:
+    """The entry path's Structure Score at ``P_t`` under ``stop_price``.
+
+    The same point-in-time clusters, spec level inputs and v1.2 weights as the
+    entry row's Structure (spec ``NEW_STRUCTURE_SCORE``); only the stop differs.
+    """
+
+    run = composition.run
+    probe, strength, causes = run._support_structure(stop_price)
+    result = calculate_structure_score_from_clusters(
+        run.clusters, entry_price=run.price, stop_price=stop_price, level_strength_result=strength, **run._structure_kwargs()
+    )
+    return StructureAtStop(probe, strength, result, causes)
+
+
+def latest_higher_low(composition: EntryComposition) -> Any | None:
+    """The BTC-122 result Setup C reads at t: the trailing-structure producer of RBT-005."""
+
+    return composition.run._latest_higher_low()
 
 
 # --- spec uniform rules (CHAMPION_COMPLETION_SPEC_V1 uniform_rules application contracts) --

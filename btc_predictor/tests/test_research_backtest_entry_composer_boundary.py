@@ -93,11 +93,21 @@ def test_the_called_spec_helpers_are_promoted_roots(census):
     }
 
 
+# The in-position input types only the RBT-005 management composer constructs
+# (its boundary tests require that it constructs exactly these).
+MANAGEMENT_CONSTRUCTORS = {
+    "btc_predictor.features.hold.HoldScoreInput",
+    "btc_predictor.features.add.AddScoreInput",
+    "btc_predictor.risk.trailing.ConfirmedTrailingStructure",
+}
+
+
 def test_allowed_constructors_are_classified_input_types(census):
     constructed = {call.target for call in census.calls if call.kind == boundary.KIND_CONSTRUCTOR}
     classified = set(coverage.INPUT_TYPE_FIELD_CLASSIFICATIONS)
-    # every allowance is used, and nothing else is constructed
-    assert constructed == set(boundary.ALLOWED_CONSTRUCTORS)
+    # every entry-side allowance is used, and nothing else is constructed
+    assert MANAGEMENT_CONSTRUCTORS <= set(boundary.ALLOWED_CONSTRUCTORS)
+    assert constructed == set(boundary.ALLOWED_CONSTRUCTORS) - MANAGEMENT_CONSTRUCTORS
     for target in boundary.ALLOWED_CONSTRUCTORS:
         if target != "btc_predictor.backtest.engine.BacktestIntent":
             assert target in classified, target
