@@ -2916,7 +2916,7 @@ Recommended next dependency-satisfied ticket: **RBT-004 (READY)**, with **RBT-00
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `IN_PROGRESS — owner rulings recorded (2026-11-01); implementation not yet committed. RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7; policy V4 data rules ADOPTED and governed by V7.`
+**Status:** `IMPLEMENTED (2026-11-01) / AWAITING INDEPENDENT xHIGH REVIEW — rulings 4453b5c, implementation 524fcbf. RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7; policy V4 data rules ADOPTED and governed by V7.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`),
 RBT-002 independent R2 re-review PASS (SATISFIED under V5 §5A.7)
 **Implementation effort:** high
@@ -2972,6 +2972,174 @@ open:
    quarterly, or an annualized rate that does not equal
    `basis_rate * 365 days / (expiry - t)` at the raw table's 18 decimal
    places.
+
+### RBT-001A Implementation Notes
+
+**Status:** `IMPLEMENTED (2026-11-01) / AWAITING INDEPENDENT xHIGH REVIEW`.
+This block is the implementer's record, not a closure.
+
+**Commits:**
+- Rulings record, `4453b5c`: the three owner rulings above.
+- Implementation, `524fcbf`: `btc_predictor/research_backtest/replay_inputs_v2.py`
+  (new), the fixtures `btc_predictor/tests/rbt001a_replay_fixtures.py` (new)
+  and `btc_predictor/tests/test_research_backtest_replay_inputs_v2.py` (new,
+  90 tests).
+- Docs, this documentation commit: this block, the tasks table and
+  `CURRENT_STATE.md`.
+
+Every file is new. `replay_inputs.py` (the reviewed RBT-001 builder), every
+owner, configuration, the RBT-002 inventory, the completion spec, the evidence
+files, `data/` and `research_artifacts/` are unchanged, and so are the RBT-004
+and RBT-005 composers.
+
+**What the builder does.** `build_extended_replay_snapshot(shared_snapshot=...,
+futures_basis=..., market_cap_evidence=..., liquidations=...,
+liquidation_hours=...)` takes a finished V1 `SharedReplaySnapshot`, binds its
+manifest by digest and never rebuilds it, and adds the families policy V3
+introduced under `RESEARCH_BACKTEST_POLICY_V7` and
+`HISTORICAL_REPLAY_AVAILABILITY_V2`. Its manifest is
+`HISTORICAL_REPLAY_SHARED_SNAPSHOT_MANIFEST_V2` (builder
+`EXTEND_REPLAY_INPUTS_TO_POLICY_V3`); it records the V1 snapshot's version,
+builder, availability policy and digest, with the V1 families' rules
+`rules_unchanged_under` V2 (policy V7 section 4 keeps them). As in V1, the
+modelled value goes only into the availability field each owner reads, every
+other field keeps its raw value, and the manifest keeps the raw times beside
+it.
+
+| family | shape | replay record | observation | modelled availability |
+| --- | --- | --- | --- | --- |
+| Futures basis | `SNAPSHOT` | `FuturesBasis.available_at` | the hour close t | `t` |
+| Liquidations | `INTERVAL` | `Liquidation.available_at` | per-side `1h` aggregate stamped at the hour start h | `h + 1h` |
+| BTC market cap | `DAILY_PUBLISHED` | `MarketCapObservation` | UTC day D, stamped `D+1 00:00` | `D+2 00:00` |
+| `LIQUIDATION_PERCENTILE` | derived | `LiquidationPercentileObservation` | UTC day D at `D 00:00` | `D+1 00:00` |
+| `MANUAL_RESEARCH_OVERRIDE`, `SYSTEMIC_EUPHORIA`, `SYSTEMIC_SHOCK` | `DISCRETIONARY` | none | n/a | never: not asserted (`None`), listed |
+| US equity closures | `DAILY_PUBLISHED` | none (the composer loads the table) | the frozen table | required and recorded |
+
+`REPLAY_SHAPES_V2` gives one shape to each of the eleven families, matching
+every single-family raw and discretionary row of the RBT-002 inventory.
+`ExtendedReplaySnapshot.entry_composer_inputs(dataset)` gives a venue run its
+`EntryComposerInputs` (basis, market caps, liquidation percentiles) and refuses
+a dataset over another shared snapshot.
+
+**Design decisions** (each an implementation choice inside the rulings,
+surfaced for the review):
+
+1. *Additive generation.* V2 is a new module whose refusal class subclasses
+   V1's and whose code set extends V1's closed set (twelve new codes). The V1
+   builder still has no parameter for the new families.
+2. *The basis contract as the replay accepts it.* `exchange="binance"`,
+   `symbol="BTCUSD"`, `instrument="BTCUSD_YYMMDD"` (the delivery date, Binance's
+   naming) and an expiry on the last Friday of March, June, September or
+   December. RBT-003's adapter must write rows in this form. "Within 7 days" is
+   `expiry - t <= 7 days`, so a row exactly 7 days out is excluded. The
+   annualisation is recomputed from the stored `basis_rate` at 80 digits and
+   rounded half away from zero to 18 places, as `NUMERIC(38,18)` rounds, so
+   RBT-003 must derive the annualized rate from the stored basis rate. A
+   duplicate is refused even when both copies would be excluded.
+3. *Market-cap evidence file.* `BTC_MARKET_CAP_EVIDENCE_V1` is canonical JSON
+   with exactly ten keys: version, provider `coinmetrics_community`, asset
+   `btc`, metric `CapMrktCurUSD`, frequency `1d`, source, licence,
+   `retrieved_at`, the retrieved responses' SHA-256 values, and rows of
+   `{date, market_cap_usd}` (positive canonical decimals, strictly increasing
+   dates). It is bound by the SHA-256 of its bytes, and
+   `market_cap_evidence_bytes` writes it. The source supplies no publication
+   time, so the `D+2 00:00` floor applies, and every value is labelled
+   `REVISION_HISTORY_UNAVAILABLE` (final values only). A day is admitted when
+   the whole day lies in the data window: 2025-12-31 is admitted, stamped
+   2026-01-01 00:00 and available 2026-01-02, which exposes no holdout content,
+   as for V1's last bar.
+4. *Liquidation hour evidence.* `LiquidationHourEvidence(hour_start,
+   feed_status, corroboration, evidence_sha256)` uses EPIC X's feed statuses
+   `OBSERVED_WITH_EVENTS`, `OBSERVED_ZERO_EVENTS` and `SOURCE_UNAVAILABLE`
+   (`LATE` and `INVALID` are refused: the historical rule has no such state).
+   Corroboration is `AGREES`, `DISAGREES` or `SERIES_UNAVAILABLE` for an
+   observed hour and `NOT_APPLICABLE` for an unavailable one. Ruling 2 refuses
+   `DISAGREES`. An observed hour whose series has no value
+   (`SERIES_UNAVAILABLE`) is refused too, because the rule's "must agree"
+   cannot be shown; this extends ruling 2 and is surfaced. Rows must agree with
+   their hour: an `OBSERVED_WITH_EVENTS` hour needs positive notional, an
+   `OBSERVED_ZERO_EVENTS` hour has none (zero rows are allowed), and a
+   `SOURCE_UNAVAILABLE` hour has no row. Every row needs its hour's evidence,
+   `notional_usd` (the adapter's quantity is USD notional), the universe
+   `kraken_futures` / `PI_XBTUSD` / `1h`, and a side named as the derivatives
+   owner names positions (`long`, `short`). One row per hour and side, across
+   providers, so nothing is counted twice.
+5. *The percentile.* A day is complete when all 24 hours are observed; its
+   quantity is the long-plus-short notional. Every day from the first to the
+   last evidence day yields one observation: an incomplete day gives `None`
+   with `LIQUIDATION_FEED_UNAVAILABLE` and enters no history; a complete day
+   with fewer than 365 complete days in `[D - 730 days, D)` gives `None` with
+   `LIQUIDATION_PERCENTILE_INSUFFICIENT_HISTORY`. Both codes are the frozen
+   contract's own. The value is `volatility._percentile_rank` (the contract's
+   named convention owner, a private owner function imported by reference). A
+   day is appended to the history only after its own value, so it is never in
+   its own history; a mutation that widens the comparison to `<= D` is
+   therefore equivalent.
+6. *Unsourceable inputs.* CVD, spot dominance, macro, on-chain and liquidity
+   (the inventory's `ABSENT_RULEBOOK_FALLBACK` set) are listed as
+   `REFUSED_NOT_APPROXIMATED` with the policy fallback, and a `CvdObservation`
+   supplied to any parameter is refused (`UNSOURCEABLE_INPUT_REFUSED`). Macro,
+   on-chain and liquidity have no owner record to refuse.
+7. *The closure table.* The V1 snapshot must have been built with
+   `US_EQUITY_MARKET_CLOSURE_TABLE_V1` over its whole coverage (the composer
+   loads the same range), so its ETF gap count is evaluated; the manifest
+   records the table's version, definition and file digests and coverage.
+8. *Manifest size.* Like V1, the manifest lists every record, plus every hour
+   of evidence and every day's digest. A synthetic 800-day history with two
+   rows an hour gives 24 MB; at real scale (Kraken depth from 2021-05-27)
+   expect tens of MB. RBT-003 should store it compressed, as V1 advised.
+
+**Tests (one new module, 90 tests, all passing).**
+
+| area | what is pinned |
+| --- | --- |
+| shapes and declarations | the eleven-family shape table equals the inventory's; discretionary and unsourceable sets equal the inventory's; V1 versions, rules and codes unchanged; the refusal class and closed code set; the adapter's own reason codes; the closure table required (absent or partial refused) and recorded |
+| futures basis | `SNAPSHOT` at t with raw times kept; the annualisation against an independent computation and a one-unit error refused; exactly 7 days excluded and recorded, never reaching `futures_basis_health`; nine contract breaches refused; duplicates; gaps across contracts |
+| market cap | `D+1` stamp and `D+2` availability; the data-window edges (2020-01-01, 2025-12-31 admitted; 2019-12-31, 2026-01-01 refused); eleven malformed or unbound files refused; loading from a file; `open_interest_intensity` sees day D only from `D+2` |
+| liquidations | `INTERVAL` at the hour's end through `aggregate_btc_derivatives_available_at`; ten row refusals; duplicates; eleven hour-evidence refusals including both corroboration rulings; eight status-and-rows cases |
+| percentile | one observation per day at its end; every day against an independent oracle (more than 400 valued); incomplete days (an unavailable hour, a missing hour) excluded from history; the first value after 365 complete days; a zero-event day enters history; the window's edge (D-730 counts, D-731 does not); the composer reads day D at `D+1` |
+| point in time | over five seeds, perturbing every value not yet available at a random cut changes no result of `futures_basis_health`, `open_interest_intensity`, `aggregate_btc_derivatives_available_at` or the visible percentiles at the cut, and changes a later one |
+| manifest | binds the V1 snapshot without changing it; versions and shapes; declared inputs; the adapter by reference; identical under input reordering, in fresh processes under three hash seeds from another cwd; no socket opened; the composer inputs and a mismatched dataset refused |
+
+Mutations of the builder (window 731 days, a 7-day row kept, market cap at
+`D+1`, liquidation at the hour start, a disagreement accepted, a minimum of
+364, an incomplete day entering history) each fail the module; the one survivor
+is the equivalent mutation of decision 5.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-02).**
+- The new module with the RBT-001 modules: 257 passed (31 s).
+- RBT-001's own tests unchanged, the database isolation scan, the coverage
+  guards and both spec modules: 380 passed in 46.61s before commit.
+- V5 definition `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89` unchanged; PAD5 preserved-authority subset 5 passed, 112 deselected;
+  PAD4-R5 2 passed.
+- Full repository at `524fcbf`, alone: 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+- `compileall` and `git diff --check` PASS.
+
+**Acceptance criteria.**
+- *Record-shape rules for every input RBT-002 classifies, including futures
+  basis, liquidations and market cap (as hash-bound evidence files) at their
+  pinned semantics:* the shape table test and the per-family groups above.
+- *`DISCRETIONARY` inputs supplied as not asserted and listed:* the manifest
+  test.
+- *Unsourceable inputs refused, not approximated:* the unsourceable test and
+  the manifest listing.
+- *Every RBT-001 test still passes unchanged; V1-built manifests stay
+  reproducible:* `replay_inputs.py` and its tests are untouched, they pass, and
+  a V2 build leaves the V1 manifest bytes identical.
+- *Each shape's boundaries and a point-in-time property test through the real
+  owners:* the groups above.
+
+**Limitations and surfaced points.** The decisions above, especially the basis
+identity format (2), the evidence-file schema (3) and the `SERIES_UNAVAILABLE`
+refusal (4), are formats RBT-003 must write. The ETF fund universe and launch
+dates are `ENGINE_STATE` in the inventory with no shape; they stay inputs the
+caller passes to `entry_composer_inputs` (RBT-003 source plan, RBT-006 freeze).
+No real-data value, score, signal, trade or outcome was computed; no database
+connection; holdout NOT COLLECTED; BTC-019 untouched, sealed sample unopened;
+EPIC X unchanged (`POSTP1-001V2R1` remains its next ticket).
+
+Recommended next dependency-satisfied ticket: the **independent xHigh RBT-001A
+review**. RBT-003 becomes READY after it passes.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
@@ -4144,7 +4312,7 @@ version or any version derived from inspecting its result.
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | IN_PROGRESS — owner rulings recorded (2026-11-01); implementation in progress |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — rulings `4453b5c`, implementation `524fcbf`; 90 new tests; full suite 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
@@ -4185,8 +4353,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-001A** (IN_PROGRESS; owner rulings
-recorded 2026-11-01); RBT-006 stays blocked on RBT-003.
+dependency-satisfied EPIC Y work is the **independent xHigh RBT-001A
+review**; RBT-003 follows it, and RBT-006 stays blocked on RBT-003.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

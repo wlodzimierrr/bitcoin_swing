@@ -971,6 +971,23 @@ missed a `dataclasses.replace` of the every-input-missing flow input; the
 runtime regression now checks the prior flow the trim owner receives. Full
 repository at `dddd6a6`: 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s.
 
+EPIC Y RBT-001A =
+IMPLEMENTED (2026-11-01), policy V7; awaiting the independent xHigh review.
+EXTEND_REPLAY_INPUTS_TO_POLICY_V3: owner rulings `4453b5c` (RBT-001A produces
+LIQUIDATION_PERCENTILE by executing EPIC X's frozen adapter contract by
+reference; a Kraken corroboration disagreement refuses the build; basis rows
+within 7 days of expiry excluded and recorded). Implementation `524fcbf` adds
+`research_backtest/replay_inputs_v2.py`: HISTORICAL_REPLAY_AVAILABILITY_V2 over
+a digest-bound V1 shared snapshot, adding futures basis (SNAPSHOT, at the hour
+close), liquidations (INTERVAL, at the hour's end, with hour evidence), BTC
+market cap (DAILY_PUBLISHED from a hash-bound Coin Metrics evidence file,
+stamped D+1, available D+2), the daily liquidation percentile (available at
+the day's end), the discretionary inputs as not asserted, the unsourceable
+inputs refused, and the closure table required. The V1 builder and every
+owner, config, inventory, spec and evidence file are unchanged. 90 new tests;
+full repository 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min). Synthetic fixtures only: no database, no real-data
+value or outcome.
+
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -1376,7 +1393,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-01
+- **Last updated:** 2026-11-02
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1416,7 +1433,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `250f9470...a061cb17`); **RBT-005 is DONE / independent xHigh re-review PASS WITH
   NON-BLOCKING FINDINGS** (2026-11-01; review FAIL fixed in `56ab0ca`,
   `f69140f` and `5052cbb`, N1 in `dddd6a6`; Part A `0856352`, Part B `8fdd5a3`;
-  spec rebound to `9a619596...15f6313`); **RBT-001A is READY**.
+  spec rebound to `9a619596...15f6313`); **RBT-001A is IMPLEMENTED / awaiting
+  its independent xHigh review** (rulings `4453b5c`, implementation `524fcbf`).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1649,9 +1667,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-001A
-  `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`; its three owner rulings (2026-11-01) are
-  recorded and implementation is in progress. RBT-005 closed DONE on
-  2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
+  `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`, implemented (rulings `4453b5c`,
+  implementation `524fcbf`) and awaiting its independent xHigh review. RBT-005
+  closed DONE on 2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-005 re-review, 2026-11-01,
   **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE** (same Codex
@@ -1954,8 +1972,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-001A** (IN_PROGRESS;
-  owner rulings recorded 2026-11-01).
+- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
+  RBT-001A review** of `524fcbf`; RBT-003 follows it.
   RBT-006 stays blocked until RBT-003 is done (RBT-005 DONE 2026-11-01);
   RBT-003, RBT-007 and RBT-008 remain blocked on their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -1978,6 +1996,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-001A implementation validation (2026-11-02):** `.venv312` CPython
+  3.12.14. The new module with the RBT-001 modules 257 passed (31 s); V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89` unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed; full repository at
+  `524fcbf`, alone: 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min). Synthetic fixtures only: no database, no real-data
+  value or outcome.
 - **RBT-005 re-review N1 fix validation (2026-11-01):** `.venv312`
   CPython 3.12.14. The six management modules and the coverage module
   166 passed in 546.55s; full repository at `dddd6a6`, alone: 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s. No database,
@@ -2426,7 +2449,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** EPIC Y RBT-005 Part A
+- **Last relevant implementation/review commits:** EPIC Y RBT-001A rulings
+  `4453b5c` and implementation `524fcbf` with this documentation commit,
+  awaiting the independent xHigh review. Before them, EPIC Y RBT-005 Part A
   `0856352` and Part B `8fdd5a3` with docs `d81d4b4` (rulings `1b52760`);
   the review FAIL and owner review rulings 4-7 in `14665aa`; review-fix
   `56ab0ca` (spec named limitation and rebind), `f69140f` (composer) and `5052cbb`
