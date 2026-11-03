@@ -456,10 +456,7 @@ def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCap
     for key in ("source", "licence"):
         if not isinstance(payload[key], str) or not payload[key].strip():
             return refuse(f"{key} must be a non-empty string")
-    try:
-        retrieved_at = _utc(datetime.fromisoformat(payload["retrieved_at"]), "retrieved_at")
-    except (TypeError, ValueError):
-        return refuse("retrieved_at must be an ISO-8601 UTC instant")
+    retrieved_at = _evidence_instant(payload["retrieved_at"], "retrieved_at", refuse)
     responses = payload["response_sha256"]
     if not isinstance(responses, list) or not responses or not all(isinstance(item, str) and _SHA256.fullmatch(item) for item in responses):
         return refuse("response_sha256 must list each retrieved response's SHA-256")
@@ -474,6 +471,9 @@ def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCap
             value = Decimal(item["market_cap_usd"])
         except (TypeError, ValueError, InvalidOperation):
             return refuse(f"row {item!r} has no ISO date or decimal value")
+        if day.isoformat() != item["date"]:
+            # one spelling per date, so every file this accepts re-verifies at admission
+            return refuse(f"row {item['date']!r}: a date is written YYYY-MM-DD")
         if not value.is_finite() or value <= 0 or v1.canonical_decimal(value) != item["market_cap_usd"]:
             return refuse(f"row {item['date']}: the value must be a positive canonical decimal")
         if rows and day <= rows[-1][0]:
@@ -487,6 +487,24 @@ def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCap
         response_sha256=tuple(responses),
         rows=tuple(rows),
     )
+
+
+def _evidence_instant(value: Any, name: str, refuse: Any) -> datetime:
+    """An evidence file's UTC instant, in the one spelling the file writer uses.
+
+    ``datetime.fromisoformat`` also reads ``Z``, a space separator or another
+    offset. Admission writes the record back in the canonical spelling and checks
+    its digest, so a file this parser accepted in another spelling would be
+    refused there; it is refused here instead.
+    """
+
+    try:
+        instant = _utc(datetime.fromisoformat(value), name)
+    except (TypeError, ValueError):
+        return refuse(f"{name} must be an ISO-8601 UTC instant")
+    if _iso(instant) != value:
+        return refuse(f"{name} {value!r} must be written {_iso(instant)!r}")
+    return instant
 
 
 def _verified_market_cap_evidence(evidence: MarketCapEvidence) -> MarketCapEvidence:

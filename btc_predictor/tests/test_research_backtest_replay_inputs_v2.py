@@ -318,6 +318,11 @@ def evidence_variants() -> list[tuple[str, bytes, str | None]]:
         ("duplicate", v1.canonical_json_bytes({**payload, "rows": [payload["rows"][0], payload["rows"][0]]}), None),
         ("unsorted", v1.canonical_json_bytes({**payload, "rows": payload["rows"][::-1]}), None),
         ("retrieved", v1.canonical_json_bytes({**payload, "retrieved_at": "yesterday"}), None),
+        # other spellings of a valid instant or date: admission writes the canonical one back, so they are refused here
+        ("retrieved-z", v1.canonical_json_bytes({**payload, "retrieved_at": "2026-10-02T12:00:00Z"}), None),
+        ("retrieved-space", v1.canonical_json_bytes({**payload, "retrieved_at": "2026-10-02 12:00:00+00:00"}), None),
+        ("retrieved-offset", v1.canonical_json_bytes({**payload, "retrieved_at": "2026-10-02T14:00:00+02:00"}), None),
+        ("date-basic", v1.canonical_json_bytes({**payload, "rows": [{**payload["rows"][0], "date": "20240201"}]}), None),
         ("responses", v1.canonical_json_bytes({**payload, "response_sha256": []}), None),
         ("digest", good, "0" * 64),
     ]
