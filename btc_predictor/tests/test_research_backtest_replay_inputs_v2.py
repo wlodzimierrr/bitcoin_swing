@@ -23,6 +23,7 @@ from typing import Any
 
 import pytest
 
+from btc_predictor.config import load_strategy_config
 from btc_predictor.data import OpenInterest, aggregate_btc_derivatives_available_at
 from btc_predictor.features.flow import CvdObservation
 from btc_predictor.features.positioning import futures_basis_health, open_interest_intensity
@@ -30,7 +31,8 @@ from btc_predictor.research import prospective_integration_corpus as epic_x
 from btc_predictor.research import us_equity_market_closures as closures
 from btc_predictor.research_backtest import replay_inputs as v1
 from btc_predictor.research_backtest import replay_inputs_v2 as v2
-from btc_predictor.research_backtest.entry_composer import EntryComposerInputs
+from btc_predictor.research_backtest import entry_composer
+from btc_predictor.research_backtest.entry_composer import EntryComposer, EntryComposerInputs
 from btc_predictor.tests import rbt001a_replay_fixtures as fx
 from btc_predictor.tests.rbt001a_replay_fixtures import (
     BULK_INGESTED_AT,
@@ -794,12 +796,45 @@ def test_the_window_is_half_open_over_the_730_prior_days(history: fx.Liquidation
 
 
 def test_the_composer_reads_day_d_at_d_plus_1(liquidity: v2.ExtendedReplaySnapshot) -> None:
-    """The entry composer reads the day ``[t - 1 day, t)`` and requires ``available_at <= t``."""
+    """Review F4: the frozen consumer itself, fed the builder's observations, reads day D at ``D+1 00:00``.
+
+    ``_DecisionRun._liquidation_percentile`` reads the day ``[t - 1 day, t)`` and
+    requires ``available_at <= t``; it is called directly, as the RBT-004
+    boundary tests call the run's steps, so replacing it fails this test.
+    """
 
     by_day = {item.observation_date: item for item in liquidity.liquidation_percentiles}
     t = utc(2023, 6, 1)
     assert by_day[(t - DAY).date()].available_at == t
     assert by_day[t.date()].available_at > t
+
+    dataset = v1.build_venue_replay_dataset(
+        venue=v1.BITSTAMP_REPLAY_VENUE, window=v1.DATA_WINDOW, price_bars=fx_price_bars(), shared_snapshot=liquidity.shared_snapshot
+    )
+    composer = EntryComposer(liquidity.entry_composer_inputs(dataset), strategy_config=load_strategy_config())
+
+    def read(instant: datetime) -> tuple[Decimal | None, list[str], tuple[str, ...] | None]:
+        run = entry_composer._DecisionRun(composer, instant, position_open=False)
+        value = run._liquidation_percentile()
+        return value, run.composer_causes.get("volatility", []), run.input_reason_codes.get(v2.LIQUIDATION_PERCENTILE_INPUT)
+
+    # every day D, valued or not, is what the consumer sees at D+1 00:00, and never earlier
+    valued = 0
+    for item in liquidity.liquidation_days:
+        observation = item.observation
+        value, causes, codes = read(midnight(item.observation_date) + DAY)
+        assert value == observation.liquidation_percentile
+        if value is None:
+            assert causes == [entry_composer.CAUSE_LIQUIDATION_PERCENTILE_MISSING] and codes == observation.reason_codes
+        else:
+            assert causes == [] and codes is None
+            valued += 1
+    assert valued > 400
+    # the reason each missing value carries reaches the composer's provenance
+    assert read(midnight(MISSING_HOUR.date()) + DAY)[2] == (v2.LIQUIDATION_FEED_UNAVAILABLE,)
+    assert read(midnight(FIRST_DAY) + 30 * DAY)[2] == (v2.LIQUIDATION_PERCENTILE_INSUFFICIENT_HISTORY,)
+    # before the first evidence day there is nothing to read
+    assert read(midnight(FIRST_DAY)) == (None, [entry_composer.CAUSE_LIQUIDATION_PERCENTILE_MISSING], None)
 
 
 # --- point in time through the real owners -----------------------------------------------------
