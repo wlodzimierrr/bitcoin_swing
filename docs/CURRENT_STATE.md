@@ -972,7 +972,8 @@ runtime regression now checks the prior flow the trim owner receives. Full
 repository at `dddd6a6`: 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s.
 
 EPIC Y RBT-001A =
-IMPLEMENTED (2026-11-01), policy V7; awaiting the independent xHigh review.
+IMPLEMENTED (2026-11-01), policy V7; independent xHigh review FAIL
+(2026-11-03), review-fix in progress.
 EXTEND_REPLAY_INPUTS_TO_POLICY_V3: owner rulings `4453b5c` (RBT-001A produces
 LIQUIDATION_PERCENTILE by executing EPIC X's frozen adapter contract by
 reference; a Kraken corroboration disagreement refuses the build; basis rows
@@ -986,7 +987,13 @@ the day's end), the discretionary inputs as not asserted, the unsourceable
 inputs refused, and the closure table required. The V1 builder and every
 owner, config, inventory, spec and evidence file are unchanged. 90 new tests;
 full repository 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min). Synthetic fixtures only: no database, no real-data
-value or outcome.
+value or outcome. The independent review (Codex CLI, report-only) found two
+P1 (market-cap values not re-checked against their evidence digest; "listed
+at t" taken from a name-and-calendar heuristic), one P2 (the annualisation
+check uses the caller's decimal context) and one P3 (the composer test never
+calls the composer). The owner's review rulings 4-6 (2026-11-03) set the
+corrections: a hash-bound contract listing evidence file, one basis row per
+contract and instant, and the strict annualisation from the stored rate.
 
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
@@ -1393,7 +1400,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-02
+- **Last updated:** 2026-11-03
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1433,8 +1440,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `250f9470...a061cb17`); **RBT-005 is DONE / independent xHigh re-review PASS WITH
   NON-BLOCKING FINDINGS** (2026-11-01; review FAIL fixed in `56ab0ca`,
   `f69140f` and `5052cbb`, N1 in `dddd6a6`; Part A `0856352`, Part B `8fdd5a3`;
-  spec rebound to `9a619596...15f6313`); **RBT-001A is IMPLEMENTED / awaiting
-  its independent xHigh review** (rulings `4453b5c`, implementation `524fcbf`).
+  spec rebound to `9a619596...15f6313`); **RBT-001A's independent xHigh review
+  FAILED (2026-11-03); its review-fix is in progress** (rulings `4453b5c`,
+  implementation `524fcbf`).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1668,10 +1676,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-001A
   `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`, implemented (rulings `4453b5c`,
-  implementation `524fcbf`) and awaiting its independent xHigh review. RBT-005
+  implementation `524fcbf`); its independent xHigh review FAILED on 2026-11-03
+  and the review-fix (owner review rulings 4-6) is in progress. RBT-005
   closed DONE on 2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-005 re-review, 2026-11-01,
+- **Most recent completed review:** EPIC Y RBT-001A, 2026-11-03,
+  **independent xHigh FAIL** (OpenAI Codex CLI at the owner's request,
+  report-only) against `4453b5c`, `524fcbf` and `413126b`: two P1, one P2 and
+  one P3 finding, and three owner questions answered with the listing
+  correction as review rulings 4-6. Details in EPIC Y's RBT-001A review
+  outcome.
+- **Preceding completed review (EPIC Y):** RBT-005 re-review, 2026-11-01,
   **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE** (same Codex
   session, report-only) of review-fix `56ab0ca`, `f69140f`, `5052cbb` and docs
   `2431246`. F1-F5 FIXED (F1 and F3 as ruled); N1 (P2) fixed after the PASS in
@@ -1972,8 +1987,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
-  RBT-001A review** of `524fcbf`; RBT-003 follows it.
+- **Next dependency-satisfied EPIC Y action:** the **RBT-001A review-fix**
+  (owner review rulings 4-6) and its independent xHigh re-review; RBT-003
+  follows it.
   RBT-006 stays blocked until RBT-003 is done (RBT-005 DONE 2026-11-01);
   RBT-003, RBT-007 and RBT-008 remain blocked on their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2450,8 +2466,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-001A rulings
-  `4453b5c` and implementation `524fcbf` with this documentation commit,
-  awaiting the independent xHigh review. Before them, EPIC Y RBT-005 Part A
+  `4453b5c` and implementation `524fcbf` with docs `413126b`; the review FAIL
+  and owner review rulings 4-6 are recorded in this documentation commit. Before them, EPIC Y RBT-005 Part A
   `0856352` and Part B `8fdd5a3` with docs `d81d4b4` (rulings `1b52760`);
   the review FAIL and owner review rulings 4-7 in `14665aa`; review-fix
   `56ab0ca` (spec named limitation and rebind), `f69140f` (composer) and `5052cbb`
@@ -3374,6 +3390,15 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-03: RBT-001A review questions.** The owner chose every
+  recommended option: "listed at t" comes from a hash-bound contract listing
+  evidence file (symbol, delivery instant, listing window from the first `1h`
+  kline), replacing the unauthorised last-Friday and name checks; one basis
+  row per contract and instant whatever its provider; the annualisation stays
+  strict, derived by RBT-003 from the stored basis rate. All four findings are
+  fixed in distinct commits, then re-reviewed. Details in the RBT-001A block
+  (rulings 4-6).
 
 - **ANSWERED 2026-11-01: RBT-001A scope points.** Asked before
   implementation; the owner chose every recommended option. RBT-001A produces

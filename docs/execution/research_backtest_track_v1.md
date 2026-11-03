@@ -2916,7 +2916,7 @@ Recommended next dependency-satisfied ticket: **RBT-004 (READY)**, with **RBT-00
 
 ## RBT-001A — `EXTEND_REPLAY_INPUTS_TO_POLICY_V3`
 
-**Status:** `IMPLEMENTED (2026-11-01) / AWAITING INDEPENDENT xHIGH REVIEW — rulings 4453b5c, implementation 524fcbf. RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7; policy V4 data rules ADOPTED and governed by V7.`
+**Status:** `IMPLEMENTED (2026-11-01); independent xHigh review FAIL (2026-11-03), review-fix in progress — rulings 4453b5c, implementation 524fcbf; owner review rulings 4-6 (2026-11-03). RBT-002 independent R2 re-review PASS under V5 §5A.7; RBT-001 independent review PASS after a9773e7; policy V4 data rules ADOPTED and governed by V7.`
 **Dependencies:** RBT-001 independent review PASS (SATISFIED, after `a9773e7`),
 RBT-002 independent R2 re-review PASS (SATISFIED under V5 §5A.7)
 **Implementation effort:** high
@@ -2973,10 +2973,37 @@ open:
    `basis_rate * 365 days / (expiry - t)` at the raw table's 18 decimal
    places.
 
+**Owner review rulings (2026-11-03, on the independent review's findings and
+questions; the recommended option each time).** They amend ruling 3 as
+stated; the review outcome below records the findings.
+
+4. **"Listed at t" comes from a listing evidence file (F2).** RBT-003 writes a
+   hash-bound evidence file, like the market-cap file: for each contract, its
+   Binance symbol, its delivery instant and its listing window (the open time
+   of its first `1h` kline in the `data.binance.vision` archive), with the
+   retrieved responses' SHA-256 values. A basis row is admitted only inside its
+   contract's window and with that delivery instant as its `expiry`. The
+   last-Friday calendar check and the `BTCUSD_YYMMDD` name check, which no
+   policy authorises, are dropped: the evidence replaces them.
+5. **One row per contract per instant.** A second copy of a contract at the
+   same `observation_time` is refused whatever its provider, as the builder
+   already does for liquidations, so `futures_basis_health` averages one row
+   per listed contract.
+6. **The annualisation stays strict, from the stored rate.** The
+   `annualized_basis_rate` must equal the stored 18-place `basis_rate` times
+   `365 days / (expiry - t)`, rounded half away from zero to 18 places.
+   RBT-003's adapter must persist the basis rate first and derive the
+   annualised rate from that persisted value.
+
+The owner also chose to fix all four findings (F1-F4) in distinct review-fix
+commits, followed by an independent xHigh re-review.
+
 ### RBT-001A Implementation Notes
 
-**Status:** `IMPLEMENTED (2026-11-01) / AWAITING INDEPENDENT xHIGH REVIEW`.
-This block is the implementer's record, not a closure.
+**Status:** `IMPLEMENTED (2026-11-01); independent xHigh review FAIL
+(2026-11-03)`. This block is the implementer's record of `413126b`, not a
+closure; the RBT-001A review outcome below records the findings, and the
+review-fix is in progress.
 
 **Commits:**
 - Rulings record, `4453b5c`: the three owner rulings above.
@@ -3140,6 +3167,61 @@ EPIC X unchanged (`POSTP1-001V2R1` remains its next ticket).
 
 Recommended next dependency-satisfied ticket: the **independent xHigh RBT-001A
 review**. RBT-003 becomes READY after it passes.
+
+### RBT-001A review outcome
+
+**Date:** 2026-11-03. **Review:** independent xHigh ticket review, run at the
+owner's request by the OpenAI Codex CLI (0.162.1, model `gpt-6.1-sol`,
+reasoning `xhigh`) in a detached worktree at `413126b`, against the rulings
+record `4453b5c`, implementation `524fcbf` and documentation `413126b` (base
+`a8b253d`). Report-only: a workspace-write sandbox with network disabled, no
+database, no `.env*` file, synthetic fixtures only; its worktree stayed clean.
+**Result: FAIL.** RBT-001A is not DONE and RBT-003 stays blocked. The review's
+three owner questions and the listing correction were answered the same day
+(owner review rulings 4-6 in the ticket block).
+
+**Findings.** Locations refer to `524fcbf`.
+
+| ID / severity | Location | Current versus expected behavior; impact | Reproducer and required correction |
+| --- | --- | --- | --- |
+| F1 / **P1** | `replay_inputs_v2.py:475` | The builder checks that the market-cap evidence is a `MarketCapEvidence`, then trusts its fields: values changed after parsing keep the original file digest. An invalid digest string and duplicate dates also pass this path. | `dataclasses.replace(evidence, rows=...)` with a market cap of `600000000000` changed to `1`: accepted, claiming the original file's hash. Re-verify the whole payload against its digest at admission. |
+| F2 / **P1** (ruling 4) | `replay_inputs_v2.py:305` | "Listed at t" is checked only as `expiry > t` plus a name and quarterly-calendar heuristic; nothing shows the contract existed at t. | A synthetic `BTCUSD_991225` quote at `2024-02-01 13:00` (delivery December 2099) is accepted and reaches `futures_basis_health`. Require source-backed listing and delivery metadata. |
+| F3 / **P2** | `replay_inputs_v2.py:307` | The recomputed rate uses precision 80, but the stored rate is quantised under the caller's decimal context. | A valid `NUMERIC(38,18)` row with basis rate `100000000000` raises `decimal.InvalidOperation` under the default precision 28 and is accepted under 80. Compare both sides in a sized local context. |
+| F4 / **P3** | `test_research_backtest_replay_inputs_v2.py:507` | `test_the_composer_reads_day_d_at_d_plus_1` checks timestamps only and never calls the composer. | With the frozen consumer replaced by an always-raising function, the test still passes. Exercise the real consumer with builder-produced observations. |
+
+The review also asked the three questions that rulings 4-6 answer: the
+authority for the last-Friday calendar, cross-provider duplicates (a second
+provider's copy changed a synthetic `basis_rate_avg` from `0.015` to
+`0.013333...`), and the persistence order of the two rates (for basis `1/3`,
+rounding both from full precision gives `2.142333088774761555` where the
+builder requires `...553`).
+
+**Checks that passed.** Availability lands only in the fields the frozen
+owners read and never precedes an observation's end; the market cap's `D+1`
+stamp, `D+2` availability, last-day admission and the exact-instant OI join
+(probed independently). The liquidation universe, sides, non-negative USD
+notional, hour-status consistency and both corroboration refusals (refusing
+`SERIES_UNAVAILABLE` "is consistent with requiring agreement"). The
+percentile's completeness, observed zeros, unusable-day exclusion,
+`[D-730, D)` history, 365 minimum, current-day exclusion, reason codes and
+day-end availability match the frozen adapter. The 7-day boundary and the
+exclusion manifest; the closure-table requirement; V2 canonical form,
+reordering and hash-seed determinism; the V1 manifest binding; V1 code and
+tests byte-unchanged. Codex's runs (`.venv312`, one process at a time): the
+new module with both RBT-001 modules 257 passed in 33.08s; PAD5 subset 5
+passed in 41.32s; PAD4-R5 2 passed in 26.21s;
+`test_research_backtest_entry_composer_pit.py` 9 passed in 86.03s; `git diff
+--check` clean. Its V5 recomputation differed only because the worktree has no
+`data/` directory (six census files absent, all 42 present files matching
+their frozen digests); the implementer's run in the full checkout reproduced
+`95e43ee1...775a89`. The full suite was not rerun.
+
+**Implementer's verification.** All four findings were confirmed from the
+code before the rulings were asked. The caller's decimal context also governs
+the daily liquidation sums and the percentile division, so the F3 correction
+covers those too.
+
+**Distinct review-fix:** in progress (owner review rulings 4-6).
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
@@ -4312,7 +4394,7 @@ version or any version derived from inspecting its result.
 | RBT-001 | `BUILD_HISTORICAL_REPLAY_INPUTS_V1` | DONE — independent xHigh ticket review PASS after review fix `a9773e7`; implementation `402e120` |
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
-| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | IMPLEMENTED / AWAITING INDEPENDENT xHIGH REVIEW — rulings `4453b5c`, implementation `524fcbf`; 90 new tests; full suite 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
+| RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | IMPLEMENTED; independent xHigh review FAIL (2026-11-03), review-fix in progress — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 90 new tests; full suite 7,722 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | BLOCKED — RBT-001A; RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
@@ -4353,8 +4435,9 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is the **independent xHigh RBT-001A
-review**; RBT-003 follows it, and RBT-006 stays blocked on RBT-003.
+dependency-satisfied EPIC Y work is the **RBT-001A review-fix** (owner
+review rulings 4-6) and its independent xHigh re-review; RBT-003 follows it,
+and RBT-006 stays blocked on RBT-003.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
