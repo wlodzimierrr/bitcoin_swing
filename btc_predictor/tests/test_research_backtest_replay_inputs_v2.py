@@ -279,6 +279,52 @@ def test_a_malformed_or_unbound_market_cap_evidence_file_is_refused(name: str) -
     assert caught.value.reason_code == "MARKET_CAP_EVIDENCE_REFUSED"
 
 
+def _redigested(evidence: v2.MarketCapEvidence, **changes: Any) -> v2.MarketCapEvidence:
+    """``changes`` applied with ``file_sha256`` set to the digest of the changed record's own bytes."""
+
+    changed = replace(evidence, **changes)
+    data = fx.market_cap_bytes(changed.rows, source=changed.source, licence=changed.licence, retrieved_at=changed.retrieved_at, response_sha256=changed.response_sha256)
+    return replace(changed, file_sha256=hashlib.sha256(data).hexdigest())
+
+
+EVIDENCE_CHANGED_AFTER_PARSING = {
+    "value": lambda e: replace(e, rows=((e.rows[0][0], Decimal("1")), *e.rows[1:])),
+    "dropped-day": lambda e: replace(e, rows=e.rows[:-1]),
+    "added-day": lambda e: replace(e, rows=(*e.rows, (e.rows[-1][0] + DAY, e.rows[-1][1]))),
+    "source": lambda e: replace(e, source="https://example.invalid/caps"),
+    "retrieved-at": lambda e: replace(e, retrieved_at=e.retrieved_at + HOUR),
+    "responses": lambda e: replace(e, response_sha256=(fx.digest("other"),)),
+    "digest-malformed": lambda e: replace(e, file_sha256="not-a-digest"),
+    "digest-uppercase": lambda e: replace(e, file_sha256=e.file_sha256.upper()),
+    "digest-other": lambda e: replace(e, file_sha256="0" * 64),
+    "value-type": lambda e: replace(e, rows=((e.rows[0][0], float(e.rows[0][1])), *e.rows[1:])),
+    "retrieved-type": lambda e: replace(e, retrieved_at="2026-10-02T12:00:00+00:00"),
+    "duplicate-redigested": lambda e: _redigested(e, rows=(*e.rows, e.rows[-1])),
+    "unsorted-redigested": lambda e: _redigested(e, rows=e.rows[::-1]),
+    "zero-redigested": lambda e: _redigested(e, rows=((e.rows[0][0], Decimal("0")), *e.rows[1:])),
+    "no-responses-redigested": lambda e: _redigested(e, response_sha256=()),
+}
+
+
+@pytest.mark.parametrize("name", sorted(EVIDENCE_CHANGED_AFTER_PARSING))
+def test_market_cap_evidence_changed_after_parsing_is_refused(name: str) -> None:
+    """Review F1: admission re-verifies the whole record against its file digest."""
+
+    evidence = fx.market_cap_evidence(date(2024, 2, 1), date(2024, 2, 5))
+    assert build(market_cap_evidence=evidence).market_caps
+    assert_refused("MARKET_CAP_EVIDENCE_REFUSED", market_cap_evidence=EVIDENCE_CHANGED_AFTER_PARSING[name](evidence))
+
+
+def test_a_self_consistent_redigested_record_is_a_different_bound_file() -> None:
+    """A changed record carrying its own new digest is admitted as that file, and the manifest names it."""
+
+    evidence = fx.market_cap_evidence(date(2024, 2, 1), date(2024, 2, 5))
+    other = _redigested(evidence, rows=((evidence.rows[0][0], Decimal("1")), *evidence.rows[1:]))
+    snapshot = build(market_cap_evidence=other)
+    assert snapshot.market_caps[0].market_cap_usd == Decimal("1")
+    assert snapshot.manifest["families"][v2.BTC_MARKET_CAP_FAMILY]["evidence"]["file_sha256"] == other.file_sha256 != evidence.file_sha256
+
+
 def test_market_cap_evidence_loads_from_its_file(tmp_path: Path) -> None:
     data = fx.market_cap_bytes(fx.market_cap_rows(date(2024, 2, 1), date(2024, 2, 3)))
     path = tmp_path / "btc_market_cap_evidence_v1.json"

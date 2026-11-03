@@ -451,6 +451,32 @@ def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCap
     )
 
 
+def _verified_market_cap_evidence(evidence: MarketCapEvidence) -> MarketCapEvidence:
+    """Re-verify a whole evidence record against its file digest at admission (review F1).
+
+    ``MarketCapEvidence`` is frozen, but ``dataclasses.replace`` can still make
+    one with changed rows and the original digest. The builder therefore
+    writes the record's canonical bytes again and parses them against the
+    digest it claims: a changed field, a malformed digest or a duplicate date is
+    refused, and the replay uses the verified copy.
+    """
+
+    try:
+        data = market_cap_evidence_bytes(
+            source=evidence.source,
+            licence=evidence.licence,
+            retrieved_at=evidence.retrieved_at,
+            response_sha256=evidence.response_sha256,
+            rows=evidence.rows,
+        )
+    except (AttributeError, TypeError, ValueError, InvalidOperation) as error:
+        raise ExtendedReplayInputRefused(
+            "MARKET_CAP_EVIDENCE_REFUSED",
+            f"the evidence cannot be written back as its {MARKET_CAP_EVIDENCE_VERSION} file: {error}",
+        ) from None
+    return parse_market_cap_evidence(data, expected_sha256=evidence.file_sha256)
+
+
 def market_cap_observation_time(day: date) -> datetime:
     """RBT-002's pinned stamp of day D's end-of-day value: ``D+1 00:00`` UTC."""
 
@@ -473,6 +499,7 @@ def _replay_market_caps(
     _refuse_unsourceable(evidence)
     if type(evidence) is not MarketCapEvidence:
         raise ExtendedReplayInputRefused("MARKET_CAP_EVIDENCE_REFUSED", "market caps come only from a verified evidence file")
+    evidence = _verified_market_cap_evidence(evidence)
     replayed: list[MarketCapObservation] = []
     entries: list[v1.ReplayInputAvailability] = []
     for day, value in evidence.rows:
