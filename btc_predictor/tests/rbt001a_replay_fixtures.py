@@ -2,7 +2,8 @@
 
 Every value is synthetic: no database, no network and no real-data value. The
 records mimic what RBT-003's adapters will persist (Binance COIN-M quarterly
-basis at hour closes, Kraken Futures ``PI_XBTUSD`` per-side hourly liquidation
+basis at hour closes with a contract listing evidence file whose calendar is
+synthetic, Kraken Futures ``PI_XBTUSD`` per-side hourly liquidation
 aggregates with their hour evidence, and a Coin Metrics market-cap evidence
 file), each carrying one bulk ingestion time, as a backfill would.
 """
@@ -92,7 +93,7 @@ def basis_row(
         "observation_time": t,
         "exchange": v2.FUTURES_BASIS_EXCHANGE,
         "symbol": v2.FUTURES_BASIS_SYMBOL,
-        "instrument": f"BTCUSD_{expiry:%y%m%d}",
+        "instrument": instrument(expiry),
         "expiry": expiry,
         "basis_rate": basis_rate,
         "provider": BASIS_PROVIDER,
@@ -107,7 +108,7 @@ def basis_row(
 
 
 def basis_rows(start: datetime, end: datetime, rate_at: Callable[[int], Decimal] | None = None) -> tuple[FuturesBasis, ...]:
-    """Hourly rows for every quarterly listed at each hour (current and next)."""
+    """Hourly rows for every quarterly the fixture listing shows listed at each hour."""
 
     rows = []
     instant = start
@@ -122,18 +123,52 @@ def basis_rows(start: datetime, end: datetime, rate_at: Callable[[int], Decimal]
 
 
 def listed_quarterlies(t: datetime) -> tuple[datetime, ...]:
-    """The next two quarterly deliveries after ``t``."""
+    """The deliveries of the fixture listing's contracts listed at ``t`` (current and next quarter)."""
 
-    found: list[datetime] = []
-    year, month = t.year, ((t.month - 1) // 3 + 1) * 3
-    while len(found) < 2:
-        expiry = quarterly_expiry(year, month)
-        if expiry > t:
-            found.append(expiry)
-        month += 3
-        if month > 12:
-            year, month = year + 1, 3
-    return tuple(found)
+    return tuple(contract.delivery_at for contract in listing_contracts() if contract.listed_at(t))
+
+
+def instrument(expiry: datetime) -> str:
+    return f"BTCUSD_{expiry:%y%m%d}"
+
+
+@lru_cache(maxsize=1)
+def listing_contracts() -> tuple[v2.FuturesBasisContractListing, ...]:
+    """A synthetic listing: every quarterly from 2019 to 2027, each first trading
+    when the quarterly two deliveries earlier delivers (so two are listed at a time).
+
+    The builder takes identity, listing and delivery only from evidence like this
+    (owner review ruling 4); the calendar here is the fixture's, not a rule.
+    """
+
+    deliveries = [quarterly_expiry(year, month) for year in range(2018, 2028) for month in (3, 6, 9, 12)]
+    return tuple(
+        v2.FuturesBasisContractListing(instrument(delivery), deliveries[index - 2], delivery)
+        for index, delivery in enumerate(deliveries)
+        if index >= 2
+    )
+
+
+def basis_listing_bytes(contracts: Iterable[v2.FuturesBasisContractListing] | None = None, **changes: object) -> bytes:
+    fields: dict[str, object] = {
+        "source": "https://data.binance.vision/?prefix=data/futures/cm/monthly/klines/",
+        "licence": "Binance public market data",
+        "retrieved_at": RETRIEVED_AT,
+        "response_sha256": [digest("binance-vision", "cm-klines", 1)],
+        "contracts": tuple(listing_contracts() if contracts is None else contracts),
+    }
+    fields.update(changes)
+    return v2.futures_basis_listing_evidence_bytes(**fields)  # type: ignore[arg-type]
+
+
+def basis_listing_evidence(contracts: Iterable[v2.FuturesBasisContractListing] | None = None) -> v2.FuturesBasisListingEvidence:
+    data = basis_listing_bytes(contracts)
+    return v2.parse_futures_basis_listing_evidence(data, expected_sha256=hashlib.sha256(data).hexdigest())
+
+
+@lru_cache(maxsize=1)
+def default_listing_evidence() -> v2.FuturesBasisListingEvidence:
+    return basis_listing_evidence()
 
 
 # --- market cap ---------------------------------------------------------------------------

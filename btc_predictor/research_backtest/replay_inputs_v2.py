@@ -12,7 +12,8 @@ V1 builder, its constants or its manifests. It takes a finished V1
 families V3 introduced:
 
 - futures basis at the hour close ``t``: ``SNAPSHOT``, available at ``t``
-  (``FUTURES_BASIS_CONTRACT_V1``, policy section 4A);
+  (``FUTURES_BASIS_CONTRACT_V1``, policy section 4A), for the contracts a
+  hash-bound listing evidence file shows listed at ``t``;
 - liquidations, Kraken Futures ``PI_XBTUSD`` per-side ``1h`` aggregates stamped
   at the hour start ``h``: ``INTERVAL``, available at ``h + 1h``;
 - BTC market cap for UTC day D: ``DAILY_PUBLISHED``, stamped ``D+1 00:00`` and
@@ -38,6 +39,20 @@ left open:
 3. Futures-basis rows within 7 days of expiry are excluded from the replay
    inputs and recorded in the manifest; every other breach of the contract is
    refused.
+
+The owner's review rulings of 2026-11-03 add three more:
+
+4. "Listed at t" comes from a hash-bound listing evidence file
+   (``FUTURES_BASIS_CONTRACT_LISTING_EVIDENCE_V1``): each contract's symbol,
+   the open time of its first ``1h`` kline and its delivery instant. No naming
+   or calendar rule decides which contracts exist.
+5. One basis row per contract and instant, whatever its provider.
+6. The annualised rate is exactly the stored 18-place basis rate's
+   annualisation; RBT-003 derives it from the persisted basis rate.
+
+Evidence records (market cap, contract listings) are verified again against
+their file digests when the builder admits them, and no result depends on the
+caller's decimal context.
 
 Inputs that RBT-002 found unsourceable (CVD and spot dominance, macro,
 on-chain and liquidity) are refused, never approximated: the manifest names
@@ -83,6 +98,8 @@ EXTENDED_SNAPSHOT_MANIFEST_VERSION = "HISTORICAL_REPLAY_SHARED_SNAPSHOT_MANIFEST
 REPLAY_V2_REFUSAL_REASON_CODES = (
     *v1.REPLAY_REFUSAL_REASON_CODES,
     "FUTURES_BASIS_CONTRACT_REFUSED",
+    "FUTURES_BASIS_CONTRACT_NOT_LISTED",
+    "FUTURES_BASIS_LISTING_EVIDENCE_REFUSED",
     "MARKET_CAP_EVIDENCE_REFUSED",
     "LIQUIDATION_UNIVERSE_REFUSED",
     "LIQUIDATION_NOTIONAL_MISSING",
@@ -218,28 +235,168 @@ def _require_raw_numeric(record: Any, fields: Sequence[str], what: str) -> None:
 # --- futures basis: FUTURES_BASIS_CONTRACT_V1 ----------------------------------------
 
 FUTURES_BASIS_CONTRACT_VERSION = "FUTURES_BASIS_CONTRACT_V1"
-# The contract's universe as the replay accepts it: Binance COIN-M BTCUSD
-# quarterly delivery contracts, identified the way Binance names them
-# (``BTCUSD_YYMMDD``, the delivery date), delivering on the last Friday of
-# March, June, September or December. RBT-003's adapter writes these values.
+# The contract's universe: Binance COIN-M BTCUSD quarterly delivery contracts
+# listed at t. Which contracts exist, when each was listed and when it delivers
+# come only from a hash-bound listing evidence file (owner review ruling 4),
+# never from a naming or calendar rule.
 FUTURES_BASIS_EXCHANGE = "binance"
 FUTURES_BASIS_SYMBOL = "BTCUSD"
-FUTURES_BASIS_QUARTER_MONTHS = (3, 6, 9, 12)
 FUTURES_BASIS_EXCLUSION_WINDOW = timedelta(days=7)
 FUTURES_BASIS_ANNUALIZATION_DAYS = 365
 FUTURES_BASIS_WITHIN_7D_OF_EXPIRY = "FUTURES_BASIS_WITHIN_7D_OF_EXPIRY"
 
+FUTURES_BASIS_LISTING_EVIDENCE_VERSION = "FUTURES_BASIS_CONTRACT_LISTING_EVIDENCE_V1"
+_LISTING_EVIDENCE_KEYS = frozenset(
+    {"evidence_version", "exchange", "symbol", "source", "licence", "retrieved_at", "response_sha256", "contracts"}
+)
+_LISTING_CONTRACT_KEYS = frozenset({"instrument", "first_kline_open_at", "delivery_at"})
 
-def futures_basis_instrument(expiry: datetime) -> str:
-    """Binance's identifier of the COIN-M BTCUSD quarterly delivering at ``expiry``."""
 
-    return f"{FUTURES_BASIS_SYMBOL}_{_utc(expiry, 'expiry'):%y%m%d}"
+@dataclass(frozen=True)
+class FuturesBasisContractListing:
+    """One contract's source-backed identity and listing window (owner review ruling 4).
+
+    ``instrument`` is the exchange's symbol for the contract,
+    ``first_kline_open_at`` the open time of its first ``1h`` kline in the
+    source archive, and ``delivery_at`` its delivery instant. A basis at the
+    hour close ``t`` uses the kline that closes at ``t``, so the contract is
+    listed at ``t`` when ``first_kline_open_at + 1h <= t < delivery_at``.
+    """
+
+    instrument: str
+    first_kline_open_at: datetime
+    delivery_at: datetime
+
+    def listed_at(self, t: datetime) -> bool:
+        return self.first_kline_open_at + _HOUR <= t < self.delivery_at
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "instrument": self.instrument,
+            "first_kline_open_at": _iso(self.first_kline_open_at),
+            "delivery_at": _iso(self.delivery_at),
+        }
 
 
-def is_quarterly_delivery_date(day: date) -> bool:
-    """The last Friday of March, June, September or December."""
+@dataclass(frozen=True)
+class FuturesBasisListingEvidence:
+    """One verified ``FUTURES_BASIS_CONTRACT_LISTING_EVIDENCE_V1`` file."""
 
-    return day.month in FUTURES_BASIS_QUARTER_MONTHS and day.weekday() == 4 and (day + timedelta(days=7)).month != day.month
+    file_sha256: str
+    source: str
+    licence: str
+    retrieved_at: datetime
+    response_sha256: tuple[str, ...]
+    contracts: tuple[FuturesBasisContractListing, ...]
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "evidence_version": FUTURES_BASIS_LISTING_EVIDENCE_VERSION,
+            "file_sha256": self.file_sha256,
+            "exchange": FUTURES_BASIS_EXCHANGE,
+            "symbol": FUTURES_BASIS_SYMBOL,
+            "source": self.source,
+            "licence": self.licence,
+            "retrieved_at": _iso(self.retrieved_at),
+            "response_sha256": list(self.response_sha256),
+            "contract_count": len(self.contracts),
+            "contracts": [contract.as_record() for contract in self.contracts],
+        }
+
+
+def futures_basis_listing_evidence_bytes(
+    *,
+    source: str,
+    licence: str,
+    retrieved_at: datetime,
+    response_sha256: Sequence[str],
+    contracts: Sequence[FuturesBasisContractListing],
+) -> bytes:
+    """The canonical bytes of a listing evidence file (RBT-003 writes these)."""
+
+    return v1.canonical_json_bytes(
+        {
+            "evidence_version": FUTURES_BASIS_LISTING_EVIDENCE_VERSION,
+            "exchange": FUTURES_BASIS_EXCHANGE,
+            "symbol": FUTURES_BASIS_SYMBOL,
+            "source": source,
+            "licence": licence,
+            "retrieved_at": _iso(retrieved_at),
+            "response_sha256": list(response_sha256),
+            "contracts": [contract.as_record() for contract in contracts],
+        }
+    )
+
+
+def load_futures_basis_listing_evidence(path: str | Path, *, expected_sha256: str) -> FuturesBasisListingEvidence:
+    """Read and verify one listing evidence file against its expected SHA-256."""
+
+    return parse_futures_basis_listing_evidence(Path(path).read_bytes(), expected_sha256=expected_sha256)
+
+
+def parse_futures_basis_listing_evidence(data: bytes, *, expected_sha256: str) -> FuturesBasisListingEvidence:
+    """Verify a listing evidence file's bytes: digest, canonical form, schema and contracts."""
+
+    def refuse(reason: str) -> Any:
+        raise ExtendedReplayInputRefused("FUTURES_BASIS_LISTING_EVIDENCE_REFUSED", reason)
+
+    digest, payload = _bound_evidence_payload(data, expected_sha256, _LISTING_EVIDENCE_KEYS, refuse)
+    declared = {key: payload[key] for key in ("evidence_version", "exchange", "symbol")}
+    expected = {
+        "evidence_version": FUTURES_BASIS_LISTING_EVIDENCE_VERSION,
+        "exchange": FUTURES_BASIS_EXCHANGE,
+        "symbol": FUTURES_BASIS_SYMBOL,
+    }
+    if declared != expected:
+        return refuse(f"the evidence declares {declared}, not the contract's universe {expected}")
+    retrieved_at, responses = _evidence_provenance(payload, refuse)
+    if not isinstance(payload["contracts"], list) or not payload["contracts"]:
+        return refuse("contracts must list at least one contract")
+    contracts: list[FuturesBasisContractListing] = []
+    for item in payload["contracts"]:
+        if not isinstance(item, dict) or set(item) != _LISTING_CONTRACT_KEYS:
+            return refuse(f"each contract is exactly {sorted(_LISTING_CONTRACT_KEYS)}")
+        instrument = item["instrument"]
+        if not isinstance(instrument, str) or not instrument or instrument != instrument.strip():
+            return refuse(f"contract {instrument!r}: the instrument must be the exchange's symbol")
+        first = _evidence_instant(item["first_kline_open_at"], f"{instrument} first_kline_open_at", refuse)
+        delivery = _evidence_instant(item["delivery_at"], f"{instrument} delivery_at", refuse)
+        if (first.minute, first.second, first.microsecond) != (0, 0, 0):
+            return refuse(f"contract {instrument}: a 1h kline opens on the hour")
+        if first >= delivery:
+            return refuse(f"contract {instrument}: its first kline must open before its delivery")
+        if any(other.instrument == instrument for other in contracts):
+            return refuse(f"contract {instrument} is listed twice")
+        if contracts and delivery <= contracts[-1].delivery_at:
+            return refuse(f"contract {instrument}: contracts are ordered by strictly increasing delivery")
+        contracts.append(FuturesBasisContractListing(instrument, first, delivery))
+    return FuturesBasisListingEvidence(
+        file_sha256=digest,
+        source=payload["source"],
+        licence=payload["licence"],
+        retrieved_at=retrieved_at,
+        response_sha256=responses,
+        contracts=tuple(contracts),
+    )
+
+
+def _verified_listing_evidence(evidence: FuturesBasisListingEvidence) -> FuturesBasisListingEvidence:
+    """Re-verify a whole listing record against its file digest at admission, as for market caps."""
+
+    try:
+        data = futures_basis_listing_evidence_bytes(
+            source=evidence.source,
+            licence=evidence.licence,
+            retrieved_at=evidence.retrieved_at,
+            response_sha256=evidence.response_sha256,
+            contracts=evidence.contracts,
+        )
+    except (AttributeError, TypeError, ValueError, InvalidOperation) as error:
+        raise ExtendedReplayInputRefused(
+            "FUTURES_BASIS_LISTING_EVIDENCE_REFUSED",
+            f"the evidence cannot be written back as its {FUTURES_BASIS_LISTING_EVIDENCE_VERSION} file: {error}",
+        ) from None
+    return parse_futures_basis_listing_evidence(data, expected_sha256=evidence.file_sha256)
 
 
 def contract_annualized_basis_rate(basis_rate: Decimal, observation_time: datetime, expiry: datetime) -> Decimal:
@@ -282,12 +439,30 @@ def _basis_identity(row: FuturesBasis) -> tuple[tuple[str, str], ...]:
 
 def _replay_futures_basis(
     rows: Sequence[FuturesBasis],
+    listing: FuturesBasisListingEvidence | None,
     *,
     window: v1.ReplayWindow,
-) -> tuple[tuple[FuturesBasis, ...], tuple[v1.ReplayInputAvailability, ...], tuple[ExcludedFuturesBasis, ...]]:
+) -> tuple[
+    tuple[FuturesBasis, ...],
+    tuple[v1.ReplayInputAvailability, ...],
+    tuple[ExcludedFuturesBasis, ...],
+    FuturesBasisListingEvidence | None,
+]:
+    rows = tuple(rows)
+    if listing is not None:
+        _refuse_unsourceable(listing)
+        if type(listing) is not FuturesBasisListingEvidence:
+            raise ExtendedReplayInputRefused("FUTURES_BASIS_LISTING_EVIDENCE_REFUSED", "contract listings come only from a verified evidence file")
+        listing = _verified_listing_evidence(listing)
+    elif rows:
+        raise ExtendedReplayInputRefused(
+            "FUTURES_BASIS_LISTING_EVIDENCE_REFUSED",
+            "futures basis rows need the contract listing evidence that shows each contract listed at t (owner review ruling 4)",
+        )
+    contracts = {} if listing is None else {contract.instrument: contract for contract in listing.contracts}
     kept: dict[tuple[Any, ...], FuturesBasis] = {}
     excluded: dict[tuple[Any, ...], FuturesBasis] = {}
-    for row in tuple(rows):
+    for row in rows:
         _require_record(row, FuturesBasis, "futures basis")
         t = _utc(row.observation_time, "futures_basis.observation_time")
         what = f"{FUTURES_BASIS_FAMILY} {t.isoformat()}"
@@ -295,10 +470,15 @@ def _replay_futures_basis(
         v1._require_owner_record(row, "futures basis")
         v1._require_decimal_fields(row, ("basis_rate", "annualized_basis_rate"), ())
         _require_raw_numeric(row, ("basis_rate", "annualized_basis_rate"), what)
-        _require_contract_row(row, t, what)
-        key = (t, row.exchange, row.symbol, row.instrument, row.provider)
+        _require_contract_row(row, t, what, contracts)
+        # owner review ruling 5: one row per contract and instant, whatever its
+        # provider, so the owner's average counts each listed contract once
+        key = (t, row.instrument)
         if key in kept or key in excluded:
-            raise ExtendedReplayInputRefused("DUPLICATE_RECORD_REFUSED", f"{what} {row.instrument} is supplied twice")
+            raise ExtendedReplayInputRefused(
+                "DUPLICATE_RECORD_REFUSED",
+                f"{what} {row.instrument} is supplied twice (one row per contract and instant, whatever its provider)",
+            )
         if row.expiry - t <= FUTURES_BASIS_EXCLUSION_WINDOW:
             excluded[key] = row
         else:
@@ -322,24 +502,36 @@ def _replay_futures_basis(
             )
         )
     dropped = tuple(ExcludedFuturesBasis(excluded[key], FUTURES_BASIS_WITHIN_7D_OF_EXPIRY) for key in sorted(excluded))
-    return tuple(replayed), tuple(entries), dropped
+    return tuple(replayed), tuple(entries), dropped, listing
 
 
-def _require_contract_row(row: FuturesBasis, t: datetime, what: str) -> None:
-    def refuse(reason: str) -> None:
-        raise ExtendedReplayInputRefused("FUTURES_BASIS_CONTRACT_REFUSED", f"{what}: {reason} ({FUTURES_BASIS_CONTRACT_VERSION})")
+def _require_contract_row(
+    row: FuturesBasis,
+    t: datetime,
+    what: str,
+    contracts: Mapping[str, FuturesBasisContractListing],
+) -> None:
+    def refuse(reason: str, code: str = "FUTURES_BASIS_CONTRACT_REFUSED") -> None:
+        raise ExtendedReplayInputRefused(code, f"{what}: {reason} ({FUTURES_BASIS_CONTRACT_VERSION})")
 
     if (t.minute, t.second, t.microsecond) != (0, 0, 0):
         refuse("the basis is taken at an hour close, so observation_time must be on the hour")
     if (row.exchange, row.symbol) != (FUTURES_BASIS_EXCHANGE, FUTURES_BASIS_SYMBOL):
         refuse(f"{row.exchange}/{row.symbol} is not Binance COIN-M {FUTURES_BASIS_SYMBOL}")
     expiry = _utc(row.expiry, "futures_basis.expiry")
-    if not is_quarterly_delivery_date(expiry.date()):
-        refuse(f"expiry {expiry.isoformat()} is not a quarterly delivery date")
-    if row.instrument != futures_basis_instrument(expiry):
-        refuse(f"instrument {row.instrument!r} is not the quarterly {futures_basis_instrument(expiry)!r}")
-    if expiry <= t:
-        refuse("the contract is not listed at t: it has already delivered")
+    # owner review ruling 4: identity, listing and delivery from the listing evidence
+    contract = contracts.get(row.instrument) if isinstance(row.instrument, str) else None
+    if contract is None:
+        refuse(f"{row.instrument!r} is not a contract in the listing evidence", "FUTURES_BASIS_CONTRACT_NOT_LISTED")
+        return
+    if expiry != contract.delivery_at:
+        refuse(f"expiry {expiry.isoformat()} is not {row.instrument}'s delivery instant {contract.delivery_at.isoformat()}")
+    if not contract.listed_at(t):
+        refuse(
+            f"{row.instrument} is listed for the hour closes from {(contract.first_kline_open_at + _HOUR).isoformat()} "
+            f"to before its delivery {contract.delivery_at.isoformat()}, not at t",
+            "FUTURES_BASIS_CONTRACT_NOT_LISTED",
+        )
     # owner review ruling 6: exactly the stored rate's annualisation, compared by
     # value (a comparison never rounds, so no context is involved)
     if row.annualized_basis_rate != contract_annualized_basis_rate(row.basis_rate, t, expiry):
@@ -425,24 +617,10 @@ def load_market_cap_evidence(path: str | Path, *, expected_sha256: str) -> Marke
 def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCapEvidence:
     """Verify an evidence file's bytes: digest, canonical form, schema and rows."""
 
-    def refuse(reason: str) -> MarketCapEvidence:
+    def refuse(reason: str) -> Any:
         raise ExtendedReplayInputRefused("MARKET_CAP_EVIDENCE_REFUSED", reason)
 
-    if not isinstance(data, bytes):
-        return refuse("evidence must be the file's bytes")
-    if not isinstance(expected_sha256, str) or not _SHA256.fullmatch(expected_sha256):
-        return refuse("the expected SHA-256 must be 64 lowercase hex digits")
-    digest = v1.sha256_hex(data)
-    if digest != expected_sha256:
-        return refuse(f"the file's SHA-256 {digest} is not the bound {expected_sha256}")
-    try:
-        payload = json.loads(data)
-    except (UnicodeDecodeError, ValueError):
-        return refuse("the file is not JSON")
-    if not isinstance(payload, dict) or v1.canonical_json_bytes(payload) != data:
-        return refuse("the file is not canonical JSON (sorted keys, no whitespace, ASCII)")
-    if set(payload) != _MARKET_CAP_EVIDENCE_KEYS:
-        return refuse(f"the evidence keys must be exactly {sorted(_MARKET_CAP_EVIDENCE_KEYS)}")
+    digest, payload = _bound_evidence_payload(data, expected_sha256, _MARKET_CAP_EVIDENCE_KEYS, refuse)
     declared = {key: payload[key] for key in ("evidence_version", "provider", "asset", "metric", "frequency")}
     expected = {
         "evidence_version": MARKET_CAP_EVIDENCE_VERSION,
@@ -453,13 +631,7 @@ def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCap
     }
     if declared != expected:
         return refuse(f"the evidence declares {declared}, not the selected series {expected}")
-    for key in ("source", "licence"):
-        if not isinstance(payload[key], str) or not payload[key].strip():
-            return refuse(f"{key} must be a non-empty string")
-    retrieved_at = _evidence_instant(payload["retrieved_at"], "retrieved_at", refuse)
-    responses = payload["response_sha256"]
-    if not isinstance(responses, list) or not responses or not all(isinstance(item, str) and _SHA256.fullmatch(item) for item in responses):
-        return refuse("response_sha256 must list each retrieved response's SHA-256")
+    retrieved_at, responses = _evidence_provenance(payload, refuse)
     if not isinstance(payload["rows"], list):
         return refuse("rows must be a list")
     rows: list[tuple[date, Decimal]] = []
@@ -487,6 +659,40 @@ def parse_market_cap_evidence(data: bytes, *, expected_sha256: str) -> MarketCap
         response_sha256=tuple(responses),
         rows=tuple(rows),
     )
+
+
+def _bound_evidence_payload(data: Any, expected_sha256: Any, keys: frozenset[str], refuse: Any) -> tuple[str, dict[str, Any]]:
+    """An evidence file's digest and canonical JSON object, with exactly ``keys``."""
+
+    if not isinstance(data, bytes):
+        return refuse("evidence must be the file's bytes")
+    if not isinstance(expected_sha256, str) or not _SHA256.fullmatch(expected_sha256):
+        return refuse("the expected SHA-256 must be 64 lowercase hex digits")
+    digest = v1.sha256_hex(data)
+    if digest != expected_sha256:
+        return refuse(f"the file's SHA-256 {digest} is not the bound {expected_sha256}")
+    try:
+        payload = json.loads(data)
+    except (UnicodeDecodeError, ValueError):
+        return refuse("the file is not JSON")
+    if not isinstance(payload, dict) or v1.canonical_json_bytes(payload) != data:
+        return refuse("the file is not canonical JSON (sorted keys, no whitespace, ASCII)")
+    if set(payload) != keys:
+        return refuse(f"the evidence keys must be exactly {sorted(keys)}")
+    return digest, payload
+
+
+def _evidence_provenance(payload: Mapping[str, Any], refuse: Any) -> tuple[datetime, tuple[str, ...]]:
+    """An evidence file's source, licence, retrieval instant and response digests."""
+
+    for key in ("source", "licence"):
+        if not isinstance(payload[key], str) or not payload[key].strip():
+            return refuse(f"{key} must be a non-empty string")
+    retrieved_at = _evidence_instant(payload["retrieved_at"], "retrieved_at", refuse)
+    responses = payload["response_sha256"]
+    if not isinstance(responses, list) or not responses or not all(isinstance(item, str) and _SHA256.fullmatch(item) for item in responses):
+        return refuse("response_sha256 must list each retrieved response's SHA-256")
+    return retrieved_at, tuple(responses)
 
 
 def _evidence_instant(value: Any, name: str, refuse: Any) -> datetime:
@@ -549,9 +755,9 @@ def _replay_market_caps(
     evidence: MarketCapEvidence | None,
     *,
     window: v1.ReplayWindow,
-) -> tuple[tuple[MarketCapObservation, ...], tuple[v1.ReplayInputAvailability, ...]]:
+) -> tuple[tuple[MarketCapObservation, ...], tuple[v1.ReplayInputAvailability, ...], MarketCapEvidence | None]:
     if evidence is None:
-        return (), ()
+        return (), (), None
     _refuse_unsourceable(evidence)
     if type(evidence) is not MarketCapEvidence:
         raise ExtendedReplayInputRefused("MARKET_CAP_EVIDENCE_REFUSED", "market caps come only from a verified evidence file")
@@ -580,7 +786,7 @@ def _replay_market_caps(
                 modelled_available_at=observation.available_at,
             )
         )
-    return tuple(replayed), tuple(entries)
+    return tuple(replayed), tuple(entries), evidence
 
 
 # --- liquidations: HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1 -----------------------
@@ -929,6 +1135,7 @@ def build_extended_replay_snapshot(
     *,
     shared_snapshot: v1.SharedReplaySnapshot,
     futures_basis: Sequence[FuturesBasis] = (),
+    futures_basis_listing: FuturesBasisListingEvidence | None = None,
     market_cap_evidence: MarketCapEvidence | None = None,
     liquidations: Sequence[Liquidation] = (),
     liquidation_hours: Sequence[LiquidationHourEvidence] = (),
@@ -947,17 +1154,18 @@ def build_extended_replay_snapshot(
     shared = shared_snapshot.manifest
     closure_record = _require_closure_table(shared)
 
-    basis_replay, basis_entries, basis_excluded = _replay_futures_basis(futures_basis, window=window)
-    cap_replay, cap_entries = _replay_market_caps(market_cap_evidence, window=window)
+    basis_replay, basis_entries, basis_excluded, listing = _replay_futures_basis(futures_basis, futures_basis_listing, window=window)
+    cap_replay, cap_entries, cap_evidence = _replay_market_caps(market_cap_evidence, window=window)
     liquidation_replay, liquidation_entries, hour_evidence = _replay_liquidations(liquidations, liquidation_hours, window=window)
     days = _liquidation_percentiles(liquidation_replay, hour_evidence)
 
     basis_section = _family_section(FUTURES_BASIS_FAMILY, basis_entries, _basis_series(basis_replay))
     basis_section["contract"] = FUTURES_BASIS_CONTRACT_VERSION
+    basis_section["listing_evidence"] = None if listing is None else listing.as_record()
     basis_section["excluded"] = [item.as_record() for item in basis_excluded]
     basis_section["excluded_count"] = len(basis_excluded)
     cap_section = _family_section(BTC_MARKET_CAP_FAMILY, cap_entries, _market_cap_series(cap_replay))
-    cap_section["evidence"] = None if market_cap_evidence is None else market_cap_evidence.as_record()
+    cap_section["evidence"] = None if cap_evidence is None else cap_evidence.as_record()
     liquidation_section = _family_section(LIQUIDATIONS_FAMILY, liquidation_entries, _liquidation_series(liquidation_replay))
     liquidation_section["completeness_rule"] = LIQUIDATION_COMPLETENESS_VERSION
     liquidation_section["hour_evidence"] = _hour_evidence_section(hour_evidence)

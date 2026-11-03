@@ -56,6 +56,8 @@ JUNE_2024 = quarterly_expiry(2024, 6)
 
 def build(**families: Any) -> v2.ExtendedReplaySnapshot:
     families.setdefault("shared_snapshot", fx.shared_snapshot())
+    if families.get("futures_basis"):
+        families.setdefault("futures_basis_listing", fx.default_listing_evidence())
     return v2.build_extended_replay_snapshot(**families)
 
 
@@ -191,14 +193,15 @@ def test_a_contract_within_seven_days_of_expiry_is_excluded_and_recorded() -> No
         (lambda row: replace(row, observation_time=row.observation_time + timedelta(minutes=30), annualized_basis_rate=fx.annualized(row.basis_rate, row.observation_time + timedelta(minutes=30), row.expiry)), "FUTURES_BASIS_CONTRACT_REFUSED"),
         (lambda row: replace(row, exchange="kraken"), "FUTURES_BASIS_CONTRACT_REFUSED"),
         (lambda row: replace(row, symbol="BTCUSDT"), "FUTURES_BASIS_CONTRACT_REFUSED"),
-        (lambda row: replace(row, instrument="BTCUSD_PERP"), "FUTURES_BASIS_CONTRACT_REFUSED"),
-        (lambda row: basis_row(row.observation_time, utc(2024, 4, 26, 8)), "FUTURES_BASIS_CONTRACT_REFUSED"),
-        (lambda row: basis_row(utc(2024, 3, 29, 8), MARCH_2024, annualized_basis_rate=Decimal("0")), "FUTURES_BASIS_CONTRACT_REFUSED"),
+        (lambda row: replace(row, instrument="BTCUSD_PERP"), "FUTURES_BASIS_CONTRACT_NOT_LISTED"),
+        (lambda row: basis_row(row.observation_time, utc(2024, 4, 26, 8)), "FUTURES_BASIS_CONTRACT_NOT_LISTED"),
+        (lambda row: replace(row, expiry=row.expiry + HOUR, annualized_basis_rate=fx.annualized(row.basis_rate, row.observation_time, row.expiry + HOUR)), "FUTURES_BASIS_CONTRACT_REFUSED"),
+        (lambda row: basis_row(utc(2024, 3, 29, 8), MARCH_2024, annualized_basis_rate=Decimal("0")), "FUTURES_BASIS_CONTRACT_NOT_LISTED"),
         (lambda row: basis_row(utc(2019, 12, 31, 23), quarterly_expiry(2020, 3)), "PRE_2020_RECORD_REFUSED"),
         (lambda row: basis_row(utc(2026, 1, 2), quarterly_expiry(2026, 3)), "HOLDOUT_RECORD_REFUSED"),
         (lambda row: replace(row, basis_rate=Decimal("NaN")), "RECORD_TYPE_REFUSED"),
     ],
-    ids=["off-hour", "exchange", "symbol", "instrument", "not-quarterly", "delivered", "pre-2020", "holdout", "nan"],
+    ids=["off-hour", "exchange", "symbol", "unlisted-perp", "unlisted-instrument", "expiry-not-delivery", "delivered", "pre-2020", "holdout", "nan"],
 )
 def test_a_basis_row_breaking_the_contract_is_refused(change: Any, reason: str) -> None:
     assert_refused(reason, futures_basis=[change(basis_row(utc(2024, 2, 1, 13), MARCH_2024))])
@@ -207,6 +210,157 @@ def test_a_basis_row_breaking_the_contract_is_refused(change: Any, reason: str) 
 def test_a_duplicate_basis_row_is_refused_even_when_excluded() -> None:
     row = basis_row(MARCH_2024 - 2 * DAY, MARCH_2024)
     assert_refused("DUPLICATE_RECORD_REFUSED", futures_basis=[row, replace(row, ingested_at=row.ingested_at + HOUR)])
+
+
+def test_a_second_providers_copy_of_a_contract_at_the_same_instant_is_refused() -> None:
+    """Owner review ruling 5: one row per contract and instant, whatever its provider."""
+
+    t = utc(2024, 2, 1, 13)
+    row = basis_row(t, MARCH_2024, Decimal("0.02"))
+    copy = replace(basis_row(t, MARCH_2024, Decimal("0.01")), provider="another_provider")
+    assert_refused("DUPLICATE_RECORD_REFUSED", futures_basis=[row, copy])
+    # two listed contracts at one instant are two rows, and the owner averages both
+    both = build(futures_basis=[row, basis_row(t, JUNE_2024, Decimal("0.01"))]).futures_basis
+    assert futures_basis_health(both, as_of=t).source_record_count == 2
+
+
+# --- futures basis: the contract listing evidence (owner review ruling 4) ---------------------
+
+
+def contract(name: str, first: datetime, delivery: datetime) -> v2.FuturesBasisContractListing:
+    return v2.FuturesBasisContractListing(name, first, delivery)
+
+
+def test_an_unlisted_contract_is_refused_however_plausible_its_name_and_calendar() -> None:
+    """Review F2's reproducer: BTCUSD_991225, delivering on a quarter's last Friday in 2099."""
+
+    expiry = fx.quarterly_expiry(2099, 12)
+    row = basis_row(utc(2024, 2, 1, 13), expiry)
+    assert row.instrument == "BTCUSD_991225" and expiry.weekday() == 4
+    assert_refused("FUTURES_BASIS_CONTRACT_NOT_LISTED", futures_basis=[row])
+    # the same row is admitted only once the evidence lists the contract at t
+    listed = fx.basis_listing_evidence((*fx.listing_contracts(), contract("BTCUSD_991225", utc(2024, 1, 1), expiry)))
+    assert build(futures_basis=[row], futures_basis_listing=listed).futures_basis[0].instrument == "BTCUSD_991225"
+
+
+def test_a_contract_is_listed_from_its_first_klines_close_to_before_its_delivery() -> None:
+    first = utc(2024, 1, 5, 8)
+    listing = fx.basis_listing_evidence((contract("BTCUSD_240329", first, MARCH_2024),))
+
+    def admitted(t: datetime) -> bool:
+        try:
+            # at the delivery itself the fixture cannot annualise; the listing refuses first
+            changes = {"annualized_basis_rate": Decimal("0")} if t >= MARCH_2024 else {}
+            build(futures_basis=[basis_row(t, MARCH_2024, **changes)], futures_basis_listing=listing)
+        except v1.ReplayInputRefused as refused:
+            assert refused.reason_code == "FUTURES_BASIS_CONTRACT_NOT_LISTED", str(refused)
+            return False
+        return True
+
+    # the basis at t uses the kline closing at t, so the first is the close of the first kline
+    assert [admitted(t) for t in (first, first + HOUR, MARCH_2024 - HOUR, MARCH_2024)] == [False, True, True, False]
+
+
+def test_no_naming_or_calendar_rule_decides_which_contracts_exist() -> None:
+    """Ruling 4 drops the last-Friday and BTCUSD_YYMMDD checks: the evidence alone names the contracts."""
+
+    delivery = utc(2024, 4, 26, 8)  # April's last Friday: not a quarter month, so the dropped calendar check refused it
+    listing = fx.basis_listing_evidence((contract("BTCUSD_CUSTOM", utc(2024, 1, 5, 8), delivery),))
+    row = basis_row(utc(2024, 2, 1, 13), delivery, instrument="BTCUSD_CUSTOM")
+    snapshot = build(futures_basis=[row], futures_basis_listing=listing)
+    assert [copy.instrument for copy in snapshot.futures_basis] == ["BTCUSD_CUSTOM"]
+    assert not hasattr(v2, "is_quarterly_delivery_date") and not hasattr(v2, "futures_basis_instrument")
+
+
+def test_basis_rows_need_the_listing_evidence_and_the_manifest_records_it() -> None:
+    row = basis_row(utc(2024, 2, 1, 13), MARCH_2024)
+    assert_refused("FUTURES_BASIS_LISTING_EVIDENCE_REFUSED", futures_basis=[row], futures_basis_listing=None)
+    listing = fx.default_listing_evidence()
+    section = build(futures_basis=[row]).manifest["families"][v2.FUTURES_BASIS_FAMILY]
+    assert section["listing_evidence"] == listing.as_record()
+    assert section["listing_evidence"]["file_sha256"] == listing.file_sha256
+    assert section["listing_evidence"]["contract_count"] == len(fx.listing_contracts())
+    # evidence without rows is recorded; no evidence and no rows records none
+    assert build(futures_basis_listing=listing).manifest["families"][v2.FUTURES_BASIS_FAMILY]["listing_evidence"] == listing.as_record()
+    assert build().manifest["families"][v2.FUTURES_BASIS_FAMILY]["listing_evidence"] is None
+
+
+def listing_variants() -> dict[str, tuple[bytes, str | None]]:
+    good = fx.basis_listing_bytes()
+    payload = json.loads(good)
+    first = payload["contracts"][0]
+
+    def with_contracts(*contracts: Any) -> bytes:
+        return v1.canonical_json_bytes({**payload, "contracts": list(contracts)})
+
+    return {
+        "pretty": (json.dumps(payload, indent=1, sort_keys=True).encode(), None),
+        "extra-key": (v1.canonical_json_bytes({**payload, "note": "x"}), None),
+        "version": (v1.canonical_json_bytes({**payload, "evidence_version": "V0"}), None),
+        "exchange": (v1.canonical_json_bytes({**payload, "exchange": "okx"}), None),
+        "symbol": (v1.canonical_json_bytes({**payload, "symbol": "BTCUSDT"}), None),
+        "licence": (v1.canonical_json_bytes({**payload, "licence": " "}), None),
+        "retrieved-z": (v1.canonical_json_bytes({**payload, "retrieved_at": "2026-10-02T12:00:00Z"}), None),
+        "responses": (v1.canonical_json_bytes({**payload, "response_sha256": []}), None),
+        "no-contracts": (with_contracts(), None),
+        "contract-extra-key": (with_contracts({**first, "listed": True}), None),
+        "instrument-empty": (with_contracts({**first, "instrument": ""}), None),
+        "instrument-padded": (with_contracts({**first, "instrument": f" {first['instrument']}"}), None),
+        "instrument-type": (with_contracts({**first, "instrument": 7}), None),
+        "first-off-hour": (with_contracts({**first, "first_kline_open_at": "2018-09-28T08:30:00+00:00"}), None),
+        "first-spelling": (with_contracts({**first, "first_kline_open_at": first["first_kline_open_at"].replace("+00:00", "Z")}), None),
+        "delivery-naive": (with_contracts({**first, "delivery_at": first["delivery_at"].replace("+00:00", "")}), None),
+        "first-not-before-delivery": (with_contracts({**first, "first_kline_open_at": first["delivery_at"]}), None),
+        "duplicate-instrument": (with_contracts(first, {**payload["contracts"][1], "instrument": first["instrument"]}), None),
+        "unsorted": (with_contracts(payload["contracts"][1], first), None),
+        "same-delivery": (with_contracts(first, {**first, "instrument": "OTHER"}), None),
+        "digest": (good, "0" * 64),
+        "digest-malformed": (good, "ABC"),
+    }
+
+
+@pytest.mark.parametrize("name", sorted(listing_variants()))
+def test_a_malformed_or_unbound_listing_evidence_file_is_refused(name: str) -> None:
+    data, bound = listing_variants()[name]
+    with pytest.raises(v1.ReplayInputRefused) as caught:
+        v2.parse_futures_basis_listing_evidence(data, expected_sha256=bound or hashlib.sha256(data).hexdigest())
+    assert caught.value.reason_code == "FUTURES_BASIS_LISTING_EVIDENCE_REFUSED", str(caught.value)
+
+
+LISTING_CHANGED_AFTER_PARSING = {
+    "delivery-moved": lambda e: replace(e, contracts=(replace(e.contracts[0], delivery_at=e.contracts[0].delivery_at + DAY), *e.contracts[1:])),
+    "listed-earlier": lambda e: replace(e, contracts=(replace(e.contracts[0], first_kline_open_at=e.contracts[0].first_kline_open_at - DAY), *e.contracts[1:])),
+    "contract-added": lambda e: replace(e, contracts=(*e.contracts, contract("BTCUSD_991225", utc(2024, 1, 1), fx.quarterly_expiry(2099, 12)))),
+    "contract-dropped": lambda e: replace(e, contracts=e.contracts[1:]),
+    "contract-type": lambda e: replace(e, contracts=(e.contracts[0].as_record(), *e.contracts[1:])),
+    "source": lambda e: replace(e, source="https://example.invalid/klines"),
+    "digest-malformed": lambda e: replace(e, file_sha256="not-a-digest"),
+    "digest-other": lambda e: replace(e, file_sha256="0" * 64),
+}
+
+
+@pytest.mark.parametrize("name", sorted(LISTING_CHANGED_AFTER_PARSING))
+def test_listing_evidence_changed_after_parsing_is_refused(name: str) -> None:
+    listing = fx.default_listing_evidence()
+    row = basis_row(utc(2024, 2, 1, 13), MARCH_2024)
+    assert build(futures_basis=[row], futures_basis_listing=listing).futures_basis
+    assert_refused("FUTURES_BASIS_LISTING_EVIDENCE_REFUSED", futures_basis=[row], futures_basis_listing=LISTING_CHANGED_AFTER_PARSING[name](listing))
+
+
+def test_only_a_listing_evidence_record_is_a_listing() -> None:
+    row = basis_row(utc(2024, 2, 1, 13), MARCH_2024)
+    caps = fx.market_cap_evidence(date(2024, 2, 1), date(2024, 2, 2))
+    assert_refused("FUTURES_BASIS_LISTING_EVIDENCE_REFUSED", futures_basis=[row], futures_basis_listing=caps)
+    cvd = CvdObservation(observation_time=utc(2024, 2, 1), market_type="spot", cvd_usd=Decimal("1"), provider="x", available_at=utc(2024, 2, 1))
+    assert_refused("UNSOURCEABLE_INPUT_REFUSED", futures_basis=[row], futures_basis_listing=cvd)
+
+
+def test_listing_evidence_loads_from_its_file(tmp_path: Path) -> None:
+    data = fx.basis_listing_bytes()
+    path = tmp_path / "futures_basis_contract_listing_evidence_v1.json"
+    path.write_bytes(data)
+    listing = v2.load_futures_basis_listing_evidence(path, expected_sha256=hashlib.sha256(data).hexdigest())
+    assert listing == fx.default_listing_evidence()
 
 
 def test_an_unsourceable_record_is_refused_not_approximated() -> None:
