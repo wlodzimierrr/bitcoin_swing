@@ -56,7 +56,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, time, timedelta
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation, localcontext
+from decimal import ROUND_HALF_EVEN, ROUND_HALF_UP, Context, Decimal, DivisionByZero, InvalidOperation, Overflow, localcontext
 from pathlib import Path
 from typing import Any
 
@@ -181,6 +181,39 @@ _DAY = timedelta(days=1)
 _ONE_MICROSECOND = timedelta(microseconds=1)
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
+# No result of this builder depends on the caller's decimal context (review F3).
+# Every rate and notional it admits fits the raw tables' NUMERIC(38,18) (at most
+# 20 integer and 18 fractional digits), so its sums and the contract's
+# annualisation are exact or correctly rounded at 80 digits. The percentile runs
+# the volatility owner's convention under the decimal module's documented default
+# context (28 digits, half-even), the context the replay's owners and composers
+# run under, stated here so that a caller's own context cannot change it.
+_WIDE_CONTEXT = Context(
+    prec=80, rounding=ROUND_HALF_EVEN, Emin=-999_999, Emax=999_999, capitals=1, clamp=0, flags=[], traps=[InvalidOperation, DivisionByZero, Overflow]
+)
+_OWNER_CONTEXT = Context(
+    prec=28, rounding=ROUND_HALF_EVEN, Emin=-999_999, Emax=999_999, capitals=1, clamp=0, flags=[], traps=[InvalidOperation, DivisionByZero, Overflow]
+)
+# Both rates and the liquidation notional are persisted as NUMERIC(38,18), which
+# rounds half away from zero.
+RAW_NUMERIC_QUANTUM = Decimal("1e-18")
+_RAW_NUMERIC_LIMIT = Decimal(10) ** 20
+
+
+def _require_raw_numeric(record: Any, fields: Sequence[str], what: str) -> None:
+    """Refuse a value the raw table's ``NUMERIC(38,18)`` column cannot hold.
+
+    Such a value is not a persisted row. ``copy_abs`` and the wide context keep
+    the check itself independent of the caller's context.
+    """
+
+    for name in fields:
+        value = getattr(record, name)
+        if value is None:
+            continue
+        if value.copy_abs() >= _RAW_NUMERIC_LIMIT or value != value.quantize(RAW_NUMERIC_QUANTUM, context=_WIDE_CONTEXT):
+            raise ExtendedReplayInputRefused("RECORD_TYPE_REFUSED", f"{what}: {name} {value} does not fit the raw table's NUMERIC(38,18)")
+
 
 # --- futures basis: FUTURES_BASIS_CONTRACT_V1 ----------------------------------------
 
@@ -194,8 +227,6 @@ FUTURES_BASIS_SYMBOL = "BTCUSD"
 FUTURES_BASIS_QUARTER_MONTHS = (3, 6, 9, 12)
 FUTURES_BASIS_EXCLUSION_WINDOW = timedelta(days=7)
 FUTURES_BASIS_ANNUALIZATION_DAYS = 365
-# Both rates are persisted as NUMERIC(38,18), which rounds half away from zero.
-RAW_NUMERIC_QUANTUM = Decimal("1e-18")
 FUTURES_BASIS_WITHIN_7D_OF_EXPIRY = "FUTURES_BASIS_WITHIN_7D_OF_EXPIRY"
 
 
@@ -212,14 +243,18 @@ def is_quarterly_delivery_date(day: date) -> bool:
 
 
 def contract_annualized_basis_rate(basis_rate: Decimal, observation_time: datetime, expiry: datetime) -> Decimal:
-    """``basis_rate * 365 days / (expiry - t)`` at the raw table's 18 decimal places."""
+    """``basis_rate * 365 days / (expiry - t)`` at the raw table's 18 decimal places.
+
+    Owner review ruling 6: ``basis_rate`` is the stored 18-place rate, and the
+    annualised rate RBT-003 persists must be derived from it. The computation
+    runs in the builder's own 80-digit context, whatever the caller's.
+    """
 
     span = (_utc(expiry, "expiry") - _utc(observation_time, "observation_time")) // _ONE_MICROSECOND
     if span <= 0:
         raise ExtendedReplayInputRefused("FUTURES_BASIS_CONTRACT_REFUSED", "the contract has expired at t")
     year = FUTURES_BASIS_ANNUALIZATION_DAYS * 86_400 * 1_000_000
-    with localcontext() as context:
-        context.prec = 80
+    with localcontext(_WIDE_CONTEXT):
         value = basis_rate * Decimal(year) / Decimal(span)
         return value.quantize(RAW_NUMERIC_QUANTUM, rounding=ROUND_HALF_UP)
 
@@ -259,6 +294,7 @@ def _replay_futures_basis(
         v1._require_admitted(window, t, t, what=what)
         v1._require_owner_record(row, "futures basis")
         v1._require_decimal_fields(row, ("basis_rate", "annualized_basis_rate"), ())
+        _require_raw_numeric(row, ("basis_rate", "annualized_basis_rate"), what)
         _require_contract_row(row, t, what)
         key = (t, row.exchange, row.symbol, row.instrument, row.provider)
         if key in kept or key in excluded:
@@ -304,7 +340,9 @@ def _require_contract_row(row: FuturesBasis, t: datetime, what: str) -> None:
         refuse(f"instrument {row.instrument!r} is not the quarterly {futures_basis_instrument(expiry)!r}")
     if expiry <= t:
         refuse("the contract is not listed at t: it has already delivered")
-    if row.annualized_basis_rate.quantize(RAW_NUMERIC_QUANTUM, rounding=ROUND_HALF_UP) != contract_annualized_basis_rate(row.basis_rate, t, expiry):
+    # owner review ruling 6: exactly the stored rate's annualisation, compared by
+    # value (a comparison never rounds, so no context is involved)
+    if row.annualized_basis_rate != contract_annualized_basis_rate(row.basis_rate, t, expiry):
         refuse("annualized_basis_rate is not basis_rate * 365 days / (expiry - t) at 18 decimal places")
 
 
@@ -634,6 +672,7 @@ def _replay_liquidations(
                 f"{what}: the adapter's quantity is USD notional, which this row does not carry",
             )
         v1._require_decimal_fields(row, ("quantity", "notional_usd"), ())
+        _require_raw_numeric(row, ("quantity", "notional_usd"), what)
         if row.notional_usd < 0:
             raise ExtendedReplayInputRefused("RECORD_TYPE_REFUSED", f"{what}: notional_usd must be >= 0")
         if start not in evidence:
@@ -754,9 +793,11 @@ def _liquidation_percentiles(
         return ()
     status = {hour.hour_start: hour.feed_status for hour in hours}
     notional: dict[date, Decimal] = {}
-    for row in rows:
-        day = row.observation_time.date()
-        notional[day] = notional.get(day, Decimal("0")) + row.notional_usd
+    with localcontext(_WIDE_CONTEXT):
+        # exact: every admitted notional fits NUMERIC(38,18) (review F3)
+        for row in rows:
+            day = row.observation_time.date()
+            notional[day] = notional.get(day, Decimal("0")) + row.notional_usd
     first = min(status).date()
     last = max(status).date()
     window = timedelta(days=epic_x.LIQUIDATION_PERCENTILE_WINDOW_DAYS)
@@ -781,7 +822,9 @@ def _liquidation_percentiles(
                     day, None, available_at, (LIQUIDATION_PERCENTILE_INSUFFICIENT_HISTORY,)
                 )
             else:
-                observation = LiquidationPercentileObservation(day, _percentile_rank(value, history), available_at)
+                with localcontext(_OWNER_CONTEXT):
+                    percentile = _percentile_rank(value, history)
+                observation = LiquidationPercentileObservation(day, percentile, available_at)
             days.append(LiquidationDay(day, True, value, len(history), observation))
             complete_days.append((start, value))
         day += _DAY

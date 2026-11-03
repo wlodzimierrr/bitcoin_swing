@@ -16,7 +16,8 @@ import subprocess
 import sys
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_DOWN, Context, Decimal, localcontext
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -224,6 +225,58 @@ def test_basis_gaps_count_hours_with_no_kept_contract() -> None:
     assert (section["gap_count"], section["missing_slot_count"]) == (1, 1)
 
 
+# A caller may run the builder under any decimal context: the default (review
+# F3's reproducer), a narrow one that rounds down, or one that traps nothing.
+CALLER_CONTEXTS = {
+    "default": Context(prec=28),
+    "narrow": Context(prec=5, rounding=ROUND_DOWN),
+    "untrapped": Context(prec=3, rounding=ROUND_CEILING, traps=[]),
+}
+
+
+def exactly(operation: Any) -> Decimal:
+    with localcontext(Context(prec=80)):
+        return operation()
+
+
+@pytest.mark.parametrize("name", sorted(CALLER_CONTEXTS))
+def test_a_valid_raw_row_is_checked_in_the_builders_own_decimal_context(name: str) -> None:
+    """Review F3: a valid NUMERIC(38,18) row is accepted, and a one-unit error refused, under any caller context."""
+
+    t = utc(2024, 2, 1, 13)
+    row = basis_row(t, MARCH_2024, Decimal("100000000000"))
+    assert len(row.annualized_basis_rate.as_tuple().digits) > 28  # beyond the default precision
+    off = replace(row, annualized_basis_rate=exactly(lambda: row.annualized_basis_rate + Decimal("1e-18")))
+    shared = fx.shared_snapshot()
+    reference = build(shared_snapshot=shared, futures_basis=[row]).manifest_bytes
+    with localcontext(CALLER_CONTEXTS[name]):
+        assert build(shared_snapshot=shared, futures_basis=[row]).manifest_bytes == reference
+        with pytest.raises(v1.ReplayInputRefused) as caught:
+            build(shared_snapshot=shared, futures_basis=[off])
+    assert caught.value.reason_code == "FUTURES_BASIS_CONTRACT_REFUSED"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda row: basis_row(row.observation_time, row.expiry, Decimal("0.0123456789012345678")),
+        lambda row: basis_row(row.observation_time, row.expiry, Decimal("1e20")),
+        lambda row: replace(row, annualized_basis_rate=exactly(lambda: row.annualized_basis_rate + Decimal("1e-19"))),
+    ],
+    ids=["basis-19-places", "basis-21-digits", "annualized-19-places"],
+)
+def test_a_basis_value_the_raw_table_cannot_hold_is_refused(change: Any) -> None:
+    """Ruling 6 reads the stored 18-place rate; an unpersistable value is no row (the 19th place was once accepted)."""
+
+    assert_refused("RECORD_TYPE_REFUSED", futures_basis=[change(basis_row(utc(2024, 2, 1, 13), MARCH_2024))])
+
+
+def test_trailing_zeros_beyond_18_places_still_fit_the_raw_table() -> None:
+    row = basis_row(utc(2024, 2, 1, 13), MARCH_2024, Decimal("0.012300000000000000000"))
+    assert row.basis_rate.as_tuple().exponent == -21
+    assert build(futures_basis=[row]).futures_basis[0].basis_rate == Decimal("0.0123")
+
+
 # --- market cap --------------------------------------------------------------------------------
 
 
@@ -373,8 +426,14 @@ HOUR_AT = utc(2024, 2, 1, 13)
         (liquidation_row(HOUR_AT + HOUR, "long", Decimal("1")), "LIQUIDATION_HOUR_EVIDENCE_MISSING"),
         (liquidation_row(utc(2019, 12, 31, 23), "long", Decimal("1")), "PRE_2020_RECORD_REFUSED"),
         (liquidation_row(utc(2026, 1, 1), "long", Decimal("1")), "HOLDOUT_RECORD_REFUSED"),
+        (liquidation_row(HOUR_AT, "long", Decimal("1.0000000000000000001")), "RECORD_TYPE_REFUSED"),
+        (liquidation_row(HOUR_AT, "long", Decimal("1e20")), "RECORD_TYPE_REFUSED"),
+        (liquidation_row(HOUR_AT, "long", Decimal("1"), quantity=Decimal("0.0000000000000000001")), "RECORD_TYPE_REFUSED"),
     ],
-    ids=["exchange", "symbol", "timeframe", "side", "off-hour", "no-notional", "negative", "no-evidence", "pre-2020", "holdout"],
+    ids=[
+        "exchange", "symbol", "timeframe", "side", "off-hour", "no-notional", "negative", "no-evidence", "pre-2020", "holdout",
+        "notional-19-places", "notional-21-digits", "quantity-19-places",
+    ],
 )
 def test_a_liquidation_row_outside_the_contract_is_refused(row: Any, reason: str) -> None:
     assert_refused(reason, liquidations=[row], liquidation_hours=[hour_evidence(HOUR_AT)])
@@ -502,6 +561,31 @@ def test_the_percentiles_equal_an_independent_oracle(history: fx.LiquidationHist
             assert item.observation.reason_codes == ()
             valued += 1
     assert valued > 400
+
+
+def test_the_daily_total_is_exact_at_the_raw_tables_scale() -> None:
+    """Review F3: 38-digit notionals sum exactly, though their total exceeds the default precision."""
+
+    day = date(2024, 2, 1)
+    hours = fx.liquidation_history(day, day, notional_at=lambda index, side: Decimal(f"{12345678901234567000 + 2 * index + (side == 'long')}.123456789012345678"))
+    assert all(len(row.notional_usd.as_tuple().digits) == 38 for row in hours.rows)
+    (only,) = build(liquidations=hours.rows, liquidation_hours=hours.hours).liquidation_days
+    exact = sum((Fraction(row.notional_usd) for row in hours.rows), Fraction(0))
+    assert len(only.daily_notional_usd.as_tuple().digits) > 28  # type: ignore[union-attr]
+    assert Fraction(only.daily_notional_usd) == exact  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("name", ["narrow", "untrapped"])
+def test_no_daily_total_or_percentile_depends_on_the_callers_decimal_context(
+    name: str, history: fx.LiquidationHistory, liquidity: v2.ExtendedReplaySnapshot
+) -> None:
+    """Review F3: the percentile runs under the stated default context, so a caller's context changes nothing."""
+
+    shared = fx.shared_snapshot()
+    with localcontext(CALLER_CONTEXTS[name]):
+        again = build(shared_snapshot=shared, liquidations=history.rows, liquidation_hours=history.hours)
+    assert again.manifest_bytes == liquidity.manifest_bytes
+    assert any(len(item.observation.liquidation_percentile.as_tuple().digits) > 5 for item in again.liquidation_days if item.observation.liquidation_percentile is not None)
 
 
 def test_an_incomplete_day_has_no_value_and_enters_no_history(liquidity: v2.ExtendedReplaySnapshot) -> None:
