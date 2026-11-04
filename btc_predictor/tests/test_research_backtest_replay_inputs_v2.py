@@ -584,6 +584,7 @@ HOUR_AT = utc(2024, 2, 1, 13)
         (liquidation_row(HOUR_AT + timedelta(minutes=5), "long", Decimal("1")), "LIQUIDATION_UNIVERSE_REFUSED"),
         (liquidation_row(HOUR_AT, "long", None), "LIQUIDATION_NOTIONAL_MISSING"),
         (liquidation_row(HOUR_AT, "long", Decimal("-1")), "RECORD_TYPE_REFUSED"),
+        (liquidation_row(HOUR_AT, "long", Decimal("100"), quantity=Decimal("-1")), "RECORD_TYPE_REFUSED"),
         (liquidation_row(HOUR_AT + HOUR, "long", Decimal("1")), "LIQUIDATION_HOUR_EVIDENCE_MISSING"),
         (liquidation_row(utc(2019, 12, 31, 23), "long", Decimal("1")), "PRE_2020_RECORD_REFUSED"),
         (liquidation_row(utc(2026, 1, 1), "long", Decimal("1")), "HOLDOUT_RECORD_REFUSED"),
@@ -592,7 +593,8 @@ HOUR_AT = utc(2024, 2, 1, 13)
         (liquidation_row(HOUR_AT, "long", Decimal("1"), quantity=Decimal("0.0000000000000000001")), "RECORD_TYPE_REFUSED"),
     ],
     ids=[
-        "exchange", "symbol", "timeframe", "side", "off-hour", "no-notional", "negative", "no-evidence", "pre-2020", "holdout",
+        "exchange", "symbol", "timeframe", "side", "off-hour", "no-notional", "negative", "negative-quantity", "no-evidence",
+        "pre-2020", "holdout",
         "notional-19-places", "notional-21-digits", "quantity-19-places",
     ],
 )

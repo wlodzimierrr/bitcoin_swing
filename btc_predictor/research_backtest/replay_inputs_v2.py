@@ -897,8 +897,11 @@ def _replay_liquidations(
             )
         v1._require_decimal_fields(row, ("quantity", "notional_usd"), ())
         _require_raw_numeric(row, ("quantity", "notional_usd"), what)
-        if row.notional_usd < 0:
-            raise ExtendedReplayInputRefused("RECORD_TYPE_REFUSED", f"{what}: notional_usd must be >= 0")
+        # the raw table's own sign constraints (ck_liquidations_quantity_non_negative,
+        # ck_liquidations_notional_usd_non_negative)
+        for field in ("quantity", "notional_usd"):
+            if getattr(row, field) < 0:
+                raise ExtendedReplayInputRefused("RECORD_TYPE_REFUSED", f"{what}: {field} must be >= 0")
         if start not in evidence:
             raise ExtendedReplayInputRefused("LIQUIDATION_HOUR_EVIDENCE_MISSING", f"{what}: the hour has no completeness evidence")
         key = (start, row.side)
