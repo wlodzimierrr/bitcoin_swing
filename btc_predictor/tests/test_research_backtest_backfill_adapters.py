@@ -293,6 +293,29 @@ def test_ruling_4_identical_duplicates_collapse_and_differing_ones_leave_a_gap()
     assert len(read.rows) == 23
 
 
+def test_ruling_4_compares_the_records_bytes_not_their_decoded_fields() -> None:
+    transport = FakeTransport()
+    day = date(2020, 9, 2)
+    rows = five_minute_rows(day)
+    quoted = fx.metrics_row(utc(2020, 9, 2, 3))
+    quoted[3] = '"1000000"'  # decodes to the same value; its bytes differ
+    rows.append(quoted)
+    metrics_day(transport, day, rows)
+    read = binance.read_open_interest(make_fetcher(transport), day, day)
+    assert [gap.as_record() for gap in read.gaps] == [
+        {"observation_time": utc(2020, 9, 2, 3).isoformat(), "reason": binance.GAP_DIFFERING_DUPLICATE}
+    ]
+    assert len(read.rows) == 23
+
+
+def test_a_metrics_record_must_be_one_line() -> None:
+    url = binance.metrics_archive_url(date(2020, 9, 2))
+    name = url.rsplit("/", 1)[1].replace(".zip", ".csv")
+    multiline = fx.zip_bytes(name, [fx.metrics_row(utc(2020, 9, 2))[:3] + ['"1\n2"'] + fx.metrics_row(utc(2020, 9, 2))[4:]])
+    refused("RESPONSE_SHAPE_REFUSED", sources.single_csv_member_records, multiline, name, "t")
+    assert sources.single_csv_member_records(fx.zip_bytes("a.csv", [["1", '"2"']]), "a.csv", "t") == [('1,"2"', ["1", "2"])]
+
+
 def test_a_missing_snapshot_or_day_is_a_recorded_gap() -> None:
     transport = FakeTransport()
     day = date(2020, 9, 3)

@@ -264,21 +264,48 @@ def hours_of(day: date) -> tuple[datetime, ...]:
 # --- archives -------------------------------------------------------------------------------
 
 
-def single_csv_member(data: bytes, expected_name: str, what: str) -> list[list[str]]:
-    """The rows of the one CSV file a provider archive holds, under its expected name."""
-
+def _single_member_text(data: bytes, expected_name: str, what: str) -> str:
     try:
         archive = zipfile.ZipFile(io.BytesIO(data))
         names = archive.namelist()
         if names != [expected_name]:
             raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: the archive holds {names}, not [{expected_name!r}]")
-        text = archive.read(expected_name).decode("ascii")
+        return archive.read(expected_name).decode("ascii")
     except (zipfile.BadZipFile, UnicodeDecodeError, KeyError) as error:
         raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: not a readable single-CSV archive ({error})") from None
+
+
+def _csv_rows(text: str, what: str) -> list[list[str]]:
     rows = [row for row in csv.reader(io.StringIO(text))]
     if any(not row for row in rows):
         raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: the CSV has a blank line")
     return rows
+
+
+def single_csv_member(data: bytes, expected_name: str, what: str) -> list[list[str]]:
+    """The rows of the one CSV file a provider archive holds, under its expected name."""
+
+    return _csv_rows(_single_member_text(data, expected_name, what), what)
+
+
+def single_csv_member_records(data: bytes, expected_name: str, what: str) -> list[tuple[str, list[str]]]:
+    """Each record of the archive's one CSV with its exact text: its line, without the terminator.
+
+    The archive is ASCII, so a record's text is its bytes; owner ruling 4
+    compares records by these (review F10). Every record must be one line, and
+    the records must be exactly the rows the whole file parses to.
+    """
+
+    text = _single_member_text(data, expected_name, what)
+    records = []
+    for line in text.splitlines():
+        parsed = list(csv.reader([line]))
+        if len(parsed) != 1 or not parsed[0]:
+            raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: line {line!r} is not one CSV record")
+        records.append((line, parsed[0]))
+    if [row for _, row in records] != _csv_rows(text, what):
+        raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: the CSV's records do not split by line")
+    return records
 
 
 def data_rows(rows: list[list[str]], header: Sequence[str], what: str) -> Iterator[list[str]]:

@@ -12,7 +12,9 @@ Sources (RBT-002 source ranking, probed 2026-10-01; licence CC BY-NC-SA 4.0):
   the ``hh:00`` row's ``sum_open_interest_value`` in USD (pin
   ``OPEN_INTEREST_HOURLY_SNAPSHOT_USD``). Owner ruling 4 (2026-11-04):
   byte-identical duplicates of an ``hh:00`` row collapse; differing duplicates
-  leave that hour without a snapshot, recorded as a gap.
+  leave that hour without a snapshot, recorded as a gap. Records are compared
+  by their exact text (the line without its terminator), not their decoded
+  fields, so ``1000000`` and ``"1000000"`` differ (review F10).
 - USD-M ``BTCUSDT`` perpetual volume, monthly ``1h`` klines: ``open_time`` is
   the interval start (pin ``PERP_VOLUME_INTERVAL_START``); volume in BTC and
   the quote volume as USD notional, the columns RBT-002 named.
@@ -67,6 +69,7 @@ from btc_predictor.research_backtest.backfill_sources import (
     require_observation_in_window,
     sha256_hex,
     single_csv_member,
+    single_csv_member_records,
 )
 
 
@@ -309,8 +312,11 @@ def parse_metrics_archive(data: bytes, day: date, *, source: str, retrieved_at: 
 
     what = f"metrics {day.isoformat()}"
     name = f"{USDM_SYMBOL}-metrics-{day.isoformat()}.csv"
-    by_hour: dict[datetime, list[list[str]]] = {}
-    for row in data_rows(single_csv_member(data, name, what), METRICS_HEADER, what):
+    by_hour: dict[datetime, list[tuple[str, list[str]]]] = {}
+    records = single_csv_member_records(data, name, what)
+    rows = [fields for _, fields in records]
+    start = 1 if rows and rows[0] == list(METRICS_HEADER) else 0  # data_rows' own header rule
+    for (text, _), row in zip(records[start:], data_rows(rows, METRICS_HEADER, what), strict=True):
         try:
             instant = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
         except ValueError:
@@ -321,7 +327,7 @@ def parse_metrics_archive(data: bytes, day: date, *, source: str, retrieved_at: 
         if row[1] != USDM_SYMBOL:
             raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: symbol {row[1]!r} is not {USDM_SYMBOL}")
         if (instant.minute, instant.second) == (0, 0):
-            by_hour.setdefault(instant, []).append(row)
+            by_hour.setdefault(instant, []).append((text, row))
     rows: list[OpenInterest] = []
     gaps: list[SnapshotGap] = []
     for hour in hours_of(day):
@@ -329,10 +335,10 @@ def parse_metrics_archive(data: bytes, day: date, *, source: str, retrieved_at: 
         if not copies:
             gaps.append(SnapshotGap(hour, GAP_SNAPSHOT_MISSING))
             continue
-        if any(copy != copies[0] for copy in copies):
+        if any(text != copies[0][0] for text, _ in copies):  # ruling 4: byte-identical, not decoded-equal
             gaps.append(SnapshotGap(hour, GAP_DIFFERING_DUPLICATE))
             continue
-        value = _decimal(copies[0][3], f"{what} {hour.isoformat()} sum_open_interest_value")
+        value = _decimal(copies[0][1][3], f"{what} {hour.isoformat()} sum_open_interest_value")
         if value < 0:
             raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what} {hour.isoformat()}: open interest must be >= 0")
         rows.append(
