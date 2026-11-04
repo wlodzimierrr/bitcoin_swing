@@ -430,10 +430,10 @@ def test_ruling_2_the_delivery_instant_is_the_symbol_date_at_0800_utc() -> None:
 
 def test_an_in_window_delivery_is_checked_against_the_last_archived_kline() -> None:
     transport = FakeTransport()
-    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 1), utc(2020, 9, 25, 7))
+    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 7))
     read = binance.read_contract_klines(make_fetcher(transport), "BTCUSD_200925")
     assert read is not None
-    assert (read.listing.first_kline_open_at, read.listing.delivery_at) == (utc(2020, 8, 1), utc(2020, 9, 25, 8))
+    assert (read.listing.first_kline_open_at, read.listing.delivery_at) == (utc(2020, 8, 10, 8), utc(2020, 9, 25, 8))
     # months from twelve before delivery (clipped to 2020-01) through the delivery month
     months = [url.rsplit("-1h-", 1)[1][:7] for url in transport.urls if not url.endswith(".CHECKSUM")]
     assert months == [f"2020-{m:02d}" for m in range(1, 10)]
@@ -441,10 +441,10 @@ def test_an_in_window_delivery_is_checked_against_the_last_archived_kline() -> N
 
 def test_a_delivery_the_archive_contradicts_is_refused() -> None:
     transport = FakeTransport()
-    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 1), utc(2020, 9, 25, 6))
+    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 6))
     refused("DELIVERY_INSTANT_MISMATCH", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_200925")
     transport = FakeTransport()
-    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 1), utc(2020, 9, 25, 8))
+    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 8))
     refused("DELIVERY_INSTANT_MISMATCH", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_200925")
 
 
@@ -464,16 +464,35 @@ def test_the_listing_start_must_be_proven_and_the_months_contiguous() -> None:
     fx.add_contract(transport, "BTCUSD_201225", utc(2020, 1, 1), utc(2020, 12, 25, 7))
     refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
     transport = FakeTransport()
-    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 6, 1), utc(2020, 12, 25, 7))
+    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 6, 10, 8), utc(2020, 12, 25, 7))
     month = binance.coinm_klines_archive_url("BTCUSD_201225", date(2020, 8, 1))
     del transport.responses[month], transport.responses[f"{month}.CHECKSUM"]
     refused("ARCHIVE_MONTH_MISSING", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
 
 
+def test_ruling_6_a_listing_start_at_the_first_hour_of_a_month_is_unproven() -> None:
+    # the review's case: the contract's real first month is missing from the archive
+    transport = FakeTransport()
+    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 6, 10, 8), utc(2020, 12, 25, 7))
+    june = binance.coinm_klines_archive_url("BTCUSD_201225", date(2020, 6, 1))
+    del transport.responses[june], transport.responses[f"{june}.CHECKSUM"]
+    error = refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
+    assert "2020-07-01T00:00:00+00:00" in str(error)
+    # a contract whose archive starts exactly at a month's first hour is unproven even with the month before absent
+    transport = FakeTransport()
+    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 7, 1), utc(2020, 12, 25, 7))
+    refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
+    # one hour later is a provable start
+    transport = FakeTransport()
+    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 7, 1, 1), utc(2020, 12, 25, 7))
+    read = binance.read_contract_klines(make_fetcher(transport), "BTCUSD_201225")
+    assert read is not None and read.listing.first_kline_open_at == utc(2020, 7, 1, 1)
+
+
 def basis_world(futures_at: Any = lambda t: Decimal("10010") + t.hour, index_at: Any = lambda t: Decimal("10000")) -> FakeTransport:
     transport = FakeTransport()
     transport.add(binance.archive_listing_url(binance.COINM_KLINES_PREFIX), fx.s3_listing(["BTCUSD_200925", "BTCUSD_PERP"]))
-    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 1), utc(2020, 9, 25, 7), futures_at)
+    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 7), futures_at)
     fx.add_index(transport, utc(2020, 8, 1), utc(2020, 9, 30, 23), index_at)
     return transport
 
@@ -482,8 +501,8 @@ def test_basis_is_the_rounded_stored_rate_and_its_strict_annualisation() -> None
     collection = binance.read_basis(make_fetcher(basis_world(index_at=lambda t: Decimal("9999.7"))))
     first, last = collection.rows[0], collection.rows[-1]
     # hour closes first_kline_open_at + 1h <= t < delivery_at (RBT-001A ruling 4)
-    assert (first.observation_time, last.observation_time) == (utc(2020, 8, 1, 1), utc(2020, 9, 25, 7))
-    assert len(collection.rows) == len(fx.hourly(utc(2020, 8, 1, 1), utc(2020, 9, 25, 8))) and collection.gaps == ()
+    assert (first.observation_time, last.observation_time) == (utc(2020, 8, 10, 9), utc(2020, 9, 25, 7))
+    assert len(collection.rows) == len(fx.hourly(utc(2020, 8, 10, 9), utc(2020, 9, 25, 8))) and collection.gaps == ()
     for row in collection.rows[:30]:
         exact = Fraction(Decimal("10010") + (row.observation_time - HOUR).hour) / Fraction(Decimal("9999.7")) - 1
         expected = Decimal(exact.numerator) / Decimal(exact.denominator)
@@ -505,14 +524,14 @@ def test_the_basis_rate_rounds_half_away_from_zero_as_numeric_38_18_stores_it() 
 
 
 def test_basis_at_t_uses_the_klines_closing_at_t_and_a_missing_one_is_a_gap() -> None:
-    transport = basis_world(futures_at=lambda t: Decimal("20000") if t == utc(2020, 8, 3, 4) else Decimal("10010"))
+    transport = basis_world(futures_at=lambda t: Decimal("20000") if t == utc(2020, 8, 13, 4) else Decimal("10010"))
     index_month = binance.coinm_index_archive_url(date(2020, 9, 1))
     rows = [fx.kline_row(t, "10000") for t in fx.hourly(utc(2020, 9, 1), utc(2020, 10, 1)) if t != utc(2020, 9, 10, 12)]
     fx.add_archive(transport, index_month, rows)
     collection = binance.read_basis(make_fetcher(transport))
     by_time = {row.observation_time: row for row in collection.rows}
-    assert by_time[utc(2020, 8, 3, 5)].basis_rate == Decimal(1)
-    assert by_time[utc(2020, 8, 3, 4)].basis_rate == Decimal("0.001")
+    assert by_time[utc(2020, 8, 13, 5)].basis_rate == Decimal(1)
+    assert by_time[utc(2020, 8, 13, 4)].basis_rate == Decimal("0.001")
     assert utc(2020, 9, 10, 13) not in by_time
     assert [gap.as_record() for gap in collection.gaps] == [
         {"instrument": "BTCUSD_200925", "observation_time": utc(2020, 9, 10, 13).isoformat(), "reason": binance.GAP_INDEX_KLINE_MISSING}
@@ -525,7 +544,7 @@ def test_the_listing_evidence_cites_the_listing_and_contract_archives_and_verifi
     collection = binance.read_basis(fetcher)
     evidence = collection.listing_evidence()
     assert [contract.as_record() for contract in evidence.contracts] == [
-        {"instrument": "BTCUSD_200925", "first_kline_open_at": utc(2020, 8, 1).isoformat(), "delivery_at": utc(2020, 9, 25, 8).isoformat()}
+        {"instrument": "BTCUSD_200925", "first_kline_open_at": utc(2020, 8, 10, 8).isoformat(), "delivery_at": utc(2020, 9, 25, 8).isoformat()}
     ]
     by_url = {item.url: item.sha256 for item in fetcher.log.retrievals if item.status == 200}
     cited = {by_url[url] for url in by_url if "klines/BTCUSD_200925/" in url and url.endswith(".zip")}

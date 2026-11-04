@@ -540,6 +540,10 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
     through the delivery month or December 2025, whichever is earlier. A month
     before the first archived one may be absent; the first requested month must
     be absent, or the listing start is unproven; every later month must exist.
+    Owner review ruling 6 (2026-11-04): an absent earlier month alone does not
+    prove the listing start, so the first archived kline must not open at
+    ``00:00`` on the 1st of its month, which a contract already trading would
+    have; otherwise the start is unproven.
     """
 
     delivery = contract_delivery_at(contract)
@@ -571,6 +575,12 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
     if not klines:
         return None
     first = min(klines)
+    if (first.day, first.hour) == (1, 0):
+        raise BackfillRefused(
+            "LISTING_START_UNPROVEN",
+            f"{contract}: the first archived kline opens at {first.isoformat()}, the start of its month, so the "
+            "contract may have traded in an unarchived earlier month (owner review ruling 6)",
+        )
     later = [opened for opened in klines if opened + _HOUR > delivery]
     if later:
         raise BackfillRefused("DELIVERY_INSTANT_MISMATCH", f"{contract}: a kline at {later[0].isoformat()} runs past the delivery")
