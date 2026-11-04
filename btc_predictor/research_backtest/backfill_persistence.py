@@ -8,9 +8,14 @@ finished collection and serve it to BTC-021's ``collect_btc_derivatives``
 (:class:`EtfFlowProvider`), which persist it with their idempotent inserts.
 
 The collectors stamp ``exchange``, ``symbol`` and ``provider`` from the request,
-not from the row, so a wrapper refuses any request that does not name its own
-rows' values: a row is never renamed on its way into the raw tables. Rows are
-served for ``[start, end)``.
+not from the row. A provider protocol call carries the exchange and symbol but
+never the provider, so a wrapper alone cannot see a renamed provider (review
+F2). Rows are therefore persisted only through :func:`persist_derivatives` and
+:func:`persist_etf_flows`, which refuse, before the unchanged collector runs, a
+request that does not name the rows' own exchange, symbol and provider or that
+spans days outside the data window: a row is never renamed on its way into the
+raw tables. Rows are served for ``[start, end)`` (ETF dates inclusive, as
+BTC-022).
 """
 
 from __future__ import annotations
@@ -22,15 +27,25 @@ from typing import Any
 
 from btc_predictor.data import (
     DerivativesCollectionRequest,
+    DerivativesCollectionResult,
     EtfFlow,
     EtfFlowCollectionRequest,
+    EtfFlowCollectionResult,
     FundingRate,
     FuturesBasis,
     Liquidation,
     OpenInterest,
     PerpVolume,
+    collect_btc_derivatives,
+    collect_etf_flows,
 )
-from btc_predictor.research_backtest.backfill_sources import BackfillRefused, require_utc
+from btc_predictor.research_backtest.backfill_sources import (
+    DATA_WINDOW_START,
+    LAST_DATA_DAY,
+    BackfillRefused,
+    require_request_span,
+    require_utc,
+)
 
 
 def _identity(rows: Iterable[Any]) -> set[tuple[str, str, str]]:
@@ -110,3 +125,39 @@ class RecordedEtfFlowProvider:
     def fetch_etf_flows(self, *, funds: Sequence[str], start: date, end: date) -> tuple[EtfFlow, ...]:
         wanted = set(funds)
         return tuple(flow for flow in self.flows if flow.fund in wanted and start <= flow.observation_date <= end)
+
+
+def persist_derivatives(
+    provider: RecordedDerivativesProvider,
+    connection: Any,
+    request: DerivativesCollectionRequest,
+    *,
+    ingested_at: datetime | None = None,
+) -> DerivativesCollectionResult:
+    """Persist a finished collection through BTC-021's collector under the rows' own names."""
+
+    if not isinstance(provider, RecordedDerivativesProvider) or not isinstance(request, DerivativesCollectionRequest):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "persist a RecordedDerivativesProvider with a DerivativesCollectionRequest")
+    named, own = (request.exchange, request.symbol, request.provider), (provider.exchange, provider.symbol, provider.provider)
+    if named != own:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the request names {named}; these rows are {own}")
+    require_request_span(request.start, request.end, "a persistence request")
+    return collect_btc_derivatives(provider, connection, request, ingested_at=ingested_at)
+
+
+def persist_etf_flows(
+    provider: RecordedEtfFlowProvider,
+    connection: Any,
+    request: EtfFlowCollectionRequest,
+    *,
+    ingested_at: datetime | None = None,
+) -> EtfFlowCollectionResult:
+    """Persist finished ETF rows through BTC-022's collector under their own provider."""
+
+    if not isinstance(provider, RecordedEtfFlowProvider) or not isinstance(request, EtfFlowCollectionRequest):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "persist a RecordedEtfFlowProvider with an EtfFlowCollectionRequest")
+    if request.provider != provider.provider:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the request names provider {request.provider!r}; these rows are {provider.provider!r}")
+    if not DATA_WINDOW_START.date() <= request.start <= request.end <= LAST_DATA_DAY:
+        raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"ETF days {request.start}..{request.end} are not inside the data window")
+    return collect_etf_flows(provider, connection, request, ingested_at=ingested_at)

@@ -14,6 +14,7 @@ written for (RBT-001A's V2 builder, BTC-021's and BTC-022's collectors).
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import socket
@@ -1010,3 +1011,39 @@ def test_etf_rows_persist_through_the_btc022_collector() -> None:
     assert [(flow.fund, flow.flow_usd, flow.aum_usd, flow.revision) for flow in result.flows] == [("IBIT", Decimal(5), Decimal(9), "FINAL_AS_RETRIEVED")]
     assert len(connection.statements) == 1
     refused("PROVIDER_REQUEST_MISMATCH", persistence.RecordedEtfFlowProvider, "other", read.flows)
+
+
+def test_persistence_refuses_a_request_that_renames_the_rows_before_the_collector_runs() -> None:
+    collection = binance.read_basis(make_fetcher(basis_world()))
+    provider = persistence.RecordedDerivativesProvider("binance", "BTCUSD", binance.BINANCE_PROVIDER, basis=collection.rows)
+    request = provider.collection_request(utc(2020, 8, 1), utc(2020, 10, 1))
+    connection = RecordingConnection()
+    result = persistence.persist_derivatives(provider, connection, request, ingested_at=RETRIEVED_AT)
+    assert result.futures_basis == tuple(collection.rows) and len(connection.statements) == 1
+    for changes in ({"provider": "renamed"}, {"exchange": "other"}, {"symbol": "BTCUSDT"}):
+        renamed = dataclasses.replace(request, **changes)
+        untouched = RecordingConnection()
+        refused("PROVIDER_REQUEST_MISMATCH", persistence.persist_derivatives, provider, untouched, renamed)
+        assert untouched.statements == []
+    for start, end in ((utc(2019, 12, 1), utc(2020, 10, 1)), (utc(2020, 8, 1), utc(2026, 2, 1))):
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", persistence.persist_derivatives, provider, RecordingConnection(), dataclasses.replace(request, start=start, end=end))
+
+
+def test_etf_persistence_refuses_a_renamed_provider_or_days_outside_the_window() -> None:
+    first = date(2024, 1, 11)
+    read = coinglass_read(coinglass_world({first: {"IBIT": 5}}, {"IBIT": {first: 9}}, first, first), ("IBIT",), first, first)
+    provider = persistence.RecordedEtfFlowProvider(coinglass.COINGLASS_PROVIDER, read.flows)
+    request = provider.collection_request(("IBIT",), first, first, source=coinglass.FLOW_HISTORY_URL, market_holidays=frozenset())
+    connection = RecordingConnection()
+    result = persistence.persist_etf_flows(provider, connection, request, ingested_at=RETRIEVED_AT)
+    assert [(flow.fund, flow.provider) for flow in result.flows] == [("IBIT", "coinglass")] and len(connection.statements) == 1
+    untouched = RecordingConnection()
+    refused("PROVIDER_REQUEST_MISMATCH", persistence.persist_etf_flows, provider, untouched, dataclasses.replace(request, provider="renamed"))
+    assert untouched.statements == []
+    refused(
+        "REQUEST_OUTSIDE_DATA_WINDOW",
+        persistence.persist_etf_flows,
+        provider,
+        RecordingConnection(),
+        dataclasses.replace(request, end=date(2026, 1, 2)),
+    )
