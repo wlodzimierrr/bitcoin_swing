@@ -123,6 +123,62 @@ def test_an_archive_must_hold_exactly_its_one_named_csv() -> None:
     refused("RESPONSE_SHAPE_REFUSED", sources.single_csv_member, b"not a zip", "a.csv", "t")
 
 
+@pytest.mark.parametrize(
+    ("build", "period"),
+    [
+        (binance.funding_archive_url, None),
+        (binance.usdm_klines_archive_url, None),
+        (lambda month: binance.coinm_klines_archive_url("BTCUSD_260327", month), None),
+        (binance.coinm_index_archive_url, None),
+        (binance.metrics_archive_url, "day"),
+    ],
+    ids=["funding", "perp-klines", "contract-klines", "index-klines", "metrics"],
+)
+def test_every_archive_url_builder_refuses_a_period_outside_the_window(build: Any, period: str | None) -> None:
+    inside, outside = ((date(2020, 1, 1), date(2025, 12, 31)), (date(2019, 12, 31), date(2026, 1, 1))) if period else (
+        (date(2020, 1, 1), date(2025, 12, 1)),
+        (date(2019, 12, 1), date(2026, 1, 1)),
+    )
+    for day in inside:
+        binance.require_archive_url_in_window(build(day))
+    for day in outside:
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", build, day)
+    if period is None:
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", build, date(2020, 1, 2))  # a month is its first day
+    refused("REQUEST_OUTSIDE_DATA_WINDOW", build, datetime(2020, 1, 1, tzinfo=UTC))
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        f"{binance.BINANCE_ARCHIVE_BASE}/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-01.zip",
+        f"{binance.BINANCE_ARCHIVE_BASE}/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2019-12-31.zip",
+        f"{binance.BINANCE_ARCHIVE_BASE}/cm/monthly/klines/BTCUSD_260327/1h/BTCUSD_260327-1h-2026-02.zip",
+        f"{binance.BINANCE_ARCHIVE_BASE}/cm/monthly/indexPriceKlines/BTCUSD/1h/BTCUSD-1h-2026-03.zip",
+        f"{binance.BINANCE_ARCHIVE_BASE}/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-13.zip",
+        f"{binance.BINANCE_ARCHIVE_BASE}/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h.zip",
+        f"{binance.BINANCE_ARCHIVE_BASE}/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-01.zip?x=2026-01",
+        "https://elsewhere.example/BTCUSDT-1h-2020-01.zip",
+    ],
+    ids=["2026-month", "2019-day", "2026-contract", "2026-index", "no-calendar-month", "no-period", "query", "foreign"],
+)
+def test_the_archive_fetch_refuses_a_hand_built_url_outside_the_window_before_the_transport(url: str) -> None:
+    transport = FakeTransport()
+    transport.add(url, b"never read")
+    refused("REQUEST_OUTSIDE_DATA_WINDOW", binance.verified_archive, make_fetcher(transport), url)
+    assert transport.calls == []
+
+
+def test_the_kraken_url_builders_refuse_a_span_outside_the_window() -> None:
+    kraken.executions_url(utc(2025, 12, 31), utc(2026, 1, 1))
+    kraken.liquidation_volume_url(utc(2025, 12, 31), utc(2025, 12, 31, 23))
+    for since, before in ((utc(2019, 12, 31), utc(2020, 1, 1)), (utc(2025, 12, 31), utc(2026, 1, 1, 1)), (utc(2021, 1, 2), utc(2021, 1, 1))):
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", kraken.executions_url, since, before)
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", kraken.executions_url, since, before, "token")
+    for since, to in ((utc(2019, 12, 31, 23), utc(2020, 1, 1, 1)), (utc(2025, 12, 31), utc(2026, 1, 1)), (utc(2021, 1, 2), utc(2021, 1, 1))):
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", kraken.liquidation_volume_url, since, to)
+
+
 # --- Binance funding -------------------------------------------------------------------------
 
 

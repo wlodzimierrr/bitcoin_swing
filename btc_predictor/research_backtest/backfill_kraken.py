@@ -144,6 +144,7 @@ class Execution:
 
 
 def executions_url(since: datetime, before: datetime, token: str | None = None) -> str:
+    require_request_span(since, before, "an executions request")  # review F7: the window at the builder
     query: dict[str, Any] = {"since": epoch_milliseconds(since), "before": epoch_milliseconds(before), "sort": "asc"}
     if token is not None:
         query["continuationToken"] = token
@@ -235,6 +236,8 @@ def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
 
 
 def liquidation_volume_url(since: datetime, to: datetime) -> str:
+    # ``to`` is the last hour start asked for, so the request covers [since, to + 1h) (review F7)
+    require_request_span(since, to + _HOUR, "a liquidation-volume request")
     query = {"interval": 3600, "since": int(since.timestamp()), "to": int(to.timestamp())}
     return f"{LIQUIDATION_VOLUME_URL}?{urlencode(query)}"
 

@@ -30,7 +30,11 @@ Sources (RBT-002 source ranking, probed 2026-10-01; licence CC BY-NC-SA 4.0):
   the data window, so nothing from 2026 is read.
 
 Every archive is checked against its published ``.CHECKSUM`` before it is read.
-Only files whose period lies inside the data window are ever requested.
+Only files whose period lies inside the data window are ever requested: each
+URL builder refuses a month or day outside it, and :func:`verified_archive`
+refuses any URL that does not name an in-window archive period before the
+transport is called (review F7), so the guard does not depend on which reader
+built the URL.
 """
 
 from __future__ import annotations
@@ -114,32 +118,67 @@ _KLINE_CLOSE_OFFSET = timedelta(hours=1) - timedelta(milliseconds=1)
 _RATE_QUANTUM = v2.RAW_NUMERIC_QUANTUM
 _WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
 _S3_NAMESPACE = "{http://s3.amazonaws.com/doc/2006-03-01/}"
+_ARCHIVE_PERIOD = re.compile(r"-(\d{4})-(\d{2})(?:-(\d{2}))?\.zip")
 
 
 # --- URLs (each one names a period inside the data window) ----------------------------------
 
 
+def _window_month(month: Any) -> date:
+    if type(month) is not date or month not in data_window_months():
+        raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"archive month {month!r} is not a month inside the data window")
+    return month
+
+
+def _window_day(day: Any) -> date:
+    if type(day) is not date or not DATA_WINDOW_START.date() <= day <= LAST_DATA_DAY:
+        raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"archive day {day!r} is not a day inside the data window")
+    return day
+
+
 def funding_archive_url(month: date) -> str:
+    month = _window_month(month)
     return f"{BINANCE_ARCHIVE_BASE}/um/monthly/fundingRate/{USDM_SYMBOL}/{USDM_SYMBOL}-fundingRate-{month:%Y-%m}.zip"
 
 
 def metrics_archive_url(day: date) -> str:
+    day = _window_day(day)
     return f"{BINANCE_ARCHIVE_BASE}/um/daily/metrics/{USDM_SYMBOL}/{USDM_SYMBOL}-metrics-{day:%Y-%m-%d}.zip"
 
 
 def usdm_klines_archive_url(month: date) -> str:
+    month = _window_month(month)
     return f"{BINANCE_ARCHIVE_BASE}/um/monthly/klines/{USDM_SYMBOL}/1h/{USDM_SYMBOL}-1h-{month:%Y-%m}.zip"
 
 
 def coinm_klines_archive_url(contract: str, month: date) -> str:
+    month = _window_month(month)
     return f"{BINANCE_ARCHIVE_BASE}/cm/monthly/klines/{contract}/1h/{contract}-1h-{month:%Y-%m}.zip"
 
 
 def coinm_index_archive_url(month: date) -> str:
+    month = _window_month(month)
     return (
         f"{BINANCE_ARCHIVE_BASE}/cm/monthly/indexPriceKlines/{COINM_INDEX_SYMBOL}/1h/"
         f"{COINM_INDEX_SYMBOL}-1h-{month:%Y-%m}.zip"
     )
+
+
+def require_archive_url_in_window(url: str) -> None:
+    """An archive URL must be a Binance archive whose file names an in-window month or day."""
+
+    match = _ARCHIVE_PERIOD.search(url) if isinstance(url, str) and url.startswith(f"{BINANCE_ARCHIVE_BASE}/") else None
+    if match is None or match.end() != len(url) or "?" in url or "#" in url:
+        raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"{url!r} is not a Binance archive naming a data-window period")
+    year, month, day = match.groups()
+    try:
+        period = date(int(year), int(month), int(day or 1))
+    except ValueError:
+        raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"{url!r} names no calendar period") from None
+    if day is None:
+        _window_month(period)
+    else:
+        _window_day(period)
 
 
 def archive_listing_url(prefix: str, marker: str | None = None) -> str:
@@ -156,6 +195,7 @@ def _archive_name(url: str) -> str:
 def verified_archive(fetcher: Fetcher, url: str, *, allow_not_found: bool = False) -> Fetched | None:
     """An archive checked against its published ``.CHECKSUM`` (``None``: an allowed 404)."""
 
+    require_archive_url_in_window(url)
     archive = fetcher.fetch_optional(url, allow_not_found=allow_not_found)
     if archive is None:
         return None
