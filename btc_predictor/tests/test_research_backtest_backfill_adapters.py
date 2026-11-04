@@ -483,9 +483,13 @@ def test_a_2026_delivery_reads_nothing_from_2026() -> None:
 
 
 def test_the_listing_start_must_be_proven_and_the_months_contiguous() -> None:
-    transport = FakeTransport()
-    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 1, 1), utc(2020, 12, 25, 7))
-    refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
+    # the first requested month is archived (a mid-month start, so only this rule refuses it):
+    # at the window's clipped start, and twelve months before a later delivery
+    for contract, first_open in (("BTCUSD_201225", utc(2020, 1, 10, 8)), ("BTCUSD_211231", utc(2020, 12, 10, 8))):
+        transport = FakeTransport()
+        fx.add_contract(transport, contract, first_open, binance.contract_delivery_at(contract) - HOUR)
+        error = refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), contract)
+        assert "the first requested month" in str(error)
     transport = FakeTransport()
     fx.add_contract(transport, "BTCUSD_201225", utc(2020, 6, 10, 8), utc(2020, 12, 25, 7))
     month = binance.coinm_klines_archive_url("BTCUSD_201225", date(2020, 8, 1))
