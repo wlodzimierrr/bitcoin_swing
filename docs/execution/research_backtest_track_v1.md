@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `IN PROGRESS — Part A (offline adapters and evidence writers); owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -3432,6 +3432,172 @@ and a public repository, and the rulings so far leave these points open:
    and the providers' documented examples; any unexpected field or shape
    refuses the response. Both stay UNVERIFIED until Part B's first step checks
    one live in-window response each.
+
+### RBT-003 Part A Implementation Notes
+
+**Status:** `PART A IMPLEMENTED (2026-11-04)`, offline. This block is the
+implementer's record, not a closure: the ticket's independent xHigh review and
+Part B are outstanding.
+
+**Commits:**
+- Rulings record, `239578c`: the five owner rulings above.
+- Part A, `1427053`: six new modules under `btc_predictor/research_backtest/`
+  (`backfill_sources`, `backfill_binance`, `backfill_kraken`,
+  `backfill_coinmetrics`, `backfill_coinglass`, `backfill_persistence`), the
+  fixtures `btc_predictor/tests/rbt003_backfill_fixtures.py` and
+  `btc_predictor/tests/test_research_backtest_backfill_adapters.py` (117 tests).
+- Docs, this documentation commit: this block, the tasks table and
+  `CURRENT_STATE.md`.
+
+Every file is new. The collectors, the raw schema, the RBT-001 and RBT-001A
+builders, every owner, configuration, the inventory, the spec, `data/` and
+`research_artifacts/` are unchanged. No network transport exists in Part A:
+each adapter takes a caller-supplied `Transport`, and the tests supply fakes
+(a module-wide guard fails any test that opens a socket).
+
+**What Part A provides.**
+
+| source (RBT-002 rank 1) | module | produces | rule |
+| --- | --- | --- | --- |
+| Binance USD-M `BTCUSDT` monthly `fundingRate` | `backfill_binance` | `FundingRate` at `calc_time` | pin `FUNDING_SETTLEMENT`; the settlement pricing 2019 excluded |
+| Binance USD-M daily `metrics` | `backfill_binance` | `OpenInterest` at `hh:00`, USD | pin `OPEN_INTEREST_HOURLY_SNAPSHOT_USD`; ruling 4 |
+| Binance USD-M monthly `1h` klines | `backfill_binance` | `PerpVolume` at the interval start | pin `PERP_VOLUME_INTERVAL_START` |
+| Binance COIN-M quarterly and index `1h` klines | `backfill_binance` | `FuturesBasis` at the hour close, the listing evidence file | `FUTURES_BASIS_CONTRACT_V1`; RBT-001A rulings 4-6; ruling 2 |
+| Kraken Futures `PI_XBTUSD` executions and hourly liquidation volume | `backfill_kraken` | per-side `1h` `Liquidation`, `LiquidationHourEvidence`, the hour evidence file | `HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1`; RBT-001A rulings 1-2; ruling 3 |
+| Coin Metrics Community `CapMrktCurUSD` `1d` | `backfill_coinmetrics` | the `BTC_MARKET_CAP_EVIDENCE_V1` file | pin `MARKET_CAP_END_OF_DAY` |
+| CoinGlass `etf/bitcoin/flow-history` and `history` | `backfill_coinglass` | `EtfFlow` with the same day's net assets | pin `ETF_FLOW_DAILY_PUBLISHED`; ruling 5 (UNVERIFIED) |
+
+`backfill_persistence` serves a finished collection to the existing
+`collect_btc_derivatives` and `collect_etf_flows` through their provider
+protocols, so Part B persists through the reviewed collectors unchanged.
+
+**Design decisions** (implementation choices inside the rulings, surfaced for
+the review):
+
+1. *The window guard.* Every request is checked before the transport is
+   called: each instant it names lies in `[2020-01-01 00:00, 2026-01-01 00:00)`
+   (`REQUEST_OUTSIDE_DATA_WINDOW`). A returned observation outside that window is
+   refused as `OBSERVATION_OUTSIDE_DATA_WINDOW` before any other check, never
+   filtered, because it is an exposure to record. Archives are requested only
+   for months or days inside the window; the Kraken chart is asked for `to` =
+   the day's last hour start, so nothing past the day is requested.
+2. *Provenance.* A raw row's `available_at` and `ingested_at` are the
+   retrieval instant of the response it came from (the later of two for a
+   basis row), as V1 notes a backfill does; the replay builders model
+   availability. The retrieval log records URL, status, size and SHA-256 per
+   response, never a header or a value, so the CoinGlass key is never
+   persisted. Twelve refusal codes form one closed set.
+3. *Names.* USD-M rows are `binance` / `BTCUSDT` with instrument `BTCUSDT`;
+   basis rows use the V2 builder's `binance` / `BTCUSD` and the contract symbol;
+   liquidations use V2's `kraken_futures` / `PI_XBTUSD` / `1h`. Providers are
+   `binance_public_data`, `kraken_futures_rest_history` and `coinglass`.
+4. *Archives.* Every Binance archive is checked against its published
+   `.CHECKSUM` before it is read; an archive holds exactly its one named CSV,
+   with or without a header row (two klines header spellings are accepted);
+   millisecond epochs are exactly 13 digits; a kline closes one millisecond
+   before the next hour.
+5. *Funding.* The settlement at 2020-01-01 00:00 prices 2019 (the prohibited
+   window) and V1 refuses it, so it is excluded and only its instant is
+   recorded. An interval must be a positive whole number of seconds.
+6. *Open interest and perpetual volume.* `sum_open_interest_value` is the USD
+   open interest (RBT-002's pin) and the klines' quote volume the USD notional
+   (the column RBT-002 named); both are quoted in USDT. A missing `hh:00` row or
+   a missing day archive is a recorded gap.
+7. *Contracts and the listing.* Contracts are the `BTCUSD_YYMMDD` directories
+   the archive listing shows (paged by marker; a repeated marker refuses).
+   Months are requested from twelve before delivery, clipped to the window,
+   through the delivery month or December 2025: the first requested month must
+   be absent (`LISTING_START_UNPROVEN` otherwise) and every month after the
+   first archived one must exist (`ARCHIVE_MONTH_MISSING`). A contract first
+   archived in 2026 is not listed inside the window. The listing file cites the
+   listing pages' and contract archives' digests.
+8. *Basis.* One row per hour close `t` with `first_kline_open_at + 1h <= t <
+   delivery_at` and `t` inside the window, from the futures and index klines
+   that open at `t - 1h`; a missing kline is a recorded gap. Rows within 7 days
+   of expiry are written, and the builder excludes and records them (RBT-001A
+   ruling 3).
+9. *Liquidations.* One continuation chain per UTC day with `since` and
+   `before`; a page outside the day, out of order, with a repeated token or a
+   repeated uid refuses. Rows exist only for a side with liquidations in an
+   observed hour: the hour evidence carries the status, so no zero row is
+   written. An unknown taker direction refuses the day. Incidents are an input;
+   `RBT002_RECORDED_INCIDENTS` holds the one RBT-002 recorded
+   (2021-11-10 05:09-05:19), and Part B re-reads the incident list.
+10. *The hour evidence file.* `HISTORICAL_LIQUIDATION_HOUR_EVIDENCE_V1`,
+    canonical JSON with twelve keys (version, rule, corroboration rule,
+    exchange, symbol, liquidation order type, contract size, source, licence,
+    `retrieved_at`, incidents, hours); each hour holds its status,
+    corroboration, execution count, sorted liquidation uids, per-side
+    quantities, series value and response digests, and its canonical SHA-256
+    is the hour's `evidence_sha256`. The parser recomputes every digest.
+11. *Market cap.* One bounded request (`end_inclusive`, a page size covering
+    the window), a next page followed only on the provider's own URL, missing
+    days recorded; the file is written by the V2 builder's own writer.
+12. *ETF.* A missing net-assets value leaves `aum_usd` `None` and is recorded,
+    never zero-filled; rows are `FINAL_AS_RETRIEVED` with no publication time.
+
+**Tests.** 117 (56 functions). Each rule and guard has refusal cases, and the
+integration tests feed adapter output to the builders it is written for: the
+V2 builder admits the basis rows with their listing (and excludes the last
+seven days), the liquidation rows with their hour records (and refuses a
+disagreeing hour), and the market-cap file; V1 admits the funding, open
+interest and perpetual volume; the BTC-021 and BTC-022 collectors persist
+through the wrappers into a recording connection. The rounding rules are
+checked against an independent rational computation. 24 in-memory mutants of
+the rulings and guards (delivery check, listing start, month contiguity,
+ruling 4, the 2019 settlement, basis rounding, window and kline offset,
+checksum, a 2026 request, ruling 3 half-up and tolerance, incidents, side
+mapping, chain span, series end, notional, evidence digest, the market-cap
+window, an unbounded CoinGlass request, AUM zero-fill, row renaming, the
+request span, an error read as empty) each fail the module.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-04).**
+- The new module with the replay and database modules: 478 passed.
+- The guard suites (database isolation, coverage, coverage census, BTC-019
+  completion gate) with the replay modules: 593 passed.
+- V5 definition `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89` unchanged; PAD5 preserved-authority subset 5 passed, 112 deselected;
+  PAD4-R5 2 passed.
+- Full repository at `1427053`, alone: 7,911 passed, 3 skipped, 1 xfailed.
+- `git diff --check` clean.
+
+**Acceptance criteria (Part A).**
+- *Existing collectors and protocols; adapters in new modules; no collector,
+  schema or migration change:* met offline (the wrappers and both collectors
+  are exercised); the persisting run is Part B.
+- *Every persisted row keeps its true provider, source and ingestion
+  provenance:* met for the rows Part A produces; a wrapper refuses a request
+  that would rename them.
+- *Frozen per-venue and shared-input datasets with manifests; a rebuild from
+  the database reproduces them:* Part B.
+- *Nothing outside the data window is requested:* enforced by the window guard
+  and tested; Part B confirms it live.
+
+**Part B prerequisites (owner).** Database write access (`POSTGRES_*`) and
+network access; the CoinGlass Hobbyist month (USD 29) and key, together with
+the documented date-bound parameters of both ETF endpoints (without them no
+ETF request is built, since an unbounded one would return 2026 rows); and
+where value-bearing evidence files live, since the repository is public
+(Coin Metrics CC BY-NC, Binance CC BY-NC-SA, Kraken unverified, CoinGlass
+personal use).
+
+**Part B's first step, before any build.** One live in-window response each:
+the CoinGlass flow and fund history field names; the Kraken chart's value
+type, unit and whether `to` is inclusive; that Kraken honours `before`; the
+Coin Metrics page shape; and the `orderType` `Liquidation` label against the
+websocket's `liquidation` (RBT-002's open note). Any difference is a reviewed
+adapter change, not a workaround.
+
+**Surfaced points.** The USDT-quoted open interest and quote volume stored as
+USD follow RBT-002's pins and named columns; under `ETF_CORE` the perpetual
+notional is unused, while open interest feeds the OI/market-cap ratio. The
+CoinGlass field names and date-bound parameters are unverified. The dataset
+build and its compressed manifests are Part B. No real-data value, score,
+signal, trade or outcome was computed; no database connection; holdout NOT
+COLLECTED; BTC-019 untouched, sealed sample unopened; EPIC X unchanged
+(`POSTP1-001V2R1` remains its next ticket).
+
+Recommended next: the owner's choice of an independent xHigh review of Part A,
+and the Part B prerequisites above.
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -4584,7 +4750,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A offline (owner rulings 2026-11-04); Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |

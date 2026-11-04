@@ -1690,11 +1690,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-003
-  `BACKFILL_HISTORICAL_INPUTS_V1` Part A: the offline provider adapters and
-  evidence writers (synthetic fixtures; no network, database or purchase). Its
-  five owner rulings (2026-11-04) are recorded; Part B, the collection run,
-  awaits database write access, network access, the CoinGlass purchase and
-  the evidence-storage decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  `BACKFILL_HISTORICAL_INPUTS_V1`: Part A, the offline provider adapters and
+  evidence writers, is implemented (`1427053`; synthetic fixtures; no network,
+  database or purchase) under its five owner rulings (2026-11-04). Part B, the
+  collection run, awaits database write access, network access, the CoinGlass
+  purchase with the documented ETF date bounds, and the evidence-storage
+  decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-001A re-review, 2026-11-04,
@@ -2010,10 +2011,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-003** Part A
-  (IN_PROGRESS; owner rulings recorded 2026-11-04). Part B needs the owner's
-  access, the USD 29 purchase (nothing purchased) and the evidence-storage
-  decision. RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** the owner's choice of an
+  independent xHigh review of RBT-003 Part A (`1427053`), and Part B's
+  prerequisites: database write and network access, the USD 29 CoinGlass
+  purchase (nothing purchased) with the documented ETF date bounds, and the
+  evidence-storage decision. RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2036,6 +2038,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part A validation (2026-11-04):** `.venv312` CPython 3.12.14.
+  The new module (117 tests) with the replay and database modules 478 passed;
+  the guard suites with the replay modules 593 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89` unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed; full repository at
+  `1427053`, alone: 7,911 passed, 3 skipped, 1 xfailed. Synthetic fixtures only: no network, no database,
+  no purchase, no real-data value or outcome.
 - **RBT-001A re-review N1 fix validation (2026-11-04):** `.venv312`
   CPython 3.12.14. The V2 module (162 tests) with the RBT-001 modules 329 passed;
   V5 definition `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89` unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed; full
@@ -2499,7 +2507,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** EPIC Y RBT-001A
+- **Last relevant implementation/review commits:** EPIC Y RBT-003 rulings
+  `239578c` and Part A `1427053` with this documentation commit. Before them,
+  EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the
   re-review PASS WITH NON-BLOCKING FINDINGS, N1's fix `6e2433e` and N2's
