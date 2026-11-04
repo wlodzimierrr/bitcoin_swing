@@ -112,6 +112,7 @@ GAP_DIFFERING_DUPLICATE = "OPEN_INTEREST_DIFFERING_DUPLICATE"
 GAP_ARCHIVE_DAY_MISSING = "OPEN_INTEREST_ARCHIVE_DAY_MISSING"
 GAP_FUTURES_KLINE_MISSING = "FUTURES_KLINE_MISSING"
 GAP_INDEX_KLINE_MISSING = "INDEX_KLINE_MISSING"
+GAP_PERP_KLINE_MISSING = "PERP_VOLUME_KLINE_MISSING"
 EXCLUDED_FUNDING_PRICES_PRE_2020 = "FUNDING_SETTLEMENT_PRICES_PRE_2020"
 
 _HOUR = timedelta(hours=1)
@@ -423,14 +424,28 @@ def perp_volumes_from_klines(klines: Mapping[datetime, Kline], *, source: str, r
     return tuple(volumes)
 
 
-def read_perp_volume(fetcher: Fetcher, first_month: date, last_month: date) -> tuple[PerpVolume, ...]:
+@dataclass(frozen=True)
+class PerpVolumeCollection:
+    rows: tuple[PerpVolume, ...]
+    gaps: tuple[SnapshotGap, ...]
+
+
+def read_perp_volume(fetcher: Fetcher, first_month: date, last_month: date) -> PerpVolumeCollection:
+    """Each month's interval-start volumes; every hour of the month without a kline is a recorded gap (review F8)."""
+
     volumes: list[PerpVolume] = []
+    gaps: list[SnapshotGap] = []
     for month in data_window_months(first_month, last_month):
         url = usdm_klines_archive_url(month)
         archive = _required(verified_archive(fetcher, url), url)
         klines = parse_klines_archive(archive.body, month, symbol=USDM_SYMBOL, what=f"perp klines {month:%Y-%m}")
         volumes.extend(perp_volumes_from_klines(klines, source=url, retrieved_at=archive.retrieved_at))
-    return tuple(volumes)
+        hour = datetime(month.year, month.month, 1, tzinfo=UTC)
+        while hour < month_end(month):
+            if hour not in klines:
+                gaps.append(SnapshotGap(hour, GAP_PERP_KLINE_MISSING))
+            hour += _HOUR
+    return PerpVolumeCollection(tuple(volumes), tuple(gaps))
 
 
 # --- COIN-M contracts, listing and basis -----------------------------------------------------

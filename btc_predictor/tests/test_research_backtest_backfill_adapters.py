@@ -330,8 +330,12 @@ def test_perpetual_volume_is_stamped_at_the_interval_start() -> None:
     month = date(2020, 1, 1)
     rows = [fx.kline_row(t, "7200", volume="3.5", quote="25200") for t in fx.hourly(utc(2020, 1, 1), utc(2020, 1, 1, 3))]
     fx.add_archive(transport, binance.usdm_klines_archive_url(month), rows)
-    volumes = binance.read_perp_volume(make_fetcher(transport), month, month)
+    read = binance.read_perp_volume(make_fetcher(transport), month, month)
+    volumes = read.rows
     assert [volume.observation_time for volume in volumes] == [utc(2020, 1, 1), utc(2020, 1, 1, 1), utc(2020, 1, 1, 2)]
+    # every other hour of the month is a recorded gap, never a silent absence (review F8)
+    assert [gap.observation_time for gap in read.gaps] == fx.hourly(utc(2020, 1, 1, 3), utc(2020, 2, 1))
+    assert {gap.reason for gap in read.gaps} == {binance.GAP_PERP_KLINE_MISSING}
     assert {(volume.timeframe, volume.volume, volume.volume_unit, volume.notional_usd) for volume in volumes} == {
         ("1h", Decimal("3.5"), "BTC", Decimal("25200"))
     }
@@ -339,11 +343,25 @@ def test_perpetual_volume_is_stamped_at_the_interval_start() -> None:
     assert [volume.available_at for volume in snapshot.perp_volumes] == [utc(2020, 1, 1, 1), utc(2020, 1, 1, 2), utc(2020, 1, 1, 3)]
 
 
+def test_an_empty_or_partial_perpetual_month_records_every_missing_hour() -> None:
+    transport = FakeTransport()
+    fx.add_archive(transport, binance.usdm_klines_archive_url(date(2020, 2, 1)), [])
+    full = fx.hourly(utc(2020, 3, 1), utc(2020, 4, 1))
+    fx.add_archive(transport, binance.usdm_klines_archive_url(date(2020, 3, 1)), [fx.kline_row(t, "1") for t in full if t != utc(2020, 3, 15, 9)])
+    read = binance.read_perp_volume(make_fetcher(transport), date(2020, 2, 1), date(2020, 3, 1))
+    assert [gap.observation_time for gap in read.gaps] == [*fx.hourly(utc(2020, 2, 1), utc(2020, 3, 1)), utc(2020, 3, 15, 9)]
+    assert len(read.rows) == len(full) - 1
+    assert binance.read_perp_volume(make_fetcher(transport), date(2020, 3, 1), date(2020, 3, 1)).gaps[0].as_record() == {
+        "observation_time": utc(2020, 3, 15, 9).isoformat(),
+        "reason": "PERP_VOLUME_KLINE_MISSING",
+    }
+
+
 @pytest.mark.parametrize("header", binance.KLINES_HEADERS)
 def test_a_klines_header_in_either_spelling_is_skipped(header: tuple[str, ...]) -> None:
     transport = FakeTransport()
     fx.add_archive(transport, binance.usdm_klines_archive_url(date(2020, 1, 1)), [list(header), fx.kline_row(utc(2020, 1, 1), "1")])
-    assert len(binance.read_perp_volume(make_fetcher(transport), date(2020, 1, 1), date(2020, 1, 1))) == 1
+    assert len(binance.read_perp_volume(make_fetcher(transport), date(2020, 1, 1), date(2020, 1, 1)).rows) == 1
 
 
 @pytest.mark.parametrize(
