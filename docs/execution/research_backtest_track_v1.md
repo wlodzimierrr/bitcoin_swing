@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `IN PROGRESS — Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part A independent xHigh review FAIL (2026-11-04), review-fix in progress under owner review rulings 6-7; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -3432,6 +3432,19 @@ and a public repository, and the rulings so far leave these points open:
    and the providers' documented examples; any unexpected field or shape
    refuses the response. Both stay UNVERIFIED until Part B's first step checks
    one live in-window response each.
+6. **A listing start needs a month-start check (review ruling, 2026-11-04).**
+   The independent review found that an absent earlier archive month is taken
+   as proof that a contract did not yet exist, and no authority says so. A
+   contract's first archived month is accepted as its listing month only when
+   the month before it is absent and the first archived kline does not open at
+   `00:00` on the 1st of its month: a contract already trading would have that
+   kline. Otherwise the read refuses as `LISTING_START_UNPROVEN` (fail closed).
+7. **`ingested_at` is the persistence instant (review ruling, 2026-11-04).** The
+   existing collectors, which RBT-003 may not change, stamp every row's
+   `ingested_at` with one instant per call. A persisted row's `ingested_at` is
+   therefore the instant it entered the database, as the collector stamps it;
+   its `available_at` is the retrieval instant of the responses the row was
+   read from. No replay owner reads `ingested_at` on a derivative or ETF row.
 
 ### RBT-003 Part A Implementation Notes
 
@@ -3598,6 +3611,62 @@ COLLECTED; BTC-019 untouched, sealed sample unopened; EPIC X unchanged
 
 Recommended next: the owner's choice of an independent xHigh review of Part A,
 and the Part B prerequisites above.
+
+### RBT-003 Part A review outcome
+
+**Date:** 2026-11-04. **Review:** independent xHigh ticket review, run at the
+owner's request by the OpenAI Codex CLI (0.162.1, model `gpt-6.1-sol`,
+reasoning `xhigh`, session `01a1a849-79f7-7e90-a3f2-73727c6b1c35`) in a
+detached worktree at `5ec5cad`, against the rulings record `239578c`,
+implementation `1427053` and documentation `5ec5cad` (base `95b9cfb`).
+Report-only: a workspace-write sandbox with network disabled, no database, no
+`.env*` file, synthetic fixtures only; its worktree stayed clean.
+**Result: FAIL.** Part B must not run this implementation unchanged. The
+review's one owner question (finding 9) and the provenance question of
+finding 3 were answered the same day (owner review rulings 6-7 above).
+
+**Findings.** Locations refer to `1427053`, under `btc_predictor/research_backtest/`.
+
+| ID / severity | Location | Current versus expected behavior; impact | Reproducer and required correction |
+| --- | --- | --- | --- |
+| F1 / **P1** | `backfill_coinmetrics.py:77`, `:128` | A provider's `next_page_url` is followed after only its prefix is checked, so a continuation can name 2019, 2026 or no date bound: the request reaches the transport before any row is checked. | Synthetic first pages whose continuations ask for 2019, 2026-H1 or no bounds: all three reached the fake transport, and an empty continuation let the read finish. Rebuild or fully validate each continuation from the original bounded query before the transport. |
+| F2 / **P2** | `backfill_persistence.py:69`, `:110` | The collectors take `provider` from the request, which the wrappers never see: a request with only its provider changed persisted Binance and ETF rows under that name. | Validate the whole request, provider included, at a persistence entry point before the unchanged collectors run. |
+| F3 / **P2** (ruling 7) | `backfill_persistence.py:62`, `backfill_binance.py:623` | The collectors overwrite `ingested_at` with one call-level instant, contradicting design decision 2; and a basis row's `available_at` is the latest retrieval of any index month, not of the archives it was read from. | With an advancing clock, a row read by `10:00:12` was stamped `10:00:14`. Stamp each basis row from its own two archives; document `ingested_at` per ruling 7 and test it. |
+| F4 / **P2** | `backfill_kraken.py:390` | A liquidation row's notional is multiplied in the ambient decimal context. | The valid `NUMERIC(38,18)` quantity `12345678901234567890.123456789012345678` became notional `12345678901234567890.12345679`; the hour still AGREED and V2 admitted it. Multiply in the controlled context. |
+| F5 / **P2** | `backfill_coinglass.py:157`, `:178` | Ruling 5 is met for key sets only: the day's `flow_usd`, `price_usd` and a fund's `btc_holdings` may hold any value. | `{"unexpected":[]}` in any of them was accepted. Check every declared field's type. |
+| F6 / **P2** | `backfill_kraken.py:355`, `:439`, `:462` | The hour evidence stores the published value canonicalised (`1500.0` as `1500`), so ruling 3 cannot be recomputed from the file; the parser accepts a contract size of `100`, an order type `Limit`, an observed incident hour with zero executions that AGREES with `999`, and hours outside the window. | Keep the published exponent; validate the declarations, the window and each hour's status, count, incident and corroboration before returning typed evidence. |
+| F7 / **P2** | `backfill_binance.py:122`, `:156`; `backfill_kraken.py:146`, `:237` | The readers clip their periods, but the URL builders and the archive fetch accept any period: synthetic 2019 and 2026 archive requests went through. | Enforce the window at the callable request boundary. |
+| F8 / **P2** | `backfill_binance.py:381` | An empty or partial perpetual klines archive returns its present rows only: missing hours leave no gap record. | Compare each month with its hourly census and record the gaps. |
+| F9 / **P2** PLAUSIBLE (ruling 6) | `backfill_binance.py:483`, `:492`, `:507` | A missing archive month before a contract's first archived month is read as proven absence: removing a synthetic contract's first month moved `first_kline_open_at` a month later without refusal. | Distinguish unavailable history from proven absence; the owner ruled the month-start check. |
+| F10 / **P3** | `backfill_binance.py:286` | Ruling 4 compares decoded CSV fields, not bytes: `1000000` and `"1000000"` collapse. | Compare the raw records. |
+
+The review's mutation runner caught 12 of 17 mutants; the five survivors
+removed either Coin Metrics date bound, made its end exclusive, or disabled
+either CoinGlass duplicate check, and each passed all 117 tests.
+
+**Checks that passed.** The normal basis path's listing-window inequalities,
+one row per contract and instant, the 18-place rate and the builder-owned
+annualisation; ruling 2 in the normal reader (a 2026 delivery read nothing
+from 2026); funding at `calc_time` and the excluded settlement pricing 2019;
+hourly USD open interest; interval-start perpetual volume; the market-cap
+writer integration; the ETF final-value replay semantics. Every adapter
+refused synthetic 2019 and 2026 observations; the Kraken day reader bounds its
+chain and its final-day `before` is the exclusive `2026-01-01`; the CoinGlass
+bound refuses before the transport. Pagination is bounded (listing 100 pages,
+execution day 10,000, market cap 10). Checksum, single-member, epoch-width and
+close-offset checks were exercised; the retrieval log holds no header; no
+network transport or database connection exists. Codex's runs (`.venv312`,
+one process at a time): the adapter module 117 passed; with the V1/V2 replay,
+replay-review and database modules 478 passed; its own probes 47 passed;
+PAD5 subset 5 passed, 112 deselected; `git diff --check` clean. The full suite
+was not rerun.
+
+**Implementer's verification.** All ten findings were confirmed from the code
+before the owner was asked. F7 concerns the callable boundary below the
+readers; the readers themselves request only in-window periods.
+
+**Distinct review-fix:** in progress (owner review rulings 6-7), followed by
+an independent xHigh re-review.
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -4750,7 +4819,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A independent xHigh review FAIL (2026-11-04; one P1, eight P2, one P3), review-fix in progress (owner review rulings 6-7); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
