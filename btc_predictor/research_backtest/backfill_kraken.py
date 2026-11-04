@@ -32,11 +32,22 @@ liquidation uids, the per-side quantities, the series value and the response
 digests) is hashed into the ``evidence_sha256`` of RBT-001A's
 :class:`LiquidationHourEvidence`, and the records are written to one
 hash-bound ``HISTORICAL_LIQUIDATION_HOUR_EVIDENCE_V1`` file.
+
+The series value is stored as its published spelling (the exact decimal,
+exponent kept: ``1500.0`` is not ``1500``), because ruling 3 compares at the
+published precision (review F6). The file's parser accepts nothing it cannot
+re-derive: the declared rule, universe, order type, contract size, source and
+licence; every hour inside the data window; the incident flag from the
+declared incidents; the status from the incident flag, execution count and
+liquidation uids; and the corroboration recomputed from the per-side
+quantities and the stored series value. The collection's own typed hours are
+read back through that parser.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -102,6 +113,7 @@ _HOUR_EVIDENCE_KEYS = frozenset(
         "contract_size_usd", "source", "licence", "retrieved_at", "incidents", "hours",
     }
 )
+_SHA256 = re.compile(r"[0-9a-f]{64}")
 _HOUR_RECORD_KEYS = frozenset(
     {
         "hour_start", "feed_status", "corroboration", "execution_count", "liquidation_uids", "long_quantity",
@@ -360,11 +372,19 @@ def hour_record(
         "liquidation_uids": sorted(execution.uid for execution in liquidations),
         "long_quantity": v1.canonical_decimal(quantities["long"]),
         "short_quantity": v1.canonical_decimal(quantities["short"]),
-        "series_value": None if series_value is None else v1.canonical_decimal(series_value),
+        "series_value": None if series_value is None else published_spelling(series_value),
         "incident": incident,
         "pages_sha256": list(pages_sha256),
         "series_sha256": series_sha256,
     }
+
+
+def published_spelling(value: Decimal) -> str:
+    """The published value exactly, exponent kept, so ruling 3's precision survives the file."""
+
+    if not isinstance(value, Decimal) or not value.is_finite() or value < 0:
+        return _refuse_shape(f"series value {value!r} is not a finite non-negative decimal")
+    return str(value)
 
 
 def hour_evidence(record: Mapping[str, Any]) -> v2.LiquidationHourEvidence:
@@ -449,31 +469,123 @@ def parse_liquidation_hour_evidence(data: bytes, *, expected_sha256: str) -> tup
     payload = _json(data, "the hour evidence")
     if not isinstance(payload, dict) or canonical_json_bytes(payload) != data or set(payload) != _HOUR_EVIDENCE_KEYS:
         return _refuse_shape("the hour evidence is not the canonical file with exactly its keys")
-    declared = {key: payload[key] for key in ("evidence_version", "rule", "corroboration_rule", "exchange", "symbol")}
-    if declared != {
-        "evidence_version": HOUR_EVIDENCE_VERSION,
-        "rule": v2.LIQUIDATION_COMPLETENESS_VERSION,
-        "corroboration_rule": CORROBORATION_RULE,
-        "exchange": KRAKEN_EXCHANGE,
-        "symbol": KRAKEN_SYMBOL,
-    }:
+    declared = {key: payload[key] for key in _HOUR_EVIDENCE_KEYS - {"retrieved_at", "incidents", "hours"}}
+    if declared != _declared_constants():
         return _refuse_shape(f"the hour evidence declares {declared}")
+    _instant(payload["retrieved_at"], "retrieved_at")
+    incidents = _incidents(payload["incidents"])
     if not isinstance(payload["hours"], list):
         return _refuse_shape("hours must be a list")
     typed: list[v2.LiquidationHourEvidence] = []
     for record in payload["hours"]:
         if not isinstance(record, dict) or set(record) != _HOUR_RECORD_KEYS:
             return _refuse_shape(f"each hour is exactly {sorted(_HOUR_RECORD_KEYS)}")
-        try:
-            hour = datetime.fromisoformat(record["hour_start"])
-        except (TypeError, ValueError):
-            return _refuse_shape(f"hour {record['hour_start']!r} is not an ISO instant")
-        if require_utc(hour, "hour_start") != hour or iso(hour) != record["hour_start"] or (hour.minute, hour.second, hour.microsecond) != (0, 0, 0):
+        hour = _instant(record["hour_start"], "hour_start")
+        if (hour.minute, hour.second, hour.microsecond) != (0, 0, 0):
             return _refuse_shape(f"hour {record['hour_start']!r} is not a canonical UTC hour start")
+        require_observation_in_window(hour, "an evidence hour")
         if typed and hour <= typed[-1].hour_start:
             return _refuse_shape(f"hour {record['hour_start']}: hours must be strictly increasing")
+        _check_hour(record, hour, incidents)
         typed.append(hour_evidence(record))
     return tuple(typed)
+
+
+def _declared_constants() -> dict[str, Any]:
+    return {
+        "evidence_version": HOUR_EVIDENCE_VERSION,
+        "rule": v2.LIQUIDATION_COMPLETENESS_VERSION,
+        "corroboration_rule": CORROBORATION_RULE,
+        "exchange": KRAKEN_EXCHANGE,
+        "symbol": KRAKEN_SYMBOL,
+        "liquidation_order_type": LIQUIDATION_ORDER_TYPE,
+        "contract_size_usd": v1.canonical_decimal(CONTRACT_SIZE_USD),
+        "source": f"{EXECUTIONS_URL} ; {LIQUIDATION_VOLUME_URL}",
+        "licence": KRAKEN_LICENCE,
+    }
+
+
+def _instant(text: Any, what: str) -> datetime:
+    try:
+        instant = datetime.fromisoformat(text) if isinstance(text, str) else None
+    except ValueError:
+        instant = None
+    if instant is None or instant.tzinfo is None or instant.utcoffset() != timedelta(0) or iso(instant) != text:
+        return _refuse_shape(f"{what} {text!r} is not a canonical UTC instant")
+    return instant.astimezone(UTC)
+
+
+def _incidents(items: Any) -> tuple[tuple[datetime, datetime], ...]:
+    if not isinstance(items, list):
+        return _refuse_shape("incidents must be a list")
+    incidents = []
+    for item in items:
+        if not isinstance(item, dict) or set(item) != {"start", "end"}:
+            return _refuse_shape("each incident is exactly {start, end}")
+        start, end = _instant(item["start"], "an incident start"), _instant(item["end"], "an incident end")
+        if end <= start:
+            return _refuse_shape("an incident must end after it starts")
+        incidents.append((start, end))
+    return tuple(incidents)
+
+
+def _stored_quantity(text: Any, what: str) -> Decimal:
+    try:
+        value = Decimal(text) if isinstance(text, str) else None
+    except InvalidOperation:
+        value = None
+    if value is None or not value.is_finite() or value < 0 or v1.canonical_decimal(value) != text:
+        return _refuse_shape(f"{what} {text!r} is not a canonical non-negative decimal")
+    return value
+
+
+def _check_hour(record: Mapping[str, Any], hour: datetime, incidents: Sequence[tuple[datetime, datetime]]) -> None:
+    """Re-derive the hour's status and corroboration from what the record stores (review F6)."""
+
+    what = f"hour {record['hour_start']}"
+    count, uids, incident = record["execution_count"], record["liquidation_uids"], record["incident"]
+    if type(count) is not int or count < 0:
+        return _refuse_shape(f"{what}: execution_count must be a non-negative integer")
+    if not isinstance(uids, list) or not all(isinstance(uid, str) and uid for uid in uids) or uids != sorted(set(uids)):
+        return _refuse_shape(f"{what}: liquidation_uids must be sorted unique identifiers")
+    if len(uids) > count:
+        return _refuse_shape(f"{what}: more liquidations than executions")
+    if type(incident) is not bool or incident != _overlaps(hour, incidents):
+        return _refuse_shape(f"{what}: the incident flag does not match the declared incidents")
+    pages, series_digest = record["pages_sha256"], record["series_sha256"]
+    if not isinstance(pages, list) or not pages or not all(isinstance(item, str) and _SHA256.fullmatch(item) for item in pages):
+        return _refuse_shape(f"{what}: pages_sha256 must list the execution pages' digests")
+    if series_digest is not None and not (isinstance(series_digest, str) and _SHA256.fullmatch(series_digest)):
+        return _refuse_shape(f"{what}: series_sha256 is not a digest")
+    long, short = _stored_quantity(record["long_quantity"], f"{what} long_quantity"), _stored_quantity(
+        record["short_quantity"], f"{what} short_quantity"
+    )
+    if not uids and (long, short) != (0, 0):
+        return _refuse_shape(f"{what}: quantities without liquidations")
+    if uids and long + short == 0:
+        return _refuse_shape(f"{what}: liquidations without a quantity")
+    published = record["series_value"]
+    if published is not None:
+        try:
+            series_value = Decimal(published) if isinstance(published, str) else None
+        except InvalidOperation:
+            series_value = None
+        if series_value is None or published_spelling(series_value) != published or series_digest is None:
+            return _refuse_shape(f"{what}: series_value {published!r} is not a published decimal with its response digest")
+    if incident or count == 0:
+        expected = (epic_x.FEED_STATUS_SOURCE_UNAVAILABLE, v2.CORROBORATION_NOT_APPLICABLE)
+    else:
+        status = epic_x.FEED_STATUS_OBSERVED_WITH_EVENTS if uids else epic_x.FEED_STATUS_OBSERVED_ZERO_EVENTS
+        if published is None:
+            expected = (status, v2.CORROBORATION_SERIES_UNAVAILABLE)
+        else:
+            with localcontext(_EXACT_CONTEXT):
+                total = (long + short) * CONTRACT_SIZE_USD
+            agrees = corroborates(total, Decimal(published))
+            expected = (status, v2.CORROBORATION_AGREES if agrees else v2.CORROBORATION_DISAGREES)
+    if (record["feed_status"], record["corroboration"]) != expected:
+        return _refuse_shape(f"{what}: {record['feed_status']}/{record['corroboration']} is not the derived {expected[0]}/{expected[1]}")
+    return None
 
 
 @dataclass(frozen=True)
@@ -518,4 +630,6 @@ def read_liquidations(
             records.append(record)
             rows.extend(liquidation_rows(record, retrieved_at=log.retrieved_at))
     evidence = liquidation_hour_evidence_bytes(retrieved_at=max(retrieved), incidents=incidents, hours=records)
-    return KrakenLiquidationCollection(tuple(rows), tuple(hour_evidence(record) for record in records), evidence)
+    # the typed hours are read back through the file's own parser, so writer and parser cannot drift
+    hours = parse_liquidation_hour_evidence(evidence, expected_sha256=sha256_hex(evidence))
+    return KrakenLiquidationCollection(tuple(rows), hours, evidence)

@@ -741,6 +741,69 @@ def test_a_malformed_hour_evidence_file_is_refused(change: Any) -> None:
     refused("RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_hour_evidence, data, expected_sha256=digest)
 
 
+UNAVAILABLE, ZERO, WITH = (
+    epic_x.FEED_STATUS_SOURCE_UNAVAILABLE,
+    epic_x.FEED_STATUS_OBSERVED_ZERO_EVENTS,
+    epic_x.FEED_STATUS_OBSERVED_WITH_EVENTS,
+)
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        (lambda p: p.update(contract_size_usd="100"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p.update(liquidation_order_type="Limit"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p.update(source="elsewhere"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p.update(licence="other"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p.update(retrieved_at="2026-11-05T10:00:00Z"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p.update(incidents=[{"start": "2021-06-01T02:00:00+00:00", "end": "2021-06-01T01:00:00+00:00"}]), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p.update(incidents=[{"start": "2021-06-01T01:00:00+00:00", "end": "2021-06-01T01:30:00+00:00"}]), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(incident=True), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][0].update(incident=True), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][0].update(feed_status=ZERO, corroboration="AGREES", series_value="999"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(corroboration="DISAGREES"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(series_value="1499"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(series_value="+1500"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(series_sha256=None), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(long_quantity="1200.0"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(liquidation_uids=["l2", "l1"]), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(execution_count=1), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(feed_status=ZERO), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][2].update(long_quantity="5"), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][2].update(feed_status=WITH), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(pages_sha256=["x"]), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][-1].update(hour_start="2026-01-01T00:00:00+00:00"), "OBSERVATION_OUTSIDE_DATA_WINDOW"),
+        (lambda p: p["hours"][0].update(hour_start="2019-12-31T23:00:00+00:00"), "OBSERVATION_OUTSIDE_DATA_WINDOW"),
+    ],
+    ids=[
+        "contract-size", "order-type", "source", "licence", "retrieved-at", "reversed-incident", "incident-without-flag",
+        "flag-without-incident", "flag-on-empty-hour", "observed-empty-hour-agrees-999", "corroboration-flipped",
+        "series-changed", "series-spelling", "series-without-digest", "quantity-spelling", "uids-unsorted",
+        "count-below-uids", "liquidations-as-zero-events", "quantity-without-liquidation", "zero-events-as-with",
+        "page-digest", "holdout-hour", "pre-2020-hour",
+    ],
+)
+def test_the_hour_evidence_parser_accepts_only_what_it_can_re_derive(change: Any, reason: str) -> None:
+    data, digest = evidence_variant(change)
+    refused(reason, kraken.parse_liquidation_hour_evidence, data, expected_sha256=digest)
+
+
+def test_the_published_precision_survives_the_evidence_file() -> None:
+    # 1500.4 rounds to 1500 at the precision of "1500" and to 1500.4 at the precision of "1500.0"
+    outcomes = {}
+    for published in ("1500", "1500.0"):
+        executions = [fx.execution("l1", utc(2021, 6, 1, 1, 10), "1500.4", order_type="Liquidation", direction="Sell")]
+        executions += [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+        executions.sort(key=lambda element: element["timestamp"])
+        series = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+        series[utc(2021, 6, 1, 1)] = published
+        collection = kraken.read_liquidations(make_fetcher(day_world([fx.execution_page(executions)], series)), DAY, DAY, incidents=())
+        stored = json.loads(collection.evidence_bytes)["hours"][1]
+        typed = kraken.parse_liquidation_hour_evidence(collection.evidence_bytes, expected_sha256=collection.evidence_sha256)
+        outcomes[published] = (stored["series_value"], typed[1].corroboration)
+    assert outcomes == {"1500": ("1500", v2.CORROBORATION_AGREES), "1500.0": ("1500.0", v2.CORROBORATION_DISAGREES)}
+
+
 def test_hour_evidence_must_be_the_bound_canonical_bytes() -> None:
     transport, _ = liquidation_day()
     collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
