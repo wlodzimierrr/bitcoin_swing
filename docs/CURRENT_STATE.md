@@ -1456,7 +1456,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   spec rebound to `9a619596...15f6313`); **RBT-001A is DONE / independent xHigh
   re-review PASS WITH NON-BLOCKING FINDINGS** (2026-11-04; review FAIL fixed in
   `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`; rulings `4453b5c`,
-  implementation `524fcbf`); **RBT-003 is READY**.
+  implementation `524fcbf`); **RBT-003 is IN PROGRESS** (Part A, offline
+  adapters; owner rulings 2026-11-04).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1688,9 +1689,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-001A
-  `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` closed DONE on 2026-11-04, RBT-005 on
-  2026-11-01 and RBT-004 on 2026-10-31; RBT-003 is READY. EPIC X's separate next action remains
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-003
+  `BACKFILL_HISTORICAL_INPUTS_V1` Part A: the offline provider adapters and
+  evidence writers (synthetic fixtures; no network, database or purchase). Its
+  five owner rulings (2026-11-04) are recorded; Part B, the collection run,
+  awaits database write access, network access, the CoinGlass purchase and
+  the evidence-storage decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-001A re-review, 2026-11-04,
   **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE** (same Codex
@@ -2005,8 +2010,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-003** (READY; its plan
-  totals USD 29 and nothing is purchased). RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** **RBT-003** Part A
+  (IN_PROGRESS; owner rulings recorded 2026-11-04). Part B needs the owner's
+  access, the USD 29 purchase (nothing purchased) and the evidence-storage
+  decision. RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -3421,6 +3428,17 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-04: RBT-003 scope and adapter points.** Asked before
+  implementation; the owner chose every recommended option. Part A builds
+  the adapters and evidence writers offline; Part B collects later. A COIN-M
+  contract's delivery instant is its symbol date at 08:00 UTC, checked
+  against the archive for in-window deliveries, so nothing from 2026 is
+  read. The liquidation-volume corroboration agrees when the hour's total,
+  rounded half-even to the series' precision, equals the series value.
+  Differing duplicate open-interest rows leave a recorded gap. The CoinGlass
+  and Kraken-chart adapters are built strictly and stay UNVERIFIED until
+  Part B checks one live response each. Details in the RBT-003 block.
 
 - **ANSWERED 2026-11-04: RBT-001A re-review findings.** The owner chose the
   recommended option: fix N1 (refuse a negative liquidation quantity, as

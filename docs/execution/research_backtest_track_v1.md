@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `READY — RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part A (offline adapters and evidence writers); owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -3390,6 +3390,48 @@ Acceptance criteria:
   RBT-001 builder, with their manifests under `backtest_evidence/research_backtest_v1/`.
 - Re-running the build from the database reproduces identical manifests.
 - Nothing outside the data window is requested from any provider.
+
+**Owner rulings (2026-11-04, asked before implementation; the recommended
+option each time).** The session has no database variables, no CoinGlass key
+and a public repository, and the rulings so far leave these points open:
+
+1. **Two parts; Part A is offline.** Part A builds the new provider adapters
+   (Binance USD-M funding, open interest and perpetual volume; Binance COIN-M
+   basis and the contract listing; Kraken Futures executions and the hourly
+   liquidation-volume corroboration; Coin Metrics market cap; CoinGlass ETF
+   flows and AUM) and the RBT-001A evidence writers, written to the providers'
+   documented formats and tested on synthetic fixtures only: no network, no
+   database, no purchase. Part B, the collection run, waits until the owner
+   provides database write access and network access, buys the CoinGlass
+   Hobbyist month (USD 29), and decides where value-bearing evidence files
+   live, since the repository is public.
+2. **A contract's delivery instant is its symbol date at 08:00 UTC, checked.**
+   Ruling 4 of RBT-001A gives no source for it, and a contract delivering after
+   2025-12-31 (for example `BTCUSD_260327`, which trades inside the data
+   window) has its last archive kline in the holdout. `delivery_at` is the
+   `YYMMDD` date in the Binance symbol at 08:00 UTC, Binance's documented COIN-M
+   delivery time, recorded as the rule. For every contract delivered inside the
+   data window, the adapter checks it against the archive (the last `1h`
+   kline's open plus one hour) and refuses a mismatch. Nothing from 2026 is
+   read.
+3. **"Within rounding" means equal at the series' precision.** An hour AGREES
+   when its long-plus-short liquidation quantity (USD notional: quantity times
+   EPIC X's 1 USD contract size) rounded half-even to the decimal places of
+   Kraken's published hourly value equals that value; anything else DISAGREES,
+   which refuses the build (RBT-001A ruling 2). Part B first checks the
+   series' unit on one live in-window hour and stops to ask if it is not USD
+   contracts.
+4. **Differing duplicate open-interest rows leave a gap.** Binance's early
+   daily metrics files hold two rows per 5-minute slot. Byte-identical
+   duplicates of the `hh:00` row collapse to one; differing duplicates leave
+   that hour with no snapshot, recorded as a gap in the collection evidence,
+   never a choice between them.
+5. **Unverified response shapes are built strictly.** The CoinGlass flow and
+   per-fund history responses and the Kraken liquidation-volume response
+   cannot be checked offline. Their adapters follow the shapes RBT-002 recorded
+   and the providers' documented examples; any unexpected field or shape
+   refuses the response. Both stay UNVERIFIED until Part B's first step checks
+   one live in-window response each.
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -4542,7 +4584,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | READY — RBT-001A DONE (2026-11-04); RBT-002 review dependency SATISFIED; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A offline (owner rulings 2026-11-04); Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
@@ -4573,7 +4615,8 @@ RBT-005's named limitation to `9a619596...15f6313`). RBT-004 is
 DONE after its independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS
 (2026-10-31); RBT-005 is DONE after its independent xHigh re-review PASS WITH
 NON-BLOCKING FINDINGS (2026-11-01); RBT-001A is DONE after its independent
-xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); RBT-003 is READY;
+xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); RBT-003 is IN
+PROGRESS (Part A, offline);
 the four
 adopted data choices stay fixed.
 
@@ -4583,8 +4626,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-003** (READY); RBT-006 stays
-blocked on RBT-003.
+dependency-satisfied EPIC Y work is **RBT-003** Part A (IN PROGRESS, offline);
+RBT-006 stays blocked on RBT-003.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
