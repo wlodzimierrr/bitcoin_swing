@@ -1,0 +1,508 @@
+"""Kraken Futures liquidation adapter for RBT-003 (Part A, offline).
+
+``HISTORICAL_LIQUIDATION_HOUR_COMPLETENESS_V1`` (policy V7 section 4A) reads
+the paginated REST execution log of ``PI_XBTUSD``:
+
+- an hour ``[h, h+1)`` is observed when the log was read contiguously across it
+  (an unbroken continuation chain, no error) and at least one execution of any
+  order type is stamped in it; it is ``OBSERVED_WITH_EVENTS`` with a
+  liquidation (``takerOrder.orderType == "Liquidation"``, RBT-002's probe) and
+  ``OBSERVED_ZERO_EVENTS`` without one;
+- an hour with no execution, or one overlapping a reported incident, is
+  ``SOURCE_UNAVAILABLE``.
+
+The quantity is EPIC X's by reference: USD notional is the execution quantity
+times the ``PI_XBTUSD`` contract size of 1 USD, the side is the taker side
+mapped by ``LIQUIDATION_SIDE_TO_POSITION`` (``sell`` liquidates a long), and an
+unknown side refuses the day, as EPIC X's census invalidates the interval.
+
+Corroboration (owner ruling 3, 2026-11-04): an observed hour ``AGREES`` when its
+long-plus-short USD total, rounded half-even to the decimal places of Kraken's
+published hourly liquidation-volume value, equals that value; otherwise it
+``DISAGREES``, and the replay builder refuses the build (RBT-001A ruling 2). An
+observed hour the series does not cover is ``SERIES_UNAVAILABLE``.
+
+The execution page and chart response shapes are those RBT-002 recorded; both
+empty forms reproduce its recorded SHA-256 values. The chart's value types and
+unit stay UNVERIFIED (owner ruling 5) until Part B checks one live in-window
+hour; any unexpected field or shape refuses the response.
+
+Each hour's evidence record (status, corroboration, execution count, the sorted
+liquidation uids, the per-side quantities, the series value and the response
+digests) is hashed into the ``evidence_sha256`` of RBT-001A's
+:class:`LiquidationHourEvidence`, and the records are written to one
+hash-bound ``HISTORICAL_LIQUIDATION_HOUR_EVIDENCE_V1`` file.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from datetime import UTC, date, datetime, timedelta
+from decimal import ROUND_HALF_EVEN, Context, Decimal, DivisionByZero, InvalidOperation, Overflow, localcontext
+from typing import Any
+from urllib.parse import urlencode
+
+from btc_predictor.data import Liquidation
+from btc_predictor.research import prospective_integration_corpus as epic_x
+from btc_predictor.research_backtest import replay_inputs as v1
+from btc_predictor.research_backtest import replay_inputs_v2 as v2
+from btc_predictor.research_backtest.backfill_sources import (
+    BackfillRefused,
+    Fetcher,
+    canonical_json_bytes,
+    data_window_days,
+    epoch_milliseconds,
+    from_epoch_milliseconds,
+    hours_of,
+    iso,
+    midnight,
+    require_observation_in_window,
+    require_request_span,
+    require_utc,
+    sha256_hex,
+)
+
+
+KRAKEN_EXCHANGE = v2.LIQUIDATION_EXCHANGE
+KRAKEN_SYMBOL = v2.LIQUIDATION_SYMBOL
+KRAKEN_TIMEFRAME = v2.LIQUIDATION_TIMEFRAME
+KRAKEN_PROVIDER = "kraken_futures_rest_history"
+KRAKEN_LICENCE = "UNVERIFIED (RBT-002: no licence found; hashes only)"
+EXECUTIONS_URL = f"https://futures.kraken.com/api/history/v2/market/{KRAKEN_SYMBOL}/executions"
+LIQUIDATION_VOLUME_URL = f"https://futures.kraken.com/api/charts/v1/analytics/{KRAKEN_SYMBOL}/liquidation-volume"
+LIQUIDATION_ORDER_TYPE = "Liquidation"
+QUANTITY_UNIT = "contracts"
+CONTRACT_SIZE_USD = epic_x.LIQUIDATION_CONTRACT_SIZE_USD
+TAKER_DIRECTIONS = {"Buy": "buy", "Sell": "sell"}
+
+HOUR_EVIDENCE_VERSION = "HISTORICAL_LIQUIDATION_HOUR_EVIDENCE_V1"
+CORROBORATION_RULE = "LIQUIDATION_VOLUME_EQUAL_AT_SERIES_PRECISION_V1"
+MAX_PAGES_PER_DAY = 10_000
+
+# RBT-002's source ranking records one Tardis-reported incident inside the data
+# window; Part B re-reads the incident list before collecting.
+RBT002_RECORDED_INCIDENTS = (
+    (datetime(2021, 11, 10, 5, 9, tzinfo=UTC), datetime(2021, 11, 10, 5, 19, tzinfo=UTC)),
+)
+
+_HOUR = timedelta(hours=1)
+_DAY = timedelta(days=1)
+_EXECUTION_FIELDS = frozenset(
+    {"uid", "timestamp", "price", "quantity", "usdValue", "markPrice", "limitFilled", "takerOrder", "makerOrder"}
+)
+_PAGE_KEYS = frozenset({"elements", "len", "continuationToken"})
+_WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
+_HOUR_EVIDENCE_KEYS = frozenset(
+    {
+        "evidence_version", "rule", "corroboration_rule", "exchange", "symbol", "liquidation_order_type",
+        "contract_size_usd", "source", "licence", "retrieved_at", "incidents", "hours",
+    }
+)
+_HOUR_RECORD_KEYS = frozenset(
+    {
+        "hour_start", "feed_status", "corroboration", "execution_count", "liquidation_uids", "long_quantity",
+        "short_quantity", "series_value", "incident", "pages_sha256", "series_sha256",
+    }
+)
+
+
+def _refuse_shape(message: str) -> Any:
+    raise BackfillRefused("RESPONSE_SHAPE_REFUSED", message)
+
+
+def _json(data: bytes, what: str) -> Any:
+    try:
+        return json.loads(data, parse_float=Decimal)
+    except (UnicodeDecodeError, ValueError):
+        return _refuse_shape(f"{what} is not JSON")
+
+
+def _quantity(value: Any, what: str) -> Decimal:
+    if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
+        return _refuse_shape(f"{what} {value!r} is not a decimal")
+    try:
+        number = Decimal(str(value))
+    except InvalidOperation:
+        return _refuse_shape(f"{what} {value!r} is not a decimal")
+    if not number.is_finite() or number <= 0:
+        return _refuse_shape(f"{what} {value!r} must be positive")
+    return number
+
+
+# --- the execution log -----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Execution:
+    uid: str
+    timestamp: datetime
+    quantity: Decimal
+    order_type: str
+    direction: str
+
+
+def executions_url(since: datetime, before: datetime, token: str | None = None) -> str:
+    query: dict[str, Any] = {"since": epoch_milliseconds(since), "before": epoch_milliseconds(before), "sort": "asc"}
+    if token is not None:
+        query["continuationToken"] = token
+    return f"{EXECUTIONS_URL}?{urlencode(query)}"
+
+
+def parse_execution_page(data: bytes) -> tuple[tuple[Execution, ...], str | None]:
+    """One page: ``{"elements": [...], "len": n}`` plus a ``continuationToken`` when more follow."""
+
+    payload = _json(data, "an execution page")
+    if not isinstance(payload, dict) or not {"elements", "len"} <= set(payload) <= _PAGE_KEYS:
+        return _refuse_shape(f"an execution page has keys {sorted(payload) if isinstance(payload, dict) else payload!r}")
+    elements, count = payload["elements"], payload["len"]
+    if not isinstance(elements, list) or type(count) is not int or count != len(elements):
+        return _refuse_shape("an execution page's len does not count its elements")
+    token = payload.get("continuationToken")
+    if token is not None and (not isinstance(token, str) or not token):
+        return _refuse_shape("a continuation token must be a non-empty string")
+    executions = []
+    for element in elements:
+        try:
+            execution = element["event"]["Execution"]["execution"]
+            taker = execution["takerOrder"]
+        except (KeyError, TypeError):
+            return _refuse_shape("an element is not event.Execution.execution with a takerOrder")
+        if not isinstance(execution, dict) or not _EXECUTION_FIELDS <= set(execution) or not isinstance(taker, dict):
+            return _refuse_shape(f"an execution lacks the recorded fields {sorted(_EXECUTION_FIELDS)}")
+        uid, order_type, direction = execution["uid"], taker.get("orderType"), taker.get("direction")
+        if not all(isinstance(item, str) and item for item in (uid, order_type, direction)):
+            return _refuse_shape("an execution needs a uid and the taker order's orderType and direction")
+        executions.append(
+            Execution(
+                uid=uid,
+                timestamp=from_epoch_milliseconds(execution["timestamp"], "an execution timestamp"),
+                quantity=_quantity(execution["quantity"], f"execution {uid} quantity"),
+                order_type=order_type,
+                direction=direction,
+            )
+        )
+    return tuple(executions), token
+
+
+@dataclass(frozen=True)
+class ExecutionDay:
+    day: date
+    executions: tuple[Execution, ...]
+    pages_sha256: tuple[str, ...]
+    retrieved_at: datetime
+
+
+def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
+    """The whole day ``[D 00:00, D+1 00:00)`` through one unbroken continuation chain."""
+
+    since, before = midnight(day), midnight(day) + _DAY
+    require_request_span(since, before, f"executions {day.isoformat()}")
+    executions: list[Execution] = []
+    digests: list[str] = []
+    seen: set[str] = set()
+    tokens: set[str] = set()
+    token: str | None = None
+    retrieved_at = since
+    for _ in range(MAX_PAGES_PER_DAY):
+        page = fetcher.fetch(executions_url(since, before, token))
+        digests.append(page.sha256)
+        retrieved_at = page.retrieved_at
+        elements, token = parse_execution_page(page.body)
+        for execution in elements:
+            require_observation_in_window(execution.timestamp, f"execution {execution.uid}")
+            if not since <= execution.timestamp < before:
+                raise BackfillRefused(
+                    "CONTINUATION_CHAIN_REFUSED",
+                    f"execution {execution.uid} at {iso(execution.timestamp)} is outside the requested day {day.isoformat()}",
+                )
+            if executions and execution.timestamp < executions[-1].timestamp:
+                raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"{day.isoformat()}: the log is not in ascending order")
+            if execution.uid in seen:
+                raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"execution {execution.uid} appears twice")
+            seen.add(execution.uid)
+            executions.append(execution)
+        if token is None:
+            return ExecutionDay(day, tuple(executions), tuple(digests), retrieved_at)
+        if token in tokens:
+            raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"{day.isoformat()}: a continuation token repeats")
+        tokens.add(token)
+    raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"{day.isoformat()}: more than {MAX_PAGES_PER_DAY} pages")
+
+
+# --- the hourly liquidation-volume series (UNVERIFIED shape, owner ruling 5) -----------------
+
+
+def liquidation_volume_url(since: datetime, to: datetime) -> str:
+    query = {"interval": 3600, "since": int(since.timestamp()), "to": int(to.timestamp())}
+    return f"{LIQUIDATION_VOLUME_URL}?{urlencode(query)}"
+
+
+def parse_liquidation_volume(data: bytes, *, since: datetime, to: datetime) -> dict[datetime, Decimal]:
+    """``{"result": {"timestamp": [...], "data": [...], "more": false}, "errors": []}``.
+
+    Timestamps are whole hours in epoch seconds inside ``[since, to]``; values
+    are non-negative JSON numbers kept with their published digits.
+    """
+
+    payload = _json(data, "the liquidation-volume series")
+    if not isinstance(payload, dict) or set(payload) != {"result", "errors"} or payload["errors"] != []:
+        return _refuse_shape("the liquidation-volume series is not {result, errors: []}")
+    result = payload["result"]
+    if not isinstance(result, dict) or set(result) != {"timestamp", "data", "more"} or result["more"] is not False:
+        return _refuse_shape("the series result is not {timestamp, data, more: false}")
+    stamps, values = result["timestamp"], result["data"]
+    if not isinstance(stamps, list) or not isinstance(values, list) or len(stamps) != len(values):
+        return _refuse_shape("the series timestamps and values do not pair up")
+    series: dict[datetime, Decimal] = {}
+    for stamp, value in zip(stamps, values):
+        if type(stamp) is not int or len(str(stamp)) != 10:
+            return _refuse_shape(f"series timestamp {stamp!r} is not an epoch second")
+        if isinstance(value, bool) or not isinstance(value, (int, Decimal)):
+            return _refuse_shape(f"series value {value!r} is not a JSON number")
+        hour = require_observation_in_window(datetime.fromtimestamp(stamp, tz=UTC), "a series point")
+        number = Decimal(value)
+        if (hour.minute, hour.second) != (0, 0) or not since <= hour <= to:
+            return _refuse_shape(f"series point {iso(hour)} is not an hour inside [{iso(since)}, {iso(to)}]")
+        if not number.is_finite() or number < 0:
+            return _refuse_shape(f"series value {value!r} at {iso(hour)} must be non-negative")
+        if hour in series:
+            return _refuse_shape(f"series point {iso(hour)} appears twice")
+        series[hour] = number
+    return series
+
+
+@dataclass(frozen=True)
+class SeriesDay:
+    values: Mapping[datetime, Decimal]
+    sha256: str
+    retrieved_at: datetime
+
+
+def read_series_day(fetcher: Fetcher, day: date) -> SeriesDay:
+    """The day's hourly points; ``to`` is the last hour start, so nothing past the day is asked for."""
+
+    since = midnight(day)
+    to = since + timedelta(hours=23)
+    require_request_span(since, to + _HOUR, f"liquidation volume {day.isoformat()}")
+    page = fetcher.fetch(liquidation_volume_url(since, to))
+    return SeriesDay(parse_liquidation_volume(page.body, since=since, to=to), page.sha256, page.retrieved_at)
+
+
+def corroborates(total: Decimal, published: Decimal) -> bool:
+    """Owner ruling 3: equal once ``total`` is rounded half-even to ``published``'s decimal places."""
+
+    exponent = published.as_tuple().exponent
+    if not isinstance(exponent, int):
+        return False
+    with localcontext(_WIDE_CONTEXT):
+        return total.quantize(Decimal((0, (1,), exponent)), rounding=ROUND_HALF_EVEN) == published
+
+
+# --- hours, rows and evidence -----------------------------------------------------------------
+
+
+def _side(execution: Execution) -> str:
+    taker = TAKER_DIRECTIONS.get(execution.direction)
+    side = epic_x.LIQUIDATION_SIDE_TO_POSITION.get(taker) if taker else None
+    if side is None:
+        raise BackfillRefused(
+            "LIQUIDATION_SIDE_UNKNOWN",
+            f"liquidation {execution.uid} has taker direction {execution.direction!r}; an unknown side refuses its day",
+        )
+    return side
+
+
+def _overlaps(hour: datetime, incidents: Sequence[tuple[datetime, datetime]]) -> bool:
+    return any(start < hour + _HOUR and hour < end for start, end in incidents)
+
+
+def hour_record(
+    hour: datetime,
+    executions: Sequence[Execution],
+    *,
+    incident: bool,
+    series_value: Decimal | None,
+    pages_sha256: Sequence[str],
+    series_sha256: str | None,
+) -> dict[str, Any]:
+    """The evidence record of one hour; its canonical digest is the hour's ``evidence_sha256``."""
+
+    in_hour = [execution for execution in executions if hour <= execution.timestamp < hour + _HOUR]
+    liquidations = [execution for execution in in_hour if execution.order_type == LIQUIDATION_ORDER_TYPE]
+    quantities = {"long": Decimal(0), "short": Decimal(0)}
+    with localcontext(_WIDE_CONTEXT):
+        for execution in liquidations:
+            quantities[_side(execution)] += execution.quantity
+        total = (quantities["long"] + quantities["short"]) * CONTRACT_SIZE_USD
+    if incident or not in_hour:
+        status, corroboration = epic_x.FEED_STATUS_SOURCE_UNAVAILABLE, v2.CORROBORATION_NOT_APPLICABLE
+    else:
+        status = epic_x.FEED_STATUS_OBSERVED_WITH_EVENTS if liquidations else epic_x.FEED_STATUS_OBSERVED_ZERO_EVENTS
+        if series_value is None:
+            corroboration = v2.CORROBORATION_SERIES_UNAVAILABLE
+        else:
+            corroboration = v2.CORROBORATION_AGREES if corroborates(total, series_value) else v2.CORROBORATION_DISAGREES
+    return {
+        "hour_start": iso(hour),
+        "feed_status": status,
+        "corroboration": corroboration,
+        "execution_count": len(in_hour),
+        "liquidation_uids": sorted(execution.uid for execution in liquidations),
+        "long_quantity": v1.canonical_decimal(quantities["long"]),
+        "short_quantity": v1.canonical_decimal(quantities["short"]),
+        "series_value": None if series_value is None else v1.canonical_decimal(series_value),
+        "incident": incident,
+        "pages_sha256": list(pages_sha256),
+        "series_sha256": series_sha256,
+    }
+
+
+def hour_evidence(record: Mapping[str, Any]) -> v2.LiquidationHourEvidence:
+    return v2.LiquidationHourEvidence(
+        hour_start=datetime.fromisoformat(record["hour_start"]),
+        feed_status=record["feed_status"],
+        corroboration=record["corroboration"],
+        evidence_sha256=sha256_hex(canonical_json_bytes(dict(record))),
+    )
+
+
+def liquidation_rows(record: Mapping[str, Any], *, retrieved_at: datetime) -> tuple[Liquidation, ...]:
+    """One per-side ``1h`` aggregate for each side with liquidations in an observed hour."""
+
+    if record["feed_status"] != epic_x.FEED_STATUS_OBSERVED_WITH_EVENTS:
+        return ()
+    hour = datetime.fromisoformat(record["hour_start"])
+    rows = []
+    for side in v2.LIQUIDATION_SIDES:
+        quantity = Decimal(record[f"{side}_quantity"])
+        if quantity > 0:
+            rows.append(
+                Liquidation(
+                    observation_time=hour,
+                    exchange=KRAKEN_EXCHANGE,
+                    symbol=KRAKEN_SYMBOL,
+                    timeframe=KRAKEN_TIMEFRAME,
+                    side=side,
+                    quantity=quantity,
+                    quantity_unit=QUANTITY_UNIT,
+                    notional_usd=quantity * CONTRACT_SIZE_USD,
+                    provider=KRAKEN_PROVIDER,
+                    source=EXECUTIONS_URL,
+                    available_at=retrieved_at,
+                    ingested_at=retrieved_at,
+                )
+            )
+    return tuple(rows)
+
+
+def liquidation_hour_evidence_bytes(
+    *,
+    retrieved_at: datetime,
+    incidents: Sequence[tuple[datetime, datetime]],
+    hours: Sequence[Mapping[str, Any]],
+) -> bytes:
+    """The canonical bytes of a ``HISTORICAL_LIQUIDATION_HOUR_EVIDENCE_V1`` file."""
+
+    return canonical_json_bytes(
+        {
+            "evidence_version": HOUR_EVIDENCE_VERSION,
+            "rule": v2.LIQUIDATION_COMPLETENESS_VERSION,
+            "corroboration_rule": CORROBORATION_RULE,
+            "exchange": KRAKEN_EXCHANGE,
+            "symbol": KRAKEN_SYMBOL,
+            "liquidation_order_type": LIQUIDATION_ORDER_TYPE,
+            "contract_size_usd": v1.canonical_decimal(CONTRACT_SIZE_USD),
+            "source": f"{EXECUTIONS_URL} ; {LIQUIDATION_VOLUME_URL}",
+            "licence": KRAKEN_LICENCE,
+            "retrieved_at": iso(retrieved_at),
+            "incidents": [{"start": iso(start), "end": iso(end)} for start, end in incidents],
+            "hours": [dict(record) for record in hours],
+        }
+    )
+
+
+def parse_liquidation_hour_evidence(data: bytes, *, expected_sha256: str) -> tuple[v2.LiquidationHourEvidence, ...]:
+    """Verify an hour evidence file and give the builder's typed records.
+
+    The file must be the canonical bytes its digest names, declare this rule
+    and universe, and list strictly increasing whole hours, each exactly the
+    recorded keys; every hour's ``evidence_sha256`` is recomputed from its record.
+    """
+
+    if not isinstance(data, bytes) or sha256_hex(data) != expected_sha256:
+        return _refuse_shape("the hour evidence does not match its bound SHA-256")
+    payload = _json(data, "the hour evidence")
+    if not isinstance(payload, dict) or canonical_json_bytes(payload) != data or set(payload) != _HOUR_EVIDENCE_KEYS:
+        return _refuse_shape("the hour evidence is not the canonical file with exactly its keys")
+    declared = {key: payload[key] for key in ("evidence_version", "rule", "corroboration_rule", "exchange", "symbol")}
+    if declared != {
+        "evidence_version": HOUR_EVIDENCE_VERSION,
+        "rule": v2.LIQUIDATION_COMPLETENESS_VERSION,
+        "corroboration_rule": CORROBORATION_RULE,
+        "exchange": KRAKEN_EXCHANGE,
+        "symbol": KRAKEN_SYMBOL,
+    }:
+        return _refuse_shape(f"the hour evidence declares {declared}")
+    if not isinstance(payload["hours"], list):
+        return _refuse_shape("hours must be a list")
+    typed: list[v2.LiquidationHourEvidence] = []
+    for record in payload["hours"]:
+        if not isinstance(record, dict) or set(record) != _HOUR_RECORD_KEYS:
+            return _refuse_shape(f"each hour is exactly {sorted(_HOUR_RECORD_KEYS)}")
+        try:
+            hour = datetime.fromisoformat(record["hour_start"])
+        except (TypeError, ValueError):
+            return _refuse_shape(f"hour {record['hour_start']!r} is not an ISO instant")
+        if require_utc(hour, "hour_start") != hour or iso(hour) != record["hour_start"] or (hour.minute, hour.second, hour.microsecond) != (0, 0, 0):
+            return _refuse_shape(f"hour {record['hour_start']!r} is not a canonical UTC hour start")
+        if typed and hour <= typed[-1].hour_start:
+            return _refuse_shape(f"hour {record['hour_start']}: hours must be strictly increasing")
+        typed.append(hour_evidence(record))
+    return tuple(typed)
+
+
+@dataclass(frozen=True)
+class KrakenLiquidationCollection:
+    rows: tuple[Liquidation, ...]
+    hours: tuple[v2.LiquidationHourEvidence, ...]
+    evidence_bytes: bytes
+
+    @property
+    def evidence_sha256(self) -> str:
+        return sha256_hex(self.evidence_bytes)
+
+
+def read_liquidations(
+    fetcher: Fetcher,
+    first_day: date,
+    last_day: date,
+    *,
+    incidents: Sequence[tuple[datetime, datetime]],
+) -> KrakenLiquidationCollection:
+    """Every hour of ``first_day`` .. ``last_day``: rows, typed hour records and the evidence file."""
+
+    incidents = tuple((require_utc(start, "incident start"), require_utc(end, "incident end")) for start, end in incidents)
+    if any(end <= start for start, end in incidents):
+        raise BackfillRefused("RESPONSE_SHAPE_REFUSED", "an incident must end after it starts")
+    records: list[dict[str, Any]] = []
+    rows: list[Liquidation] = []
+    retrieved: list[datetime] = []
+    for day in data_window_days(first_day, last_day):
+        log = read_execution_day(fetcher, day)
+        series = read_series_day(fetcher, day)
+        retrieved += [log.retrieved_at, series.retrieved_at]
+        for hour in hours_of(day):
+            record = hour_record(
+                hour,
+                log.executions,
+                incident=_overlaps(hour, incidents),
+                series_value=series.values.get(hour),
+                pages_sha256=log.pages_sha256,
+                series_sha256=series.sha256,
+            )
+            records.append(record)
+            rows.extend(liquidation_rows(record, retrieved_at=log.retrieved_at))
+    evidence = liquidation_hour_evidence_bytes(retrieved_at=max(retrieved), incidents=incidents, hours=records)
+    return KrakenLiquidationCollection(tuple(rows), tuple(hour_evidence(record) for record in records), evidence)
