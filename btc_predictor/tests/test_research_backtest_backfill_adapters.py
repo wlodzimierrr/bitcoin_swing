@@ -19,7 +19,7 @@ import hashlib
 import json
 import socket
 from datetime import UTC, date, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -1093,3 +1093,49 @@ def test_an_etf_row_keeps_its_retrieval_instant_and_takes_the_persistence_instan
     persisted_at = RETRIEVED_AT + timedelta(hours=1)
     result = persistence.persist_etf_flows(provider, RecordingConnection(), request, ingested_at=persisted_at)
     assert (result.flows[0].available_at, result.flows[0].ingested_at) == (RETRIEVED_AT + timedelta(seconds=2), persisted_at)
+
+
+FULL_WIDTH = "12345678901234567890.123456789012345678"  # a valid NUMERIC(38,18) quantity
+
+
+def test_liquidation_quantities_and_notional_are_exact_under_a_narrow_caller_context() -> None:
+    executions = [
+        fx.execution("l1", utc(2021, 6, 1, 1, 10), FULL_WIDTH, order_type="Liquidation", direction="Sell"),
+        fx.execution("l2", utc(2021, 6, 1, 1, 20), "0.000000000000000001", order_type="Liquidation", direction="Sell"),
+    ]
+    executions += [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+    executions.sort(key=lambda element: element["timestamp"])
+    exact_total = Decimal("12345678901234567890.123456789012345679")
+    series = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = str(exact_total)
+    transport = day_world([fx.execution_page(executions)], series)
+    with localcontext() as narrow:
+        narrow.prec = 6
+        collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+    (row,) = collection.rows
+    assert (row.side, row.quantity, row.notional_usd) == ("long", exact_total, exact_total)
+    assert {hour.hour_start.hour: hour.corroboration for hour in collection.hours}[1] == v2.CORROBORATION_AGREES
+    snapshot = v2.build_extended_replay_snapshot(
+        shared_snapshot=rbt001a.shared_snapshot(), liquidations=collection.rows, liquidation_hours=collection.hours
+    )
+    assert [item.notional_usd for item in snapshot.liquidations] == [exact_total]
+
+
+def test_a_liquidation_sum_that_cannot_be_exact_is_refused() -> None:
+    huge = "9" * 81
+    executions = [fx.execution(f"l{k}", utc(2021, 6, 1, 1, k), huge if k else "0." + "0" * 80 + "1", order_type="Liquidation", direction="Sell") for k in range(2)]
+    refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(day_world([fx.execution_page(executions)])), DAY, DAY, incidents=())
+
+
+def test_a_funding_interval_is_whole_seconds_exactly_at_any_width() -> None:
+    transport = FakeTransport()
+    funding_month(transport, date(2020, 2, 1), [fx.funding_row(utc(2020, 2, 1), hours="8.00000000000000000000000000001")])
+    with localcontext() as context:
+        context.prec = 28
+        refused("RESPONSE_SHAPE_REFUSED", binance.read_funding, make_fetcher(transport), date(2020, 2, 1), date(2020, 2, 1))
+    transport = FakeTransport()
+    funding_month(transport, date(2020, 2, 1), [fx.funding_row(utc(2020, 2, 1), hours="1" + "0" * 40)])
+    refused("RESPONSE_SHAPE_REFUSED", binance.read_funding, make_fetcher(transport), date(2020, 2, 1), date(2020, 2, 1))
+    transport = FakeTransport()
+    funding_month(transport, date(2020, 2, 1), [fx.funding_row(utc(2020, 2, 1), hours="8.000000000000000000000000000000")])
+    assert binance.read_funding(make_fetcher(transport), date(2020, 2, 1), date(2020, 2, 1)).rows[0].funding_interval_hours == 8

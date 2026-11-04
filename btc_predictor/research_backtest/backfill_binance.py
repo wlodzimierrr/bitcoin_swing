@@ -44,6 +44,7 @@ import xml.etree.ElementTree as ElementTree
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
+from fractions import Fraction
 from decimal import ROUND_HALF_EVEN, ROUND_HALF_UP, Context, Decimal, DivisionByZero, InvalidOperation, Overflow, localcontext
 from typing import Any
 from urllib.parse import urlencode
@@ -243,14 +244,18 @@ def parse_funding_archive(data: bytes, month: date, *, source: str, retrieved_at
         _in_month(settled, month, f"{what} settlement")
         hours = _decimal(row[1], f"{what} funding_interval_hours")
         rate = _decimal(row[2], f"{what} last_funding_rate")
-        seconds = hours * 3600
-        if hours <= 0 or seconds != seconds.to_integral_value():
+        seconds = Fraction(hours) * 3600  # exact: a rounded product could pass as whole seconds (review F4)
+        try:
+            interval = timedelta(seconds=int(seconds)) if hours > 0 and seconds.denominator == 1 else None
+        except OverflowError:
+            interval = None
+        if interval is None:
             raise BackfillRefused(
                 "RESPONSE_SHAPE_REFUSED", f"{what} {settled.isoformat()}: the interval must be a positive whole number of seconds"
             )
         if settled in rows or any(instant == settled for instant, _ in excluded):
             raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"{what}: settlement {settled.isoformat()} appears twice")
-        if settled - timedelta(seconds=int(seconds)) < DATA_WINDOW_START:
+        if settled - interval < DATA_WINDOW_START:
             excluded.append((settled, EXCLUDED_FUNDING_PRICES_PRE_2020))
             continue
         rows[settled] = FundingRate(

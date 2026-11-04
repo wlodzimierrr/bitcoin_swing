@@ -40,7 +40,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
-from decimal import ROUND_HALF_EVEN, Context, Decimal, DivisionByZero, InvalidOperation, Overflow, localcontext
+from decimal import ROUND_HALF_EVEN, Context, Decimal, DivisionByZero, Inexact, InvalidOperation, Overflow, localcontext
 from typing import Any
 from urllib.parse import urlencode
 
@@ -94,6 +94,8 @@ _EXECUTION_FIELDS = frozenset(
 )
 _PAGE_KEYS = frozenset({"elements", "len", "continuationToken"})
 _WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
+# sums and the notional are exact or refused, whatever the caller's context (review F4)
+_EXACT_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[Inexact, InvalidOperation, DivisionByZero, Overflow])
 _HOUR_EVIDENCE_KEYS = frozenset(
     {
         "evidence_version", "rule", "corroboration_rule", "exchange", "symbol", "liquidation_order_type",
@@ -335,10 +337,13 @@ def hour_record(
     in_hour = [execution for execution in executions if hour <= execution.timestamp < hour + _HOUR]
     liquidations = [execution for execution in in_hour if execution.order_type == LIQUIDATION_ORDER_TYPE]
     quantities = {"long": Decimal(0), "short": Decimal(0)}
-    with localcontext(_WIDE_CONTEXT):
-        for execution in liquidations:
-            quantities[_side(execution)] += execution.quantity
-        total = (quantities["long"] + quantities["short"]) * CONTRACT_SIZE_USD
+    try:
+        with localcontext(_EXACT_CONTEXT):
+            for execution in liquidations:
+                quantities[_side(execution)] += execution.quantity
+            total = (quantities["long"] + quantities["short"]) * CONTRACT_SIZE_USD
+    except Inexact:
+        return _refuse_shape(f"hour {iso(hour)}: the liquidation quantities do not sum exactly")
     if incident or not in_hour:
         status, corroboration = epic_x.FEED_STATUS_SOURCE_UNAVAILABLE, v2.CORROBORATION_NOT_APPLICABLE
     else:
@@ -381,6 +386,11 @@ def liquidation_rows(record: Mapping[str, Any], *, retrieved_at: datetime) -> tu
     for side in v2.LIQUIDATION_SIDES:
         quantity = Decimal(record[f"{side}_quantity"])
         if quantity > 0:
+            try:
+                with localcontext(_EXACT_CONTEXT):
+                    notional = quantity * CONTRACT_SIZE_USD
+            except Inexact:
+                return _refuse_shape(f"hour {record['hour_start']}: the {side} notional is not exact")
             rows.append(
                 Liquidation(
                     observation_time=hour,
@@ -390,7 +400,7 @@ def liquidation_rows(record: Mapping[str, Any], *, retrieved_at: datetime) -> tu
                     side=side,
                     quantity=quantity,
                     quantity_unit=QUANTITY_UNIT,
-                    notional_usd=quantity * CONTRACT_SIZE_USD,
+                    notional_usd=notional,
                     provider=KRAKEN_PROVIDER,
                     source=EXECUTIONS_URL,
                     available_at=retrieved_at,
