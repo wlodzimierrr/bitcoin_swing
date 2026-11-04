@@ -19,6 +19,13 @@ What every adapter shares:
   SHA-256, never by value, with its retrieval instant; evidence files cite the
   digests.
 - **One refusal class** with a closed set of reason codes.
+- **Provenance** (owner review ruling 7, 2026-11-04). A row's ``available_at``
+  is the retrieval instant of the responses it was read from (the later of the
+  two archives for a basis row; both responses for an ETF row). The in-memory
+  row carries the same instant in ``ingested_at``, which the existing
+  collectors replace at persistence with their own instant: a persisted row's
+  ``ingested_at`` is when it entered the database. No replay owner reads
+  ``ingested_at`` on a derivative or ETF row.
 
 Nothing here opens a database or a network connection, and nothing is
 certified: the adapters produce raw records with their true provider, source

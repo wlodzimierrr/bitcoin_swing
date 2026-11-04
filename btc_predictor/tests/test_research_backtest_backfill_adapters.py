@@ -1047,3 +1047,49 @@ def test_etf_persistence_refuses_a_renamed_provider_or_days_outside_the_window()
         RecordingConnection(),
         dataclasses.replace(request, end=date(2026, 1, 2)),
     )
+
+
+class AdvancingClock:
+    """One second later on every read, so each response has its own retrieval instant."""
+
+    def __init__(self) -> None:
+        self.ticks = 0
+
+    def __call__(self) -> datetime:
+        self.ticks += 1
+        return RETRIEVED_AT + timedelta(seconds=self.ticks)
+
+
+def test_a_basis_row_is_stamped_from_its_own_two_archives_and_persisted_under_ruling_7() -> None:
+    fetcher = sources.Fetcher(basis_world(), RetrievalLog(), AdvancingClock())
+    collection = binance.read_basis(fetcher)
+    retrieved = {item.url: item.retrieved_at for item in fetcher.log.retrievals if item.status == 200}
+    for row in collection.rows:
+        month = (row.observation_time - HOUR).date().replace(day=1)
+        expected = max(
+            retrieved[binance.coinm_klines_archive_url("BTCUSD_200925", month)],
+            retrieved[binance.coinm_index_archive_url(month)],
+        )
+        assert row.available_at == row.ingested_at == expected, row.observation_time
+    assert len({row.available_at for row in collection.rows}) == 2  # August and September, not the latest of all
+    # ruling 7: the collector stamps the persistence instant; every row keeps its own retrieval instant
+    provider = persistence.RecordedDerivativesProvider("binance", "BTCUSD", binance.BINANCE_PROVIDER, basis=collection.rows)
+    persisted_at = RETRIEVED_AT + timedelta(hours=1)
+    result = persistence.persist_derivatives(
+        provider, RecordingConnection(), provider.collection_request(utc(2020, 8, 1), utc(2020, 10, 1)), ingested_at=persisted_at
+    )
+    assert [row.available_at for row in result.futures_basis] == [row.available_at for row in collection.rows]
+    assert {row.ingested_at for row in result.futures_basis} == {persisted_at}
+
+
+def test_an_etf_row_keeps_its_retrieval_instant_and_takes_the_persistence_instant() -> None:
+    first = date(2024, 1, 11)
+    transport = coinglass_world({first: {"IBIT": 5}}, {"IBIT": {first: 9}}, first, first)
+    fetcher = coinglass.coinglass_fetcher(transport, RetrievalLog(), api_key="key-123", clock=AdvancingClock())
+    read = coinglass.read_etf_flows(fetcher, ("IBIT",), first, first, bounds=BOUNDS)
+    assert read.flows[0].available_at == RETRIEVED_AT + timedelta(seconds=2)  # the later of its two responses
+    provider = persistence.RecordedEtfFlowProvider(coinglass.COINGLASS_PROVIDER, read.flows)
+    request = provider.collection_request(("IBIT",), first, first, source=coinglass.FLOW_HISTORY_URL, market_holidays=frozenset())
+    persisted_at = RETRIEVED_AT + timedelta(hours=1)
+    result = persistence.persist_etf_flows(provider, RecordingConnection(), request, ingested_at=persisted_at)
+    assert (result.flows[0].available_at, result.flows[0].ingested_at) == (RETRIEVED_AT + timedelta(seconds=2), persisted_at)

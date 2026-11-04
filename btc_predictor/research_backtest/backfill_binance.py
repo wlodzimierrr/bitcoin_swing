@@ -502,9 +502,15 @@ class ContractKlines:
 
     listing: v2.FuturesBasisContractListing
     klines: Mapping[datetime, Kline]
-    retrieved_at: datetime
+    retrieved_by_month: Mapping[date, datetime]
     sources: tuple[str, ...]
     archive_sha256: tuple[str, ...]
+
+    @property
+    def retrieved_at(self) -> datetime:
+        """The latest retrieval of any of the contract's archives (the listing file's instant)."""
+
+        return max(self.retrieved_by_month.values())
 
 
 def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | None:
@@ -525,7 +531,7 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
     klines: dict[datetime, Kline] = {}
     sources: list[str] = []
     digests: list[str] = []
-    retrieved: list[datetime] = []
+    retrieved: dict[date, datetime] = {}
     for index, month in enumerate(months):
         url = coinm_klines_archive_url(contract, month)
         archive = verified_archive(fetcher, url, allow_not_found=True)
@@ -541,7 +547,7 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
         klines.update(parse_klines_archive(archive.body, month, symbol=contract, what=f"{contract} {month:%Y-%m}"))
         sources.append(url)
         digests.append(archive.sha256)
-        retrieved.append(archive.retrieved_at)
+        retrieved[month] = archive.retrieved_at
     if not klines:
         return None
     first = min(klines)
@@ -554,7 +560,7 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
             f"{contract}: the last archived kline closes at {(max(klines) + _HOUR).isoformat()}, not the delivery {delivery.isoformat()}",
         )
     return ContractKlines(
-        v2.FuturesBasisContractListing(contract, first, delivery), klines, max(retrieved), tuple(sources), tuple(digests)
+        v2.FuturesBasisContractListing(contract, first, delivery), klines, retrieved, tuple(sources), tuple(digests)
     )
 
 
@@ -575,17 +581,25 @@ class BasisGap:
         return {"instrument": self.instrument, "observation_time": self.observation_time.isoformat(), "reason": self.reason}
 
 
+def _month_of(instant: datetime) -> date:
+    return date(instant.year, instant.month, 1)
+
+
 def basis_rows(
     contract: ContractKlines,
     index: Mapping[datetime, Kline],
     *,
-    index_retrieved_at: datetime,
+    index_retrieved: Mapping[date, datetime],
     source: str,
 ) -> tuple[tuple[FuturesBasis, ...], tuple[BasisGap, ...]]:
-    """One row per hour close ``t`` in ``[first + 1h, delivery)`` inside the window, with both klines."""
+    """One row per hour close ``t`` in ``[first + 1h, delivery)`` inside the window, with both klines.
+
+    A row's ``available_at`` is the later retrieval of the two archives its
+    klines came from (the contract's and the index's month of ``t - 1h``), not
+    of any other month (review F3).
+    """
 
     listing = contract.listing
-    retrieved_at = max(contract.retrieved_at, index_retrieved_at)
     rows: list[FuturesBasis] = []
     gaps: list[BasisGap] = []
     t = listing.first_kline_open_at + _HOUR
@@ -596,6 +610,8 @@ def basis_rows(
             gaps.append(BasisGap(listing.instrument, t, GAP_FUTURES_KLINE_MISSING if future is None else GAP_INDEX_KLINE_MISSING))
         else:
             rate = basis_rate(future.close, spot.close)
+            month = _month_of(t - _HOUR)
+            retrieved_at = max(contract.retrieved_by_month[month], index_retrieved[month])
             rows.append(
                 FuturesBasis(
                     observation_time=t,
@@ -651,16 +667,16 @@ def read_basis(fetcher: Fetcher) -> BasisCollection:
     first_month = min(item.listing.first_kline_open_at for item in listed).date()
     last_needed = min(max(item.listing.delivery_at for item in listed).date(), LAST_DATA_DAY)
     index: dict[datetime, Kline] = {}
-    index_retrieved: list[datetime] = []
+    index_retrieved: dict[date, datetime] = {}
     for month in data_window_months(first_month, last_needed):
         url = coinm_index_archive_url(month)
         archive = _required(verified_archive(fetcher, url), url)
         index.update(parse_klines_archive(archive.body, month, symbol=COINM_INDEX_SYMBOL, what=f"index {month:%Y-%m}"))
-        index_retrieved.append(archive.retrieved_at)
+        index_retrieved[month] = archive.retrieved_at
     rows: list[FuturesBasis] = []
     gaps: list[BasisGap] = []
     for item in listed:
-        contract_rows, contract_gaps = basis_rows(item, index, index_retrieved_at=max(index_retrieved), source=BASIS_SOURCE)
+        contract_rows, contract_gaps = basis_rows(item, index, index_retrieved=index_retrieved, source=BASIS_SOURCE)
         rows.extend(contract_rows)
         gaps.extend(contract_gaps)
     # the listing pages and every contract archive the listing rests on (RBT-001A ruling 4)

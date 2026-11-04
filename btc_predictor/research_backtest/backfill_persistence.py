@@ -16,6 +16,12 @@ request that does not name the rows' own exchange, symbol and provider or that
 spans days outside the data window: a row is never renamed on its way into the
 raw tables. Rows are served for ``[start, end)`` (ETF dates inclusive, as
 BTC-022).
+
+Owner review ruling 7 (2026-11-04): the collectors stamp every persisted row's
+``ingested_at`` with one instant per call, the persistence instant (``now``
+unless the caller passes it), while each row keeps its own ``available_at``,
+the retrieval instant of its responses. The entry points pass ``ingested_at``
+through unchanged.
 """
 
 from __future__ import annotations
