@@ -191,7 +191,13 @@ def series_body(points: Mapping[datetime, Any], *, more: bool = False, errors: S
 # --- Coin Metrics and CoinGlass --------------------------------------------------------------
 
 
-def coinmetrics_page(rows: Iterable[tuple[date, str]], *, next_url: str | None = None, extra: Mapping[str, Any] | None = None) -> bytes:
+def coinmetrics_page(
+    rows: Iterable[tuple[date, str]],
+    *,
+    next_url: str | None = None,
+    token: str | None = "token",
+    extra: Mapping[str, Any] | None = None,
+) -> bytes:
     payload: dict[str, Any] = {
         "data": [
             {"asset": "btc", "time": f"{day.isoformat()}T00:00:00.000000000Z", "CapMrktCurUSD": value, **(extra or {})}
@@ -200,7 +206,8 @@ def coinmetrics_page(rows: Iterable[tuple[date, str]], *, next_url: str | None =
     }
     if next_url is not None:
         payload["next_page_url"] = next_url
-        payload["next_page_token"] = "token"
+        if token is not None:
+            payload["next_page_token"] = token
     return json.dumps(payload).encode()
 
 

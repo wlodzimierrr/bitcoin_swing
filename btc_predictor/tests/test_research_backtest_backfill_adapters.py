@@ -22,6 +22,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode
 
 import pytest
 
@@ -712,14 +713,80 @@ def test_market_caps_become_the_v2_evidence_file_the_builder_admits() -> None:
     assert snapshot.market_caps[0].available_at == utc(2020, 1, 3)
 
 
-def test_market_cap_pages_are_followed_only_on_the_providers_own_url() -> None:
+def test_the_market_cap_request_is_exactly_the_bounded_inclusive_query() -> None:
+    first, last = date(2020, 1, 1), date(2020, 1, 5)
+    transport = coinmetrics_world([(first, "1")], first, last)
+    coinmetrics.read_market_caps(make_fetcher(transport), first, last)
+    (url,) = transport.urls
+    assert url.split("?", 1)[0] == "https://community-api.coinmetrics.io/v4/timeseries/asset-metrics"
+    assert dict(parse_qsl(url.split("?", 1)[1], strict_parsing=True)) == {
+        "assets": "btc",
+        "metrics": "CapMrktCurUSD",
+        "frequency": "1d",
+        "start_time": "2020-01-01",
+        "end_time": "2020-01-05",
+        "end_inclusive": "true",
+        "page_size": "10000",
+    }
+
+
+def continuation_url(first: date, last: date, token: str = "token", **changes: Any) -> str:
+    query = {**coinmetrics.bounded_query(first, last), "next_page_token": token, **changes}
+    return f"{coinmetrics.COINMETRICS_TIMESERIES_URL}?{urlencode({key: value for key, value in query.items() if value is not None})}"
+
+
+def test_a_market_cap_continuation_is_rebuilt_from_the_bounded_query() -> None:
     first, last = date(2020, 1, 1), date(2020, 1, 2)
-    next_url = f"{coinmetrics.COINMETRICS_TIMESERIES_URL}?next_page_token=token"
-    transport = coinmetrics_world([(first, "1")], first, last, next_url=next_url)
-    transport.add(next_url, fx.coinmetrics_page([(last, "2")]))
+    # the provider's own spelling, in another parameter order, names the same bounded query
+    provider_url = continuation_url(first, last)
+    reordered = provider_url.split("?")[0] + "?" + "&".join(reversed(provider_url.split("?")[1].split("&")))
+    transport = coinmetrics_world([(first, "1")], first, last, next_url=reordered)
+    transport.add(coinmetrics.timeseries_url(first, last, "token"), fx.coinmetrics_page([(last, "2")]))
     assert len(coinmetrics.read_market_caps(make_fetcher(transport), first, last).rows) == 2
-    foreign = coinmetrics_world([(first, "1")], first, last, next_url="https://elsewhere.example/page")
-    refused("RESPONSE_SHAPE_REFUSED", coinmetrics.read_market_caps, make_fetcher(foreign), first, last)
+    assert transport.urls == [coinmetrics.timeseries_url(first, last), coinmetrics.timeseries_url(first, last, "token")]
+
+
+@pytest.mark.parametrize(
+    ("next_url", "token", "reason"),
+    [
+        ("https://elsewhere.example/page", "token", "RESPONSE_SHAPE_REFUSED"),
+        ("pre-2020", "token", "CONTINUATION_CHAIN_REFUSED"),
+        ("holdout", "token", "CONTINUATION_CHAIN_REFUSED"),
+        ("unbounded", "token", "CONTINUATION_CHAIN_REFUSED"),
+        ("exclusive", "token", "CONTINUATION_CHAIN_REFUSED"),
+        ("extra", "token", "CONTINUATION_CHAIN_REFUSED"),
+        ("other-token", "token", "CONTINUATION_CHAIN_REFUSED"),
+        ("bounded", None, "CONTINUATION_CHAIN_REFUSED"),
+    ],
+    ids=["foreign", "pre-2020", "holdout", "unbounded", "exclusive", "extra-parameter", "token-mismatch", "no-token"],
+)
+def test_a_market_cap_continuation_outside_the_bounded_query_is_never_requested(
+    next_url: str, token: str | None, reason: str
+) -> None:
+    first, last = date(2020, 1, 1), date(2020, 1, 31)
+    urls = {
+        "pre-2020": continuation_url(first, last, start_time="2019-12-01"),
+        "holdout": continuation_url(first, last, end_time="2026-06-30"),
+        "unbounded": continuation_url(first, last, start_time=None, end_time=None),
+        "exclusive": continuation_url(first, last, end_inclusive="false"),
+        "extra": continuation_url(first, last, paging_from="start"),
+        "other-token": continuation_url(first, last, token="other"),
+        "bounded": continuation_url(first, last),
+    }
+    transport = coinmetrics_world([(first, "1")], first, last, next_url=urls.get(next_url, next_url), token=token)
+    refused(reason, coinmetrics.read_market_caps, make_fetcher(transport), first, last)
+    assert transport.urls == [coinmetrics.timeseries_url(first, last)]
+
+
+def test_a_repeated_market_cap_token_refuses_the_chain() -> None:
+    first, last = date(2020, 1, 1), date(2020, 1, 3)
+    transport = coinmetrics_world([(first, "1")], first, last, next_url=continuation_url(first, last))
+    transport.add(
+        coinmetrics.timeseries_url(first, last, "token"),
+        fx.coinmetrics_page([(date(2020, 1, 2), "2")], next_url=continuation_url(first, last)),
+    )
+    refused("CONTINUATION_CHAIN_REFUSED", coinmetrics.read_market_caps, make_fetcher(transport), first, last)
+    assert len(transport.urls) == 2
 
 
 @pytest.mark.parametrize(

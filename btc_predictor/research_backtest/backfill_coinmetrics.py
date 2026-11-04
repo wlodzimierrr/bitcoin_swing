@@ -12,6 +12,12 @@ builder applies the ``D+1 00:00`` stamp and the ``D+2 00:00`` availability.
 The timeseries response shape follows the provider's documented form; any
 unexpected field refuses the response, and Part B confirms it on one live
 in-window page.
+
+**Continuations** (review F1). The provider's ``next_page_url`` is never
+requested as given. It must name this endpoint and repeat the original bounded
+query exactly, plus the page's own ``next_page_token``; the next request is
+then rebuilt here from that bounded query and the token, so no continuation
+can ask for a day outside the window. A repeated token refuses the chain.
 """
 
 from __future__ import annotations
@@ -23,7 +29,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from btc_predictor.research_backtest import replay_inputs_v2 as v2
 from btc_predictor.research_backtest.backfill_sources import (
@@ -45,19 +51,55 @@ _PAGE_KEYS = frozenset({"data", "next_page_token", "next_page_url"})
 _ROW_KEYS = frozenset({"asset", "time", v2.MARKET_CAP_METRIC})
 
 
-def timeseries_url(first_day: date, last_day: date) -> str:
+def bounded_query(first_day: date, last_day: date) -> dict[str, str]:
+    """The one query this adapter sends: the requested days, both ends inclusive."""
+
     if not DATA_WINDOW_START.date() <= first_day <= last_day <= LAST_DATA_DAY:
         raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"market cap days {first_day}..{last_day} are not inside the data window")
-    query = {
+    return {
         "assets": v2.MARKET_CAP_ASSET,
         "metrics": v2.MARKET_CAP_METRIC,
         "frequency": v2.MARKET_CAP_FREQUENCY,
         "start_time": first_day.isoformat(),
         "end_time": last_day.isoformat(),
         "end_inclusive": "true",
-        "page_size": PAGE_SIZE,
+        "page_size": str(PAGE_SIZE),
     }
+
+
+def timeseries_url(first_day: date, last_day: date, next_page_token: str | None = None) -> str:
+    query = bounded_query(first_day, last_day)
+    if next_page_token is not None:
+        query["next_page_token"] = next_page_token
     return f"{COINMETRICS_TIMESERIES_URL}?{urlencode(query)}"
+
+
+def _refuse_chain(message: str) -> Any:
+    raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", message)
+
+
+def continuation_token(next_url: Any, token: Any, *, first_day: date, last_day: date) -> str | None:
+    """The next page's token, once ``next_url`` is shown to repeat the bounded query (review F1)."""
+
+    if next_url is None and token is None:
+        return None
+    endpoint = urlsplit(COINMETRICS_TIMESERIES_URL)
+    parts = urlsplit(next_url) if isinstance(next_url, str) else None
+    if parts is None or (parts.scheme, parts.netloc, parts.path, parts.fragment) != (endpoint.scheme, endpoint.netloc, endpoint.path, ""):
+        return _refuse("the next page is not a Coin Metrics timeseries URL")
+    if not isinstance(token, str) or not token:
+        return _refuse_chain("a continuation needs its next_page_token")
+    try:
+        pairs = parse_qsl(parts.query, keep_blank_values=True, strict_parsing=True)
+    except ValueError:
+        return _refuse_chain("the next page's query is malformed")
+    query = dict(pairs)
+    expected = {**bounded_query(first_day, last_day), "next_page_token": token}
+    if len(query) != len(pairs) or query != expected:
+        return _refuse_chain(
+            f"the next page asks for {sorted(query.items())}, not the bounded query {sorted(expected.items())}"
+        )
+    return token
 
 
 def _refuse(message: str) -> Any:
@@ -65,7 +107,7 @@ def _refuse(message: str) -> Any:
 
 
 def parse_timeseries_page(data: bytes, *, first_day: date, last_day: date) -> tuple[tuple[tuple[date, Decimal], ...], str | None]:
-    """One page's ``(day, market cap)`` rows and the next page's URL, if any."""
+    """One page's ``(day, market cap)`` rows and the next page's validated token, if any."""
 
     try:
         payload = json.loads(data)
@@ -73,9 +115,6 @@ def parse_timeseries_page(data: bytes, *, first_day: date, last_day: date) -> tu
         return _refuse("a market-cap page is not JSON")
     if not isinstance(payload, dict) or "data" not in payload or not set(payload) <= _PAGE_KEYS:
         return _refuse(f"a market-cap page has keys {sorted(payload) if isinstance(payload, dict) else payload!r}")
-    next_url = payload.get("next_page_url")
-    if next_url is not None and (not isinstance(next_url, str) or not next_url.startswith(f"{COINMETRICS_TIMESERIES_URL}?")):
-        return _refuse("the next page is not a Coin Metrics timeseries URL")
     if not isinstance(payload["data"], list):
         return _refuse("data must be a list")
     rows = []
@@ -98,7 +137,11 @@ def parse_timeseries_page(data: bytes, *, first_day: date, last_day: date) -> tu
         if number is None or not number.is_finite() or number <= 0:
             return _refuse(f"market cap for {day} must be a positive decimal string, not {value!r}")
         rows.append((day, number))
-    return tuple(rows), next_url
+    # after the rows, so a returned day outside the window is refused as the exposure it is
+    token = continuation_token(
+        payload.get("next_page_url"), payload.get("next_page_token"), first_day=first_day, last_day=last_day
+    )
+    return tuple(rows), token
 
 
 @dataclass(frozen=True)
@@ -118,21 +161,24 @@ class MarketCapCollection:
 def read_market_caps(fetcher: Fetcher, first_day: date, last_day: date) -> MarketCapCollection:
     """Every requested day's value, the days the source does not cover, and the evidence file."""
 
-    url: str | None = timeseries_url(first_day, last_day)
     rows: list[tuple[date, Decimal]] = []
     digests: list[str] = []
     retrieved: list[datetime] = []
+    tokens: set[str] = set()
+    token: str | None = None
     for _ in range(MAX_PAGES):
-        if url is None:
-            break
-        page = fetcher.fetch(url)
+        page = fetcher.fetch(timeseries_url(first_day, last_day, token))
         digests.append(page.sha256)
         retrieved.append(page.retrieved_at)
-        page_rows, url = parse_timeseries_page(page.body, first_day=first_day, last_day=last_day)
+        page_rows, token = parse_timeseries_page(page.body, first_day=first_day, last_day=last_day)
         rows.extend(page_rows)
+        if token is None:
+            break
+        if token in tokens:
+            raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"market cap: next_page_token {token!r} repeats")
+        tokens.add(token)
     else:
-        if url is not None:
-            raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"market cap: more than {MAX_PAGES} pages")
+        raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"market cap: more than {MAX_PAGES} pages")
     rows.sort()
     if any(later[0] == earlier[0] for earlier, later in zip(rows, rows[1:])):
         raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", "a market-cap day appears twice")
