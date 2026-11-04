@@ -9,7 +9,10 @@ the response shapes follow the documented examples as RBT-002 recorded them,
 any unexpected field or shape refuses the response, and the adapter stays
 UNVERIFIED until Part B checks one live in-window response of each endpoint.
 ``net_assets_usd`` is this adapter's reading of "net assets"; Part B confirms
-the name.
+the name. Every declared field is type-checked, including those the rows do
+not use (review F5): the envelope's ``msg`` is a string; a flow day's total
+``flow_usd`` and ``price_usd`` and a fund day's ``btc_holdings`` are finite JSON
+numbers; a ticker's ``flow_usd`` is a finite JSON number, ``null`` or absent.
 
 **Holdout guard.** CoinGlass serves history to the present, so an unbounded
 request would return 2026 rows, which policy V7 section 3 forbids collecting.
@@ -128,6 +131,8 @@ def _envelope(data: bytes, what: str) -> list[Any]:
         return _refuse(f"{what} is not exactly {sorted(_ENVELOPE_KEYS)}")
     if payload["code"] != "0" or not isinstance(payload["data"], list):
         return _refuse(f"{what} reports code {payload['code']!r}")
+    if not isinstance(payload["msg"], str):
+        return _refuse(f"{what}: msg {payload['msg']!r} is not a string")
     return payload["data"]
 
 
@@ -153,18 +158,26 @@ def parse_flow_history(data: bytes, *, first_day: date, last_day: date) -> dict[
     """Per-ticker flows by ``(ticker, trading date)``; a ticker without a value has no entry."""
 
     flows: dict[tuple[str, date], Decimal] = {}
+    days: set[date] = set()
+    seen: set[tuple[str, date]] = set()
     for entry in _envelope(data, "the flow history"):
         if not isinstance(entry, dict) or set(entry) != _FLOW_DAY_KEYS or not isinstance(entry["etf_flows"], list):
             return _refuse(f"each flow day is exactly {sorted(_FLOW_DAY_KEYS)}")
         day = _trading_day(entry["timestamp"], "a flow day", first_day, last_day)
+        if day in days:
+            raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"flow day {day} appears twice")
+        days.add(day)
+        _usd(entry["flow_usd"], f"the {day} total flow_usd")  # unused, but declared: checked (review F5)
+        _usd(entry["price_usd"], f"the {day} price_usd")
         for item in entry["etf_flows"]:
             if not isinstance(item, dict) or "etf_ticker" not in item or not set(item) <= _FLOW_TICKER_KEYS:
                 return _refuse(f"each ticker flow is within {sorted(_FLOW_TICKER_KEYS)} and names its ticker")
             ticker = item["etf_ticker"]
             if not isinstance(ticker, str) or not ticker or ticker != ticker.strip():
                 return _refuse(f"ticker {ticker!r} is not a fund identifier")
-            if (ticker, day) in flows:
+            if (ticker, day) in seen:  # with or without a value
                 raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"{ticker} {day} appears twice")
+            seen.add((ticker, day))
             if item.get("flow_usd") is not None:
                 flows[(ticker, day)] = _usd(item["flow_usd"], f"{ticker} {day} flow_usd")
     return flows
@@ -178,6 +191,7 @@ def parse_fund_history(data: bytes, *, ticker: str, first_day: date, last_day: d
         if not isinstance(entry, dict) or set(entry) != _FUND_DAY_KEYS:
             return _refuse(f"each {ticker} history day is exactly {sorted(_FUND_DAY_KEYS)}")
         day = _trading_day(entry["assets_date"], f"a {ticker} assets date", first_day, last_day)
+        _usd(entry["btc_holdings"], f"{ticker} {day} btc_holdings")  # unused, but declared: checked (review F5)
         if day in assets:
             raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"{ticker} assets for {day} appear twice")
         value = _usd(entry["net_assets_usd"], f"{ticker} {day} net assets")
