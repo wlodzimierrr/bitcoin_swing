@@ -1458,7 +1458,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`; rulings `4453b5c`,
   implementation `524fcbf`); **RBT-003 is IN PROGRESS** (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
-  FAILED on 2026-11-04 and the review-fix is in progress).
+  FAILED on 2026-11-04, and its review-fix is committed and awaits the
+  independent xHigh re-review).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1694,8 +1695,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `BACKFILL_HISTORICAL_INPUTS_V1`: Part A, the offline provider adapters and
   evidence writers, is implemented (`1427053`; synthetic fixtures; no network,
   database or purchase) under its five owner rulings (2026-11-04). Its
-  independent xHigh review FAILED on 2026-11-04 and the review-fix (owner
-  review rulings 6-7) is in progress. Part B, the
+  independent xHigh review FAILED on 2026-11-04; the review-fix (owner review
+  rulings 6-7; `a3bfa6e`..`00ba499`) is committed and awaits the independent
+  xHigh re-review. Part B, the
   collection run, awaits database write access, network access, the CoinGlass
   purchase with the documented ETF date bounds, and the evidence-storage
   decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
@@ -2014,9 +2016,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part A
-  review-fix** (owner review rulings 6-7) and its independent xHigh
-  re-review; then Part B's
+- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
+  re-review of the RBT-003 Part A review-fix** (`a3bfa6e`..`00ba499`); then
+  Part B's
   prerequisites: database write and network access, the USD 29 CoinGlass
   purchase (nothing purchased) with the documented ETF date bounds, and the
   evidence-storage decision. RBT-006 stays blocked until
@@ -2042,6 +2044,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part A review-fix validation (2026-11-04):** `.venv312`
+  CPython 3.12.14. The adapter module (187 tests) with the replay and
+  database modules 548 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed; full
+  repository at `00ba499`, alone: 7,981 passed, 3 skipped, 1 xfailed, 0
+  failed (79 min). 56 in-memory mutants each fail the adapter module.
+  Synthetic fixtures only: no network, no database, no real-data value or
+  outcome.
 - **RBT-003 Part A validation (2026-11-04):** `.venv312` CPython 3.12.14.
   The new module (117 tests) with the replay and database modules 478 passed;
   the guard suites with the replay modules 593 passed; V5 definition
@@ -2513,7 +2524,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
-  owner review rulings 6-7 are recorded in this documentation commit. Before them,
+  owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
+  `09ba259`, `d7bd11c`, `894bcc1`, `be01997`, `58e1248`, `ca09376`,
+  `1b96bbf`, `423fb13` and `00ba499` with this documentation commit. Before
+  them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the
