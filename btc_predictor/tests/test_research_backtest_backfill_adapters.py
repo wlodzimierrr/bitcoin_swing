@@ -466,9 +466,65 @@ def test_a_delivery_the_archive_contradicts_is_refused() -> None:
     transport = FakeTransport()
     fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 6))
     refused("DELIVERY_INSTANT_MISMATCH", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_200925")
+    # ruling 11: volume in the 09:00 kline means the contract traded past the hour after delivery
     transport = FakeTransport()
-    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 8))
+    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 25, 9))
     refused("DELIVERY_INSTANT_MISMATCH", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_200925")
+
+
+SETTLED = utc(2020, 9, 25, 8)  # BTCUSD_200925's delivery instant (ruling 2)
+
+
+@pytest.mark.parametrize(
+    ("last_open", "traded_until"),
+    [
+        (utc(2020, 9, 25, 8), utc(2020, 9, 25, 9)),  # the delivery-hour kline carries volume (9 of 22 live contracts)
+        (utc(2020, 9, 25, 8), SETTLED),  # the delivery-hour kline exists with zero volume (most live contracts)
+        (utc(2020, 9, 30, 23), SETTLED),  # zero-volume klines run to the month's end (BTCUSD_200925 live)
+        (utc(2020, 9, 30, 23), utc(2020, 9, 25, 9)),  # both: volume at 08:00, then flat to the month's end
+    ],
+    ids=["volume-in-delivery-hour", "flat-delivery-hour", "flat-to-month-end", "volume-then-flat"],
+)
+def test_ruling_11_the_last_kline_with_volume_closes_at_delivery_or_the_hour_after(
+    last_open: datetime, traded_until: datetime
+) -> None:
+    transport = FakeTransport()
+    fx.add_contract(
+        transport, "BTCUSD_200925", utc(2020, 8, 10, 8), last_open, volume_at=lambda t: "2" if t < traded_until else "0"
+    )
+    read = binance.read_contract_klines(make_fetcher(transport), "BTCUSD_200925")
+    assert read is not None and read.listing.delivery_at == SETTLED
+    # no kline opening at or after delivery is returned: no basis row may read one
+    assert max(read.klines) == utc(2020, 9, 25, 7)
+
+
+@pytest.mark.parametrize(
+    ("last_open", "traded", "why"),
+    [
+        (utc(2020, 9, 30, 23), lambda t: t < utc(2020, 9, 25, 10), "volume until 10:00, past the hour after delivery"),
+        (utc(2020, 9, 30, 23), lambda t: t < SETTLED or t == utc(2020, 9, 28, 12), "volume again days after delivery"),
+        (utc(2020, 9, 30, 23), lambda t: t < utc(2020, 9, 25, 7), "no volume in the hour before delivery: stopped early"),
+        (utc(2020, 9, 30, 23), lambda t: t < utc(2020, 9, 24, 8), "stopped a day early"),
+        (utc(2020, 9, 30, 23), lambda t: False, "no kline has volume"),
+    ],
+    ids=["past-the-hour-after", "traded-again", "stopped-an-hour-early", "stopped-a-day-early", "never-traded"],
+)
+def test_ruling_11_any_other_last_traded_kline_refuses(last_open: datetime, traded: Any, why: str) -> None:
+    transport = FakeTransport()
+    fx.add_contract(transport, "BTCUSD_200925", utc(2020, 8, 10, 8), last_open, volume_at=lambda t: "2" if traded(t) else "0")
+    refused("DELIVERY_INSTANT_MISMATCH", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_200925")
+
+
+def test_ruling_11_reads_volume_without_arithmetic_in_the_callers_context() -> None:
+    transport = FakeTransport()
+    fx.add_contract(
+        transport, "BTCUSD_200925", utc(2020, 8, 10, 8), utc(2020, 9, 30, 23),
+        volume_at=lambda t: "0.000000000000000001" if t < SETTLED else "0.000",
+    )
+    with localcontext() as ctx:
+        ctx.prec, ctx.Emin, ctx.traps[Inexact] = 1, -2, True
+        read = binance.read_contract_klines(make_fetcher(transport), "BTCUSD_200925")
+    assert read is not None and max(read.klines) == utc(2020, 9, 25, 7)
 
 
 def test_a_2026_delivery_reads_nothing_from_2026() -> None:

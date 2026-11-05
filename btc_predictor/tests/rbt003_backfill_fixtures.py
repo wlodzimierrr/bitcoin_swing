@@ -115,12 +115,13 @@ def add_contract(
     first_open: datetime,
     last_open: datetime,
     close_at: Any = lambda t: Decimal("10010"),
+    volume_at: Any = lambda t: "2",
 ) -> None:
     """A contract's monthly archives holding every hour from ``first_open`` to ``last_open``."""
 
     by_month: dict[date, list[list[str]]] = {}
     for opened in hourly(first_open, last_open + HOUR):
-        by_month.setdefault(month_of(opened), []).append(kline_row(opened, close_at(opened)))
+        by_month.setdefault(month_of(opened), []).append(kline_row(opened, close_at(opened), volume=volume_at(opened)))
     for month, rows in by_month.items():
         add_archive(transport, binance.coinm_klines_archive_url(contract, month), rows)
 

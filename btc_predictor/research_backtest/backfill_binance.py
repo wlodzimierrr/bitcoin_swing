@@ -28,8 +28,9 @@ Sources (RBT-002 source ranking, probed 2026-10-01; licence CC BY-NC-SA 4.0):
   the contracts the archive lists, each with the open time of its first ``1h``
   kline and its delivery instant. Owner ruling 2 (2026-11-04): the delivery
   instant is the symbol's ``YYMMDD`` date at 08:00 UTC, checked against the
-  archive (last kline open plus one hour) for every contract delivered inside
-  the data window, so nothing from 2026 is read.
+  archive for every contract delivered inside the data window, so nothing from
+  2026 is read. Owner Part B ruling 11 (2026-11-05) makes the check the last
+  kline with volume, which must close at delivery or the hour after it.
 
 Every archive is checked against its published ``.CHECKSUM`` before it is read.
 Only files whose period lies inside the data window are ever requested: each
@@ -552,6 +553,14 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
     have; otherwise the start is unproven. Owner re-review ruling 8 (2026-11-05):
     every requested month before the first archived kline must be absent; a
     present archive without a kline does not prove the contract was not trading.
+
+    Owner Part B ruling 11 (2026-11-05, amending ruling 2's check): the live
+    archives keep the delivery day's ``08:00`` kline, sometimes with volume, and
+    some keep zero-volume klines to the month's end. For a contract delivered
+    inside the data window, the last kline with non-zero volume must close at
+    the delivery instant or one hour after it, so every later kline has zero
+    volume; anything else refuses. Klines opening at or after delivery are not
+    returned: no basis row reads them.
     """
 
     delivery = contract_delivery_at(contract)
@@ -596,14 +605,17 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
             f"{contract}: the first archived kline opens at {first.isoformat()}, the start of its month, so the "
             "contract may have traded in an unarchived earlier month (owner review ruling 6)",
         )
-    later = [opened for opened in klines if opened + _HOUR > delivery]
-    if later:
-        raise BackfillRefused("DELIVERY_INSTANT_MISMATCH", f"{contract}: a kline at {later[0].isoformat()} runs past the delivery")
-    if delivery < DATA_WINDOW_END and max(klines) + _HOUR != delivery:
-        raise BackfillRefused(
-            "DELIVERY_INSTANT_MISMATCH",
-            f"{contract}: the last archived kline closes at {(max(klines) + _HOUR).isoformat()}, not the delivery {delivery.isoformat()}",
-        )
+    if delivery < DATA_WINDOW_END:
+        # ``is_zero`` involves no arithmetic, so the caller's decimal context cannot change the check
+        traded = [opened for opened, kline in klines.items() if not kline.volume.is_zero()]
+        last_close = max(traded) + _HOUR if traded else None
+        if last_close not in (delivery, delivery + _HOUR):
+            closes = "no kline has volume" if last_close is None else f"the last kline with volume closes at {last_close.isoformat()}"
+            raise BackfillRefused(
+                "DELIVERY_INSTANT_MISMATCH",
+                f"{contract}: {closes}, not at the delivery {delivery.isoformat()} or the hour after it (owner Part B ruling 11)",
+            )
+    klines = {opened: kline for opened, kline in klines.items() if opened < delivery}
     return ContractKlines(
         v2.FuturesBasisContractListing(contract, first, delivery), klines, retrieved, tuple(sources), tuple(digests)
     )
