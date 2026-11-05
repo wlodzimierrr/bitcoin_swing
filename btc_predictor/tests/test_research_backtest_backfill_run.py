@@ -13,6 +13,8 @@ import io
 import json
 import socket
 import urllib.error
+import urllib.request
+import urllib.response
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from email.message import Message
@@ -166,6 +168,72 @@ def test_a_long_retry_after_is_capped() -> None:
     sleeps: list[float] = []
     make_transport(opener, sleeps, pause_seconds=0)(URL, {})
     assert sleeps == [0, transport_module.MAX_RETRY_AFTER_SECONDS]
+
+
+class FakeHttps(urllib.request.HTTPSHandler):
+    """Answers inside urllib's real handler chain (redirect handling included) and opens no socket."""
+
+    handler_order = 100  # ahead of the default HTTP and HTTPS handlers, which would open a socket
+
+    def __init__(self, replies: dict[str, tuple[int, dict[str, str], bytes]]) -> None:
+        super().__init__()
+        self.replies = replies
+        self.requests: list[tuple[str, dict[str, str]]] = []
+
+    def https_open(self, request: Any) -> Any:
+        self.requests.append((request.full_url, dict(request.header_items())))
+        status, headers, body = self.replies[request.full_url]
+        message = Message()
+        for name, value in headers.items():
+            message[name] = value
+        response = urllib.response.addinfourl(io.BytesIO(body), message, request.full_url, status)
+        response.msg = "fake"
+        return response
+
+    http_open = https_open
+
+
+CG_URL = coinglass.FLOW_HISTORY_URL
+JANUARY_2026 = "https://data.binance.vision/data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-01.zip"
+
+
+@pytest.mark.parametrize("code", [301, 302, 303, 307, 308])
+@pytest.mark.parametrize(
+    ("url", "target"),
+    [
+        (CG_URL, "https://outside.invalid/collect"),  # another host, with the key
+        (CG_URL, "http://open-api-v4.coinglass.com/api/etf/bitcoin/flow-history"),  # plain HTTP, with the key
+        (URL, JANUARY_2026),  # a bounded February 2020 archive sent to the holdout
+    ],
+)
+def test_review_b1_a_redirect_is_returned_never_followed(code: int, url: str, target: str) -> None:
+    handler = FakeHttps({url: (code, {"Location": target}, b"moved"), target: (200, {}, b"777000099")})
+    transport = transport_module.UrllibTransport(opener=transport_module.build_opener(handler), sleep=lambda seconds: None)
+    response = transport(url, {"CG-API-KEY": "secret-key"})
+    assert response.status == code and b"777000099" not in response.body
+    assert [requested for requested, _ in handler.requests] == [url]  # the target was never requested
+    fetcher = sources.Fetcher(
+        transport_module.UrllibTransport(opener=transport_module.build_opener(FakeHttps(handler.replies)), sleep=lambda seconds: None),
+        sources.RetrievalLog(), lambda: RETRIEVED_AT, headers={"CG-API-KEY": "secret-key"},
+    )
+    caught = refused("PROVIDER_RESPONSE_REFUSED", fetcher.fetch, url)
+    assert target not in str(caught) and "secret-key" not in str(caught)
+
+
+def test_review_b1_the_default_opener_refuses_redirects_and_a_redirected_response_refuses() -> None:
+    director = transport_module.UrllibTransport().opener.__self__
+    redirecting = [handler for handler in director.handlers if isinstance(handler, urllib.request.HTTPRedirectHandler)]
+    assert len(redirecting) == 1 and isinstance(redirecting[0], transport_module.RefuseRedirects)
+    # an injected opener that did follow a redirect: its response is refused, its body never read
+    reply = Reply(200, b"777000098")
+    reply.url = JANUARY_2026
+    reply.read = None  # reading would raise
+    opener = Opener(reply)
+    caught = refused("PROVIDER_RESPONSE_REFUSED", make_transport(opener), URL, {})
+    assert "2026" not in str(caught) and len(opener.requests) == 1
+    plain = Reply(200, b"archive")
+    plain.url = URL
+    assert make_transport(Opener(plain))(URL, {}).body == b"archive"
 
 
 def test_only_the_transport_module_may_open_a_connection() -> None:

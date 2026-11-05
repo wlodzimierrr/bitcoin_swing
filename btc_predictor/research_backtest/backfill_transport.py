@@ -10,6 +10,11 @@ growing pause, honouring a short ``Retry-After``; any other status, and the last
 attempt's status, is returned unchanged for the fetcher to judge, so an error is
 never read as an empty result. Headers (the CoinGlass key among them) are sent
 and never logged, printed or put in an exception message.
+
+A redirect is never followed (review B1): its target was not checked against
+the host allowlist, the scheme or the data window, so the default opener
+returns a ``3xx`` as the response, which the fetcher refuses, and a response
+from any URL other than the requested one refuses.
 """
 
 from __future__ import annotations
@@ -44,6 +49,19 @@ class TransportFailed(RuntimeError):
     """Every attempt failed without an HTTP response; the message names the URL and the error type only."""
 
 
+class RefuseRedirects(urllib.request.HTTPRedirectHandler):
+    """Return a ``3xx`` as the response instead of requesting its target (review B1)."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> None:
+        return None
+
+
+def build_opener(*handlers: urllib.request.BaseHandler) -> Callable[..., Any]:
+    """An opener that never follows a redirect; ``handlers`` are for tests."""
+
+    return urllib.request.build_opener(RefuseRedirects(), *handlers).open
+
+
 @dataclass
 class UrllibTransport:
     """``GET`` with retries, a pause between requests and a host allowlist.
@@ -55,7 +73,7 @@ class UrllibTransport:
     pause_seconds: float = 0.2
     attempts: int = 6
     backoff_seconds: float = 2.0
-    opener: Callable[..., Any] = urllib.request.urlopen
+    opener: Callable[..., Any] = field(default_factory=build_opener)
     sleep: Callable[[float], None] = time.sleep
     requests: int = field(default=0, init=False)
     retries: int = field(default=0, init=False)
@@ -78,6 +96,13 @@ class UrllibTransport:
             try:
                 request = urllib.request.Request(url, headers=request_headers, method="GET")
                 with self.opener(request, timeout=self.timeout_seconds) as response:
+                    answered = getattr(response, "url", None)
+                    if answered is not None and answered != request.full_url:
+                        # an opener that followed a redirect: its target was never checked (review B1)
+                        raise BackfillRefused(
+                            "PROVIDER_RESPONSE_REFUSED",
+                            f"{parts.scheme}://{parts.hostname}: the response is not the requested URL's (a redirect is never followed)",
+                        )
                     status, body = int(response.status), response.read()
             except urllib.error.HTTPError as error:
                 status, body = int(error.code), _read_error_body(error)
