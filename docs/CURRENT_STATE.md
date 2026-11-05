@@ -1459,8 +1459,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   implementation `524fcbf`); **RBT-003 is IN PROGRESS** (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
-  findings, and the second review-fix is committed and awaits the
-  independent xHigh re-review).
+  findings and its second re-review the same day with one P2, and the third
+  review-fix is in progress).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1698,15 +1698,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   database or purchase) under its five owner rulings (2026-11-04). Its
   independent xHigh review FAILED on 2026-11-04 and, after the review-fix
   `a3bfa6e`..`00ba499` (owner review rulings 6-7), its re-review FAILED on
-  2026-11-05 with two P2 findings; the second review-fix (owner re-review
-  ruling 8; `85cfc8f`, `d7d43a0`) is committed and awaits the independent
-  xHigh re-review. Part B, the
+  2026-11-05 with two P2 findings; after the second review-fix (owner
+  re-review ruling 8; `85cfc8f`, `d7d43a0`) its second re-review FAILED the
+  same day with one P2 (N3), and the third review-fix is in progress. Part
+  B, the
   collection run, awaits database write access, network access, the CoinGlass
   purchase with the documented ETF date bounds, and the evidence-storage
   decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 Part A re-review,
+- **Most recent completed review:** EPIC Y RBT-003 Part A second re-review,
+  2026-11-05, **independent xHigh FAIL** (same Codex session, report-only) of
+  review-fix `85cfc8f` and `d7d43a0` and docs `091c8cd`: N1, N2 and F1-F10
+  FIXED, rulings 6-8 met; one P2, N3 (the evidence's series-value spelling
+  follows the caller's decimal `capitals` setting). Details in EPIC Y's
+  RBT-003 Part A second re-review outcome.
+- **Preceding completed review (EPIC Y):** RBT-003 Part A re-review,
   2026-11-05, **independent xHigh FAIL** (same Codex session, report-only) of
   review-fix `a3bfa6e`..`00ba499` and docs `ed7f83a`: F1-F8 and F10 FIXED (F3
   as ruled), F9 fixed in part; two P2: N1 (the evidence parser adds in the
@@ -2026,9 +2033,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
-  re-review of the second RBT-003 Part A review-fix** (`85cfc8f`,
-  `d7d43a0`); then Part B's
+- **Next dependency-satisfied EPIC Y action:** the **third RBT-003 Part A
+  review-fix** (N3) and its independent xHigh re-review; then Part B's
   prerequisites: database write and network access, the USD 29 CoinGlass
   purchase (nothing purchased) with the documented ETF date bounds, and the
   evidence-storage decision. RBT-006 stays blocked until
@@ -2547,7 +2553,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `09ba259`, `d7bd11c`, `894bcc1`, `be01997`, `58e1248`, `ca09376`,
   `1b96bbf`, `423fb13` and `00ba499` with docs `ed7f83a`; the re-review FAIL
   and owner re-review ruling 8 `f931981`; the second review-fix `85cfc8f` and
-  `d7d43a0` with this documentation commit. Before them,
+  `d7d43a0` with docs `091c8cd`; the second re-review FAIL in this
+  documentation commit. Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the
@@ -3477,6 +3484,11 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-05: RBT-003 Part A second re-review finding.** The
+  owner chose the recommended option: fix N3 in a distinct commit, validate,
+  then an independent re-review. No ruling was needed. Details in the RBT-003
+  block.
 
 - **ANSWERED 2026-11-05: RBT-003 Part A re-review findings.** The owner chose
   the recommended options: fix N1 and N2 in distinct commits, validate, then
