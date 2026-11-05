@@ -1461,7 +1461,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
   findings and its second re-review the same day with one P2; after the
   third review-fix its third re-review PASSED the same day, closing Part A's
-  review, and Part B, the collection run, remains).
+  review; Part B, the collection run, started the same day under owner
+  rulings 9-11).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1703,10 +1704,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   re-review ruling 8; `85cfc8f`, `d7d43a0`) its second re-review FAILED the
   same day with one P2 (N3); after the third review-fix (`3f3a801`) its
   third re-review PASSED the same day with no new finding, which closes Part
-  A's review. Part B, the
-  collection run, awaits database write access, network access, the CoinGlass
-  purchase with the documented ETF date bounds, and the evidence-storage
-  decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  A's review. Part B, the collection run, started on 2026-11-05: its
+  prerequisites are in place, its first step's live checks are done, and the
+  owner ruled that value-bearing files live in a private repository (9), that
+  CoinGlass, which takes no date bound, is read through a reviewed projection
+  (10), and that the delivery instant is checked by volume (11). Its code,
+  tests and independent review come next; nothing has been collected or
+  persisted. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part A third re-review,
@@ -2042,11 +2046,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-003 Part B**, the
-  collection run, once the owner provides its prerequisites: database write
-  and network access, the USD 29 CoinGlass
-  purchase (nothing purchased) with the documented ETF date bounds, and the
-  evidence-storage decision. RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** **RBT-003 Part B** code:
+  the network transport, the ruling 5 and 11 adapter changes, the CoinGlass
+  projection (ruling 10), a resumable runner writing value-bearing files to
+  the private repository (ruling 9), persistence and the dataset build; its
+  tests and independent review come before the first CoinGlass request.
+  RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -3503,6 +3508,16 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-05: RBT-003 Part B rulings 9-11.** The owner chose
+  every recommended option: value-bearing files (evidence, frozen datasets
+  and their manifests) live in the private repository
+  `wlodzimierrr/backtest_evidence`, this repository only value-free records
+  (9); CoinGlass, whose ETF endpoints take no date bound, is read through a
+  reviewed projection that drops out-of-window records before any value is
+  parsed (10); the delivery instant stays the symbol date at `08:00` UTC,
+  checked by the last kline with volume closing at `08:00` or `09:00` (11).
+  Details in the RBT-003 block.
 
 - **ANSWERED 2026-11-05: RBT-003 Part A second re-review finding.** The
   owner chose the recommended option: fix N3 in a distinct commit, validate,
