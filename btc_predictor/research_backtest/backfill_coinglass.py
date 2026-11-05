@@ -199,24 +199,32 @@ class EtfFlowCollectionRead:
     projections: tuple[ProjectedResponse, ...]  # the flow history first, then each fund's, in request order
 
 
-def read_etf_flows(fetcher: Fetcher, funds: Sequence[str], first_day: date, last_day: date) -> EtfFlowCollectionRead:
-    """The requested funds' flows with the same day's net assets (``None`` when absent).
+def read_etf_flows(
+    fetcher: Fetcher, funds: Sequence[str] | None, first_day: date, last_day: date
+) -> EtfFlowCollectionRead:
+    """The funds' flows with the same day's net assets (``None`` when absent).
 
-    Every response is projected to ``[max(first_day, 2024-01-11), last_day]``
-    before it is parsed (owner Part B ruling 10); the full response is not kept.
+    ``funds=None`` reads every ticker the projected flow history names, the
+    collection Part B makes: policy V7's fund universe is chosen per decision
+    at replay, not here. Every response is projected to
+    ``[max(first_day, 2024-01-11), last_day]`` before it is parsed (owner Part B
+    ruling 10); the full response is not kept.
     """
 
     first_day = max(first_day, FIRST_ETF_FLOW_DAY)
     if not first_day <= last_day <= LAST_DATA_DAY:  # before any request: no response is fetched for days outside
         raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"ETF days {first_day}..{last_day} are not inside the data window")
-    if not funds or len(set(funds)) != len(funds):
+    if funds is not None and (not funds or len(set(funds)) != len(funds)):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "name each fund once")
-    urls = {ticker: fund_history_url(ticker) for ticker in funds}  # every ticker is checked before any request
+    urls = {ticker: fund_history_url(ticker) for ticker in funds or ()}  # every named ticker is checked before any request
     flow = project_records(
         fetcher.fetch(FLOW_HISTORY_URL), date_keys=FLOW_DATE_KEYS, first_day=first_day, last_day=last_day,
         what="the flow history",
     )
     flows = parse_flow_history(flow)
+    if funds is None:
+        funds = tuple(sorted({ticker for ticker, _ in flows}))
+        urls = {ticker: fund_history_url(ticker) for ticker in funds}
     projections = [flow]
     histories: dict[str, tuple[Mapping[date, Decimal], datetime]] = {}
     for ticker in funds:
