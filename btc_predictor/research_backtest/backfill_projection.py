@@ -21,7 +21,9 @@ only it reaches the strict parsers and the evidence file. The full response
 leaves a digest and a size (the retrieval log's), and each projection records
 how many records it dropped from the prohibited window, from in-window days
 not requested, and from the holdout and reserve: the metadata exposure the
-ruling records. Any malformed byte refuses the whole response.
+ruling records. Any malformed byte refuses the whole response, a string's
+bytes included: each must be a well-formed UTF-8 sequence, checked byte by byte
+and never decoded (review B7).
 """
 
 from __future__ import annotations
@@ -125,7 +127,7 @@ class _Reader:
         return i
 
     def string_end(self, i: int) -> int:
-        """The index after the string opening at ``i``; escapes and control bytes are checked."""
+        """The index after the string opening at ``i``; escapes, control bytes and UTF-8 are checked."""
 
         data, size = self.data, self.size
         i += 1
@@ -148,8 +150,35 @@ class _Reader:
                 continue
             if byte < 0x20:
                 self.refuse(f"a string at byte {i} holds a control byte")
-            i += 1
+            i = self.utf8_end(i) if byte >= 0x80 else i + 1
         return self.refuse("a string is not terminated")
+
+    def utf8_end(self, i: int) -> int:
+        """The index after the multi-byte UTF-8 sequence at ``i``: its bytes are checked, never decoded (review B7).
+
+        RFC 3629's table: no overlong form, no surrogate, nothing above U+10FFFF.
+        """
+
+        data, lead = self.data, self.data[i]
+        if 0xC2 <= lead <= 0xDF:
+            length, low, high = 2, 0x80, 0xBF
+        elif lead == 0xE0:
+            length, low, high = 3, 0xA0, 0xBF
+        elif 0xE1 <= lead <= 0xEC or 0xEE <= lead <= 0xEF:
+            length, low, high = 3, 0x80, 0xBF
+        elif lead == 0xED:
+            length, low, high = 3, 0x80, 0x9F
+        elif lead == 0xF0:
+            length, low, high = 4, 0x90, 0xBF
+        elif 0xF1 <= lead <= 0xF3:
+            length, low, high = 4, 0x80, 0xBF
+        elif lead == 0xF4:
+            length, low, high = 4, 0x80, 0x8F
+        else:
+            return self.refuse(f"a string at byte {i} holds a byte that cannot start a UTF-8 sequence")
+        if i + length > self.size or not low <= data[i + 1] <= high or not all(0x80 <= item <= 0xBF for item in data[i + 2 : i + length]):
+            self.refuse(f"a string at byte {i} holds a malformed UTF-8 sequence")
+        return i + length
 
     def value_end(self, i: int, depth: int) -> int:
         if depth > MAX_DEPTH:

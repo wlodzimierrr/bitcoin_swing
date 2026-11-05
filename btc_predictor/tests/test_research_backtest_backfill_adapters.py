@@ -1376,6 +1376,38 @@ def test_ruling_10_the_projection_checks_the_grammar_of_every_byte(body: bytes) 
             first_day=date(2024, 1, 11), last_day=date(2024, 1, 12), what="flows")
 
 
+# review B7: a lone continuation, a byte no sequence starts with, overlong forms, surrogates,
+# code points above U+10FFFF and truncated sequences
+MALFORMED_UTF8 = [
+    b"\xff", b"\xfe", b"\x80", b"\xbf", b"\xc0\xaf", b"\xc1\xbf", b"\xc2", b"\xc2\x41", b"\xe2\x82",
+    b"\xe2\x82\x41", b"\xe0\x80\x80", b"\xe0\x9f\xbf", b"\xed\xa0\x80", b"\xed\xbf\xbf", b"\xf0\x80\x80\x80",
+    b"\xf0\x8f\xbf\xbf", b"\xf4\x90\x80\x80", b"\xf5\x80\x80\x80", b"\xf8\x88\x80\x80\x80",
+]
+
+
+@pytest.mark.parametrize("sequence", MALFORMED_UTF8)
+@pytest.mark.parametrize("where", ["dropped", "kept-msg"])
+def test_review_b7_every_string_byte_must_be_well_formed_utf8(sequence: bytes, where: str) -> None:
+    if where == "dropped":
+        body = b'{"code":"0","msg":"success","data":[{"timestamp":%d,"name":"a%sb"}]}' % (HOLDOUT_STAMP, sequence)
+    else:
+        body = b'{"code":"0","msg":"a%sb","data":[%s]}' % (sequence, VALID_RECORD.encode())
+    error = refused("RESPONSE_SHAPE_REFUSED", projection.project_records, fetched(body), date_keys=("timestamp",),
+                    first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows")
+    assert "UTF-8" in str(error)
+
+
+def test_review_b7_well_formed_utf8_passes_and_is_kept_byte_for_byte() -> None:
+    text = "\u0080\u00e9\u07ff\u0800\u20ac\ud7ff\ue000\uffff\U0001d11e\U0010ffff".encode()
+    assert len(text) == 2 + 2 + 2 + 3 + 3 + 3 + 3 + 3 + 4 + 4  # every sequence length, each boundary
+    body = b'{"code":"0","msg":"s%s","data":[{"timestamp":%d,"name":"%s"},%s]}' % (text, HOLDOUT_STAMP, text, VALID_RECORD.encode())
+    projected = projection.project_records(
+        fetched(body), date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows"
+    )
+    assert projected.body == b'{"code":"0","msg":"s' + text + b'","data":[' + VALID_RECORD.encode() + b"]}"
+    assert (projected.kept, projected.dropped_holdout) == (1, 1)
+
+
 def test_ruling_10_member_order_whitespace_and_escaped_text_do_not_change_the_projection() -> None:
     kept = '{ "etf_flows" : [ { "etf_ticker" : "IBIT", "flow_usd" : 5 } ],\n "price_usd":1, "flow_usd":-2.5e1,\t"timestamp" : 1704931200000 }'
     dropped = '{"name":"q\\"]},{\\u005d [","nested":{"a":[true,false,null,{"b":"}"}]},"timestamp":%d}' % HOLDOUT_STAMP
