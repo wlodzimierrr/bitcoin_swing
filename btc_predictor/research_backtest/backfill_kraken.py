@@ -560,9 +560,11 @@ def _check_hour(record: Mapping[str, Any], hour: datetime, incidents: Sequence[t
     long, short = _stored_quantity(record["long_quantity"], f"{what} long_quantity"), _stored_quantity(
         record["short_quantity"], f"{what} short_quantity"
     )
-    if not uids and (long, short) != (0, 0):
+    # no arithmetic here: a sum in the caller's decimal context could round or trap (re-review N1)
+    no_quantity = long.is_zero() and short.is_zero()
+    if not uids and not no_quantity:
         return _refuse_shape(f"{what}: quantities without liquidations")
-    if uids and long + short == 0:
+    if uids and no_quantity:
         return _refuse_shape(f"{what}: liquidations without a quantity")
     published = record["series_value"]
     if published is not None:
@@ -579,8 +581,11 @@ def _check_hour(record: Mapping[str, Any], hour: datetime, incidents: Sequence[t
         if published is None:
             expected = (status, v2.CORROBORATION_SERIES_UNAVAILABLE)
         else:
-            with localcontext(_EXACT_CONTEXT):
-                total = (long + short) * CONTRACT_SIZE_USD
+            try:
+                with localcontext(_EXACT_CONTEXT):
+                    total = (long + short) * CONTRACT_SIZE_USD
+            except Inexact:
+                return _refuse_shape(f"{what}: the stored quantities do not sum exactly")
             agrees = corroborates(total, Decimal(published))
             expected = (status, v2.CORROBORATION_AGREES if agrees else v2.CORROBORATION_DISAGREES)
     if (record["feed_status"], record["corroboration"]) != expected:

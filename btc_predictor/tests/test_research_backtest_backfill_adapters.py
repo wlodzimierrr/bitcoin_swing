@@ -19,7 +19,7 @@ import hashlib
 import json
 import socket
 from datetime import UTC, date, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal, localcontext
+from decimal import ROUND_HALF_UP, Decimal, Inexact, localcontext
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -836,6 +836,7 @@ UNAVAILABLE, ZERO, WITH = (
         (lambda p: p["hours"][2].update(long_quantity="5"), "RESPONSE_SHAPE_REFUSED"),
         (lambda p: p["hours"][2].update(feed_status=WITH), "RESPONSE_SHAPE_REFUSED"),
         (lambda p: p["hours"][1].update(pages_sha256=["x"]), "RESPONSE_SHAPE_REFUSED"),
+        (lambda p: p["hours"][1].update(long_quantity="9" * 81), "RESPONSE_SHAPE_REFUSED"),
         (lambda p: p["hours"][-1].update(hour_start="2026-01-01T00:00:00+00:00"), "OBSERVATION_OUTSIDE_DATA_WINDOW"),
         (lambda p: p["hours"][0].update(hour_start="2019-12-31T23:00:00+00:00"), "OBSERVATION_OUTSIDE_DATA_WINDOW"),
     ],
@@ -844,7 +845,7 @@ UNAVAILABLE, ZERO, WITH = (
         "flag-without-incident", "flag-on-empty-hour", "observed-empty-hour-agrees-999", "corroboration-flipped",
         "series-changed", "series-spelling", "series-without-digest", "quantity-spelling", "uids-unsorted",
         "count-below-uids", "liquidations-as-zero-events", "quantity-without-liquidation", "zero-events-as-with",
-        "page-digest", "holdout-hour", "pre-2020-hour",
+        "page-digest", "quantity-too-wide", "holdout-hour", "pre-2020-hour",
     ],
 )
 def test_the_hour_evidence_parser_accepts_only_what_it_can_re_derive(change: Any, reason: str) -> None:
@@ -1252,6 +1253,32 @@ def test_a_liquidation_sum_that_cannot_be_exact_is_refused() -> None:
     huge = "9" * 81
     executions = [fx.execution(f"l{k}", utc(2021, 6, 1, 1, k), huge if k else "0." + "0" * 80 + "1", order_type="Liquidation", direction="Sell") for k in range(2)]
     refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(day_world([fx.execution_page(executions)])), DAY, DAY, incidents=())
+
+
+@pytest.mark.parametrize(
+    ("quantity", "prec", "emin", "trap_inexact"),
+    [(FULL_WIDTH, 28, None, True), ("0.000000000000000001", 3, -5, False), ("1234.5", 3, None, True)],
+    ids=["full-width-inexact-trapped", "underflow-at-precision-3", "ordinary-inexact-trapped"],
+)
+def test_the_evidence_read_back_admits_a_valid_hour_under_any_caller_context(
+    quantity: str, prec: int, emin: int | None, trap_inexact: bool
+) -> None:
+    # re-review N1: the parser re-derives each hour without arithmetic in the caller's context
+    executions = [fx.execution("l1", utc(2021, 6, 1, 1, 10), quantity, order_type="Liquidation", direction="Sell")]
+    executions += [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+    executions.sort(key=lambda element: element["timestamp"])
+    series = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = quantity
+    transport = day_world([fx.execution_page(executions)], series)
+    with localcontext() as caller:
+        caller.prec = prec
+        if emin is not None:
+            caller.Emin = emin
+        caller.traps[Inexact] = trap_inexact
+        collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+    (row,) = collection.rows
+    assert row.quantity == row.notional_usd == Decimal(quantity)
+    assert (collection.hours[1].feed_status, collection.hours[1].corroboration) == (WITH, v2.CORROBORATION_AGREES)
 
 
 def test_a_funding_interval_is_whole_seconds_exactly_at_any_width() -> None:
