@@ -14,7 +14,12 @@ evidence repository (owner Part B ruling 9) under
 - the unit's evidence files, value-bearing ones included;
 - ``DONE.json``, written last, binding every other file by SHA-256.
 
-A unit whose ``DONE.json`` verifies is skipped, so an interrupted run resumes;
+A unit whose ``DONE.json`` verifies is skipped, so an interrupted run resumes.
+A marker verifies only when it names this run version, its own source and
+unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
+files by SHA-256, and records its rows persisted (or ``not_persisted``); a
+marker that exists but does not verify refuses the unit for reconciliation by
+hand, never a silent re-read (review B4);
 the collectors insert-or-ignore, so a unit interrupted after persisting
 re-persists nothing new. Progress lines are value-free, and a refusal prints
 its code and its message with every digit masked (RBT-002's metadata-only
@@ -84,6 +89,11 @@ ETF_FIRST_DAY = coinglass.FIRST_ETF_FLOW_DAY
 _DIGIT = re.compile(r"\d")
 _STORE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,39}")  # a source or a unit
 _FILE_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,119}")  # a unit file: no separator, never "." or ".."
+_SHA256 = re.compile(r"[0-9a-f]{64}")
+_COUNT_NAME = re.compile(r"[a-z][a-z_]{0,63}")
+DONE_KEYS = frozenset({"run_version", "source", "unit", "completed_at", "persisted", "files"})
+REQUIRED_FILES = frozenset({"retrievals.json", "summary.json"})
+NOT_PERSISTED = {"not_persisted": 1}
 
 
 def masked(text: str, limit: int = 400) -> str:
@@ -150,6 +160,22 @@ class EvidenceStore:
     def done(self, source: str, unit: str) -> dict[str, Any] | None:
         """The unit's ``DONE.json`` when it and every file it binds verify; ``None`` otherwise."""
 
+        found = self.completed(source, unit)
+        return None if found is None else found[0]
+
+    def has_done_marker(self, source: str, unit: str) -> bool:
+        directory = self.unit_dir(source, unit)
+        return self._real_directory(directory, create=False) and ((directory / DONE_FILE).is_symlink() or (directory / DONE_FILE).exists())
+
+    def completed(self, source: str, unit: str) -> tuple[dict[str, Any], dict[str, bytes]] | None:
+        """The verified ``DONE.json`` and the files it binds (review B4); ``None`` when absent or not verifying.
+
+        It must hold exactly the marker's keys, name this run version and its
+        own source and unit, record a UTC completion instant and non-negative
+        integer counts, and bind ``summary.json`` and ``retrievals.json``
+        among plain file names whose SHA-256 each match.
+        """
+
         directory = self.unit_dir(source, unit)
         if not self._real_directory(directory, create=False):
             return None
@@ -157,15 +183,32 @@ class EvidenceStore:
         _require_not_link(marker)
         if not marker.is_file():
             return None
-        record = json.loads(marker.read_bytes())
-        for name, digest in record["files"].items():
-            if not _FILE_NAME.fullmatch(name):
+        try:
+            record = json.loads(marker.read_bytes())
+        except (UnicodeDecodeError, ValueError):
+            return None
+        if not isinstance(record, dict) or set(record) != DONE_KEYS:
+            return None
+        if (record["run_version"], record["source"], record["unit"]) != (RUN_VERSION, source, unit):
+            return None
+        if not _utc_instant(record["completed_at"]) or not _counts(record["persisted"]):
+            return None
+        bound = record["files"]
+        if not isinstance(bound, dict) or not REQUIRED_FILES <= set(bound):
+            return None
+        files: dict[str, bytes] = {}
+        for name, digest in bound.items():
+            if not _FILE_NAME.fullmatch(name) or name == DONE_FILE or not isinstance(digest, str) or not _SHA256.fullmatch(digest):
                 return None
             path = directory / name
             _require_not_link(path)
-            if not path.is_file() or sha256_hex(path.read_bytes()) != digest:
+            if not path.is_file():
                 return None
-        return record
+            data = path.read_bytes()
+            if sha256_hex(data) != digest:
+                return None
+            files[name] = data
+        return record, files
 
     def write(self, source: str, unit: str, files: Mapping[str, bytes], *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
         directory = self.unit_dir(source, unit)
@@ -188,6 +231,20 @@ class EvidenceStore:
         }
         _atomic_write(directory / DONE_FILE, canonical_json_bytes(record))
         return record
+
+
+def _utc_instant(value: Any) -> bool:
+    try:
+        instant = datetime.fromisoformat(value) if isinstance(value, str) else None
+    except ValueError:
+        return False
+    return instant is not None and instant.utcoffset() == timedelta(0) and iso(instant) == value
+
+
+def _counts(value: Any) -> bool:
+    return isinstance(value, dict) and all(
+        isinstance(name, str) and _COUNT_NAME.fullmatch(name) and type(count) is int and count >= 0 for name, count in value.items()
+    )
 
 
 def _require_not_link(path: Path) -> None:
@@ -458,8 +515,19 @@ def funds_of(projection: Any) -> str:
 
 @dataclass(frozen=True)
 class Source:
+    """A source's schedule and reader, and what its completion marker must record (review B4).
+
+    ``table`` is the raw table its rows go to (``None``: nothing is persisted);
+    ``evidence`` the files every completed unit binds besides the summary and
+    the retrieval log; ``extra_persisted`` further counts a persisting run
+    records.
+    """
+
     units: Callable[[], tuple[str, ...]]
     read: Callable[[RunContext, str], UnitOutput]
+    table: str | None = None
+    evidence: tuple[str, ...] = ()
+    extra_persisted: frozenset[str] = frozenset()
 
 
 def _month_units(first: date) -> Callable[[], tuple[str, ...]]:
@@ -467,14 +535,19 @@ def _month_units(first: date) -> Callable[[], tuple[str, ...]]:
 
 
 SOURCES: dict[str, Source] = {
-    "binance-funding": Source(_month_units(DATA_WINDOW_START.date()), funding_unit),
-    "binance-open-interest": Source(_month_units(OPEN_INTEREST_FIRST_DAY), open_interest_unit),
-    "binance-perp-volume": Source(_month_units(DATA_WINDOW_START.date()), perp_volume_unit),
-    "binance-basis": Source(lambda: ("all",), basis_unit),
+    "binance-funding": Source(_month_units(DATA_WINDOW_START.date()), funding_unit, "funding_rates"),
+    "binance-open-interest": Source(_month_units(OPEN_INTEREST_FIRST_DAY), open_interest_unit, "open_interest"),
+    "binance-perp-volume": Source(_month_units(DATA_WINDOW_START.date()), perp_volume_unit, "perp_volume"),
+    "binance-basis": Source(lambda: ("all",), basis_unit, "futures_basis", ("futures_basis_listing_evidence.json",)),
     "kraken-incidents": Source(lambda: ("all",), incidents_unit),
-    "kraken-liquidations": Source(lambda: tuple(day.isoformat() for day in data_window_days(KRAKEN_FIRST_DAY, LAST_DATA_DAY)), liquidation_unit),
-    "coinmetrics-market-cap": Source(lambda: ("all",), market_cap_unit),
-    "coinglass-etf": Source(lambda: ("all",), coinglass_unit),
+    "kraken-liquidations": Source(
+        lambda: tuple(day.isoformat() for day in data_window_days(KRAKEN_FIRST_DAY, LAST_DATA_DAY)),
+        liquidation_unit, "liquidations", ("liquidation_hour_evidence.json.gz",),
+    ),
+    "coinmetrics-market-cap": Source(lambda: ("all",), market_cap_unit, None, ("market_cap_evidence.json",)),
+    "coinglass-etf": Source(
+        lambda: ("all",), coinglass_unit, "etf_flows", ("flow_history.projected.json",), frozenset({"missing_publication_dates"})
+    ),
 }
 
 
@@ -498,14 +571,47 @@ def _scheduled(source: str, unit: str) -> None:
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} schedules no unit {unit!r}")
 
 
+def _complete(ctx: RunContext, source: str, unit: str) -> bool:
+    """Whether the unit is complete for this run, so it is skipped (review B4).
+
+    A marker that exists but does not verify, lacks its source's evidence, or
+    does not record its summary's rows persisted refuses: the unit may already
+    be persisted, so only the operator reconciles it. A unit collected with
+    ``--no-persist`` is read again by a persisting run.
+    """
+
+    found = ctx.store.completed(source, unit)
+    if found is None:
+        if ctx.store.has_done_marker(source, unit):
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json does not verify; reconcile the unit by hand")
+        return False
+    record, files = found
+    spec, persisted = SOURCES[source], record["persisted"]
+    if not set(spec.evidence) <= set(files):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json does not bind the source's evidence")
+    if spec.table is None:
+        if persisted != {}:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json records rows the source never persists")
+        return True
+    if persisted == NOT_PERSISTED:
+        return ctx.connect is None
+    try:
+        summary = json.loads(files["summary.json"])
+    except (UnicodeDecodeError, ValueError):
+        summary = None
+    rows = summary.get("rows") if isinstance(summary, dict) else None
+    if type(rows) is not int or not set(persisted) <= {spec.table, *spec.extra_persisted} or persisted.get(spec.table, 0) != rows:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json does not record the summary's rows persisted")
+    return True
+
+
 def run_unit(ctx: RunContext, source: str, unit: str) -> UnitReport:
     try:
         _scheduled(source, unit)  # before the store or the transport is touched
-        record = ctx.store.done(source, unit)
+        complete = _complete(ctx, source, unit)
     except BackfillRefused as refused:
         return UnitReport(source, str(unit), "REFUSED", f"{refused.reason_code}: {masked(str(refused))}")
-    # a unit collected with --no-persist is read again when a later run persists
-    if record is not None and not (ctx.connect is not None and record["persisted"].get("not_persisted")):
+    if complete:
         return UnitReport(source, unit, "SKIPPED")
     try:
         output = SOURCES[source].read(ctx, unit)

@@ -301,7 +301,8 @@ def test_ruling_9_the_store_must_be_a_git_work_tree_outside_the_public_repositor
 
 
 def test_a_unit_whose_files_changed_is_not_done(store: run.EvidenceStore) -> None:
-    store.write("s", "u", {"a.json": b"1"}, completed_at=RETRIEVED_AT, persisted={})
+    # every completed unit binds its summary and retrieval log (review B4)
+    store.write("s", "u", {"a.json": b"1", "summary.json": b"{}", "retrievals.json": b"[]"}, completed_at=RETRIEVED_AT, persisted={})
     assert store.done("s", "u") is not None
     (store.unit_dir("s", "u") / "a.json").write_bytes(b"2")
     assert store.done("s", "u") is None
@@ -341,7 +342,7 @@ def test_review_b5_a_linked_file_is_never_written_through_or_trusted(store: run.
     (directory / "summary.json").unlink()
     # a planted partial link is removed, never followed
     (directory / "summary.json.partial").symlink_to(outside)
-    store.write("binance-funding", "2020-02", {"summary.json": b"777000022"}, completed_at=RETRIEVED_AT, persisted={})
+    store.write("binance-funding", "2020-02", {"summary.json": b"777000022", "retrievals.json": b"[]"}, completed_at=RETRIEVED_AT, persisted={})
     assert outside.read_bytes() == b"public" and not (directory / "summary.json").is_symlink()
     assert (directory / "summary.json").read_bytes() == b"777000022" and store.done("binance-funding", "2020-02") is not None
     # a bound file replaced by a link to identical bytes is not trusted
@@ -484,6 +485,118 @@ def test_review_b8_a_unit_its_source_does_not_schedule_is_refused_before_any_req
     report_ = run.run_unit(context(transport, store, Database(), allow_coinglass=True, coinglass_key="key-123"), source, unit)
     assert report_.status == "REFUSED" and report_.detail.startswith("PROVIDER_REQUEST_MISMATCH"), report_.detail
     assert transport.calls == [] and not store.base.exists()
+
+
+def done_marker(store: run.EvidenceStore, source: str, unit: str) -> dict[str, Any]:
+    return json.loads((store.unit_dir(source, unit) / "DONE.json").read_bytes())
+
+
+def rewrite_marker(store: run.EvidenceStore, source: str, unit: str, marker: Any) -> None:
+    (store.unit_dir(source, unit) / "DONE.json").write_bytes(json.dumps(marker).encode())
+
+
+def test_review_b4_a_copied_unit_is_not_skipped(store: run.EvidenceStore) -> None:
+    transport, database = funding_world(), Database()
+    assert run.run_unit(context(transport, store, database), "binance-funding", "2020-02").status == "DONE"
+    store.unit_dir("binance-funding", "2020-03").mkdir()
+    for path in store.unit_dir("binance-funding", "2020-02").iterdir():
+        (store.unit_dir("binance-funding", "2020-03") / path.name).write_bytes(path.read_bytes())
+    calls = len(transport.calls)
+    report_ = run.run_unit(context(transport, store, database), "binance-funding", "2020-03")
+    assert report_.status == "REFUSED" and "reconcile" in report_.detail and len(transport.calls) == calls
+    assert store.done("binance-funding", "2020-03") is None
+
+
+def test_review_b4_an_unpersisted_marker_edited_to_look_persisted_is_not_skipped(store: run.EvidenceStore) -> None:
+    transport = funding_world()
+    assert run.run_unit(context(transport, store), "binance-funding", "2020-02").status == "DONE"
+    marker = done_marker(store, "binance-funding", "2020-02")
+    assert marker["persisted"] == {"not_persisted": 1}
+    for persisted in ({}, {"funding_rates": 5}, {"funding_rates": 6, "open_interest": 1}, {"etf_flows": 6}):
+        rewrite_marker(store, "binance-funding", "2020-02", marker | {"persisted": persisted})
+        calls = len(transport.calls)
+        report_ = run.run_unit(context(transport, store, Database()), "binance-funding", "2020-02")
+        assert report_.status == "REFUSED" and len(transport.calls) == calls, persisted
+    rewrite_marker(store, "binance-funding", "2020-02", marker | {"persisted": {"funding_rates": 6}})
+    assert run.run_unit(context(transport, store, Database()), "binance-funding", "2020-02").status == "SKIPPED"
+
+
+def test_review_b4_a_source_that_persists_nothing_records_nothing_and_binds_its_evidence(store: run.EvidenceStore) -> None:
+    transport = FakeTransport()
+    transport.add(run.TARDIS_EXCHANGE_URL, tardis_body())
+    assert run.run_unit(context(transport, store), "kraken-incidents", "all").status == "DONE"
+    marker = done_marker(store, "kraken-incidents", "all")
+    rewrite_marker(store, "kraken-incidents", "all", marker | {"persisted": {"liquidations": 0}})
+    assert run.run_unit(context(transport, store), "kraken-incidents", "all").status == "REFUSED"
+    rewrite_marker(store, "kraken-incidents", "all", marker)
+    assert run.run_unit(context(transport, store), "kraken-incidents", "all").status == "SKIPPED"
+    # a market-cap marker that does not bind the evidence file is refused
+    directory = store.unit_dir("coinmetrics-market-cap", "all")
+    store.write("coinmetrics-market-cap", "all", {"summary.json": b"{}", "retrievals.json": b"[]"}, completed_at=RETRIEVED_AT, persisted={})
+    report_ = run.run_unit(context(transport, store), "coinmetrics-market-cap", "all")
+    assert report_.status == "REFUSED" and "evidence" in report_.detail and directory.exists()
+
+
+MARKER_EDITS = [
+    ("run_version", "RBT003_PART_B_COLLECTION_RUN_V0"),
+    ("source", "binance-open-interest"),
+    ("unit", "2020-03"),
+    ("completed_at", "2026-11-05T10:00:00"),
+    ("completed_at", "not an instant"),
+    ("persisted", {"funding_rates": True}),
+    ("persisted", {"funding_rates": -6}),
+    ("persisted", {"Funding Rates": 6}),
+    ("persisted", []),
+    ("files", {}),
+    ("files", "summary.json"),
+]
+
+
+@pytest.mark.parametrize(("key", "value"), MARKER_EDITS)
+def test_review_b4_a_marker_must_name_its_version_source_unit_and_valid_records(store: run.EvidenceStore, key: str, value: Any) -> None:
+    transport, database = funding_world(), Database()
+    assert run.run_unit(context(transport, store, database), "binance-funding", "2020-02").status == "DONE"
+    rewrite_marker(store, "binance-funding", "2020-02", done_marker(store, "binance-funding", "2020-02") | {key: value})
+    assert store.done("binance-funding", "2020-02") is None
+    calls = len(transport.calls)
+    assert run.run_unit(context(transport, store, database), "binance-funding", "2020-02").status == "REFUSED"
+    assert len(transport.calls) == calls
+
+
+def test_review_b4_a_marker_must_bind_the_summary_and_log_under_plain_names(store: run.EvidenceStore, tmp_path: Path) -> None:
+    transport, database = funding_world(), Database()
+    assert run.run_unit(context(transport, store, database), "binance-funding", "2020-02").status == "DONE"
+    marker = done_marker(store, "binance-funding", "2020-02")
+    outside = tmp_path / "outside.json"
+    outside.write_bytes(b"{}")
+    for files in (
+        {"summary.json": marker["files"]["summary.json"]},  # no retrieval log
+        marker["files"] | {"../../../../../outside.json": sources.sha256_hex(b"{}")},
+        marker["files"] | {"DONE.json": marker["files"]["summary.json"]},
+        marker["files"] | {"summary.json": marker["files"]["summary.json"].upper()},
+    ):
+        rewrite_marker(store, "binance-funding", "2020-02", marker | {"files": files})
+        assert store.done("binance-funding", "2020-02") is None, files
+    for extra in ({"note": 1}, None):
+        bad = dict(marker)
+        if extra is None:
+            del bad["completed_at"]
+        else:
+            bad |= extra
+        rewrite_marker(store, "binance-funding", "2020-02", bad)
+        assert store.done("binance-funding", "2020-02") is None
+    (store.unit_dir("binance-funding", "2020-02") / "DONE.json").write_bytes(b"{not json")
+    assert store.done("binance-funding", "2020-02") is None
+    assert run.run_unit(context(transport, store, database), "binance-funding", "2020-02").status == "REFUSED"
+
+
+def test_review_b4_a_changed_bound_file_refuses_the_unit_instead_of_reading_it_again(store: run.EvidenceStore) -> None:
+    transport, database = funding_world(), Database()
+    assert run.run_unit(context(transport, store, database), "binance-funding", "2020-02").status == "DONE"
+    (store.unit_dir("binance-funding", "2020-02") / "summary.json").write_bytes(b'{"rows":6,"excluded":[]} ')
+    calls = len(transport.calls)
+    report_ = run.run_unit(context(transport, store, database), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and len(transport.calls) == calls
 
 
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:
