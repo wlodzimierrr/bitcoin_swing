@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `IN PROGRESS — Part A second independent xHigh re-review FAIL (2026-11-05; one P2, N3), third review-fix in progress; second review-fix 85cfc8f, d7d43a0 (owner re-review ruling 8); re-review FAIL 2026-11-05 (two P2); review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part A third review-fix committed (2026-11-05, 3f3a801), awaiting the independent xHigh re-review; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix 85cfc8f, d7d43a0 (owner re-review ruling 8); re-review FAIL 2026-11-05 (two P2); review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -3576,7 +3576,8 @@ paragraph; the rest stand as written.
   ruling 8, N2).
 - Decision 10: the series value keeps its published spelling, and the parser
   re-derives every hour and checks every declaration (F6), with no arithmetic
-  in the caller's decimal context (N1).
+  in the caller's decimal context (N1); the spelling itself never depends on
+  that context (N3).
 - Decision 11: a next page is requested only as the bounded query plus its
   validated token (F1).
 - Persistence: rows are persisted only through `persist_derivatives` and
@@ -3882,7 +3883,7 @@ implementation unchanged. No owner question was raised.
 
 | ID / severity | Location (`091c8cd`) | Finding | Required correction |
 | --- | --- | --- | --- |
-| N3 / **P2** | `backfill_kraken.py:387`, `:575` | `published_spelling` writes the series value with `str(value)`, whose exponent letter follows the caller's decimal `capitals` setting, and the parser requires that same spelling. A provider value of `0.00000000` is stored as `"0e-8"` under `capitals=0` and `"0E-8"` under `capitals=1` (likewise `1.5e+3`): identical responses give different evidence bytes and hashes, and a correctly hashed file is refused as `RESPONSE_SHAPE_REFUSED` when parsed under the other setting. | Spell the value independently of the caller's context, keeping its exponent and trailing zeros; add cross-context writer and parser tests. |
+| N3 / **P2 FIXED** | `backfill_kraken.py:387`, `:575` | `published_spelling` writes the series value with `str(value)`, whose exponent letter follows the caller's decimal `capitals` setting, and the parser requires that same spelling. A provider value of `0.00000000` is stored as `"0e-8"` under `capitals=0` and `"0E-8"` under `capitals=1` (likewise `1.5e+3`): identical responses give different evidence bytes and hashes, and a correctly hashed file is refused as `RESPONSE_SHAPE_REFUSED` when parsed under the other setting. | Spell the value independently of the caller's context, keeping its exponent and trailing zeros; add cross-context writer and parser tests. |
 
 Codex's targeted mutation runner caught all 8 of its mutants (the five
 first-review survivors, the N1 zero check, its too-wide refusal and the N2
@@ -3905,8 +3906,35 @@ both. It is the only Decimal-to-text conversion in the adapters whose output
 follows the context: the other `str()` calls round-trip a number exactly or
 accept digits only.
 
-**Distinct review-fix:** in progress, followed by an independent xHigh
-re-review.
+**Distinct review-fix:** `3f3a801` (2026-11-05), on top of the second
+re-review FAIL record `ae5a1a1`. Only `backfill_kraken.py` and the test module
+change; the collectors, the raw schema, the RBT-001 and RBT-001A builders,
+every owner, configuration, the inventory, the spec, `data/` and
+`research_artifacts/` are unchanged.
+
+- `3f3a801` (N3): `published_spelling` spells the value through a fixed
+  context with a capital `E`, keeping its exponent and trailing zeros, so the
+  caller's `capitals` setting changes neither the evidence bytes nor what the
+  parser accepts. Under the default context the bytes are unchanged.
+
+**Tests.** The module has 196 tests in 82 functions (193 in 81 before): the
+same responses collected under `capitals` 0 and 1 give identical evidence
+bytes, and each file reads back under the other setting, for `0.00000000`,
+`1.5e+3` and the exponent-free control `1500.0`. Both exponent cases fail with
+the fix reverted. No existing test or expectation changed.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-05).**
+- The adapter module with the replay and database modules: 557 passed.
+- V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed, 112 deselected;
+  PAD4-R5 2 passed.
+- Full repository at `3f3a801`, alone:
+  7,990 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+- `git diff --check` clean. Synthetic fixtures only: no network, no
+  database, no real-data value or outcome.
+
+Next: the independent xHigh re-review (resuming the review session).
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -5059,7 +5087,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A second independent xHigh re-review FAIL (2026-11-05; one P2, N3), third review-fix in progress; second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A third review-fix `3f3a801` committed (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min), awaiting the independent xHigh re-review; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |

@@ -1460,7 +1460,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
   findings and its second re-review the same day with one P2, and the third
-  review-fix is in progress).
+  review-fix is committed and awaits the independent xHigh re-review).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1700,8 +1700,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `a3bfa6e`..`00ba499` (owner review rulings 6-7), its re-review FAILED on
   2026-11-05 with two P2 findings; after the second review-fix (owner
   re-review ruling 8; `85cfc8f`, `d7d43a0`) its second re-review FAILED the
-  same day with one P2 (N3), and the third review-fix is in progress. Part
-  B, the
+  same day with one P2 (N3); the third review-fix (`3f3a801`) is committed
+  and awaits the independent xHigh re-review. Part B, the
   collection run, awaits database write access, network access, the CoinGlass
   purchase with the documented ETF date bounds, and the evidence-storage
   decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
@@ -2033,8 +2033,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **third RBT-003 Part A
-  review-fix** (N3) and its independent xHigh re-review; then Part B's
+- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
+  re-review of the third RBT-003 Part A review-fix** (`3f3a801`); then
+  Part B's
   prerequisites: database write and network access, the USD 29 CoinGlass
   purchase (nothing purchased) with the documented ETF date bounds, and the
   evidence-storage decision. RBT-006 stays blocked until
@@ -2060,6 +2061,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part A third review-fix validation (2026-11-05):**
+  `.venv312` CPython 3.12.14. The adapter module (196 tests) with the replay
+  and database modules 557 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected;
+  PAD4-R5 2 passed. Full repository at `3f3a801`, alone:
+  7,990 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+  Both new exponent cases fail with the fix reverted. Synthetic fixtures
+  only: no network, no database, no real-data value or outcome.
 - **RBT-003 Part A second review-fix validation (2026-11-05):**
   `.venv312` CPython 3.12.14. The adapter module (193 tests) with the replay
   and database modules 554 passed; V5 definition
@@ -2553,8 +2563,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `09ba259`, `d7bd11c`, `894bcc1`, `be01997`, `58e1248`, `ca09376`,
   `1b96bbf`, `423fb13` and `00ba499` with docs `ed7f83a`; the re-review FAIL
   and owner re-review ruling 8 `f931981`; the second review-fix `85cfc8f` and
-  `d7d43a0` with docs `091c8cd`; the second re-review FAIL in this
-  documentation commit. Before them,
+  `d7d43a0` with docs `091c8cd`; the second re-review FAIL `ae5a1a1`; the
+  third review-fix `3f3a801` with this documentation commit. Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the
