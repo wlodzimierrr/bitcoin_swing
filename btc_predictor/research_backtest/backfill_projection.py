@@ -17,7 +17,9 @@ every date lies inside the requested days and drops them otherwise. A dropped
 record's other members are skipped as byte spans, never decoded, so no
 out-of-window value is parsed, logged or kept. The projected response is the
 envelope's ``code`` and ``msg`` with the kept records' bytes in their order;
-only it reaches the strict parsers and the evidence file. The full response
+only it reaches the strict parsers and the evidence file, and a parser first
+proves, with :func:`verified_body`, that the bytes it is given are exactly a
+projection on the endpoint's own date members (review B2). The full response
 leaves a digest and a size (the retrieval log's), and each projection records
 how many records it dropped from the prohibited window, from in-window days
 not requested, and from the holdout and reserve: the metadata exposure the
@@ -363,3 +365,35 @@ def project_records(
         dropped_unrequested=unrequested,
         dropped_holdout=holdout,
     )
+
+
+def verified_body(projection: Any, *, date_keys: Sequence[str], what: str) -> bytes:
+    """The projected bytes, once proven to be a projection on the endpoint's date members (review B2).
+
+    A parser calls this before it decodes anything. The projection must name
+    exactly ``date_keys``; its bytes are then projected again, value-blind, on
+    those members and its own days, and every record must be kept and the
+    result byte-identical. A response projected on fewer date members (a fund
+    record whose ``market_date`` is in the holdout, say) or bytes that were
+    never projected refuse here, before any value is decoded.
+    """
+
+    if not isinstance(projection, ProjectedResponse):
+        raise BackfillRefused("PROVIDER_RESPONSE_REFUSED", f"{what} is read only through the in-window projection (owner Part B ruling 10)")
+    if tuple(projection.date_keys) != tuple(date_keys):
+        raise BackfillRefused(
+            "PROVIDER_RESPONSE_REFUSED", f"{what} was projected on {list(projection.date_keys)}, not on the endpoint's {list(date_keys)}"
+        )
+    if not (
+        isinstance(projection.body, bytes)
+        and isinstance(projection.retrieved_at, datetime)
+        and all(type(day) is date for day in (projection.first_day, projection.last_day))
+    ):
+        raise BackfillRefused("PROVIDER_RESPONSE_REFUSED", f"{what}: the projection does not name its bytes and days")
+    again = project_records(
+        Fetched(projection.url, projection.body, projection.retrieved_at),
+        date_keys=date_keys, first_day=projection.first_day, last_day=projection.last_day, what=what,
+    )
+    if again.dropped or again.kept != projection.kept or again.body != projection.body:
+        raise BackfillRefused("PROVIDER_RESPONSE_REFUSED", f"{what}: the bytes are not exactly a projection to the requested days")
+    return projection.body

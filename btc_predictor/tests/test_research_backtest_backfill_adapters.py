@@ -1292,6 +1292,73 @@ def test_ruling_10_no_dropped_value_is_ever_decoded(monkeypatch: pytest.MonkeyPa
     assert [item.url for item in read.projections] == [coinglass.FLOW_HISTORY_URL, coinglass.fund_history_url("IBIT")]
 
 
+def spy_on_json(monkeypatch: pytest.MonkeyPatch) -> list[bytes]:
+    decoded: list[bytes] = []
+    real_loads = json.loads
+
+    def spy(data: Any, *args: Any, **kwargs: Any) -> Any:
+        decoded.append(data if isinstance(data, bytes) else str(data).encode())
+        return real_loads(data, *args, **kwargs)
+
+    monkeypatch.setattr(json, "loads", spy)
+    return decoded
+
+
+def fund_record(assets_day: date, market_day: date, market_price: str) -> str:
+    return (
+        '{"assets_date":%d,"btc_holdings":1000,"market_date":%d,"market_price":%s,"name":"iShares Bitcoin Trust",'
+        '"nav":38.57,"net_assets":9,"premium_discount":-0.16,"shares_outstanding":555700100,"ticker":"IBIT"}'
+        % (day_ms(assets_day), day_ms(market_day), market_price)
+    )
+
+
+def test_review_b2_a_projection_on_fewer_date_members_is_refused_before_decoding(monkeypatch: pytest.MonkeyPatch) -> None:
+    first = date(2024, 1, 11)
+    body = ('{"code":"0","msg":"success","data":[%s]}' % fund_record(first, date(2026, 1, 5), "777000011")).encode()
+    decoded = spy_on_json(monkeypatch)
+    partial = projection.project_records(
+        fetched(body, coinglass.fund_history_url("IBIT")), date_keys=("assets_date",), first_day=first, last_day=first, what="IBIT"
+    )
+    assert partial.kept == 1  # projected on assets_date alone, the holdout market date stays
+    refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_fund_history, partial, ticker="IBIT")
+    assert decoded and not any(b"777000011" in item for item in decoded)
+    # projected on both members, the record is dropped and nothing is left to decode
+    whole = projection.project_records(
+        fetched(body, coinglass.fund_history_url("IBIT")), date_keys=coinglass.FUND_DATE_KEYS, first_day=first, last_day=first, what="IBIT"
+    )
+    assert (whole.kept, whole.dropped_holdout) == (0, 1) and coinglass.parse_fund_history(whole, ticker="IBIT") == {}
+    assert not any(b"777000011" in item for item in decoded)
+
+
+def test_review_b2_bytes_or_claims_that_are_not_an_exact_projection_are_refused_before_decoding(monkeypatch: pytest.MonkeyPatch) -> None:
+    first, second = date(2024, 1, 11), date(2024, 1, 12)
+    body = sentinel_flow_page()
+    decoded = spy_on_json(monkeypatch)
+    forged = projection.ProjectedResponse(
+        url=coinglass.FLOW_HISTORY_URL, retrieved_at=RETRIEVED_AT, first_day=first, last_day=second, date_keys=coinglass.FLOW_DATE_KEYS,
+        response_sha256=hashlib.sha256(body).hexdigest(), response_size=len(body), body=body, kept=6,
+        dropped_prohibited=0, dropped_unrequested=0, dropped_holdout=0,
+    )
+    refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_flow_history, forged)  # never projected
+    # never projected, though it claims the count a projection would keep
+    refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_flow_history, dataclasses.replace(forged, kept=2))
+    genuine = projection.project_records(fetched(body), date_keys=coinglass.FLOW_DATE_KEYS, first_day=first, last_day=second, what="flows")
+    for changed in (
+        {"last_day": first},  # the bytes hold a day the claim does not request
+        {"kept": 1},
+        {"date_keys": coinglass.FUND_DATE_KEYS},
+        {"date_keys": ("timestamp", "timestamp")},
+        {"first_day": datetime(2024, 1, 11, tzinfo=UTC)},
+        {"body": body.decode()},
+        {"body": genuine.body.replace(b'{"code":', b'{ "code":')},  # the same records, not the projection's bytes
+        {"retrieved_at": None},
+    ):
+        refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_flow_history, dataclasses.replace(genuine, **changed))
+    refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_fund_history, genuine, ticker="IBIT")  # a flow projection
+    assert not any(str(value).encode() in item for value in SENTINELS.values() for item in decoded)
+    assert coinglass.parse_flow_history(genuine) == {("IBIT", first): Decimal(5), ("IBIT", second): Decimal(6)}
+
+
 def test_ruling_10_a_dropped_record_is_never_shape_checked() -> None:
     # a holdout record the strict parser would refuse (unknown field, string value) is dropped, not read
     first = date(2024, 1, 11)

@@ -43,7 +43,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 from btc_predictor.data import EtfFlow
-from btc_predictor.research_backtest.backfill_projection import ProjectedResponse, project_records
+from btc_predictor.research_backtest.backfill_projection import ProjectedResponse, project_records, verified_body
 from btc_predictor.research_backtest.backfill_sources import (
     LAST_DATA_DAY,
     BackfillRefused,
@@ -102,13 +102,11 @@ def _refuse(message: str) -> Any:
     raise BackfillRefused("RESPONSE_SHAPE_REFUSED", message)
 
 
-def _envelope(projection: Any, what: str) -> list[Any]:
-    if not isinstance(projection, ProjectedResponse):
-        raise BackfillRefused(
-            "PROVIDER_RESPONSE_REFUSED", f"{what} is read only through the in-window projection (owner Part B ruling 10)"
-        )
+def _envelope(projection: Any, what: str, date_keys: tuple[str, ...]) -> list[Any]:
+    # nothing is decoded before the bytes are proven a projection on the endpoint's own date members (review B2)
+    body = verified_body(projection, date_keys=date_keys, what=what)
     try:
-        payload = json.loads(projection.body, parse_float=Decimal)
+        payload = json.loads(body, parse_float=Decimal)
     except (UnicodeDecodeError, ValueError):
         return _refuse(f"{what} is not JSON")
     if not isinstance(payload, dict) or set(payload) != _ENVELOPE_KEYS:
@@ -145,7 +143,7 @@ def parse_flow_history(projection: ProjectedResponse) -> dict[tuple[str, date], 
     flows: dict[tuple[str, date], Decimal] = {}
     days: set[date] = set()
     seen: set[tuple[str, date]] = set()
-    for entry in _envelope(projection, "the flow history"):
+    for entry in _envelope(projection, "the flow history", FLOW_DATE_KEYS):
         if not isinstance(entry, dict) or set(entry) != _FLOW_DAY_KEYS or not isinstance(entry["etf_flows"], list):
             return _refuse(f"each flow day is exactly {sorted(_FLOW_DAY_KEYS)}")
         day = _trading_day(entry["timestamp"], "a flow day", first_day, last_day)
@@ -173,7 +171,7 @@ def parse_fund_history(projection: ProjectedResponse, *, ticker: str) -> dict[da
 
     first_day, last_day = getattr(projection, "first_day", None), getattr(projection, "last_day", None)
     assets: dict[date, Decimal] = {}
-    for entry in _envelope(projection, f"the {ticker} history"):
+    for entry in _envelope(projection, f"the {ticker} history", FUND_DATE_KEYS):
         if not isinstance(entry, dict) or set(entry) != _FUND_DAY_KEYS:
             return _refuse(f"each {ticker} history day is exactly {sorted(_FUND_DAY_KEYS)}")
         day = _trading_day(entry["assets_date"], f"a {ticker} assets date", first_day, last_day)
