@@ -1413,7 +1413,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-04
+- **Last updated:** 2026-11-05
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1458,8 +1458,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`; rulings `4453b5c`,
   implementation `524fcbf`); **RBT-003 is IN PROGRESS** (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
-  FAILED on 2026-11-04, and its review-fix is committed and awaits the
-  independent xHigh re-review).
+  FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
+  findings, and the second review-fix is in progress).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1695,15 +1695,23 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `BACKFILL_HISTORICAL_INPUTS_V1`: Part A, the offline provider adapters and
   evidence writers, is implemented (`1427053`; synthetic fixtures; no network,
   database or purchase) under its five owner rulings (2026-11-04). Its
-  independent xHigh review FAILED on 2026-11-04; the review-fix (owner review
-  rulings 6-7; `a3bfa6e`..`00ba499`) is committed and awaits the independent
-  xHigh re-review. Part B, the
+  independent xHigh review FAILED on 2026-11-04 and, after the review-fix
+  `a3bfa6e`..`00ba499` (owner review rulings 6-7), its re-review FAILED on
+  2026-11-05 with two P2 findings; the second review-fix (owner re-review
+  ruling 8) is in progress. Part B, the
   collection run, awaits database write access, network access, the CoinGlass
   purchase with the documented ETF date bounds, and the evidence-storage
   decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 Part A, 2026-11-04,
+- **Most recent completed review:** EPIC Y RBT-003 Part A re-review,
+  2026-11-05, **independent xHigh FAIL** (same Codex session, report-only) of
+  review-fix `a3bfa6e`..`00ba499` and docs `ed7f83a`: F1-F8 and F10 FIXED (F3
+  as ruled), F9 fixed in part; two P2: N1 (the evidence parser adds in the
+  caller's decimal context) and N2 (an empty archive before the first kline
+  passes as absent; owner re-review ruling 8). Details in EPIC Y's RBT-003
+  Part A re-review outcome.
+- **Preceding completed review (EPIC Y):** RBT-003 Part A, 2026-11-04,
   **independent xHigh FAIL** (OpenAI Codex CLI at the owner's request, new
   session, report-only) against `239578c`, `1427053` and `5ec5cad`: one P1 (a
   Coin Metrics continuation can request outside the data window), eight P2
@@ -2016,9 +2024,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
-  re-review of the RBT-003 Part A review-fix** (`a3bfa6e`..`00ba499`); then
-  Part B's
+- **Next dependency-satisfied EPIC Y action:** the **second RBT-003 Part A
+  review-fix** (N1, N2; owner re-review ruling 8) and its independent xHigh
+  re-review; then Part B's
   prerequisites: database write and network access, the USD 29 CoinGlass
   purchase (nothing purchased) with the documented ETF date bounds, and the
   evidence-storage decision. RBT-006 stays blocked until
@@ -2526,8 +2534,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
   `09ba259`, `d7bd11c`, `894bcc1`, `be01997`, `58e1248`, `ca09376`,
-  `1b96bbf`, `423fb13` and `00ba499` with this documentation commit. Before
-  them,
+  `1b96bbf`, `423fb13` and `00ba499` with docs `ed7f83a`; the re-review FAIL
+  and owner re-review ruling 8 in this documentation commit. Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the
@@ -3457,6 +3465,12 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-05: RBT-003 Part A re-review findings.** The owner chose
+  the recommended options: fix N1 and N2 in distinct commits, validate, then
+  an independent re-review. A present, verified contract archive with no kline
+  before the first archived kline does not prove absence: the read refuses as
+  `LISTING_START_UNPROVEN` (re-review ruling 8). Details in the RBT-003 block.
 
 - **ANSWERED 2026-11-04: RBT-003 Part A review findings.** The owner chose
   every recommended option: fix all ten findings in distinct commits, then an

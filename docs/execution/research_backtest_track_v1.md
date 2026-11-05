@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `IN PROGRESS — Part A review-fix committed (2026-11-04, a3bfa6e..00ba499) under owner review rulings 6-7, awaiting the independent xHigh re-review; review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part A independent xHigh re-review FAIL (2026-11-05; two P2), second review-fix in progress under owner re-review ruling 8; review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -3445,6 +3445,13 @@ and a public repository, and the rulings so far leave these points open:
    therefore the instant it entered the database, as the collector stamps it;
    its `available_at` is the retrieval instant of the responses the row was
    read from. No replay owner reads `ingested_at` on a derivative or ETF row.
+8. **An empty archive does not prove absence (re-review ruling, 2026-11-05).**
+   The independent re-review found that a contract month whose archive is
+   present and verified but holds no kline, before the first month that holds
+   one, is treated like an absent month. Every requested month before the
+   first archived kline must be absent: a present archive without a kline
+   does not prove that the contract was not trading, so the read refuses as
+   `LISTING_START_UNPROVEN` (fail closed).
 
 ### RBT-003 Part A Implementation Notes
 
@@ -3660,7 +3667,7 @@ finding 3 were answered the same day (owner review rulings 6-7 above).
 | F6 / **P2 FIXED** | `backfill_kraken.py:355`, `:439`, `:462` | The hour evidence stores the published value canonicalised (`1500.0` as `1500`), so ruling 3 cannot be recomputed from the file; the parser accepts a contract size of `100`, an order type `Limit`, an observed incident hour with zero executions that AGREES with `999`, and hours outside the window. | Keep the published exponent; validate the declarations, the window and each hour's status, count, incident and corroboration before returning typed evidence. |
 | F7 / **P2 FIXED** | `backfill_binance.py:122`, `:156`; `backfill_kraken.py:146`, `:237` | The readers clip their periods, but the URL builders and the archive fetch accept any period: synthetic 2019 and 2026 archive requests went through. | Enforce the window at the callable request boundary. |
 | F8 / **P2 FIXED** | `backfill_binance.py:381` | An empty or partial perpetual klines archive returns its present rows only: missing hours leave no gap record. | Compare each month with its hourly census and record the gaps. |
-| F9 / **P2 FIXED** PLAUSIBLE (ruling 6) | `backfill_binance.py:483`, `:492`, `:507` | A missing archive month before a contract's first archived month is read as proven absence: removing a synthetic contract's first month moved `first_kline_open_at` a month later without refusal. | Distinguish unavailable history from proven absence; the owner ruled the month-start check. |
+| F9 / **P2 FIXED in part** PLAUSIBLE (ruling 6; residual N2 in the re-review) | `backfill_binance.py:483`, `:492`, `:507` | A missing archive month before a contract's first archived month is read as proven absence: removing a synthetic contract's first month moved `first_kline_open_at` a month later without refusal. | Distinguish unavailable history from proven absence; the owner ruled the month-start check. |
 | F10 / **P3 FIXED** | `backfill_binance.py:286` | Ruling 4 compares decoded CSV fields, not bytes: `1000000` and `"1000000"` collapse. | Compare the raw records. |
 
 The review's mutation runner caught 12 of 17 mutants; the five survivors
@@ -3763,7 +3770,59 @@ survivors. They are the 24 earlier mutants (three re-aimed at changed lines),
 - `git diff --check` clean. Synthetic fixtures only: no network, no
   database, no real-data value or outcome.
 
-Next: the independent xHigh re-review (resuming the review session).
+The re-review outcome below records the result.
+
+### RBT-003 Part A re-review outcome
+
+**Date:** 2026-11-05. **Review:** independent xHigh re-review by the same Codex
+CLI session (`gpt-6.1-sol`, reasoning `xhigh`), resumed in a new detached
+worktree at `ed7f83a` under the same report-only rules; its worktree stayed
+clean. **Reviewed:** `5ec5cad..ed7f83a`, that is the FAIL record `7faea78`,
+review-fix `a3bfa6e`..`00ba499` and documentation `ed7f83a`, against owner
+review rulings 6-7.
+**Result: FAIL.** Nine prior findings are fixed (F3 as ruled); F9 is fixed in
+part, and the new evidence parser added a regression. Part B must not run this
+implementation unchanged. No owner question was raised; the owner ruled the
+reading of ruling 6 that N2 turns on (re-review ruling 8 above).
+
+| Finding | Re-review status and evidence |
+| --- | --- |
+| F1 | **FIXED.** Prohibited, holdout, unbounded and exclusive-end continuations refuse before a second transport call; valid continuations are rebuilt locally, safely encoded tokens included. |
+| F2 | **FIXED.** Both persistence entry points refuse a renamed request before any statement reaches the recording connection. |
+| F3 | **FIXED as ruled** (ruling 7). Advancing-clock probes confirm each basis row's own archive pair, month-boundary closes included; persistence keeps `available_at` and stamps `ingested_at` with the persistence instant. |
+| F4 | **FIXED.** Full-width quantities and sums stay exact at caller precisions 3, 6, 28 and 80 (see N1). |
+| F5 | **FIXED.** Objects in the formerly unchecked fields refuse; repeated days, fund histories and null-valued tickers refuse. |
+| F6 | **FIXED** for the original defects. Published exponents survive the round trip; contradictory declarations, statuses, incidents and outside-window hours refuse; a matrix of valid hours passes (see N1). |
+| F7 | **FIXED.** The archive builders, hand-built archive fetches and the Kraken builders refuse outside-window requests with no transport call. |
+| F8 | **FIXED.** Empty and partial archives return exactly the missing-hour census with its reasons. |
+| F9 | **FIXED in part** (ruling 6). The removed-first-month case refuses; a present but empty earlier archive does not (N2). |
+| F10 | **FIXED.** Quoted and unquoted decoded-equal records leave a gap; identical ones collapse. |
+
+| ID / severity | Location (`ed7f83a`) | Finding | Required correction |
+| --- | --- | --- | --- |
+| N1 / **P2** | `backfill_kraken.py:565` | The evidence parser's check `uids and long + short == 0` adds in the caller's decimal context. Through `read_liquidations`, the valid quantity `12345678901234567890.123456789012345678` raises `decimal.Inexact` at precision 28 with `Inexact` trapped; `1E-18` at precision 3 and `Emin=-5` rounds to zero and refuses as "liquidations without a quantity"; the ordinary fixture fails at precision 3 with `Inexact` trapped. The writer accepts these hours, so the mandatory read-back refuses valid output. | Compare the two validated non-negative quantities with zero individually, or add in a controlled context; add trapped-context and underflow regressions. |
+| N2 / **P2** (residual F9) | `backfill_binance.py:567`, `:577` | The listing loop tracks whether klines have accumulated, not whether an archive was present. With January-April absent, May present with a valid checksum and an empty CSV, and June starting `2020-06-10 08:00`, `BTCUSD_201225` is accepted with June's start, though May was not absent. | Keep archive presence and refuse a present archive without a kline before the first kline as `LISTING_START_UNPROVEN` (ruling 8); test it apart from the first-requested-month case. |
+
+The five mutants that survived the first review are caught, and Codex's own
+runner caught all 24 of its mutants. Its test audit found only the documented
+expectation changes and no changed refusal-code expectation, and it found the
+new tests meaningful. `ed7f83a` records the fixes, the moved expectations and
+the validation counts accurately, apart from the complete-fix claims that N1
+and N2 qualify. Holdout probes of every adapter and the evidence parser found
+no request built or sent, and no row admitted, outside the window; the holdout
+remains NOT COLLECTED. Codex's runs (`.venv312`, one process at a time,
+`-p no:cacheprovider`): the adapter module 187 passed; its recreated probes 90
+passed; with the V1/V2 replay, replay-review and database modules 548 passed;
+four edge probes failed, reproducing N1 and N2; PAD5 and PAD4-R5 7 passed;
+`git diff --check` clean. It did not run the full suite.
+
+**Implementer's verification.** Both findings were confirmed from the code
+before the owner was asked: the parser's check adds outside `_EXACT_CONTEXT`,
+and an empty CSV parses to no klines, which the loop cannot tell from an
+absent month.
+
+**Distinct review-fix:** in progress (owner re-review ruling 8), followed by
+an independent xHigh re-review.
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -4916,7 +4975,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A review-fix `a3bfa6e`..`00ba499` committed (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min), awaiting the independent xHigh re-review; review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A independent xHigh re-review FAIL (2026-11-05; two P2), second review-fix in progress (owner re-review ruling 8); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
