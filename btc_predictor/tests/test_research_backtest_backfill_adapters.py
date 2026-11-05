@@ -1631,6 +1631,27 @@ def test_ruling_5_every_declared_coinglass_field_is_type_checked(flow: str, fund
     refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
 
 
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"ticker": "GBTC"},  # another fund's history served for the requested ticker
+        {"name": ""},
+        {"name": 5},
+        {"market_date": 1704931200001},  # not a UTC day stamp
+        {"market_date": None},
+    ],
+    ids=["other-ticker", "empty-name", "number-name", "market-date-not-midnight", "market-date-null"],
+)
+def test_a_fund_history_day_must_name_its_fund_and_a_day(change: dict[str, Any]) -> None:
+    first = date(2024, 1, 11)
+    record = json.loads(FUND_DAY % ("1000", "9")) | change
+    transport = FakeTransport()
+    transport.add(coinglass.FLOW_HISTORY_URL, ('{"code":"0","msg":"success","data":[%s]}' % (FLOW_DAY % ("0", "45000", "5"))).encode())
+    transport.add(coinglass.fund_history_url("IBIT"), json.dumps({"code": "0", "msg": "success", "data": [record]}).encode())
+    reason = "RESPONSE_SHAPE_REFUSED"
+    refused(reason, coinglass_read, transport, ("IBIT",), first, first)
+
+
 def test_the_valid_coinglass_forms_are_still_read() -> None:
     first = date(2024, 1, 11)
     transport = FakeTransport()
