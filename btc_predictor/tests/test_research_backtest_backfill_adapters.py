@@ -516,6 +516,27 @@ def test_ruling_6_a_listing_start_at_the_first_hour_of_a_month_is_unproven() -> 
     assert read is not None and read.listing.first_kline_open_at == utc(2020, 7, 1, 1)
 
 
+@pytest.mark.parametrize("empty_rows", [[], [list(binance.KLINES_HEADERS[0])]], ids=["no-record", "header-only"])
+def test_ruling_8_an_archived_month_without_a_kline_before_the_first_kline_is_unproven(empty_rows: list[list[str]]) -> None:
+    # the re-review's case: January-April absent, May archived and verified but empty, June listing mid-month;
+    # May is not the first requested month, so only ruling 8 refuses it
+    may = binance.coinm_klines_archive_url("BTCUSD_201225", date(2020, 5, 1))
+    transport = FakeTransport()
+    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 6, 10, 8), utc(2020, 12, 25, 7))
+    fx.add_archive(transport, may, empty_rows)
+    error = refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
+    assert "2020-05 is archived without a kline" in str(error)
+    # a contract whose only archive is empty is refused, not read as unlisted
+    transport = FakeTransport()
+    fx.add_archive(transport, may, empty_rows)
+    refused("LISTING_START_UNPROVEN", binance.read_contract_klines, make_fetcher(transport), "BTCUSD_201225")
+    # the same history with May absent is a proven start
+    transport = FakeTransport()
+    fx.add_contract(transport, "BTCUSD_201225", utc(2020, 6, 10, 8), utc(2020, 12, 25, 7))
+    read = binance.read_contract_klines(make_fetcher(transport), "BTCUSD_201225")
+    assert read is not None and read.listing.first_kline_open_at == utc(2020, 6, 10, 8)
+
+
 def basis_world(futures_at: Any = lambda t: Decimal("10010") + t.hour, index_at: Any = lambda t: Decimal("10000")) -> FakeTransport:
     transport = FakeTransport()
     transport.add(binance.archive_listing_url(binance.COINM_KLINES_PREFIX), fx.s3_listing(["BTCUSD_200925", "BTCUSD_PERP"]))

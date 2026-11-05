@@ -549,7 +549,9 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
     Owner review ruling 6 (2026-11-04): an absent earlier month alone does not
     prove the listing start, so the first archived kline must not open at
     ``00:00`` on the 1st of its month, which a contract already trading would
-    have; otherwise the start is unproven.
+    have; otherwise the start is unproven. Owner re-review ruling 8 (2026-11-05):
+    every requested month before the first archived kline must be absent; a
+    present archive without a kline does not prove the contract was not trading.
     """
 
     delivery = contract_delivery_at(contract)
@@ -574,7 +576,14 @@ def read_contract_klines(fetcher: Fetcher, contract: str) -> ContractKlines | No
                 "LISTING_START_UNPROVEN",
                 f"{contract}: the first requested month {month:%Y-%m} is already archived, so the listing may start earlier",
             )
-        klines.update(parse_klines_archive(archive.body, month, symbol=contract, what=f"{contract} {month:%Y-%m}"))
+        month_klines = parse_klines_archive(archive.body, month, symbol=contract, what=f"{contract} {month:%Y-%m}")
+        if not klines and not month_klines:
+            raise BackfillRefused(
+                "LISTING_START_UNPROVEN",
+                f"{contract}: {month:%Y-%m} is archived without a kline before the first archived kline, so that month "
+                "is not proven absent (owner re-review ruling 8)",
+            )
+        klines.update(month_klines)
         sources.append(url)
         digests.append(archive.sha256)
         retrieved[month] = archive.retrieved_at
