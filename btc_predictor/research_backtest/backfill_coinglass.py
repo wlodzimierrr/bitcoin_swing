@@ -80,11 +80,13 @@ _FUND_DAY_KEYS = frozenset(
 )
 _FUND_NUMBERS = ("btc_holdings", "market_price", "nav", "premium_discount", "shares_outstanding")
 _TICKER = re.compile(r"[A-Z][A-Z0-9]{0,9}")
+_API_KEY = re.compile(r"[!-~]{1,256}")  # visible ASCII only: no space, control byte or line break (review B6)
 
 
 def coinglass_fetcher(transport: Transport, log: RetrievalLog, *, api_key: str, clock: Clock = utc_now) -> Fetcher:
-    if not api_key or api_key != api_key.strip():
-        raise BackfillRefused("PROVIDER_RESPONSE_REFUSED", "a CoinGlass API key is required")
+    if not isinstance(api_key, str) or not _API_KEY.fullmatch(api_key):
+        # the message never quotes the key (review B6)
+        raise BackfillRefused("PROVIDER_RESPONSE_REFUSED", "a CoinGlass API key of visible ASCII characters is required")
     return Fetcher(transport, log, clock, headers={API_KEY_HEADER: api_key})
 
 

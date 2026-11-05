@@ -19,6 +19,7 @@ from any URL other than the requested one refuses.
 
 from __future__ import annotations
 
+import re
 import time
 import urllib.error
 import urllib.request
@@ -43,10 +44,12 @@ ALLOWED_HOSTS = frozenset(
 USER_AGENT = "bitcoin-swing-research/1.0"
 RETRIED_STATUSES = frozenset({429, 500, 502, 503, 504})
 MAX_RETRY_AFTER_SECONDS = 120.0
+_HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+_HEADER_VALUE = re.compile(r"[!-~]+(?: +[!-~]+)*")  # visible ASCII and inner spaces: no control byte or line break
 
 
 class TransportFailed(RuntimeError):
-    """Every attempt failed without an HTTP response; the message names the URL and the error type only."""
+    """No HTTP response; the message names the URL and the error type only, never the error's text."""
 
 
 class RefuseRedirects(urllib.request.HTTPRedirectHandler):
@@ -87,6 +90,10 @@ class UrllibTransport:
         if parts.scheme != "https" or parts.hostname not in ALLOWED_HOSTS or parts.port is not None or parts.username:
             raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{parts.scheme}://{parts.hostname}: not an RBT-003 provider host")
         request_headers = {"User-Agent": USER_AGENT, **dict(headers)}
+        for name, value in request_headers.items():
+            if not (isinstance(name, str) and _HEADER_NAME.fullmatch(name) and isinstance(value, str) and _HEADER_VALUE.fullmatch(value)):
+                # refused before urllib, whose own check quotes the value (review B6)
+                raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a request header holds a name or value HTTP does not allow")
         failure = "no attempt"
         for attempt in range(self.attempts):
             if attempt:
@@ -113,6 +120,10 @@ class UrllibTransport:
             except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
                 failure = type(error).__name__
                 continue
+            except BackfillRefused:
+                raise
+            except Exception as error:  # noqa: BLE001 - its text may quote a header (review B6): the type only
+                raise TransportFailed(f"{url}: no response ({type(error).__name__})") from None
             if status in RETRIED_STATUSES and attempt + 1 < self.attempts:
                 failure = f"HTTP {status}"
                 continue

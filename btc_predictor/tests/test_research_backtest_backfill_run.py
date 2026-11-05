@@ -236,6 +236,34 @@ def test_review_b1_the_default_opener_refuses_redirects_and_a_redirected_respons
     assert make_transport(Opener(plain))(URL, {}).body == b"archive"
 
 
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"CG-API-KEY": "synthetic-secret\ncontinued"},
+        {"CG-API-KEY": "synthetic-secret\r\nX-Injected: 1"},
+        {"CG-API-KEY": "synthetic-secret\x00"},
+        {"CG-API-KEY": " synthetic-secret"},
+        {"CG-API-KEY": "synthetic-secret "},
+        {"CG-API-KEY": "synthetic-s\u00e9cret"},
+        {"CG-API-KEY": ""},
+        {"CG API KEY": "synthetic-secret"},
+        {"CG-API-KEY\n": "synthetic-secret"},
+    ],
+)
+def test_review_b6_a_header_http_does_not_allow_refuses_before_urllib_without_being_quoted(headers: dict[str, str]) -> None:
+    opener = Opener()
+    caught = refused("PROVIDER_REQUEST_MISMATCH", make_transport(opener), URL, headers)
+    assert opener.requests == [] and "synthetic" not in str(caught)
+
+
+def test_review_b6_an_unexpected_error_leaves_its_type_only_and_is_not_retried() -> None:
+    opener = Opener(ValueError("Invalid header value b'synthetic-secret'"))
+    with pytest.raises(transport_module.TransportFailed) as caught:
+        make_transport(opener)(URL, {})
+    assert "synthetic-secret" not in str(caught.value) and "ValueError" in str(caught.value)
+    assert caught.value.__cause__ is None and caught.value.__suppress_context__ and len(opener.requests) == 1
+
+
 def test_only_the_transport_module_may_open_a_connection() -> None:
     banned = ("urlopen", "import socket", "http.client", "import requests", "import httpx", "urllib.request")
     for module in (*ADAPTERS, run):

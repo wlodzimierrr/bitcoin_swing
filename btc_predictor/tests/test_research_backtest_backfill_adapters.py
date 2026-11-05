@@ -1161,6 +1161,18 @@ def test_ruling_10_coinglass_urls_carry_no_date_and_bad_requests_fetch_nothing()
     refused("PROVIDER_RESPONSE_REFUSED", coinglass.coinglass_fetcher, transport, RetrievalLog(), api_key="")
 
 
+@pytest.mark.parametrize(
+    "key",
+    [
+        "synthetic-secret\ncontinued", "synthetic-secret\r\n", "synthetic secret", " synthetic-secret",
+        "synthetic-secret ", "synthetic-secret\x00", "synthetic-s\u00e9cret", "synthetic-secret" * 20, None, b"synthetic-secret",
+    ],
+)
+def test_review_b6_a_key_http_does_not_allow_refuses_without_being_quoted(key: Any) -> None:
+    caught = refused("PROVIDER_RESPONSE_REFUSED", coinglass.coinglass_fetcher, FakeTransport(), RetrievalLog(), api_key=key)
+    assert "synthetic" not in str(caught)
+
+
 def test_ruling_10_a_parser_refuses_bytes_that_were_not_projected() -> None:
     refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_flow_history, fx.coinglass_flow_page({}))
     refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_fund_history, fx.coinglass_fund_page({}), ticker="IBIT")
