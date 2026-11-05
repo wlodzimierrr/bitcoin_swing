@@ -405,6 +405,28 @@ def test_the_units_follow_rbt002s_spans() -> None:
     assert all(len(run.SOURCES[name].units()) == 1 for name in ("binance-basis", "kraken-incidents", "coinmetrics-market-cap", "coinglass-etf"))
 
 
+@pytest.mark.parametrize(
+    ("source", "unit"),
+    [
+        ("kraken-liquidations", "2021-05-26"),  # before the execution log's depth
+        ("kraken-liquidations", "2026-01-01"),
+        ("binance-open-interest", "2020-08"),  # before the metrics archive's depth
+        ("binance-funding", "2019-12"),
+        ("binance-funding", "2026-01"),
+        ("binance-funding", "2020-1"),
+        ("binance-funding", "../2020-01"),
+        ("binance-basis", "2020-01"),
+        ("coinglass-etf", "2024-01"),
+        ("nonsense", "all"),
+    ],
+)
+def test_review_b8_a_unit_its_source_does_not_schedule_is_refused_before_any_request(store: run.EvidenceStore, source: str, unit: str) -> None:
+    transport = FakeTransport()
+    report_ = run.run_unit(context(transport, store, Database(), allow_coinglass=True, coinglass_key="key-123"), source, unit)
+    assert report_.status == "REFUSED" and report_.detail.startswith("PROVIDER_REQUEST_MISMATCH"), report_.detail
+    assert transport.calls == [] and not store.base.exists()
+
+
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:
     rows = binance.read_funding(fx.make_fetcher(funding_world()), date(2020, 2, 1), date(2020, 2, 1)).rows
     recorded = persistence.RecordedDerivativesProvider("binance", "BTCUSDT", binance.BINANCE_PROVIDER, funding=rows)

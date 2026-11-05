@@ -449,7 +449,20 @@ class UnitReport:
     detail: str = ""
 
 
+def _scheduled(source: str, unit: str) -> None:
+    """A unit is read only when its source schedules it (review B8): the source's depth and the window bound it."""
+
+    if source not in SOURCES:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"unknown source {source!r}")
+    if not isinstance(unit, str) or unit not in SOURCES[source].units():
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} schedules no unit {unit!r}")
+
+
 def run_unit(ctx: RunContext, source: str, unit: str) -> UnitReport:
+    try:
+        _scheduled(source, unit)  # before the store or the transport is touched
+    except BackfillRefused as refused:
+        return UnitReport(source, str(unit), "REFUSED", f"{refused.reason_code}: {masked(str(refused))}")
     record = ctx.store.done(source, unit)
     # a unit collected with --no-persist is read again when a later run persists
     if record is not None and not (ctx.connect is not None and record["persisted"].get("not_persisted")):
