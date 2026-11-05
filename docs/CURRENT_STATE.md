@@ -1462,7 +1462,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   findings and its second re-review the same day with one P2; after the
   third review-fix its third re-review PASSED the same day, closing Part A's
   review; Part B, the collection run, started the same day under owner
-  rulings 9-11).
+  rulings 9-11, and its code is committed; nothing is collected yet).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1708,8 +1708,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   prerequisites are in place, its first step's live checks are done, and the
   owner ruled that value-bearing files live in a private repository (9), that
   CoinGlass, which takes no date bound, is read through a reviewed projection
-  (10), and that the delivery instant is checked by volume (11). Its code,
-  tests and independent review come next; nothing has been collected or
+  (10), and that the delivery instant is checked by volume (11). Its code
+  is committed (`3301b16`..`4cf0993`: the adapter changes, the projection,
+  the transport and the resumable run); nothing has been collected or
   persisted. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
@@ -2046,12 +2047,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-003 Part B** code:
-  the network transport, the ruling 5 and 11 adapter changes, the CoinGlass
-  projection (ruling 10), a resumable runner writing value-bearing files to
-  the private repository (ruling 9), persistence and the dataset build; its
-  tests and independent review come before the first CoinGlass request.
-  RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
+  collection run** of every source but CoinGlass, then the independent review
+  of the Part B code (the projection before the first CoinGlass request),
+  then CoinGlass and the dataset build. RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2074,6 +2073,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part B code validation (2026-11-05):** `.venv312` CPython
+  3.12.14. The adapter (267) and run (29) modules with the replay, database
+  and coverage guard modules 779 passed, 1 xfailed; the BTC-019 completion
+  gate and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed.
+  Full repository at `4cf0993`, alone:
+  8,090 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+  Synthetic fixtures only.
 - **RBT-003 Part A third review-fix validation (2026-11-05):**
   `.venv312` CPython 3.12.14. The adapter module (196 tests) with the replay
   and database modules 557 passed; V5 definition
@@ -2578,7 +2586,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   and owner re-review ruling 8 `f931981`; the second review-fix `85cfc8f` and
   `d7d43a0` with docs `091c8cd`; the second re-review FAIL `ae5a1a1`; the
   third review-fix `3f3a801` with docs `1881a8a`; the third re-review PASS
-  in this documentation commit. Before them,
+  `e6f7448`; Part B's start and rulings 9-11 `7ab24be`; the Part B code
+  `3301b16`, `d561cc7`, `4f22106`, `1e195d6` and `4cf0993` with this
+  documentation commit. Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the
