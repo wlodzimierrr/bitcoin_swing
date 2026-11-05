@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `IN PROGRESS — Part B code review FAIL 2026-11-05 (one P1, five P2, two P3; owner: fix all eight, then re-review; Kraken liquidations and CoinGlass wait); non-CoinGlass collection started on 4cf0993; Part B code committed 2026-11-05 (3301b16..4cf0993), first step's live checks done, owner Part B rulings 9-11; Part A third independent xHigh re-review PASS (2026-11-05; no new finding), Part A review closed; third review-fix 3f3a801; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix 85cfc8f, d7d43a0 (owner re-review ruling 8); re-review FAIL 2026-11-05 (two P2); review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part B review-fix 43ddb46..7a9de7d committed 2026-11-05, awaiting re-review; non-CoinGlass collection done on 4cf0993 (evidence 76496db, private); Part B code review FAIL 2026-11-05 (one P1, five P2, two P3; owner: fix all eight, then re-review; Kraken liquidations and CoinGlass wait); Part B code committed 2026-11-05 (3301b16..4cf0993), first step's live checks done, owner Part B rulings 9-11; Part A third independent xHigh re-review PASS (2026-11-05; no new finding), Part A review closed; third review-fix 3f3a801; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix 85cfc8f, d7d43a0 (owner re-review ruling 8); re-review FAIL 2026-11-05 (two P2); review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -4266,6 +4266,123 @@ collection of the incident list, Binance's funding, perpetual volume, open
 interest and basis, and Coin Metrics' market cap, which started before the
 review on `4cf0993`, runs to its end; its units stay recorded as collected by
 `4cf0993`. Kraken's liquidations and CoinGlass wait for the re-review PASS.
+
+### RBT-003 Part B review-fix (B1-B8)
+
+**Status:** `REVIEW-FIX COMMITTED (2026-11-05)`; awaiting the independent
+xHigh re-review. CoinGlass is not called and Kraken's liquidations are not
+collected before its PASS.
+
+**Distinct review-fix:** one commit per finding on top of the FAIL record
+`f3e6119`, then one test commit. Only `backfill_transport`, `backfill_run`,
+`backfill_projection`, `backfill_coinglass` and the two test modules change;
+the collectors, the raw schema, the RBT-001 and RBT-001A builders, every
+owner, configuration, the inventory, the spec, `data/` and
+`research_artifacts/` are unchanged.
+- `43ddb46` (B1): the default opener returns a `3xx` as the response
+  (`RefuseRedirects`), which the fetcher refuses, and a response whose URL is
+  not the requested one refuses before its body is read. No redirect is
+  followed, so no request leaves the six hosts, `https` or the requested
+  period.
+- `704bd82` (B6): the CoinGlass key must be 1-256 visible ASCII characters;
+  the transport checks every header name and value before `urllib` and
+  refuses without quoting either; any other error from the opener leaves its
+  type only (no text, no chained cause) and is not retried.
+- `dbdfe33` (B7): every byte at or above `0x80` in a projected string must
+  begin a well-formed UTF-8 sequence under RFC 3629's table (no overlong
+  form, no surrogate, nothing above U+10FFFF), checked byte by byte and never
+  decoded.
+- `e9cfc75` (B2): `backfill_projection.verified_body` proves, before either
+  parser decodes anything, that the bytes are exactly a projection on the
+  endpoint's own date members (`timestamp`; `assets_date` and `market_date`)
+  and the projection's days: the same members, every record kept on a
+  second value-blind projection, byte-identical bytes, the same count, typed
+  days and bytes.
+- `e244ebf` (B8): `run_unit` refuses an unknown source and any unit its
+  source does not schedule before the store or the transport is touched.
+- `1573ee7` (B5): every directory from the store's root down, and every file
+  it reads or writes, must be real, never a symbolic link; files are written
+  through a fresh `O_NOFOLLOW` partial file; source, unit and file names are
+  plain names. The store is consulted before any request.
+- `5f1717c` (B4): a `DONE.json` verifies only with exactly its keys, this run
+  version, its own source and unit, a UTC completion instant, non-negative
+  integer counts, and `summary.json` and `retrievals.json` bound under plain
+  names; the run also requires the source's evidence files and that the
+  marker records the summary's rows persisted (`not_persisted`, or nothing
+  for a source that persists nothing). A marker that exists but does not
+  verify refuses the unit for reconciliation by hand, since the unit may
+  already be persisted: it is never silently read again.
+- `0187e09` (B3): a unit's files and `PREPARED.json` (binding them, and
+  recording whether the run persists) are written before any row is
+  persisted; `DONE.json` then binds the same files and replaces it. A unit a
+  persisting run prepared is never read afresh: CoinGlass rebuilds its rows
+  from the prepared projections, each of which must reproduce its exposure
+  record (`backfill_coinglass.etf_flows_from_projections` shares the live
+  read's row builder), and every other source reads again with the prepared
+  retrieval instants replayed and must reproduce the prepared files byte for
+  byte. The rows are then the prepared read's, so the unchanged collectors'
+  insert-or-ignore adds nothing already committed. A no-persist run never
+  completes a persisting run's unit, and a unit prepared without persistence
+  is read afresh.
+- `7a9de7d`: each of the six fund numbers is type-checked on its own (30
+  cases), the gap the review's mutation runner found for `nav`.
+
+**Implementation Notes corrected.** The Part B Implementation Notes above
+said that the transport sends a `GET` "only to the six Part B hosts" (true
+only since B1: redirects were followed), that a unit "whose `DONE.json`
+verifies is skipped, so the run resumes" (before B4 a marker's identity and
+persistence were not checked, and before B3 a CoinGlass unit interrupted
+after its commit was read again with a later `available_at`; the run
+module's docstring said such a unit "re-persists nothing new", true then for
+the five derivative tables only) and that "any malformed byte refuses the
+whole response" (before B7, malformed UTF-8 inside a string did not). They
+stand as the record of `4cf0993`; this section and the modules' docstrings
+are current.
+
+**Tests.** The adapter module has 349 tests (267 before) and the run module
+107 (29 before): B1 16, B2 2, B3 7, B4 16, B5 20, B6 20, B7 39, B8 10, the
+fund numbers 30. Changed fixtures, each following B4: two store tests now
+bind `summary.json` and `retrievals.json`, which every completed unit binds.
+No other test or expectation changed. Mutants (`mutate.py`, one textual
+change at a time against the finding's tests): B1 3 of 3, B6 4 of 4, B7 9 of
+9, B2 6 of 6 after two cases were added for the two first survivors (a
+forged count, re-framed bytes), B8 2 of 2, B5 6 of 6, B4 12 of 13, B3 10 of
+10, the fund numbers 5 of 5. The B4 survivor removes the digest-format and
+self-binding checks, which no real file can pass anyway (a digest must
+equal the file's lower-case SHA-256): an equivalent mutant kept as an
+explicit guard.
+
+**Collection so far (2026-11-05, on `4cf0993`, before the review).** The
+incident list (one in-window incident, as RBT-002 recorded), Binance funding
+(72 months, 6,575 rows; the 2020-01-01 00:00 settlement excluded as pricing
+2019), perpetual volume (72 months, 52,608 rows, no gap), open interest (64
+months from 2020-09-01, 46,708 rows, 44 gap records), the basis (one unit,
+96,730 rows from 2020-06-11, 192 gap records, two contracts unlisted in the
+window; 593 requests, of which 148 contract-month archives answered `404`
+and were read as absent months by Part A's reviewed listing proof) and Coin
+Metrics' market cap (one request; no missing day). Each source's database
+rows equal its units' summary rows (read-only count), every unit's marker
+verifies under B4, and none is left prepared. The evidence (635 files,
+4.5 MB) is committed to the private repository as `76496db` (ruling 9).
+Every progress line and summary is value-free; no value was printed.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-05).**
+- The adapter and run modules with the V1/V2 replay, replay-review, database
+  and four coverage guard modules: 939 passed, 1 xfailed; the BTC-019 completion gate and
+  the coverage review: 18 passed.
+- V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed, 112 deselected;
+  PAD4-R5 2 passed.
+- Full repository at `7a9de7d`, alone:
+  8,250 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+- `git diff --check` clean. Synthetic fixtures only; the only network reads
+  were the collection run's and two no-redirect requests for Binance archive
+  URLs the run had fetched.
+
+Next: the independent xHigh re-review of `f3e6119..` this record; on PASS,
+Kraken's liquidations, then CoinGlass (`--allow-coinglass`), then the
+dataset build.
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -5418,7 +5535,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part B code review FAIL 2026-11-05 (one P1, five P2, two P3; owner: fix all eight, then re-review); non-CoinGlass collection started on `4cf0993`; Part B code `3301b16`..`4cf0993` committed 2026-11-05 (296 tests; full suite 8,090 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B started 2026-11-05 (live checks done; owner rulings 9-11: private evidence repository, CoinGlass projection, volume-based delivery check); Part A third independent xHigh re-review PASS 2026-11-05 (no new finding), Part A review closed; third review-fix `3f3a801` (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part B review-fix `43ddb46`..`7a9de7d` committed 2026-11-05 (456 tests; full suite 8,250 passed, 3 skipped, 1 xfailed, 0 failed in 79 min), awaiting re-review; non-CoinGlass collection done on `4cf0993` (evidence `76496db`, private); Part B code review FAIL 2026-11-05 (one P1, five P2, two P3; owner: fix all eight, then re-review); Part B code `3301b16`..`4cf0993` committed 2026-11-05 (296 tests; full suite 8,090 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B started 2026-11-05 (live checks done; owner rulings 9-11: private evidence repository, CoinGlass projection, volume-based delivery check); Part A third independent xHigh re-review PASS 2026-11-05 (no new finding), Part A review closed; third review-fix `3f3a801` (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |

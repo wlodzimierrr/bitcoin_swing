@@ -1463,8 +1463,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   third review-fix its third re-review PASSED the same day, closing Part A's
   review; Part B, the collection run, started the same day under owner
   rulings 9-11; its code's independent review FAILED the same day and the
-  owner chose to fix all eight findings and re-review; the collection of
-  every source but CoinGlass and Kraken's liquidations is under way).
+  owner chose to fix all eight findings and re-review; the review-fix is
+  committed and awaits its re-review; the collection of every source but
+  CoinGlass and Kraken's liquidations is done).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1719,9 +1720,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   are not fully checked, a malformed key can reach a traceback, malformed
   UTF-8 is accepted in dropped strings, and a unit is not checked against its
   source's span); the owner chose to fix all eight, validate and re-review.
-  The collection of the incident list, Binance and Coin Metrics, started on
-  `4cf0993` before the review, runs to its end; Kraken's liquidations and
-  CoinGlass wait for the re-review PASS. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  The review-fix is committed (`43ddb46`..`7a9de7d`, one commit per
+  finding and a test commit) and awaits its independent re-review. The
+  collection of the incident list, Binance and Coin Metrics, run on
+  `4cf0993` before the review, is done: 211 units, every source's database
+  rows equal to its summaries, evidence in the private repository
+  (`76496db`). Kraken's liquidations and CoinGlass wait for the re-review
+  PASS. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B code review,
@@ -2064,10 +2069,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
-  review-fix** (B1-B8, one commit each), its validation and its independent
-  re-review, while the non-CoinGlass collection finishes; then Kraken's
-  liquidations, CoinGlass and the dataset build. RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **re-review of the RBT-003 Part B review-fix** (`f3e6119..` its record);
+  on PASS, Kraken's liquidations, CoinGlass and the dataset build. RBT-006
+  stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2090,6 +2095,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part B review-fix validation (2026-11-05):** `.venv312`
+  CPython 3.12.14. The adapter (349) and run (107) modules with the replay,
+  database and coverage guard modules 939 passed, 1 xfailed; the BTC-019 completion gate
+  and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed.
+  Full repository at `7a9de7d`, alone:
+  8,250 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+  Synthetic fixtures only.
 - **RBT-003 Part B code validation (2026-11-05):** `.venv312` CPython
   3.12.14. The adapter (267) and run (29) modules with the replay, database
   and coverage guard modules 779 passed, 1 xfailed; the BTC-019 completion
@@ -2605,7 +2619,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   third review-fix `3f3a801` with docs `1881a8a`; the third re-review PASS
   `e6f7448`; Part B's start and rulings 9-11 `7ab24be`; the Part B code
   `3301b16`, `d561cc7`, `4f22106`, `1e195d6` and `4cf0993` with docs
-  `b6c4ef3`; the Part B code review FAIL in this documentation commit.
+  `b6c4ef3`; the Part B code review FAIL `f3e6119`; the Part B review-fix
+  `43ddb46`, `704bd82`, `dbdfe33`, `e9cfc75`, `e244ebf`, `1573ee7`,
+  `5f1717c`, `0187e09` and `7a9de7d` with this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
