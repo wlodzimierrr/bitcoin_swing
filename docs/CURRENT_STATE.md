@@ -1459,8 +1459,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   implementation `524fcbf`); **RBT-003 is IN PROGRESS** (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
-  findings and its second re-review the same day with one P2, and the third
-  review-fix is committed and awaits the independent xHigh re-review).
+  findings and its second re-review the same day with one P2; after the
+  third review-fix its third re-review PASSED the same day, closing Part A's
+  review, and Part B, the collection run, remains).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1700,14 +1701,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `a3bfa6e`..`00ba499` (owner review rulings 6-7), its re-review FAILED on
   2026-11-05 with two P2 findings; after the second review-fix (owner
   re-review ruling 8; `85cfc8f`, `d7d43a0`) its second re-review FAILED the
-  same day with one P2 (N3); the third review-fix (`3f3a801`) is committed
-  and awaits the independent xHigh re-review. Part B, the
+  same day with one P2 (N3); after the third review-fix (`3f3a801`) its
+  third re-review PASSED the same day with no new finding, which closes Part
+  A's review. Part B, the
   collection run, awaits database write access, network access, the CoinGlass
   purchase with the documented ETF date bounds, and the evidence-storage
   decision. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 Part A second re-review,
+- **Most recent completed review:** EPIC Y RBT-003 Part A third re-review,
+  2026-11-05, **independent xHigh PASS** (same Codex session, report-only) of
+  review-fix `3f3a801` and docs `1881a8a`: N3, N1, N2 and F1-F10 FIXED,
+  rulings 6-8 met, no new finding; no caller-context dependency remains in
+  any adapter's evidence, digests or persisted rows. Part A's review is
+  closed; RBT-003 stays IN PROGRESS for Part B. Details in EPIC Y's RBT-003
+  Part A third re-review outcome.
+- **Preceding completed review (EPIC Y):** RBT-003 Part A second re-review,
   2026-11-05, **independent xHigh FAIL** (same Codex session, report-only) of
   review-fix `85cfc8f` and `d7d43a0` and docs `091c8cd`: N1, N2 and F1-F10
   FIXED, rulings 6-8 met; one P2, N3 (the evidence's series-value spelling
@@ -2033,10 +2042,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **independent xHigh
-  re-review of the third RBT-003 Part A review-fix** (`3f3a801`); then
-  Part B's
-  prerequisites: database write and network access, the USD 29 CoinGlass
+- **Next dependency-satisfied EPIC Y action:** **RBT-003 Part B**, the
+  collection run, once the owner provides its prerequisites: database write
+  and network access, the USD 29 CoinGlass
   purchase (nothing purchased) with the documented ETF date bounds, and the
   evidence-storage decision. RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
@@ -2564,7 +2572,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `1b96bbf`, `423fb13` and `00ba499` with docs `ed7f83a`; the re-review FAIL
   and owner re-review ruling 8 `f931981`; the second review-fix `85cfc8f` and
   `d7d43a0` with docs `091c8cd`; the second re-review FAIL `ae5a1a1`; the
-  third review-fix `3f3a801` with this documentation commit. Before them,
+  third review-fix `3f3a801` with docs `1881a8a`; the third re-review PASS
+  in this documentation commit. Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
   `3b88daf` (F2, rulings 4-5) and `f785d81` (F4) with docs `7c48585`; the

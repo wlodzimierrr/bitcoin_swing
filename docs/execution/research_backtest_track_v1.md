@@ -3372,7 +3372,7 @@ stays blocked on RBT-003.
 
 ## RBT-003 — `BACKFILL_HISTORICAL_INPUTS_V1`
 
-**Status:** `IN PROGRESS — Part A third review-fix committed (2026-11-05, 3f3a801), awaiting the independent xHigh re-review; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix 85cfc8f, d7d43a0 (owner re-review ruling 8); re-review FAIL 2026-11-05 (two P2); review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
+**Status:** `IN PROGRESS — Part A third independent xHigh re-review PASS (2026-11-05; no new finding), Part A review closed; third review-fix 3f3a801; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix 85cfc8f, d7d43a0 (owner re-review ruling 8); re-review FAIL 2026-11-05 (two P2); review-fix a3bfa6e..00ba499 (owner review rulings 6-7); review FAIL 2026-11-04; Part A IMPLEMENTED (2026-11-04, 1427053), offline; owner rulings 2026-11-04; Part B (collection) awaits database write access, network access, the CoinGlass purchase with the documented ETF date bounds, and the evidence-storage decision. RBT-001A DONE (2026-11-04); RBT-002 independent R2 re-review PASS and RBT-001 review PASS`
 **Dependencies:** RBT-001A, RBT-002
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -3934,7 +3934,59 @@ the fix reverted. No existing test or expectation changed.
 - `git diff --check` clean. Synthetic fixtures only: no network, no
   database, no real-data value or outcome.
 
-Next: the independent xHigh re-review (resuming the review session).
+The third re-review outcome below records the result.
+
+### RBT-003 Part A third re-review outcome
+
+**Date:** 2026-11-05. **Review:** the third independent xHigh re-review by
+the same Codex CLI session (`gpt-6.1-sol`, reasoning `xhigh`), resumed in a
+new detached worktree at `1881a8a` under the same report-only rules; its
+worktree stayed clean. **Reviewed:** `091c8cd..1881a8a`, that is the second
+re-review FAIL record `ae5a1a1`, review-fix `3f3a801` and documentation
+`1881a8a`, against owner rulings 1-8.
+**Result: PASS. Part A's independent review is closed.** N3, N1, N2 and
+F1-F10 are fixed (F3 as ruled, F9 under rulings 6 and 8), rulings 6-8 are met
+and no new finding was raised. RBT-003 stays IN PROGRESS: the frozen
+datasets, manifests and reproducible database rebuild are Part B's, which
+remains blocked on its prerequisites. No owner question was raised.
+
+| Finding | Third re-review status and evidence |
+| --- | --- |
+| N3 | **FIXED.** `published_spelling` uses the fixed context's `to_sci_string`; the six failing cross-context probes of the second re-review pass, exponents and trailing zeros survive, and reverting the line reproduces those six failures and both new exponent cases. |
+| N1 | **FIXED.** Each stored quantity is checked with `is_zero()`; the full-width, underflow and trapped-context probes pass, and a too-wide stored sum is refused under control. |
+| N2 | **FIXED** (ruling 8). Verified empty or header-only archives before the first kline refuse, empty-only contracts included; an all-absent contract stays unlisted, and an empty archive after the listing stays a recorded gap. |
+| F1-F10 | **FIXED** (F3 as ruled; F9 under rulings 6 and 8). The recreated probes of every finding pass. |
+
+**Decimal-context audit.** Across 192 caller contexts varying precision,
+exponent limits, rounding, traps, `capitals` and clamp, every adapter gave
+identical evidence bytes, digests, decimal values, persisted results and
+recording-connection parameters, and the liquidation, contract-listing and
+market-cap evidence each read back under the other contexts. Eight
+default-context comparisons against the `091c8cd` function gave identical
+evidence bytes, hashes, typed hours and rows. No remaining dependency on the
+caller's context was found.
+
+Acceptance criteria for Part A: the existing collectors and provider
+protocols are used with no collector, schema or migration change; provider,
+source and ingestion provenance are true; nothing outside the data window is
+requested or admitted in offline verification. Holdout probes of every
+adapter's request and response guards, all with synthetic responses, found no
+request or admission outside the window; the holdout remains NOT COLLECTED.
+An AST comparison with `091c8cd` found every earlier test function and
+decorator unchanged and one test function added, whose two exponent cases
+fail with N3 reverted. `1881a8a` describes the fix accurately.
+
+Codex's runs (`.venv312`, one process at a time, `-p no:cacheprovider`): the
+adapter module with the V1/V2 replay, replay-review and database modules 557
+passed under `-W error::RuntimeWarning`; its earlier probe modules 308 passed;
+its new cross-context probes 200 passed; its mutation runner caught 28 of 28
+mutants; its formatting counterfactual 704 passed; PAD5 and PAD4-R5 7 passed;
+`git diff --check` clean. It did not run the full suite or recompute the V5
+definition, whose bound inputs the diff leaves unchanged.
+
+Next: RBT-003 Part B, the collection run, once the owner provides its
+prerequisites (database write and network access, the CoinGlass purchase with
+the documented ETF date bounds, and the evidence-storage decision).
 
 ## RBT-004 — `COMPOSE_CHAMPION_ENTRY_DECISION_V1`
 
@@ -5087,7 +5139,7 @@ version or any version derived from inspecting its result.
 | RBT-002 | `INVENTORY_HISTORICAL_INPUT_COVERAGE_V1` | DONE — independent R2 re-review PASS under V5 §5A.7; correction `812b968`, docs `ce5cd70`, inventory `108ab25b...efe3a` unchanged; all four criteria independently verified |
 | RBT-002A | `DEFINE_CHAMPION_COMPLETION_SPEC_V1` | DONE — independent xHigh review PASS under V7; final spec `9819f84a...5013f`, inventory unchanged; fixes `352bba0`, `496a947`, `5b75882`, `42459e6`; owner-ruled guard/ablation conformance `700b924`; 26 inputs, 16 new parameter elements, 14 roots; full suite 0 failures |
 | RBT-001A | `EXTEND_REPLAY_INPUTS_TO_POLICY_V3` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); review FAIL (two P1, one P2, one P3) fixed in `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`, N2 corrected in the docs — rulings `4453b5c`, implementation `524fcbf`; owner review rulings 4-6; 162 tests; full suite at `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min) |
-| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A third review-fix `3f3a801` committed (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min), awaiting the independent xHigh re-review; second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
+| RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | IN PROGRESS — Part A third independent xHigh re-review PASS 2026-11-05 (no new finding), Part A review closed; third review-fix `3f3a801` (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | BLOCKED — RBT-003; RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
