@@ -98,6 +98,15 @@ def fund_history_url(ticker: str) -> str:
     return f"{FUND_HISTORY_URL}?{urlencode({'ticker': ticker})}"
 
 
+def fund_of_history_url(url: Any) -> str:
+    """The ticker a per-fund URL names: its only query."""
+
+    match = re.fullmatch(re.escape(FUND_HISTORY_URL) + r"\?ticker=([A-Z][A-Z0-9]{0,9})", url) if isinstance(url, str) else None
+    if match is None:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a fund history URL without its ticker")
+    return match.group(1)
+
+
 def _refuse(message: str) -> Any:
     raise BackfillRefused("RESPONSE_SHAPE_REFUSED", message)
 
@@ -225,21 +234,50 @@ def read_etf_flows(
     if funds is None:
         funds = tuple(sorted({ticker for ticker, _ in flows}))
         urls = {ticker: fund_history_url(ticker) for ticker in funds}
-    projections = [flow]
-    histories: dict[str, tuple[Mapping[date, Decimal], datetime]] = {}
+    histories: dict[str, tuple[ProjectedResponse, Mapping[date, Decimal]]] = {}
     for ticker in funds:
         history = project_records(
             fetcher.fetch(urls[ticker]), date_keys=FUND_DATE_KEYS, first_day=first_day, last_day=last_day,
             what=f"the {ticker} history",
         )
-        projections.append(history)
-        histories[ticker] = (parse_fund_history(history, ticker=ticker), history.retrieved_at)
+        histories[ticker] = (history, parse_fund_history(history, ticker=ticker))
+    return _collection(flow, flows, histories)
+
+
+def etf_flows_from_projections(flow: ProjectedResponse, histories: Sequence[ProjectedResponse]) -> EtfFlowCollectionRead:
+    """The ``funds=None`` read rebuilt from its projections alone; nothing is requested (review B3).
+
+    A resumed collection unit's rows must be the prepared read's, retrieval
+    instants included: an ETF row's key holds ``available_at``. ``flow`` must
+    be the flow history's projection and ``histories`` exactly one per ticker
+    the flow history names, in the read's (sorted) order. Every projection is
+    proven before it is decoded (review B2).
+    """
+
+    if getattr(flow, "url", None) != FLOW_HISTORY_URL:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the first projection is not the flow history's")
+    flows = parse_flow_history(flow)
+    tickers = tuple(fund_of_history_url(getattr(history, "url", None)) for history in histories)
+    if tickers != tuple(sorted({ticker for ticker, _ in flows})):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the fund histories are not exactly the flow history's funds, in order")
+    parsed = {ticker: (history, parse_fund_history(history, ticker=ticker)) for ticker, history in zip(tickers, histories)}
+    return _collection(flow, flows, parsed)
+
+
+def _collection(
+    flow: ProjectedResponse,
+    flows: Mapping[tuple[str, date], Decimal],
+    histories: Mapping[str, tuple[ProjectedResponse, Mapping[date, Decimal]]],
+) -> EtfFlowCollectionRead:
+    """The rows of a parsed flow history and its funds' histories: one path for a live read and a rebuilt one."""
+
     rows: list[EtfFlow] = []
     missing: list[tuple[str, date]] = []
     for (ticker, day), value in sorted(flows.items(), key=lambda item: (item[0][1], item[0][0])):
         if ticker not in histories:
             continue
-        assets, retrieved_at = histories[ticker]
+        history, assets = histories[ticker]
+        retrieved_at = history.retrieved_at
         aum = assets.get(day)
         if aum is None:
             missing.append((ticker, day))
@@ -257,7 +295,8 @@ def read_etf_flows(
             )
         )
     tickers = tuple(sorted({ticker for ticker, _ in flows}))
-    return EtfFlowCollectionRead(tuple(rows), tickers, tuple(missing), tuple(projections))
+    projections = (flow, *(history for history, _ in histories.values()))
+    return EtfFlowCollectionRead(tuple(rows), tickers, tuple(missing), projections)
 
 
 def utc_day_stamp(day: date) -> int:

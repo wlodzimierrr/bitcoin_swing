@@ -1173,6 +1173,23 @@ def test_review_b6_a_key_http_does_not_allow_refuses_without_being_quoted(key: A
     assert "synthetic" not in str(caught)
 
 
+def test_review_b3_the_etf_rows_rebuild_from_their_projections_alone() -> None:
+    first, second = date(2024, 1, 11), date(2024, 1, 12)
+    transport = coinglass_world({first: {"IBIT": 5, "GBTC": -7}, second: {"IBIT": 6}}, {"IBIT": {first: 9}, "GBTC": {second: 11}}, first, second)
+    fetcher = coinglass.coinglass_fetcher(transport, RetrievalLog(), api_key="key-123", clock=AdvancingClock())
+    read = coinglass.read_etf_flows(fetcher, None, first, second)
+    flow, gbtc, ibit = read.projections
+    assert [item.url for item in (gbtc, ibit)] == [coinglass.fund_history_url("GBTC"), coinglass.fund_history_url("IBIT")]
+    assert coinglass.etf_flows_from_projections(flow, (gbtc, ibit)) == read  # rows, instants, missing AUM and projections
+    for histories in ((ibit, gbtc), (ibit,), (gbtc, ibit, ibit), ()):
+        refused("PROVIDER_REQUEST_MISMATCH", coinglass.etf_flows_from_projections, flow, histories)
+    refused("PROVIDER_REQUEST_MISMATCH", coinglass.etf_flows_from_projections, gbtc, (gbtc, ibit))
+    refused("PROVIDER_REQUEST_MISMATCH", coinglass.etf_flows_from_projections, dataclasses.replace(flow, url=flow.url + "?x=1"), (gbtc, ibit))
+    assert coinglass.fund_of_history_url(coinglass.fund_history_url("IBIT")) == "IBIT"
+    for bad in (coinglass.FLOW_HISTORY_URL, coinglass.fund_history_url("IBIT") + "&start_time=1", None):
+        refused("PROVIDER_REQUEST_MISMATCH", coinglass.fund_of_history_url, bad)
+
+
 def test_ruling_10_a_parser_refuses_bytes_that_were_not_projected() -> None:
     refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_flow_history, fx.coinglass_flow_page({}))
     refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_fund_history, fx.coinglass_fund_page({}), ticker="IBIT")

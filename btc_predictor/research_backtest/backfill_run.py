@@ -12,16 +12,19 @@ evidence repository (owner Part B ruling 9) under
   SHA-256, never a header or a value;
 - ``summary.json``: value-free facts (counts, gaps, exclusions, exposure);
 - the unit's evidence files, value-bearing ones included;
-- ``DONE.json``, written last, binding every other file by SHA-256.
+- ``PREPARED.json``, written before any row is persisted, binding the files;
+- ``DONE.json``, written last over the same files, replacing it.
 
 A unit whose ``DONE.json`` verifies is skipped, so an interrupted run resumes.
 A marker verifies only when it names this run version, its own source and
 unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
 files by SHA-256, and records its rows persisted (or ``not_persisted``); a
 marker that exists but does not verify refuses the unit for reconciliation by
-hand, never a silent re-read (review B4);
-the collectors insert-or-ignore, so a unit interrupted after persisting
-re-persists nothing new. Progress lines are value-free, and a refusal prints
+hand, never a silent re-read (review B4). Before a unit is persisted its
+files and ``PREPARED.json`` (binding them) are written; a unit a persisting
+run prepared is resumed from that read, never read afresh, so its rows keep
+their retrieval instants and the collectors' insert-or-ignore re-persists
+nothing already committed (review B3). Progress lines are value-free, and a refusal prints
 its code and its message with every digit masked (RBT-002's metadata-only
 discipline). Spans follow RBT-002's acquisition plan: from the source's depth
 or the window start to 2025-12-31.
@@ -58,6 +61,7 @@ from btc_predictor.research_backtest.backfill_persistence import (
     persist_derivatives,
     persist_etf_flows,
 )
+from btc_predictor.research_backtest.backfill_projection import ProjectedResponse
 from btc_predictor.research_backtest.backfill_sources import (
     DATA_WINDOW_END,
     DATA_WINDOW_START,
@@ -91,7 +95,10 @@ _STORE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,39}")  # a source or a unit
 _FILE_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,119}")  # a unit file: no separator, never "." or ".."
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _COUNT_NAME = re.compile(r"[a-z][a-z_]{0,63}")
+PREPARED_FILE = "PREPARED.json"
+MARKERS = frozenset({DONE_FILE, PREPARED_FILE})
 DONE_KEYS = frozenset({"run_version", "source", "unit", "completed_at", "persisted", "files"})
+PREPARED_KEYS = frozenset({"run_version", "source", "unit", "persisting", "files"})
 REQUIRED_FILES = frozenset({"retrievals.json", "summary.json"})
 NOT_PERSISTED = {"not_persisted": 1}
 
@@ -164,8 +171,14 @@ class EvidenceStore:
         return None if found is None else found[0]
 
     def has_done_marker(self, source: str, unit: str) -> bool:
+        return self._has_marker(source, unit, DONE_FILE)
+
+    def has_prepared_marker(self, source: str, unit: str) -> bool:
+        return self._has_marker(source, unit, PREPARED_FILE)
+
+    def _has_marker(self, source: str, unit: str, marker: str) -> bool:
         directory = self.unit_dir(source, unit)
-        return self._real_directory(directory, create=False) and ((directory / DONE_FILE).is_symlink() or (directory / DONE_FILE).exists())
+        return self._real_directory(directory, create=False) and ((directory / marker).is_symlink() or (directory / marker).exists())
 
     def completed(self, source: str, unit: str) -> tuple[dict[str, Any], dict[str, bytes]] | None:
         """The verified ``DONE.json`` and the files it binds (review B4); ``None`` when absent or not verifying.
@@ -176,10 +189,24 @@ class EvidenceStore:
         among plain file names whose SHA-256 each match.
         """
 
+        found = self._verified(source, unit, DONE_FILE, DONE_KEYS)
+        if found is None or not _utc_instant(found[0]["completed_at"]) or not _counts(found[0]["persisted"]):
+            return None
+        return found
+
+    def prepared(self, source: str, unit: str) -> tuple[dict[str, Any], dict[str, bytes]] | None:
+        """The verified ``PREPARED.json`` and the files it binds (review B3); ``None`` when absent or not verifying."""
+
+        found = self._verified(source, unit, PREPARED_FILE, PREPARED_KEYS)
+        if found is None or type(found[0]["persisting"]) is not bool:
+            return None
+        return found
+
+    def _verified(self, source: str, unit: str, marker_name: str, keys: frozenset[str]) -> tuple[dict[str, Any], dict[str, bytes]] | None:
         directory = self.unit_dir(source, unit)
         if not self._real_directory(directory, create=False):
             return None
-        marker = directory / DONE_FILE
+        marker = directory / marker_name
         _require_not_link(marker)
         if not marker.is_file():
             return None
@@ -187,18 +214,16 @@ class EvidenceStore:
             record = json.loads(marker.read_bytes())
         except (UnicodeDecodeError, ValueError):
             return None
-        if not isinstance(record, dict) or set(record) != DONE_KEYS:
+        if not isinstance(record, dict) or set(record) != keys:
             return None
         if (record["run_version"], record["source"], record["unit"]) != (RUN_VERSION, source, unit):
-            return None
-        if not _utc_instant(record["completed_at"]) or not _counts(record["persisted"]):
             return None
         bound = record["files"]
         if not isinstance(bound, dict) or not REQUIRED_FILES <= set(bound):
             return None
         files: dict[str, bytes] = {}
         for name, digest in bound.items():
-            if not _FILE_NAME.fullmatch(name) or name == DONE_FILE or not isinstance(digest, str) or not _SHA256.fullmatch(digest):
+            if not _FILE_NAME.fullmatch(name) or name in MARKERS or not isinstance(digest, str) or not _SHA256.fullmatch(digest):
                 return None
             path = directory / name
             _require_not_link(path)
@@ -210,27 +235,53 @@ class EvidenceStore:
             files[name] = data
         return record, files
 
-    def write(self, source: str, unit: str, files: Mapping[str, bytes], *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
+    def prepare(self, source: str, unit: str, files: Mapping[str, bytes], *, persisting: bool) -> None:
+        """Write the unit's files, then ``PREPARED.json`` binding them, before anything is persisted (review B3)."""
+
         directory = self.unit_dir(source, unit)
         self._real_directory(directory, create=True)
-        stale = directory / DONE_FILE
-        _require_not_link(stale)
-        if stale.exists():
-            stale.unlink()
+        for marker in MARKERS:
+            stale = directory / marker
+            _require_not_link(stale)
+            if stale.exists():
+                stale.unlink()
         for name, data in files.items():
-            if not _FILE_NAME.fullmatch(name) or name == DONE_FILE:
+            if not _FILE_NAME.fullmatch(name) or name in MARKERS:
                 raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{name!r} is not a unit file name")
             _atomic_write(directory / name, data)
         record = {
             "run_version": RUN_VERSION,
             "source": source,
             "unit": unit,
-            "completed_at": iso(completed_at),
-            "persisted": dict(sorted(persisted.items())),
+            "persisting": persisting,
             "files": {name: sha256_hex(data) for name, data in sorted(files.items())},
         }
+        _atomic_write(directory / PREPARED_FILE, canonical_json_bytes(record))
+
+    def complete(self, source: str, unit: str, *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
+        """Write ``DONE.json`` over the prepared files, then drop ``PREPARED.json``."""
+
+        found = self.prepared(source, unit)
+        if found is None:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: only a prepared unit is completed")
+        directory = self.unit_dir(source, unit)
+        record = {
+            "run_version": RUN_VERSION,
+            "source": source,
+            "unit": unit,
+            "completed_at": iso(completed_at),
+            "persisted": dict(sorted(persisted.items())),
+            "files": found[0]["files"],
+        }
         _atomic_write(directory / DONE_FILE, canonical_json_bytes(record))
+        (directory / PREPARED_FILE).unlink()
         return record
+
+    def write(self, source: str, unit: str, files: Mapping[str, bytes], *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
+        """Prepare and complete at once: a unit with nothing to persist."""
+
+        self.prepare(source, unit, files, persisting=False)
+        return self.complete(source, unit, completed_at=completed_at, persisted=persisted)
 
 
 def _utc_instant(value: Any) -> bool:
@@ -287,10 +338,25 @@ class RunContext:
     allow_coinglass: bool = False
     out: Callable[[str], None] = print
     log: RetrievalLog = field(default_factory=RetrievalLog)
+    fetch_clock: Clock | None = None  # a prepared read's retrieval instants, replayed (review B3)
 
     def fetcher(self) -> Fetcher:
         self.log = RetrievalLog()
-        return Fetcher(self.transport, self.log, self.clock)
+        return Fetcher(self.transport, self.log, self.fetch_clock or self.clock)
+
+
+@dataclass
+class ReplayClock:
+    """A prepared read's retrieval instants, in their order (review B3)."""
+
+    instants: tuple[datetime, ...]
+    used: int = 0
+
+    def __call__(self) -> datetime:
+        if self.used >= len(self.instants):
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the re-read makes more requests than the prepared read")
+        self.used += 1
+        return self.instants[self.used - 1]
 
 
 def _derivative_counts(result: Any) -> Counter[str]:
@@ -463,21 +529,76 @@ def market_cap_unit(ctx: RunContext, unit: str) -> UnitOutput:
     return UnitOutput({"market_cap_evidence.json": collection.evidence_bytes}, summary)
 
 
-def coinglass_unit(ctx: RunContext, unit: str) -> UnitOutput:
+def _coinglass_allowed(ctx: RunContext) -> None:
     if not ctx.allow_coinglass:
         raise BackfillRefused(
             "PROVIDER_REQUEST_MISMATCH", "CoinGlass runs only with --allow-coinglass, after the projection's review (owner Part B ruling 10)"
         )
+
+
+def _projection_file(index: int, url: Any) -> str:
+    return "flow_history.projected.json" if index == 0 else f"history_{coinglass.fund_of_history_url(url)}.projected.json"
+
+
+def coinglass_unit(ctx: RunContext, unit: str) -> UnitOutput:
+    _coinglass_allowed(ctx)
     if not ctx.coinglass_key:
         raise BackfillRefused("PROVIDER_RESPONSE_REFUSED", "COINGLASS_API_KEY is not set")
     ctx.log = RetrievalLog()
-    fetcher = coinglass.coinglass_fetcher(ctx.transport, ctx.log, api_key=ctx.coinglass_key, clock=ctx.clock)
-    read = coinglass.read_etf_flows(fetcher, None, ETF_FIRST_DAY, LAST_DATA_DAY)
+    fetcher = coinglass.coinglass_fetcher(ctx.transport, ctx.log, api_key=ctx.coinglass_key, clock=ctx.fetch_clock or ctx.clock)
+    return _coinglass_output(coinglass.read_etf_flows(fetcher, None, ETF_FIRST_DAY, LAST_DATA_DAY))
+
+
+def coinglass_resume(ctx: RunContext, unit: str, files: Mapping[str, bytes]) -> UnitOutput:
+    """The prepared CoinGlass unit rebuilt from its projections and their exposure records; nothing is requested (review B3).
+
+    Each projection is rebuilt from its file and its summary's exposure record,
+    which must reproduce that record exactly (digests, sizes and counts
+    included), so the rows keep the prepared read's retrieval instants.
+    """
+
+    _coinglass_allowed(ctx)
+    try:
+        exposures = json.loads(files["summary.json"])["projections"]
+    except (KeyError, TypeError, UnicodeDecodeError, ValueError):
+        exposures = None
+    if not isinstance(exposures, list) or not exposures or not all(isinstance(item, dict) for item in exposures):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the prepared CoinGlass summary has no projection records")
+    projections = []
+    for index, exposure in enumerate(exposures):
+        name = _projection_file(index, exposure.get("url"))
+        if name not in files:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the prepared CoinGlass unit has no {name}")
+        projections.append(_projection_from_exposure(exposure, files[name]))
+    return _coinglass_output(coinglass.etf_flows_from_projections(projections[0], projections[1:]))
+
+
+def _projection_from_exposure(exposure: Mapping[str, Any], body: bytes) -> ProjectedResponse:
+    try:
+        rebuilt = ProjectedResponse(
+            url=exposure["url"],
+            retrieved_at=datetime.fromisoformat(exposure["retrieved_at"]),
+            first_day=date.fromisoformat(exposure["first_day"]),
+            last_day=date.fromisoformat(exposure["last_day"]),
+            date_keys=tuple(exposure["date_keys"]),
+            response_sha256=exposure["response_sha256"],
+            response_size=exposure["response_size"],
+            body=body,
+            kept=exposure["kept"],
+            dropped_prohibited=exposure["dropped_prohibited"],
+            dropped_unrequested=exposure["dropped_unrequested"],
+            dropped_holdout=exposure["dropped_holdout"],
+        )
+    except (KeyError, TypeError, ValueError):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a prepared projection record is malformed") from None
+    if rebuilt.exposure_record() != dict(exposure):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a prepared projection does not reproduce its exposure record")
+    return rebuilt
+
+
+def _coinglass_output(read: coinglass.EtfFlowCollectionRead) -> UnitOutput:
     funds = tuple(sorted({row.fund for row in read.flows}))
-    files = {
-        ("flow_history" if index == 0 else f"history_{funds_of(item)}") + ".projected.json": item.body
-        for index, item in enumerate(read.projections)
-    }
+    files = {_projection_file(index, item.url): item.body for index, item in enumerate(read.projections)}
     summary = {
         "rows": len(read.flows),
         "tickers_seen": list(read.tickers_seen),
@@ -504,15 +625,6 @@ def coinglass_unit(ctx: RunContext, unit: str) -> UnitOutput:
     return UnitOutput(files, summary, persist)
 
 
-def funds_of(projection: Any) -> str:
-    """The ticker a per-fund projection was requested for, from its URL's only query."""
-
-    match = re.fullmatch(re.escape(coinglass.FUND_HISTORY_URL) + r"\?ticker=([A-Z][A-Z0-9]{0,9})", projection.url)
-    if match is None:
-        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a per-fund projection without its ticker")
-    return match.group(1)
-
-
 @dataclass(frozen=True)
 class Source:
     """A source's schedule and reader, and what its completion marker must record (review B4).
@@ -528,6 +640,7 @@ class Source:
     table: str | None = None
     evidence: tuple[str, ...] = ()
     extra_persisted: frozenset[str] = frozenset()
+    resume: Callable[[RunContext, str, Mapping[str, bytes]], UnitOutput] | None = None  # rebuild from prepared files
 
 
 def _month_units(first: date) -> Callable[[], tuple[str, ...]]:
@@ -546,7 +659,8 @@ SOURCES: dict[str, Source] = {
     ),
     "coinmetrics-market-cap": Source(lambda: ("all",), market_cap_unit, None, ("market_cap_evidence.json",)),
     "coinglass-etf": Source(
-        lambda: ("all",), coinglass_unit, "etf_flows", ("flow_history.projected.json",), frozenset({"missing_publication_dates"})
+        lambda: ("all",), coinglass_unit, "etf_flows", ("flow_history.projected.json",), frozenset({"missing_publication_dates"}),
+        coinglass_resume,
     ),
 }
 
@@ -605,6 +719,73 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
     return True
 
 
+def _unit_files(output: UnitOutput, retrievals: bytes) -> dict[str, bytes]:
+    files = dict(output.files)
+    files["summary.json"] = canonical_json_bytes(dict(output.summary))
+    files["retrievals.json"] = retrievals
+    return files
+
+
+def _retrieval_instants(data: bytes) -> tuple[datetime, ...]:
+    try:
+        records = json.loads(data)
+        instants = tuple(item["retrieved_at"] for item in records)
+    except (KeyError, TypeError, UnicodeDecodeError, ValueError):
+        instants = None
+    if instants is None or not all(_utc_instant(item) for item in instants):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the prepared retrieval log is malformed")
+    return tuple(datetime.fromisoformat(item) for item in instants)
+
+
+def _read_or_resume(ctx: RunContext, source: str, unit: str) -> tuple[UnitOutput, dict[str, bytes]]:
+    """Read the unit and prepare it, or resume the unit a persisting run prepared (review B3).
+
+    A unit's files and ``PREPARED.json`` are written before anything is
+    persisted, so a run interrupted after its commit leaves its read behind. A
+    unit a persisting run prepared may already be persisted, and its rows carry
+    that read's retrieval instants (an ETF row's key includes
+    ``available_at``), so it is never read afresh: CoinGlass rebuilds its rows
+    from the prepared projections, and every other source reads again with the
+    prepared instants replayed and must reproduce the prepared files byte for
+    byte. Either way the rows are the prepared read's, so the collectors'
+    insert-or-ignore adds nothing already committed. A unit prepared without
+    persistence is read afresh.
+    """
+
+    spec = SOURCES[source]
+    found = ctx.store.prepared(source, unit)
+    if found is None and ctx.store.has_prepared_marker(source, unit):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its PREPARED.json does not verify; reconcile the unit by hand")
+    if found is not None and found[0]["persisting"]:
+        if ctx.connect is None:
+            raise BackfillRefused(
+                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: a persisting run prepared it, so only a persisting run completes it"
+            )
+        prepared = found[1]
+        if spec.resume is not None:
+            output = spec.resume(ctx, unit, prepared)
+            files = _unit_files(output, prepared["retrievals.json"])
+        else:
+            clock = ReplayClock(_retrieval_instants(prepared["retrievals.json"]))
+            ctx.fetch_clock = clock
+            try:
+                output = spec.read(ctx, unit)
+            finally:
+                ctx.fetch_clock = None
+            files = _unit_files(output, canonical_json_bytes(ctx.log.as_records()))
+            if clock.used != len(clock.instants):
+                files = {}
+        if files != prepared:
+            raise BackfillRefused(
+                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: the re-read differs from the prepared read; reconcile the unit by hand"
+            )
+        return output, prepared
+    output = spec.read(ctx, unit)
+    files = _unit_files(output, canonical_json_bytes(ctx.log.as_records()))
+    ctx.store.prepare(source, unit, files, persisting=ctx.connect is not None and output.persist is not None)
+    return output, files
+
+
 def run_unit(ctx: RunContext, source: str, unit: str) -> UnitReport:
     try:
         _scheduled(source, unit)  # before the store or the transport is touched
@@ -614,20 +795,17 @@ def run_unit(ctx: RunContext, source: str, unit: str) -> UnitReport:
     if complete:
         return UnitReport(source, unit, "SKIPPED")
     try:
-        output = SOURCES[source].read(ctx, unit)
-        retrievals = ctx.log.as_records()
+        output, files = _read_or_resume(ctx, source, unit)
         persisted: Mapping[str, int] = {}
         if output.persist is not None and ctx.connect is not None:
             with ctx.connect() as connection:
                 persisted = output.persist(connection, ctx.clock())
         elif output.persist is not None:
-            persisted = {"not_persisted": 1}
-        files = dict(output.files)
-        files["summary.json"] = canonical_json_bytes(dict(output.summary))
-        files["retrievals.json"] = canonical_json_bytes(retrievals)
-        ctx.store.write(source, unit, files, completed_at=ctx.clock(), persisted=persisted)
+            persisted = NOT_PERSISTED
+        ctx.store.complete(source, unit, completed_at=ctx.clock(), persisted=persisted)
     except BackfillRefused as refused:
         return UnitReport(source, unit, "REFUSED", f"{refused.reason_code}: {masked(str(refused))}")
+    retrievals = json.loads(files["retrievals.json"])
     statuses = Counter(item["status"] for item in retrievals)
     detail = f"{len(retrievals)} requests {dict(statuses)}, persisted {dict(persisted)}"
     return UnitReport(source, unit, "DONE", detail)

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from sqlalchemy.dialects import postgresql
 
 from btc_predictor.research_backtest import backfill_binance as binance
 from btc_predictor.research_backtest import backfill_coinglass as coinglass
@@ -597,6 +598,147 @@ def test_review_b4_a_changed_bound_file_refuses_the_unit_instead_of_reading_it_a
     calls = len(transport.calls)
     report_ = run.run_unit(context(transport, store, database), "binance-funding", "2020-02")
     assert report_.status == "REFUSED" and len(transport.calls) == calls
+
+
+class AdvancingClock:
+    def __init__(self, start: datetime = RETRIEVED_AT) -> None:
+        self.now = start
+
+    def __call__(self) -> datetime:
+        self.now += timedelta(seconds=1)
+        return self.now
+
+
+LATER = RETRIEVED_AT + timedelta(hours=1)
+
+
+def advancing_context(transport: Any, store: run.EvidenceStore, database: Database | None = None, *, start: datetime = RETRIEVED_AT, **kwargs: Any) -> run.RunContext:
+    return run.RunContext(
+        transport=transport, store=store, clock=AdvancingClock(start),
+        connect=None if database is None else database.connect, out=lambda line: None, **kwargs,
+    )
+
+
+def available_at(database: Database) -> list[tuple[str, Any]]:
+    values = []
+    for connection in database.connections:
+        for statement in connection.statements:
+            params = statement.compile(dialect=postgresql.dialect()).params
+            values.extend(sorted((name, value) for name, value in params.items() if name.startswith("available_at")))
+    return values
+
+
+def interrupted_after_commit(*args: Any, **kwargs: Any) -> None:
+    raise RuntimeError("interrupted after the commit")
+
+
+def run_interrupted(store: run.EvidenceStore, ctx: run.RunContext, source: str, unit: str) -> None:
+    store.complete = interrupted_after_commit  # type: ignore[method-assign]
+    try:
+        with pytest.raises(RuntimeError):
+            run.run_unit(ctx, source, unit)
+    finally:
+        del store.complete
+
+
+def prepared_files(store: run.EvidenceStore, source: str, unit: str) -> dict[str, bytes]:
+    files = unit_files(store, source, unit)
+    assert "DONE.json" not in files
+    return {name: data for name, data in files.items() if name != "PREPARED.json"}
+
+
+def coinglass_run_world() -> FakeTransport:
+    first, second = date(2024, 1, 11), date(2024, 2, 1)
+    transport = FakeTransport()
+    days = {first: {"IBIT": 5, "GBTC": -7}, second: {"IBIT": 6}, date(2026, 1, 5): {"IBIT": 777000001}}
+    transport.add(coinglass.FLOW_HISTORY_URL, fx.coinglass_flow_page(days))
+    transport.add(coinglass.fund_history_url("IBIT"), fx.coinglass_fund_page({first: 9, second: 10, date(2026, 1, 5): 777000002}))
+    transport.add(coinglass.fund_history_url("GBTC"), fx.coinglass_fund_page({date(2019, 6, 3): 777000003, first: 11}, ticker="GBTC"))
+    return transport
+
+
+def test_review_b3_an_etf_unit_interrupted_after_its_commit_resumes_from_its_projections(store: run.EvidenceStore) -> None:
+    keyed = {"allow_coinglass": True, "coinglass_key": "key-123"}
+    database = Database()
+    run_interrupted(store, advancing_context(coinglass_run_world(), store, database, **keyed), "coinglass-etf", "all")
+    committed = available_at(database)
+    assert committed and store.done("coinglass-etf", "all") is None and store.prepared("coinglass-etf", "all")[0]["persisting"] is True
+    before = prepared_files(store, "coinglass-etf", "all")
+    later, database_again = FakeTransport(), Database()  # serves nothing: a fresh read would be refused
+    report_ = run.run_unit(advancing_context(later, store, database_again, start=LATER, **keyed), "coinglass-etf", "all")
+    assert report_.status == "DONE", report_.detail
+    assert later.calls == [] and available_at(database_again) == committed  # the same keys: insert-or-ignore adds nothing
+    after = unit_files(store, "coinglass-etf", "all")
+    assert {name: data for name, data in after.items() if name != "DONE.json"} == before and "PREPARED.json" not in after
+    assert json.loads(after["DONE.json"])["persisted"]["etf_flows"] == 3
+
+
+def test_review_b3_a_derivative_unit_interrupted_after_its_commit_is_read_again_with_its_instants(store: run.EvidenceStore) -> None:
+    database = Database()
+    run_interrupted(store, advancing_context(funding_world(), store, database), "binance-funding", "2020-02")
+    committed = available_at(database)
+    before = prepared_files(store, "binance-funding", "2020-02")
+    transport, database_again = funding_world(), Database()
+    report_ = run.run_unit(advancing_context(transport, store, database_again, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "DONE", report_.detail
+    assert len(transport.calls) == 2 and available_at(database_again) == committed
+    after = unit_files(store, "binance-funding", "2020-02")
+    assert {name: data for name, data in after.items() if name != "DONE.json"} == before
+
+
+def test_review_b3_a_changed_response_or_a_no_persist_run_never_completes_a_persisting_runs_unit(store: run.EvidenceStore) -> None:
+    run_interrupted(store, advancing_context(funding_world(), store, Database()), "binance-funding", "2020-02")
+    changed = FakeTransport()
+    rows = [fx.funding_row(utc(2020, 2, day, hour), rate="0.000777000007") for day in (1, 2) for hour in (0, 8, 16)]
+    fx.add_archive(changed, binance.funding_archive_url(date(2020, 2, 1)), rows)
+    database = Database()
+    report_ = run.run_unit(advancing_context(changed, store, database, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and "reconcile" in report_.detail and database.connections == []
+    transport = funding_world()
+    report_ = run.run_unit(advancing_context(transport, store, None, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and transport.calls == []
+    assert store.prepared("binance-funding", "2020-02") is not None and store.done("binance-funding", "2020-02") is None
+
+
+def test_review_b3_a_unit_prepared_without_persistence_is_read_afresh(store: run.EvidenceStore) -> None:
+    run_interrupted(store, advancing_context(funding_world(), store, None), "binance-funding", "2020-02")
+    assert store.prepared("binance-funding", "2020-02")[0]["persisting"] is False
+    database = Database()
+    report_ = run.run_unit(advancing_context(funding_world(), store, database, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "DONE" and all(value > LATER for _, value in available_at(database))
+
+
+def test_review_b3_a_prepared_marker_that_does_not_verify_is_refused(store: run.EvidenceStore) -> None:
+    run_interrupted(store, advancing_context(funding_world(), store, Database()), "binance-funding", "2020-02")
+    (store.unit_dir("binance-funding", "2020-02") / "summary.json").write_bytes(b"{}")
+    transport = funding_world()
+    report_ = run.run_unit(advancing_context(transport, store, Database(), start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and "PREPARED" in report_.detail and transport.calls == []
+
+
+def test_review_b3_a_coinglass_rebuild_must_reproduce_every_exposure_record(store: run.EvidenceStore) -> None:
+    keyed = {"allow_coinglass": True, "coinglass_key": "key-123"}
+    run_interrupted(store, advancing_context(coinglass_run_world(), store, Database(), **keyed), "coinglass-etf", "all")
+    files = prepared_files(store, "coinglass-etf", "all")
+    ctx = advancing_context(FakeTransport(), store, Database(), **keyed)
+    assert run.coinglass_resume(ctx, "all", files).summary == json.loads(files["summary.json"])
+    summary = json.loads(files["summary.json"])
+    # what the bytes prove: the rule, their digest and size, the count kept, the date members and the days
+    # (the record's own instants and the full response's digest are bound by PREPARED.json's digest of the summary)
+    for index, edit in (
+        (1, {"rule": "OTHER"}), (1, {"projected_sha256": "0" * 64}), (1, {"projected_size": 1}), (1, {"kept": 3}),
+        (1, {"date_keys": ["assets_date"]}), (1, {"first_day": "2024-01-12"}), (1, {"retrieved_at": "yesterday"}),
+        (2, {"last_day": "2024-01-31"}),  # IBIT keeps 2024-02-01
+    ):
+        edited = json.loads(files["summary.json"])
+        edited["projections"][index] |= edit
+        with pytest.raises(BackfillRefused):
+            run.coinglass_resume(ctx, "all", files | {"summary.json": json.dumps(edited).encode()})
+    for drop in ("history_IBIT.projected.json", "flow_history.projected.json"):
+        refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_resume, ctx, "all", {k: v for k, v in files.items() if k != drop})
+    one_fund = dict(summary, projections=summary["projections"][:2])
+    refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_resume, ctx, "all", files | {"summary.json": json.dumps(one_fund).encode()})
+    refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_resume, advancing_context(FakeTransport(), store), "all", files)  # the gate
 
 
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:
