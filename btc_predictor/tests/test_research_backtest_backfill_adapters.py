@@ -34,6 +34,7 @@ from btc_predictor.research_backtest import backfill_coinglass as coinglass
 from btc_predictor.research_backtest import backfill_coinmetrics as coinmetrics
 from btc_predictor.research_backtest import backfill_kraken as kraken
 from btc_predictor.research_backtest import backfill_persistence as persistence
+from btc_predictor.research_backtest import backfill_projection as projection
 from btc_predictor.research_backtest import backfill_sources as sources
 from btc_predictor.research_backtest import replay_inputs as v1
 from btc_predictor.research_backtest import replay_inputs_v2 as v2
@@ -45,7 +46,7 @@ from btc_predictor.tests.rbt003_backfill_fixtures import HOUR, RETRIEVED_AT, Fak
 
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = ROOT / "backtest_evidence" / "research_backtest_v1" / "rbt002_input_coverage_inventory_v1.json"
-NEW_MODULES = (sources, binance, kraken, coinmetrics, coinglass, persistence)
+NEW_MODULES = (sources, binance, kraken, coinmetrics, coinglass, projection, persistence)
 
 
 @pytest.fixture(autouse=True)
@@ -1130,34 +1131,39 @@ def test_a_market_cap_value_must_be_a_decimal_string_and_the_stamp_a_day() -> No
 # --- CoinGlass (UNVERIFIED shapes) -----------------------------------------------------------
 
 
-BOUNDS = coinglass.DateBoundParameters("start_time", "end_time", "ms")
-
-
 def coinglass_world(flows: dict[date, dict[str, Any]], assets: dict[str, dict[date, Any]], first: date, last: date) -> FakeTransport:
     transport = FakeTransport()
-    transport.add(coinglass.flow_history_url(BOUNDS, first, last), fx.coinglass_flow_page(flows))
+    transport.add(coinglass.FLOW_HISTORY_URL, fx.coinglass_flow_page(flows))
     for ticker, history in assets.items():
-        transport.add(coinglass.fund_history_url(BOUNDS, ticker, first, last), fx.coinglass_fund_page(history))
+        transport.add(coinglass.fund_history_url(ticker), fx.coinglass_fund_page(history, ticker=ticker))
     return transport
 
 
 def coinglass_read(transport: FakeTransport, funds: tuple[str, ...], first: date, last: date) -> coinglass.EtfFlowCollectionRead:
     fetcher = coinglass.coinglass_fetcher(transport, RetrievalLog(), api_key="key-123", clock=lambda: RETRIEVED_AT)
-    return coinglass.read_etf_flows(fetcher, funds, first, last, bounds=BOUNDS)
+    return coinglass.read_etf_flows(fetcher, funds, first, last)
 
 
-def test_no_coinglass_request_is_built_without_a_documented_date_bound() -> None:
+def test_ruling_10_coinglass_urls_carry_no_date_and_bad_requests_fetch_nothing() -> None:
+    assert coinglass.FLOW_HISTORY_URL == "https://open-api-v4.coinglass.com/api/etf/bitcoin/flow-history"
+    assert coinglass.fund_history_url("IBIT") == "https://open-api-v4.coinglass.com/api/etf/bitcoin/history?ticker=IBIT"
+    for bad in ("", "ibit", "IBIT&start_time=1", " IBIT", "IBIT ", "ABCDEFGHIJK", "1BIT"):
+        refused("PROVIDER_REQUEST_MISMATCH", coinglass.fund_history_url, bad)
     transport = FakeTransport()
     fetcher = coinglass.coinglass_fetcher(transport, RetrievalLog(), api_key="key")
-    refused("REQUEST_OUTSIDE_DATA_WINDOW", coinglass.read_etf_flows, fetcher, ("IBIT",), date(2024, 1, 11), date(2024, 1, 31), bounds=None)
+    # requested days outside the window, a bad ticker or a repeated fund refuse before any request
+    refused("REQUEST_OUTSIDE_DATA_WINDOW", coinglass.read_etf_flows, fetcher, ("IBIT",), date(2025, 12, 1), date(2026, 1, 1))
+    refused("REQUEST_OUTSIDE_DATA_WINDOW", coinglass.read_etf_flows, fetcher, ("IBIT",), date(2024, 1, 11), date(2024, 1, 10))
+    refused("REQUEST_OUTSIDE_DATA_WINDOW", coinglass.read_etf_flows, fetcher, ("IBIT",), date(2023, 1, 1), date(2023, 12, 31))
+    refused("PROVIDER_REQUEST_MISMATCH", coinglass.read_etf_flows, fetcher, ("IBIT", "ibit"), date(2024, 1, 11), date(2024, 1, 31))
+    refused("PROVIDER_REQUEST_MISMATCH", coinglass.read_etf_flows, fetcher, ("IBIT", "IBIT"), date(2024, 1, 11), date(2024, 1, 31))
     assert transport.calls == []
-    refused("REQUEST_OUTSIDE_DATA_WINDOW", BOUNDS.query, date(2025, 12, 1), date(2026, 1, 2))
-    assert BOUNDS.query(date(2025, 12, 31), date(2025, 12, 31)) == {"start_time": 1767139200000, "end_time": 1767225599999}
-    assert coinglass.DateBoundParameters("from", "to", "date").query(date(2024, 1, 11), date(2024, 1, 12)) == {
-        "from": "2024-01-11",
-        "to": "2024-01-12",
-    }
     refused("PROVIDER_RESPONSE_REFUSED", coinglass.coinglass_fetcher, transport, RetrievalLog(), api_key="")
+
+
+def test_ruling_10_a_parser_refuses_bytes_that_were_not_projected() -> None:
+    refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_flow_history, fx.coinglass_flow_page({}))
+    refused("PROVIDER_RESPONSE_REFUSED", coinglass.parse_fund_history, fx.coinglass_fund_page({}), ticker="IBIT")
 
 
 def test_etf_flows_join_the_same_days_net_assets_and_never_log_the_key() -> None:
@@ -1182,20 +1188,18 @@ def test_etf_flows_join_the_same_days_net_assets_and_never_log_the_key() -> None
 @pytest.mark.parametrize(
     ("body", "reason"),
     [
-        (fx.coinglass_flow_page({date(2026, 1, 2): {"IBIT": 1}}), "OBSERVATION_OUTSIDE_DATA_WINDOW"),
         (fx.coinglass_flow_page({date(2024, 1, 11): {"IBIT": 1}}, code="40001"), "RESPONSE_SHAPE_REFUSED"),
-        (fx.coinglass_flow_page({date(2024, 2, 1): {"IBIT": 1}}), "RESPONSE_SHAPE_REFUSED"),
         (fx.coinglass_flow_page({date(2024, 1, 11): {"IBIT": "1"}}), "RESPONSE_SHAPE_REFUSED"),
         (b'{"code":"0","msg":"success","data":[],"extra":1}', "RESPONSE_SHAPE_REFUSED"),
         (b'{"code":"0","msg":"success","data":[{"timestamp":1704931200000,"flow_usd":0,"etf_flows":[]}]}', "RESPONSE_SHAPE_REFUSED"),
         (b'{"code":"0","msg":"success","data":[{"timestamp":1704931200001,"flow_usd":0,"price_usd":1,"etf_flows":[]}]}', "RESPONSE_SHAPE_REFUSED"),
     ],
-    ids=["holdout", "error-code", "unrequested-day", "string-flow", "extra-key", "missing-key", "not-midnight"],
+    ids=["error-code", "string-flow", "extra-key", "missing-key", "not-midnight"],
 )
 def test_ruling_5_an_unexpected_flow_history_is_refused(body: bytes, reason: str) -> None:
     first, last = date(2024, 1, 11), date(2024, 1, 31)
     transport = coinglass_world({}, {"IBIT": {}}, first, last)
-    transport.add(coinglass.flow_history_url(BOUNDS, first, last), body)
+    transport.add(coinglass.FLOW_HISTORY_URL, body)
     refused(reason, coinglass_read, transport, ("IBIT",), first, last)
 
 
@@ -1210,10 +1214,190 @@ def test_a_malformed_fund_history_is_refused() -> None:
     transport = coinglass_world({first: {"IBIT": 5}}, {"IBIT": {first: -1}}, first, first)
     refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
     transport.add(
-        coinglass.fund_history_url(BOUNDS, "IBIT", first, first),
+        coinglass.fund_history_url("IBIT"),
         b'{"code":"0","msg":"success","data":[{"assets_date":1704931200000,"net_assets_usd":1}]}',
     )
     refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
+# --- the in-window projection (owner Part B ruling 10) ----------------------------------------
+
+
+def fetched(body: bytes, url: str = "https://open-api-v4.coinglass.com/api/etf/bitcoin/flow-history") -> sources.Fetched:
+    return sources.Fetched(url, body, RETRIEVED_AT)
+
+
+def day_ms(day: date) -> int:
+    return coinglass.utc_day_stamp(day)
+
+
+# each dropped record carries a sentinel no kept record holds; none may reach a decoder
+SENTINELS = {date(2019, 6, 3): 777000001, date(2023, 5, 1): 777000002, date(2026, 1, 2): 777000003, date(2026, 8, 3): 777000004}
+
+
+def sentinel_flow_page() -> bytes:
+    days = {day: {"IBIT": value} for day, value in SENTINELS.items()}
+    days |= {date(2024, 1, 11): {"IBIT": 5}, date(2024, 1, 12): {"IBIT": 6}}
+    return fx.coinglass_flow_page(days)
+
+
+def test_ruling_10_the_projection_keeps_the_requested_days_and_counts_the_rest() -> None:
+    body = sentinel_flow_page()
+    projected = projection.project_records(
+        fetched(body), date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2024, 1, 12), what="flows"
+    )
+    assert (projected.kept, projected.dropped_prohibited, projected.dropped_unrequested, projected.dropped_holdout) == (2, 1, 1, 2)
+    assert (projected.response_sha256, projected.response_size) == (hashlib.sha256(body).hexdigest(), len(body))
+    kept = json.loads(projected.body)
+    assert kept == {"code": "0", "msg": "success", "data": json.loads(body)["data"][2:4]}
+    assert all(str(value).encode() not in projected.body for value in SENTINELS.values())
+    assert coinglass.parse_flow_history(projected) == {("IBIT", date(2024, 1, 11)): Decimal(5), ("IBIT", date(2024, 1, 12)): Decimal(6)}
+    record = projected.exposure_record()
+    assert record["projected_sha256"] == hashlib.sha256(projected.body).hexdigest() and record["dropped_holdout"] == 2
+    assert all(str(value) not in json.dumps(record) for value in SENTINELS.values())
+
+
+def test_ruling_10_no_dropped_value_is_ever_decoded(monkeypatch: pytest.MonkeyPatch) -> None:
+    decoded: list[bytes] = []
+    real_loads = json.loads
+
+    def spy(data: Any, *args: Any, **kwargs: Any) -> Any:
+        decoded.append(data if isinstance(data, bytes) else str(data).encode())
+        return real_loads(data, *args, **kwargs)
+
+    monkeypatch.setattr(json, "loads", spy)
+    first = date(2024, 1, 11)
+    transport = FakeTransport()
+    transport.add(coinglass.FLOW_HISTORY_URL, sentinel_flow_page())
+    funds = {day: value for day, value in SENTINELS.items()} | {first: 9}
+    transport.add(coinglass.fund_history_url("IBIT"), fx.coinglass_fund_page(funds))
+    read = coinglass_read(transport, ("IBIT",), first, date(2024, 1, 12))
+    assert [(row.observation_date, row.flow_usd, row.aum_usd) for row in read.flows] == [
+        (first, Decimal(5), Decimal(9)), (date(2024, 1, 12), Decimal(6), None)
+    ]
+    assert decoded and not any(str(value).encode() in item for value in SENTINELS.values() for item in decoded)
+    assert [item.dropped for item in read.projections] == [4, 4]
+    assert [item.url for item in read.projections] == [coinglass.FLOW_HISTORY_URL, coinglass.fund_history_url("IBIT")]
+
+
+def test_ruling_10_a_dropped_record_is_never_shape_checked() -> None:
+    # a holdout record the strict parser would refuse (unknown field, string value) is dropped, not read
+    first = date(2024, 1, 11)
+    body = '{"code":"0","msg":"success","data":[%s,{"timestamp":%d,"unexpected":"x","etf_flows":"y"}]}' % (
+        FLOW_DAY % ("0", "45000", "5"), day_ms(date(2026, 3, 2))
+    )
+    transport = FakeTransport()
+    transport.add(coinglass.FLOW_HISTORY_URL, body.encode())
+    transport.add(coinglass.fund_history_url("IBIT"), fx.coinglass_fund_page({first: 9}))
+    read = coinglass_read(transport, ("IBIT",), first, first)
+    assert [row.flow_usd for row in read.flows] == [Decimal(5)] and read.projections[0].dropped_holdout == 1
+
+
+@pytest.mark.parametrize(
+    ("assets_day", "market_day", "counted"),
+    [
+        (date(2024, 1, 11), date(2024, 1, 11), "kept"),
+        (date(2024, 1, 11), date(2026, 1, 2), "dropped_holdout"),
+        (date(2019, 12, 31), date(2024, 1, 11), "dropped_prohibited"),
+        (date(2015, 7, 20), date(2015, 7, 20), "dropped_prohibited"),  # GBTC predates the window: the sealed sample's years
+        (date(2024, 1, 11), date(2024, 1, 13), "dropped_unrequested"),
+    ],
+)
+def test_ruling_10_a_fund_record_is_kept_only_when_both_of_its_dates_are_requested(
+    assets_day: date, market_day: date, counted: str
+) -> None:
+    record = json.loads(FUND_DAY % ("1000", "9"))
+    record |= {"assets_date": day_ms(assets_day), "market_date": day_ms(market_day)}
+    body = json.dumps({"code": "0", "msg": "success", "data": [record]}).encode()
+    projected = projection.project_records(
+        fetched(body, coinglass.fund_history_url("IBIT")), date_keys=coinglass.FUND_DATE_KEYS,
+        first_day=date(2024, 1, 11), last_day=date(2024, 1, 12), what="IBIT history",
+    )
+    assert getattr(projected, counted) == 1 and projected.kept + projected.dropped == 1
+
+
+VALID_RECORD = '{"timestamp":1704931200000,"flow_usd":0,"price_usd":1,"etf_flows":[]}'
+HOLDOUT_STAMP = day_ms(date(2026, 1, 5))
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"",
+        b"[]",
+        b'{"code":"0","msg":"success","data":[' + VALID_RECORD.encode(),
+        b'{"code":"0","msg":"success","data":[]} x',
+        b'{"code":"0","msg":"success","data":[]}{}',
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"name":"unterminated}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"name":"bad \\q escape"}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"name":"bad \\u12 escape"}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"name":"tab\tinside"}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"flow_usd":01}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"flow_usd":1.}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"flow_usd":NaN}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"flow_usd":nulls}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"flow_usd":[1,]}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"x":%s}]}' % (HOLDOUT_STAMP, b"[" * 40 + b"]" * 40),
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"x":1,"x":2}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"bad name":1}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"timestamp":%d,"esc\\u0061ped":1}]}' % HOLDOUT_STAMP,
+        b'{"code":"0","msg":"success","data":[{"flow_usd":1}]}',
+        b'{"code":"0","msg":"success","data":[{"timestamp":"1704931200000"}]}',
+        b'{"code":"0","msg":"success","data":[{"timestamp":1704931200}]}',
+        b'{"code":"0","msg":"success","data":[{"timestamp":-1704931200000}]}',
+        b'{"code":"0","msg":"success","data":[{"timestamp":1704931200000.0}]}',
+        b'{"code":"0","msg":"success","data":[{"timestamp":1704931200000,"timestamp":1704931200000}]}',
+        b'{"code":"0","msg":"success","data":[[]]}',
+        b'{"code":"0","msg":"success","data":{}}',
+        b'{"code":"0","msg":"success","data":null}',
+        b'{"code":"0","msg":"success"}',
+        b'{"code":"0","msg":"success","data":[],"extra":1}',
+        b'{"code":"0","msg":"success","data":[],"data":[]}',
+        b'{"code":0,"msg":"success","data":[]}',
+        b'{"code":"0","msg":null,"data":[]}',
+        b'{"code":"40001","msg":"API key invalid","data":null}',
+    ],
+)
+def test_ruling_10_the_projection_checks_the_grammar_of_every_byte(body: bytes) -> None:
+    refused("RESPONSE_SHAPE_REFUSED", projection.project_records, fetched(body), date_keys=("timestamp",),
+            first_day=date(2024, 1, 11), last_day=date(2024, 1, 12), what="flows")
+
+
+def test_ruling_10_member_order_whitespace_and_escaped_text_do_not_change_the_projection() -> None:
+    kept = '{ "etf_flows" : [ { "etf_ticker" : "IBIT", "flow_usd" : 5 } ],\n "price_usd":1, "flow_usd":-2.5e1,\t"timestamp" : 1704931200000 }'
+    dropped = '{"name":"q\\"]},{\\u005d [","nested":{"a":[true,false,null,{"b":"}"}]},"timestamp":%d}' % HOLDOUT_STAMP
+    body = ('\n{ "data" : [ %s , %s ] , "msg" : "success" , "code" : "0" }\n' % (dropped, kept)).encode()
+    projected = projection.project_records(
+        fetched(body), date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows"
+    )
+    assert projected.body == b'{"code":"0","msg":"success","data":[' + kept.encode() + b"]}"
+    assert (projected.kept, projected.dropped_holdout) == (1, 1)
+    assert coinglass.parse_flow_history(projected) == {("IBIT", date(2024, 1, 11)): Decimal(5)}
+
+
+def test_ruling_10_the_projection_asks_only_for_days_inside_the_window() -> None:
+    body = fetched(fx.coinglass_flow_page({}))
+    for first, last in ((date(2025, 12, 31), date(2026, 1, 1)), (date(2019, 12, 31), date(2020, 1, 1)), (date(2024, 2, 1), date(2024, 1, 31))):
+        refused("REQUEST_OUTSIDE_DATA_WINDOW", projection.project_records, body, date_keys=("timestamp",), first_day=first, last_day=last, what="flows")
+    refused("PROVIDER_REQUEST_MISMATCH", projection.project_records, body, date_keys=(), first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows")
+    refused("PROVIDER_RESPONSE_REFUSED", projection.project_records, fx.coinglass_flow_page({}), date_keys=("timestamp",),
+            first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows")
+    edge = projection.project_records(
+        fetched(fx.coinglass_flow_page({date(2025, 12, 31): {"IBIT": 1}, date(2026, 1, 1): {"IBIT": 2}})),
+        date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2025, 12, 31), what="flows",
+    )
+    assert (edge.kept, edge.dropped_holdout) == (1, 1)
+
+
+def test_ruling_10_a_provider_error_names_its_status_but_never_a_record() -> None:
+    error = refused("RESPONSE_SHAPE_REFUSED", projection.project_records, fetched(b'{"code":"40001","msg":"API key invalid","data":null}'),
+                    date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows")
+    assert "40001" in str(error) and "API key invalid" in str(error)
+    body = b'{"code":"0","msg":"success","data":[{"timestamp":%d,"flow_usd":777000009,}]}' % HOLDOUT_STAMP
+    error = refused("RESPONSE_SHAPE_REFUSED", projection.project_records, fetched(body),
+                    date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2024, 1, 11), what="flows")
+    assert "777000009" not in str(error)
 
 
 # --- persistence through the existing collectors ---------------------------------------------
@@ -1336,7 +1520,7 @@ def test_an_etf_row_keeps_its_retrieval_instant_and_takes_the_persistence_instan
     first = date(2024, 1, 11)
     transport = coinglass_world({first: {"IBIT": 5}}, {"IBIT": {first: 9}}, first, first)
     fetcher = coinglass.coinglass_fetcher(transport, RetrievalLog(), api_key="key-123", clock=AdvancingClock())
-    read = coinglass.read_etf_flows(fetcher, ("IBIT",), first, first, bounds=BOUNDS)
+    read = coinglass.read_etf_flows(fetcher, ("IBIT",), first, first)
     assert read.flows[0].available_at == RETRIEVED_AT + timedelta(seconds=2)  # the later of its two responses
     provider = persistence.RecordedEtfFlowProvider(coinglass.COINGLASS_PROVIDER, read.flows)
     request = provider.collection_request(("IBIT",), first, first, source=coinglass.FLOW_HISTORY_URL, market_holidays=frozenset())
@@ -1418,7 +1602,11 @@ def test_a_funding_interval_is_whole_seconds_exactly_at_any_width() -> None:
 
 
 FLOW_DAY = '{"timestamp":1704931200000,"flow_usd":%s,"price_usd":%s,"etf_flows":[{"etf_ticker":"IBIT","flow_usd":%s}]}'
-FUND_DAY = '{"assets_date":1704931200000,"btc_holdings":%s,"net_assets_usd":%s}'
+FUND_DAY = (
+    '{"assets_date":1704931200000,"btc_holdings":%s,"market_date":1704931200000,"market_price":38.51,'
+    '"name":"iShares Bitcoin Trust","nav":38.57,"net_assets":%s,"premium_discount":-0.16,'
+    '"shares_outstanding":555700100,"ticker":"IBIT"}'
+)
 
 
 @pytest.mark.parametrize(
@@ -1438,8 +1626,8 @@ FUND_DAY = '{"assets_date":1704931200000,"btc_holdings":%s,"net_assets_usd":%s}'
 def test_ruling_5_every_declared_coinglass_field_is_type_checked(flow: str, fund: str) -> None:
     first = date(2024, 1, 11)
     transport = FakeTransport()
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), ('{"code":"0","msg":"success","data":[%s]}' % flow).encode())
-    transport.add(coinglass.fund_history_url(BOUNDS, "IBIT", first, first), ('{"code":"0","msg":"success","data":[%s]}' % fund).encode())
+    transport.add(coinglass.FLOW_HISTORY_URL, ('{"code":"0","msg":"success","data":[%s]}' % flow).encode())
+    transport.add(coinglass.fund_history_url("IBIT"), ('{"code":"0","msg":"success","data":[%s]}' % fund).encode())
     refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
 
 
@@ -1448,8 +1636,8 @@ def test_the_valid_coinglass_forms_are_still_read() -> None:
     transport = FakeTransport()
     body = '{"code":"0","msg":"success","data":[%s]}'
     flow = '{"timestamp":1704931200000,"flow_usd":-1.5,"price_usd":45000.25,"etf_flows":[{"etf_ticker":"IBIT","flow_usd":5},{"etf_ticker":"GBTC","flow_usd":null},{"etf_ticker":"FBTC"}]}'
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), (body % flow).encode())
-    transport.add(coinglass.fund_history_url(BOUNDS, "IBIT", first, first), (body % (FUND_DAY % ("0.5", "9"))).encode())
+    transport.add(coinglass.FLOW_HISTORY_URL, (body % flow).encode())
+    transport.add(coinglass.fund_history_url("IBIT"), (body % (FUND_DAY % ("0.5", "9"))).encode())
     read = coinglass_read(transport, ("IBIT",), first, first)
     assert [(row.fund, row.flow_usd, row.aum_usd) for row in read.flows] == [("IBIT", Decimal(5), Decimal(9))]
     assert read.tickers_seen == ("IBIT",)
@@ -1458,7 +1646,7 @@ def test_the_valid_coinglass_forms_are_still_read() -> None:
 def test_a_coinglass_msg_must_be_a_string() -> None:
     first = date(2024, 1, 11)
     transport = coinglass_world({first: {"IBIT": 5}}, {"IBIT": {first: 9}}, first, first)
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), b'{"code":"0","msg":null,"data":[]}')
+    transport.add(coinglass.FLOW_HISTORY_URL, b'{"code":"0","msg":null,"data":[]}')
     refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
 
 
@@ -1467,17 +1655,17 @@ def test_a_duplicate_coinglass_flow_or_assets_day_is_refused() -> None:
     body = '{"code":"0","msg":"success","data":[%s]}'
     day = FLOW_DAY % ("0", "45000", "5")
     transport = FakeTransport()
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), (body % f"{day},{day}").encode())
-    transport.add(coinglass.fund_history_url(BOUNDS, "IBIT", first, first), (body % (FUND_DAY % ("1", "9"))).encode())
+    transport.add(coinglass.FLOW_HISTORY_URL, (body % f"{day},{day}").encode())
+    transport.add(coinglass.fund_history_url("IBIT"), (body % (FUND_DAY % ("1", "9"))).encode())
     refused("DUPLICATE_PROVIDER_RECORD", coinglass_read, transport, ("IBIT",), first, first)
     # a repeated ticker within one day, even without a value, and a repeated day with distinct tickers
     null_twice = '{"timestamp":1704931200000,"flow_usd":0,"price_usd":1,"etf_flows":[{"etf_ticker":"GBTC","flow_usd":null},{"etf_ticker":"GBTC"}]}'
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), (body % null_twice).encode())
+    transport.add(coinglass.FLOW_HISTORY_URL, (body % null_twice).encode())
     refused("DUPLICATE_PROVIDER_RECORD", coinglass_read, transport, ("IBIT",), first, first)
     other = '{"timestamp":1704931200000,"flow_usd":0,"price_usd":1,"etf_flows":[{"etf_ticker":"FBTC","flow_usd":1}]}'
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), (body % f"{day},{other}").encode())
+    transport.add(coinglass.FLOW_HISTORY_URL, (body % f"{day},{other}").encode())
     refused("DUPLICATE_PROVIDER_RECORD", coinglass_read, transport, ("IBIT",), first, first)
-    transport.add(coinglass.flow_history_url(BOUNDS, first, first), (body % day).encode())
+    transport.add(coinglass.FLOW_HISTORY_URL, (body % day).encode())
     assets = FUND_DAY % ("1", "9")
-    transport.add(coinglass.fund_history_url(BOUNDS, "IBIT", first, first), (body % f"{assets},{assets}").encode())
+    transport.add(coinglass.fund_history_url("IBIT"), (body % f"{assets},{assets}").encode())
     refused("DUPLICATE_PROVIDER_RECORD", coinglass_read, transport, ("IBIT",), first, first)

@@ -229,12 +229,21 @@ def coinglass_flow_page(days: Mapping[date, Mapping[str, Any]], *, code: str = "
     return json.dumps({"code": code, "msg": "success", "data": data}).encode()
 
 
-def coinglass_fund_page(assets: Mapping[date, Any]) -> bytes:
+def coinglass_fund_page(assets: Mapping[date, Any], *, ticker: str = "IBIT") -> bytes:
+    """A ``history?ticker=`` response in the documented record shape (Part B's first step, 2026-11-05)."""
+
     data = [
         {
             "assets_date": epoch_milliseconds(datetime(day.year, day.month, day.day, tzinfo=UTC)),
             "btc_holdings": 1000,
-            "net_assets_usd": value,
+            "market_date": epoch_milliseconds(datetime(day.year, day.month, day.day, tzinfo=UTC)),
+            "market_price": 38.51,
+            "name": f"{ticker} Bitcoin Trust",
+            "nav": 38.57,
+            "net_assets": value,
+            "premium_discount": -0.16,
+            "shares_outstanding": 555700100,
+            "ticker": ticker,
         }
         for day, value in sorted(assets.items())
     ]

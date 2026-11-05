@@ -1,25 +1,29 @@
-"""CoinGlass ETF flow and AUM adapter for RBT-003 (Part A, offline, UNVERIFIED).
+"""CoinGlass ETF flow and AUM adapter for RBT-003 (Part B, ruling 10; shapes UNVERIFIED).
 
 RBT-002's rank-1 ETF source is the CoinGlass Hobbyist plan (USD 29 a month,
 personal use): ``etf/bitcoin/flow-history`` gives each day's total and
-per-ticker flows, and ``etf/bitcoin/history`` gives a ticker's net-assets
-history (RBT-002 recorded ``assets_date``, ``btc_holdings`` and net assets).
-Nothing is purchased and no key exists, so owner ruling 5 (2026-11-04) applies:
-the response shapes follow the documented examples as RBT-002 recorded them,
-any unexpected field or shape refuses the response, and the adapter stays
-UNVERIFIED until Part B checks one live in-window response of each endpoint.
-``net_assets_usd`` is this adapter's reading of "net assets"; Part B confirms
-the name. Every declared field is type-checked, including those the rows do
-not use (review F5): the envelope's ``msg`` is a string; a flow day's total
-``flow_usd`` and ``price_usd`` and a fund day's ``btc_holdings`` are finite JSON
-numbers; a ticker's ``flow_usd`` is a finite JSON number, ``null`` or absent.
+per-ticker flows, and ``etf/bitcoin/history?ticker=`` gives a ticker's daily
+history, whose ``net_assets`` is the fund's total net assets in USD. Owner
+ruling 5 (2026-11-04) applies: the response shapes follow the provider's
+documented examples (re-read in Part B's first step, 2026-11-05: the
+``history`` record is ``assets_date``, ``btc_holdings``, ``market_date``,
+``market_price``, ``name``, ``nav``, ``net_assets``, ``premium_discount``,
+``shares_outstanding`` and ``ticker``), any unexpected field or shape refuses
+the response, and the adapter stays UNVERIFIED until one live response of each
+endpoint passes. Every declared field is type-checked, including those the
+rows do not use (review F5): the envelope's ``msg`` is a string; a flow day's
+total ``flow_usd`` and ``price_usd`` are finite JSON numbers; a ticker's
+``flow_usd`` is a finite JSON number, ``null`` or absent; a fund day's numbers
+are finite JSON numbers, its ``name`` a non-empty string and its ``ticker`` the
+requested one.
 
-**Holdout guard.** CoinGlass serves history to the present, so an unbounded
-request would return 2026 rows, which policy V7 section 3 forbids collecting.
-No request is built without :class:`DateBoundParameters`, the documented
-query parameters that end the response on 2025-12-31; Part B supplies them
-from the provider's documentation, not from a data response. A returned row
-outside the data window is still refused, never filtered.
+**Holdout guard (owner Part B ruling 10, 2026-11-05).** Neither endpoint takes
+a date bound, so every response holds the whole history, holdout, reserve and
+(for a fund that predates 2020) the prohibited window included. The two URLs
+carry no date and no other query than the ticker, and a response is read only
+through :func:`backfill_projection.project_records`, which drops every record
+dated outside the requested in-window days before any of its values is parsed
+and counts what it dropped. The parsers accept only a projected response.
 
 The source supplies no publication time and no vintages, so every row is
 ``FINAL_AS_RETRIEVED``: the replay builder applies the ``T+2 00:00`` floor and
@@ -30,16 +34,17 @@ header; the retrieval log records URLs, never headers.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 from urllib.parse import urlencode
 
 from btc_predictor.data import EtfFlow
+from btc_predictor.research_backtest.backfill_projection import ProjectedResponse, project_records
 from btc_predictor.research_backtest.backfill_sources import (
-    DATA_WINDOW_START,
     LAST_DATA_DAY,
     BackfillRefused,
     Clock,
@@ -48,7 +53,6 @@ from btc_predictor.research_backtest.backfill_sources import (
     Transport,
     epoch_milliseconds,
     from_epoch_milliseconds,
-    midnight,
     require_observation_in_window,
     utc_now,
 )
@@ -62,38 +66,20 @@ COINGLASS_LICENCE = "CoinGlass Hobbyist plan: personal use; no publication or re
 API_KEY_HEADER = "CG-API-KEY"
 ETF_REVISION = "FINAL_AS_RETRIEVED"
 FIRST_ETF_FLOW_DAY = date(2024, 1, 11)  # US spot bitcoin ETFs began trading (policy V7 section 3)
+FLOW_DATE_KEYS = ("timestamp",)
+FUND_DATE_KEYS = ("assets_date", "market_date")
 
 _ENVELOPE_KEYS = frozenset({"code", "msg", "data"})
 _FLOW_DAY_KEYS = frozenset({"timestamp", "flow_usd", "price_usd", "etf_flows"})
 _FLOW_TICKER_KEYS = frozenset({"etf_ticker", "flow_usd"})
-_FUND_DAY_KEYS = frozenset({"assets_date", "btc_holdings", "net_assets_usd"})
-
-
-@dataclass(frozen=True)
-class DateBoundParameters:
-    """The documented query parameters that bound a response to a day range.
-
-    ``unit`` is ``"ms"`` (epoch milliseconds of the day's 00:00 and of the last
-    day's end) or ``"date"`` (ISO dates, the end inclusive).
-    """
-
-    start: str
-    end: str
-    unit: str
-
-    def __post_init__(self) -> None:
-        if not self.start.strip() or not self.end.strip() or self.start == self.end:
-            raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", "date-bound parameters need two distinct names")
-        if self.unit not in ("ms", "date"):
-            raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"unknown date-bound unit {self.unit!r}")
-
-    def query(self, first_day: date, last_day: date) -> dict[str, Any]:
-        if not DATA_WINDOW_START.date() <= first_day <= last_day <= LAST_DATA_DAY:
-            raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"ETF days {first_day}..{last_day} are not inside the data window")
-        if self.unit == "date":
-            return {self.start: first_day.isoformat(), self.end: last_day.isoformat()}
-        last_instant = midnight(last_day) + timedelta(days=1) - timedelta(milliseconds=1)
-        return {self.start: epoch_milliseconds(midnight(first_day)), self.end: epoch_milliseconds(last_instant)}
+_FUND_DAY_KEYS = frozenset(
+    {
+        "assets_date", "btc_holdings", "market_date", "market_price", "name", "nav", "net_assets",
+        "premium_discount", "shares_outstanding", "ticker",
+    }
+)
+_FUND_NUMBERS = ("btc_holdings", "market_price", "nav", "premium_discount", "shares_outstanding")
+_TICKER = re.compile(r"[A-Z][A-Z0-9]{0,9}")
 
 
 def coinglass_fetcher(transport: Transport, log: RetrievalLog, *, api_key: str, clock: Clock = utc_now) -> Fetcher:
@@ -102,29 +88,25 @@ def coinglass_fetcher(transport: Transport, log: RetrievalLog, *, api_key: str, 
     return Fetcher(transport, log, clock, headers={API_KEY_HEADER: api_key})
 
 
-def flow_history_url(bounds: DateBoundParameters | None, first_day: date, last_day: date) -> str:
-    if bounds is None:
-        raise BackfillRefused(
-            "REQUEST_OUTSIDE_DATA_WINDOW", "no documented date bound: an unbounded ETF request would return holdout rows"
-        )
-    return f"{FLOW_HISTORY_URL}?{urlencode(bounds.query(first_day, last_day))}"
+def fund_history_url(ticker: str) -> str:
+    """The documented per-fund URL: its only query is the ticker (no date bound exists, ruling 10)."""
 
-
-def fund_history_url(bounds: DateBoundParameters | None, ticker: str, first_day: date, last_day: date) -> str:
-    if bounds is None:
-        raise BackfillRefused(
-            "REQUEST_OUTSIDE_DATA_WINDOW", "no documented date bound: an unbounded ETF request would return holdout rows"
-        )
-    return f"{FUND_HISTORY_URL}?{urlencode({'ticker': ticker, **bounds.query(first_day, last_day)})}"
+    if not isinstance(ticker, str) or not _TICKER.fullmatch(ticker):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{ticker!r} is not a fund ticker")
+    return f"{FUND_HISTORY_URL}?{urlencode({'ticker': ticker})}"
 
 
 def _refuse(message: str) -> Any:
     raise BackfillRefused("RESPONSE_SHAPE_REFUSED", message)
 
 
-def _envelope(data: bytes, what: str) -> list[Any]:
+def _envelope(projection: Any, what: str) -> list[Any]:
+    if not isinstance(projection, ProjectedResponse):
+        raise BackfillRefused(
+            "PROVIDER_RESPONSE_REFUSED", f"{what} is read only through the in-window projection (owner Part B ruling 10)"
+        )
     try:
-        payload = json.loads(data, parse_float=Decimal)
+        payload = json.loads(projection.body, parse_float=Decimal)
     except (UnicodeDecodeError, ValueError):
         return _refuse(f"{what} is not JSON")
     if not isinstance(payload, dict) or set(payload) != _ENVELOPE_KEYS:
@@ -154,13 +136,14 @@ def _trading_day(stamp: Any, what: str, first_day: date, last_day: date) -> date
     return instant.date()
 
 
-def parse_flow_history(data: bytes, *, first_day: date, last_day: date) -> dict[tuple[str, date], Decimal]:
+def parse_flow_history(projection: ProjectedResponse) -> dict[tuple[str, date], Decimal]:
     """Per-ticker flows by ``(ticker, trading date)``; a ticker without a value has no entry."""
 
+    first_day, last_day = getattr(projection, "first_day", None), getattr(projection, "last_day", None)
     flows: dict[tuple[str, date], Decimal] = {}
     days: set[date] = set()
     seen: set[tuple[str, date]] = set()
-    for entry in _envelope(data, "the flow history"):
+    for entry in _envelope(projection, "the flow history"):
         if not isinstance(entry, dict) or set(entry) != _FLOW_DAY_KEYS or not isinstance(entry["etf_flows"], list):
             return _refuse(f"each flow day is exactly {sorted(_FLOW_DAY_KEYS)}")
         day = _trading_day(entry["timestamp"], "a flow day", first_day, last_day)
@@ -183,18 +166,25 @@ def parse_flow_history(data: bytes, *, first_day: date, last_day: date) -> dict[
     return flows
 
 
-def parse_fund_history(data: bytes, *, ticker: str, first_day: date, last_day: date) -> dict[date, Decimal]:
-    """One ticker's net assets by trading date."""
+def parse_fund_history(projection: ProjectedResponse, *, ticker: str) -> dict[date, Decimal]:
+    """One ticker's total net assets (USD) by trading date."""
 
+    first_day, last_day = getattr(projection, "first_day", None), getattr(projection, "last_day", None)
     assets: dict[date, Decimal] = {}
-    for entry in _envelope(data, f"the {ticker} history"):
+    for entry in _envelope(projection, f"the {ticker} history"):
         if not isinstance(entry, dict) or set(entry) != _FUND_DAY_KEYS:
             return _refuse(f"each {ticker} history day is exactly {sorted(_FUND_DAY_KEYS)}")
         day = _trading_day(entry["assets_date"], f"a {ticker} assets date", first_day, last_day)
-        _usd(entry["btc_holdings"], f"{ticker} {day} btc_holdings")  # unused, but declared: checked (review F5)
+        _trading_day(entry["market_date"], f"a {ticker} market date", first_day, last_day)  # declared: checked (F5)
+        if entry["ticker"] != ticker:
+            return _refuse(f"a {ticker} history day names ticker {entry['ticker']!r}")
+        if not isinstance(entry["name"], str) or not entry["name"].strip():
+            return _refuse(f"a {ticker} history day has no fund name")
+        for field in _FUND_NUMBERS:  # unused, but declared: checked (review F5)
+            _usd(entry[field], f"{ticker} {day} {field}")
         if day in assets:
             raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"{ticker} assets for {day} appear twice")
-        value = _usd(entry["net_assets_usd"], f"{ticker} {day} net assets")
+        value = _usd(entry["net_assets"], f"{ticker} {day} net assets")
         if value < 0:
             return _refuse(f"{ticker} {day}: net assets must be >= 0")
         assets[day] = value
@@ -206,33 +196,39 @@ class EtfFlowCollectionRead:
     flows: tuple[EtfFlow, ...]
     tickers_seen: tuple[str, ...]
     missing_aum: tuple[tuple[str, date], ...]
+    projections: tuple[ProjectedResponse, ...]  # the flow history first, then each fund's, in request order
 
 
-def read_etf_flows(
-    fetcher: Fetcher,
-    funds: Sequence[str],
-    first_day: date,
-    last_day: date,
-    *,
-    bounds: DateBoundParameters | None,
-) -> EtfFlowCollectionRead:
-    """The requested funds' flows with the same day's net assets (``None`` when absent)."""
+def read_etf_flows(fetcher: Fetcher, funds: Sequence[str], first_day: date, last_day: date) -> EtfFlowCollectionRead:
+    """The requested funds' flows with the same day's net assets (``None`` when absent).
+
+    Every response is projected to ``[max(first_day, 2024-01-11), last_day]``
+    before it is parsed (owner Part B ruling 10); the full response is not kept.
+    """
 
     first_day = max(first_day, FIRST_ETF_FLOW_DAY)
+    if not first_day <= last_day <= LAST_DATA_DAY:  # before any request: no response is fetched for days outside
+        raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"ETF days {first_day}..{last_day} are not inside the data window")
     if not funds or len(set(funds)) != len(funds):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "name each fund once")
-    page = fetcher.fetch(flow_history_url(bounds, first_day, last_day))
-    flows = parse_flow_history(page.body, first_day=first_day, last_day=last_day)
+    urls = {ticker: fund_history_url(ticker) for ticker in funds}  # every ticker is checked before any request
+    flow = project_records(
+        fetcher.fetch(FLOW_HISTORY_URL), date_keys=FLOW_DATE_KEYS, first_day=first_day, last_day=last_day,
+        what="the flow history",
+    )
+    flows = parse_flow_history(flow)
+    projections = [flow]
     histories: dict[str, tuple[Mapping[date, Decimal], datetime]] = {}
     for ticker in funds:
-        history = fetcher.fetch(fund_history_url(bounds, ticker, first_day, last_day))
-        histories[ticker] = (
-            parse_fund_history(history.body, ticker=ticker, first_day=first_day, last_day=last_day),
-            history.retrieved_at,
+        history = project_records(
+            fetcher.fetch(urls[ticker]), date_keys=FUND_DATE_KEYS, first_day=first_day, last_day=last_day,
+            what=f"the {ticker} history",
         )
+        projections.append(history)
+        histories[ticker] = (parse_fund_history(history, ticker=ticker), history.retrieved_at)
     rows: list[EtfFlow] = []
     missing: list[tuple[str, date]] = []
-    for (ticker, day), flow in sorted(flows.items(), key=lambda item: (item[0][1], item[0][0])):
+    for (ticker, day), value in sorted(flows.items(), key=lambda item: (item[0][1], item[0][0])):
         if ticker not in histories:
             continue
         assets, retrieved_at = histories[ticker]
@@ -243,17 +239,17 @@ def read_etf_flows(
             EtfFlow(
                 fund=ticker,
                 observation_date=day,
-                flow_usd=flow,
+                flow_usd=value,
                 aum_usd=aum,
                 provider=COINGLASS_PROVIDER,
                 source=FLOW_HISTORY_URL,
                 revision=ETF_REVISION,
-                available_at=max(page.retrieved_at, retrieved_at),
-                ingested_at=max(page.retrieved_at, retrieved_at),
+                available_at=max(flow.retrieved_at, retrieved_at),
+                ingested_at=max(flow.retrieved_at, retrieved_at),
             )
         )
     tickers = tuple(sorted({ticker for ticker, _ in flows}))
-    return EtfFlowCollectionRead(tuple(rows), tickers, tuple(missing))
+    return EtfFlowCollectionRead(tuple(rows), tickers, tuple(missing), tuple(projections))
 
 
 def utc_day_stamp(day: date) -> int:
