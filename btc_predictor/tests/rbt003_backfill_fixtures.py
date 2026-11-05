@@ -177,10 +177,14 @@ def execution_page(elements: Sequence[Mapping[str, Any]], token: str | None = No
     return json.dumps(payload, separators=(",", ":")).encode()
 
 
-def series_body(points: Mapping[datetime, Any], *, more: bool = False, errors: Sequence[Any] = ()) -> bytes:
+def series_body(
+    points: Mapping[datetime, Any], *, more: bool = False, errors: Sequence[Any] = (), quoted: bool = True
+) -> bytes:
+    """Kraken's hourly liquidation-volume chart; values are JSON strings, as the live series spells them."""
+
     hours = sorted(points)
     stamps = ",".join(str(int(hour.timestamp())) for hour in hours)
-    values = ",".join(str(points[hour]) for hour in hours)
+    values = ",".join((f'"{points[hour]}"' if quoted else str(points[hour])) for hour in hours)
     tail = "true" if more else "false"
     return (
         '{"result":{"timestamp":[%s],"data":[%s],"more":%s},"errors":%s}'

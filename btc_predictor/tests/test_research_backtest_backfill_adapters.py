@@ -683,17 +683,40 @@ def test_the_series_request_ends_at_the_days_last_hour() -> None:
     [
         fx.series_body({utc(2021, 6, 1, 1): 5}, more=True),
         fx.series_body({utc(2021, 6, 1, 1): 5}, errors=["boom"]),
-        fx.series_body({utc(2021, 6, 1, 1): '"5"'}),
+        fx.series_body({utc(2021, 6, 1, 1): 5}, quoted=False),
         fx.series_body({utc(2021, 6, 1, 1): -1}),
+        fx.series_body({utc(2021, 6, 1, 1): "+5"}),
+        fx.series_body({utc(2021, 6, 1, 1): "05"}),
+        fx.series_body({utc(2021, 6, 1, 1): " 5"}),
+        fx.series_body({utc(2021, 6, 1, 1): "NaN"}),
+        fx.series_body({utc(2021, 6, 1, 1): "Infinity"}),
+        fx.series_body({utc(2021, 6, 1, 1): "5."}),
+        fx.series_body({utc(2021, 6, 1, 1): ""}),
         fx.series_body({utc(2021, 6, 2): 5}),
-        b'{"result":{"timestamp":[1622509200000],"data":[5],"more":false},"errors":[]}',
-        b'{"result":{"timestamp":[1622509200],"data":[5,6],"more":false},"errors":[]}',
+        b'{"result":{"timestamp":[1622509200000],"data":["5"],"more":false},"errors":[]}',
+        b'{"result":{"timestamp":[1622509200],"data":["5","6"],"more":false},"errors":[]}',
         b'{"result":{"timestamp":[],"data":[],"more":false,"x":1},"errors":[]}',
     ],
-    ids=["more", "errors", "string-value", "negative", "outside-day", "milliseconds", "unpaired", "extra-key"],
+    ids=[
+        "more", "errors", "number-value", "negative", "plus-sign", "leading-zero", "space", "nan", "infinity",
+        "bare-point", "empty", "outside-day", "milliseconds", "unpaired", "extra-key",
+    ],
 )
 def test_ruling_5_an_unexpected_series_shape_is_refused(body: bytes) -> None:
     refused("RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_volume, body, since=utc(2021, 6, 1), to=utc(2021, 6, 1, 23))
+
+
+@pytest.mark.parametrize(
+    ("spelled", "value"),
+    [("0", "0"), ("1234567", "1234567"), ("1500.20", "1500.20"), ("0.00000000", "0E-8"), ("1.5e+3", "1.5E+3")],
+)
+def test_the_live_series_spells_each_value_as_a_decimal_string(spelled: str, value: str) -> None:
+    # Part B's first step (2026-11-05): the live chart's values are JSON strings of digits; the parser keeps their digits
+    hour = utc(2021, 6, 1, 1)
+    series = kraken.parse_liquidation_volume(
+        fx.series_body({hour: spelled}), since=utc(2021, 6, 1), to=utc(2021, 6, 1, 23)
+    )
+    assert list(series) == [hour] and str(series[hour]) == str(Decimal(value)) and series[hour].as_tuple() == Decimal(value).as_tuple()
 
 
 @pytest.mark.parametrize(

@@ -23,9 +23,11 @@ published hourly liquidation-volume value, equals that value; otherwise it
 observed hour the series does not cover is ``SERIES_UNAVAILABLE``.
 
 The execution page and chart response shapes are those RBT-002 recorded; both
-empty forms reproduce its recorded SHA-256 values. The chart's value types and
-unit stay UNVERIFIED (owner ruling 5) until Part B checks one live in-window
-hour; any unexpected field or shape refuses the response.
+empty forms reproduce its recorded SHA-256 values. Part B's first step checked
+them live (2026-11-05): the chart's values are JSON strings holding a decimal
+numeral, not JSON numbers, so a number is refused (owner ruling 5), and its
+unit is USD contracts (two hours agreed exactly, owner ruling 3). Any other
+unexpected field or shape refuses the response.
 
 Each hour's evidence record (status, corroboration, execution count, the sorted
 liquidation uids, the per-side quantities, the series value and the response
@@ -104,6 +106,8 @@ _EXECUTION_FIELDS = frozenset(
     {"uid", "timestamp", "price", "quantity", "usdValue", "markPrice", "limitFilled", "takerOrder", "makerOrder"}
 )
 _PAGE_KEYS = frozenset({"elements", "len", "continuationToken"})
+# a chart value is a JSON string holding a non-negative decimal numeral (Part B's live check, ruling 5)
+_SERIES_NUMERAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
 # sums and the notional are exact or refused, whatever the caller's context (review F4)
 _EXACT_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[Inexact, InvalidOperation, DivisionByZero, Overflow])
@@ -262,7 +266,9 @@ def parse_liquidation_volume(data: bytes, *, since: datetime, to: datetime) -> d
     """``{"result": {"timestamp": [...], "data": [...], "more": false}, "errors": []}``.
 
     Timestamps are whole hours in epoch seconds inside ``[since, to]``; values
-    are non-negative JSON numbers kept with their published digits.
+    are JSON strings holding a non-negative decimal numeral, kept with their
+    published digits. A JSON number is refused: the live series spells every
+    value as a string (Part B's first step, owner ruling 5).
     """
 
     payload = _json(data, "the liquidation-volume series")
@@ -278,8 +284,8 @@ def parse_liquidation_volume(data: bytes, *, since: datetime, to: datetime) -> d
     for stamp, value in zip(stamps, values):
         if type(stamp) is not int or len(str(stamp)) != 10:
             return _refuse_shape(f"series timestamp {stamp!r} is not an epoch second")
-        if isinstance(value, bool) or not isinstance(value, (int, Decimal)):
-            return _refuse_shape(f"series value {value!r} is not a JSON number")
+        if not isinstance(value, str) or not _SERIES_NUMERAL.fullmatch(value):
+            return _refuse_shape(f"series value {value!r} is not a string holding a decimal numeral")
         hour = require_observation_in_window(datetime.fromtimestamp(stamp, tz=UTC), "a series point")
         number = Decimal(value)
         if (hour.minute, hour.second) != (0, 0) or not since <= hour <= to:
