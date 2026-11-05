@@ -1780,6 +1780,18 @@ def test_a_fund_history_day_must_name_its_fund_and_a_day(change: dict[str, Any])
     refused(reason, coinglass_read, transport, ("IBIT",), first, first)
 
 
+@pytest.mark.parametrize("value", ["1", True, None, [], {}], ids=["string", "bool", "null", "array", "object"])
+@pytest.mark.parametrize("field", ["btc_holdings", "market_price", "nav", "premium_discount", "shares_outstanding", "net_assets"])
+def test_review_each_fund_number_is_type_checked_on_its_own(field: str, value: Any) -> None:
+    # the Part B review's mutants found no test of the nav check alone: each number, each wrong type
+    first = date(2024, 1, 11)
+    record = json.loads(FUND_DAY % ("1000", "9")) | {field: value}
+    transport = FakeTransport()
+    transport.add(coinglass.FLOW_HISTORY_URL, ('{"code":"0","msg":"success","data":[%s]}' % (FLOW_DAY % ("0", "45000", "5"))).encode())
+    transport.add(coinglass.fund_history_url("IBIT"), json.dumps({"code": "0", "msg": "success", "data": [record]}).encode())
+    refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
 def test_the_valid_coinglass_forms_are_still_read() -> None:
     first = date(2024, 1, 11)
     transport = FakeTransport()
