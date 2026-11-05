@@ -82,6 +82,8 @@ TARDIS_INCIDENT_KEYS = frozenset({"from", "to", "status", "details"})
 ETF_FIRST_DAY = coinglass.FIRST_ETF_FLOW_DAY
 
 _DIGIT = re.compile(r"\d")
+_STORE_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,39}")  # a source or a unit
+_FILE_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,119}")  # a unit file: no separator, never "." or ".."
 
 
 def masked(text: str, limit: int = 400) -> str:
@@ -111,7 +113,9 @@ class EvidenceStore:
     """The private evidence repository's RBT-003 directory (owner Part B ruling 9).
 
     The root must be a git work tree outside this public repository, so a
-    value-bearing file can never land in a tracked public path.
+    value-bearing file can never land in a tracked public path. Below the
+    root every directory and file the store reads or writes must be real,
+    never a symbolic link, so no destination can leave the store (review B5).
     """
 
     def __init__(self, root: Path, *, public_repository: Path) -> None:
@@ -124,30 +128,54 @@ class EvidenceStore:
         self.base = root / STORE_LAYOUT
 
     def unit_dir(self, source: str, unit: str) -> Path:
+        for name in (source, unit):
+            if not isinstance(name, str) or not _STORE_NAME.fullmatch(name):
+                raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a source or a unit is not a plain store name")
         return self.base / source / unit
+
+    def _real_directory(self, directory: Path, *, create: bool) -> bool:
+        """Whether every directory from the root down is real (review B5); ``create`` makes the missing ones."""
+
+        current = self.root
+        for part in directory.relative_to(self.root).parts:
+            current = current / part
+            if current.is_symlink() or (current.exists() and not current.is_dir()):
+                raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{current.relative_to(self.root)} is not a real directory of the evidence store")
+            if not current.exists():
+                if not create:
+                    return False
+                current.mkdir()
+        return True
 
     def done(self, source: str, unit: str) -> dict[str, Any] | None:
         """The unit's ``DONE.json`` when it and every file it binds verify; ``None`` otherwise."""
 
         directory = self.unit_dir(source, unit)
+        if not self._real_directory(directory, create=False):
+            return None
         marker = directory / DONE_FILE
+        _require_not_link(marker)
         if not marker.is_file():
             return None
         record = json.loads(marker.read_bytes())
         for name, digest in record["files"].items():
+            if not _FILE_NAME.fullmatch(name):
+                return None
             path = directory / name
+            _require_not_link(path)
             if not path.is_file() or sha256_hex(path.read_bytes()) != digest:
                 return None
         return record
 
     def write(self, source: str, unit: str, files: Mapping[str, bytes], *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
         directory = self.unit_dir(source, unit)
-        directory.mkdir(parents=True, exist_ok=True)
+        self._real_directory(directory, create=True)
         stale = directory / DONE_FILE
+        _require_not_link(stale)
         if stale.exists():
             stale.unlink()
         for name, data in files.items():
-            if "/" in name or name in ("", DONE_FILE, ".", ".."):
+            if not _FILE_NAME.fullmatch(name) or name == DONE_FILE:
                 raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{name!r} is not a unit file name")
             _atomic_write(directory / name, data)
         record = {
@@ -162,9 +190,21 @@ class EvidenceStore:
         return record
 
 
+def _require_not_link(path: Path) -> None:
+    if path.is_symlink():
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{path.name} in the evidence store is a symbolic link")
+
+
 def _atomic_write(path: Path, data: bytes) -> None:
+    """Write a fresh partial file, never through a symbolic link, then rename it over ``path`` (review B5)."""
+
+    _require_not_link(path)
     partial = path.with_name(path.name + ".partial")
-    partial.write_bytes(data)
+    if partial.is_symlink() or partial.exists():
+        partial.unlink()  # a link is removed, never followed
+    descriptor = os.open(partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(data)
     os.replace(partial, path)
 
 
@@ -461,9 +501,9 @@ def _scheduled(source: str, unit: str) -> None:
 def run_unit(ctx: RunContext, source: str, unit: str) -> UnitReport:
     try:
         _scheduled(source, unit)  # before the store or the transport is touched
+        record = ctx.store.done(source, unit)
     except BackfillRefused as refused:
         return UnitReport(source, str(unit), "REFUSED", f"{refused.reason_code}: {masked(str(refused))}")
-    record = ctx.store.done(source, unit)
     # a unit collected with --no-persist is read again when a later run persists
     if record is not None and not (ctx.connect is not None and record["persisted"].get("not_persisted")):
         return UnitReport(source, unit, "SKIPPED")

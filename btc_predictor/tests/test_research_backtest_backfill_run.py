@@ -308,6 +308,65 @@ def test_a_unit_whose_files_changed_is_not_done(store: run.EvidenceStore) -> Non
     refused("PROVIDER_REQUEST_MISMATCH", store.write, "s", "u", {"../x": b"1"}, completed_at=RETRIEVED_AT, persisted={})
 
 
+def outside_tree(tmp_path: Path) -> Path:
+    public = tmp_path / "public-tree"
+    public.mkdir()
+    return public
+
+
+@pytest.mark.parametrize("linked", ["layout", "source", "unit"])
+def test_review_b5_a_linked_directory_below_the_root_is_refused_and_nothing_lands_outside(
+    store: run.EvidenceStore, tmp_path: Path, linked: str
+) -> None:
+    public = outside_tree(tmp_path)
+    target = {"layout": store.root / "research_backtest_v1", "source": store.base / "binance-funding", "unit": store.base / "binance-funding" / "2020-02"}[linked]
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.symlink_to(public, target_is_directory=True)
+    refused("PROVIDER_REQUEST_MISMATCH", store.write, "binance-funding", "2020-02", {"summary.json": b"777000020"}, completed_at=RETRIEVED_AT, persisted={})
+    refused("PROVIDER_REQUEST_MISMATCH", store.done, "binance-funding", "2020-02")
+    transport = funding_world()
+    report_ = run.run_unit(context(transport, store, Database()), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and transport.calls == []  # refused before any request
+    assert list(public.rglob("*")) == []
+
+
+def test_review_b5_a_linked_file_is_never_written_through_or_trusted(store: run.EvidenceStore, tmp_path: Path) -> None:
+    public = outside_tree(tmp_path)
+    outside = public / "outside.json"
+    outside.write_bytes(b"public")
+    directory = store.unit_dir("binance-funding", "2020-02")
+    directory.mkdir(parents=True)
+    (directory / "summary.json").symlink_to(outside)
+    refused("PROVIDER_REQUEST_MISMATCH", store.write, "binance-funding", "2020-02", {"summary.json": b"777000021"}, completed_at=RETRIEVED_AT, persisted={})
+    (directory / "summary.json").unlink()
+    # a planted partial link is removed, never followed
+    (directory / "summary.json.partial").symlink_to(outside)
+    store.write("binance-funding", "2020-02", {"summary.json": b"777000022"}, completed_at=RETRIEVED_AT, persisted={})
+    assert outside.read_bytes() == b"public" and not (directory / "summary.json").is_symlink()
+    assert (directory / "summary.json").read_bytes() == b"777000022" and store.done("binance-funding", "2020-02") is not None
+    # a bound file replaced by a link to identical bytes is not trusted
+    outside.write_bytes(b"777000022")
+    (directory / "summary.json").unlink()
+    (directory / "summary.json").symlink_to(outside)
+    refused("PROVIDER_REQUEST_MISMATCH", store.done, "binance-funding", "2020-02")
+    (directory / "summary.json").unlink()
+    (directory / "summary.json").write_bytes(b"777000022")
+    (directory / "DONE.json").rename(public / "DONE.json")
+    (directory / "DONE.json").symlink_to(public / "DONE.json")
+    refused("PROVIDER_REQUEST_MISMATCH", store.done, "binance-funding", "2020-02")
+
+
+@pytest.mark.parametrize("name", ["../x", "x/y", "", ".", "..", "A", "-x", "x" * 41, None])
+def test_review_b5_a_source_or_unit_must_be_a_plain_store_name(store: run.EvidenceStore, name: Any) -> None:
+    refused("PROVIDER_REQUEST_MISMATCH", store.unit_dir, name, "all")
+    refused("PROVIDER_REQUEST_MISMATCH", store.unit_dir, "binance-funding", name)
+
+
+@pytest.mark.parametrize("name", ["../x.json", "a/b.json", "", ".", "..", ".hidden", "DONE.json"])
+def test_review_b5_a_unit_file_must_be_a_plain_file_name(store: run.EvidenceStore, name: str) -> None:
+    refused("PROVIDER_REQUEST_MISMATCH", store.write, "binance-funding", "2020-02", {name: b"1"}, completed_at=RETRIEVED_AT, persisted={})
+
+
 # --- the run -----------------------------------------------------------------------------------
 
 
