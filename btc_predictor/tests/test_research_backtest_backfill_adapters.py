@@ -890,6 +890,28 @@ def test_the_published_precision_survives_the_evidence_file() -> None:
     assert outcomes == {"1500": ("1500", v2.CORROBORATION_AGREES), "1500.0": ("1500.0", v2.CORROBORATION_DISAGREES)}
 
 
+@pytest.mark.parametrize(("published", "stored"), [("0.00000000", "0E-8"), ("1.5e+3", "1.5E+3"), ("1500.0", "1500.0")])
+def test_the_evidence_bytes_do_not_depend_on_the_callers_decimal_capitals(published: str, stored: str) -> None:
+    # re-review N3: the same responses give the same bytes, and each file reads back under either setting
+    executions = [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+    series = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = published
+    collections = {}
+    for capitals in (0, 1):
+        with localcontext() as caller:
+            caller.capitals = capitals
+            transport = day_world([fx.execution_page(executions)], series)
+            collections[capitals] = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+    assert collections[0].evidence_bytes == collections[1].evidence_bytes
+    assert json.loads(collections[0].evidence_bytes)["hours"][1]["series_value"] == stored
+    for capitals in (0, 1):
+        written = collections[1 - capitals]
+        with localcontext() as caller:
+            caller.capitals = capitals
+            hours = kraken.parse_liquidation_hour_evidence(written.evidence_bytes, expected_sha256=written.evidence_sha256)
+        assert hours == collections[0].hours
+
+
 def test_hour_evidence_must_be_the_bound_canonical_bytes() -> None:
     transport, _ = liquidation_day()
     collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())

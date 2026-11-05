@@ -107,6 +107,8 @@ _PAGE_KEYS = frozenset({"elements", "len", "continuationToken"})
 _WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
 # sums and the notional are exact or refused, whatever the caller's context (review F4)
 _EXACT_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[Inexact, InvalidOperation, DivisionByZero, Overflow])
+# a published value is spelled with a capital E, whatever the caller's ``capitals`` (re-review N3)
+_SPELLING_CONTEXT = Context(capitals=1)
 _HOUR_EVIDENCE_KEYS = frozenset(
     {
         "evidence_version", "rule", "corroboration_rule", "exchange", "symbol", "liquidation_order_type",
@@ -380,11 +382,16 @@ def hour_record(
 
 
 def published_spelling(value: Decimal) -> str:
-    """The published value exactly, exponent kept, so ruling 3's precision survives the file."""
+    """The published value exactly, exponent kept, so ruling 3's precision survives the file.
+
+    The spelling never depends on the caller's decimal context, so the same
+    responses always give the same evidence bytes and the parser reads them
+    back under any context.
+    """
 
     if not isinstance(value, Decimal) or not value.is_finite() or value < 0:
         return _refuse_shape(f"series value {value!r} is not a finite non-negative decimal")
-    return str(value)
+    return _SPELLING_CONTEXT.to_sci_string(value)
 
 
 def hour_evidence(record: Mapping[str, Any]) -> v2.LiquidationHourEvidence:
