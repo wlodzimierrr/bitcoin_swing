@@ -742,7 +742,10 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
     does not record its summary's rows persisted refuses: the unit may already
     be persisted, so only the operator reconciles it. A unit collected with
     ``--no-persist`` is resumed from its saved read by a persisting run
-    (review BR1).
+    (review BR1). Its ``not_persisted`` claim is trusted only without a
+    ``PREPARED.json`` beside it, which may mark a read a persisting run has
+    committed since: then a ``--no-persist`` run refuses the unit and a
+    persisting run resumes the prepared read (review BR5).
     """
 
     found = ctx.store.completed(source, unit)
@@ -762,7 +765,7 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
             raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json records rows the source never persists")
         return True
     if persisted == NOT_PERSISTED:
-        return ctx.connect is None
+        return ctx.connect is None and not ctx.store.has_prepared_marker(source, unit)
     try:
         summary = json.loads(files["summary.json"])
     except (UnicodeDecodeError, ValueError):

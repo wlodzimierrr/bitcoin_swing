@@ -847,17 +847,58 @@ def test_review_br1_a_reopened_unit_keeps_a_marker_through_any_interruption(stor
     assert store.prepared("binance-funding", "2020-02")[0]["files"] == json.loads(done_bytes)["files"] and not (directory / "DONE.json").exists()
     (directory / "DONE.json").write_bytes(done_bytes)  # as if interrupted between its two steps
     transport = funding_world()
-    assert run.run_unit(advancing_context(transport, store, None, start=LATER), "binance-funding", "2020-02").status == "SKIPPED"
+    report_ = run.run_unit(advancing_context(transport, store, None, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and "only a persisting run" in report_.detail and transport.calls == []  # review BR5
     database = Database()
     run_interrupted(store, advancing_context(funding_world(), store, database, start=LATER), "binance-funding", "2020-02")
     committed = available_at(database)
     assert committed and all(value < LATER for _, value in committed) and store.prepared("binance-funding", "2020-02") is not None
+    assert (directory / "DONE.json").read_bytes() == done_bytes  # still beside PREPARED.json, its claim now stale
+    report_ = run.run_unit(advancing_context(funding_world(), store, None, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and "only a persisting run" in report_.detail
     database_again = Database()
     report_ = run.run_unit(advancing_context(funding_world(), store, database_again, start=LATER + timedelta(hours=1)), "binance-funding", "2020-02")
     assert report_.status == "DONE" and available_at(database_again) == committed
     assert store.done("binance-funding", "2020-02")["persisted"] == {"funding_rates": 6} and store.prepared("binance-funding", "2020-02") is None
     refused("PROVIDER_REQUEST_MISMATCH", store.reopen, "binance-funding", "2020-02")  # persisted: never reopened
     refused("PROVIDER_REQUEST_MISMATCH", store.reopen, "binance-funding", "2020-03")  # nothing completed
+
+
+# --- review BR5: a not_persisted completion is trusted only without a PREPARED.json beside it -------
+
+
+@pytest.mark.parametrize("prepared", ["verifying", "not-verifying"])
+def test_review_br5_a_restored_no_persist_done_cannot_override_a_committed_preparation(store: run.EvidenceStore, prepared: str) -> None:
+    # the re-review's reproducer: a --no-persist completion, reopened and committed by a persisting run
+    # interrupted before its completion, then the old DONE.json restored beside PREPARED.json
+    assert run.run_unit(advancing_context(coinglass_run_world(), store, None, **KEYED), "coinglass-etf", "all").status == "DONE"
+    directory = store.unit_dir("coinglass-etf", "all")
+    done_bytes = (directory / "DONE.json").read_bytes()
+    database = Database()
+    run_interrupted(store, advancing_context(changed_coinglass_world(), store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+    committed = insert_params(database)
+    assert committed and store.prepared("coinglass-etf", "all") is not None and not (directory / "DONE.json").exists()
+    (directory / "DONE.json").write_bytes(done_bytes)
+    if prepared == "not-verifying":
+        (directory / "PREPARED.json").write_bytes(b"{")
+    changed = changed_coinglass_world()
+    report_ = run.run_unit(advancing_context(changed, store, None, start=LATER + timedelta(hours=1), **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and changed.calls == []
+    assert (directory / "DONE.json").read_bytes() == done_bytes  # left as it was
+    database_again = Database()
+    report_ = run.run_unit(advancing_context(changed, store, database_again, start=LATER + timedelta(hours=1), **KEYED), "coinglass-etf", "all")
+    if prepared == "not-verifying":
+        assert report_.status == "REFUSED" and "reconcile" in report_.detail and database_again.connections == []
+    else:
+        assert report_.status == "DONE" and changed.calls == [] and insert_params(database_again) == committed  # the prepared read
+        assert store.done("coinglass-etf", "all")["persisted"]["etf_flows"] == 3 and store.prepared("coinglass-etf", "all") is None
+
+
+def test_review_br5_a_no_persist_completion_alone_is_still_skipped_by_a_no_persist_run(store: run.EvidenceStore) -> None:
+    assert run.run_unit(advancing_context(coinglass_run_world(), store, None, **KEYED), "coinglass-etf", "all").status == "DONE"
+    transport = FakeTransport()
+    assert run.run_unit(advancing_context(transport, store, None, start=LATER, **KEYED), "coinglass-etf", "all").status == "SKIPPED"
+    assert transport.calls == []
 
 
 @pytest.mark.parametrize("marker", ["PREPARED.json", "DONE.json"])
