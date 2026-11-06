@@ -18,7 +18,8 @@ evidence repository (owner Part B ruling 9) under
 A unit whose ``DONE.json`` verifies is skipped, so an interrupted run resumes.
 A marker verifies only when it names this run version, its own source and
 unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
-files by SHA-256, and records its rows persisted (or ``not_persisted``); a
+files (for CoinGlass, every projection its summary records) by SHA-256, and
+records its rows persisted (or ``not_persisted``); a
 marker that exists but does not verify refuses the unit for reconciliation by
 hand, never a silent re-read (review B4). Before a unit is persisted its
 files and ``PREPARED.json`` (binding them) are written. For a source that
@@ -583,19 +584,30 @@ def coinglass_resume(ctx: RunContext, unit: str, files: Mapping[str, bytes]) -> 
     """
 
     _coinglass_allowed(ctx)
+    projections = []
+    for name, exposure in _coinglass_projections(files):
+        if name not in files:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the prepared CoinGlass unit has no {name}")
+        projections.append(_projection_from_exposure(exposure, files[name]))
+    return _coinglass_output(coinglass.etf_flows_from_projections(projections[0], projections[1:]))
+
+
+def _coinglass_projections(files: Mapping[str, bytes]) -> list[tuple[str, dict[str, Any]]]:
+    """Each projection file a CoinGlass unit's summary records, with its exposure record (reviews B3 and BR2)."""
+
     try:
         exposures = json.loads(files["summary.json"])["projections"]
     except (KeyError, TypeError, UnicodeDecodeError, ValueError):
         exposures = None
     if not isinstance(exposures, list) or not exposures or not all(isinstance(item, dict) for item in exposures):
-        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the prepared CoinGlass summary has no projection records")
-    projections = []
-    for index, exposure in enumerate(exposures):
-        name = _projection_file(index, exposure.get("url"))
-        if name not in files:
-            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the prepared CoinGlass unit has no {name}")
-        projections.append(_projection_from_exposure(exposure, files[name]))
-    return _coinglass_output(coinglass.etf_flows_from_projections(projections[0], projections[1:]))
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the CoinGlass unit's summary has no projection records")
+    return [(_projection_file(index, exposure.get("url")), exposure) for index, exposure in enumerate(exposures)]
+
+
+def coinglass_evidence(files: Mapping[str, bytes]) -> frozenset[str]:
+    """The projection files a CoinGlass unit's summary records: a completed unit binds every one (review BR2)."""
+
+    return frozenset(name for name, _ in _coinglass_projections(files))
 
 
 def _projection_from_exposure(exposure: Mapping[str, Any], body: bytes) -> ProjectedResponse:
@@ -656,8 +668,9 @@ class Source:
 
     ``table`` is the raw table its rows go to (``None``: nothing is persisted);
     ``evidence`` the files every completed unit binds besides the summary and
-    the retrieval log; ``extra_persisted`` further counts a persisting run
-    records.
+    the retrieval log; ``described`` the further files a unit's own summary
+    says it holds, which a completed unit must bind too (review BR2);
+    ``extra_persisted`` further counts a persisting run records.
     """
 
     units: Callable[[], tuple[str, ...]]
@@ -666,6 +679,7 @@ class Source:
     evidence: tuple[str, ...] = ()
     extra_persisted: frozenset[str] = frozenset()
     resume: Callable[[RunContext, str, Mapping[str, bytes]], UnitOutput] | None = None  # rebuild from prepared files
+    described: Callable[[Mapping[str, bytes]], frozenset[str]] | None = None
 
 
 def _month_units(first: date) -> Callable[[], tuple[str, ...]]:
@@ -685,7 +699,7 @@ SOURCES: dict[str, Source] = {
     "coinmetrics-market-cap": Source(lambda: ("all",), market_cap_unit, None, ("market_cap_evidence.json",)),
     "coinglass-etf": Source(
         lambda: ("all",), coinglass_unit, "etf_flows", ("flow_history.projected.json",), frozenset({"missing_publication_dates"}),
-        coinglass_resume,
+        coinglass_resume, coinglass_evidence,
     ),
 }
 
@@ -727,7 +741,7 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
         return False
     record, files = found
     spec, persisted = SOURCES[source], record["persisted"]
-    if not set(spec.evidence) <= set(files):
+    if not set(spec.evidence) <= set(files) or (spec.described is not None and not spec.described(files) <= set(files)):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json does not bind the source's evidence")
     if spec.table is None:
         if persisted != {}:

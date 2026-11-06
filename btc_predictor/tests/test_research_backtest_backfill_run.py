@@ -898,6 +898,47 @@ def test_review_br1_a_source_that_persists_nothing_is_read_afresh_whatever_it_ho
     assert len(transport.calls) == 3 and store.done("kraken-incidents", "all")["persisted"] == {}
 
 
+# --- review BR2: a completed CoinGlass unit binds every projection its summary records ----------------
+
+
+ETF_PROJECTIONS = {"flow_history.projected.json", "history_GBTC.projected.json", "history_IBIT.projected.json"}
+
+
+def completed_etf_unit(store: run.EvidenceStore) -> dict[str, Any]:
+    assert run.run_unit(advancing_context(coinglass_run_world(), store, Database(), **KEYED), "coinglass-etf", "all").status == "DONE"
+    marker = done_marker(store, "coinglass-etf", "all")
+    assert run.coinglass_evidence(store.completed("coinglass-etf", "all")[1]) == ETF_PROJECTIONS <= set(marker["files"])
+    return marker
+
+
+@pytest.mark.parametrize("dropped", sorted(ETF_PROJECTIONS))
+def test_review_br2_a_completed_etf_unit_missing_a_recorded_projection_is_refused(store: run.EvidenceStore, dropped: str) -> None:
+    # the re-review's reproducer: a projection file deleted with only its entry in DONE.json
+    marker = completed_etf_unit(store)
+    (store.unit_dir("coinglass-etf", "all") / dropped).unlink()
+    rewrite_marker(store, "coinglass-etf", "all", marker | {"files": {k: v for k, v in marker["files"].items() if k != dropped}})
+    assert store.completed("coinglass-etf", "all") is not None  # the marker itself verifies
+    for database in (Database(), None):
+        changed = changed_coinglass_world()
+        report_ = run.run_unit(advancing_context(changed, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and "evidence" in report_.detail and changed.calls == []
+        assert database is None or database.connections == []
+
+
+def test_review_br2_a_completed_etf_units_summary_must_record_its_projections(store: run.EvidenceStore) -> None:
+    marker = completed_etf_unit(store)
+    directory = store.unit_dir("coinglass-etf", "all")
+    summary = json.loads((directory / "summary.json").read_bytes())
+    for edited in ({k: v for k, v in summary.items() if k != "projections"}, summary | {"projections": []}, summary | {"projections": [1]}):
+        data = sources.canonical_json_bytes(edited)
+        (directory / "summary.json").write_bytes(data)
+        rewrite_marker(store, "coinglass-etf", "all", marker | {"files": marker["files"] | {"summary.json": sources.sha256_hex(data)}})
+        changed = changed_coinglass_world()
+        report_ = run.run_unit(advancing_context(changed, store, Database(), start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and "projection records" in report_.detail and changed.calls == [], edited
+    refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_evidence, {"summary.json": b"{not json"})
+
+
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:
     rows = binance.read_funding(fx.make_fetcher(funding_world()), date(2020, 2, 1), date(2020, 2, 1)).rows
     recorded = persistence.RecordedDerivativesProvider("binance", "BTCUSDT", binance.BINANCE_PROVIDER, funding=rows)
