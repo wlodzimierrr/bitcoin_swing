@@ -875,16 +875,72 @@ def test_review_br1_an_etf_unit_whose_marker_was_removed_is_refused_not_read_afr
         assert database is None or database.connections == []
 
 
-def test_review_br1_only_an_empty_unit_of_a_persisting_source_is_read_afresh(store: run.EvidenceStore) -> None:
+def test_review_br3_only_a_unit_of_a_persisting_source_without_a_directory_is_read_afresh(store: run.EvidenceStore) -> None:
     directory = store.unit_dir("binance-funding", "2020-02")
     directory.mkdir(parents=True)
     (directory / "summary.json.partial").write_bytes(b"{")  # an interrupted first write
-    for database in (Database(), None):
-        transport = funding_world()
-        report_ = run.run_unit(advancing_context(transport, store, database), "binance-funding", "2020-02")
-        assert report_.status == "REFUSED" and "reconcile" in report_.detail and transport.calls == []
-    (directory / "summary.json.partial").unlink()
+    for emptied in (False, True):
+        if emptied:
+            (directory / "summary.json.partial").unlink()  # an empty directory is not a new unit (review BR3)
+        for database in (Database(), None):
+            transport = funding_world()
+            report_ = run.run_unit(advancing_context(transport, store, database), "binance-funding", "2020-02")
+            assert report_.status == "REFUSED" and "reconcile" in report_.detail and transport.calls == []
+            assert database is None or database.connections == []
+    directory.rmdir()  # the operator's reconciliation
     assert run.run_unit(advancing_context(funding_world(), store, Database()), "binance-funding", "2020-02").status == "DONE"
+
+
+# --- review BR3: emptying a unit's directory never makes it new ------------------------------
+
+
+@pytest.mark.parametrize("state", ["prepared", "done"])
+def test_review_br3_an_etf_unit_emptied_but_its_directory_kept_is_refused_not_read_afresh(store: run.EvidenceStore, state: str) -> None:
+    ctx = advancing_context(coinglass_run_world(), store, Database(), **KEYED)
+    if state == "prepared":
+        run_interrupted(store, ctx, "coinglass-etf", "all")  # committed, then interrupted
+    else:
+        assert run.run_unit(ctx, "coinglass-etf", "all").status == "DONE"
+    directory = store.unit_dir("coinglass-etf", "all")
+    for path in directory.iterdir():
+        path.unlink()
+    for database in (Database(), None):
+        changed = changed_coinglass_world()
+        report_ = run.run_unit(advancing_context(changed, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and "reconcile" in report_.detail and changed.calls == []
+        assert database is None or database.connections == []
+    assert directory.is_dir() and list(directory.iterdir()) == []  # left as it was
+
+
+def test_review_br3_an_interruption_before_a_units_first_file_refuses_until_its_directory_is_removed(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def interrupted(path: Path, data: bytes) -> None:
+        raise OSError("interrupted before the unit's first file")
+
+    database = Database()
+    with monkeypatch.context() as patch:
+        patch.setattr(run, "_atomic_write", interrupted)
+        with pytest.raises(OSError):
+            run.run_unit(advancing_context(funding_world(), store, database), "binance-funding", "2020-02")
+    directory = store.unit_dir("binance-funding", "2020-02")
+    assert directory.is_dir() and list(directory.iterdir()) == [] and database.connections == []  # nothing persisted
+    for again in (Database(), None):
+        transport = funding_world()
+        report_ = run.run_unit(advancing_context(transport, store, again, start=LATER), "binance-funding", "2020-02")
+        assert report_.status == "REFUSED" and "reconcile" in report_.detail and transport.calls == []
+    directory.rmdir()  # the operator's reconciliation
+    again = Database()
+    assert run.run_unit(advancing_context(funding_world(), store, again, start=LATER), "binance-funding", "2020-02").status == "DONE"
+    assert store.done("binance-funding", "2020-02")["persisted"] == {"funding_rates": 6}
+
+
+def test_review_br3_a_source_that_persists_nothing_reads_an_empty_unit_afresh(store: run.EvidenceStore) -> None:
+    store.unit_dir("kraken-incidents", "all").mkdir(parents=True)
+    transport = FakeTransport()
+    transport.add(run.TARDIS_EXCHANGE_URL, tardis_body())
+    assert run.run_unit(advancing_context(transport, store, None), "kraken-incidents", "all").status == "DONE"
+    assert len(transport.calls) == 1 and store.done("kraken-incidents", "all")["persisted"] == {}
 
 
 def test_review_br1_a_source_that_persists_nothing_is_read_afresh_whatever_it_holds(store: run.EvidenceStore) -> None:

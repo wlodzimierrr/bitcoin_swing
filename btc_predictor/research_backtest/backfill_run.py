@@ -28,8 +28,9 @@ read is never replaced by a fresh one: a persisting run resumes a prepared
 unit, or one completed with ``not_persisted``, from that read, so its rows
 keep their retrieval instants and the collectors' insert-or-ignore
 re-persists nothing already committed; a ``--no-persist`` run refuses a
-prepared unit; and a unit holding files under no marker refuses for
-reconciliation by hand (reviews B3 and BR1). Progress lines are value-free, and a refusal prints
+prepared unit; and a unit whose directory exists, empty or not, under no
+marker the run resumes refuses for reconciliation by hand, so only a unit
+without a directory is read afresh (reviews B3, BR1 and BR3). Progress lines are value-free, and a refusal prints
 its code and its message with every digit masked (RBT-002's metadata-only
 discipline). Spans follow RBT-002's acquisition plan: from the source's depth
 or the window start to 2025-12-31.
@@ -185,11 +186,14 @@ class EvidenceStore:
         directory = self.unit_dir(source, unit)
         return self._real_directory(directory, create=False) and ((directory / marker).is_symlink() or (directory / marker).exists())
 
-    def has_files(self, source: str, unit: str) -> bool:
-        """Whether the unit's directory holds anything at all (review BR1)."""
+    def has_directory(self, source: str, unit: str) -> bool:
+        """Whether the unit's directory exists, empty or not (reviews BR1 and BR3).
 
-        directory = self.unit_dir(source, unit)
-        return self._real_directory(directory, create=False) and any(directory.iterdir())
+        Emptying a unit's directory never makes it new: for a source that
+        persists, only a unit without a directory is read afresh.
+        """
+
+        return self._real_directory(self.unit_dir(source, unit), create=False)
 
     def completed(self, source: str, unit: str) -> tuple[dict[str, Any], dict[str, bytes]] | None:
         """The verified ``DONE.json`` and the files it binds (review B4); ``None`` when absent or not verifying.
@@ -816,8 +820,10 @@ def _read_or_resume(ctx: RunContext, source: str, unit: str) -> tuple[UnitOutput
     whichever run prepared it, or a unit completed with ``not_persisted``,
     from its saved read, so the collectors' insert-or-ignore adds nothing
     already committed; a ``--no-persist`` run refuses a prepared unit; and a
-    unit holding files under no marker it resumes refuses for reconciliation
-    by hand. Only a unit with no files is read afresh. A source that persists
+    unit whose directory exists, empty or not, under no marker it resumes
+    refuses for reconciliation by hand (an interruption before the unit's
+    first file leaves an empty directory, and nothing persisted). Only a unit
+    without a directory is read afresh (review BR3). A source that persists
     nothing is always read afresh.
     """
 
@@ -837,9 +843,9 @@ def _read_or_resume(ctx: RunContext, source: str, unit: str) -> tuple[UnitOutput
             output = _resume(ctx, source, unit, done[1])
             ctx.store.reopen(source, unit)
             return output, done[1]
-        if done is not None or ctx.store.has_files(source, unit):
+        if done is not None or ctx.store.has_directory(source, unit):
             raise BackfillRefused(
-                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: it holds files under no marker this run resumes; reconcile the unit by hand"
+                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its directory exists under no marker this run resumes; reconcile the unit by hand"
             )
     output = spec.read(ctx, unit)
     files = _unit_files(output, canonical_json_bytes(ctx.log.as_records()))
