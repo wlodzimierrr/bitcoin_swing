@@ -963,7 +963,7 @@ ETF_PROJECTIONS = {"flow_history.projected.json", "history_GBTC.projected.json",
 def completed_etf_unit(store: run.EvidenceStore) -> dict[str, Any]:
     assert run.run_unit(advancing_context(coinglass_run_world(), store, Database(), **KEYED), "coinglass-etf", "all").status == "DONE"
     marker = done_marker(store, "coinglass-etf", "all")
-    assert run.coinglass_evidence(store.completed("coinglass-etf", "all")[1]) == ETF_PROJECTIONS <= set(marker["files"])
+    assert {name for name, _, _ in run.coinglass_evidence(store.completed("coinglass-etf", "all")[1])} == ETF_PROJECTIONS <= set(marker["files"])
     return marker
 
 
@@ -993,6 +993,84 @@ def test_review_br2_a_completed_etf_units_summary_must_record_its_projections(st
         report_ = run.run_unit(advancing_context(changed, store, Database(), start=LATER, **KEYED), "coinglass-etf", "all")
         assert report_.status == "REFUSED" and "projection records" in report_.detail and changed.calls == [], edited
     refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_evidence, {"summary.json": b"{not json"})
+
+
+# --- review BR4: each projection a completed CoinGlass unit records must match its exposure record -----
+
+
+def no_decoding(monkeypatch: pytest.MonkeyPatch) -> None:
+    def decoded(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("a completion check decoded a projection")
+
+    monkeypatch.setattr(run, "_projection_from_exposure", decoded)
+    monkeypatch.setattr(coinglass, "etf_flows_from_projections", decoded)
+
+
+def substitute(store: run.EvidenceStore, marker: dict[str, Any], replaced: dict[str, bytes]) -> None:
+    directory = store.unit_dir("coinglass-etf", "all")
+    for name, data in replaced.items():
+        (directory / name).write_bytes(data)
+    rewrite_marker(store, "coinglass-etf", "all", marker | {"files": marker["files"] | {name: sources.sha256_hex(data) for name, data in replaced.items()}})
+    assert store.completed("coinglass-etf", "all") is not None  # the marker itself verifies
+
+
+@pytest.mark.parametrize("case", ["copied-fund", "swapped-funds", "replaced-flow"])
+def test_review_br4_a_completed_etf_unit_with_a_substituted_projection_is_refused(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    # the re-review's reproducer: a projection replaced, only its digest in DONE.json updated, the summary unchanged
+    marker = completed_etf_unit(store)
+    saved = unit_files(store, "coinglass-etf", "all")
+    ibit, gbtc = (saved[f"history_{fund}.projected.json"] for fund in ("IBIT", "GBTC"))
+    replaced = {
+        "copied-fund": {"history_IBIT.projected.json": gbtc},
+        "swapped-funds": {"history_IBIT.projected.json": gbtc, "history_GBTC.projected.json": ibit},
+        "replaced-flow": {"flow_history.projected.json": ibit},
+    }[case]
+    assert all(saved[name] != data for name, data in replaced.items())
+    substitute(store, marker, replaced)
+    no_decoding(monkeypatch)
+    for database in (Database(), None):
+        changed = changed_coinglass_world()
+        report_ = run.run_unit(advancing_context(changed, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and "does not match the record" in report_.detail and changed.calls == []
+        assert database is None or database.connections == []
+
+
+RECORD_EDITS = {
+    "other-digest": ("projected_sha256", lambda record: "0" * 64),
+    "other-size": ("projected_size", lambda record: record["projected_size"] + 1),
+    "float-size": ("projected_size", lambda record: float(record["projected_size"])),  # equal in value, not an integer
+    "string-size": ("projected_size", lambda record: str(record["projected_size"])),
+    "boolean-size": ("projected_size", lambda record: True),
+}
+
+
+@pytest.mark.parametrize("edit", sorted(RECORD_EDITS))
+def test_review_br4_a_completed_etf_units_summary_must_record_each_projections_digest_and_size(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    marker = completed_etf_unit(store)
+    directory = store.unit_dir("coinglass-etf", "all")
+    summary = json.loads((directory / "summary.json").read_bytes())
+    field, value = RECORD_EDITS[edit]
+    summary["projections"][1] = summary["projections"][1] | {field: value(summary["projections"][1])}
+    substitute(store, marker, {"summary.json": sources.canonical_json_bytes(summary)})
+    no_decoding(monkeypatch)
+    changed = changed_coinglass_world()
+    report_ = run.run_unit(advancing_context(changed, store, Database(), start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and "does not match the record" in report_.detail and changed.calls == []
+
+
+def test_review_br4_an_intact_completed_etf_unit_is_skipped_without_decoding_a_projection(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    completed_etf_unit(store)
+    no_decoding(monkeypatch)
+    for database in (Database(), None):
+        transport = FakeTransport()
+        report_ = run.run_unit(advancing_context(transport, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "SKIPPED" and transport.calls == [] and (database is None or database.connections == [])
 
 
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:

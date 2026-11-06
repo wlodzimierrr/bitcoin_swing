@@ -18,7 +18,8 @@ evidence repository (owner Part B ruling 9) under
 A unit whose ``DONE.json`` verifies is skipped, so an interrupted run resumes.
 A marker verifies only when it names this run version, its own source and
 unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
-files (for CoinGlass, every projection its summary records) by SHA-256, and
+files (for CoinGlass, every projection its summary records, each matching
+the digest and size its exposure record gives it) by SHA-256, and
 records its rows persisted (or ``not_persisted``); a
 marker that exists but does not verify refuses the unit for reconciliation by
 hand, never a silent re-read (review B4). Before a unit is persisted its
@@ -608,10 +609,15 @@ def _coinglass_projections(files: Mapping[str, bytes]) -> list[tuple[str, dict[s
     return [(_projection_file(index, exposure.get("url")), exposure) for index, exposure in enumerate(exposures)]
 
 
-def coinglass_evidence(files: Mapping[str, bytes]) -> frozenset[str]:
-    """The projection files a CoinGlass unit's summary records: a completed unit binds every one (review BR2)."""
+def coinglass_evidence(files: Mapping[str, bytes]) -> tuple[tuple[str, Any, Any], ...]:
+    """Each projection file a CoinGlass unit's summary records, with the digest and size its exposure record gives it.
 
-    return frozenset(name for name, _ in _coinglass_projections(files))
+    A completed unit binds every one, and each file must match its record
+    (reviews BR2 and BR4); only digests and sizes are compared, so no value is
+    decoded.
+    """
+
+    return tuple((name, exposure.get("projected_sha256"), exposure.get("projected_size")) for name, exposure in _coinglass_projections(files))
 
 
 def _projection_from_exposure(exposure: Mapping[str, Any], body: bytes) -> ProjectedResponse:
@@ -673,7 +679,8 @@ class Source:
     ``table`` is the raw table its rows go to (``None``: nothing is persisted);
     ``evidence`` the files every completed unit binds besides the summary and
     the retrieval log; ``described`` the further files a unit's own summary
-    says it holds, which a completed unit must bind too (review BR2);
+    says it holds, each with the SHA-256 and size it records, which a
+    completed unit must bind and match (reviews BR2 and BR4);
     ``extra_persisted`` further counts a persisting run records.
     """
 
@@ -683,7 +690,7 @@ class Source:
     evidence: tuple[str, ...] = ()
     extra_persisted: frozenset[str] = frozenset()
     resume: Callable[[RunContext, str, Mapping[str, bytes]], UnitOutput] | None = None  # rebuild from prepared files
-    described: Callable[[Mapping[str, bytes]], frozenset[str]] | None = None
+    described: Callable[[Mapping[str, bytes]], tuple[tuple[str, Any, Any], ...]] | None = None
 
 
 def _month_units(first: date) -> Callable[[], tuple[str, ...]]:
@@ -745,8 +752,11 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
         return False
     record, files = found
     spec, persisted = SOURCES[source], record["persisted"]
-    if not set(spec.evidence) <= set(files) or (spec.described is not None and not spec.described(files) <= set(files)):
+    described = () if spec.described is None else spec.described(files)
+    if not set(spec.evidence) <= set(files) or not {name for name, _, _ in described} <= set(files):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json does not bind the source's evidence")
+    if any(type(size) is not int or (sha256_hex(files[name]), len(files[name])) != (digest, size) for name, digest, size in described):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: a file does not match the record its summary keeps of it")
     if spec.table is None:
         if persisted != {}:
             raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json records rows the source never persists")
