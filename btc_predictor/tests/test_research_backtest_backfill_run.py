@@ -662,7 +662,8 @@ def test_review_b3_an_etf_unit_interrupted_after_its_commit_resumes_from_its_pro
     database = Database()
     run_interrupted(store, advancing_context(coinglass_run_world(), store, database, **keyed), "coinglass-etf", "all")
     committed = available_at(database)
-    assert committed and store.done("coinglass-etf", "all") is None and store.prepared("coinglass-etf", "all")[0]["persisting"] is True
+    assert committed and store.done("coinglass-etf", "all") is None
+    assert set(store.prepared("coinglass-etf", "all")[0]) == {"run_version", "source", "unit", "files"}  # no persistence claim (BR1)
     before = prepared_files(store, "coinglass-etf", "all")
     later, database_again = FakeTransport(), Database()  # serves nothing: a fresh read would be refused
     report_ = run.run_unit(advancing_context(later, store, database_again, start=LATER, **keyed), "coinglass-etf", "all")
@@ -700,12 +701,18 @@ def test_review_b3_a_changed_response_or_a_no_persist_run_never_completes_a_pers
     assert store.prepared("binance-funding", "2020-02") is not None and store.done("binance-funding", "2020-02") is None
 
 
-def test_review_b3_a_unit_prepared_without_persistence_is_read_afresh(store: run.EvidenceStore) -> None:
+def test_review_br1_a_unit_prepared_without_persistence_is_resumed_never_read_afresh(store: run.EvidenceStore) -> None:
+    # owner BR1 decision: a prepared unit may be persisted whichever run prepared it (B3 had it read afresh)
     run_interrupted(store, advancing_context(funding_world(), store, None), "binance-funding", "2020-02")
-    assert store.prepared("binance-funding", "2020-02")[0]["persisting"] is False
+    before = prepared_files(store, "binance-funding", "2020-02")
+    transport = funding_world()
+    report_ = run.run_unit(advancing_context(transport, store, None, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and "reconcile" not in report_.detail and transport.calls == []
     database = Database()
     report_ = run.run_unit(advancing_context(funding_world(), store, database, start=LATER), "binance-funding", "2020-02")
-    assert report_.status == "DONE" and all(value > LATER for _, value in available_at(database))
+    assert report_.status == "DONE", report_.detail
+    assert available_at(database) and all(value < LATER for _, value in available_at(database))  # the prepared read's instants
+    assert {name: data for name, data in unit_files(store, "binance-funding", "2020-02").items() if name != "DONE.json"} == before
 
 
 def test_review_b3_a_prepared_marker_that_does_not_verify_is_refused(store: run.EvidenceStore) -> None:
@@ -739,6 +746,156 @@ def test_review_b3_a_coinglass_rebuild_must_reproduce_every_exposure_record(stor
     one_fund = dict(summary, projections=summary["projections"][:2])
     refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_resume, ctx, "all", files | {"summary.json": json.dumps(one_fund).encode()})
     refused("PROVIDER_REQUEST_MISMATCH", run.coinglass_resume, advancing_context(FakeTransport(), store), "all", files)  # the gate
+
+
+# --- review BR1: no marker's claim sends a unit that may be persisted to a fresh read ----------------
+
+
+KEYED = {"allow_coinglass": True, "coinglass_key": "key-123"}
+
+
+def changed_coinglass_world() -> FakeTransport:
+    transport = coinglass_run_world()
+    transport.add(coinglass.FLOW_HISTORY_URL, fx.coinglass_flow_page({date(2024, 1, 11): {"IBIT": 999}}))
+    return transport
+
+
+def insert_params(database: Database) -> list[dict[str, Any]]:
+    """Every persisted parameter but the persistence instant: the rows, their values and their keys."""
+
+    return [
+        {name: value for name, value in statement.compile(dialect=postgresql.dialect()).params.items() if not name.startswith("ingested_at")}
+        for connection in database.connections
+        for statement in connection.statements
+    ]
+
+
+@pytest.mark.parametrize("persisting", [True, False])
+def test_review_br1_a_prepared_marker_edited_to_claim_no_persistence_does_not_verify(store: run.EvidenceStore, persisting: bool) -> None:
+    # the re-review's reproducer: an ETF unit interrupted after its commit, its marker then edited to claim no persistence
+    run_interrupted(store, advancing_context(coinglass_run_world(), store, Database(), **KEYED), "coinglass-etf", "all")
+    marker = store.unit_dir("coinglass-etf", "all") / "PREPARED.json"
+    record = json.loads(marker.read_bytes())
+    marker.write_bytes(sources.canonical_json_bytes(record | {"persisting": False}))
+    changed = changed_coinglass_world()
+    database = Database() if persisting else None
+    report_ = run.run_unit(advancing_context(changed, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and "PREPARED" in report_.detail and changed.calls == []
+    assert (database is None or database.connections == []) and store.done("coinglass-etf", "all") is None
+
+
+def test_review_br1_a_no_persist_run_refuses_a_prepared_etf_unit_and_a_persisting_run_resumes_it(store: run.EvidenceStore) -> None:
+    database = Database()
+    run_interrupted(store, advancing_context(coinglass_run_world(), store, database, **KEYED), "coinglass-etf", "all")
+    committed = insert_params(database)
+    changed = changed_coinglass_world()
+    report_ = run.run_unit(advancing_context(changed, store, None, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and changed.calls == [] and store.done("coinglass-etf", "all") is None
+    database_again = Database()
+    report_ = run.run_unit(advancing_context(changed, store, database_again, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "DONE" and changed.calls == [] and insert_params(database_again) == committed
+
+
+def test_review_br1_a_completed_etf_unit_edited_to_look_unpersisted_is_resumed_not_read_afresh(store: run.EvidenceStore) -> None:
+    database = Database()
+    assert run.run_unit(advancing_context(coinglass_run_world(), store, database, **KEYED), "coinglass-etf", "all").status == "DONE"
+    committed = insert_params(database)
+    before = {name: data for name, data in unit_files(store, "coinglass-etf", "all").items() if name != "DONE.json"}
+    rewrite_marker(store, "coinglass-etf", "all", done_marker(store, "coinglass-etf", "all") | {"persisted": run.NOT_PERSISTED})
+    changed, database_again = changed_coinglass_world(), Database()
+    report_ = run.run_unit(advancing_context(changed, store, database_again, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "DONE", report_.detail
+    assert changed.calls == [] and insert_params(database_again) == committed  # the same rows and keys: nothing new
+    after = unit_files(store, "coinglass-etf", "all")
+    assert {name: data for name, data in after.items() if name != "DONE.json"} == before
+    assert json.loads(after["DONE.json"])["persisted"]["etf_flows"] == 3
+
+
+def test_review_br1_a_derivative_unit_completed_without_persistence_is_resumed_with_its_instants(store: run.EvidenceStore) -> None:
+    assert run.run_unit(advancing_context(funding_world(), store, None), "binance-funding", "2020-02").status == "DONE"
+    before = {name: data for name, data in unit_files(store, "binance-funding", "2020-02").items() if name != "DONE.json"}
+    changed = FakeTransport()
+    rows = [fx.funding_row(utc(2020, 2, day, hour), rate="0.000777000007") for day in (1, 2) for hour in (0, 8, 16)]
+    fx.add_archive(changed, binance.funding_archive_url(date(2020, 2, 1)), rows)
+    database = Database()
+    report_ = run.run_unit(advancing_context(changed, store, database, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "REFUSED" and "reconcile" in report_.detail and database.connections == []
+    assert store.done("binance-funding", "2020-02")["persisted"] == run.NOT_PERSISTED  # left as it was
+    report_ = run.run_unit(advancing_context(funding_world(), store, database, start=LATER), "binance-funding", "2020-02")
+    assert report_.status == "DONE" and available_at(database) and all(value < LATER for _, value in available_at(database))
+    after = unit_files(store, "binance-funding", "2020-02")
+    assert {name: data for name, data in after.items() if name != "DONE.json"} == before and "PREPARED.json" not in after
+
+
+def test_review_br1_a_reopened_unit_keeps_a_marker_through_any_interruption(store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert run.run_unit(advancing_context(funding_world(), store, None), "binance-funding", "2020-02").status == "DONE"
+    directory = store.unit_dir("binance-funding", "2020-02")
+    done_bytes = (directory / "DONE.json").read_bytes()
+    write = run._atomic_write
+
+    def interrupted_marker(path: Path, data: bytes) -> None:
+        if path.name == "PREPARED.json":
+            raise OSError("interrupted before the marker")
+        write(path, data)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(run, "_atomic_write", interrupted_marker)
+        with pytest.raises(OSError):
+            store.reopen("binance-funding", "2020-02")
+    assert (directory / "DONE.json").read_bytes() == done_bytes  # DONE.json is dropped only once PREPARED.json is written
+    store.reopen("binance-funding", "2020-02")
+    assert store.prepared("binance-funding", "2020-02")[0]["files"] == json.loads(done_bytes)["files"] and not (directory / "DONE.json").exists()
+    (directory / "DONE.json").write_bytes(done_bytes)  # as if interrupted between its two steps
+    transport = funding_world()
+    assert run.run_unit(advancing_context(transport, store, None, start=LATER), "binance-funding", "2020-02").status == "SKIPPED"
+    database = Database()
+    run_interrupted(store, advancing_context(funding_world(), store, database, start=LATER), "binance-funding", "2020-02")
+    committed = available_at(database)
+    assert committed and all(value < LATER for _, value in committed) and store.prepared("binance-funding", "2020-02") is not None
+    database_again = Database()
+    report_ = run.run_unit(advancing_context(funding_world(), store, database_again, start=LATER + timedelta(hours=1)), "binance-funding", "2020-02")
+    assert report_.status == "DONE" and available_at(database_again) == committed
+    assert store.done("binance-funding", "2020-02")["persisted"] == {"funding_rates": 6} and store.prepared("binance-funding", "2020-02") is None
+    refused("PROVIDER_REQUEST_MISMATCH", store.reopen, "binance-funding", "2020-02")  # persisted: never reopened
+    refused("PROVIDER_REQUEST_MISMATCH", store.reopen, "binance-funding", "2020-03")  # nothing completed
+
+
+@pytest.mark.parametrize("marker", ["PREPARED.json", "DONE.json"])
+def test_review_br1_an_etf_unit_whose_marker_was_removed_is_refused_not_read_afresh(store: run.EvidenceStore, marker: str) -> None:
+    ctx = advancing_context(coinglass_run_world(), store, Database(), **KEYED)
+    if marker == "PREPARED.json":
+        run_interrupted(store, ctx, "coinglass-etf", "all")
+    else:
+        assert run.run_unit(ctx, "coinglass-etf", "all").status == "DONE"
+    (store.unit_dir("coinglass-etf", "all") / marker).unlink()
+    for database in (Database(), None):
+        changed = changed_coinglass_world()
+        report_ = run.run_unit(advancing_context(changed, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and "reconcile" in report_.detail and changed.calls == []
+        assert database is None or database.connections == []
+
+
+def test_review_br1_only_an_empty_unit_of_a_persisting_source_is_read_afresh(store: run.EvidenceStore) -> None:
+    directory = store.unit_dir("binance-funding", "2020-02")
+    directory.mkdir(parents=True)
+    (directory / "summary.json.partial").write_bytes(b"{")  # an interrupted first write
+    for database in (Database(), None):
+        transport = funding_world()
+        report_ = run.run_unit(advancing_context(transport, store, database), "binance-funding", "2020-02")
+        assert report_.status == "REFUSED" and "reconcile" in report_.detail and transport.calls == []
+    (directory / "summary.json.partial").unlink()
+    assert run.run_unit(advancing_context(funding_world(), store, Database()), "binance-funding", "2020-02").status == "DONE"
+
+
+def test_review_br1_a_source_that_persists_nothing_is_read_afresh_whatever_it_holds(store: run.EvidenceStore) -> None:
+    transport = FakeTransport()
+    transport.add(run.TARDIS_EXCHANGE_URL, tardis_body())
+    run_interrupted(store, advancing_context(transport, store, Database()), "kraken-incidents", "all")
+    assert store.prepared("kraken-incidents", "all") is not None and len(transport.calls) == 1
+    assert run.run_unit(advancing_context(transport, store, None, start=LATER), "kraken-incidents", "all").status == "DONE"
+    (store.unit_dir("kraken-incidents", "all") / "DONE.json").unlink()
+    assert run.run_unit(advancing_context(transport, store, Database(), start=LATER), "kraken-incidents", "all").status == "DONE"
+    assert len(transport.calls) == 3 and store.done("kraken-incidents", "all")["persisted"] == {}
 
 
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:

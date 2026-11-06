@@ -21,10 +21,14 @@ unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
 files by SHA-256, and records its rows persisted (or ``not_persisted``); a
 marker that exists but does not verify refuses the unit for reconciliation by
 hand, never a silent re-read (review B4). Before a unit is persisted its
-files and ``PREPARED.json`` (binding them) are written; a unit a persisting
-run prepared is resumed from that read, never read afresh, so its rows keep
-their retrieval instants and the collectors' insert-or-ignore re-persists
-nothing already committed (review B3). Progress lines are value-free, and a refusal prints
+files and ``PREPARED.json`` (binding them) are written. For a source that
+persists, no marker can prove that a saved read was not committed, so a saved
+read is never replaced by a fresh one: a persisting run resumes a prepared
+unit, or one completed with ``not_persisted``, from that read, so its rows
+keep their retrieval instants and the collectors' insert-or-ignore
+re-persists nothing already committed; a ``--no-persist`` run refuses a
+prepared unit; and a unit holding files under no marker refuses for
+reconciliation by hand (reviews B3 and BR1). Progress lines are value-free, and a refusal prints
 its code and its message with every digit masked (RBT-002's metadata-only
 discipline). Spans follow RBT-002's acquisition plan: from the source's depth
 or the window start to 2025-12-31.
@@ -98,7 +102,7 @@ _COUNT_NAME = re.compile(r"[a-z][a-z_]{0,63}")
 PREPARED_FILE = "PREPARED.json"
 MARKERS = frozenset({DONE_FILE, PREPARED_FILE})
 DONE_KEYS = frozenset({"run_version", "source", "unit", "completed_at", "persisted", "files"})
-PREPARED_KEYS = frozenset({"run_version", "source", "unit", "persisting", "files"})
+PREPARED_KEYS = frozenset({"run_version", "source", "unit", "files"})  # no persistence claim (review BR1)
 REQUIRED_FILES = frozenset({"retrievals.json", "summary.json"})
 NOT_PERSISTED = {"not_persisted": 1}
 
@@ -180,6 +184,12 @@ class EvidenceStore:
         directory = self.unit_dir(source, unit)
         return self._real_directory(directory, create=False) and ((directory / marker).is_symlink() or (directory / marker).exists())
 
+    def has_files(self, source: str, unit: str) -> bool:
+        """Whether the unit's directory holds anything at all (review BR1)."""
+
+        directory = self.unit_dir(source, unit)
+        return self._real_directory(directory, create=False) and any(directory.iterdir())
+
     def completed(self, source: str, unit: str) -> tuple[dict[str, Any], dict[str, bytes]] | None:
         """The verified ``DONE.json`` and the files it binds (review B4); ``None`` when absent or not verifying.
 
@@ -195,12 +205,13 @@ class EvidenceStore:
         return found
 
     def prepared(self, source: str, unit: str) -> tuple[dict[str, Any], dict[str, bytes]] | None:
-        """The verified ``PREPARED.json`` and the files it binds (review B3); ``None`` when absent or not verifying."""
+        """The verified ``PREPARED.json`` and the files it binds (review B3); ``None`` when absent or not verifying.
 
-        found = self._verified(source, unit, PREPARED_FILE, PREPARED_KEYS)
-        if found is None or type(found[0]["persisting"]) is not bool:
-            return None
-        return found
+        It claims nothing about persistence: a prepared unit may have been
+        persisted whichever run prepared it (review BR1).
+        """
+
+        return self._verified(source, unit, PREPARED_FILE, PREPARED_KEYS)
 
     def _verified(self, source: str, unit: str, marker_name: str, keys: frozenset[str]) -> tuple[dict[str, Any], dict[str, bytes]] | None:
         directory = self.unit_dir(source, unit)
@@ -235,7 +246,7 @@ class EvidenceStore:
             files[name] = data
         return record, files
 
-    def prepare(self, source: str, unit: str, files: Mapping[str, bytes], *, persisting: bool) -> None:
+    def prepare(self, source: str, unit: str, files: Mapping[str, bytes]) -> None:
         """Write the unit's files, then ``PREPARED.json`` binding them, before anything is persisted (review B3)."""
 
         directory = self.unit_dir(source, unit)
@@ -253,10 +264,24 @@ class EvidenceStore:
             "run_version": RUN_VERSION,
             "source": source,
             "unit": unit,
-            "persisting": persisting,
             "files": {name: sha256_hex(data) for name, data in sorted(files.items())},
         }
         _atomic_write(directory / PREPARED_FILE, canonical_json_bytes(record))
+
+    def reopen(self, source: str, unit: str) -> None:
+        """Prepare a unit completed without persistence again over the same files, before it is persisted (review BR1).
+
+        ``PREPARED.json`` is written before ``DONE.json`` is dropped, so an
+        interruption leaves a marker the next run resumes.
+        """
+
+        found = self.completed(source, unit)
+        if found is None or found[0]["persisted"] != NOT_PERSISTED:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: only a unit completed without persistence is reopened")
+        directory = self.unit_dir(source, unit)
+        record = {"run_version": RUN_VERSION, "source": source, "unit": unit, "files": found[0]["files"]}
+        _atomic_write(directory / PREPARED_FILE, canonical_json_bytes(record))
+        (directory / DONE_FILE).unlink()
 
     def complete(self, source: str, unit: str, *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
         """Write ``DONE.json`` over the prepared files, then drop ``PREPARED.json``."""
@@ -280,7 +305,7 @@ class EvidenceStore:
     def write(self, source: str, unit: str, files: Mapping[str, bytes], *, completed_at: datetime, persisted: Mapping[str, int]) -> dict[str, Any]:
         """Prepare and complete at once: a unit with nothing to persist."""
 
-        self.prepare(source, unit, files, persisting=False)
+        self.prepare(source, unit, files)
         return self.complete(source, unit, completed_at=completed_at, persisted=persisted)
 
 
@@ -691,7 +716,8 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
     A marker that exists but does not verify, lacks its source's evidence, or
     does not record its summary's rows persisted refuses: the unit may already
     be persisted, so only the operator reconciles it. A unit collected with
-    ``--no-persist`` is read again by a persisting run.
+    ``--no-persist`` is resumed from its saved read by a persisting run
+    (review BR1).
     """
 
     found = ctx.store.completed(source, unit)
@@ -737,52 +763,73 @@ def _retrieval_instants(data: bytes) -> tuple[datetime, ...]:
     return tuple(datetime.fromisoformat(item) for item in instants)
 
 
+def _resume(ctx: RunContext, source: str, unit: str, saved: Mapping[str, bytes]) -> UnitOutput:
+    """The unit's saved read reproduced (review B3): any difference refuses for reconciliation by hand.
+
+    CoinGlass rebuilds its rows from the saved projections; every other source
+    reads again with the saved retrieval instants replayed and must reproduce
+    the saved files byte for byte. Either way the rows are the saved read's.
+    """
+
+    spec = SOURCES[source]
+    if spec.resume is not None:
+        output = spec.resume(ctx, unit, saved)
+        files = _unit_files(output, saved["retrievals.json"])
+    else:
+        clock = ReplayClock(_retrieval_instants(saved["retrievals.json"]))
+        ctx.fetch_clock = clock
+        try:
+            output = spec.read(ctx, unit)
+        finally:
+            ctx.fetch_clock = None
+        files = _unit_files(output, canonical_json_bytes(ctx.log.as_records()))
+        if clock.used != len(clock.instants):
+            files = {}
+    if files != dict(saved):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: the re-read differs from the saved read; reconcile the unit by hand")
+    return output
+
+
 def _read_or_resume(ctx: RunContext, source: str, unit: str) -> tuple[UnitOutput, dict[str, bytes]]:
-    """Read the unit and prepare it, or resume the unit a persisting run prepared (review B3).
+    """Read the unit and prepare it, or resume its saved read (reviews B3 and BR1).
 
     A unit's files and ``PREPARED.json`` are written before anything is
-    persisted, so a run interrupted after its commit leaves its read behind. A
-    unit a persisting run prepared may already be persisted, and its rows carry
-    that read's retrieval instants (an ETF row's key includes
-    ``available_at``), so it is never read afresh: CoinGlass rebuilds its rows
-    from the prepared projections, and every other source reads again with the
-    prepared instants replayed and must reproduce the prepared files byte for
-    byte. Either way the rows are the prepared read's, so the collectors'
-    insert-or-ignore adds nothing already committed. A unit prepared without
-    persistence is read afresh.
+    persisted, so a run interrupted after its commit leaves its read behind,
+    and the rows it committed carry that read's retrieval instants (an ETF
+    row's key includes ``available_at``). For a source that persists, no
+    marker can prove that a saved read was not committed, so a saved read is
+    never replaced by a fresh one: a persisting run resumes a prepared unit,
+    whichever run prepared it, or a unit completed with ``not_persisted``,
+    from its saved read, so the collectors' insert-or-ignore adds nothing
+    already committed; a ``--no-persist`` run refuses a prepared unit; and a
+    unit holding files under no marker it resumes refuses for reconciliation
+    by hand. Only a unit with no files is read afresh. A source that persists
+    nothing is always read afresh.
     """
 
     spec = SOURCES[source]
     found = ctx.store.prepared(source, unit)
     if found is None and ctx.store.has_prepared_marker(source, unit):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its PREPARED.json does not verify; reconcile the unit by hand")
-    if found is not None and found[0]["persisting"]:
-        if ctx.connect is None:
+    if spec.table is not None:
+        if found is not None:
+            if ctx.connect is None:
+                raise BackfillRefused(
+                    "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: a prepared unit may be persisted, so only a persisting run completes it"
+                )
+            return _resume(ctx, source, unit, found[1]), found[1]
+        done = ctx.store.completed(source, unit)
+        if done is not None and done[0]["persisted"] == NOT_PERSISTED and ctx.connect is not None:
+            output = _resume(ctx, source, unit, done[1])
+            ctx.store.reopen(source, unit)
+            return output, done[1]
+        if done is not None or ctx.store.has_files(source, unit):
             raise BackfillRefused(
-                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: a persisting run prepared it, so only a persisting run completes it"
+                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: it holds files under no marker this run resumes; reconcile the unit by hand"
             )
-        prepared = found[1]
-        if spec.resume is not None:
-            output = spec.resume(ctx, unit, prepared)
-            files = _unit_files(output, prepared["retrievals.json"])
-        else:
-            clock = ReplayClock(_retrieval_instants(prepared["retrievals.json"]))
-            ctx.fetch_clock = clock
-            try:
-                output = spec.read(ctx, unit)
-            finally:
-                ctx.fetch_clock = None
-            files = _unit_files(output, canonical_json_bytes(ctx.log.as_records()))
-            if clock.used != len(clock.instants):
-                files = {}
-        if files != prepared:
-            raise BackfillRefused(
-                "PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: the re-read differs from the prepared read; reconcile the unit by hand"
-            )
-        return output, prepared
     output = spec.read(ctx, unit)
     files = _unit_files(output, canonical_json_bytes(ctx.log.as_records()))
-    ctx.store.prepare(source, unit, files, persisting=ctx.connect is not None and output.persist is not None)
+    ctx.store.prepare(source, unit, files)
     return output, files
 
 
