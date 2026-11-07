@@ -1239,6 +1239,182 @@ def test_review_br6_the_proof_accepts_every_unit_the_code_completes_and_decodes_
     assert all((item.first_day, item.last_day) == (run.ETF_FIRST_DAY, run.LAST_DATA_DAY) for item in projections)
 
 
+# --- review BR7: a CoinGlass unit's projection records must be the reads its retrieval log records ----------
+
+
+BR7_REFUSAL = "one successful read per projection record"
+
+
+def _moved(instant: str) -> str:
+    return sources.iso(datetime.fromisoformat(instant) + timedelta(hours=1))
+
+
+def _edit_log(summary: dict[str, Any], log: list[dict[str, Any]], edit: str) -> list[str]:
+    """Edit a CoinGlass summary's records or its retrieval log as the re-review's probes did; return the files removed with it."""
+
+    records = summary["projections"]
+    if edit == "fund-instant-moved":  # the re-review's reproducer: IBIT's record an hour later, its retrieval unchanged
+        records[2]["retrieved_at"] = _moved(records[2]["retrieved_at"])
+    elif edit == "flow-instant-moved":
+        records[0]["retrieved_at"] = _moved(records[0]["retrieved_at"])
+    elif edit == "response-digest":
+        records[1]["response_sha256"] = "0" * 64
+    elif edit == "response-size":
+        records[1]["response_size"] += 1
+    elif edit == "fund-and-census-removed":  # IBIT's record, census entry, file and binding removed; its retrieval still logged
+        assert records[2]["url"] == coinglass.fund_history_url("IBIT")
+        summary["projections"], summary["tickers_seen"] = records[:2], ["GBTC"]
+        return ["history_IBIT.projected.json"]
+    elif edit == "log-instant-moved":
+        log[2]["retrieved_at"] = _moved(log[2]["retrieved_at"])
+    elif edit == "log-url":
+        log[2]["url"] = coinglass.fund_history_url("ARKB")
+    elif edit == "log-status":
+        log[1]["status"] = 404
+    elif edit == "log-missing":
+        del log[-1]
+    elif edit == "log-extra-attempt":  # a refused attempt before the read it records
+        log.insert(1, log[1] | {"status": 429})
+    elif edit == "log-reordered":
+        log[1:] = log[:0:-1]
+    elif edit == "log-float-size":
+        log[1]["size"] = float(log[1]["size"])
+    elif edit == "log-extra-field":
+        log[1]["note"] = "retried"
+    else:
+        raise AssertionError(edit)
+    return []
+
+
+BR7_EDITS = [
+    "fund-instant-moved", "flow-instant-moved", "response-digest", "response-size", "fund-and-census-removed",
+    "log-instant-moved", "log-url", "log-status", "log-missing", "log-extra-attempt", "log-reordered", "log-float-size",
+    "log-extra-field",
+]
+
+
+def br7_unit(store: run.EvidenceStore, marker_name: str, edit: str) -> None:
+    directory = store.unit_dir("coinglass-etf", "all")
+    marker = json.loads((directory / marker_name).read_bytes())
+    summary = json.loads((directory / "summary.json").read_bytes())
+    log = json.loads((directory / "retrievals.json").read_bytes())
+    assert summary["tickers_seen"] == ["GBTC", "IBIT"] and len(summary["projections"]) == len(log) == 3
+    for name in _edit_log(summary, log, edit):
+        (directory / name).unlink()
+        del marker["files"][name]
+    for name, value in (("summary.json", summary), ("retrievals.json", log)):
+        data = sources.canonical_json_bytes(value)
+        (directory / name).write_bytes(data)
+        marker["files"][name] = sources.sha256_hex(data)
+    (directory / marker_name).write_bytes(sources.canonical_json_bytes(marker))
+
+
+@pytest.mark.parametrize("edit", BR7_EDITS)
+def test_review_br7_a_completed_etf_units_records_must_be_the_reads_its_retrieval_log_records(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    # the re-review's cases: the records or the log edited, their digests in DONE.json updated, every projection unchanged
+    completed_etf_unit(store)
+    br7_unit(store, "DONE.json", edit)
+    assert store.completed("coinglass-etf", "all") is not None  # the marker itself verifies
+    no_decoding(monkeypatch)
+    for database in (Database(), None):
+        transport = FakeTransport()
+        report_ = run.run_unit(advancing_context(transport, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and BR7_REFUSAL in report_.detail and transport.calls == [], (edit, report_)
+        assert database is None or database.connections == []
+
+
+@pytest.mark.parametrize("edit", ["fund-instant-moved", "flow-instant-moved", "log-instant-moved", "fund-and-census-removed", "log-missing"])
+def test_review_br7_a_prepared_etf_unit_is_resumed_only_with_the_instants_its_log_records(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    # the re-review's reproducer: interrupted after its commit, IBIT's record an hour later, PREPARED.json's digest updated;
+    # resumed, its rows would take another available_at, so another key
+    database = Database()
+    run_interrupted(store, advancing_context(coinglass_run_world(), store, database, **KEYED), "coinglass-etf", "all")
+    assert available_at(database)
+    br7_unit(store, "PREPARED.json", edit)
+    assert store.prepared("coinglass-etf", "all") is not None
+    no_decoding(monkeypatch)
+    again, transport = Database(), FakeTransport()
+    report_ = run.run_unit(advancing_context(transport, store, again, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and BR7_REFUSAL in report_.detail, (edit, report_)
+    assert transport.calls == [] and again.connections == [] and store.done("coinglass-etf", "all") is None
+
+
+def test_review_br7_a_not_persisted_etf_unit_whose_records_disagree_with_its_log_is_neither_reopened_nor_skipped(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert run.run_unit(advancing_context(coinglass_run_world(), store, None, **KEYED), "coinglass-etf", "all").status == "DONE"
+    br7_unit(store, "DONE.json", "fund-instant-moved")
+    assert store.completed("coinglass-etf", "all") is not None
+    no_decoding(monkeypatch)
+    for database in (Database(), None):
+        transport = FakeTransport()
+        report_ = run.run_unit(advancing_context(transport, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and BR7_REFUSAL in report_.detail and transport.calls == [], report_
+        assert database is None or database.connections == []
+    assert store.done("coinglass-etf", "all")["persisted"] == run.NOT_PERSISTED and store.prepared("coinglass-etf", "all") is None
+
+
+@pytest.mark.parametrize("edit", BR6_EDITS)
+def test_review_br7_each_br6_edit_is_refused_on_its_own_with_a_log_forged_to_match(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    # BR6's proof stands without the log check: the log is rewritten to the edited records, and the refusal is not the log's
+    completed_etf_unit(store)
+    edited_unit(store, "DONE.json", edit)
+    directory = store.unit_dir("coinglass-etf", "all")
+    marker = json.loads((directory / "DONE.json").read_bytes())
+    records = json.loads((directory / "summary.json").read_bytes())["projections"]
+    log = [
+        {"url": item["url"], "retrieved_at": item["retrieved_at"], "status": 200, "size": item["response_size"], "sha256": item["response_sha256"]}
+        for item in records
+    ]
+    data = sources.canonical_json_bytes(log)
+    (directory / "retrievals.json").write_bytes(data)
+    rewrite_marker(store, "coinglass-etf", "all", marker | {"files": marker["files"] | {"retrievals.json": sources.sha256_hex(data)}})
+    assert store.completed("coinglass-etf", "all") is not None
+    no_decoding(monkeypatch)
+    for database in (Database(), None):
+        transport = FakeTransport()
+        report_ = run.run_unit(advancing_context(transport, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and BR7_REFUSAL not in report_.detail and transport.calls == [], (edit, report_)
+        assert database is None or database.connections == []
+
+
+def coinglass_world_of(funds: tuple[str, ...]) -> FakeTransport:
+    """A CoinGlass world of other funds and days than ``coinglass_run_world``'s: each fund flows on its own Thursday."""
+
+    transport = FakeTransport()
+    days = {date(2024, 1, 11) + timedelta(weeks=index): {fund: index + 1} for index, fund in enumerate(funds)}
+    transport.add(coinglass.FLOW_HISTORY_URL, fx.coinglass_flow_page(days | {date(2026, 1, 5): {funds[0]: 777000001}}))
+    for index, (day, fund) in enumerate(zip(days, funds, strict=True)):
+        assets = {day: 100 + index, date(2025, 12, 31): 200 + index}
+        transport.add(coinglass.fund_history_url(fund), fx.coinglass_fund_page(assets, ticker=fund))
+    return transport
+
+
+@pytest.mark.parametrize("funds", [("FBTC",), ("ARKB", "BITB", "FBTC", "IBIT")])
+def test_review_br7_the_log_check_accepts_units_of_other_funds_and_days_resumed_or_completed(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, funds: tuple[str, ...]
+) -> None:
+    database = Database()
+    run_interrupted(store, advancing_context(coinglass_world_of(funds), store, database, **KEYED), "coinglass-etf", "all")
+    committed = available_at(database)
+    assert committed and len(json.loads(prepared_files(store, "coinglass-etf", "all")["retrievals.json"])) == len(funds) + 1
+    later, again = FakeTransport(), Database()
+    report_ = run.run_unit(advancing_context(later, store, again, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "DONE" and later.calls == [] and available_at(again) == committed, report_.detail
+    no_decoding(monkeypatch)
+    for database_ in (Database(), None):
+        transport = FakeTransport()
+        report_ = run.run_unit(advancing_context(transport, store, database_, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "SKIPPED" and transport.calls == [], report_
+    assert len(run.coinglass_proven(store.completed("coinglass-etf", "all")[1])) == len(funds) + 1
+
+
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:
     rows = binance.read_funding(fx.make_fetcher(funding_world()), date(2020, 2, 1), date(2020, 2, 1)).rows
     recorded = persistence.RecordedDerivativesProvider("binance", "BTCUSDT", binance.BINANCE_PROVIDER, funding=rows)

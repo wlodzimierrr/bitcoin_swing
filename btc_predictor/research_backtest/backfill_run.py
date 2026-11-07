@@ -20,7 +20,8 @@ A marker verifies only when it names this run version, its own source and
 unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
 files (for CoinGlass, every projection its summary records, each matching
 the digest and size its exposure record gives it, and the records proven
-value-blind as a rebuild proves them) by SHA-256, and
+value-blind as a rebuild proves them, the retrieval log included) by
+SHA-256, and
 records its rows persisted (or ``not_persisted``); a
 marker that exists but does not verify refuses the unit for reconciliation by
 hand, never a silent re-read (review B4). Before a unit is persisted its
@@ -77,6 +78,7 @@ from btc_predictor.research_backtest.backfill_sources import (
     BackfillRefused,
     Clock,
     Fetcher,
+    Retrieval,
     RetrievalLog,
     Transport,
     canonical_json_bytes,
@@ -587,8 +589,8 @@ def coinglass_resume(ctx: RunContext, unit: str, files: Mapping[str, bytes]) -> 
     Each projection is rebuilt from its file and its summary's exposure record,
     which must reproduce that record exactly (digests, sizes and counts
     included), so the rows keep the prepared read's retrieval instants; the
-    records are proven as a completed unit's are (review BR6) before any
-    value is decoded.
+    records are proven as a completed unit's are (reviews BR6 and BR7),
+    against the saved retrieval log included, before any value is decoded.
     """
 
     _coinglass_allowed(ctx)
@@ -620,16 +622,19 @@ def coinglass_evidence(files: Mapping[str, bytes]) -> tuple[tuple[str, Any, Any]
 
 
 def coinglass_proven(files: Mapping[str, bytes]) -> list[ProjectedResponse]:
-    """A CoinGlass unit's projections, proven value-blind as its rebuild proves them (reviews B3 and BR6).
+    """A CoinGlass unit's projections, proven value-blind as its rebuild proves them (reviews B3, BR6 and BR7).
 
     The summary's records must declare the flow history first and then one
     fund history per ticker of its ``tickers_seen`` (sorted, each once), in
     order. Each record must be reproduced exactly by the projection rebuilt
     from its file, over the unit's own days, and the file's bytes must
     re-project, value-blind, to exactly that projection on its endpoint's date
-    members (``verified_body``). Nothing is decoded, so a completed unit is
-    checked without reading a value, and a rebuild decodes only bytes proven
-    here.
+    members (``verified_body``). The unit's ``retrievals.json`` must be exactly
+    the log a read of those projections writes: one ``200`` retrieval per
+    record, in order, with its URL, instant, response digest and size, so the
+    rows' ``available_at`` (taken from the records) is the saved read's (review
+    BR7). Nothing is decoded, so a completed unit is checked without reading a
+    value, and a rebuild decodes only bytes proven here.
     """
 
     records = _coinglass_projections(files)
@@ -653,6 +658,11 @@ def coinglass_proven(files: Mapping[str, bytes]) -> list[ProjectedResponse]:
         else:
             verified_body(projection, date_keys=coinglass.FUND_DATE_KEYS, what=f"the {tickers[index - 1]} history")
         projections.append(projection)
+    log = [Retrieval(item.url, item.retrieved_at, 200, item.response_size, item.response_sha256).as_record() for item in projections]
+    if files.get("retrievals.json") != canonical_json_bytes(log):
+        raise BackfillRefused(
+            "PROVIDER_REQUEST_MISMATCH", "the CoinGlass unit's retrieval log is not one successful read per projection record, in order"
+        )
     return projections
 
 
@@ -736,8 +746,8 @@ class Source:
     the retrieval log; ``described`` the further files a unit's own summary
     says it holds, each with the SHA-256 and size it records, which a
     completed unit must bind and match (reviews BR2 and BR4); ``proven``
-    checks, value-blind, that those files are what the summary declares
-    (review BR6);
+    checks, value-blind, that those files are what the summary declares and
+    what the retrieval log read (reviews BR6 and BR7);
     ``extra_persisted`` further counts a persisting run records.
     """
 
@@ -798,7 +808,8 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
 
     A marker that exists but does not verify, lacks its source's evidence (for
     CoinGlass, a summary whose projection records are incomplete or
-    inconsistent, review BR6), or does not record its summary's rows
+    inconsistent, or disagree with the retrieval log, reviews BR6 and BR7),
+    or does not record its summary's rows
     persisted refuses: the unit may already be persisted, so only the
     operator reconciles it. A unit collected with
     ``--no-persist`` is resumed from its saved read by a persisting run
@@ -821,7 +832,7 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
     if any(type(size) is not int or (sha256_hex(files[name]), len(files[name])) != (digest, size) for name, digest, size in described):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: a file does not match the record its summary keeps of it")
     if spec.proven is not None:
-        spec.proven(files)  # value-blind: the declared records are complete and consistent (review BR6)
+        spec.proven(files)  # value-blind: the declared records are complete, consistent and the log's (reviews BR6, BR7)
     if spec.table is None:
         if persisted != {}:
             raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json records rows the source never persists")
