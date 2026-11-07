@@ -19,7 +19,8 @@ A unit whose ``DONE.json`` verifies is skipped, so an interrupted run resumes.
 A marker verifies only when it names this run version, its own source and
 unit, binds ``summary.json``, ``retrievals.json`` and its source's evidence
 files (for CoinGlass, every projection its summary records, each matching
-the digest and size its exposure record gives it) by SHA-256, and
+the digest and size its exposure record gives it, and the records proven
+value-blind as a rebuild proves them) by SHA-256, and
 records its rows persisted (or ``not_persisted``); a
 marker that exists but does not verify refuses the unit for reconciliation by
 hand, never a silent re-read (review B4). Before a unit is persisted its
@@ -68,7 +69,7 @@ from btc_predictor.research_backtest.backfill_persistence import (
     persist_derivatives,
     persist_etf_flows,
 )
-from btc_predictor.research_backtest.backfill_projection import ProjectedResponse
+from btc_predictor.research_backtest.backfill_projection import ProjectedResponse, verified_body
 from btc_predictor.research_backtest.backfill_sources import (
     DATA_WINDOW_END,
     DATA_WINDOW_START,
@@ -585,15 +586,13 @@ def coinglass_resume(ctx: RunContext, unit: str, files: Mapping[str, bytes]) -> 
 
     Each projection is rebuilt from its file and its summary's exposure record,
     which must reproduce that record exactly (digests, sizes and counts
-    included), so the rows keep the prepared read's retrieval instants.
+    included), so the rows keep the prepared read's retrieval instants; the
+    records are proven as a completed unit's are (review BR6) before any
+    value is decoded.
     """
 
     _coinglass_allowed(ctx)
-    projections = []
-    for name, exposure in _coinglass_projections(files):
-        if name not in files:
-            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the prepared CoinGlass unit has no {name}")
-        projections.append(_projection_from_exposure(exposure, files[name]))
+    projections = coinglass_proven(files)
     return _coinglass_output(coinglass.etf_flows_from_projections(projections[0], projections[1:]))
 
 
@@ -620,7 +619,62 @@ def coinglass_evidence(files: Mapping[str, bytes]) -> tuple[tuple[str, Any, Any]
     return tuple((name, exposure.get("projected_sha256"), exposure.get("projected_size")) for name, exposure in _coinglass_projections(files))
 
 
+def coinglass_proven(files: Mapping[str, bytes]) -> list[ProjectedResponse]:
+    """A CoinGlass unit's projections, proven value-blind as its rebuild proves them (reviews B3 and BR6).
+
+    The summary's records must declare the flow history first and then one
+    fund history per ticker of its ``tickers_seen`` (sorted, each once), in
+    order. Each record must be reproduced exactly by the projection rebuilt
+    from its file, over the unit's own days, and the file's bytes must
+    re-project, value-blind, to exactly that projection on its endpoint's date
+    members (``verified_body``). Nothing is decoded, so a completed unit is
+    checked without reading a value, and a rebuild decodes only bytes proven
+    here.
+    """
+
+    records = _coinglass_projections(files)
+    tickers = json.loads(files["summary.json"]).get("tickers_seen")
+    if not isinstance(tickers, list) or not all(isinstance(ticker, str) for ticker in tickers) or tickers != sorted(set(tickers)):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the CoinGlass unit's summary has no sorted census of the funds it saw")
+    urls = [coinglass.FLOW_HISTORY_URL, *(coinglass.fund_history_url(ticker) for ticker in tickers)]
+    if [exposure.get("url") for _, exposure in records] != urls:
+        raise BackfillRefused(
+            "PROVIDER_REQUEST_MISMATCH", "the CoinGlass unit's projection records are not the flow history and one history per fund it saw"
+        )
+    projections = []
+    for index, (name, exposure) in enumerate(records):
+        if name not in files:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the CoinGlass unit has no {name}")
+        projection = _projection_from_exposure(exposure, files[name])
+        if (projection.first_day, projection.last_day) != (ETF_FIRST_DAY, LAST_DATA_DAY):
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a CoinGlass projection record names other days than the unit's")
+        if index == 0:
+            verified_body(projection, date_keys=coinglass.FLOW_DATE_KEYS, what="the flow history")
+        else:
+            verified_body(projection, date_keys=coinglass.FUND_DATE_KEYS, what=f"the {tickers[index - 1]} history")
+        projections.append(projection)
+    return projections
+
+
+_EXPOSURE_COUNTS = ("response_size", "projected_size", "kept", "dropped_prohibited", "dropped_unrequested", "dropped_holdout")
+_EXPOSURE_TEXTS = ("rule", "url", "retrieved_at", "first_day", "last_day", "response_sha256", "projected_sha256")
+
+
 def _projection_from_exposure(exposure: Mapping[str, Any], body: bytes) -> ProjectedResponse:
+    """The projection an exposure record describes, over ``body``; the record must be exactly its own (review BR6).
+
+    Counts and sizes must be integers and the other fields strings (so ``3.0``
+    or ``true`` is no count), and the rebuilt projection must reproduce the
+    record.
+    """
+
+    if not (
+        all(type(exposure.get(key)) is int for key in _EXPOSURE_COUNTS)
+        and all(type(exposure.get(key)) is str for key in _EXPOSURE_TEXTS)
+        and type(exposure.get("date_keys")) is list
+        and all(type(key) is str for key in exposure["date_keys"])
+    ):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a prepared projection record is malformed")
     try:
         rebuilt = ProjectedResponse(
             url=exposure["url"],
@@ -636,9 +690,10 @@ def _projection_from_exposure(exposure: Mapping[str, Any], body: bytes) -> Proje
             dropped_unrequested=exposure["dropped_unrequested"],
             dropped_holdout=exposure["dropped_holdout"],
         )
-    except (KeyError, TypeError, ValueError):
+        reproduced = rebuilt.exposure_record() == dict(exposure)
+    except (KeyError, TypeError, ValueError, OverflowError):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a prepared projection record is malformed") from None
-    if rebuilt.exposure_record() != dict(exposure):
+    if not reproduced:
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "a prepared projection does not reproduce its exposure record")
     return rebuilt
 
@@ -680,7 +735,9 @@ class Source:
     ``evidence`` the files every completed unit binds besides the summary and
     the retrieval log; ``described`` the further files a unit's own summary
     says it holds, each with the SHA-256 and size it records, which a
-    completed unit must bind and match (reviews BR2 and BR4);
+    completed unit must bind and match (reviews BR2 and BR4); ``proven``
+    checks, value-blind, that those files are what the summary declares
+    (review BR6);
     ``extra_persisted`` further counts a persisting run records.
     """
 
@@ -691,6 +748,7 @@ class Source:
     extra_persisted: frozenset[str] = frozenset()
     resume: Callable[[RunContext, str, Mapping[str, bytes]], UnitOutput] | None = None  # rebuild from prepared files
     described: Callable[[Mapping[str, bytes]], tuple[tuple[str, Any, Any], ...]] | None = None
+    proven: Callable[[Mapping[str, bytes]], Any] | None = None
 
 
 def _month_units(first: date) -> Callable[[], tuple[str, ...]]:
@@ -710,7 +768,7 @@ SOURCES: dict[str, Source] = {
     "coinmetrics-market-cap": Source(lambda: ("all",), market_cap_unit, None, ("market_cap_evidence.json",)),
     "coinglass-etf": Source(
         lambda: ("all",), coinglass_unit, "etf_flows", ("flow_history.projected.json",), frozenset({"missing_publication_dates"}),
-        coinglass_resume, coinglass_evidence,
+        coinglass_resume, coinglass_evidence, coinglass_proven,
     ),
 }
 
@@ -738,9 +796,11 @@ def _scheduled(source: str, unit: str) -> None:
 def _complete(ctx: RunContext, source: str, unit: str) -> bool:
     """Whether the unit is complete for this run, so it is skipped (review B4).
 
-    A marker that exists but does not verify, lacks its source's evidence, or
-    does not record its summary's rows persisted refuses: the unit may already
-    be persisted, so only the operator reconciles it. A unit collected with
+    A marker that exists but does not verify, lacks its source's evidence (for
+    CoinGlass, a summary whose projection records are incomplete or
+    inconsistent, review BR6), or does not record its summary's rows
+    persisted refuses: the unit may already be persisted, so only the
+    operator reconciles it. A unit collected with
     ``--no-persist`` is resumed from its saved read by a persisting run
     (review BR1). Its ``not_persisted`` claim is trusted only without a
     ``PREPARED.json`` beside it, which may mark a read a persisting run has
@@ -760,6 +820,8 @@ def _complete(ctx: RunContext, source: str, unit: str) -> bool:
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json does not bind the source's evidence")
     if any(type(size) is not int or (sha256_hex(files[name]), len(files[name])) != (digest, size) for name, digest, size in described):
         raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: a file does not match the record its summary keeps of it")
+    if spec.proven is not None:
+        spec.proven(files)  # value-blind: the declared records are complete and consistent (review BR6)
     if spec.table is None:
         if persisted != {}:
             raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"{source} {unit}: its DONE.json records rows the source never persists")

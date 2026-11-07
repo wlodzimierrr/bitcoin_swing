@@ -1040,10 +1040,13 @@ def test_review_br2_a_completed_etf_units_summary_must_record_its_projections(st
 
 
 def no_decoding(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail on any value parser or rebuild; a projection's metadata (``_projection_from_exposure``) may be read (review BR6)."""
+
     def decoded(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("a completion check decoded a projection")
 
-    monkeypatch.setattr(run, "_projection_from_exposure", decoded)
+    monkeypatch.setattr(coinglass, "parse_flow_history", decoded)
+    monkeypatch.setattr(coinglass, "parse_fund_history", decoded)
     monkeypatch.setattr(coinglass, "etf_flows_from_projections", decoded)
 
 
@@ -1112,6 +1115,128 @@ def test_review_br4_an_intact_completed_etf_unit_is_skipped_without_decoding_a_p
         transport = FakeTransport()
         report_ = run.run_unit(advancing_context(transport, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
         assert report_.status == "SKIPPED" and transport.calls == [] and (database is None or database.connections == [])
+
+
+# --- review BR6: a CoinGlass unit's projection records are proven value-blind, complete and consistent ---
+
+
+def _edit_records(summary: dict[str, Any], edit: str) -> list[str]:
+    """Edit a CoinGlass summary as the re-review's probes did; return the files removed with it."""
+
+    records = summary["projections"]
+    if edit == "omit-fund":  # IBIT's record, file and binding removed; tickers_seen unchanged
+        summary["projections"] = [item for item in records if item["url"] != coinglass.fund_history_url("IBIT")]
+        return ["history_IBIT.projected.json"]
+    if edit == "fund-url-first":
+        records[0]["url"] = coinglass.fund_history_url("IBIT")
+    elif edit == "foreign-url-first":
+        records[0]["url"] = "https://outside.invalid/projection"
+    elif edit == "duplicate-fund":
+        records.append(dict(records[1]))
+    elif edit == "funds-out-of-order":
+        records[1:] = records[:0:-1]
+    elif edit == "kept-mismatch":
+        records[2]["kept"] = 0
+    elif edit == "date-proof-mismatch":
+        records[2]["date_keys"] = ["assets_date"]
+    elif edit == "day-span-narrowed":
+        records[2]["last_day"] = "2024-01-11"
+    elif edit == "day-span-widened":  # inside the window and the bytes still re-project: only the unit's days refuse it
+        records[2]["first_day"] = "2024-01-02"
+    elif edit == "day-span-into-holdout":
+        records[2]["last_day"] = "2026-06-30"
+    elif edit == "flow-kept-mismatch":
+        records[0]["kept"] = 0
+    elif edit == "flow-date-proof-mismatch":
+        records[0]["date_keys"] = list(coinglass.FUND_DATE_KEYS)
+    elif edit == "rule-mismatch":
+        records[0]["rule"] = "OTHER"
+    elif edit == "float-kept":
+        records[1]["kept"] = float(records[1]["kept"])
+    elif edit == "boolean-dropped":
+        records[1]["dropped_holdout"] = True
+    elif edit == "census-extra-fund":
+        summary["tickers_seen"] = sorted([*summary["tickers_seen"], "ARKB"])
+    elif edit == "census-unsorted":
+        summary["tickers_seen"] = summary["tickers_seen"][::-1]
+    elif edit == "census-duplicated":
+        summary["tickers_seen"] = [*summary["tickers_seen"], summary["tickers_seen"][-1]]
+    elif edit == "census-missing":
+        del summary["tickers_seen"]
+    elif edit == "funds-and-census-reversed":  # consistent with each other, but not the read's sorted order
+        records[1:] = records[:0:-1]
+        summary["tickers_seen"] = summary["tickers_seen"][::-1]
+    elif edit == "fund-and-census-duplicated":  # consistent with each other, but a fund twice
+        records.append(dict(records[-1]))
+        summary["tickers_seen"] = [*summary["tickers_seen"], summary["tickers_seen"][-1]]
+    elif edit == "non-text-digest":
+        records[1]["response_sha256"] = 12345
+    else:
+        raise AssertionError(edit)
+    return []
+
+
+BR6_EDITS = [
+    "omit-fund", "fund-url-first", "foreign-url-first", "duplicate-fund", "funds-out-of-order", "kept-mismatch",
+    "date-proof-mismatch", "day-span-narrowed", "day-span-widened", "rule-mismatch", "float-kept", "boolean-dropped",
+    "census-extra-fund", "census-unsorted", "census-duplicated", "census-missing", "funds-and-census-reversed",
+    "fund-and-census-duplicated", "non-text-digest", "day-span-into-holdout", "flow-kept-mismatch", "flow-date-proof-mismatch",
+]
+
+
+def edited_unit(store: run.EvidenceStore, marker_name: str, edit: str) -> None:
+    directory = store.unit_dir("coinglass-etf", "all")
+    marker = json.loads((directory / marker_name).read_bytes())
+    summary = json.loads((directory / "summary.json").read_bytes())
+    assert summary["tickers_seen"] == ["GBTC", "IBIT"] and len(summary["projections"]) == 3
+    for name in _edit_records(summary, edit):
+        (directory / name).unlink()
+        del marker["files"][name]
+    data = sources.canonical_json_bytes(summary)
+    (directory / "summary.json").write_bytes(data)
+    marker["files"]["summary.json"] = sources.sha256_hex(data)
+    (directory / marker_name).write_bytes(sources.canonical_json_bytes(marker))
+
+
+@pytest.mark.parametrize("edit", BR6_EDITS)
+def test_review_br6_a_completed_etf_unit_must_declare_its_projections_completely_and_consistently(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    # the re-review's reproducers and their kin: the summary edited, its digest in DONE.json updated
+    completed_etf_unit(store)
+    edited_unit(store, "DONE.json", edit)
+    assert store.completed("coinglass-etf", "all") is not None  # the marker itself verifies
+    no_decoding(monkeypatch)
+    for database in (Database(), None):
+        transport = FakeTransport()
+        report_ = run.run_unit(advancing_context(transport, store, database, start=LATER, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "REFUSED" and transport.calls == [], (edit, report_)
+        assert database is None or database.connections == []
+
+
+@pytest.mark.parametrize("edit", ["omit-fund", "day-span-widened", "float-kept", "census-extra-fund"])
+def test_review_br6_a_prepared_etf_unit_is_proven_before_its_rebuild_decodes_anything(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    database = Database()
+    run_interrupted(store, advancing_context(coinglass_run_world(), store, database, **KEYED), "coinglass-etf", "all")
+    edited_unit(store, "PREPARED.json", edit)
+    assert store.prepared("coinglass-etf", "all") is not None
+    no_decoding(monkeypatch)
+    again, transport = Database(), FakeTransport()
+    report_ = run.run_unit(advancing_context(transport, store, again, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and transport.calls == [] and again.connections == [], (edit, report_)
+
+
+def test_review_br6_the_proof_accepts_every_unit_the_code_completes_and_decodes_nothing(
+    store: run.EvidenceStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    completed_etf_unit(store)
+    files = store.completed("coinglass-etf", "all")[1]
+    no_decoding(monkeypatch)
+    projections = run.coinglass_proven(files)
+    assert [item.url for item in projections] == [coinglass.FLOW_HISTORY_URL, *(coinglass.fund_history_url(t) for t in ("GBTC", "IBIT"))]
+    assert all((item.first_day, item.last_day) == (run.ETF_FIRST_DAY, run.LAST_DATA_DAY) for item in projections)
 
 
 def test_rows_persist_in_monthly_slices_and_every_row_must_land(store: run.EvidenceStore) -> None:
