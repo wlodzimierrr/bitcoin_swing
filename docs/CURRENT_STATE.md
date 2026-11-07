@@ -1413,7 +1413,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-06
+- **Last updated:** 2026-11-07
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1467,7 +1467,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   re-review FAILED on 2026-11-06 with two P2 findings and the owner chose to
   fix both and re-review; the second review-fix's re-review FAILED the same
   day with three P2 findings and the owner chose to fix all three and
-  re-review; the third review-fix is committed and awaits its re-review; the
+  re-review; the third review-fix's re-review FAILED on 2026-11-07 with one
+  P2 finding and the owner chose to fix it value-blind and re-review; the
   collection of every source but CoinGlass and Kraken's liquidations is
   done).
   All four V4 data
@@ -1734,8 +1735,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   completed CoinGlass unit's projections are not checked against their
   exposure records; a `not_persisted` completion is trusted beside a
   `PREPARED.json`); the owner chose to fix all three and re-review. The
-  third review-fix (`25e4bcd` BR3, `9875a7c` BR4, `9644715` BR5) is
-  committed and awaits its independent re-review. The
+  third review-fix (`25e4bcd` BR3, `9875a7c` BR4, `9644715` BR5) was
+  re-reviewed on 2026-11-07: FAIL with one P2 finding (a completed CoinGlass
+  unit's projection records are not checked for completeness and
+  consistency); the owner chose to fix it value-blind and re-review. The
   collection of the incident list, Binance and Coin Metrics, run on
   `4cf0993` before the review, is done: 211 units, every source's database
   rows equal to its summaries, evidence in the private repository
@@ -1743,7 +1746,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   PASS. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 Part B second
+- **Most recent completed review:** EPIC Y RBT-003 Part B third
+  re-review, 2026-11-07, **independent xHigh FAIL** (same Codex session,
+  report-only) of the third review-fix `25e4bcd`, `9875a7c`, `9644715` and
+  docs `fa1770b`: BR3, BR4, BR5, BR1 and B3 FIXED, BR2 and B4 FIXED IN
+  PART, rulings 5, 9, 10 and 11 met; one P2 (BR6, CoinGlass completion
+  trusts an incomplete or inconsistent projection declaration). The owner
+  chose to fix it value-blind and re-review. Details in EPIC Y's RBT-003
+  Part B third re-review outcome.
+- **Preceding completed review (EPIC Y):** RBT-003 Part B second
   re-review, 2026-11-06, **independent xHigh FAIL** (same Codex session,
   report-only) of the second review-fix `15f0d92`, `75a60f8` and docs
   `7400832`: BR1, BR2, B3 and B4 FIXED IN PART, rulings 5, 9, 10 and 11
@@ -2100,10 +2111,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **re-review of the RBT-003 Part B third review-fix** (`eade370..` its
-  record); on PASS, Kraken's liquidations, CoinGlass and the dataset build.
-  RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
+  fourth review-fix** (BR6, value-blind), its validation and its
+  independent re-review; on PASS, Kraken's liquidations, CoinGlass and the
+  dataset build. RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2674,7 +2685,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   re-review FAIL `56b819f`; the second review-fix `15f0d92` (BR1) and
   `75a60f8` (BR2) with docs `7400832`; the Part B second re-review FAIL
   `eade370`; the third review-fix `25e4bcd` (BR3), `9875a7c` (BR4) and
-  `9644715` (BR5) with this documentation commit.
+  `9644715` (BR5) with docs `fa1770b`; the Part B third re-review FAIL in
+  this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
