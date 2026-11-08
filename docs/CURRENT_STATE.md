@@ -1477,8 +1477,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   log is listed out of time order, and the owner ruled that such a step is
   counted, not refused (ruling 12; its code change `fd702fe` was
   re-reviewed the same day: FAIL with one P2 finding, and the owner chose
-  to sum each side's quantities exactly and re-review), with the collection
-  continuing past refused days meanwhile).
+  to sum each side's quantities exactly and re-review; the review-fix
+  `029057e` is committed and awaits its re-review), with the collection on
+  the reviewed code having run to its end past the refused days, which
+  wait for that PASS).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1765,8 +1767,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (an hour's quantities are summed one at a time in the 80-digit exact
   context, so extreme-precision quantities are accepted in one listing
   order and refused in another); the owner chose to sum each side exactly
-  and re-review. The collection continues past refused days meanwhile on
-  the reviewed code; CoinGlass follows. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  and re-review. The review-fix (`029057e`, R12-1) is committed and awaits
+  its independent re-review. The collection ran to its end on the reviewed
+  code, past the refused days, which wait for that PASS; CoinGlass
+  follows. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B ruling 12
@@ -2159,12 +2163,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
-  ruling 12 review-fix** (R12-1, each side's quantities summed exactly),
-  its validation and its independent re-review, while the Kraken
-  liquidation collection continues past refused days; on PASS, the refused
-  days, CoinGlass (`--allow-coinglass`) and the dataset build. RBT-006
-  stays blocked until
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **re-review of the RBT-003 Part B ruling 12 review-fix** (`e3b69b5..` its
+  record); the Kraken liquidation collection on the reviewed code has run
+  to its end past the refused days; on PASS, the refused days, CoinGlass
+  (`--allow-coinglass`) and the dataset build. RBT-006 stays blocked
+  until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2187,6 +2191,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part B ruling 12 review-fix validation (2026-11-08):**
+  `.venv312` CPython 3.12.14. The adapter (374) and run (210) modules with
+  the replay, database and coverage guard modules 1,067 passed, 1 xfailed; the BTC-019
+  completion gate and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed.
+  Full repository at `029057e`:
+  8,378 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+  Synthetic fixtures only.
 - **RBT-003 Part B ruling 12 code validation (2026-11-08):** `.venv312`
   CPython 3.12.14. The adapter (356) and run (210) modules with the replay,
   database and coverage guard modules 1,049 passed, 1 xfailed; the BTC-019 completion gate
@@ -2768,7 +2781,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `197c8c5` (BR7) with docs `2c03121`; the Part B fifth re-review PASS
   `4d6b14d`; the Kraken collection stop and owner ruling 12 `8aed7af`;
   ruling 12's code `fd702fe` with docs `e3b69b5`; the ruling 12
-  re-review FAIL in this documentation commit.
+  re-review FAIL `724b488`; the review-fix `029057e` (R12-1) with this
+  documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
