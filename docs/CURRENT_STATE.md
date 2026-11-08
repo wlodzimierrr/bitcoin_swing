@@ -1413,7 +1413,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-07
+- **Last updated:** 2026-11-08
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1473,7 +1473,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the owner chose to fix it value-blind and re-review; the fifth
   review-fix's re-review PASSED the same day, closing Part B's code review;
   the collection of every source but CoinGlass and Kraken's liquidations is
-  done).
+  done; Kraken's liquidation collection stopped on 2026-11-08 at a day whose
+  log is listed out of time order, and the owner ruled that such a step is
+  counted, not refused (ruling 12, to implement and re-review), with the
+  collection continuing past refused days meanwhile).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1752,7 +1755,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   collection of the incident list, Binance and Coin Metrics, run on
   `4cf0993` before the review, is done: 211 units, every source's database
   rows equal to its summaries, evidence in the private repository
-  (`76496db`). Kraken's liquidations and CoinGlass are next. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  (`76496db`). Kraken's liquidation collection ran on `4d6b14d`: 49 days
+  (2021-05-27 to 2021-07-14), then it stopped on 2026-11-08 at 2021-07-15,
+  whose log lists one execution 1 ms before the one above it. The owner
+  ruled that such a step is counted, not refused (ruling 12; its code
+  change, validation and independent re-review come first), and the
+  collection continues past refused days meanwhile; CoinGlass follows. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B fifth
@@ -2136,9 +2144,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** RBT-003 Part B's
-  remaining collection: Kraken's liquidations, then CoinGlass
-  (`--allow-coinglass`), then the dataset build. RBT-006 stays blocked until
+- **Next dependency-satisfied EPIC Y action:** RBT-003 Part B ruling
+  12's code change (a Kraken day listed out of time order is counted, not
+  refused), its validation and its independent re-review, while the Kraken
+  liquidation collection continues past refused days; then the refused days,
+  CoinGlass (`--allow-coinglass`) and the dataset build. RBT-006 stays blocked until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
@@ -2730,8 +2740,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `9644715` (BR5) with docs `fa1770b`; the Part B third re-review FAIL
   `b90c454`; the fourth review-fix `e866317` (BR6) with docs `995fc03`;
   the Part B fourth re-review FAIL `3aaca84`; the fifth review-fix
-  `197c8c5` (BR7) with docs `2c03121`; the Part B fifth re-review PASS in
-  this documentation commit.
+  `197c8c5` (BR7) with docs `2c03121`; the Part B fifth re-review PASS
+  `4d6b14d`; the Kraken collection stop and owner ruling 12 in this
+  documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
