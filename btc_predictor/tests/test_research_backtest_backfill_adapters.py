@@ -16,10 +16,11 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import itertools
 import json
 import socket
 from datetime import UTC, date, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal, Inexact, localcontext
+from decimal import MAX_EMAX, ROUND_HALF_UP, Decimal, Inexact, localcontext
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -1774,6 +1775,129 @@ def test_a_liquidation_sum_that_cannot_be_exact_is_refused() -> None:
     huge = "9" * 81
     executions = [fx.execution(f"l{k}", utc(2021, 6, 1, 1, k), huge if k else "0." + "0" * 80 + "1", order_type="Liquidation", direction="Sell") for k in range(2)]
     refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(day_world([fx.execution_page(executions)])), DAY, DAY, incidents=())
+
+
+def same_side(quantities: list[str], *, direction: str = "Sell") -> list[dict[str, Any]]:
+    return [
+        fx.execution(f"l{k}", utc(2021, 6, 1, 1, k + 1), quantity, order_type="Liquidation", direction=direction)
+        for k, quantity in enumerate(quantities)
+    ]
+
+
+def precision_day(liquidations: list[dict[str, Any]], published: str | None) -> FakeTransport:
+    """A fully observed day whose hour 1 lists ``liquidations`` in the order given (ruling 12 admits any order)."""
+
+    executions = [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+    executions[1:1] = liquidations
+    series: dict[datetime, Any] = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    if published is not None:
+        series[utc(2021, 6, 1, 1)] = published
+    return day_world([fx.execution_page(executions)], series)
+
+
+def listing_orders(count: int) -> list[tuple[int, ...]]:
+    return list(itertools.permutations(range(count))) if count <= 4 else [tuple(range(count)), tuple(reversed(range(count)))]
+
+
+NINES_80 = "0." + "9" * 80
+
+
+@pytest.mark.parametrize(
+    ("quantities", "total"),
+    [
+        (["1", "1E-80", NINES_80], "2"),
+        (["1E-80", "1", "1." + "9" * 80], "3"),
+        (["9"] * 12, "108"),
+        (["1." + "0" * 20_000, "2"], "3"),
+    ],
+    ids=["a-carry-cancels-the-last-digit", "a-value-wider-than-80-digits", "carries-into-new-leading-digits", "trailing-zeros"],
+)
+def test_r12_1_an_hours_quantities_sum_exactly_in_every_listing_order(quantities: list[str], total: str) -> None:
+    # re-review R12-1: one value at a time in 80 digits accepted [1E-80, 1-1E-80, 1] and refused [1, 1E-80, 1-1E-80]
+    liquidations = same_side(quantities)
+    outcomes = []
+    for order in listing_orders(len(liquidations)):
+        transport = precision_day([liquidations[k] for k in order], total)
+        collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+        (row,) = collection.rows
+        assert (row.side, row.quantity, row.notional_usd) == ("long", Decimal(total), Decimal(total))
+        assert (collection.hours[1].feed_status, collection.hours[1].corroboration) == (WITH, v2.CORROBORATION_AGREES)
+        classified = [(hour.hour_start, hour.feed_status, hour.corroboration) for hour in collection.hours]
+        outcomes.append((collection.rows, classified, without_page_digests(collection)))
+    assert all(outcome == outcomes[0] for outcome in outcomes)
+
+
+@pytest.mark.parametrize(
+    "quantities",
+    [["1", "1E-80"], ["0." + "0" * 80 + "1", "9" * 81], ["1E-80", "1", "1." + "9" * 79], [f"9E+{MAX_EMAX}"] * 2],
+    ids=["81-digits", "162-digits", "81-digits-of-three", "past-the-largest-exponent"],
+)
+def test_r12_1_a_sum_wider_than_80_digits_refuses_in_every_listing_order(quantities: list[str]) -> None:
+    liquidations = same_side(quantities)
+    for order in listing_orders(len(liquidations)):
+        transport = precision_day([liquidations[k] for k in order], None)
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+        assert "do not sum exactly" in str(refusal)
+
+
+def test_r12_1_each_side_is_held_to_80_digits_even_when_the_hours_total_fits() -> None:
+    # the long side sums to 1 + 1E-80 (81 digits); with the short side's 1 - 1E-80 the hour's total would be 2
+    liquidations = same_side(["1", "1E-80"]) + [
+        fx.execution("s0", utc(2021, 6, 1, 1, 30), NINES_80, order_type="Liquidation", direction="Buy")
+    ]
+    for order in listing_orders(3):
+        transport = precision_day([liquidations[k] for k in order], "2")
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+        assert "do not sum exactly" in str(refusal)
+
+
+@pytest.mark.parametrize("places", [kraken.EXACT_SUM_MAX_DIGITS - 1, kraken.EXACT_SUM_MAX_DIGITS], ids=["at-the-cap", "past-the-cap"])
+def test_r12_1_the_exact_sum_is_bounded_by_the_quantities_span_in_every_listing_order(places: int) -> None:
+    # 0.9...9 (places nines) and 1E-places sum to 1 over places + 1 digits: the cap admits a span of exactly its size
+    liquidations = same_side(["0." + "9" * places, f"1E-{places}"])
+    for order in listing_orders(2):
+        transport = precision_day([liquidations[k] for k in order], "1")
+        if places + 1 <= kraken.EXACT_SUM_MAX_DIGITS:
+            collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+            assert [(row.side, row.quantity) for row in collection.rows] == [("long", Decimal(1))]
+        else:
+            refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+            assert f"need more than {kraken.EXACT_SUM_MAX_DIGITS} digits" in str(refusal)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        ["1", "1E-80", NINES_80],
+        ["1E+30", "1E-30", "123.456", "0.5"],
+        ["9"] * 4,
+        ["1." + "0" * 300, "7E-200"],
+        ["1E-1000050", "2E-1000050"],
+        ["1E+1000050", "1E+1000050", "3E+1000049"],
+    ],
+    ids=["carry-cancels", "mixed-places", "carries", "trailing-zeros", "below-the-80-digit-exponent-range", "above-it"],
+)
+def test_r12_1_exact_sum_is_the_exact_total_in_every_order_under_any_caller_context(values: list[str]) -> None:
+    numbers = [Decimal(value) for value in values]
+    expected = sum((Fraction(number) for number in numbers), Fraction(0))
+    for order in itertools.permutations(numbers):
+        with localcontext() as caller:
+            caller.prec, caller.traps[Inexact] = 3, True
+            total = kraken.exact_sum(list(order))
+        assert total is not None and Fraction(total) == expected
+    assert kraken.exact_sum([]) == 0
+    assert kraken.exact_sum([Decimal("1E+5000"), Decimal("1E-5001")]) is None  # a span of 10,002 digits
+
+
+def test_r12_1_an_unknown_side_refuses_before_any_sum_and_names_the_same_liquidation_in_every_order() -> None:
+    liquidations = same_side(["1", "1E-80"])  # their sum alone would not be exact
+    liquidations += [
+        fx.execution(uid, utc(2021, 6, 1, 1, 20 + k), order_type="Liquidation", direction="sell") for k, uid in enumerate(["u2", "u1"])
+    ]
+    for order in listing_orders(4):
+        transport = precision_day([liquidations[k] for k in order], None)
+        refusal = refused("LIQUIDATION_SIDE_UNKNOWN", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+        assert "liquidation u1 has" in str(refusal)
 
 
 @pytest.mark.parametrize(

@@ -53,7 +53,18 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
-from decimal import ROUND_HALF_EVEN, Context, Decimal, DivisionByZero, Inexact, InvalidOperation, Overflow, localcontext
+from decimal import (
+    MAX_EMAX,
+    MIN_EMIN,
+    ROUND_HALF_EVEN,
+    Context,
+    Decimal,
+    DivisionByZero,
+    Inexact,
+    InvalidOperation,
+    Overflow,
+    localcontext,
+)
 from typing import Any
 from urllib.parse import urlencode
 
@@ -111,6 +122,8 @@ _SERIES_NUMERAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)
 _WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
 # sums and the notional are exact or refused, whatever the caller's context (review F4)
 _EXACT_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[Inexact, InvalidOperation, DivisionByZero, Overflow])
+# the widest exact sum one side of an hour may need before the 80-digit check (re-review R12-1)
+EXACT_SUM_MAX_DIGITS = 10_000
 # a published value is spelled with a capital E, whatever the caller's ``capitals`` (re-review N3)
 _SPELLING_CONTEXT = Context(capitals=1)
 _HOUR_EVIDENCE_KEYS = frozenset(
@@ -352,6 +365,43 @@ def _overlaps(hour: datetime, incidents: Sequence[tuple[datetime, datetime]]) ->
     return any(start < hour + _HOUR and hour < end for start, end in incidents)
 
 
+def _lowest_digit(value: Decimal) -> int:
+    """The place of a positive decimal's lowest non-zero digit (``Decimal("1.50")`` gives -1)."""
+
+    _, digits, exponent = value.as_tuple()
+    return exponent + len(digits) - len("".join(map(str, digits)).rstrip("0"))
+
+
+def exact_sum(values: Sequence[Decimal]) -> Decimal | None:
+    """The exact sum of positive decimals, the same in any order (re-review R12-1).
+
+    Adding one value at a time in the 80-digit exact context let a partial
+    sum need more digits than the total, so the same values were accepted
+    in one order and refused in another. Here nothing rounds: every partial
+    sum is a multiple of the lowest non-zero digit among the values and, the
+    values being positive, at most their total, which is below ten to the
+    power of the largest value's leading place plus the digits of their
+    count. That span, taken from the values and never from their order, is
+    the precision, with no exponent limit. A span above
+    ``EXACT_SUM_MAX_DIGITS`` gives ``None`` instead of using that much
+    memory. The caller applies the 80-digit exact context to the sum once.
+    """
+
+    if not values:
+        return Decimal(0)
+    lowest = min(_lowest_digit(value) for value in values)
+    highest = max(value.adjusted() for value in values) + len(str(len(values)))
+    digits = highest - lowest + 1
+    if digits > EXACT_SUM_MAX_DIGITS:
+        return None
+    context = Context(prec=digits, rounding=ROUND_HALF_EVEN, Emax=MAX_EMAX, Emin=MIN_EMIN, traps=[Inexact, InvalidOperation, Overflow])
+    total = Decimal(0)
+    with localcontext(context):
+        for value in values:
+            total += value
+    return total
+
+
 def hour_record(
     hour: datetime,
     executions: Sequence[Execution],
@@ -365,11 +415,20 @@ def hour_record(
 
     in_hour = [execution for execution in executions if hour <= execution.timestamp < hour + _HOUR]
     liquidations = [execution for execution in in_hour if execution.order_type == LIQUIDATION_ORDER_TYPE]
-    quantities = {"long": Decimal(0), "short": Decimal(0)}
+    # every side is known before any sum, each side summed exactly, then held to 80 digits once (re-review R12-1)
+    by_side: dict[str, list[Decimal]] = {"long": [], "short": []}
+    for execution in sorted(liquidations, key=lambda item: item.uid):
+        by_side[_side(execution)].append(execution.quantity)
+    quantities: dict[str, Decimal] = {}
     try:
+        for side, values in by_side.items():
+            value = exact_sum(values)
+            if value is None:
+                return _refuse_shape(
+                    f"hour {iso(hour)}: the {side} liquidation quantities need more than {EXACT_SUM_MAX_DIGITS} digits to sum exactly"
+                )
+            quantities[side] = _EXACT_CONTEXT.plus(value)
         with localcontext(_EXACT_CONTEXT):
-            for execution in liquidations:
-                quantities[_side(execution)] += execution.quantity
             total = (quantities["long"] + quantities["short"]) * CONTRACT_SIZE_USD
     except Inexact:
         return _refuse_shape(f"hour {iso(hour)}: the liquidation quantities do not sum exactly")
