@@ -20,9 +20,21 @@ import itertools
 import json
 import socket
 from datetime import UTC, date, datetime, timedelta
-from decimal import MAX_EMAX, ROUND_HALF_UP, Decimal, Inexact, localcontext
+from decimal import (
+    MAX_EMAX,
+    ROUND_HALF_EVEN,
+    ROUND_HALF_UP,
+    Context,
+    Decimal,
+    DivisionByZero,
+    Inexact,
+    InvalidOperation,
+    Overflow,
+    localcontext,
+)
 from fractions import Fraction
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import parse_qsl, urlencode
 
@@ -1898,6 +1910,222 @@ def test_r12_1_an_unknown_side_refuses_before_any_sum_and_names_the_same_liquida
         transport = precision_day([liquidations[k] for k in order], None)
         refusal = refused("LIQUIDATION_SIDE_UNKNOWN", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
         assert "liquidation u1 has" in str(refusal)
+
+
+# --- re-review R12-2 to R12-4: a numeric input refuses its day, never raises ----------------------
+
+
+def ruling_3(total: Decimal, published: Decimal) -> bool:
+    """Owner ruling 3 in exact fractions: the total rounded half-even to the published places is the published value."""
+
+    unit = Fraction(10) ** published.as_tuple().exponent
+    return round(Fraction(total) / unit) * unit == Fraction(published)
+
+
+def corroborates_before_r12_2(total: Decimal, published: Decimal) -> bool:
+    """The comparison before R12-2, in its fixed 80-digit context; it raises where that runs out of digits."""
+
+    exponent = published.as_tuple().exponent
+    with localcontext(Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])):
+        return total.quantize(Decimal((0, (1,), exponent)), rounding=ROUND_HALF_EVEN) == published
+
+
+R12_2_TOTALS = ["0", "1", "5", "15", "25", "0.5", "2.5", "99.95", "12345.6789", "1E-80", NINES_80, "9" * 80, "1E+30"]
+R12_2_EXPONENTS = [-200, -100, -81, -80, -79, -18, -4, -2, -1, 0, 1, 2, 3, 31, 81, 200]
+
+
+def test_r12_2_corroboration_is_ruling_3_at_any_published_precision_under_any_caller_context() -> None:
+    compared = 0
+    for text in R12_2_TOTALS:
+        total = Decimal(text)
+        for exponent in R12_2_EXPONENTS:
+            rounded = round(Fraction(total) / Fraction(10) ** exponent)
+            for coefficient in {rounded, rounded + 1, max(rounded - 1, 0)}:
+                published = Decimal((0, tuple(int(digit) for digit in str(coefficient)), exponent))
+                with localcontext() as caller:
+                    caller.prec, caller.Emax, caller.Emin, caller.traps[Inexact] = 3, 10, -10, True
+                    agrees = kraken.corroborates(total, published)
+                assert agrees is (coefficient == rounded) is ruling_3(total, published), (text, exponent, coefficient)
+                try:
+                    before = corroborates_before_r12_2(total, published)
+                except InvalidOperation:
+                    continue
+                assert before is agrees  # wherever the earlier comparison answered, the answer is the same
+                compared += 1
+    assert compared >= 380  # the cases the earlier comparison answered
+
+
+@pytest.mark.parametrize(
+    ("total", "published", "agrees"),
+    [
+        ("1", "1." + "0" * 20_000, True),
+        ("1", "1." + "0" * 19_999 + "1", False),
+        ("5", f"0E+{MAX_EMAX}", True),  # 5 rounded to the largest place decimal holds is 0
+        ("5", f"1E+{MAX_EMAX}", False),
+        ("0", f"0E+{MAX_EMAX}", True),
+        ("1", "1E-1000000000000000000", False),  # an exponent below the smallest a context may set
+        ("0", "0E-1000000000000000000", True),
+        ("9" * 80, "1E+80", True),
+        ("9" * 80, "1E+81", False),
+    ],
+    ids=["20000-places", "20000-places-differs", "largest-place-zero", "largest-place-one", "zero-at-the-largest-place",
+         "below-the-smallest-exponent", "zero-below-it", "carry-into-a-new-digit", "past-the-carry"],
+)
+def test_r12_2_corroboration_answers_at_the_exponent_extremes(total: str, published: str, agrees: bool) -> None:
+    with localcontext() as caller:
+        caller.prec, caller.traps[Inexact] = 3, True
+        assert kraken.corroborates(Decimal(total), Decimal(published)) is agrees
+
+
+@pytest.mark.parametrize("places", [79, 80, 200, 20_000])
+def test_r12_2_a_published_value_with_any_number_of_places_corroborates_and_reads_back(places: int) -> None:
+    # re-review R12-2: a total of 1 against 1 with 80 zero places raised InvalidOperation instead of agreeing
+    for published, corroboration in [("1." + "0" * places, v2.CORROBORATION_AGREES), ("1." + "0" * (places - 1) + "1", v2.CORROBORATION_DISAGREES)]:
+        with localcontext() as caller:
+            caller.prec, caller.traps[Inexact] = 3, True
+            collection = kraken.read_liquidations(make_fetcher(precision_day(same_side(["1"]), published)), DAY, DAY, incidents=())
+        assert [(row.side, row.quantity) for row in collection.rows] == [("long", Decimal(1))]
+        assert (collection.hours[1].feed_status, collection.hours[1].corroboration) == (WITH, corroboration)
+        stored = json.loads(collection.evidence_bytes)["hours"][1]
+        assert (stored["series_value"], stored["corroboration"]) == (published, corroboration)
+        typed = kraken.parse_liquidation_hour_evidence(collection.evidence_bytes, expected_sha256=collection.evidence_sha256)
+        assert typed == collection.hours
+
+
+@pytest.mark.parametrize(
+    ("quantities", "total"),
+    [
+        (["99999999999999999999.999999999999999999"], "99999999999999999999.999999999999999999"),  # the column's largest
+        (["0.000000000000000001"], "0.000000000000000001"),
+        (["0.0000000000000000005", "0.0000000000000000005"], "0.000000000000000001"),  # each past 18 places, not their sum
+        (["1E+20"], None),
+        (["99999999999999999999.999999999999999999", "0.000000000000000001"], None),  # the sum reaches 10^20
+        (["0.0000000000000000001"], None),
+        (["1E+4300"], None),  # the review's case: 4,301 digits that would not read back
+        (["1E+999999"], None),
+    ],
+    ids=["largest", "smallest", "places-cancel-in-the-sum", "10^20", "sum-reaches-10^20", "19-places", "1E+4300", "1E+999999"],
+)
+def test_r12_3_a_side_the_liquidation_table_cannot_hold_refuses_its_day(quantities: list[str], total: str | None) -> None:
+    for direction, side in [("Sell", "long"), ("Buy", "short")]:
+        transport = precision_day(same_side(quantities, direction=direction), total or "1")
+        if total is not None:
+            collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+            assert [(row.side, row.quantity, row.notional_usd) for row in collection.rows] == [(side, Decimal(total), Decimal(total))]
+            assert collection.hours[1].corroboration == v2.CORROBORATION_AGREES
+            assert kraken.parse_liquidation_hour_evidence(collection.evidence_bytes, expected_sha256=collection.evidence_sha256) == collection.hours
+        else:
+            refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+            assert f"the {side} liquidation quantity or its notional does not fit the liquidation table's NUMERIC(38,18)" in str(refusal)
+
+
+def test_r12_3_each_sides_notional_is_held_to_the_column_too(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(kraken, "CONTRACT_SIZE_USD", Decimal(1000))
+    hour = utc(2021, 6, 1, 1)
+
+    def record(quantity: str) -> dict[str, Any]:
+        liquidation = kraken.Execution("l0", hour, Decimal(quantity), "Liquidation", "Sell")
+        return kraken.hour_record(hour, [liquidation], incident=False, series_value=None, pages_sha256=["0" * 64], series_sha256=None)
+
+    assert record("99999999999999999")["long_quantity"] == "99999999999999999"  # its notional 99999999999999999000 fits
+    refusal = refused("RESPONSE_SHAPE_REFUSED", record, "100000000000000000")  # the quantity fits, its notional 10^20 does not
+    assert "the long liquidation quantity or its notional does not fit" in str(refusal)
+
+
+@pytest.mark.parametrize(
+    "stored",
+    ["1" + "0" * 4300, "1" + "0" * 100_000, "100000000000000000000", "0." + "0" * 18 + "1", "0." + "0" * 5000 + "1"],
+    ids=["4301-digits", "100001-digits", "10^20", "19-places", "5001-places"],
+)
+def test_r12_3_a_stored_quantity_the_column_cannot_hold_refuses_before_its_spelling_is_read(stored: str) -> None:
+    # re-review R12-3: a 4,301-digit stored quantity raised ValueError inside the replay owner's canonical spelling
+    def change(payload: dict[str, Any]) -> None:
+        payload["hours"][1]["long_quantity"] = stored
+
+    data, digest = evidence_variant(change)
+    with localcontext() as caller:
+        caller.prec, caller.traps[Inexact] = 3, True
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_hour_evidence, data, expected_sha256=digest)
+    assert "long_quantity does not fit the liquidation table's NUMERIC(38,18)" in str(refusal)
+
+
+def test_r12_3_the_column_rule_is_the_v2_builders() -> None:
+    assert kraken.RAW_NUMERIC_LIMIT == v2._RAW_NUMERIC_LIMIT
+    assert Decimal((0, (1,), -kraken.RAW_NUMERIC_PLACES)) == v2.RAW_NUMERIC_QUANTUM
+    values = [
+        "0", "1", "1E-18", "1E-19", "1.5E-18", "0.0000000000000000015", "5E+19", "99999999999999999999.999999999999999999",
+        "1E+20", "100000000000000000000.000000000000000001", "123456789012345678901", "1E+4300", "1E-1000050", "1." + "0" * 300,
+    ]
+    for text in values:
+        value = Decimal(text)
+        try:
+            v2._require_raw_numeric(SimpleNamespace(quantity=value), ("quantity",), "a probe")
+            v2_holds = True
+        except v2.ExtendedReplayInputRefused:
+            v2_holds = False
+        assert kraken.fits_raw_numeric(value) is v2_holds, text
+
+
+@pytest.mark.parametrize("published", ["1e+1000000000000000000", "1E+99999999999999999999", "0e+1000000000000000000"])
+@pytest.mark.parametrize("trap", [True, False], ids=["caller-traps", "caller-does-not-trap"])
+def test_r12_4_a_published_exponent_no_decimal_can_hold_refuses_its_day_under_any_caller_context(published: str, trap: bool) -> None:
+    transport = precision_day(same_side(["1"]), published)
+    with localcontext() as caller:
+        caller.traps[InvalidOperation] = trap
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+    assert f"series value {published!r} at 2021-06-01T01:00:00+00:00 has an exponent no decimal can hold" in str(refusal)
+
+
+@pytest.mark.parametrize(
+    ("published", "corroboration"),
+    [(f"1E+{MAX_EMAX}", v2.CORROBORATION_DISAGREES), (f"0E+{MAX_EMAX}", v2.CORROBORATION_AGREES)],
+    ids=["one-at-the-largest-exponent", "zero-at-it"],
+)
+def test_r12_4_the_largest_published_exponent_reads_compares_and_reads_back(published: str, corroboration: str) -> None:
+    collection = kraken.read_liquidations(make_fetcher(precision_day(same_side(["1"]), published)), DAY, DAY, incidents=())
+    assert collection.hours[1].corroboration == corroboration
+    assert json.loads(collection.evidence_bytes)["hours"][1]["series_value"] == published
+    assert kraken.parse_liquidation_hour_evidence(collection.evidence_bytes, expected_sha256=collection.evidence_sha256) == collection.hours
+
+
+HUGE_JSON_NUMBER = b"1e+1000000000000000000"  # valid JSON; its exponent is past what decimal holds
+
+
+def read_with_a_huge_json_number(where: str) -> Any:
+    """Read a complete day, or its evidence, with one JSON number whose exponent no decimal can hold."""
+
+    executions = [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+    executions[1:1] = same_side(["7"])
+    page = fx.execution_page(executions)
+    series: dict[datetime, Any] = {hour: "0" for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = "7"
+    if where == "execution-page":
+        assert page.count(b'"quantity":"7"') == 1
+        page = page.replace(b'"quantity":"7"', b'"quantity":' + HUGE_JSON_NUMBER)
+    transport = day_world([page], series)
+    if where == "series":
+        series[utc(2021, 6, 1, 1)] = HUGE_JSON_NUMBER.decode()
+        transport.add(kraken.liquidation_volume_url(utc(2021, 6, 1), utc(2021, 6, 1, 23)), fx.series_body(series, quoted=False))
+    if where != "hour-evidence":
+        return lambda: kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+    evidence = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=()).evidence_bytes
+    assert evidence.count(b'"incident":false') == 24
+    tampered = evidence.replace(b'"incident":false', b'"incident":' + HUGE_JSON_NUMBER, 1)
+    return lambda: kraken.parse_liquidation_hour_evidence(tampered, expected_sha256=hashlib.sha256(tampered).hexdigest())
+
+
+@pytest.mark.parametrize(
+    ("where", "what"),
+    [("execution-page", "an execution page"), ("series", "the liquidation-volume series"), ("hour-evidence", "the hour evidence")],
+)
+@pytest.mark.parametrize("trap", [True, False], ids=["caller-traps", "caller-does-not-trap"])
+def test_r12_5_a_json_number_no_decimal_can_hold_refuses_under_any_caller_context(where: str, what: str, trap: bool) -> None:
+    # implementer-found R12-5: json.loads(parse_float=Decimal) raised InvalidOperation, which is not a ValueError
+    read = read_with_a_huge_json_number(where)
+    with localcontext() as caller:
+        caller.traps[InvalidOperation] = trap
+        refusal = refused("RESPONSE_SHAPE_REFUSED", read)
+    assert str(refusal).endswith(f"{what} holds a number no decimal can hold")
 
 
 @pytest.mark.parametrize(

@@ -119,11 +119,14 @@ _EXECUTION_FIELDS = frozenset(
 _PAGE_KEYS = frozenset({"elements", "len", "continuationToken"})
 # a chart value is a JSON string holding a non-negative decimal numeral (Part B's live check, ruling 5)
 _SERIES_NUMERAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
-_WIDE_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation, DivisionByZero, Overflow])
 # sums and the notional are exact or refused, whatever the caller's context (review F4)
 _EXACT_CONTEXT = Context(prec=80, rounding=ROUND_HALF_EVEN, traps=[Inexact, InvalidOperation, DivisionByZero, Overflow])
 # the widest exact sum one side of an hour may need before the 80-digit check (re-review R12-1)
 EXACT_SUM_MAX_DIGITS = 10_000
+# each side's quantity and notional fit the liquidation table's NUMERIC(38,18), as V2 requires of
+# these rows: below 10^20, nothing past the 18th place (re-review R12-3)
+RAW_NUMERIC_LIMIT = Decimal("1E+20")
+RAW_NUMERIC_PLACES = 18
 # a published value is spelled with a capital E, whatever the caller's ``capitals`` (re-review N3)
 _SPELLING_CONTEXT = Context(capitals=1)
 _HOUR_EVIDENCE_KEYS = frozenset(
@@ -147,9 +150,14 @@ def _refuse_shape(message: str) -> Any:
 
 def _json(data: bytes, what: str) -> Any:
     try:
-        return json.loads(data, parse_float=Decimal)
+        # every JSON number is read exactly; one whose exponent decimal cannot hold refuses whatever the
+        # caller's traps (re-review R12-5)
+        with localcontext(_EXACT_CONTEXT):
+            return json.loads(data, parse_float=Decimal)
     except (UnicodeDecodeError, ValueError):
         return _refuse_shape(f"{what} is not JSON")
+    except InvalidOperation:
+        return _refuse_shape(f"{what} holds a number no decimal can hold")
 
 
 def _quantity(value: Any, what: str) -> Decimal:
@@ -309,9 +317,11 @@ def parse_liquidation_volume(data: bytes, *, since: datetime, to: datetime) -> d
         if not isinstance(value, str) or not _SERIES_NUMERAL.fullmatch(value):
             return _refuse_shape(f"series value {value!r} is not a string holding a decimal numeral")
         hour = require_observation_in_window(datetime.fromtimestamp(stamp, tz=UTC), "a series point")
-        number = Decimal(value)
+        number = _numeral_value(value)
         if (hour.minute, hour.second) != (0, 0) or not since <= hour <= to:
             return _refuse_shape(f"series point {iso(hour)} is not an hour inside [{iso(since)}, {iso(to)}]")
+        if number is None:
+            return _refuse_shape(f"series value {value!r} at {iso(hour)} has an exponent no decimal can hold")
         if not number.is_finite() or number < 0:
             return _refuse_shape(f"series value {value!r} at {iso(hour)} must be non-negative")
         if hour in series:
@@ -338,13 +348,29 @@ def read_series_day(fetcher: Fetcher, day: date) -> SeriesDay:
 
 
 def corroborates(total: Decimal, published: Decimal) -> bool:
-    """Owner ruling 3: equal once ``total`` is rounded half-even to ``published``'s decimal places."""
+    """Owner ruling 3: equal once ``total`` is rounded half-even to ``published``'s decimal places.
+
+    The rounding never runs out of digits, however many places the published
+    value has (re-review R12-2). When its last place is at or below the
+    total's lowest non-zero digit nothing rounds, and the exact values are
+    compared. Otherwise the rounded total has at most one digit more than the
+    total has above that place: the precision is computed from the two
+    values, with ``decimal``'s widest exponent limits, never a fixed context.
+    """
 
     exponent = published.as_tuple().exponent
     if not isinstance(exponent, int):
         return False
-    with localcontext(_WIDE_CONTEXT):
-        return total.quantize(Decimal((0, (1,), exponent)), rounding=ROUND_HALF_EVEN) == published
+    if total.is_zero() or exponent <= _lowest_digit(total):
+        return total == published
+    context = Context(
+        prec=max(total.adjusted() - exponent + 2, 1),
+        rounding=ROUND_HALF_EVEN,
+        Emax=MAX_EMAX,
+        Emin=MIN_EMIN,
+        traps=[InvalidOperation, Overflow],
+    )
+    return total.quantize(Decimal((0, (1,), exponent)), context=context) == published
 
 
 # --- hours, rows and evidence -----------------------------------------------------------------
@@ -361,6 +387,20 @@ def _side(execution: Execution) -> str:
     return side
 
 
+def _numeral_value(value: str) -> Decimal | None:
+    """A numeral's exact value, or ``None`` when its exponent is past what ``decimal`` holds (re-review R12-4).
+
+    The conversion is exact at any precision; the context only makes such an
+    exponent signal the same way whatever the caller's traps.
+    """
+
+    try:
+        with localcontext(_EXACT_CONTEXT):
+            return Decimal(value)
+    except InvalidOperation:
+        return None
+
+
 def _overlaps(hour: datetime, incidents: Sequence[tuple[datetime, datetime]]) -> bool:
     return any(start < hour + _HOUR and hour < end for start, end in incidents)
 
@@ -370,6 +410,17 @@ def _lowest_digit(value: Decimal) -> int:
 
     _, digits, exponent = value.as_tuple()
     return exponent + len(digits) - len("".join(map(str, digits)).rstrip("0"))
+
+
+def fits_raw_numeric(value: Decimal) -> bool:
+    """A non-negative decimal the liquidation table's ``NUMERIC(38,18)`` holds as it is (re-review R12-3).
+
+    Exact comparisons only, no arithmetic, so no caller context and no
+    spelling length matters; a value that fits is spelled in at most 39
+    characters.
+    """
+
+    return value.is_zero() or (value < RAW_NUMERIC_LIMIT and _lowest_digit(value) >= -RAW_NUMERIC_PLACES)
 
 
 def exact_sum(values: Sequence[Decimal]) -> Decimal | None:
@@ -429,9 +480,17 @@ def hour_record(
                 )
             quantities[side] = _EXACT_CONTEXT.plus(value)
         with localcontext(_EXACT_CONTEXT):
+            notionals = {side: quantity * CONTRACT_SIZE_USD for side, quantity in quantities.items()}
             total = (quantities["long"] + quantities["short"]) * CONTRACT_SIZE_USD
     except Inexact:
         return _refuse_shape(f"hour {iso(hour)}: the liquidation quantities do not sum exactly")
+    # what the hour stores and persists fits the table, so its spelling always reads back (re-review R12-3)
+    for side, quantity in quantities.items():
+        if not (fits_raw_numeric(quantity) and fits_raw_numeric(notionals[side])):
+            return _refuse_shape(
+                f"hour {iso(hour)}: the {side} liquidation quantity or its notional does not fit the liquidation table's"
+                f" NUMERIC(38,18) (below 10^20, at most {RAW_NUMERIC_PLACES} places)"
+            )
     if incident or not in_hour:
         status, corroboration = epic_x.FEED_STATUS_SOURCE_UNAVAILABLE, v2.CORROBORATION_NOT_APPLICABLE
     else:
@@ -615,7 +674,12 @@ def _stored_quantity(text: Any, what: str) -> Decimal:
         value = Decimal(text) if isinstance(text, str) else None
     except InvalidOperation:
         value = None
-    if value is None or not value.is_finite() or value < 0 or v1.canonical_decimal(value) != text:
+    if value is None or not value.is_finite() or value < 0:
+        return _refuse_shape(f"{what} {text!r} is not a canonical non-negative decimal")
+    # before the spelling check: a numeral too long for ``int`` would raise there (re-review R12-3)
+    if not fits_raw_numeric(value):
+        return _refuse_shape(f"{what} does not fit the liquidation table's NUMERIC(38,18)")
+    if v1.canonical_decimal(value) != text:
         return _refuse_shape(f"{what} {text!r} is not a canonical non-negative decimal")
     return value
 
