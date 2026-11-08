@@ -213,10 +213,18 @@ class ExecutionDay:
     executions: tuple[Execution, ...]
     pages_sha256: tuple[str, ...]
     retrieved_at: datetime
+    out_of_order_steps: int  # executions listed before an earlier one (owner Part B ruling 12)
 
 
 def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
-    """The whole day ``[D 00:00, D+1 00:00)`` through one unbroken continuation chain."""
+    """The whole day ``[D 00:00, D+1 00:00)`` through one unbroken continuation chain.
+
+    The log is kept in the provider's order. An execution listed with an
+    earlier timestamp than the one before it is counted, not refused (owner
+    Part B ruling 12): the live log lists some days slightly out of time order,
+    and the hour records do not depend on the order. The chain itself must
+    still end, never repeat a token or a uid, and stay inside the day.
+    """
 
     since, before = midnight(day), midnight(day) + _DAY
     require_request_span(since, before, f"executions {day.isoformat()}")
@@ -226,6 +234,7 @@ def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
     tokens: set[str] = set()
     token: str | None = None
     retrieved_at = since
+    out_of_order = 0
     for _ in range(MAX_PAGES_PER_DAY):
         page = fetcher.fetch(executions_url(since, before, token))
         digests.append(page.sha256)
@@ -239,13 +248,13 @@ def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
                     f"execution {execution.uid} at {iso(execution.timestamp)} is outside the requested day {day.isoformat()}",
                 )
             if executions and execution.timestamp < executions[-1].timestamp:
-                raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"{day.isoformat()}: the log is not in ascending order")
+                out_of_order += 1
             if execution.uid in seen:
                 raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"execution {execution.uid} appears twice")
             seen.add(execution.uid)
             executions.append(execution)
         if token is None:
-            return ExecutionDay(day, tuple(executions), tuple(digests), retrieved_at)
+            return ExecutionDay(day, tuple(executions), tuple(digests), retrieved_at, out_of_order)
         if token in tokens:
             raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"{day.isoformat()}: a continuation token repeats")
         tokens.add(token)
@@ -611,6 +620,7 @@ class KrakenLiquidationCollection:
     rows: tuple[Liquidation, ...]
     hours: tuple[v2.LiquidationHourEvidence, ...]
     evidence_bytes: bytes
+    out_of_order_steps: int  # over every day read (owner Part B ruling 12)
 
     @property
     def evidence_sha256(self) -> str:
@@ -632,10 +642,12 @@ def read_liquidations(
     records: list[dict[str, Any]] = []
     rows: list[Liquidation] = []
     retrieved: list[datetime] = []
+    out_of_order = 0
     for day in data_window_days(first_day, last_day):
         log = read_execution_day(fetcher, day)
         series = read_series_day(fetcher, day)
         retrieved += [log.retrieved_at, series.retrieved_at]
+        out_of_order += log.out_of_order_steps
         for hour in hours_of(day):
             record = hour_record(
                 hour,
@@ -650,4 +662,4 @@ def read_liquidations(
     evidence = liquidation_hour_evidence_bytes(retrieved_at=max(retrieved), incidents=incidents, hours=records)
     # the typed hours are read back through the file's own parser, so writer and parser cannot drift
     hours = parse_liquidation_hour_evidence(evidence, expected_sha256=sha256_hex(evidence))
-    return KrakenLiquidationCollection(tuple(rows), hours, evidence)
+    return KrakenLiquidationCollection(tuple(rows), hours, evidence, out_of_order)

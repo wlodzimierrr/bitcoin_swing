@@ -710,7 +710,6 @@ def test_the_day_is_read_through_one_continuation_chain() -> None:
     ("pages", "reason"),
     [
         ([fx.execution_page([fx.execution("a", utc(2021, 6, 2))])], "CONTINUATION_CHAIN_REFUSED"),
-        ([fx.execution_page([fx.execution("b", utc(2021, 6, 1, 5)), fx.execution("a", utc(2021, 6, 1, 4))])], "CONTINUATION_CHAIN_REFUSED"),
         ([fx.execution_page([fx.execution("a", utc(2021, 6, 1, 1))], "token-0"), fx.execution_page([fx.execution("a", utc(2021, 6, 1, 2))])], "DUPLICATE_PROVIDER_RECORD"),
         ([fx.execution_page([], "token-0"), fx.execution_page([], "token-0")], "CONTINUATION_CHAIN_REFUSED"),
         ([b'{"elements":[],"len":1}'], "RESPONSE_SHAPE_REFUSED"),
@@ -718,10 +717,98 @@ def test_the_day_is_read_through_one_continuation_chain() -> None:
         ([b'{"elements":[{"event":{}}],"len":1}'], "RESPONSE_SHAPE_REFUSED"),
         ([fx.execution_page([fx.execution("a", utc(2021, 6, 1, 1), quantity="0")])], "RESPONSE_SHAPE_REFUSED"),
     ],
-    ids=["outside-day", "descending", "duplicate-uid", "repeated-token", "len", "extra-key", "no-execution", "zero-quantity"],
+    ids=["outside-day", "duplicate-uid", "repeated-token", "len", "extra-key", "no-execution", "zero-quantity"],
 )
 def test_a_broken_execution_chain_is_refused(pages: list[bytes], reason: str) -> None:
     refused(reason, kraken.read_execution_day, make_fetcher(day_world(pages)), DAY)
+
+
+# --- owner Part B ruling 12: a day listed out of time order is read, its steps back counted ----------
+
+
+def test_ruling_12_a_day_listed_out_of_time_order_is_read_whole_in_the_providers_order() -> None:
+    # the live log listed 2021-07-15 with one execution 1 ms before the one above it
+    noon = utc(2021, 6, 1, 13)
+    first = fx.execution_page(
+        [
+            fx.execution("b", utc(2021, 6, 1, 5)),
+            fx.execution("a", utc(2021, 6, 1, 4)),  # back an hour
+            fx.execution("c", utc(2021, 6, 1, 4)),  # the same instant is not a step back
+            fx.execution("m2", noon + timedelta(milliseconds=2)),
+            fx.execution("m1", noon + timedelta(milliseconds=1)),  # back 1 ms
+        ],
+        token="token-0",
+    )
+    second = fx.execution_page([fx.execution("d", noon), fx.execution("e", utc(2021, 6, 1, 23, 59))])  # back across the pages
+    read = kraken.read_execution_day(make_fetcher(day_world([first, second])), DAY)
+    assert [item.uid for item in read.executions] == ["b", "a", "c", "m2", "m1", "d", "e"]
+    assert read.out_of_order_steps == 3 and len(read.pages_sha256) == 2
+
+
+def test_ruling_12_a_day_in_time_order_counts_no_step_back() -> None:
+    page = fx.execution_page([fx.execution("a", utc(2021, 6, 1, 4)), fx.execution("b", utc(2021, 6, 1, 4)), fx.execution("c", utc(2021, 6, 1, 5))])
+    assert kraken.read_execution_day(make_fetcher(day_world([page])), DAY).out_of_order_steps == 0
+
+
+@pytest.mark.parametrize(
+    ("pages", "reason", "detail", "reads"),
+    [
+        ([fx.execution_page([fx.execution("b", utc(2021, 6, 1, 5)), fx.execution("a", datetime(2021, 5, 31, 23, 59, 59, tzinfo=UTC))])],
+         "CONTINUATION_CHAIN_REFUSED", "is outside the requested day", 1),
+        ([fx.execution_page([fx.execution("b", utc(2021, 6, 1, 5)), fx.execution("a", utc(2021, 6, 2, 0))])],
+         "CONTINUATION_CHAIN_REFUSED", "is outside the requested day", 1),
+        ([fx.execution_page([fx.execution("b", utc(2021, 6, 1, 5)), fx.execution("a", utc(2021, 6, 1, 4))], "token-0"), fx.execution_page([fx.execution("b", utc(2021, 6, 1, 3))])],
+         "DUPLICATE_PROVIDER_RECORD", "appears twice", 2),
+        ([fx.execution_page([fx.execution("b", utc(2021, 6, 1, 5)), fx.execution("a", utc(2021, 6, 1, 4))], "token-0"), fx.execution_page([], "token-0")],
+         "CONTINUATION_CHAIN_REFUSED", "a continuation token repeats", 2),
+    ],
+    ids=["back-before-the-day", "past-the-day", "duplicate-uid", "repeated-token"],
+)
+def test_ruling_12_a_day_out_of_order_still_refuses_a_broken_chain(pages: list[bytes], reason: str, detail: str, reads: int) -> None:
+    transport = day_world(pages)
+    refusal = refused(reason, kraken.read_execution_day, make_fetcher(transport), DAY)
+    assert detail in str(refusal) and len(transport.urls) == reads  # refused by its own check, at the page that breaks the chain
+
+
+def test_ruling_12_an_execution_out_of_order_in_the_holdout_is_still_an_exposure() -> None:
+    page = fx.execution_page([fx.execution("b", utc(2025, 12, 31, 5)), fx.execution("a", utc(2026, 1, 1)), fx.execution("c", utc(2025, 12, 31, 4))])
+    transport = day_world([page], day=date(2025, 12, 31))
+    refused("OBSERVATION_OUTSIDE_DATA_WINDOW", kraken.read_execution_day, make_fetcher(transport), date(2025, 12, 31))
+
+
+def without_page_digests(collection: kraken.KrakenLiquidationCollection) -> dict[str, Any]:
+    evidence = json.loads(collection.evidence_bytes)
+    for hour in evidence["hours"]:
+        assert hour.pop("pages_sha256")
+    return evidence
+
+
+def test_ruling_12_the_hours_and_rows_do_not_depend_on_the_listing_order() -> None:
+    _, executions = liquidation_day()
+    series = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = "1500"
+    series[utc(2021, 6, 1, 3)] = "50"
+    listings = {
+        "in order": [fx.execution_page(executions)],
+        "reversed": [fx.execution_page(executions[::-1])],
+        "reversed across pages": [fx.execution_page(executions[:0:-1], token="token-0"), fx.execution_page(executions[:1])],
+    }
+    collections = {
+        name: kraken.read_liquidations(make_fetcher(day_world(pages, series)), DAY, DAY, incidents=()) for name, pages in listings.items()
+    }
+    steps = len(executions) - 1  # every execution of the day is listed at a distinct instant
+    assert {name: collection.out_of_order_steps for name, collection in collections.items()} == {
+        "in order": 0, "reversed": steps, "reversed across pages": steps,
+    }
+    in_order = collections["in order"]
+    assert len(in_order.rows) == 3
+    def classified(collection: kraken.KrakenLiquidationCollection) -> list[tuple[datetime, str, str]]:
+        return [(hour.hour_start, hour.feed_status, hour.corroboration) for hour in collection.hours]
+
+    for collection in collections.values():
+        assert collection.rows == in_order.rows and classified(collection) == classified(in_order)
+        # the hour records differ only in the digests of the pages they were read from
+        assert without_page_digests(collection) == without_page_digests(in_order)
 
 
 def test_an_execution_in_the_holdout_is_an_exposure() -> None:

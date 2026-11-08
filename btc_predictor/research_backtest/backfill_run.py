@@ -545,6 +545,7 @@ def liquidation_unit(ctx: RunContext, unit: str) -> UnitOutput:
         "feed_status": dict(sorted(Counter(hour.feed_status for hour in collection.hours).items())),
         "corroboration": dict(sorted(Counter(hour.corroboration for hour in collection.hours).items())),
         "disagreeing_hours": [iso(hour.hour_start) for hour in collection.hours if hour.corroboration == "DISAGREES"],
+        "out_of_order_steps": collection.out_of_order_steps,  # owner Part B ruling 12
         "evidence_sha256": collection.evidence_sha256,
         "evidence_size": len(collection.evidence_bytes),
         "gzip": {"zlib_version": zlib.ZLIB_VERSION, "compresslevel": 9, "mtime": 0},

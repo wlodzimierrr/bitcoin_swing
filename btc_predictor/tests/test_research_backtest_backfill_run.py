@@ -1493,6 +1493,52 @@ def test_a_liquidation_day_keeps_its_gzipped_evidence_and_persists_its_rows(stor
     assert b"777000005" not in files["summary.json"] and b"777000005" not in files["retrievals.json"]
 
 
+def liquidation_world(*, in_order: bool) -> FakeTransport:
+    transport = FakeTransport()
+    transport.add(run.TARDIS_EXCHANGE_URL, tardis_body())
+    start = utc(2021, 6, 1)
+    executions = [fx.execution(f"e{hour}", start + timedelta(hours=hour, minutes=5)) for hour in range(24)]
+    executions.append(fx.execution("liq", start + timedelta(hours=3, minutes=7), quantity="777000005", order_type="Liquidation", direction="Sell"))
+    if in_order:
+        executions.sort(key=lambda item: item["timestamp"])
+    transport.add(kraken.executions_url(start, start + timedelta(days=1)), fx.execution_page(executions))  # else "liq" is listed last
+    series = {start + timedelta(hours=hour): ("777000005" if hour == 3 else "0") for hour in range(24)}
+    transport.add(kraken.liquidation_volume_url(start, start + timedelta(hours=23)), fx.series_body(series))
+    return transport
+
+
+@pytest.mark.parametrize(("in_order", "steps"), [(True, 0), (False, 1)], ids=["in-order", "out-of-order"])
+def test_ruling_12_a_liquidation_day_listed_out_of_order_is_collected_and_its_summary_counts_the_steps_back(
+    store: run.EvidenceStore, in_order: bool, steps: int
+) -> None:
+    ctx = context(liquidation_world(in_order=in_order), store, Database())
+    assert run.run_unit(ctx, "kraken-incidents", "all").status == "DONE"
+    report_ = run.run_unit(ctx, "kraken-liquidations", "2021-06-01")
+    assert report_.status == "DONE", report_.detail
+    files = unit_files(store, "kraken-liquidations", "2021-06-01")
+    summary = json.loads(files["summary.json"])
+    assert summary["out_of_order_steps"] == steps and summary["rows"] == 1 and summary["corroboration"] == {"AGREES": 24}
+    assert json.loads(files["DONE.json"])["persisted"] == {"liquidations": 1}
+    assert run.run_unit(ctx, "kraken-liquidations", "2021-06-01").status == "SKIPPED"
+
+
+def test_ruling_12_a_liquidation_day_out_of_order_interrupted_after_its_commit_is_read_again_with_its_instants(
+    store: run.EvidenceStore,
+) -> None:
+    database = Database()
+    assert run.run_unit(advancing_context(liquidation_world(in_order=False), store), "kraken-incidents", "all").status == "DONE"
+    run_interrupted(store, advancing_context(liquidation_world(in_order=False), store, database), "kraken-liquidations", "2021-06-01")
+    committed = available_at(database)
+    before = prepared_files(store, "kraken-liquidations", "2021-06-01")
+    assert committed and json.loads(before["summary.json"])["out_of_order_steps"] == 1
+    transport, database_again = liquidation_world(in_order=False), Database()
+    report_ = run.run_unit(advancing_context(transport, store, database_again, start=LATER), "kraken-liquidations", "2021-06-01")
+    assert report_.status == "DONE", report_.detail
+    assert available_at(database_again) == committed
+    after = unit_files(store, "kraken-liquidations", "2021-06-01")
+    assert {name: data for name, data in after.items() if name != "DONE.json"} == before
+
+
 # --- the single reads --------------------------------------------------------------------------
 
 
