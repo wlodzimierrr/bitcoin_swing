@@ -1480,8 +1480,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   to sum each side's quantities exactly and re-review; the review-fix
   `029057e` fixed that, and its re-review the same day FAILED with two P2
   findings, numeric inputs that raise instead of refusing, which the owner
-  chose to fix and re-review; the second review-fix `7808213` is committed
-  and awaits its re-review), with the collection on
+  chose to fix and re-review; the second review-fix `7808213` fixed most
+  of them, and its re-review the same day FAILED with two P2 findings,
+  malformed evidence files that raise instead of refusing, which the owner
+  chose to fix, with two more found by the implementer, and re-review),
+  with the collection on
   the reviewed code having run to its end past the refused days, which
   wait for that PASS).
   All four V4 data
@@ -1775,13 +1778,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   places, and a quantity too long for the evidence reader, each raise
   instead of refusing the day), and the owner chose to fix them, with a
   third of the same kind found by the implementer, then re-review; the
-  second review-fix (`7808213`, R12-2 to R12-5) is committed and awaits its
-  independent re-review. The collection ran to its end on the reviewed
+  second review-fix (`7808213`, R12-2 to R12-5) fixed them, R12-3 in part.
+  Its re-review FAILED with two P2 findings (an evidence file storing a
+  long spelling of a quantity that fits, or a JSON number the canonical
+  writer cannot write, raises instead of refusing), and the owner chose to
+  fix them, with two more found by the implementer (a response nested too
+  deeply to decode; a refusal message that varies with the caller's decimal
+  context), then re-review. The collection ran to its end on the reviewed
   code, past the refused days, which wait for that PASS; CoinGlass
   follows. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B ruling 12
+  third re-review, 2026-11-08, **independent xHigh FAIL** (same Codex
+  session, report-only) of the second review-fix `7808213` and docs
+  `490c1f0`: R12-2, R12-4 and R12-5 FIXED, R12-3 FIXED IN PART; R12-1,
+  ruling 12, Part B's earlier fixes and rulings 5, 9, 10 and 11 hold; two
+  P2 in the hour evidence parser (R12-6, a long spelling of a quantity that
+  fits; R12-7, a JSON number the canonical writer cannot write), neither
+  admitting a wrong row. The owner chose to fix both, with two more found
+  by the implementer (R12-8, R12-9), and re-review. Details in EPIC Y's
+  RBT-003 Part B ruling 12 third re-review outcome. Before it, the ruling 12
   second re-review, 2026-11-08, **independent xHigh FAIL** (same Codex
   session, report-only) of the review-fix `029057e` and docs `863ef06`:
   R12-1 FIXED; ruling 12, Part B's earlier fixes and rulings 5, 9, 10 and
@@ -2180,9 +2197,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **re-review of the RBT-003 Part B ruling 12 second review-fix**
-  (`863ef06..` its record); the
+- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
+  ruling 12 third review-fix** (R12-6 to R12-9, malformed responses and
+  evidence refused instead of raising), its validation and its independent
+  re-review; the
   Kraken liquidation collection on the reviewed code has run
   to its end past the refused days; on PASS, the refused days, CoinGlass
   (`--allow-coinglass`) and the dataset build. RBT-006 stays blocked
@@ -2810,7 +2828,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   ruling 12's code `fd702fe` with docs `e3b69b5`; the ruling 12
   re-review FAIL `724b488`; the review-fix `029057e` (R12-1) with docs
   `863ef06`; the second re-review FAIL `49ca348`; the second review-fix
-  `7808213` (R12-2 to R12-5) with this documentation commit.
+  `7808213` (R12-2 to R12-5) with docs `490c1f0`; the third re-review FAIL
+  in this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
