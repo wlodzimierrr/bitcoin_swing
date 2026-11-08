@@ -2128,6 +2128,164 @@ def test_r12_5_a_json_number_no_decimal_can_hold_refuses_under_any_caller_contex
     assert str(refusal).endswith(f"{what} holds a number no decimal can hold")
 
 
+LARGEST_FITTING = "99999999999999999999.999999999999999999"  # the column's largest value, canonically spelled
+
+
+def test_r12_6_the_spelling_limit_is_the_longest_canonical_spelling_of_a_value_that_fits() -> None:
+    assert len(LARGEST_FITTING) == kraken.RAW_NUMERIC_SPELLING_MAX
+    for text in [LARGEST_FITTING, "12345678901234567890.123456789012345678", "99999999999999999999", "0.000000000000000001", "0"]:
+        value = Decimal(text)
+        assert kraken.fits_raw_numeric(value) and v1.canonical_decimal(value) == text
+        assert len(text) <= kraken.RAW_NUMERIC_SPELLING_MAX
+
+
+@pytest.mark.parametrize(
+    "stored",
+    [
+        "1." + "0" * 4300,  # the review's case: exactly 1, a coefficient of 4,301 digits
+        "1." + "0" * 100_000,
+        "0.000000000000000001" + "0" * 4300,
+        LARGEST_FITTING + "0" * 4300,
+        "0" * 5000 + "1." + "0" * 5000,
+    ],
+    ids=["one-4300-zeros", "one-100000-zeros", "smallest-4300-zeros", "largest-4300-zeros", "leading-and-trailing-zeros"],
+)
+@pytest.mark.parametrize("side", ["long_quantity", "short_quantity"])
+@pytest.mark.parametrize("hostile", [False, True], ids=["default-context", "hostile-context"])
+def test_r12_6_a_long_spelling_of_a_stored_quantity_that_fits_refuses_as_not_canonical(stored: str, side: str, hostile: bool) -> None:
+    # re-review R12-6: the value fits, so the column check passed, and canonical_decimal's int raised ValueError
+    assert kraken.fits_raw_numeric(Decimal(stored))
+
+    def change(payload: dict[str, Any]) -> None:
+        payload["hours"][1][side] = stored
+
+    data, digest = evidence_variant(change)
+    with localcontext() as caller:
+        if hostile:
+            caller.prec, caller.traps[Inexact], caller.traps[InvalidOperation] = 3, True, False
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_hour_evidence, data, expected_sha256=digest)
+    assert f"{side} {stored!r} is not a canonical non-negative decimal" in str(refusal)
+
+
+@pytest.mark.parametrize("spelling", ["1." + "0" * 4300, "1." + "0" * 100_000], ids=["4300-zeros", "100000-zeros"])
+def test_r12_6_a_long_spelled_execution_quantity_is_stored_canonically_and_reads_back(spelling: str) -> None:
+    collection = kraken.read_liquidations(make_fetcher(precision_day(same_side([spelling]), "1")), DAY, DAY, incidents=())
+    assert json.loads(collection.evidence_bytes)["hours"][1]["long_quantity"] == "1"
+    assert [(row.side, row.quantity) for row in collection.rows] == [("long", Decimal(1))]
+    assert collection.hours[1].corroboration == v2.CORROBORATION_AGREES
+    assert kraken.parse_liquidation_hour_evidence(collection.evidence_bytes, expected_sha256=collection.evidence_sha256) == collection.hours
+
+
+@pytest.mark.parametrize("number", [b"1.0", b"1e1", b"0.5", b"NaN", b"Infinity", b"-Infinity"])
+@pytest.mark.parametrize("field", ["contract_size_usd", "execution_count", "long_quantity", "series_value", "incident"])
+def test_r12_7_a_json_number_the_canonical_writer_cannot_write_refuses_the_evidence(field: str, number: bytes) -> None:
+    # re-review R12-7: a JSON fraction decoded as a Decimal (TypeError) or a non-finite float (ValueError) in the canonical check
+    def change(payload: dict[str, Any]) -> None:
+        (payload if field == "contract_size_usd" else payload["hours"][1])[field] = "R12-7 SENTINEL"
+
+    data, _ = evidence_variant(change)
+    assert data.count(b'"R12-7 SENTINEL"') == 1
+    tampered = data.replace(b'"R12-7 SENTINEL"', number)
+    refusal = refused(
+        "RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_hour_evidence, tampered, expected_sha256=hashlib.sha256(tampered).hexdigest()
+    )
+    assert str(refusal).endswith("the hour evidence is not the canonical file with exactly its keys")
+
+
+def test_r12_7_the_canonical_check_refuses_when_the_writer_runs_out_of_depth(monkeypatch: pytest.MonkeyPatch) -> None:
+    # the decoder and the writer reach the same depth today; a writer that ran out of it first refuses too
+    transport, _ = liquidation_day()
+    collection = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+
+    def out_of_depth(value: Any) -> bytes:
+        raise RecursionError("maximum recursion depth exceeded while encoding a JSON object")
+
+    monkeypatch.setattr(kraken, "canonical_json_bytes", out_of_depth)
+    refusal = refused(
+        "RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_hour_evidence, collection.evidence_bytes, expected_sha256=collection.evidence_sha256
+    )
+    assert str(refusal).endswith("the hour evidence is not the canonical file with exactly its keys")
+
+
+def nested(depth: int) -> bytes:
+    return b"[" * depth + b"]" * depth
+
+
+def deepest_decodable_nesting() -> int:
+    """The deepest array nesting this interpreter's JSON decoder reads (about 10,000 on CPython 3.12)."""
+
+    low, high = 1, 1_000_000
+    while low < high:
+        middle = (low + high + 1) // 2
+        try:
+            json.loads(nested(middle))
+            low = middle
+        except RecursionError:
+            high = middle - 1
+    return low
+
+
+def read_with_a_json_value(where: str, value: bytes) -> Any:
+    """Read a complete day, or its evidence, with ``value``'s JSON text in place of one of its values."""
+
+    executions = [fx.execution(f"x{hour}", utc(2021, 6, 1, hour, 30)) for hour in range(24)]
+    executions[1:1] = same_side(["7"])
+    page = fx.execution_page(executions)
+    series: dict[datetime, Any] = {hour: "0" for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = "7"
+    if where == "execution-page":
+        assert page.count(b'"quantity":"7"') == 1
+        page = page.replace(b'"quantity":"7"', b'"quantity":' + value)
+    transport = day_world([page], series)
+    if where == "series":
+        series[utc(2021, 6, 1, 1)] = value.decode()
+        transport.add(kraken.liquidation_volume_url(utc(2021, 6, 1), utc(2021, 6, 1, 23)), fx.series_body(series, quoted=False))
+    if where != "hour-evidence":
+        return lambda: kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=())
+    evidence = kraken.read_liquidations(make_fetcher(transport), DAY, DAY, incidents=()).evidence_bytes
+    assert evidence.count(b'"incident":false') == 24
+    tampered = evidence.replace(b'"incident":false', b'"incident":' + value, 1)
+    return lambda: kraken.parse_liquidation_hour_evidence(tampered, expected_sha256=hashlib.sha256(tampered).hexdigest())
+
+
+@pytest.mark.parametrize(
+    ("where", "what"),
+    [("execution-page", "an execution page"), ("series", "the liquidation-volume series"), ("hour-evidence", "the hour evidence")],
+)
+def test_r12_8_a_body_nested_too_deeply_to_decode_refuses_in_every_reader(where: str, what: str) -> None:
+    # implementer-found R12-8: the decoder's RecursionError is not a ValueError
+    limit = deepest_decodable_nesting()
+    for depth in [limit + 1, 100_000, 1_000_000]:
+        refusal = refused("RESPONSE_SHAPE_REFUSED", read_with_a_json_value(where, nested(depth)))
+        assert str(refusal).endswith(f"{what} is nested too deeply to read"), depth
+    for depth in range(limit - 10, limit + 11):  # around the decoder's depth: refused by depth or by shape, never raised
+        refused("RESPONSE_SHAPE_REFUSED", read_with_a_json_value(where, nested(depth)))
+
+
+@pytest.mark.parametrize("quantity", ["1e+1000000000000000000", "seven"], ids=["exponent-no-decimal-holds", "no-numeral"])
+@pytest.mark.parametrize("trap", [True, False], ids=["caller-traps", "caller-does-not-trap"])
+def test_r12_9_an_execution_quantity_decimal_cannot_read_refuses_the_same_way_under_any_caller_context(quantity: str, trap: bool) -> None:
+    # implementer-found R12-9: read in the caller's context, the message turned on its InvalidOperation trap
+    transport = precision_day(same_side([quantity]), "1")
+    with localcontext() as caller:
+        caller.traps[InvalidOperation] = trap
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_liquidations, make_fetcher(transport), DAY, DAY, incidents=())
+    assert str(refusal).endswith(f"execution l0 quantity {quantity!r} is not a decimal")
+
+
+@pytest.mark.parametrize("published", ["1e+1000000000000000000", "1E+99999999999999999999", "seven"])
+@pytest.mark.parametrize("trap", [True, False], ids=["caller-traps", "caller-does-not-trap"])
+def test_r12_9_a_stored_published_value_decimal_cannot_read_refuses_the_same_way_under_any_caller_context(published: str, trap: bool) -> None:
+    def change(payload: dict[str, Any]) -> None:
+        payload["hours"][1]["series_value"] = published
+
+    data, digest = evidence_variant(change)
+    with localcontext() as caller:
+        caller.traps[InvalidOperation] = trap
+        refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.parse_liquidation_hour_evidence, data, expected_sha256=digest)
+    assert str(refusal).endswith(f"series_value {published!r} is not a published decimal with its response digest")
+
+
 @pytest.mark.parametrize(
     ("quantity", "prec", "emin", "trap_inexact"),
     [(FULL_WIDTH, 28, None, True), ("0.000000000000000001", 3, -5, False), ("1234.5", 3, None, True)],

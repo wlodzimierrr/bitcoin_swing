@@ -127,6 +127,8 @@ EXACT_SUM_MAX_DIGITS = 10_000
 # these rows: below 10^20, nothing past the 18th place (re-review R12-3)
 RAW_NUMERIC_LIMIT = Decimal("1E+20")
 RAW_NUMERIC_PLACES = 18
+# the longest canonical spelling of a value that fits: 20 integer digits, the point and 18 places (re-review R12-6)
+RAW_NUMERIC_SPELLING_MAX = 39
 # a published value is spelled with a capital E, whatever the caller's ``capitals`` (re-review N3)
 _SPELLING_CONTEXT = Context(capitals=1)
 _HOUR_EVIDENCE_KEYS = frozenset(
@@ -158,14 +160,17 @@ def _json(data: bytes, what: str) -> Any:
         return _refuse_shape(f"{what} is not JSON")
     except InvalidOperation:
         return _refuse_shape(f"{what} holds a number no decimal can hold")
+    except RecursionError:
+        # a body nested past the decoder's depth refuses instead of raising (re-review R12-8)
+        return _refuse_shape(f"{what} is nested too deeply to read")
 
 
 def _quantity(value: Any, what: str) -> Decimal:
     if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
         return _refuse_shape(f"{what} {value!r} is not a decimal")
-    try:
-        number = Decimal(str(value))
-    except InvalidOperation:
+    # read in the exact context, so the same text refuses the same way whatever the caller's traps (re-review R12-9)
+    number = _numeral_value(str(value))
+    if number is None:
         return _refuse_shape(f"{what} {value!r} is not a decimal")
     if not number.is_finite() or number <= 0:
         return _refuse_shape(f"{what} {value!r} must be positive")
@@ -388,10 +393,11 @@ def _side(execution: Execution) -> str:
 
 
 def _numeral_value(value: str) -> Decimal | None:
-    """A numeral's exact value, or ``None`` when its exponent is past what ``decimal`` holds (re-review R12-4).
+    """A numeral's exact value, or ``None`` when ``decimal`` cannot read it (re-review R12-4, R12-9).
 
-    The conversion is exact at any precision; the context only makes such an
-    exponent signal the same way whatever the caller's traps.
+    ``None`` for an exponent past what ``decimal`` holds, or for text that is
+    no numeral at all. The conversion is exact at any precision; the context
+    only makes such text signal the same way whatever the caller's traps.
     """
 
     try:
@@ -607,7 +613,7 @@ def parse_liquidation_hour_evidence(data: bytes, *, expected_sha256: str) -> tup
     if not isinstance(data, bytes) or sha256_hex(data) != expected_sha256:
         return _refuse_shape("the hour evidence does not match its bound SHA-256")
     payload = _json(data, "the hour evidence")
-    if not isinstance(payload, dict) or canonical_json_bytes(payload) != data or set(payload) != _HOUR_EVIDENCE_KEYS:
+    if not isinstance(payload, dict) or not _is_canonical(payload, data) or set(payload) != _HOUR_EVIDENCE_KEYS:
         return _refuse_shape("the hour evidence is not the canonical file with exactly its keys")
     declared = {key: payload[key] for key in _HOUR_EVIDENCE_KEYS - {"retrieved_at", "incidents", "hours"}}
     if declared != _declared_constants():
@@ -629,6 +635,20 @@ def parse_liquidation_hour_evidence(data: bytes, *, expected_sha256: str) -> tup
         _check_hour(record, hour, incidents)
         typed.append(hour_evidence(record))
     return tuple(typed)
+
+
+def _is_canonical(payload: Any, data: bytes) -> bool:
+    """Whether ``data`` is the canonical encoding of what it decodes to (re-review R12-7).
+
+    A JSON fraction decodes as a ``Decimal``, and ``NaN`` or an infinity as a
+    float, none of which the canonical writer writes; such a body, or one
+    nested too deeply for the writer, is not the canonical file.
+    """
+
+    try:
+        return canonical_json_bytes(payload) == data
+    except (TypeError, ValueError, RecursionError):
+        return False
 
 
 def _declared_constants() -> dict[str, Any]:
@@ -679,7 +699,9 @@ def _stored_quantity(text: Any, what: str) -> Decimal:
     # before the spelling check: a numeral too long for ``int`` would raise there (re-review R12-3)
     if not fits_raw_numeric(value):
         return _refuse_shape(f"{what} does not fit the liquidation table's NUMERIC(38,18)")
-    if v1.canonical_decimal(value) != text:
+    # a longer spelling of a value that fits is not canonical, refused before ``canonical_decimal`` converts its
+    # digits with ``int``, which raises past 4,300 of them (re-review R12-6)
+    if len(text) > RAW_NUMERIC_SPELLING_MAX or v1.canonical_decimal(value) != text:
         return _refuse_shape(f"{what} {text!r} is not a canonical non-negative decimal")
     return value
 
@@ -713,10 +735,8 @@ def _check_hour(record: Mapping[str, Any], hour: datetime, incidents: Sequence[t
         return _refuse_shape(f"{what}: liquidations without a quantity")
     published = record["series_value"]
     if published is not None:
-        try:
-            series_value = Decimal(published) if isinstance(published, str) else None
-        except InvalidOperation:
-            series_value = None
+        # read in the exact context, so the same text refuses the same way whatever the caller's traps (re-review R12-9)
+        series_value = _numeral_value(published) if isinstance(published, str) else None
         if series_value is None or published_spelling(series_value) != published or series_digest is None:
             return _refuse_shape(f"{what}: series_value {published!r} is not a published decimal with its response digest")
     if incident or count == 0:
@@ -731,7 +751,7 @@ def _check_hour(record: Mapping[str, Any], hour: datetime, incidents: Sequence[t
                     total = (long + short) * CONTRACT_SIZE_USD
             except Inexact:
                 return _refuse_shape(f"{what}: the stored quantities do not sum exactly")
-            agrees = corroborates(total, Decimal(published))
+            agrees = corroborates(total, series_value)
             expected = (status, v2.CORROBORATION_AGREES if agrees else v2.CORROBORATION_DISAGREES)
     if (record["feed_status"], record["corroboration"]) != expected:
         return _refuse_shape(f"{what}: {record['feed_status']}/{record['corroboration']} is not the derived {expected[0]}/{expected[1]}")
