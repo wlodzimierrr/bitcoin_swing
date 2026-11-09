@@ -824,6 +824,226 @@ def test_ruling_12_the_hours_and_rows_do_not_depend_on_the_listing_order() -> No
         assert without_page_digests(collection) == without_page_digests(in_order)
 
 
+# --- owner Part B ruling 13: an identical copy of an execution collapses to one, counted ---------------
+
+
+def element_text(element: dict[str, Any]) -> bytes:
+    return json.dumps(element, separators=(",", ":")).encode()
+
+
+def page_of(*elements: bytes) -> bytes:
+    """A page from each element's own JSON text, so a copy may differ from its first listing in spelling alone."""
+
+    return b'{"elements":[' + b",".join(elements) + b'],"len":' + str(len(elements)).encode() + b"}"
+
+
+def test_ruling_13_a_block_listed_twice_back_to_back_collapses_to_one_listing() -> None:
+    # the live log listed 2022-12-15, 2023-02-14, 2023-02-20 and 2023-03-17 with one block of executions twice in a row
+    block = [fx.execution(uid, utc(2021, 6, 1, hour)) for uid, hour in (("a", 1), ("b", 2), ("c", 3))]
+    page = fx.execution_page([*block, *block, fx.execution("d", utc(2021, 6, 1, 4))])
+    read = kraken.read_execution_day(make_fetcher(day_world([page])), DAY)
+    assert [item.uid for item in read.executions] == ["a", "b", "c", "d"]
+    assert read.duplicate_copies == 3 and read.out_of_order_steps == 0  # a copy is not in the log, so no step back
+
+
+def test_ruling_13_copies_across_pages_and_repeated_copies_are_each_counted() -> None:
+    a, b, c = (fx.execution(uid, utc(2021, 6, 1, hour)) for uid, hour in (("a", 5), ("b", 4), ("c", 6)))
+    first = fx.execution_page([a, b, a], token="token-0")
+    second = fx.execution_page([b, a, c, c])
+    read = kraken.read_execution_day(make_fetcher(day_world([first, second])), DAY)
+    assert [item.uid for item in read.executions] == ["a", "b", "c"] and len(read.pages_sha256) == 2
+    assert read.duplicate_copies == 4 and read.out_of_order_steps == 1  # only b, listed after a, steps back
+
+
+def test_ruling_13_a_day_without_copies_counts_none() -> None:
+    page = fx.execution_page([fx.execution("a", utc(2021, 6, 1, 4)), fx.execution("b", utc(2021, 6, 1, 5))])
+    assert kraken.read_execution_day(make_fetcher(day_world([page])), DAY).duplicate_copies == 0
+    assert kraken.parse_execution_page(page)[1] is None  # the public page parser keeps its shape
+
+
+def reordered(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: reordered(value[key]) for key in reversed(list(value))}
+    return value
+
+
+def test_ruling_13_whitespace_key_order_and_string_escapes_do_not_make_a_copy_differ() -> None:
+    a = fx.execution("a", utc(2021, 6, 1, 4))
+    spaced = json.dumps(reordered(a), indent=2).encode()
+    escaped = json.dumps(a).encode().replace(b'"Limit"', b'"\\u004cimit"')
+    assert escaped != json.dumps(a).encode() and json.loads(escaped) == a
+    read = kraken.read_execution_day(make_fetcher(day_world([page_of(element_text(a), spaced, escaped)])), DAY)
+    assert [item.uid for item in read.executions] == ["a"] and read.duplicate_copies == 2
+
+
+def with_extra(value: bytes) -> bytes:
+    """Execution ``a``'s element with one more element-level field holding ``value``'s JSON text."""
+
+    text = element_text(fx.execution("a", utc(2021, 6, 1, 4)))
+    return text[:-1] + b',"extra":' + value + b"}"
+
+
+# the first listing's and the repeat's values of one field: each pair differs, in value, type or spelling
+DIFFERING_VALUES = [
+    (b"1", b"2"),
+    (b"1", b"1.0"),
+    (b"1", b"1e0"),
+    (b"1e0", b"1E0"),
+    (b"1.0", b"1.00"),
+    (b"0", b"-0"),
+    (b"100", b"1E+2"),
+    (b"1", b'"1"'),
+    (b"null", b'"null"'),
+    (b"NaN", b'"NaN"'),
+    (b"Infinity", b'"Infinity"'),
+    (b"-Infinity", b"Infinity"),
+    (b"Infinity", b"1e999"),
+    (b"true", b"1"),
+    (b"false", b"0"),
+    (b"true", b'"true"'),
+    (b"null", b"0"),
+    (b'""', b"null"),
+    (b'"x"', b'"x "'),
+    (b"[1,2]", b"[2,1]"),
+    (b"[]", b"{}"),
+    (b"[null]", b"[]"),
+    (b'{"k":1}', b'{"k":1,"j":1}'),
+    (b'{"k":1}', b'{"k":"1"}'),
+    (b'["1",1]', b'[1,"1"]'),
+    (b'{"k":[1]}', b'{"k":1}'),
+]
+
+
+@pytest.mark.parametrize("swapped", [False, True], ids=["first-then-repeat", "repeat-then-first"])
+@pytest.mark.parametrize(("first", "repeat"), DIFFERING_VALUES, ids=[f"{a.decode()}~{b.decode()}" for a, b in DIFFERING_VALUES])
+def test_ruling_13_a_repeat_differing_in_any_value_type_or_number_spelling_still_refuses(first: bytes, repeat: bytes, swapped: bool) -> None:
+    if swapped:
+        first, repeat = repeat, first
+    transport = day_world([page_of(with_extra(first), with_extra(repeat))])
+    refusal = refused("DUPLICATE_PROVIDER_RECORD", kraken.read_execution_day, make_fetcher(transport), DAY)
+    assert str(refusal).endswith("execution a appears twice") and len(transport.urls) == 1
+
+
+def changed(change: Any) -> dict[str, Any]:
+    element = fx.execution("a", utc(2021, 6, 1, 4))
+    change(element, element["event"]["Execution"]["execution"])
+    return element
+
+
+@pytest.mark.parametrize(
+    "repeat",
+    [
+        changed(lambda element, execution: execution.update(quantity="200")),
+        changed(lambda element, execution: execution.update(quantity=100)),  # the number, not the string
+        changed(lambda element, execution: execution.update(price="30000.0")),
+        changed(lambda element, execution: execution.update(limitFilled=True)),
+        changed(lambda element, execution: execution.update(timestamp=execution["timestamp"] + 1)),
+        changed(lambda element, execution: execution["takerOrder"].update(uid="taker-b")),
+        changed(lambda element, execution: execution["makerOrder"].pop("uid")),
+        changed(lambda element, execution: execution.update(extra=None)),
+        changed(lambda element, execution: element.update(uid="element-b")),
+        changed(lambda element, execution: element.update(timestamp=element["timestamp"] + 1)),
+        changed(lambda element, execution: element.pop("timestamp")),
+        changed(lambda element, execution: element.update(extra=1)),
+    ],
+    ids=[
+        "quantity", "quantity-number", "price-spelling", "limit-filled", "execution-timestamp", "taker-uid",
+        "maker-key-missing", "execution-key-extra", "element-uid", "element-timestamp", "element-key-missing",
+        "element-key-extra",
+    ],
+)
+def test_ruling_13_a_repeat_differing_anywhere_in_its_element_still_refuses(repeat: dict[str, Any]) -> None:
+    a = fx.execution("a", utc(2021, 6, 1, 4))
+    for pages in (
+        [fx.execution_page([a, repeat])],
+        [fx.execution_page([a, a], "token-0"), fx.execution_page([repeat])],  # after an identical copy, on a later page
+    ):
+        transport = day_world(pages)
+        refusal = refused("DUPLICATE_PROVIDER_RECORD", kraken.read_execution_day, make_fetcher(transport), DAY)
+        assert str(refusal).endswith("execution a appears twice") and len(transport.urls) == len(pages)
+
+
+@pytest.mark.parametrize(
+    ("day", "repeat_at", "reason", "detail"),
+    [
+        (DAY, utc(2021, 6, 2), "CONTINUATION_CHAIN_REFUSED", "is outside the requested day"),
+        (DAY, datetime(2021, 5, 31, 23, 59, 59, tzinfo=UTC), "CONTINUATION_CHAIN_REFUSED", "is outside the requested day"),
+        (date(2025, 12, 31), utc(2026, 1, 1), "OBSERVATION_OUTSIDE_DATA_WINDOW", ""),
+    ],
+    ids=["past-the-day", "before-the-day", "holdout"],
+)
+def test_ruling_13_a_repeat_stamped_outside_the_day_or_the_window_refuses_by_that_guard_first(
+    day: date, repeat_at: datetime, reason: str, detail: str
+) -> None:
+    first = fx.execution("a", datetime(day.year, day.month, day.day, 5, tzinfo=UTC))
+    repeat = fx.execution("a", repeat_at)
+    refusal = refused(reason, kraken.read_execution_day, make_fetcher(day_world([fx.execution_page([first, repeat])], day=day)), day)
+    assert detail in str(refusal)
+
+
+def test_ruling_13_copies_change_no_hour_record_row_or_step_back() -> None:
+    _, executions = liquidation_day()
+    series = {hour: 0 for hour in fx.hourly(utc(2021, 6, 1), utc(2021, 6, 2))}
+    series[utc(2021, 6, 1, 1)] = "1500"
+    series[utc(2021, 6, 1, 3)] = "50"
+    listings = {
+        "plain": [fx.execution_page(executions)],
+        # the two first liquidations and a trade listed twice in a row; the third liquidation again at the end
+        "copies": [fx.execution_page(executions[:3] + executions[:3] + executions[3:] + executions[4:5])],
+        "copies across pages": [fx.execution_page(executions[:3], token="token-0"), fx.execution_page(executions + executions[::-1])],
+    }
+    collections = {
+        name: kraken.read_liquidations(make_fetcher(day_world(pages, series)), DAY, DAY, incidents=()) for name, pages in listings.items()
+    }
+    assert {name: (item.duplicate_copies, item.out_of_order_steps) for name, item in collections.items()} == {
+        "plain": (0, 0), "copies": (4, 0), "copies across pages": (3 + len(executions), 0),
+    }
+    plain = collections["plain"]
+    assert len(plain.rows) == 3
+
+    def classified(collection: kraken.KrakenLiquidationCollection) -> list[tuple[datetime, str, str]]:
+        return [(hour.hour_start, hour.feed_status, hour.corroboration) for hour in collection.hours]
+
+    for collection in collections.values():
+        assert collection.rows == plain.rows and classified(collection) == classified(plain)
+        assert without_page_digests(collection) == without_page_digests(plain)
+
+
+def test_ruling_13_an_element_nested_to_any_depth_is_compared_or_refused_never_raised() -> None:
+    limit = deepest_decodable_nesting()
+    outcomes = set()
+    for depth in range(limit - 12, limit + 2):
+        same = nested(depth)
+        other = b"[" * depth + b"1" + b"]" * depth
+        for repeat, expected in ((same, "DUPLICATE_COPY"), (other, "DUPLICATE_PROVIDER_RECORD")):
+            try:
+                read = kraken.read_execution_day(make_fetcher(day_world([page_of(with_extra(same), with_extra(repeat))])), DAY)
+            except BackfillRefused as refusal:
+                assert refusal.reason_code in {expected, "RESPONSE_SHAPE_REFUSED"}, (depth, str(refusal))
+                outcomes.add(refusal.reason_code)
+            else:
+                assert expected == "DUPLICATE_COPY" and read.duplicate_copies == 1, depth
+                outcomes.add(expected)
+    assert outcomes == {"DUPLICATE_COPY", "DUPLICATE_PROVIDER_RECORD", "RESPONSE_SHAPE_REFUSED"}
+
+
+@pytest.mark.parametrize("step", ["loads", "dumps"])
+def test_ruling_13_a_page_too_deep_to_compare_its_elements_refuses(monkeypatch: pytest.MonkeyPatch, step: str) -> None:
+    def loads(data: Any, **hooks: Any) -> Any:
+        if hooks.get("parse_int") is not None:  # the comparison's readings, not the page's own
+            raise RecursionError
+        return json.loads(data, **hooks)
+
+    def dumps(*args: Any, **kwargs: Any) -> str:
+        raise RecursionError
+
+    stand_in = SimpleNamespace(loads=loads if step == "loads" else json.loads, dumps=dumps if step == "dumps" else json.dumps)
+    monkeypatch.setattr(kraken, "json", stand_in)
+    a = fx.execution("a", utc(2021, 6, 1, 4))
+    refusal = refused("RESPONSE_SHAPE_REFUSED", kraken.read_execution_day, make_fetcher(day_world([fx.execution_page([a])])), DAY)
+    assert str(refusal).endswith("an execution page is nested too deeply to compare its elements")
+
+
 def test_an_execution_in_the_holdout_is_an_exposure() -> None:
     transport = day_world([fx.execution_page([fx.execution("a", utc(2026, 1, 1))])], day=date(2025, 12, 31))
     refused("OBSERVATION_OUTSIDE_DATA_WINDOW", kraken.read_execution_day, make_fetcher(transport), date(2025, 12, 31))

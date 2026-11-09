@@ -200,6 +200,35 @@ def executions_url(since: datetime, before: datetime, token: str | None = None) 
 def parse_execution_page(data: bytes) -> tuple[tuple[Execution, ...], str | None]:
     """One page: ``{"elements": [...], "len": n}`` plus a ``continuationToken`` when more follow."""
 
+    executions, _, token = _execution_page(data)
+    return executions, token
+
+
+def _element_identities(data: bytes) -> tuple[str, ...]:
+    """Each element's identity: equal exactly when two elements are the same JSON value with every number
+    spelled the same way (owner Part B ruling 13); whitespace and key order do not count.
+
+    Two readings of the page, already read once by ``_json``: one with every number as its spelling (a
+    string), one with every number as ``null``. A leaf that is a string in the first and ``null`` in the
+    second is a number spelled that way; a string in both is that string; ``null`` in both is ``null``. So
+    equal pairs mean equal values, number spellings and types alike.
+    """
+
+    try:
+        spelled = json.loads(data, parse_int=str, parse_float=str, parse_constant=str)["elements"]
+        typed = json.loads(data, parse_int=_no_value, parse_float=_no_value, parse_constant=_no_value)["elements"]
+        return tuple(
+            json.dumps([a, b], sort_keys=True, separators=(",", ":")) for a, b in zip(spelled, typed, strict=True)
+        )
+    except RecursionError:
+        return _refuse_shape("an execution page is nested too deeply to compare its elements")
+
+
+def _no_value(_: str) -> None:
+    return None
+
+
+def _execution_page(data: bytes) -> tuple[tuple[Execution, ...], tuple[str, ...], str | None]:
     payload = _json(data, "an execution page")
     if not isinstance(payload, dict) or not {"elements", "len"} <= set(payload) <= _PAGE_KEYS:
         return _refuse_shape(f"an execution page has keys {sorted(payload) if isinstance(payload, dict) else payload!r}")
@@ -230,7 +259,7 @@ def parse_execution_page(data: bytes) -> tuple[tuple[Execution, ...], str | None
                 direction=direction,
             )
         )
-    return tuple(executions), token
+    return tuple(executions), _element_identities(data), token
 
 
 @dataclass(frozen=True)
@@ -240,6 +269,7 @@ class ExecutionDay:
     pages_sha256: tuple[str, ...]
     retrieved_at: datetime
     out_of_order_steps: int  # executions listed before an earlier one (owner Part B ruling 12)
+    duplicate_copies: int  # identical copies of an execution listed earlier, dropped (owner Part B ruling 13)
 
 
 def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
@@ -248,39 +278,46 @@ def read_execution_day(fetcher: Fetcher, day: date) -> ExecutionDay:
     The log is kept in the provider's order. An execution listed with an
     earlier timestamp than the one before it is counted, not refused (owner
     Part B ruling 12): the live log lists some days slightly out of time order,
-    and the hour records do not depend on the order. The chain itself must
-    still end, never repeat a token or a uid, and stay inside the day.
+    and the hour records do not depend on the order. An execution listed again
+    as an identical copy of its first listing is dropped and counted (owner
+    Part B ruling 13): it is not part of the log, so it is no step back. The
+    chain itself must still end, never repeat a token, never list a uid again
+    with any difference, and stay inside the day.
     """
 
     since, before = midnight(day), midnight(day) + _DAY
     require_request_span(since, before, f"executions {day.isoformat()}")
     executions: list[Execution] = []
     digests: list[str] = []
-    seen: set[str] = set()
+    seen: dict[str, str] = {}  # uid -> its first listing's identity
     tokens: set[str] = set()
     token: str | None = None
     retrieved_at = since
-    out_of_order = 0
+    out_of_order = copies = 0
     for _ in range(MAX_PAGES_PER_DAY):
         page = fetcher.fetch(executions_url(since, before, token))
         digests.append(page.sha256)
         retrieved_at = page.retrieved_at
-        elements, token = parse_execution_page(page.body)
-        for execution in elements:
+        elements, identities, token = _execution_page(page.body)
+        for execution, identity in zip(elements, identities, strict=True):
             require_observation_in_window(execution.timestamp, f"execution {execution.uid}")
             if not since <= execution.timestamp < before:
                 raise BackfillRefused(
                     "CONTINUATION_CHAIN_REFUSED",
                     f"execution {execution.uid} at {iso(execution.timestamp)} is outside the requested day {day.isoformat()}",
                 )
+            first = seen.get(execution.uid)
+            if first is not None:
+                if identity != first:
+                    raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"execution {execution.uid} appears twice")
+                copies += 1
+                continue
             if executions and execution.timestamp < executions[-1].timestamp:
                 out_of_order += 1
-            if execution.uid in seen:
-                raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"execution {execution.uid} appears twice")
-            seen.add(execution.uid)
+            seen[execution.uid] = identity
             executions.append(execution)
         if token is None:
-            return ExecutionDay(day, tuple(executions), tuple(digests), retrieved_at, out_of_order)
+            return ExecutionDay(day, tuple(executions), tuple(digests), retrieved_at, out_of_order, copies)
         if token in tokens:
             raise BackfillRefused("CONTINUATION_CHAIN_REFUSED", f"{day.isoformat()}: a continuation token repeats")
         tokens.add(token)
@@ -764,6 +801,7 @@ class KrakenLiquidationCollection:
     hours: tuple[v2.LiquidationHourEvidence, ...]
     evidence_bytes: bytes
     out_of_order_steps: int  # over every day read (owner Part B ruling 12)
+    duplicate_copies: int  # over every day read (owner Part B ruling 13)
 
     @property
     def evidence_sha256(self) -> str:
@@ -785,12 +823,13 @@ def read_liquidations(
     records: list[dict[str, Any]] = []
     rows: list[Liquidation] = []
     retrieved: list[datetime] = []
-    out_of_order = 0
+    out_of_order = copies = 0
     for day in data_window_days(first_day, last_day):
         log = read_execution_day(fetcher, day)
         series = read_series_day(fetcher, day)
         retrieved += [log.retrieved_at, series.retrieved_at]
         out_of_order += log.out_of_order_steps
+        copies += log.duplicate_copies
         for hour in hours_of(day):
             record = hour_record(
                 hour,
@@ -805,4 +844,4 @@ def read_liquidations(
     evidence = liquidation_hour_evidence_bytes(retrieved_at=max(retrieved), incidents=incidents, hours=records)
     # the typed hours are read back through the file's own parser, so writer and parser cannot drift
     hours = parse_liquidation_hour_evidence(evidence, expected_sha256=sha256_hex(evidence))
-    return KrakenLiquidationCollection(tuple(rows), hours, evidence, out_of_order)
+    return KrakenLiquidationCollection(tuple(rows), hours, evidence, out_of_order, copies)

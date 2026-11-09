@@ -1539,6 +1539,57 @@ def test_ruling_12_a_liquidation_day_out_of_order_interrupted_after_its_commit_i
     assert {name: data for name, data in after.items() if name != "DONE.json"} == before
 
 
+def copied_liquidation_world(*, repeat_changed: bool = False) -> FakeTransport:
+    """A day whose log lists one block, the liquidation among it, twice in a row (owner Part B ruling 13)."""
+
+    transport = FakeTransport()
+    transport.add(run.TARDIS_EXCHANGE_URL, tardis_body())
+    start = utc(2021, 6, 1)
+    executions = [fx.execution(f"e{hour}", start + timedelta(hours=hour, minutes=5)) for hour in range(24)]
+    executions.insert(4, fx.execution("liq", start + timedelta(hours=3, minutes=7), quantity="777000005", order_type="Liquidation", direction="Sell"))
+    block = json.loads(json.dumps(executions[2:6]))  # e2, e3, liq, e4
+    if repeat_changed:
+        block[2]["event"]["Execution"]["execution"]["quantity"] = "777000006"
+    transport.add(kraken.executions_url(start, start + timedelta(days=1)), fx.execution_page(executions[:6] + block + executions[6:]))
+    series = {start + timedelta(hours=hour): ("777000005" if hour == 3 else "0") for hour in range(24)}
+    transport.add(kraken.liquidation_volume_url(start, start + timedelta(hours=23)), fx.series_body(series))
+    return transport
+
+
+def test_ruling_13_a_liquidation_day_listing_a_block_twice_is_collected_and_its_summary_counts_the_copies(
+    store: run.EvidenceStore,
+) -> None:
+    ctx = context(copied_liquidation_world(), store, Database())
+    assert run.run_unit(ctx, "kraken-incidents", "all").status == "DONE"
+    report_ = run.run_unit(ctx, "kraken-liquidations", "2021-06-01")
+    assert report_.status == "DONE", report_.detail
+    files = unit_files(store, "kraken-liquidations", "2021-06-01")
+    summary = json.loads(files["summary.json"])
+    assert summary["duplicate_copies"] == 4 and summary["out_of_order_steps"] == 0
+    assert summary["rows"] == 1 and summary["corroboration"] == {"AGREES": 24}
+    assert json.loads(files["DONE.json"])["persisted"] == {"liquidations": 1}
+    assert run.run_unit(ctx, "kraken-liquidations", "2021-06-01").status == "SKIPPED"
+
+
+@pytest.mark.parametrize("in_order", [True, False], ids=["in-order", "out-of-order"])
+def test_ruling_13_a_liquidation_day_without_copies_counts_none(store: run.EvidenceStore, in_order: bool) -> None:
+    ctx = context(liquidation_world(in_order=in_order), store, Database())
+    assert run.run_unit(ctx, "kraken-incidents", "all").status == "DONE"
+    assert run.run_unit(ctx, "kraken-liquidations", "2021-06-01").status == "DONE"
+    assert json.loads(unit_files(store, "kraken-liquidations", "2021-06-01")["summary.json"])["duplicate_copies"] == 0
+
+
+def test_ruling_13_a_liquidation_day_whose_repeat_differs_is_refused_and_writes_nothing(store: run.EvidenceStore) -> None:
+    database = Database()
+    ctx = context(copied_liquidation_world(repeat_changed=True), store, database)
+    assert run.run_unit(ctx, "kraken-incidents", "all").status == "DONE"
+    connections = len(database.connections)
+    report_ = run.run_unit(ctx, "kraken-liquidations", "2021-06-01")
+    assert report_.status == "REFUSED" and report_.detail.startswith("DUPLICATE_PROVIDER_RECORD"), report_.detail
+    assert "777000006" not in report_.detail and "777000005" not in report_.detail
+    assert not store.unit_dir("kraken-liquidations", "2021-06-01").exists() and len(database.connections) == connections
+
+
 # --- the single reads --------------------------------------------------------------------------
 
 
