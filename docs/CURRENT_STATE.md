@@ -1493,7 +1493,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the owner ruled that such copies collapse to one and are counted, while a
   repeat that differs still refuses (ruling 13; its code `3041d0c`
   PASSED its independent review on 2026-11-09 with no new finding, and the
-  four days are now to be collected with it)).
+  four days were collected with it the same day, completing the Kraken
+  liquidations); CoinGlass's first live responses omit two documented
+  members, which the owner made optional (ruling 14, to implement and
+  re-review)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1801,9 +1804,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   identical copies (no liquidation among them); the owner ruled that such
   copies collapse to one and are counted, while a repeat that differs still
   refuses (ruling 13; its code change `3041d0c` PASSED its independent
-  review on 2026-11-09 with no new finding, and the four days are now to be
-  collected with it). Every completed unit's database rows match its
-  summary. CoinGlass may run meanwhile. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  review on 2026-11-09 with no new finding, and the four days were
+  collected with it the same day: all 1,680 Kraken days are complete, and
+  every unit's database rows match its summary. CoinGlass's first live
+  responses omit the envelope's `msg` and, on most of IBIT's days,
+  `btc_holdings`; the owner ruled both optional (ruling 14; its code
+  change, validation and independent re-review come first). RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B ruling 13
@@ -2230,11 +2236,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **owner's
-  collection of the four refused Kraken liquidation days** with the
-  reviewed code `3041d0c` (`kraken-liquidations --keep-going`, skipping the
-  completed units), and CoinGlass (`--allow-coinglass`); then the dataset
-  build. RBT-006 stays blocked
+- **Next dependency-satisfied EPIC Y action:** RBT-003 Part B
+  **ruling 14's code change** (CoinGlass: the envelope's `msg` and a fund
+  history day's `btc_holdings` may be absent), its validation and its
+  independent re-review; then the owner's CoinGlass collection
+  (`--allow-coinglass`) and the dataset build. RBT-006 stays blocked
   until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
@@ -2882,7 +2888,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `cbee5d4`; the fourth re-review PASS WITH NON-BLOCKING FINDINGS
   `f65426d`; the collection of the refused days and owner ruling 13
   `b55261d`; ruling 13's code `3041d0c` with docs `b076e15`; its review
-  PASS in this documentation commit.
+  PASS `dda1fef`; the Kraken completion, CoinGlass's live check and owner
+  ruling 14 in this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
