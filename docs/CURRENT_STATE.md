@@ -1491,8 +1491,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   2026-11-09 the refused days were collected with `c5fa819`'s code except
   four, whose log repeats a block of executions as identical copies, and
   the owner ruled that such copies collapse to one and are counted, while a
-  repeat that differs still refuses (ruling 13, to implement and
-  re-review)).
+  repeat that differs still refuses (ruling 13; its code `3041d0c` is
+  committed and awaits its re-review)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1799,9 +1799,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   2026-11-09 except four, whose log repeats a block of executions as
   identical copies (no liquidation among them); the owner ruled that such
   copies collapse to one and are counted, while a repeat that differs still
-  refuses (ruling 13; its code change, validation and independent
-  re-review come first). Every completed unit's database rows match its
-  summary. CoinGlass may run meanwhile. RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  refuses (ruling 13; its code change `3041d0c` is committed and awaits
+  its independent re-review). Every completed unit's database rows match
+  its summary. CoinGlass may run meanwhile. RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B ruling 12
@@ -2221,10 +2221,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** RBT-003 Part B
-  **ruling 13's code change** (a Kraken execution repeated as an identical
-  copy collapses to one and is counted), its validation and its
-  independent re-review, with the owner's CoinGlass collection
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **re-review of RBT-003 Part B ruling 13's code change** (`b55261d..`
+  its record; a Kraken execution repeated as an identical copy collapses to
+  one and is counted), with the owner's CoinGlass collection
   (`--allow-coinglass`) meanwhile; then the four refused Kraken days and
   the dataset build. RBT-006 stays blocked
   until
@@ -2250,6 +2250,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part B ruling 13 code validation (2026-11-09):**
+  `.venv312` CPython 3.12.14. The adapter (559) and run (214) modules with
+  the replay, database and coverage guard modules 1,256 passed, 1 xfailed; the BTC-019
+  completion gate and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed.
+  Full repository at `3041d0c`:
+  8,567 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
+  Synthetic fixtures only.
 - **RBT-003 Part B ruling 12 third review-fix validation (2026-11-08):**
   `.venv312` CPython 3.12.14. The adapter (484) and run (210) modules with
   the replay, database and coverage guard modules 1,177 passed, 1 xfailed; the BTC-019
@@ -2863,8 +2872,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `7808213` (R12-2 to R12-5) with docs `490c1f0`; the third re-review FAIL
   `fda90ed`; the third review-fix `c5fa819` (R12-6 to R12-9) with docs
   `cbee5d4`; the fourth re-review PASS WITH NON-BLOCKING FINDINGS
-  `f65426d`; the collection of the refused days and owner ruling 13 in this
-  documentation commit.
+  `f65426d`; the collection of the refused days and owner ruling 13
+  `b55261d`; ruling 13's code `3041d0c` with this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
