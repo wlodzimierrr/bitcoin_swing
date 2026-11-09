@@ -1590,6 +1590,84 @@ def test_ruling_13_a_liquidation_day_whose_repeat_differs_is_refused_and_writes_
     assert not store.unit_dir("kraken-liquidations", "2021-06-01").exists() and len(database.connections) == connections
 
 
+
+# --- owner Part B ruling 14: CoinGlass's envelope msg and a fund day's btc_holdings may be absent ---------
+
+
+def live_coinglass_run_world() -> FakeTransport:
+    """coinglass_run_world's responses as the live ones are: no msg, and IBIT's days without btc_holdings."""
+
+    transport = coinglass_run_world()
+    for url, response in list(transport.responses.items()):
+        payload = json.loads(response.body)
+        del payload["msg"]
+        if url == coinglass.fund_history_url("IBIT"):
+            for record in payload["data"]:
+                del record["btc_holdings"]
+        transport.add(url, json.dumps(payload).encode())
+    return transport
+
+
+def persisted_rows(database: Database) -> list[list[tuple[str, Any]]]:
+    return [
+        sorted(statement.compile(dialect=postgresql.dialect()).params.items())
+        for connection in database.connections
+        for statement in connection.statements
+    ]
+
+
+def test_ruling_14_a_live_shaped_coinglass_unit_is_collected_like_the_documented_one(tmp_path: Path) -> None:
+    stores = []
+    for name, world in (("documented", coinglass_run_world()), ("live", live_coinglass_run_world())):
+        root = tmp_path / name / "backtest_evidence"
+        (root / ".git").mkdir(parents=True)
+        store, database = run.EvidenceStore(root, public_repository=REPOSITORY), Database()
+        report_ = run.run_unit(context(world, store, database, **KEYED), "coinglass-etf", "all")
+        assert report_.status == "DONE", report_.detail
+        stores.append((store, database, unit_files(store, "coinglass-etf", "all")))
+    (_, documented_db, documented), (store, live_db, live) = stores
+    assert sorted(live) == sorted(documented)
+    assert persisted_rows(live_db) == persisted_rows(documented_db) and persisted_rows(live_db)
+    projected = [name for name in live if name.endswith(".projected.json")]
+    assert len(projected) == 3 and all(b"msg" not in live[name] and b"77700000" not in live[name] for name in projected)
+    assert b"btc_holdings" not in live["history_IBIT.projected.json"] and b"btc_holdings" in live["history_GBTC.projected.json"]
+    mine, theirs = json.loads(live["summary.json"]), json.loads(documented["summary.json"])
+    assert [(item["kept"], item["dropped_prohibited"], item["dropped_holdout"]) for item in mine["projections"]] == [(2, 0, 1), (1, 1, 0), (2, 0, 1)]
+    assert (mine["rows"], mine["tickers_seen"], mine["missing_aum"]) == (theirs["rows"], theirs["tickers_seen"], theirs["missing_aum"])
+    assert json.loads(live["DONE.json"])["persisted"] == json.loads(documented["DONE.json"])["persisted"]
+    assert json.loads(live["DONE.json"])["persisted"]["etf_flows"] == 3
+    transport = FakeTransport()
+    assert run.run_unit(context(transport, store, Database(), **KEYED), "coinglass-etf", "all").status == "SKIPPED"
+    assert transport.calls == []
+
+
+def test_ruling_14_a_live_shaped_coinglass_unit_interrupted_after_its_commit_resumes_from_its_projections(
+    store: run.EvidenceStore,
+) -> None:
+    database = Database()
+    run_interrupted(store, advancing_context(live_coinglass_run_world(), store, database, **KEYED), "coinglass-etf", "all")
+    committed = available_at(database)
+    before = prepared_files(store, "coinglass-etf", "all")
+    assert b"msg" not in before["flow_history.projected.json"]
+    later, database_again = FakeTransport(), Database()  # serves nothing: a fresh read would be refused
+    report_ = run.run_unit(advancing_context(later, store, database_again, start=LATER, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "DONE", report_.detail
+    assert later.calls == [] and available_at(database_again) == committed
+    after = unit_files(store, "coinglass-etf", "all")
+    assert {name: data for name, data in after.items() if name != "DONE.json"} == before
+    assert json.loads(after["DONE.json"])["persisted"]["etf_flows"] == 3
+
+
+def test_ruling_14_a_coinglass_error_reply_is_refused_naming_its_status_and_writes_nothing(store: run.EvidenceStore) -> None:
+    transport, database = FakeTransport(), Database()
+    transport.add(coinglass.FLOW_HISTORY_URL, b'{"code":"401","msg":"Upgrade plan"}')
+    report_ = run.run_unit(context(transport, store, database, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED" and report_.detail.startswith("RESPONSE_SHAPE_REFUSED"), report_.detail
+    # the provider's code and message are named; the run masks digits in every report, as for any refusal
+    assert "the provider reports code '###': 'Upgrade plan'" in report_.detail and "key-123" not in report_.detail
+    assert transport.urls == [coinglass.FLOW_HISTORY_URL] and database.connections == []
+    assert not store.unit_dir("coinglass-etf", "all").exists()
+
 # --- the single reads --------------------------------------------------------------------------
 
 

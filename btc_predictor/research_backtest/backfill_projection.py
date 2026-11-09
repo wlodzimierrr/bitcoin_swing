@@ -16,7 +16,8 @@ members (13-digit epoch milliseconds), then keeps the record's exact bytes when
 every date lies inside the requested days and drops them otherwise. A dropped
 record's other members are skipped as byte spans, never decoded, so no
 out-of-window value is parsed, logged or kept. The projected response is the
-envelope's ``code`` and ``msg`` with the kept records' bytes in their order;
+envelope's ``code`` and, when present, its ``msg`` (the live responses omit
+it, owner Part B ruling 14) with the kept records' bytes in their order;
 only it reaches the strict parsers and the evidence file, and a parser first
 proves, with :func:`verified_body`, that the bytes it is given are exactly a
 projection on the endpoint's own date members (review B2). The full response
@@ -49,6 +50,7 @@ from btc_predictor.research_backtest.backfill_sources import (
 
 PROJECTION_RULE = "IN_WINDOW_RECORD_PROJECTION_V1"
 ENVELOPE_KEYS = ("code", "msg", "data")
+REQUIRED_ENVELOPE_KEYS = ("code", "data")  # msg may be absent: the live responses omit it (owner Part B ruling 14)
 MAX_DEPTH = 32
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
@@ -277,8 +279,10 @@ def project_records(
     counted as prohibited when a date precedes the window, as holdout when one
     follows it, and as unrequested when its dates are in the window but not all
     in the requested days. The envelope must be exactly ``code``, ``msg`` and
-    ``data``, ``code`` must be ``"0"``, and every record an object naming each
-    date member once, as a 13-digit epoch-millisecond integer.
+    ``data``, or ``code`` and ``data`` (owner Part B ruling 14), ``code`` must
+    be ``"0"``, and every record an object naming each date member once, as a
+    13-digit epoch-millisecond integer. Another ``code`` refuses naming it and
+    the ``msg``, if any, before ``data`` is required.
     """
 
     if not isinstance(fetched, Fetched) or not isinstance(fetched.body, bytes):
@@ -297,14 +301,17 @@ def project_records(
     if reader.space(end) != reader.size:
         reader.refuse(f"bytes follow the envelope at byte {end}")
     names = [name for name, _, _ in envelope]
-    if sorted(names) != sorted(ENVELOPE_KEYS):
-        reader.refuse(f"the envelope's members are {sorted(names)}, not exactly {sorted(ENVELOPE_KEYS)}")
+    mismatch = f"the envelope's members are {sorted(names)}, not exactly {sorted(ENVELOPE_KEYS)} or {sorted(REQUIRED_ENVELOPE_KEYS)}"
+    if len(set(names)) != len(names) or not {"code"} <= set(names) <= set(ENVELOPE_KEYS):
+        reader.refuse(mismatch)
     spans = {name: (value_start, value_end) for name, value_start, value_end in envelope}
     code = reader.status_string(spans["code"], "code")
-    msg = reader.status_string(spans["msg"], "msg")
+    msg = reader.status_string(spans["msg"], "msg") if "msg" in spans else None  # optional (owner Part B ruling 14)
     if code != "0":
-        # the provider's status message, never a record
-        reader.refuse(f"the provider reports code {code[:40]!r}: {msg[:200]!r}")
+        # the provider's status message, never a record; named before data is required (an error has none)
+        reader.refuse(f"the provider reports code {code[:40]!r}" + ("" if msg is None else f": {msg[:200]!r}"))
+    if "data" not in spans:
+        reader.refuse(mismatch)
     data_start, _ = spans["data"]
     if fetched.body[data_start] != 0x5B:
         reader.refuse("the envelope's data is not an array")
@@ -339,18 +346,11 @@ def project_records(
             unrequested += 1
 
     code_start, code_end = spans["code"]
-    msg_start, msg_end = spans["msg"]
-    body = b"".join(
-        (
-            b'{"code":',
-            fetched.body[code_start:code_end],
-            b',"msg":',
-            fetched.body[msg_start:msg_end],
-            b',"data":[',
-            b",".join(kept),
-            b"]}",
-        )
-    )
+    parts = [b'{"code":', fetched.body[code_start:code_end]]
+    if "msg" in spans:  # kept as before; the live responses have none (owner Part B ruling 14)
+        msg_start, msg_end = spans["msg"]
+        parts += [b',"msg":', fetched.body[msg_start:msg_end]]
+    body = b"".join((*parts, b',"data":[', b",".join(kept), b"]}"))
     return ProjectedResponse(
         url=fetched.url,
         retrieved_at=fetched.retrieved_at,

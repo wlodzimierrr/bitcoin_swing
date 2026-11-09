@@ -2647,3 +2647,209 @@ def test_a_duplicate_coinglass_flow_or_assets_day_is_refused() -> None:
     assets = FUND_DAY % ("1", "9")
     transport.add(coinglass.fund_history_url("IBIT"), (body % f"{assets},{assets}").encode())
     refused("DUPLICATE_PROVIDER_RECORD", coinglass_read, transport, ("IBIT",), first, first)
+
+
+# --- owner Part B ruling 14: the envelope's msg and a fund day's btc_holdings may be absent ------------
+
+
+def live_shape(page: bytes, *, holdings: bool = True) -> bytes:
+    """A fixture page as CoinGlass's live responses are: no msg, and with ``holdings=False`` no btc_holdings."""
+
+    payload = json.loads(page)
+    del payload["msg"]
+    if not holdings:
+        for record in payload["data"]:
+            del record["btc_holdings"]
+    return json.dumps(payload).encode()
+
+
+def live_world(flows: dict[date, dict[str, Any]], assets: dict[str, dict[date, Any]], *, holdings: bool = True) -> FakeTransport:
+    transport = FakeTransport()
+    transport.add(coinglass.FLOW_HISTORY_URL, live_shape(fx.coinglass_flow_page(flows)))
+    for ticker, history in assets.items():
+        transport.add(coinglass.fund_history_url(ticker), live_shape(fx.coinglass_fund_page(history, ticker=ticker), holdings=holdings))
+    return transport
+
+
+def project_flows(body: bytes) -> projection.ProjectedResponse:
+    return projection.project_records(
+        fetched(body), date_keys=("timestamp",), first_day=date(2024, 1, 11), last_day=date(2024, 1, 12), what="flows"
+    )
+
+
+def test_ruling_14_an_envelope_without_msg_is_projected_without_one() -> None:
+    documented, live = project_flows(sentinel_flow_page()), project_flows(live_shape(sentinel_flow_page()))
+    counts = (live.kept, live.dropped_prohibited, live.dropped_unrequested, live.dropped_holdout)
+    assert counts == (documented.kept, documented.dropped_prohibited, documented.dropped_unrequested, documented.dropped_holdout)
+    assert counts == (2, 1, 1, 2)
+    assert live.body == documented.body.replace(b',"msg":"success"', b"", 1) and b"msg" not in live.body
+    assert json.loads(live.body) == {"code": "0", "data": json.loads(sentinel_flow_page())["data"][2:4]}
+    assert all(str(value).encode() not in live.body for value in SENTINELS.values())
+    assert projection.verified_body(live, date_keys=("timestamp",), what="flows") == live.body
+    # member order and whitespace do not matter; the projection is written in its own order
+    kept = '{"timestamp":%d,"flow_usd":0,"price_usd":1,"etf_flows":[]}' % day_ms(date(2024, 1, 11))
+    dropped = '{"timestamp":%d,"flow_usd":777000009,"price_usd":1,"etf_flows":[]}' % HOLDOUT_STAMP
+    spaced = project_flows(('\n{ "data" : [ %s , %s ] , "code" : "0" }\n' % (dropped, kept)).encode())
+    assert spaced.body == b'{"code":"0","data":[' + kept.encode() + b"]}" and spaced.dropped_holdout == 1
+
+
+@pytest.mark.parametrize("msg", [b'"success"', b'""', b'"a\\u00e9b"'], ids=["success", "empty", "escaped"])
+def test_ruling_14_a_present_msg_is_kept_byte_for_byte_as_before(msg: bytes) -> None:
+    kept = VALID_RECORD.encode()
+    projected = project_flows(b'{"msg":' + msg + b',"code":"0","data":[' + kept + b"]}")
+    assert projected.body == b'{"code":"0","msg":' + msg + b',"data":[' + kept + b"]}"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"{}",
+        b'{"code":"0"}',
+        b'{"data":[]}',
+        b'{"msg":"success","data":[]}',
+        b'{"code":"0","msg":"success"}',
+        b'{"code":"0","data":[],"extra":1}',
+        b'{"code":"0","data":[],"data":[]}',
+        b'{"code":"0","code":"0","data":[]}',
+        b'{"code":"0","msg":"a","msg":"b","data":[]}',
+        b'{"code":"0","Msg":"success","data":[]}',
+        b'{"code":"0","message":"success","data":[]}',
+        b'{"code":0,"data":[]}',
+        b'{"code":null,"data":[]}',
+        b'{"code":"0","msg":null,"data":[]}',
+        b'{"code":"0","msg":1,"data":[]}',
+        b'{"code":"0","msg":[],"data":[]}',
+        b'{"code":"0","msg":{},"data":[]}',
+        b'{"code":"0","msg":true,"data":[]}',
+        b'{"code":"0","data":{}}',
+        b'{"code":"0","data":null}',
+        b'{"code":"0","data":"[]"}',
+        b'{"code":"0","data":[]} x',
+        b'{"code":"0","data":[{"timestamp":%d,"flow_usd":01}]}' % HOLDOUT_STAMP,
+    ],
+)
+def test_ruling_14_the_envelope_is_still_exactly_code_and_data_with_an_optional_msg(body: bytes) -> None:
+    refused("RESPONSE_SHAPE_REFUSED", project_flows, body)
+
+
+def test_ruling_14_both_envelopes_are_read() -> None:
+    for body in (b'{"code":"0","data":[]}', b'{"code":"0","msg":"success","data":[]}', b'{"data":[],"code":"0"}'):
+        assert project_flows(body).kept == 0
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        (b'{"code":"401","msg":"Upgrade plan"}', "the provider reports code '401': 'Upgrade plan'"),
+        (b'{"msg":"Upgrade plan","code":"401"}', "the provider reports code '401': 'Upgrade plan'"),
+        (b'{"code":"401"}', "the provider reports code '401'"),
+        (b'{"code":"401","data":null}', "the provider reports code '401'"),
+        (b'{"code":"40001","msg":"API key invalid","data":null}', "the provider reports code '40001': 'API key invalid'"),
+        (b'{"code":"500","data":[{"timestamp":%d,"flow_usd":777000009}]}' % HOLDOUT_STAMP, "the provider reports code '500'"),
+    ],
+    ids=["no-data", "no-data-reordered", "code-only", "null-data", "documented", "records-unread"],
+)
+def test_ruling_14_a_provider_error_names_its_code_and_any_message_before_data_is_required(body: bytes, expected: str) -> None:
+    error = refused("RESPONSE_SHAPE_REFUSED", project_flows, body)
+    assert str(error) == f"RESPONSE_SHAPE_REFUSED: flows: {expected}"
+
+
+def test_ruling_14_a_coinglass_read_refused_by_the_provider_names_its_status() -> None:
+    first = date(2024, 1, 11)
+    transport = FakeTransport()
+    transport.add(coinglass.FLOW_HISTORY_URL, b'{"code":"401","msg":"Upgrade plan"}')
+    error = refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, None, first, first)
+    assert "'401'" in str(error) and "'Upgrade plan'" in str(error) and len(transport.calls) == 1
+
+
+@pytest.mark.parametrize("holdings", [True, False], ids=["with-holdings", "without-holdings"])
+def test_ruling_14_a_live_shaped_read_gives_the_documented_reads_rows(holdings: bool) -> None:
+    first, last = date(2024, 1, 11), date(2024, 1, 12)
+    flows = {first: {"IBIT": 5, "GBTC": -7}, last: {"IBIT": 6}, date(2026, 1, 5): {"IBIT": 777000001}}
+    assets = {"IBIT": {first: 9, last: 10, date(2026, 1, 5): 777000002}, "GBTC": {date(2019, 6, 3): 777000003, first: 11}}
+    documented = coinglass_read(coinglass_world(flows, assets, first, last), None, first, last)
+    live = coinglass_read(live_world(flows, assets, holdings=holdings), None, first, last)
+    assert live.flows == documented.flows and len(live.flows) == 3
+    assert (live.tickers_seen, live.missing_aum) == (documented.tickers_seen, documented.missing_aum)
+    for mine, theirs in zip(live.projections, documented.projections, strict=True):
+        assert (mine.url, mine.kept, mine.dropped) == (theirs.url, theirs.kept, theirs.dropped)
+        assert b"msg" not in mine.body and b"77700000" not in mine.body
+        assert (b"btc_holdings" in mine.body) == (holdings and mine.url != coinglass.FLOW_HISTORY_URL)
+        if holdings:
+            assert mine.body == theirs.body.replace(b',"msg":"success"', b"", 1)
+
+
+def test_ruling_14_a_fund_history_may_mix_days_with_and_without_btc_holdings() -> None:
+    first, second = date(2024, 1, 11), date(2024, 1, 12)
+    without = json.loads(fund_record(second, second, "38.51"))
+    del without["btc_holdings"]
+    transport = live_world({first: {"IBIT": 5}, second: {"IBIT": 6}}, {})
+    transport.add(coinglass.fund_history_url("IBIT"), ('{"code":"0","data":[%s,%s]}' % (fund_record(first, first, "38.51"), json.dumps(without))).encode())
+    read = coinglass_read(transport, ("IBIT",), first, second)
+    assert [(row.observation_date, row.flow_usd, row.aum_usd) for row in read.flows] == [(first, 5, 9), (second, 6, 9)]
+    assert read.missing_aum == ()
+
+
+FUND_MEMBERS = ("assets_date", "market_date", "market_price", "name", "nav", "net_assets", "premium_discount", "shares_outstanding", "ticker")
+
+
+@pytest.mark.parametrize("holdings", [True, False], ids=["with-holdings", "without-holdings"])
+@pytest.mark.parametrize("member", FUND_MEMBERS)
+def test_ruling_14_every_other_fund_member_is_still_required(member: str, holdings: bool) -> None:
+    first = date(2024, 1, 11)
+    record = json.loads(FUND_DAY % ("1000", "9"))
+    del record[member]
+    if not holdings:
+        del record["btc_holdings"]
+    transport = live_world({first: {"IBIT": 5}}, {})
+    transport.add(coinglass.fund_history_url("IBIT"), json.dumps({"code": "0", "data": [record]}).encode())
+    refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
+@pytest.mark.parametrize(
+    ("remove", "add"),
+    [
+        (("btc_holdings",), {"btc_holding": 1000}),  # a misspelt holdings member
+        ((), {"aum": 1}),  # an unknown member beside the holdings
+        (("btc_holdings",), {"aum": 1}),  # an unknown member without them
+    ],
+    ids=["misspelt", "extra-with", "extra-without"],
+)
+def test_ruling_14_an_unknown_fund_member_still_refuses(remove: tuple[str, ...], add: dict[str, Any]) -> None:
+    first = date(2024, 1, 11)
+    record = {name: value for name, value in json.loads(FUND_DAY % ("1000", "9")).items() if name not in remove} | add
+    transport = live_world({first: {"IBIT": 5}}, {})
+    transport.add(coinglass.fund_history_url("IBIT"), json.dumps({"code": "0", "data": [record]}).encode())
+    refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
+@pytest.mark.parametrize("value", ["1", True, None, [], {}], ids=["string", "bool", "null", "array", "object"])
+def test_ruling_14_a_present_btc_holdings_is_still_a_finite_number(value: Any) -> None:
+    first = date(2024, 1, 11)
+    record = json.loads(FUND_DAY % ("1000", "9")) | {"btc_holdings": value}
+    transport = live_world({first: {"IBIT": 5}}, {})
+    transport.add(coinglass.fund_history_url("IBIT"), json.dumps({"code": "0", "data": [record]}).encode())
+    refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
+@pytest.mark.parametrize("endpoint", ["flow", "fund"])
+@pytest.mark.parametrize("msg", [None, 1, [], {}, True], ids=["null", "number", "array", "object", "bool"])
+def test_ruling_14_a_present_msg_is_still_a_string(endpoint: str, msg: Any) -> None:
+    first = date(2024, 1, 11)
+    transport = live_world({first: {"IBIT": 5}}, {"IBIT": {first: 9}})
+    if endpoint == "flow":
+        url, page = coinglass.FLOW_HISTORY_URL, fx.coinglass_flow_page({first: {"IBIT": 5}})
+    else:
+        url, page = coinglass.fund_history_url("IBIT"), fx.coinglass_fund_page({first: 9})
+    transport.add(url, json.dumps(json.loads(live_shape(page)) | {"msg": msg}).encode())
+    refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
+@pytest.mark.parametrize("member", ["timestamp", "flow_usd", "price_usd", "etf_flows"])
+def test_ruling_14_every_flow_day_member_is_still_required(member: str) -> None:
+    first = date(2024, 1, 11)
+    payload = json.loads(live_shape(fx.coinglass_flow_page({first: {"IBIT": 5}})))
+    del payload["data"][0][member]
+    transport = live_world({}, {"IBIT": {first: 9}})
+    transport.add(coinglass.FLOW_HISTORY_URL, json.dumps(payload).encode())
+    refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)

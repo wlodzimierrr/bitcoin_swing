@@ -11,11 +11,13 @@ documented examples (re-read in Part B's first step, 2026-11-05: the
 ``shares_outstanding`` and ``ticker``), any unexpected field or shape refuses
 the response, and the adapter stays UNVERIFIED until one live response of each
 endpoint passes. Every declared field is type-checked, including those the
-rows do not use (review F5): the envelope's ``msg`` is a string; a flow day's
-total ``flow_usd`` and ``price_usd`` are finite JSON numbers; a ticker's
-``flow_usd`` is a finite JSON number, ``null`` or absent; a fund day's numbers
-are finite JSON numbers, its ``name`` a non-empty string and its ``ticker`` the
-requested one.
+rows do not use (review F5): the envelope's ``msg``, when present, is a string;
+a flow day's total ``flow_usd`` and ``price_usd`` are finite JSON numbers; a
+ticker's ``flow_usd`` is a finite JSON number, ``null`` or absent; a fund day's
+numbers are finite JSON numbers, its ``name`` a non-empty string and its
+``ticker`` the requested one. The first live responses (2026-11-09) omit the
+envelope's ``msg`` and, on most of IBIT's days, a fund day's ``btc_holdings``:
+owner Part B ruling 14 makes both optional, and each is checked when present.
 
 **Holdout guard (owner Part B ruling 10, 2026-11-05).** Neither endpoint takes
 a date bound, so every response holds the whole history, holdout, reserve and
@@ -70,6 +72,7 @@ FLOW_DATE_KEYS = ("timestamp",)
 FUND_DATE_KEYS = ("assets_date", "market_date")
 
 _ENVELOPE_KEYS = frozenset({"code", "msg", "data"})
+_OPTIONAL_ENVELOPE_KEYS = frozenset({"msg"})  # the live responses omit it (owner Part B ruling 14)
 _FLOW_DAY_KEYS = frozenset({"timestamp", "flow_usd", "price_usd", "etf_flows"})
 _FLOW_TICKER_KEYS = frozenset({"etf_ticker", "flow_usd"})
 _FUND_DAY_KEYS = frozenset(
@@ -78,6 +81,7 @@ _FUND_DAY_KEYS = frozenset(
         "premium_discount", "shares_outstanding", "ticker",
     }
 )
+_OPTIONAL_FUND_DAY_KEYS = frozenset({"btc_holdings"})  # IBIT's live history mostly omits it (owner Part B ruling 14)
 _FUND_NUMBERS = ("btc_holdings", "market_price", "nav", "premium_discount", "shares_outstanding")
 _TICKER = re.compile(r"[A-Z][A-Z0-9]{0,9}")
 _API_KEY = re.compile(r"[!-~]{1,256}")  # visible ASCII only: no space, control byte or line break (review B6)
@@ -118,11 +122,11 @@ def _envelope(projection: Any, what: str, date_keys: tuple[str, ...]) -> list[An
         payload = json.loads(body, parse_float=Decimal)
     except (UnicodeDecodeError, ValueError):
         return _refuse(f"{what} is not JSON")
-    if not isinstance(payload, dict) or set(payload) != _ENVELOPE_KEYS:
-        return _refuse(f"{what} is not exactly {sorted(_ENVELOPE_KEYS)}")
+    if not isinstance(payload, dict) or not _ENVELOPE_KEYS - _OPTIONAL_ENVELOPE_KEYS <= set(payload) <= _ENVELOPE_KEYS:
+        return _refuse(f"{what} is not exactly {sorted(_ENVELOPE_KEYS)}, msg optional")
     if payload["code"] != "0" or not isinstance(payload["data"], list):
         return _refuse(f"{what} reports code {payload['code']!r}")
-    if not isinstance(payload["msg"], str):
+    if "msg" in payload and not isinstance(payload["msg"], str):
         return _refuse(f"{what}: msg {payload['msg']!r} is not a string")
     return payload["data"]
 
@@ -181,8 +185,8 @@ def parse_fund_history(projection: ProjectedResponse, *, ticker: str) -> dict[da
     first_day, last_day = getattr(projection, "first_day", None), getattr(projection, "last_day", None)
     assets: dict[date, Decimal] = {}
     for entry in _envelope(projection, f"the {ticker} history", FUND_DATE_KEYS):
-        if not isinstance(entry, dict) or set(entry) != _FUND_DAY_KEYS:
-            return _refuse(f"each {ticker} history day is exactly {sorted(_FUND_DAY_KEYS)}")
+        if not isinstance(entry, dict) or not _FUND_DAY_KEYS - _OPTIONAL_FUND_DAY_KEYS <= set(entry) <= _FUND_DAY_KEYS:
+            return _refuse(f"each {ticker} history day is exactly {sorted(_FUND_DAY_KEYS)}, btc_holdings optional")
         day = _trading_day(entry["assets_date"], f"a {ticker} assets date", first_day, last_day)
         _trading_day(entry["market_date"], f"a {ticker} market date", first_day, last_day)  # declared: checked (F5)
         if entry["ticker"] != ticker:
@@ -190,7 +194,8 @@ def parse_fund_history(projection: ProjectedResponse, *, ticker: str) -> dict[da
         if not isinstance(entry["name"], str) or not entry["name"].strip():
             return _refuse(f"a {ticker} history day has no fund name")
         for field in _FUND_NUMBERS:  # unused, but declared: checked (review F5)
-            _usd(entry[field], f"{ticker} {day} {field}")
+            if field in entry or field not in _OPTIONAL_FUND_DAY_KEYS:  # btc_holdings only when present (ruling 14)
+                _usd(entry[field], f"{ticker} {day} {field}")
         if day in assets:
             raise BackfillRefused("DUPLICATE_PROVIDER_RECORD", f"{ticker} assets for {day} appear twice")
         value = _usd(entry["net_assets"], f"{ticker} {day} net assets")
