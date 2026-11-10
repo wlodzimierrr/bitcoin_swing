@@ -15,9 +15,10 @@ response, the requester refuses one that is not a JSON list of candle rows,
 each starting with the integer epoch the adapter documents. It also refuses
 any candle dated outside the data window: that is an exposure to record,
 refused and never filtered (Part A's decision 1). The adapter itself keeps
-only the requested hours and checks each candle. Every value it returns must
-be one ``raw.btc_ohlcv``'s ``NUMERIC(38,18)`` columns hold exactly, so the row
-persisted is the row read.
+only the requested hours and checks each candle. Every JSON fraction reaches it
+as the exact decimal the venue spelled, never a binary float (review D1), and
+every value it returns must be one ``raw.btc_ohlcv``'s ``NUMERIC(38,18)``
+columns hold exactly, so the row persisted is the row read.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Context, Decimal, InvalidOperation, localcontext
 from typing import Any
 
 from btc_predictor.data.bitfinex import BitfinexOhlcvProvider
@@ -46,6 +48,9 @@ TIMEFRAME = "1h"
 VALUE_FIELDS = ("open", "high", "low", "close", "volume")
 _HOUR = timedelta(hours=1)
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+# every JSON fraction is decoded as the exact decimal it spells, never a binary float (review D1), in a context
+# where one whose exponent no decimal can hold refuses whatever the caller's traps (as re-review R14-1 fixed)
+_DECODING_CONTEXT = Context(traps=[InvalidOperation])
 
 JsonRequester = Callable[[str], Any]
 
@@ -132,7 +137,10 @@ def bounded_requester(fetcher: Fetcher, candle_instant: Callable[[Any, str], dat
     """The adapter's JSON requester, read through ``fetcher`` and bounded to the data window.
 
     The response must be a JSON list of candle rows, each a non-empty list
-    whose first element is the integer epoch the venue documents. Every candle
+    whose first element is the integer epoch the venue documents. A JSON
+    fraction is decoded as the exact decimal it spells (review D1): the
+    adapter's ``Decimal(str(value))`` then keeps it exactly, so the value
+    checked against ``raw.btc_ohlcv`` is the value the venue sent. Every candle
     must lie inside the data window, or the response is refused (an exposure,
     never filtered). The rest of each row is the adapter's to check.
     """
@@ -140,9 +148,12 @@ def bounded_requester(fetcher: Fetcher, candle_instant: Callable[[Any, str], dat
     def request_json(url: str) -> Any:
         page = fetcher.fetch(url)
         try:
-            payload = json.loads(page.body, parse_constant=_no_constant)
+            with localcontext(_DECODING_CONTEXT):
+                payload = json.loads(page.body, parse_float=Decimal, parse_constant=_no_constant)
         except (UnicodeDecodeError, ValueError, RecursionError):
             raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: a response is not JSON") from None
+        except InvalidOperation:
+            raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: a response holds a number no decimal can hold") from None
         if not isinstance(payload, list):
             raise BackfillRefused("RESPONSE_SHAPE_REFUSED", f"{what}: a response is not a list of candles")
         for index, row in enumerate(payload):

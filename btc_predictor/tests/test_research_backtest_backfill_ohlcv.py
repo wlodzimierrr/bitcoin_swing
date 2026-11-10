@@ -357,7 +357,7 @@ def test_a_malformed_bitfinex_answer_refuses_without_raising(body: bytes) -> Non
     [
         "[1580403600, 9300, 9400, 9350, 9380, 1e-20]",  # more places than NUMERIC(38,18) keeps
         "[1580403600, 9300, 9400, 9350, 9380, 1.25e-19]",
-        "[1580403600, 9300, 1e400, 9350, 9380, 1]",  # a JSON numeral that decodes to an infinite float
+        "[1580403600, 9300, 1e400, 9350, 9380, 1]",  # an exponent far beyond the column
         "[1580403600, 1e21, 1e21, 1e21, 1e21, 1]",  # 10^21 does not fit below 10^20
     ],
 )
@@ -365,6 +365,56 @@ def test_a_value_raw_btc_ohlcv_cannot_hold_exactly_refuses(row: str) -> None:
     api = CandleApi("coinbase", body=f"[{row}]".encode())
     error = refused("RESPONSE_SHAPE_REFUSED", ohlcv.read_missing_hours, make_fetcher(api), "coinbase")  # type: ignore[arg-type]
     assert "holds exactly" in str(error), str(error)
+
+
+# review D1: a JSON fraction is decoded as the decimal it spells, never through a binary float
+FIRST_CANDLE = {"coinbase": "[[1580403600, 9300, 9400, 9350, 9380, {}]]", "bitfinex": "[[1581418800000, 9350, 9380, 9400, 9300, {}]]"}
+EXACT_VOLUMES = [
+    "0.123456789012345678",  # eighteen places: a float keeps seventeen significant digits
+    "99999999999999999999.999999999999999999",  # the largest value NUMERIC(38,18) holds: a float rounds it to 10^20
+    "12345678901234567890.123456789012345678",
+    "123.4567",
+]
+INEXACT_VOLUMES = [  # (numeral, the guard that refuses it)
+    ("0.1234567890123456789", "holds exactly"),  # nineteen places: a float rounded it to a value that fits
+    ("1e-324", "holds exactly"),  # a float underflowed it to zero, persisted as a zero volume
+    ("100000000000000000000.000000000000000001", "holds exactly"),
+    ("1e+1000000000000000000", "no decimal can hold"),  # beyond any decimal: refused, never raised (as R14-1)
+]
+
+
+@pytest.mark.parametrize("unit", ["coinbase", "bitfinex"])
+@pytest.mark.parametrize("numeral", EXACT_VOLUMES)
+def test_a_fraction_is_persisted_exactly_as_the_venue_spelled_it(unit: str, numeral: str, store: run.EvidenceStore) -> None:
+    database = Database()
+    api = CandleApi(unit, body=FIRST_CANDLE[unit].format(numeral).encode())
+    report = run.run_unit(context(api, store, database), "ohlcv-missing-hours", unit)
+    assert report.status == "DONE", report.detail
+    (row,) = inserted(database)
+    assert row["timestamp"] == all_hours(unit)[0] and str(row["volume"]) == numeral and row["volume"] == Decimal(numeral)
+    assert row["open"] == Decimal("9350")
+
+
+@pytest.mark.parametrize("unit", ["coinbase", "bitfinex"])
+@pytest.mark.parametrize(("numeral", "guard"), INEXACT_VOLUMES)
+def test_a_fraction_the_column_cannot_hold_is_refused_never_rounded(unit: str, numeral: str, guard: str, store: run.EvidenceStore) -> None:
+    database = Database()
+    api = CandleApi(unit, body=FIRST_CANDLE[unit].format(numeral).encode())
+    report = run.run_unit(context(api, store, database), "ohlcv-missing-hours", unit)
+    assert report.status == "REFUSED" and report.detail.startswith("RESPONSE_SHAPE_REFUSED"), report.detail
+    assert guard in report.detail, report.detail
+    assert database.connections == [] and not store.has_directory("ohlcv-missing-hours", unit)
+
+
+def test_decoding_is_exact_whatever_the_callers_decimal_context() -> None:
+    import decimal
+
+    api = CandleApi("coinbase", body=FIRST_CANDLE["coinbase"].format("0.123456789012345678").encode())
+    with decimal.localcontext(decimal.Context(prec=3, traps=[])):
+        read = ohlcv.read_missing_hours(make_fetcher(api), "coinbase")  # type: ignore[arg-type]
+        api_huge = CandleApi("coinbase", body=FIRST_CANDLE["coinbase"].format("1e+1000000000000000000").encode())
+        error = refused("RESPONSE_SHAPE_REFUSED", ohlcv.read_missing_hours, make_fetcher(api_huge), "coinbase")  # type: ignore[arg-type]
+    assert str(read.rows[0]["volume"]) == "0.123456789012345678" and "no decimal can hold" in str(error)
 
 
 @pytest.mark.parametrize("status", [404, 429, 500])
