@@ -2,9 +2,11 @@
 
 Part A's adapters take a caller-supplied :class:`backfill_sources.Transport` and
 never import a client; this module supplies the real one. It sends a ``GET``
-only to the six hosts Part B uses (Binance's public archive and its listing
-bucket, Kraken Futures, Coin Metrics Community, CoinGlass and Tardis's public
-exchange metadata) and refuses any other URL before connecting. Transient
+only to the eight hosts Part B uses (Binance's public archive and its listing
+bucket, Kraken Futures, Coin Metrics Community, CoinGlass, Tardis's public
+exchange metadata, and, for the re-requested missing hours of owner Part B
+ruling 15, Coinbase Exchange's and Bitfinex's public candle APIs) and refuses
+any other URL before connecting. Transient
 failures (a connection error, a timeout, HTTP 429 or a 5xx) are retried with a
 growing pause, honouring a short ``Retry-After``; any other status, and the last
 attempt's status, is returned unchanged for the fetcher to judge, so an error is
@@ -39,6 +41,8 @@ ALLOWED_HOSTS = frozenset(
         "community-api.coinmetrics.io",
         "open-api-v4.coinglass.com",
         "api.tardis.dev",
+        "api.exchange.coinbase.com",  # owner Part B ruling 15: the BTC-020 adapters' hosts
+        "api-pub.bitfinex.com",
     }
 )
 USER_AGENT = "bitcoin-swing-research/1.0"

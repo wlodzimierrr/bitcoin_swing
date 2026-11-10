@@ -4,8 +4,10 @@ The ticket requires collection through the existing collectors and their
 provider protocols, with no collector, schema or migration change. The
 adapters read and verify whole archives first, so these wrappers hold a
 finished collection and serve it to BTC-021's ``collect_btc_derivatives``
-(:class:`DerivativesProvider`) and BTC-022's ``collect_etf_flows``
-(:class:`EtfFlowProvider`), which persist it with their idempotent inserts.
+(:class:`DerivativesProvider`), BTC-022's ``collect_etf_flows``
+(:class:`EtfFlowProvider`) and, for the re-requested missing hours (owner Part
+B ruling 15), BTC-020's ``collect_btc_ohlcv`` (:class:`OhlcvProvider`), which
+persist it with their idempotent inserts.
 
 The collectors stamp ``exchange``, ``symbol`` and ``provider`` from the request,
 not from the row. A provider protocol call carries the exchange and symbol but
@@ -14,8 +16,9 @@ F2). Rows are therefore persisted only through :func:`persist_derivatives` and
 :func:`persist_etf_flows`, which refuse, before the unchanged collector runs, a
 request that does not name the rows' own exchange, symbol and provider or that
 spans days outside the data window: a row is never renamed on its way into the
-raw tables. Rows are served for ``[start, end)`` (ETF dates inclusive, as
-BTC-022).
+raw tables. Rows are served for ``[start, end)`` (ETF dates and OHLCV hours
+inclusive, as BTC-022 and BTC-020). :func:`persist_ohlcv` also refuses a request
+for derived bars: the re-request persists the raw ``1h`` bars only.
 
 Owner review ruling 7 (2026-11-04): the collectors stamp every persisted row's
 ``ingested_at`` with one instant per call, the persistence instant (``now``
@@ -26,9 +29,9 @@ through unchanged.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from btc_predictor.data import (
@@ -41,8 +44,11 @@ from btc_predictor.data import (
     FuturesBasis,
     Liquidation,
     OpenInterest,
+    OhlcvCollectionRequest,
+    OhlcvCollectionResult,
     PerpVolume,
     collect_btc_derivatives,
+    collect_btc_ohlcv,
     collect_etf_flows,
 )
 from btc_predictor.research_backtest.backfill_sources import (
@@ -133,6 +139,40 @@ class RecordedEtfFlowProvider:
         return tuple(flow for flow in self.flows if flow.fund in wanted and start <= flow.observation_date <= end)
 
 
+@dataclass(frozen=True)
+class RecordedOhlcvProvider:
+    """One venue's re-requested ``1h`` candles as an ``OhlcvProvider`` (owner Part B ruling 15).
+
+    The rows are the BTC-020 adapter's own mappings; BTC-020's collector stamps
+    the exchange, symbol and provider from the request, which
+    :func:`persist_ohlcv` checks against these names.
+    """
+
+    exchange: str
+    symbol: str
+    provider: str
+    rows: tuple[Mapping[str, Any], ...] = ()
+
+    @property
+    def provider_id(self) -> str:  # BTC-020's collector checks a declared provider against its request
+        return self.provider
+
+    def collection_request(self, start: datetime, end: datetime) -> OhlcvCollectionRequest:
+        """The collector request that persists these rows under their own names, with no derived bar."""
+
+        return OhlcvCollectionRequest(
+            exchange=self.exchange, symbol=self.symbol, provider=self.provider, start=start, end=end, derived_timeframes=()
+        )
+
+    def fetch_ohlcv(self, *, exchange: str, symbol: str, timeframe: str, start: datetime, end: datetime) -> tuple[Mapping[str, Any], ...]:
+        if (exchange, symbol, timeframe) != (self.exchange, self.symbol, "1h"):
+            raise BackfillRefused(
+                "PROVIDER_REQUEST_MISMATCH", f"the request names {exchange}/{symbol} {timeframe}; these rows are {self.exchange}/{self.symbol} 1h"
+            )
+        start, end = require_utc(start, "start"), require_utc(end, "end")
+        return tuple(row for row in self.rows if start <= row["timestamp"] <= end)
+
+
 def persist_derivatives(
     provider: RecordedDerivativesProvider,
     connection: Any,
@@ -167,3 +207,28 @@ def persist_etf_flows(
     if not DATA_WINDOW_START.date() <= request.start <= request.end <= LAST_DATA_DAY:
         raise BackfillRefused("REQUEST_OUTSIDE_DATA_WINDOW", f"ETF days {request.start}..{request.end} are not inside the data window")
     return collect_etf_flows(provider, connection, request, ingested_at=ingested_at)
+
+
+def persist_ohlcv(
+    provider: RecordedOhlcvProvider,
+    connection: Any,
+    request: OhlcvCollectionRequest,
+    *,
+    ingested_at: datetime | None = None,
+) -> OhlcvCollectionResult:
+    """Persist re-requested ``1h`` candles through BTC-020's collector under their own names (owner Part B ruling 15).
+
+    The request must name the rows' exchange, symbol and provider, ask for no
+    derived bar, and cover hours inside the data window; the collector's
+    statement is insert-only, so an hour already stored is never changed.
+    """
+
+    if not isinstance(provider, RecordedOhlcvProvider) or not isinstance(request, OhlcvCollectionRequest):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "persist a RecordedOhlcvProvider with an OhlcvCollectionRequest")
+    named, own = (request.exchange, request.symbol, request.provider), (provider.exchange, provider.symbol, provider.provider)
+    if named != own:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"the request names {named}; these rows are {own}")
+    if request.source_timeframe != "1h" or request.derived_timeframes:
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the re-request persists raw 1h bars only, never a derived bar")
+    require_request_span(request.start, request.end + timedelta(hours=1), "an OHLCV persistence request")
+    return collect_btc_ohlcv(provider, connection, request, ingested_at=ingested_at)

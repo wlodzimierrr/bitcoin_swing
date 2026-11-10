@@ -40,6 +40,12 @@ or the window start to 2025-12-31.
 
 CoinGlass (owner Part B ruling 10) runs only with ``--allow-coinglass``, which
 the operator passes once the projection has passed its independent review.
+
+``ohlcv-missing-hours`` (owner Part B ruling 15) re-requests the Coinbase and
+Bitfinex hours RBT-002 found missing, one unit per venue, through the BTC-020
+adapters, and persists what returns through BTC-020's collector with no
+derived bar; an hour still missing stays a preserved gap, listed in the unit's
+summary.
 """
 
 from __future__ import annotations
@@ -63,12 +69,15 @@ from btc_predictor.research_backtest import backfill_binance as binance
 from btc_predictor.research_backtest import backfill_coinglass as coinglass
 from btc_predictor.research_backtest import backfill_coinmetrics as coinmetrics
 from btc_predictor.research_backtest import backfill_kraken as kraken
+from btc_predictor.research_backtest import backfill_ohlcv as ohlcv
 from btc_predictor.research_backtest import replay_inputs_v2 as v2
 from btc_predictor.research_backtest.backfill_persistence import (
     RecordedDerivativesProvider,
     RecordedEtfFlowProvider,
+    RecordedOhlcvProvider,
     persist_derivatives,
     persist_etf_flows,
+    persist_ohlcv,
 )
 from btc_predictor.research_backtest.backfill_projection import ProjectedResponse, verified_body
 from btc_predictor.research_backtest.backfill_sources import (
@@ -565,6 +574,31 @@ def market_cap_unit(ctx: RunContext, unit: str) -> UnitOutput:
     return UnitOutput({"market_cap_evidence.json": collection.evidence_bytes}, summary)
 
 
+def persist_ohlcv_rows(
+    connection: Any,
+    ingested_at: datetime,
+    recorded: RecordedOhlcvProvider,
+    runs: Iterable[tuple[datetime, datetime]],
+) -> dict[str, int]:
+    """Persist one collector call per missing run (owner Part B ruling 15); every row must land in a run, no derived bar."""
+
+    raw = 0
+    for first, last in runs:
+        result = persist_ohlcv(recorded, connection, recorded.collection_request(first, last), ingested_at=ingested_at)
+        if result.derived_bars:
+            raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the re-request persisted a derived bar")
+        raw += len(result.raw_bars)
+    if raw != len(recorded.rows):
+        raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", f"persisted {raw} bars, not every row ({len(recorded.rows)})")
+    return {"btc_ohlcv": raw}
+
+
+def ohlcv_missing_hours_unit(ctx: RunContext, unit: str) -> UnitOutput:
+    read = ohlcv.read_missing_hours(ctx.fetcher(), unit)
+    recorded = RecordedOhlcvProvider(read.venue.exchange, read.venue.symbol, read.venue.provider, rows=read.rows)
+    return UnitOutput({}, read.summary(), lambda c, at: persist_ohlcv_rows(c, at, recorded, read.runs))
+
+
 def _coinglass_allowed(ctx: RunContext) -> None:
     if not ctx.allow_coinglass:
         raise BackfillRefused(
@@ -782,6 +816,7 @@ SOURCES: dict[str, Source] = {
         lambda: ("all",), coinglass_unit, "etf_flows", ("flow_history.projected.json",), frozenset({"missing_publication_dates"}),
         coinglass_resume, coinglass_evidence, coinglass_proven,
     ),
+    "ohlcv-missing-hours": Source(lambda: tuple(sorted(ohlcv.MISSING_HOURS_VENUES)), ohlcv_missing_hours_unit, "btc_ohlcv"),
 }
 
 
