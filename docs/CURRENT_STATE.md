@@ -1500,7 +1500,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   R14-1, a CoinGlass number no decimal can hold that raises instead of
   refusing, which the owner chose to fix; the fix `d9e611f` PASSED its
   independent re-review on 2026-11-10 with no new finding, closing ruling
-  14's code review, and CoinGlass is now to be collected with it)).
+  14's code review, and CoinGlass was collected with it the same day:
+  every Part B source is now collected)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1818,8 +1819,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   decimal can hold raises instead of refusing, a limitation recorded
   earlier outside the Kraken review; the owner chose to fix it, and the
   fix `d9e611f` PASSED its independent re-review on 2026-11-10 with no
-  new finding, closing ruling 14's code review; CoinGlass is now to be
-  collected with it). RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  new finding, closing ruling 14's code review; CoinGlass was collected
+  with it the same day: one unit, 11 funds, its database rows matching its
+  summary, holdout and reserve records dropped unread. Every Part B source
+  is collected, and the Kraken and CoinGlass evidence is committed to the
+  private evidence repository). RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B R14-1
@@ -2262,9 +2266,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **owner's CoinGlass
-  collection** with the reviewed code `d9e611f` (`coinglass-etf
-  --allow-coinglass`); then the dataset build. RBT-006 stays blocked
+- **Next dependency-satisfied EPIC Y action:** the RBT-003 Part B
+  **dataset build** (a window-bounded database reader, the V1 and V2
+  builders, the manifests in the private evidence repository and a
+  value-free index here); every Part B source is collected. RBT-006 stays blocked
   until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
@@ -2933,7 +2938,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   PASS `dda1fef`; the Kraken completion, CoinGlass's live check and owner
   ruling 14 `321487e`; ruling 14's code `87dc505` with docs `cdbcb81`;
   its review FAIL (R14-1) `d3f0619`; the R14-1 fix `d9e611f` with docs
-  `2005d7c`; its re-review PASS in this documentation commit.
+  `2005d7c`; its re-review PASS `a7e9254`; the CoinGlass collection in
+  this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
