@@ -3552,8 +3552,8 @@ and a public repository, and the rulings so far leave these points open:
     nothing. Each of the 14 hours is observed with liquidations, but its
     total differs from Kraken's published hourly series. Every other
     observed hour (39,865) agrees exactly, and none lacks a series value. In
-    13 of the hours the executions total more than the series (10 of them
-    hold one liquidation), and no neighbouring hour offsets the difference.
+    13 of the hours the executions total more than the series, and no
+    neighbouring hour offsets the difference.
     The 14th, 2021-05-27 11:00, totals less: it is the first hour of the
     execution log's depth, so it is likely only partly covered. Under RBT-001A
     ruling 2, any disagreement refuses the build. Instead, the dataset build
