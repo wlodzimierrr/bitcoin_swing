@@ -1502,7 +1502,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   independent re-review on 2026-11-10 with no new finding, closing ruling
   14's code review, and CoinGlass was collected with it the same day:
   every Part B source is now collected; owner ruling 15 re-requests the 27
-  missing Coinbase and Bitfinex hours before the dataset build)).
+  missing Coinbase and Bitfinex hours before the dataset build, and owner
+  ruling 16 withholds the 14 Kraken hours whose totals disagree with
+  Kraken's hourly series, leaving their 13 days incomplete)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -2272,8 +2274,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   missing Coinbase and Bitfinex hours are re-requested through the BTC-020
   adapters first; then a window-bounded database reader, the V1 and V2
   builders, the frozen inputs and manifests in the private evidence
-  repository and a value-free index here). Both are validated and reviewed
-  together; then the owner's re-request run and the build. RBT-006 stays blocked
+  repository and a value-free index here; owner ruling 16: the 14 Kraken
+  hours that disagree with the series are withheld from the V2 builder).
+  Both are validated and reviewed together; then the owner's re-request run
+  and the build. RBT-006 stays blocked
   until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
@@ -2943,7 +2947,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   ruling 14 `321487e`; ruling 14's code `87dc505` with docs `cdbcb81`;
   its review FAIL (R14-1) `d3f0619`; the R14-1 fix `d9e611f` with docs
   `2005d7c`; its re-review PASS `a7e9254`; the CoinGlass collection
-  `545ad32`; owner ruling 15 in this documentation commit.
+  `545ad32`; owner ruling 15 `bd64bf1`; owner ruling 16 in this
+  documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
