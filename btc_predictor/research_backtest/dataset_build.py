@@ -17,7 +17,8 @@ keeps a value-free index.
    the basis listing, the market-cap file, and every Kraken day's hour
    evidence.
 3. Checks that each collected series holds exactly the rows its units record
-   persisted.
+   persisted, and that each venue's rows hold every hour its re-request
+   returned and none it left missing (review D2).
 4. Withholds from the V2 builder each Kraken hour whose total disagrees with
    Kraken's hourly series, with its rows (owner Part B ruling 16, amending
    RBT-001A ruling 2 for this build). Its day is then incomplete, as an
@@ -74,10 +75,11 @@ from typing import Any
 
 from btc_predictor.research import us_equity_market_closures as closures
 from btc_predictor.research_backtest import backfill_kraken as kraken
+from btc_predictor.research_backtest import backfill_ohlcv as ohlcv
 from btc_predictor.research_backtest import backfill_run as run
 from btc_predictor.research_backtest import replay_inputs as v1
 from btc_predictor.research_backtest import replay_inputs_v2 as v2
-from btc_predictor.research_backtest.backfill_sources import BACKFILL_TICKET, BackfillRefused, hours_of, sha256_hex
+from btc_predictor.research_backtest.backfill_sources import BACKFILL_TICKET, BackfillRefused, hours_of, iso, sha256_hex
 from btc_predictor.research_backtest.dataset_reader import (
     READER_VERSION,
     SERIES,
@@ -245,6 +247,8 @@ class BuildEvidence:
     liquidation_hours: tuple[v2.LiquidationHourEvidence, ...]
     persisted: Mapping[str, int]
     record: Mapping[str, Any]
+    # owner Part B ruling 15, review D2: per venue series, the hours its re-request returned and left missing
+    missing_hours: Mapping[str, tuple[frozenset[datetime], frozenset[datetime]]]
 
     @property
     def withheld_hours(self) -> frozenset[datetime]:
@@ -269,6 +273,37 @@ def _summary(files: Mapping[str, bytes], what: str) -> dict[str, Any]:
     if not isinstance(summary, dict):
         raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{what}: its summary is not a JSON object")
     return summary
+
+
+def _missing_hours_evidence(unit: str, files: Mapping[str, bytes]) -> tuple[str, frozenset[datetime], frozenset[datetime]]:
+    """One re-request unit's venue series and the hours it returned and left missing (review D2).
+
+    Its summary must list exactly the venue's scheduled hours as requested,
+    split into the hours returned (one row each) and the hours still missing.
+    """
+
+    what = f"{MISSING_HOURS_SOURCE} {unit}"
+    spec = ohlcv.MISSING_HOURS_VENUES.get(unit)
+    summary = _summary(files, what)
+    if spec is None:
+        raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{what}: no missing hours are scheduled for it")
+    scheduled = {iso(hour): hour for hour in spec.hours()}
+    returned, missing = summary.get("returned_hours"), summary.get("still_missing_hours")
+    if (
+        summary.get("venue") != spec.venue.venue_id
+        or summary.get("requested_hours") != list(scheduled)
+        or not isinstance(returned, list)
+        or not isinstance(missing, list)
+        or not all(type(hour) is str for hour in (*returned, *missing))
+        or sorted(returned + missing) != list(scheduled)
+        or summary.get("rows") != len(returned)
+    ):
+        raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{what}: its summary does not split the scheduled hours into returned and missing")
+    return (
+        venue_series_name(spec.venue),
+        frozenset(scheduled[hour] for hour in returned),
+        frozenset(scheduled[hour] for hour in missing),
+    )
 
 
 def load_build_evidence(store: run.EvidenceStore, *, units: Callable[[str], Sequence[str]] | None = None) -> BuildEvidence:
@@ -322,6 +357,13 @@ def load_build_evidence(store: run.EvidenceStore, *, units: Callable[[str], Sequ
         markers = [[unit, sha256_hex(v1.canonical_json_bytes(marker))] for unit, marker, _ in items]
         return {"unit_count": len(items), "first_unit": items[0][0], "last_unit": items[-1][0], "done_sha256": sha256_hex(v1.canonical_json_bytes(markers))}
 
+    missing_hours = {}
+    for unit, _, files in completed[MISSING_HOURS_SOURCE]:
+        name, returned, missing = _missing_hours_evidence(unit, files)
+        if name in missing_hours:
+            raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{MISSING_HOURS_SOURCE} {unit}: a second unit for {name}")
+        missing_hours[name] = (returned, missing)
+
     withheld = sorted(hour.hour_start for hour in hours if hour.corroboration == v2.CORROBORATION_DISAGREES)
     record = {
         "units": {source: bound(completed[source]) for source in EVIDENCE_SOURCES},
@@ -332,15 +374,26 @@ def load_build_evidence(store: run.EvidenceStore, *, units: Callable[[str], Sequ
             unit: _summary(files, f"{MISSING_HOURS_SOURCE} {unit}").get("still_missing_hours") for unit, _, files in completed[MISSING_HOURS_SOURCE]
         },
     }
-    return BuildEvidence(listing, market_cap, tuple(hours), persisted, record)
+    return BuildEvidence(listing, market_cap, tuple(hours), persisted, record, missing_hours)
 
 
 def require_persisted_rows(rows: DatasetRows, evidence: BuildEvidence) -> None:
-    """Each collected series holds exactly the rows its completed units record persisted."""
+    """Each collected series holds exactly the rows its completed units record persisted.
+
+    Each venue's rows hold every hour its re-request returned and persisted,
+    and none it left missing (owner Part B ruling 15, review D2).
+    """
 
     for name in SERIES_SOURCES:
         if len(rows[name]) != evidence.persisted[name]:
             raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{name}: the rows read are not the rows its units record persisted")
+    for name, (returned, missing) in evidence.missing_hours.items():
+        instant = SERIES_BY_NAME[name].instant_column.name
+        held = {getattr(bar, instant) for bar in rows[name]}
+        if not returned <= held:
+            raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{name}: an hour its re-request returned and persisted is not in the rows read")
+        if not held.isdisjoint(missing):
+            raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"{name}: an hour its re-request left missing is in the rows read")
 
 
 # --- the build -----------------------------------------------------------------------------------

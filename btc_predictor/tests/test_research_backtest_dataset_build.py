@@ -419,6 +419,104 @@ def test_rows_that_are_not_what_the_units_persisted_are_refused(world: Collected
         refused(build.DatasetBuildRefused, "EVIDENCE_MISMATCH", build.build_replay_datasets, fewer, evidence)
 
 
+# review D2: the hours a re-request returned must be in its venue's rows read, and those it left missing must not
+COINBASE_FIRST_MISSING = utc(2020, 1, 30, 17)
+BITFINEX_FIRST_MISSING = utc(2020, 2, 11, 11)
+
+
+class CandleWorld(World):
+    """Coinbase answers one candle, at its first missing hour; the adapter keeps it for that hour's run only."""
+
+    def __call__(self, url: str, headers: Any) -> TransportResponse:
+        if url.startswith("https://api.exchange.coinbase.com/"):
+            return TransportResponse(200, f"[[{int(COINBASE_FIRST_MISSING.timestamp())}, 9300, 9400, 9350, 9380, 1.5]]".encode())
+        return super().__call__(url, headers)
+
+
+def recollect_coinbase(world: Collected) -> tuple[OhlcvBar, ...]:
+    """Collect the Coinbase re-request again, returning one hour, and give back the bars it persisted."""
+
+    store = store_of(world)
+    shutil.rmtree(store.unit_dir("ohlcv-missing-hours", "coinbase"))
+    recorder = Recorder()
+    ctx = run.RunContext(transport=CandleWorld(), store=store, clock=lambda: RETRIEVED_AT, connect=recorder.connect, out=lambda line: None)
+    assert run.run_unit(ctx, "ohlcv-missing-hours", "coinbase").status == "DONE"
+    series = reader.SERIES_BY_NAME["ohlcv_1h_coinbase"]
+    return tuple(reader.owner_record(series, row) for row in recorder.rows("btc_ohlcv"))
+
+
+def with_bars(rows: reader.DatasetRows, name: str, bars: tuple[OhlcvBar, ...]) -> reader.DatasetRows:
+    series = reader.SERIES_BY_NAME[name]
+    return {**rows, name: reader.sorted_records(series, (*rows[name], *bars))}
+
+
+def test_ruling_15_every_hour_the_re_request_returned_must_be_in_the_rows_read(world: Collected) -> None:
+    persisted = recollect_coinbase(world)
+    assert [bar.timestamp for bar in persisted] == [COINBASE_FIRST_MISSING]
+    evidence = evidence_of(world)
+    returned, missing = evidence.missing_hours["ohlcv_1h_coinbase"]
+    assert returned == {COINBASE_FIRST_MISSING} and COINBASE_FIRST_MISSING not in missing and len(missing) == 10
+    assert evidence.missing_hours["ohlcv_1h_bitfinex"] == (frozenset(), frozenset(run.ohlcv.MISSING_HOURS_VENUES["bitfinex"].hours()))
+    # the database holds the returned hour: the build proceeds
+    held = with_bars(world.rows, "ohlcv_1h_coinbase", persisted)
+    datasets = build.build_replay_datasets(held, evidence)
+    (coinbase,) = [dataset for dataset in datasets.venues if dataset.venue is v1.COINBASE_REPLAY_VENUE]
+    assert coinbase.manifest["price_series"]["series"][0]["first_observation"] == COINBASE_FIRST_MISSING.isoformat()
+    # a database view without it is refused, before any builder runs
+    error = refused(build.DatasetBuildRefused, "EVIDENCE_MISMATCH", build.build_replay_datasets, world.rows, evidence)
+    assert "ohlcv_1h_coinbase" in str(error) and "returned" in str(error)
+
+
+def test_ruling_15_an_hour_the_re_request_left_missing_must_not_be_in_the_rows_read(world: Collected) -> None:
+    evidence = evidence_of(world)
+    (bar,) = [b for b in ohlcv_bars(v1.BITFINEX_REPLAY_VENUE) if b.timestamp == utc(2020, 2, 1, 0)]
+    stray = dataclasses.replace(bar, timestamp=BITFINEX_FIRST_MISSING)
+    error = refused(
+        build.DatasetBuildRefused, "EVIDENCE_MISMATCH", build.build_replay_datasets, with_bars(world.rows, "ohlcv_1h_bitfinex", (stray,)), evidence
+    )
+    assert "ohlcv_1h_bitfinex" in str(error) and "left missing" in str(error)
+
+
+def _rewritten_summary(world: Collected, change: Any) -> None:
+    """Store the Coinbase unit again with a changed summary and a marker that binds it."""
+
+    store = store_of(world)
+    directory = store.unit_dir("ohlcv-missing-hours", "coinbase")
+    files = {path.name: path.read_bytes() for path in directory.iterdir() if path.name != "DONE.json"}
+    marker = json.loads((directory / "DONE.json").read_bytes())
+    summary = json.loads(files["summary.json"])
+    change(summary)
+    files["summary.json"] = json.dumps(summary).encode()
+    shutil.rmtree(directory)
+    store.write("ohlcv-missing-hours", "coinbase", files, completed_at=RETRIEVED_AT, persisted={"btc_ohlcv": summary["rows"]})
+    assert marker["persisted"] == {"btc_ohlcv": 0}
+
+
+SUMMARY_CHANGES = {
+    "another venue": lambda s: s.update(venue="BITFINEX"),
+    "an hour returned twice": lambda s: s.update(returned_hours=s["still_missing_hours"][:1] * 2, still_missing_hours=s["still_missing_hours"][1:], rows=2),
+    "an unscheduled hour returned": lambda s: s.update(returned_hours=["2020-01-30T18:00:00+00:00"], rows=1),
+    "an hour neither returned nor missing": lambda s: s.update(still_missing_hours=s["still_missing_hours"][1:]),
+    "an hour both returned and missing": lambda s: s.update(returned_hours=s["still_missing_hours"][:1], rows=1),
+    "a requested hour dropped": lambda s: s.update(requested_hours=s["requested_hours"][1:], still_missing_hours=s["still_missing_hours"][1:]),
+    "an hour not text": lambda s: s.update(still_missing_hours=[1, *s["still_missing_hours"][1:]]),
+    "missing hours not a list": lambda s: s.update(still_missing_hours="all"),
+    "rows not the hours returned": lambda s: s.update(returned_hours=s["still_missing_hours"][:1], still_missing_hours=s["still_missing_hours"][1:], rows=0),
+}
+
+
+@pytest.mark.parametrize("change", sorted(SUMMARY_CHANGES))
+def test_a_re_request_summary_that_does_not_split_the_scheduled_hours_is_refused(world: Collected, change: str) -> None:
+    _rewritten_summary(world, SUMMARY_CHANGES[change])
+    error = refused(build.DatasetBuildRefused, "EVIDENCE_MISMATCH", evidence_of, world)
+    assert "ohlcv-missing-hours coinbase" in str(error)
+
+
+def test_a_rewritten_but_consistent_summary_still_loads(world: Collected) -> None:
+    _rewritten_summary(world, lambda s: None)  # the control: the rewrite itself is accepted
+    assert evidence_of(world).missing_hours["ohlcv_1h_coinbase"][0] == frozenset()
+
+
 # --- the frozen files ------------------------------------------------------------------------------
 
 
