@@ -576,6 +576,116 @@ def test_a_stored_dataset_that_does_not_match_its_build_record_is_refused(world:
     refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
 
 
+# review D4: a file is never expanded past the size its record declares
+BOMB_SIZE = 96 << 20
+
+
+@pytest.fixture(scope="module")
+def bomb() -> tuple[bytes, str]:
+    """96 MiB of zeros as one gzip member of about a hundred kilobytes, and the zeros' SHA-256."""
+
+    zeros = bytes(BOMB_SIZE)
+    return run.deterministic_gzip(zeros), build.sha256_hex(zeros)
+
+
+def _rebind(directory: Path, part: str, name: str, compressed: bytes, **declared: Any) -> None:
+    """Store ``compressed`` as one file, its record matching its gzip bytes and declaring ``declared``."""
+
+    (directory / part / f"{name}.json.gz").write_bytes(compressed)
+    record = json.loads((directory / "BUILD.json").read_bytes())
+    record[part][name].update(gzip_sha256=build.sha256_hex(compressed), gzip_size=len(compressed), **declared)
+    (directory / "BUILD.json").write_bytes(v1.canonical_json_bytes(record))
+
+
+def _peak_bytes(call: Any, *args: Any) -> int:
+    import tracemalloc
+
+    tracemalloc.start()
+    try:
+        with contextlib.suppress(build.DatasetBuildRefused):
+            call(*args)
+        return tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+
+
+def test_a_stored_file_that_expands_past_its_declared_size_is_refused_before_it_is_held(world: Collected, bomb: tuple[bytes, str]) -> None:
+    built(world)
+    _rebind(world.root / build.DATASET_LAYOUT, "inputs", "etf_flows", bomb[0], size=1)
+    error = refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+    assert "inputs/etf_flows.json.gz" in str(error) and "declared size" in str(error)
+    assert _peak_bytes(build.load_dataset, store_of(world)) < BOMB_SIZE // 8
+
+
+# each declared size on the bomb, with its true digest, and the bound lowered below it: refused, never expanded
+DECLARED_SIZES = {"beyond the bound": BOMB_SIZE, "negative": -1, "a boolean": True, "text": str(BOMB_SIZE), "absent": None}
+
+
+@pytest.mark.parametrize("declared", sorted(set(DECLARED_SIZES) - {"absent"}))
+def test_a_declared_size_the_build_will_not_expand_to_is_refused(
+    world: Collected, bomb: tuple[bytes, str], declared: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built(world)
+    monkeypatch.setattr(build, "MAX_FILE_SIZE", BOMB_SIZE - 1)
+    _rebind(world.root / build.DATASET_LAYOUT, "inputs", "etf_flows", bomb[0], size=DECLARED_SIZES[declared], sha256=bomb[1])
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+    assert _peak_bytes(build.load_dataset, store_of(world)) < BOMB_SIZE // 8
+    monkeypatch.setattr(build, "MAX_FILE_SIZE", BOMB_SIZE)  # the control: within the bound, the declared size loads
+    if declared == "beyond the bound":
+        assert len(build.load_dataset(store_of(world)).inputs["etf_flows"]) == BOMB_SIZE
+
+
+def test_a_stored_file_of_two_gzip_members_is_refused(world: Collected) -> None:
+    built(world)
+    directory = world.root / build.DATASET_LAYOUT
+    data = gzip.decompress((directory / "inputs" / "etf_flows.json.gz").read_bytes())
+    split = run.deterministic_gzip(data[:10]) + run.deterministic_gzip(data[10:])
+    assert gzip.decompress(split) == data  # gzip itself would accept it
+    _rebind(directory, "inputs", "etf_flows", split)
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+    _rebind(directory, "inputs", "etf_flows", run.deterministic_gzip(data) + b"\0")
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+    _rebind(directory, "inputs", "etf_flows", run.deterministic_gzip(data)[:-8])  # its CRC-32 and size trailer cut
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+    _rebind(directory, "inputs", "etf_flows", run.deterministic_gzip(data))  # the control: one member loads
+    assert build.load_dataset(store_of(world)).inputs["etf_flows"] == data
+
+
+def _rewritten_hour_evidence(world: Collected, compressed: bytes, **summary_changes: Any) -> None:
+    store = store_of(world)
+    directory = store.unit_dir("kraken-liquidations", LIQUIDATION_DAY.isoformat())
+    files = {path.name: path.read_bytes() for path in directory.iterdir() if path.name != "DONE.json"}
+    marker = json.loads((directory / "DONE.json").read_bytes())
+    files[build.HOUR_EVIDENCE_FILE] = compressed
+    files["summary.json"] = json.dumps({**json.loads(files["summary.json"]), **summary_changes}).encode()
+    shutil.rmtree(directory)
+    store.write("kraken-liquidations", LIQUIDATION_DAY.isoformat(), files, completed_at=RETRIEVED_AT, persisted=marker["persisted"])
+
+
+def test_hour_evidence_that_expands_past_its_recorded_size_is_refused_before_it_is_held(world: Collected, bomb: tuple[bytes, str]) -> None:
+    _rewritten_hour_evidence(world, bomb[0])
+    error = refused(build.DatasetBuildRefused, "EVIDENCE_MISMATCH", evidence_of, world)
+    assert LIQUIDATION_DAY.isoformat() in str(error) and "recorded size" in str(error)
+    assert _peak_bytes(evidence_of, world) < BOMB_SIZE // 8
+
+
+@pytest.mark.parametrize("declared", sorted(DECLARED_SIZES))
+def test_hour_evidence_without_a_size_the_build_will_expand_to_is_refused(
+    world: Collected, bomb: tuple[bytes, str], declared: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(build, "MAX_FILE_SIZE", BOMB_SIZE - 1)
+    _rewritten_hour_evidence(world, bomb[0], evidence_size=DECLARED_SIZES[declared], evidence_sha256=bomb[1])
+    error = refused(build.DatasetBuildRefused, "EVIDENCE_MISMATCH", evidence_of, world)
+    assert "recorded size" in str(error), str(error)
+    assert _peak_bytes(evidence_of, world) < BOMB_SIZE // 8
+
+
+def test_rewritten_hour_evidence_of_its_recorded_size_still_loads(world: Collected) -> None:
+    directory = store_of(world).unit_dir("kraken-liquidations", LIQUIDATION_DAY.isoformat())
+    _rewritten_hour_evidence(world, (directory / build.HOUR_EVIDENCE_FILE).read_bytes())  # the control
+    assert len(evidence_of(world).liquidation_hours) == 48
+
+
 def test_a_linked_stored_file_is_refused(world: Collected, tmp_path: Path) -> None:
     built(world)
     path = world.root / build.DATASET_LAYOUT / "inputs" / "etf_flows.json.gz"

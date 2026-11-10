@@ -61,7 +61,6 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import gzip
 import hashlib
 import json
 import re
@@ -123,6 +122,9 @@ LISTING_FILE = "futures_basis_listing_evidence.json"
 MARKET_CAP_FILE = "market_cap_evidence.json"
 
 _DECODING_CONTEXT = Context(traps=[InvalidOperation])  # a numeral decodes exactly or refuses, whatever the caller's context
+# review D4: no file is expanded past the size its record declares, and no declared size past this bound; no frozen or
+# evidence file approaches it (the dry build's largest, a manifest, was 76 MB)
+MAX_FILE_SIZE = 1 << 30
 # the canonical decimal's shape (positional, no exponent), checked before any Decimal is built, so a numeral
 # such as 1e999999999999999999 is refused instead of being spelled out digit by digit
 _CANONICAL_NUMERAL = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]*[1-9])?")
@@ -260,6 +262,30 @@ class BuildEvidence:
         return frozenset(hour.hour_start for hour in self.liquidation_hours if hour.corroboration == v2.CORROBORATION_DISAGREES)
 
 
+def _declared_size(value: Any) -> int | None:
+    """A size a record declares, if it is an integer the build will expand to (review D4)."""
+
+    return value if type(value) is int and 0 <= value <= MAX_FILE_SIZE else None
+
+
+def _gunzip(data: bytes, size: int) -> bytes | None:
+    """The one gzip member ``data`` holds, if it decompresses to exactly ``size`` bytes (review D4).
+
+    At most ``size + 1`` bytes are ever expanded, so a file that expands
+    further is refused before its output is held. Trailing bytes or a second
+    member refuse: the build writes one member.
+    """
+
+    decompressor = zlib.decompressobj(wbits=31)  # gzip framing, its CRC-32 and size trailer checked
+    try:
+        output = decompressor.decompress(data, size + 1)
+    except zlib.error:
+        return None
+    if len(output) != size or not decompressor.eof or decompressor.unused_data:
+        return None
+    return output
+
+
 def _no_transport(url: str, headers: Mapping[str, str]) -> Any:
     raise BackfillRefused("PROVIDER_REQUEST_MISMATCH", "the dataset build makes no request")
 
@@ -347,11 +373,12 @@ def load_build_evidence(store: run.EvidenceStore, *, units: Callable[[str], Sequ
     )
     hours: list[v2.LiquidationHourEvidence] = []
     for day, _, files in completed["kraken-liquidations"]:
-        try:
-            data = gzip.decompress(files[HOUR_EVIDENCE_FILE])
-        except (EOFError, OSError, zlib.error):
-            raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"kraken-liquidations {day}: its hour evidence is not gzip") from None
-        day_hours = kraken.parse_liquidation_hour_evidence(data, expected_sha256=_summary(files, f"kraken-liquidations {day}").get("evidence_sha256"))
+        summary = _summary(files, f"kraken-liquidations {day}")
+        size = _declared_size(summary.get("evidence_size"))
+        data = None if size is None else _gunzip(files[HOUR_EVIDENCE_FILE], size)
+        if data is None:
+            raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"kraken-liquidations {day}: its hour evidence is not one gzip member of its recorded size")
+        day_hours = kraken.parse_liquidation_hour_evidence(data, expected_sha256=summary.get("evidence_sha256"))
         if tuple(hour.hour_start for hour in day_hours) != hours_of(date.fromisoformat(day)):
             raise DatasetBuildRefused("EVIDENCE_MISMATCH", f"kraken-liquidations {day}: its hour evidence is not that day's 24 hours")
         hours.extend(day_hours)
@@ -570,10 +597,10 @@ def load_dataset(store: run.EvidenceStore) -> StoredDataset:
             compressed = _read_real_file(directory, entry["file"])
             if (sha256_hex(compressed), len(compressed)) != (entry["gzip_sha256"], entry["gzip_size"]):
                 raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{entry['file']} does not match its gzip digest")
-            try:
-                data = gzip.decompress(compressed)
-            except (EOFError, OSError, zlib.error):
-                raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{entry['file']} is not gzip") from None
+            size = _declared_size(entry["size"])
+            data = None if size is None else _gunzip(compressed, size)  # never expanded past its declared size (review D4)
+            if data is None:
+                raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{entry['file']} is not one gzip member of its declared size")
             if (sha256_hex(data), len(data)) != (entry["sha256"], entry["size"]):
                 raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{entry['file']} does not match its digest")
             stored[part][name] = data
