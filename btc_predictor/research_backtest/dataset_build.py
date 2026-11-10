@@ -570,18 +570,107 @@ def _read_real_file(directory: Path, relative: str) -> bytes:
     return path.read_bytes()
 
 
+_DIGEST = re.compile(r"[0-9a-f]{64}")
+_COMMIT = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+_UNIT_BOUND_KEYS = frozenset({"unit_count", "first_unit", "last_unit", "done_sha256"})
+_EVIDENCE_KEYS = frozenset(
+    {"units", "withheld_liquidation_hours", "futures_basis_listing_sha256", "market_cap_evidence_sha256", "still_missing_hours"}
+)
+
+
+def _is_digest(value: Any) -> bool:
+    return type(value) is str and _DIGEST.fullmatch(value) is not None
+
+
+def _is_texts(value: Any) -> bool:
+    return type(value) is list and all(type(item) is str for item in value)
+
+
+def _is_count(value: Any) -> bool:
+    return type(value) is int and value >= 0
+
+
+def _well_formed_evidence(evidence: Any) -> bool:
+    """The evidence section's shape, as ``load_build_evidence`` writes it: names, counts, digests and hours."""
+
+    if type(evidence) is not dict or set(evidence) != _EVIDENCE_KEYS:
+        return False
+    units, missing = evidence["units"], evidence["still_missing_hours"]
+    return (
+        type(units) is dict
+        and sorted(units) == sorted(EVIDENCE_SOURCES)
+        and all(
+            type(bound) is dict
+            and set(bound) == _UNIT_BOUND_KEYS
+            and _is_count(bound["unit_count"])
+            and type(bound["first_unit"]) is str
+            and type(bound["last_unit"]) is str
+            and _is_digest(bound["done_sha256"])
+            for bound in units.values()
+        )
+        and _is_texts(evidence["withheld_liquidation_hours"])
+        and _is_digest(evidence["futures_basis_listing_sha256"])
+        and _is_digest(evidence["market_cap_evidence_sha256"])
+        and type(missing) is dict
+        and sorted(missing) == sorted(ohlcv.MISSING_HOURS_VENUES)
+        and all(_is_texts(hours) for hours in missing.values())
+    )
+
+
+def _well_formed_build_record(record: dict[str, Any]) -> bool:
+    """``BUILD.json``'s metadata as this build writes it (review D5); the file entries are checked with their files."""
+
+    gzip_record = record["gzip"]
+    return (
+        record["build_version"] == BUILD_VERSION
+        and record["ticket"] == BACKFILL_TICKET
+        and record["evidence_class"] == v1.RESEARCH_EVIDENCE_CLASS
+        and type(record["code_commit"]) is str
+        and _COMMIT.fullmatch(record["code_commit"]) is not None
+        and record["window"] == v1.DATA_WINDOW.as_record()
+        and record["reader"] == {"version": READER_VERSION, "series": [series.as_record() for series in SERIES]}
+        and type(gzip_record) is dict
+        and set(gzip_record) == {"zlib_version", "compresslevel", "mtime"}
+        and type(gzip_record["zlib_version"]) is str
+        and type(gzip_record["compresslevel"]) is int
+        and type(gzip_record["mtime"]) is int
+        and (gzip_record["compresslevel"], gzip_record["mtime"]) == (9, 0)
+        and _well_formed_evidence(record["evidence"])
+    )
+
+
+def _well_formed_entry(entry: Any, part: str, name: str) -> bool:
+    """A file entry's keys, name and record count; its digests and sizes are checked against its file."""
+
+    keys = FILE_ENTRY_KEYS | ({"records"} if part == "inputs" else set())
+    return (
+        type(entry) is dict
+        and set(entry) == keys
+        and entry["file"] == f"{part}/{name}.json.gz"
+        and (part != "inputs" or _is_count(entry["records"]))
+    )
+
+
 def load_dataset(store: run.EvidenceStore) -> StoredDataset:
-    """The stored dataset, every file checked against ``BUILD.json`` (gzip and uncompressed digests and sizes)."""
+    """The stored dataset, every file checked against ``BUILD.json`` (gzip and uncompressed digests and sizes).
+
+    ``BUILD.json`` must be its canonical bytes, with every value of the type
+    and shape the build writes; anything else, a non-finite number among it,
+    refuses, never raises (review D5).
+    """
 
     directory = dataset_directory(store)
     store._real_directory(directory, create=False)
     record_bytes = _read_real_file(directory, BUILD_FILE)
     try:
         record = json.loads(record_bytes)
+        canonical = v1.canonical_json_bytes(record)  # review D5: NaN, Infinity or 1e999 refuse here, never raise
     except (UnicodeDecodeError, ValueError, RecursionError):
-        record = None
-    if not isinstance(record, dict) or set(record) != BUILD_KEYS or v1.canonical_json_bytes(record) != record_bytes:
+        record = canonical = None
+    if not isinstance(record, dict) or set(record) != BUILD_KEYS or canonical != record_bytes:
         raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{BUILD_FILE} is not the canonical build record")
+    if not _well_formed_build_record(record):
+        raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{BUILD_FILE} does not hold this build's metadata")
     expected = {"inputs": [series.name for series in SERIES], "manifests": ["shared_snapshot", *(f"venue_{venue.venue_id.lower()}" for venue in v1.REPLAY_VENUES), "extended_snapshot"]}
     stored: dict[str, dict[str, bytes]] = {}
     for part, names in expected.items():
@@ -591,8 +680,7 @@ def load_dataset(store: run.EvidenceStore) -> StoredDataset:
         stored[part] = {}
         for name in names:
             entry = entries[name]
-            keys = FILE_ENTRY_KEYS | ({"records"} if part == "inputs" else set())
-            if not isinstance(entry, dict) or set(entry) != keys or entry["file"] != f"{part}/{name}.json.gz":
+            if not _well_formed_entry(entry, part, name):
                 raise DatasetBuildRefused("DATASET_FILE_REFUSED", f"{BUILD_FILE}: the {part} entry {name} is malformed")
             compressed = _read_real_file(directory, entry["file"])
             if (sha256_hex(compressed), len(compressed)) != (entry["gzip_sha256"], entry["gzip_size"]):

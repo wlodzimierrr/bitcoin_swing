@@ -576,6 +576,86 @@ def test_a_stored_dataset_that_does_not_match_its_build_record_is_refused(world:
     refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
 
 
+# review D5: a malformed BUILD.json refuses, never raises
+NUMERALS = {"NaN": b"NaN", "Infinity": b"Infinity", "-Infinity": b"-Infinity", "1e999": b"1e999", "a fraction": b"0.0", "an exponent": b"0e0"}
+
+
+def _raw_build_edit(world: Collected, old: bytes, new: bytes) -> None:
+    path = world.root / build.DATASET_LAYOUT / "BUILD.json"
+    data = path.read_bytes()
+    assert data.count(old) == 1
+    path.write_bytes(data.replace(old, new))
+
+
+@pytest.mark.parametrize("numeral", sorted(NUMERALS))
+@pytest.mark.parametrize("member", [b'"mtime":', b'"compresslevel":'])
+def test_a_build_record_holding_a_fraction_or_non_finite_number_refuses_without_raising(world: Collected, numeral: str, member: bytes) -> None:
+    built(world)
+    current = b"0" if member == b'"mtime":' else b"9"
+    _raw_build_edit(world, member + current + b",", member + NUMERALS[numeral] + b",")
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+
+
+def test_the_command_line_refuses_a_non_finite_build_record_value_free(world: Collected, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(build, "load_build_evidence", lambda store, units=None: _ORIGINAL_LOAD(store, units=units_of))
+    built(world)
+    _raw_build_edit(world, b'"mtime":0,', b'"mtime":1e999,')
+    lines: list[str] = []
+    for command in (["verify", "--no-database"], ["index"]):
+        lines.clear()
+        assert build.main([*command, "--store", str(world.root)], connect=_no_connect, out=lines.append) == 1
+        assert lines[-1].startswith("REFUSED DATASET_FILE_REFUSED"), lines
+
+
+METADATA_EDITS = {
+    "code commit not text": lambda r: r.update(code_commit=123),
+    "code commit not a commit": lambda r: r.update(code_commit="main"),
+    "another build version": lambda r: r.update(build_version="OTHER"),
+    "another ticket": lambda r: r.update(ticket="OTHER"),
+    "another evidence class": lambda r: r.update(evidence_class="CERTIFYING"),
+    "another window": lambda r: r["window"].update(end_exclusive="2026-07-01T00:00:00+00:00"),
+    "another reader": lambda r: r["reader"].update(version="OTHER"),
+    "another gzip level": lambda r: r["gzip"].update(compresslevel=6),
+    "a gzip level that is a boolean": lambda r: r["gzip"].update(mtime=False),
+    "a zlib version not text": lambda r: r["gzip"].update(zlib_version=1),
+    "an evidence key missing": lambda r: r["evidence"].pop("still_missing_hours"),
+    "an evidence key added": lambda r: r["evidence"].update(extra="x"),
+    "an evidence source missing": lambda r: r["evidence"]["units"].pop("binance-basis"),
+    "a unit count that is a boolean": lambda r: r["evidence"]["units"]["coinglass-etf"].update(unit_count=True),
+    "a unit digest in upper case": lambda r: r["evidence"]["units"]["coinglass-etf"].update(done_sha256="A" * 64),
+    "a unit name not text": lambda r: r["evidence"]["units"]["coinglass-etf"].update(first_unit=["all"]),
+    "an evidence digest not hex": lambda r: r["evidence"].update(market_cap_evidence_sha256="z" * 64),
+    "withheld hours not text": lambda r: r["evidence"].update(withheld_liquidation_hours=[{"hour": "x"}]),
+    "still-missing hours for one venue": lambda r: r["evidence"]["still_missing_hours"].pop("coinbase"),
+    "still-missing hours not a list": lambda r: r["evidence"]["still_missing_hours"].update(coinbase="all"),
+    "an entry digest not hex": lambda r: r["manifests"]["shared_snapshot"].update(sha256="z" * 64),
+    "an entry gzip size that is a boolean": lambda r: r["inputs"]["etf_flows"].update(gzip_size=True),
+    "an entry gzip size as text": lambda r: r["inputs"]["etf_flows"].update(gzip_size=str(r["inputs"]["etf_flows"]["gzip_size"])),
+    "a record count that is negative": lambda r: r["inputs"]["etf_flows"].update(records=-1),
+    "a record count that is a boolean": lambda r: r["inputs"]["etf_flows"].update(records=True),
+}
+
+
+def _edit_build_record(world: Collected, change: Any) -> None:
+    path = world.root / build.DATASET_LAYOUT / "BUILD.json"
+    record = json.loads(path.read_bytes())
+    change(record)
+    path.write_bytes(v1.canonical_json_bytes(record))
+
+
+@pytest.mark.parametrize("edit", sorted(METADATA_EDITS))
+def test_a_build_record_with_metadata_the_build_never_writes_is_refused(world: Collected, edit: str) -> None:
+    built(world)
+    _edit_build_record(world, METADATA_EDITS[edit])
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+
+
+def test_a_canonically_rewritten_build_record_still_loads(world: Collected) -> None:
+    built(world)
+    _edit_build_record(world, lambda record: None)  # the control
+    assert build.load_dataset(store_of(world)).record["gzip"]["compresslevel"] == 9
+
+
 # review D4: a file is never expanded past the size its record declares
 BOMB_SIZE = 96 << 20
 
