@@ -1498,8 +1498,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   members, which the owner made optional (ruling 14; its code `87dc505`
   is implemented as ruled, but its review on 2026-11-10 FAILED on one P2,
   R14-1, a CoinGlass number no decimal can hold that raises instead of
-  refusing, which the owner chose to fix; the fix `d9e611f` is committed
-  and awaits its re-review)).
+  refusing, which the owner chose to fix; the fix `d9e611f` PASSED its
+  independent re-review on 2026-11-10 with no new finding, closing ruling
+  14's code review, and CoinGlass is now to be collected with it)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1816,10 +1817,19 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   2026-11-10 FAILED on one P2, R14-1: a CoinGlass number whose exponent no
   decimal can hold raises instead of refusing, a limitation recorded
   earlier outside the Kraken review; the owner chose to fix it, and the
-  fix `d9e611f` is committed and awaits its independent re-review). RBT-001A closed DONE on 2026-11-04, RBT-005 on
+  fix `d9e611f` PASSED its independent re-review on 2026-11-10 with no
+  new finding, closing ruling 14's code review; CoinGlass is now to be
+  collected with it). RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 Part B ruling 14
+- **Most recent completed review:** EPIC Y RBT-003 Part B R14-1
+  re-review, 2026-11-10, **independent xHigh PASS** (same Codex session,
+  report-only) of the fix `d9e611f` and docs `2005d7c`, with no new
+  finding: R14-1 FIXED (a CoinGlass number no decimal can hold refuses
+  under any caller context; every number decimal holds decodes as before);
+  ruling 14, rulings 12 and 13, R12-1 to R12-9, Part B's earlier fixes and
+  rulings 5, 9, 10 and 11 hold. Ruling 14's code review is closed. Details
+  in EPIC Y's RBT-003 Part B R14-1 re-review outcome. Before it, the ruling 14
   code review, 2026-11-10, **independent xHigh FAIL** (same Codex session,
   report-only) of `87dc505` and docs `cdbcb81`: ruling 14 implemented as
   ruled (CoinGlass's `msg` and a fund day's `btc_holdings` may be absent,
@@ -2252,11 +2262,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **re-review of the RBT-003 Part B R14-1 fix** (`d3f0619..` its record;
-  CoinGlass's reader refuses a number no decimal can hold instead of
-  raising); then the owner's CoinGlass collection (`--allow-coinglass`)
-  and the dataset build. RBT-006 stays blocked
+- **Next dependency-satisfied EPIC Y action:** the **owner's CoinGlass
+  collection** with the reviewed code `d9e611f` (`coinglass-etf
+  --allow-coinglass`); then the dataset build. RBT-006 stays blocked
   until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
@@ -2924,8 +2932,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `b55261d`; ruling 13's code `3041d0c` with docs `b076e15`; its review
   PASS `dda1fef`; the Kraken completion, CoinGlass's live check and owner
   ruling 14 `321487e`; ruling 14's code `87dc505` with docs `cdbcb81`;
-  its review FAIL (R14-1) `d3f0619`; the R14-1 fix `d9e611f` with this
-  documentation commit.
+  its review FAIL (R14-1) `d3f0619`; the R14-1 fix `d9e611f` with docs
+  `2005d7c`; its re-review PASS in this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
