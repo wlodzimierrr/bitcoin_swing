@@ -763,7 +763,7 @@ def test_the_index_is_value_free_and_binds_the_private_commit(world: Collected) 
     built(world)
     store = git_store(world)
     stored = build.load_dataset(store)
-    commit = build.private_commit(store)
+    commit = build.private_commit(store, stored)
     data = build.dataset_index_bytes(stored, private_commit=commit)
     index = json.loads(data)
     assert index["private_commit"] == commit == git(world.root, "rev-parse", "HEAD")
@@ -780,15 +780,91 @@ def test_the_index_is_value_free_and_binds_the_private_commit(world: Collected) 
     assert coverage["missing_slot_count"] == 1 and coverage["series"][0]["gaps"]["spans"][0]["first_missing"] == utc(2020, 2, 1, 7).isoformat()
 
 
+def commit_all(world: Collected, message: str = "dataset") -> str:
+    git(world.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "add", "-A")
+    git(world.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", message)
+    return git(world.root, "rev-parse", "HEAD")
+
+
 def test_the_private_commit_must_hold_the_dataset_as_stored(world: Collected) -> None:
     store = git_store(world)
     built(world)
-    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store)
-    git(world.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "add", "-A")
-    git(world.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "dataset")
-    assert build.private_commit(store) == git(world.root, "rev-parse", "HEAD")
+    stored = build.load_dataset(store)
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+    head = commit_all(world)
+    assert build.private_commit(store, stored) == head
     (world.root / build.DATASET_LAYOUT / "stray").write_bytes(b"x")
-    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store)
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+
+
+# review D3: every file BUILD.json binds must be in the named commit with exactly the stored bytes
+
+
+def test_a_commit_leaving_ignored_payloads_out_is_refused(world: Collected) -> None:
+    (world.root / ".gitignore").write_text("*.gz\n")
+    store = git_store(world)
+    built(world)
+    stored = build.load_dataset(store)
+    commit_all(world)
+    tracked = git(world.root, "ls-files", "--", build.DATASET_LAYOUT.as_posix()).splitlines()
+    assert tracked == [f"{build.DATASET_LAYOUT.as_posix()}/BUILD.json"]  # the payloads are ignored, not committed
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+    # forced in, the same payloads make the commit hold the dataset
+    git(world.root, "add", "-f", "--", build.DATASET_LAYOUT.as_posix())
+    head = commit_all(world, "payloads")
+    assert build.private_commit(store, stored) == head
+
+
+def test_an_ignored_stray_file_beside_the_dataset_is_refused_as_an_untracked_one_is(world: Collected) -> None:
+    (world.root / ".gitignore").write_text("*.tmp\n")
+    store = git_store(world)
+    built(world)
+    stored = build.load_dataset(store)
+    head = commit_all(world)
+    assert build.private_commit(store, stored) == head
+    (world.root / build.DATASET_LAYOUT / "inputs" / "partial.tmp").write_bytes(b"x")
+    assert git(world.root, "status", "--porcelain") == ""  # ignored: the plain status shows nothing
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+
+
+def test_a_commit_holding_another_file_in_the_dataset_is_refused(world: Collected) -> None:
+    store = git_store(world)
+    built(world)
+    stored = build.load_dataset(store)
+    (world.root / build.DATASET_LAYOUT / "inputs" / "notes.txt").write_text("x")
+    commit_all(world)
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+
+
+def test_the_commit_must_hold_the_dataset_that_was_loaded(world: Collected) -> None:
+    store = git_store(world)
+    built(world)
+    stored = build.load_dataset(store)
+    commit_all(world)
+    other = dataclasses.replace(stored, record_bytes=stored.record_bytes + b" ")
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, other)
+    entry = stored.record["inputs"]["etf_flows"]
+    changed = {**stored.record, "inputs": {**stored.record["inputs"], "etf_flows": {**entry, "gzip_sha256": "0" * 64}}}
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, dataclasses.replace(stored, record=changed))
+
+
+def test_a_payload_committed_with_other_bytes_is_refused(world: Collected) -> None:
+    store = git_store(world)
+    built(world)
+    stored = build.load_dataset(store)
+    path = world.root / build.DATASET_LAYOUT / "manifests" / "venue_coinbase.json.gz"
+    data = path.read_bytes()
+    path.write_bytes(data + b"\0")
+    commit_all(world)
+    path.write_bytes(data)  # the working tree as stored, the commit not
+    git(world.root, "update-index", "--assume-unchanged", "--", str(path.relative_to(world.root)))
+    assert git(world.root, "status", "--porcelain") == ""
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+
+
+def test_the_blob_ids_are_gits_own() -> None:
+    for data in (b"", b"x", gzip.compress(b"abc", mtime=0)):
+        assert build._blob_id(data, "sha1") == subprocess.run(["git", "hash-object", "--stdin"], input=data, capture_output=True, check=True).stdout.decode().strip()
 
 
 def test_the_build_names_a_clean_code_commit(tmp_path: Path) -> None:

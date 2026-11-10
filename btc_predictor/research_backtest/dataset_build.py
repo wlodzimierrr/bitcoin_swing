@@ -43,7 +43,9 @@ input files and manifests) and from the frozen input files alone (identical
 manifests).
 
 ``index`` writes the value-free index into this repository once the private
-repository has committed the dataset. The index holds:
+repository has committed the dataset: every file ``BUILD.json`` binds, and
+``BUILD.json``, in the commit with exactly the stored bytes (review D3). The
+index holds:
 
 - digests and sizes;
 - versions, the code commit and the private commit;
@@ -60,6 +62,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import gzip
+import hashlib
 import json
 import re
 import subprocess
@@ -686,19 +689,57 @@ def code_commit(repository: Path = PUBLIC_REPOSITORY) -> str:
     return _git(repository, "rev-parse", "HEAD")
 
 
-def private_commit(store: run.EvidenceStore) -> str:
-    """The private repository's commit holding the dataset exactly as stored."""
+_BLOB_HASHES = {"sha1": hashlib.sha1, "sha256": hashlib.sha256}
+_FILE_MODES = frozenset({"100644", "100755"})  # a regular file: never a link (120000) or a submodule (160000)
+
+
+def _blob_id(data: bytes, object_format: str) -> str:
+    """The id git gives a blob of exactly these bytes."""
+
+    return _BLOB_HASHES[object_format](b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def private_commit(store: run.EvidenceStore, stored: StoredDataset) -> str:
+    """The private repository's commit holding the dataset exactly as stored (review D3).
+
+    ``BUILD.json`` and every file it binds must be in the commit, as regular
+    files with exactly the stored bytes, and the commit's dataset directory
+    must hold nothing else; nothing in the working tree may differ from it,
+    ignored files included. Checking only ``BUILD.json`` let a commit leave
+    ignored payloads out.
+    """
 
     path = DATASET_LAYOUT.as_posix()
+    directory = dataset_directory(store)
+    expected = {BUILD_FILE: stored.record_bytes}
+    for part in ("inputs", "manifests"):
+        for entry in stored.record[part].values():
+            data = _read_real_file(directory, entry["file"])
+            if sha256_hex(data) != entry["gzip_sha256"]:
+                raise DatasetBuildRefused("PRIVATE_COMMIT_REFUSED", f"{entry['file']} is not the file the dataset was loaded with")
+            expected[entry["file"]] = data
     try:
-        if _git(store.root, "status", "--porcelain", "--untracked-files=all", "--", path):
-            raise DatasetBuildRefused("PRIVATE_COMMIT_REFUSED", "the dataset is not committed as stored in the private repository")
-        _git(store.root, "ls-files", "--error-unmatch", "--", f"{path}/{BUILD_FILE}")
-        return _git(store.root, "rev-parse", "HEAD")
-    except DatasetBuildRefused as refused:
-        if refused.reason_code == "PRIVATE_COMMIT_REFUSED":
-            raise
+        status = _git(store.root, "status", "--porcelain", "--untracked-files=all", "--ignored=matching", "--", path)
+        object_format = _git(store.root, "rev-parse", "--show-object-format")
+        commit = _git(store.root, "rev-parse", "--verify", "HEAD^{commit}")
+        listing = _git(store.root, "ls-tree", "-r", "-z", "--full-tree", commit, "--", path)
+    except DatasetBuildRefused:
         raise DatasetBuildRefused("PRIVATE_COMMIT_REFUSED", "the private repository does not hold the dataset in a commit") from None
+    if status:
+        raise DatasetBuildRefused("PRIVATE_COMMIT_REFUSED", "the dataset is not committed as stored in the private repository")
+    if object_format not in _BLOB_HASHES:
+        raise DatasetBuildRefused("PRIVATE_COMMIT_REFUSED", "the private repository's object format is not one the build checks")
+    tree: dict[str, tuple[str, str, str]] = {}
+    for item in filter(None, listing.split("\0")):
+        meta, _, name = item.partition("\t")
+        mode, kind, blob = meta.split(" ")
+        tree[name] = (mode, kind, blob)
+    wanted = {f"{path}/{name}": data for name, data in expected.items()}
+    if set(tree) != set(wanted) or any(
+        tree[name][0] not in _FILE_MODES or tree[name][1:] != ("blob", _blob_id(data, object_format)) for name, data in wanted.items()
+    ):
+        raise DatasetBuildRefused("PRIVATE_COMMIT_REFUSED", "the commit does not hold exactly the dataset's files as stored")
+    return commit
 
 
 # --- the command line ----------------------------------------------------------------------------
@@ -748,7 +789,7 @@ def main(
         store = run.EvidenceStore(Path(args.store), public_repository=PUBLIC_REPOSITORY)
         if args.command == "index":
             stored = load_dataset(store)
-            commit = private_commit(store)
+            commit = private_commit(store, stored)
             path = PUBLIC_REPOSITORY / INDEX_PATH
             run._atomic_write(path, dataset_index_bytes(stored, private_commit=commit))
             out(f"index written: {INDEX_PATH} (private commit {commit})")
