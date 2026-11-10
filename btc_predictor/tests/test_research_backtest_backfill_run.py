@@ -1668,6 +1668,24 @@ def test_ruling_14_a_coinglass_error_reply_is_refused_naming_its_status_and_writ
     assert transport.urls == [coinglass.FLOW_HISTORY_URL] and database.connections == []
     assert not store.unit_dir("coinglass-etf", "all").exists()
 
+
+@pytest.mark.parametrize("trap", [True, False], ids=["caller-traps", "caller-does-not-trap"])
+def test_r14_1_a_coinglass_number_no_decimal_can_hold_is_refused_and_writes_nothing(store: run.EvidenceStore, trap: bool) -> None:
+    # re-review R14-1: it raised InvalidOperation out of run_unit, stopping the run, instead of refusing the unit
+    from decimal import InvalidOperation, localcontext
+
+    transport, database = live_coinglass_run_world(), Database()
+    url = coinglass.fund_history_url("IBIT")
+    body = transport.responses[url].body
+    assert body.count(b'"net_assets": 9,') == 1
+    transport.add(url, body.replace(b'"net_assets": 9,', b'"net_assets": 1e+1000000000000000000,'))
+    with localcontext() as caller:
+        caller.traps[InvalidOperation] = trap
+        report_ = run.run_unit(context(transport, store, database, **KEYED), "coinglass-etf", "all")
+    assert report_.status == "REFUSED", report_.detail
+    assert report_.detail.startswith("RESPONSE_SHAPE_REFUSED") and "the IBIT history holds a number no decimal can hold" in report_.detail
+    assert database.connections == [] and not store.unit_dir("coinglass-etf", "all").exists()
+
 # --- the single reads --------------------------------------------------------------------------
 
 

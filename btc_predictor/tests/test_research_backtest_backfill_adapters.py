@@ -2853,3 +2853,118 @@ def test_ruling_14_every_flow_day_member_is_still_required(member: str) -> None:
     transport = live_world({}, {"IBIT": {first: 9}})
     transport.add(coinglass.FLOW_HISTORY_URL, json.dumps(payload).encode())
     refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+
+
+# --- re-review R14-1: a CoinGlass number no decimal can hold refuses instead of raising --------------
+
+R14_HUGE = "1e+1000000000000000000"  # valid JSON; its exponent is past what decimal holds
+R14_PLACEHOLDER = "@@r14-number@@"
+R14_FIELDS = [
+    ("flow", "flow_usd"),
+    ("flow", "price_usd"),
+    ("flow", "ticker flow_usd"),
+    ("fund", "net_assets"),
+    ("fund", "btc_holdings"),
+    ("fund", "market_price"),
+    ("fund", "nav"),
+    ("fund", "premium_discount"),
+    ("fund", "shares_outstanding"),
+]
+
+
+def r14_world(endpoint: str, field: str, numeral: str, *, msg: bool) -> FakeTransport:
+    """A one-day IBIT read whose in-window ``endpoint`` record holds the raw JSON ``numeral`` at ``field``."""
+
+    first = date(2024, 1, 11)
+    flow = json.loads(fx.coinglass_flow_page({first: {"IBIT": 5}}))
+    fund = json.loads(fx.coinglass_fund_page({first: 9}))
+    if endpoint == "flow" and field == "ticker flow_usd":
+        flow["data"][0]["etf_flows"][0]["flow_usd"] = R14_PLACEHOLDER
+    else:
+        (flow if endpoint == "flow" else fund)["data"][0][field] = R14_PLACEHOLDER
+    transport = FakeTransport()
+    for url, payload in ((coinglass.FLOW_HISTORY_URL, flow), (coinglass.fund_history_url("IBIT"), fund)):
+        if not msg:
+            del payload["msg"]
+        body = json.dumps(payload)
+        transport.add(url, body.replace(f'"{R14_PLACEHOLDER}"', numeral).encode())
+    return transport
+
+
+@pytest.mark.parametrize("trap", [True, False], ids=["caller-traps", "caller-does-not-trap"])
+@pytest.mark.parametrize("msg", [True, False], ids=["with-msg", "without-msg"])
+@pytest.mark.parametrize(("endpoint", "field"), R14_FIELDS, ids=[f"{endpoint}-{field.replace(' ', '-')}" for endpoint, field in R14_FIELDS])
+def test_r14_1_a_json_number_no_decimal_can_hold_refuses_under_any_caller_context(endpoint: str, field: str, msg: bool, trap: bool) -> None:
+    # re-review R14-1: json.loads(parse_float=Decimal) raised InvalidOperation, which is not a ValueError
+    first = date(2024, 1, 11)
+    transport = r14_world(endpoint, field, R14_HUGE, msg=msg)
+    with localcontext() as caller:
+        caller.traps[InvalidOperation] = trap
+        error = refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+    what = "the flow history" if endpoint == "flow" else "the IBIT history"
+    assert str(error) == f"RESPONSE_SHAPE_REFUSED: {what} holds a number no decimal can hold"
+    assert len(transport.calls) == (1 if endpoint == "flow" else 2)
+
+
+@pytest.mark.parametrize(
+    "numeral",
+    ["1e+1000000000000000000", "1E+99999999999999999999", "0e+1000000000000000000", "-1e+1000000000000000000", "1.5E+1000000000000000000"],
+)
+@pytest.mark.parametrize(("endpoint", "field"), [("flow", "flow_usd"), ("fund", "net_assets")])
+def test_r14_1_each_exponent_no_decimal_can_hold_refuses(endpoint: str, field: str, numeral: str) -> None:
+    first = date(2024, 1, 11)
+    error = refused("RESPONSE_SHAPE_REFUSED", coinglass_read, r14_world(endpoint, field, numeral, msg=False), ("IBIT",), first, first)
+    assert str(error).endswith("holds a number no decimal can hold")
+
+
+@pytest.mark.parametrize("numeral", ["1e+999999999999999999", "1E-1000000000000000000", "1" + "0" * 4000, "-0.0"])
+@pytest.mark.parametrize(("endpoint", "field"), [("flow", "price_usd"), ("fund", "btc_holdings")])
+def test_r14_1_a_number_decimal_can_hold_still_decodes(endpoint: str, field: str, numeral: str) -> None:
+    # the largest exponent decimal holds, a smaller one, a long integer and a negative zero, in a member no row uses
+    first = date(2024, 1, 11)
+    plain = coinglass_read(r14_world(endpoint, field, "1", msg=False), ("IBIT",), first, first)
+    read = coinglass_read(r14_world(endpoint, field, numeral, msg=False), ("IBIT",), first, first)
+    assert read.flows == plain.flows and len(read.flows) == 1
+
+
+def test_r14_1_an_integer_too_long_for_python_still_refuses() -> None:
+    first = date(2024, 1, 11)
+    for endpoint, field in (("flow", "price_usd"), ("fund", "btc_holdings")):
+        refused("RESPONSE_SHAPE_REFUSED", coinglass_read, r14_world(endpoint, field, "1" + "0" * 5000, msg=False), ("IBIT",), first, first)
+
+
+def test_r14_1_the_decoding_does_not_depend_on_the_callers_context() -> None:
+    first = date(2024, 1, 11)
+    plain = coinglass_read(r14_world("fund", "btc_holdings", "1000", msg=True), ("IBIT",), first, first)
+    hostile = Context(prec=1, Emax=1, Emin=-1, rounding=ROUND_HALF_UP, capitals=0, traps=list(Context().traps))
+    with localcontext(hostile):
+        again = coinglass_read(r14_world("fund", "btc_holdings", "1000", msg=True), ("IBIT",), first, first)
+        transport = r14_world("fund", "net_assets", R14_HUGE, msg=False)
+        error = refused("RESPONSE_SHAPE_REFUSED", coinglass_read, transport, ("IBIT",), first, first)
+    assert again.flows == plain.flows and [row.aum_usd for row in again.flows] == [9]
+    assert str(error) == "RESPONSE_SHAPE_REFUSED: the IBIT history holds a number no decimal can hold"
+
+
+@pytest.mark.parametrize("msg", [True, False], ids=["with-msg", "without-msg"])
+def test_r14_1_such_a_number_in_a_dropped_record_is_never_decoded(msg: bool, monkeypatch: pytest.MonkeyPatch) -> None:
+    first, holdout = date(2024, 1, 11), date(2026, 1, 5)
+    flows = {first: {"IBIT": 5}, holdout: {"IBIT": 777000001}}
+    assets = {"IBIT": {date(2019, 6, 3): 777000003, first: 9, holdout: 777000002}}
+    plain = coinglass_read(coinglass_world(flows, assets, first, first), None, first, first)
+    transport = coinglass_world(flows, assets, first, first)
+    for url, response in list(transport.responses.items()):
+        payload = json.loads(response.body)
+        if not msg:
+            del payload["msg"]
+        body = json.dumps(payload).encode()
+        for sentinel in (b"777000001", b"777000002", b"777000003"):
+            body = body.replace(sentinel, R14_HUGE.encode())
+        transport.add(url, body)
+    decoded: list[bytes] = []
+    real_loads = coinglass.json.loads
+    monkeypatch.setattr(coinglass.json, "loads", lambda body, **kw: decoded.append(body) or real_loads(body, **kw))
+    read = coinglass_read(transport, None, first, first)
+    assert read.flows == plain.flows and read.missing_aum == plain.missing_aum
+    # json.loads is the module's own: the projection's status reads and both parsers' bodies, none with the number
+    assert all(R14_HUGE.encode() not in body for body in decoded)
+    assert sum(body.startswith(b'{"code":"0",') for body in decoded) == 2

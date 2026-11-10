@@ -15,7 +15,9 @@ rows do not use (review F5): the envelope's ``msg``, when present, is a string;
 a flow day's total ``flow_usd`` and ``price_usd`` are finite JSON numbers; a
 ticker's ``flow_usd`` is a finite JSON number, ``null`` or absent; a fund day's
 numbers are finite JSON numbers, its ``name`` a non-empty string and its
-``ticker`` the requested one. The first live responses (2026-11-09) omit the
+``ticker`` the requested one. A JSON number whose exponent no decimal can hold
+refuses the response, whatever the caller's decimal context (re-review R14-1).
+The first live responses (2026-11-09) omit the
 envelope's ``msg`` and, on most of IBIT's days, a fund day's ``btc_holdings``:
 owner Part B ruling 14 makes both optional, and each is checked when present.
 
@@ -40,7 +42,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from decimal import Decimal
+from decimal import Context, Decimal, InvalidOperation, localcontext
 from typing import Any
 from urllib.parse import urlencode
 
@@ -83,6 +85,9 @@ _FUND_DAY_KEYS = frozenset(
 )
 _OPTIONAL_FUND_DAY_KEYS = frozenset({"btc_holdings"})  # IBIT's live history mostly omits it (owner Part B ruling 14)
 _FUND_NUMBERS = ("btc_holdings", "market_price", "nav", "premium_discount", "shares_outstanding")
+# every JSON number is decoded in this context, so one whose exponent no decimal can hold refuses whatever the
+# caller's traps, as Kraken's reader does (re-review R12-5); decoding is exact in any precision
+_DECODING_CONTEXT = Context(traps=[InvalidOperation])
 _TICKER = re.compile(r"[A-Z][A-Z0-9]{0,9}")
 _API_KEY = re.compile(r"[!-~]{1,256}")  # visible ASCII only: no space, control byte or line break (review B6)
 
@@ -119,9 +124,12 @@ def _envelope(projection: Any, what: str, date_keys: tuple[str, ...]) -> list[An
     # nothing is decoded before the bytes are proven a projection on the endpoint's own date members (review B2)
     body = verified_body(projection, date_keys=date_keys, what=what)
     try:
-        payload = json.loads(body, parse_float=Decimal)
+        with localcontext(_DECODING_CONTEXT):
+            payload = json.loads(body, parse_float=Decimal)
     except (UnicodeDecodeError, ValueError):
         return _refuse(f"{what} is not JSON")
+    except InvalidOperation:  # re-review R14-1: it raised, stopping the run, instead of refusing
+        return _refuse(f"{what} holds a number no decimal can hold")
     if not isinstance(payload, dict) or not _ENVELOPE_KEYS - _OPTIONAL_ENVELOPE_KEYS <= set(payload) <= _ENVELOPE_KEYS:
         return _refuse(f"{what} is not exactly {sorted(_ENVELOPE_KEYS)}, msg optional")
     if payload["code"] != "0" or not isinstance(payload["data"], list):
