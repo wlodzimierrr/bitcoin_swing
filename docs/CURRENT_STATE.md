@@ -1504,7 +1504,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   every Part B source is now collected; owner ruling 15 re-requests the 27
   missing Coinbase and Bitfinex hours before the dataset build, and owner
   ruling 16 withholds the 14 Kraken hours whose totals disagree with
-  Kraken's hourly series, leaving their 13 days incomplete)).
+  Kraken's hourly series, leaving their 13 days incomplete; the re-request
+  source and the dataset build code `7e4f871` are committed and await their
+  independent review)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -2269,15 +2271,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the RBT-003 Part B
-  **re-request source and dataset build code** (owner ruling 15: the 27
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **review of the RBT-003 Part B re-request source and dataset build code**
+  (`545ad32..` its record); then the owner's re-request run and the build.
+  The code (owner ruling 15: the 27
   missing Coinbase and Bitfinex hours are re-requested through the BTC-020
   adapters first; then a window-bounded database reader, the V1 and V2
   builders, the frozen inputs and manifests in the private evidence
   repository and a value-free index here; owner ruling 16: the 14 Kraken
   hours that disagree with the series are withheld from the V2 builder).
-  Both are validated and reviewed together; then the owner's re-request run
-  and the build. RBT-006 stays blocked
+  Both are reviewed together. RBT-006 stays blocked
   until
   RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
   dependencies.
@@ -2301,6 +2304,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part B re-request and dataset build validation
+  (2026-11-10):** `.venv312` CPython 3.12.14. The adapter, run and two new
+  modules with the replay, database and coverage guard modules 1,523 passed, 1 xfailed;
+  the BTC-019 completion gate and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed. Full repository at
+  `7e4f871`:
+  8,834 passed, 3 skipped, 1 xfailed, 0 failed (80 min).
 - **RBT-003 Part B R14-1 fix validation (2026-11-10):**
   `.venv312` CPython 3.12.14. The adapter (695) and run (219) modules with
   the replay, database and coverage guard modules 1,397 passed, 1 xfailed; the BTC-019
@@ -2947,8 +2958,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   ruling 14 `321487e`; ruling 14's code `87dc505` with docs `cdbcb81`;
   its review FAIL (R14-1) `d3f0619`; the R14-1 fix `d9e611f` with docs
   `2005d7c`; its re-review PASS `a7e9254`; the CoinGlass collection
-  `545ad32`; owner ruling 15 `bd64bf1`; owner ruling 16 in this
-  documentation commit.
+  `545ad32`; owner ruling 15 `bd64bf1`; owner ruling 16 `3665152`; the
+  re-request and dataset build code `7e4f871` with this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
