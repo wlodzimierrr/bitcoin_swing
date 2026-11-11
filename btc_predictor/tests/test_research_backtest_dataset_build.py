@@ -1137,6 +1137,45 @@ def test_a_commit_leaving_ignored_payloads_out_is_refused(world: Collected) -> N
     assert build.private_commit(store, stored) == head
 
 
+def _commit_stray(world: Collected, relative: str) -> None:
+    path = world.root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"synthetic stray")
+    commit_all(world, "stray")
+    assert git(world.root, "status", "--porcelain") == ""
+
+
+NOT_UTF8 = "stray-\udcff"  # the byte 0xff in a file name, through the file system's surrogate escape
+
+
+def test_a_committed_file_name_that_is_not_utf8_refuses_without_raising(world: Collected, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    built(world)  # review DR3
+    store = git_store(world)
+    stored = build.load_dataset(store)
+    _commit_stray(world, f"{build.DATASET_LAYOUT.as_posix()}/inputs/{NOT_UTF8}")
+    assert b"\xff" in subprocess.run(["git", "-C", str(world.root), "ls-tree", "-r", "-z", "--name-only", "HEAD"], capture_output=True, check=True).stdout
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+    status, lines = _index_through_the_command_line(world, monkeypatch, tmp_path / "public")
+    assert status == 1 and lines[-1].startswith("REFUSED PRIVATE_COMMIT_REFUSED"), lines
+    assert not (tmp_path / "public" / build.INDEX_PATH).exists()
+
+
+def test_a_committed_utf8_file_name_beside_the_dataset_refuses_as_another_file(world: Collected) -> None:
+    built(world)  # the control: a name that decodes is compared with the bound files, and refuses as one more
+    store = git_store(world)
+    stored = build.load_dataset(store)
+    _commit_stray(world, f"{build.DATASET_LAYOUT.as_posix()}/inputs/stray-é")
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+
+
+def test_a_file_name_that_is_not_utf8_outside_the_dataset_does_not_concern_it(world: Collected) -> None:
+    built(world)  # the control: only the dataset's directory is listed
+    store = git_store(world)
+    stored = build.load_dataset(store)
+    _commit_stray(world, f"elsewhere/{NOT_UTF8}")
+    assert build.private_commit(store, stored) == git(world.root, "rev-parse", "HEAD")
+
+
 def test_an_ignored_stray_file_beside_the_dataset_is_refused_as_an_untracked_one_is(world: Collected) -> None:
     (world.root / ".gitignore").write_text("*.tmp\n")
     store = git_store(world)

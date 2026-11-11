@@ -833,10 +833,19 @@ def dataset_index_bytes(stored: StoredDataset, *, private_commit: str) -> bytes:
 
 
 def _git(repository: Path, *args: str) -> str:
-    completed = subprocess.run(["git", "-C", str(repository), *args], capture_output=True, text=True, check=False)
+    """Git's output as UTF-8 text; a failure, or output that is not UTF-8, refuses (review DR3).
+
+    ``ls-tree -z`` prints file names unquoted, as raw bytes: a committed name
+    that is not UTF-8 refuses rather than raising.
+    """
+
+    completed = subprocess.run(["git", "-C", str(repository), *args], capture_output=True, check=False)
     if completed.returncode != 0:
         raise DatasetBuildRefused("CODE_COMMIT_REFUSED", f"git {args[0]} failed in {repository.name}")
-    return completed.stdout.strip()
+    try:
+        return completed.stdout.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        raise DatasetBuildRefused("CODE_COMMIT_REFUSED", f"git {args[0]} printed a name that is not UTF-8 in {repository.name}") from None
 
 
 def code_commit(repository: Path = PUBLIC_REPOSITORY) -> str:
