@@ -921,6 +921,83 @@ def test_code_that_is_not_a_clean_commit_refuses(frozen_store) -> None:
     assert written(public) == {}
 
 
+def refused(line: str) -> str:
+    return line.split(": ", 1)[0] + ": " + run_module().masked(line.split(": ", 1)[1])
+
+
+def every_file(public: Path) -> dict[str, bytes]:
+    return {str(path.relative_to(public)): path.read_bytes() for path in sorted(public.rglob("*")) if path.is_file() and not path.is_symlink()}
+
+
+@pytest.mark.parametrize("venue", VENUES)
+def test_a_link_at_any_destination_refuses_before_anything_is_written(frozen_store, tmp_path: Path, venue: str) -> None:
+    world, public = frozen_store
+    before = every_file(public)
+    target = tmp_path / "elsewhere.json"
+    (public / pr.ARTIFACT_DIRECTORY / pr.completeness_file(venue)).symlink_to(target)
+    fake = FakePass()
+    status, lines = run_freeze(world, run_pass=fake)
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {pr.completeness_file(venue)} is a symbolic link"))
+    link = public / pr.ARTIFACT_DIRECTORY / pr.completeness_file(venue)
+    assert len(fake.calls) == 3 and every_file(public) == before and link.is_symlink() and not target.exists()
+
+
+@pytest.mark.parametrize("name", [pr.PREREGISTRATION_FILE, pr.PREREGISTRATION_DIGEST_FILE])
+def test_an_existing_freeze_refuses_before_the_pass_and_is_left_as_it_was(frozen_store, name: str) -> None:
+    world, public = frozen_store
+    (public / pr.ARTIFACT_DIRECTORY / name).write_bytes(b"earlier")
+    before = every_file(public)
+    fake = FakePass()
+    status, lines = run_freeze(world, run_pass=fake)
+    assert (status, lines) == (1, [refused(f"REFUSED FREEZE_EXISTS: FREEZE_EXISTS: {name} exists; a freeze is never overwritten")])
+    assert fake.calls == [] and every_file(public) == before
+
+
+def test_an_existing_ledger_refuses_with_nothing_written(frozen_store) -> None:
+    world, public = frozen_store
+    (public / pr.ARTIFACT_DIRECTORY / pr.completeness_file("COINBASE")).write_bytes(b"earlier")
+    before = every_file(public)
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_EXISTS: FREEZE_EXISTS: {pr.completeness_file('COINBASE')} exists; a freeze is never overwritten"))
+    assert every_file(public) == before
+
+
+def test_a_linked_partial_or_directory_refuses(frozen_store, tmp_path: Path) -> None:
+    world, public = frozen_store
+    partial = public / pr.ARTIFACT_DIRECTORY / f"{pr.PREREGISTRATION_FILE}.partial"
+    partial.symlink_to(tmp_path / "elsewhere")
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {partial.name} is a symbolic link"))
+    partial.unlink()
+    directory = public / pr.ARTIFACT_DIRECTORY
+    moved = tmp_path / "real_directory"
+    directory.rename(moved)
+    directory.symlink_to(moved, target_is_directory=True)
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {pr.ARTIFACT_DIRECTORY} is not a real directory"))
+    assert sorted(path.name for path in moved.iterdir()) == [build.INDEX_PATH.name]
+
+
+def test_the_preregistration_is_written_last(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, _ = frozen_store
+    order: list[str] = []
+    real = run_module()._atomic_write
+
+    def recording(path: Path, data: bytes) -> None:
+        order.append(path.name)
+        real(path, data)
+
+    monkeypatch.setattr(run_module(), "_atomic_write", recording)
+    assert run_freeze(world, run_pass=FakePass())[0] == 0
+    assert order == [*(pr.completeness_file(venue) for venue in VENUES), pr.PREREGISTRATION_DIGEST_FILE, pr.PREREGISTRATION_FILE]
+
+
+def run_module():
+    from btc_predictor.research_backtest import backfill_run
+
+    return backfill_run
+
+
 def test_the_real_pass_runs_on_the_stored_dataset(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
     world, public = frozen_store
     monkeypatch.setattr(pr, "decision_schedule", lambda window=DATA_WINDOW: tuple(days(utc(2020, 2, 2), 3)))

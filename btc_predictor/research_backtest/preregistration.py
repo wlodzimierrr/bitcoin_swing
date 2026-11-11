@@ -1058,6 +1058,25 @@ def completeness_file(venue: str) -> str:
     return f"rbt006_completeness_{venue.lower()}_v1.json"
 
 
+def _require_fresh_destinations(public_repository: Path, names: Sequence[str]) -> Path:
+    """Every destination checked before anything is written (review F2): a real directory, no file there yet.
+
+    A freeze is never overwritten, as the dataset build never overwrites a dataset.
+    """
+
+    directory = public_repository / ARTIFACT_DIRECTORY
+    for part in (public_repository / Path(*ARTIFACT_DIRECTORY.parts[: index + 1]) for index in range(len(ARTIFACT_DIRECTORY.parts))):
+        if part.is_symlink() or not part.is_dir():
+            raise _refuse("FREEZE_DESTINATION_REFUSED", f"{part.relative_to(public_repository)} is not a real directory")
+    for name in names:
+        for path in (directory / name, directory / f"{name}.partial"):
+            if path.is_symlink():
+                raise _refuse("FREEZE_DESTINATION_REFUSED", f"{path.name} is a symbolic link")
+        if (directory / name).exists():
+            raise _refuse("FREEZE_EXISTS", f"{name} exists; a freeze is never overwritten")
+    return directory
+
+
 def freeze_from_store(
     store: Any,
     *,
@@ -1132,11 +1151,17 @@ def main(
     args = parser.parse_args(argv)
     try:
         code = (commit or build.code_commit)()
+        artifacts = (PREREGISTRATION_DIGEST_FILE, PREREGISTRATION_FILE)
+        _require_fresh_destinations(build.PUBLIC_REPOSITORY, artifacts)  # before the pass: an existing freeze refuses at once
         store = run.EvidenceStore(Path(args.store).expanduser(), public_repository=build.PUBLIC_REPOSITORY)
         record, files = freeze_from_store(store, code_commit=code, evidence=evidence, run_pass=run_pass, progress=out)
-        directory = build.PUBLIC_REPOSITORY / ARTIFACT_DIRECTORY
-        for name, data in sorted(files.items()):
-            run._atomic_write(directory / name, data)
+        ledgers = sorted(name for name in files if name not in artifacts)
+        order = (*ledgers, *artifacts)  # the preregistration last
+        if sorted(order) != sorted(files):  # unreachable: freeze_from_store writes both artifacts
+            raise _refuse("FREEZE_REFUSED", "the freeze's files are not its ledgers and two artifacts")
+        directory = _require_fresh_destinations(build.PUBLIC_REPOSITORY, order)
+        for name in order:
+            run._atomic_write(directory / name, files[name])
         for venue, item in sorted(record["venues"].items()):
             out(f"{venue}: evaluation start {item['evaluation_window']['start']}, folds {item['walk_forward']['fold_count']}")
         out(f"preregistration written: {ARTIFACT_DIRECTORY / PREREGISTRATION_FILE} sha256 {sha256_hex(files[PREREGISTRATION_FILE])} at code {code}")
