@@ -375,6 +375,51 @@ def test_every_owner_convention_names_existing_owner_code() -> None:
             assert policy in source, policy
 
 
+def _statuses(text: str) -> set[str]:
+    return {re.sub(r"\s*\(.*\)$", "", item.strip()) for item in text.split("|")}
+
+
+def test_every_owner_convention_states_its_owners_exact_undefined_statuses() -> None:
+    from btc_predictor.backtest import parameter_surfaces as ps
+    from btc_predictor.backtest import setup_performance as sp
+
+    def unavailable(statuses: tuple[str, ...]) -> set[str]:
+        return set(statuses) - {"AVAILABLE"}
+
+    owner_statuses = {
+        "sharpe": unavailable(ps.SHARPE_STATUSES),
+        "calmar": unavailable(ps.CALMAR_STATUSES),
+        "max_drawdown": unavailable(ps.DRAWDOWN_STATUSES),
+        "profit_factor": unavailable(sp.PROFIT_FACTOR_STATUSES),
+    }
+    owner_none = {"expectancy": "closed_trade_expectancy", "average_r_per_trade": "mean_r_multiple"}  # the owner's field is None
+    metrics = {metric["metric"]: metric for metric in pr.metric_definitions()["metrics"]}
+    owned = {name for name, metric in metrics.items() if metric["authority"] == "OWNER_CONVENTION"}
+    assert owned == set(owner_statuses) | set(owner_none) | {"number_of_trades"}
+    for name, statuses in owner_statuses.items():
+        assert _statuses(metrics[name]["undefined"]) == statuses, name
+    from btc_predictor.backtest.threshold_sweeps import ThresholdSweepMetrics
+
+    for name, field in owner_none.items():
+        assert metrics[name]["undefined"].endswith("(this specification's name for the owner's None)")
+        assert field in metrics[name]["owner"] and "None" in str(ThresholdSweepMetrics.__annotations__[field])
+    assert metrics["number_of_trades"]["undefined"].startswith("never undefined")
+
+
+def test_a_new_definition_names_a_shared_condition_as_its_owner_does() -> None:
+    from btc_predictor.backtest import parameter_surfaces as ps
+
+    shared = {"NO_EQUITY_CURVE": ps.DRAWDOWN_NO_EQUITY_CURVE, "NON_POSITIVE_NAV": ps.DRAWDOWN_NON_POSITIVE_NAV, "INSUFFICIENT_PERIODS": ps.SHARPE_INSUFFICIENT_PERIODS}
+    seen = set()
+    for metric in pr.metric_definitions()["metrics"]:
+        for status in _statuses(metric["undefined"]):
+            for condition, owner_name in shared.items():
+                if condition in status:
+                    assert status == owner_name, (metric["metric"], status)
+                    seen.add(condition)
+    assert seen == set(shared)
+
+
 def test_the_stop_buffer_alone_uses_the_configured_grid_because_the_uniform_one_is_refused() -> None:
     base = pr._configuration_mapping()
     paths = pr.SWEEP_PARAMETER_PATHS["stop_buffer_atr_multiplier"]
@@ -404,7 +449,7 @@ def test_the_cross_venue_measures_cover_policy_section_8() -> None:
 def test_the_metric_definitions_are_frozen_by_digest() -> None:
     assert pr.metric_definitions_sha256() == pr.sha256_hex(pr.metric_definitions_bytes())
     assert json.loads(pr.metric_definitions_bytes()) == pr.metric_definitions()
-    assert pr.metric_definitions_sha256() == "8aaa3e9eb5f9d1fe79d3d423bf024dba31f0d8d5136879cfc4d790f1be7ecfa2"
+    assert pr.metric_definitions_sha256() == "c13adf73ed34925adf15263fe763a85dde4815c2380bd62b18a6bd4f25283dd3"
 
 
 # --- the completeness-only pass ------------------------------------------------------------------

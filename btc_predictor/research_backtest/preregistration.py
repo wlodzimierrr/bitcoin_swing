@@ -518,7 +518,7 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "authority": _OWNER,
         "owner": "btc_predictor.backtest.threshold_sweeps._metrics closed_trade_expectancy",
         "definition": "mean net_pnl over closed trades",
-        "undefined": "NO_CLOSED_TRADES",
+        "undefined": "NO_CLOSED_TRADES (this specification's name for the owner's None)",
     },
     {
         "metric": "average_r_per_trade",
@@ -526,7 +526,7 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "authority": _OWNER,
         "owner": "btc_predictor.backtest.threshold_sweeps._metrics mean_r_multiple",
         "definition": "mean r_multiple over closed trades whose r_multiple is not None; the count used is reported",
-        "undefined": "NO_R_MULTIPLE",
+        "undefined": "NO_R_MULTIPLE (this specification's name for the owner's None)",
     },
     {
         "metric": "sharpe",
@@ -561,7 +561,7 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "authority": _OWNER,
         "owner": "btc_predictor.backtest.parameter_surfaces._max_drawdown (WORST_FOLD_PEAK_TO_TROUGH_NAV_DRAWDOWN_V1)",
         "definition": "largest (peak - nav) / peak over the equity curve, the peak starting at the starting NAV; the walk-forward reports the worst fold",
-        "undefined": "NO_EQUITY_CURVE | NON_POSITIVE_NAV",
+        "undefined": "UNAVAILABLE_NO_EQUITY_CURVE | UNDEFINED_NON_POSITIVE_NAV",
     },
     {
         "metric": "return_per_trade",
@@ -609,7 +609,7 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "authority": _NEW,
         "owner": "",
         "definition": "equity points with open_quantity > 0 over all equity points of the run",
-        "undefined": "NO_EQUITY_CURVE",
+        "undefined": "UNAVAILABLE_NO_EQUITY_CURVE",
     },
     {
         "metric": "turnover",
@@ -617,7 +617,7 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "authority": _NEW,
         "owner": "",
         "definition": "sum over trades of entry_notional + exit_notional, over the mean equity-point NAV, unannualized; the run's length in days is reported beside it",
-        "undefined": "NO_EQUITY_CURVE | NON_POSITIVE_NAV",
+        "undefined": "UNAVAILABLE_NO_EQUITY_CURVE | UNDEFINED_NON_POSITIVE_NAV",
     },
     {
         "metric": "number_of_trades",
@@ -633,7 +633,7 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "authority": _NEW,
         "owner": "",
         "definition": "the longest span, in hours, from an equity point at a new NAV peak to the first later point at or above that peak, or to the run's last point if never regained (marked unrecovered)",
-        "undefined": "NO_EQUITY_CURVE",
+        "undefined": "UNAVAILABLE_NO_EQUITY_CURVE",
     },
     {
         "metric": "longest_losing_streak",
