@@ -774,6 +774,20 @@ def test_build_record_text_that_is_what_it_names_loads(world: Collected, edit: s
     assert build.load_dataset(store_of(world)).record["gzip"]["compresslevel"] == 9
 
 
+# review DR2: a file entry's gzip size is an integer, not a fraction that equals one
+
+
+@pytest.mark.parametrize("part, name", [("inputs", "etf_flows"), ("manifests", "shared_snapshot")])
+def test_a_gzip_size_written_as_an_equal_fraction_is_refused(world: Collected, part: str, name: str) -> None:
+    built(world)
+    path = world.root / build.DATASET_LAYOUT / "BUILD.json"
+    size = json.loads(path.read_bytes())[part][name]["gzip_size"]
+    assert len((world.root / build.DATASET_LAYOUT / f"{part}/{name}.json.gz").read_bytes()) == size
+    _edit_build_record(world, lambda r: r[part][name].update(gzip_size=float(size)))
+    assert b'"gzip_size":%d.0,' % size in path.read_bytes()  # canonical, and equal to the file's length but for its type
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+
+
 # review D4: a file is never expanded past the size its record declares
 BOMB_SIZE = 96 << 20
 

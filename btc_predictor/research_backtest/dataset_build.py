@@ -676,13 +676,18 @@ def _well_formed_build_record(record: dict[str, Any]) -> bool:
 
 
 def _well_formed_entry(entry: Any, part: str, name: str) -> bool:
-    """A file entry's keys, name and record count; its digests and sizes are checked against its file."""
+    """A file entry's keys, name, gzip size and record count; its digests and sizes are checked against its file.
+
+    The gzip size must be an integer (review DR2): a fraction such as ``N.0``
+    equals the file's length, so the comparison alone would accept it.
+    """
 
     keys = FILE_ENTRY_KEYS | ({"records"} if part == "inputs" else set())
     return (
         type(entry) is dict
         and set(entry) == keys
         and entry["file"] == f"{part}/{name}.json.gz"
+        and _is_count(entry["gzip_size"])
         and (part != "inputs" or _is_count(entry["records"]))
     )
 
