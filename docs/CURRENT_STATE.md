@@ -1413,7 +1413,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-10
+- **Last updated:** 2026-11-11
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1508,7 +1508,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   source and the dataset build code `7e4f871` implement both rulings as
   ruled, but their independent review on 2026-11-10 FAILED on five P2
   findings and one P3, D1 to D6, which the owner chose to fix; the six
-  fixes `0219a41`..`2d0307b` are committed and await their re-review)).
+  fixes `0219a41`..`2d0307b` FAILED their re-review on 2026-11-11 on one
+  P2 and two P3, DR1 to DR3, which the owner chose to fix and re-review)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1836,12 +1837,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   from the V2 builder (ruling 16); their code `7e4f871` is implemented as
   ruled, but its independent review on 2026-11-10 FAILED on five P2
   findings, D1 to D5, and one P3, D6, all of which the owner chose to fix;
-  the fixes `0219a41`..`2d0307b` are committed and await their re-review).
+  the fixes `0219a41`..`2d0307b` FAILED their independent re-review on
+  2026-11-11 on one P2, DR1 (arbitrary `BUILD.json` text reaches the public
+  index), and two P3, DR2 and DR3, all of which the owner chose to fix,
+  with two missing tests, then re-review).
   RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
 - **Most recent completed review:** EPIC Y RBT-003 Part B re-request
-  and dataset build code review, 2026-11-10, **independent xHigh FAIL**
+  and dataset build review-fix re-review, 2026-11-11, **independent xHigh
+  FAIL** (same Codex session, report-only) of the fixes `0219a41`..`2d0307b`
+  and docs `e5051a0` (`d0efcff..e5051a0`): D1, D2, D4 and D6 fixed, D3 and
+  D5 in part; rulings 15 and 16 stay met; one P2 (DR1: the withheld and
+  still-missing hours, unit names and zlib version in `BUILD.json` are
+  checked only as text and reach the public index) and two P3 (DR2: an
+  integer-valued fraction accepted as `gzip_size`; DR3: a non-UTF-8 file
+  name in the private commit raises instead of refusing), with two test
+  gaps, which the owner chose to fix, then re-review; the manifests' text,
+  which `index` publishes as builder output, is an owner-accepted
+  limitation. Details in EPIC Y's RBT-003 Part B re-request and dataset
+  build review-fix re-review outcome. Before it, the RBT-003 Part B
+  re-request and dataset build code review, 2026-11-10, **independent xHigh FAIL**
   (same Codex session, report-only) of `7e4f871` and docs `6acc12c`
   (`545ad32..6acc12c`): rulings 15 and 16 implemented as ruled; a rebuild
   reproduces identical manifests and nothing outside the data window is
@@ -2292,13 +2308,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **re-review of the RBT-003 Part B re-request and dataset build review
-  fixes D1 to D6** (`6acc12c..` their record: exact candle decimals; the
-  returned hours checked against the rows read; every bound file in the
-  private commit; bounded gzip expansion; a malformed `BUILD.json` refused;
-  the count removed from ruling 16's rationale); then the owner's re-request
-  run and the build. The code (owner ruling 15: the 27
+- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
+  re-request and dataset build re-review fixes DR1 to DR3** (`BUILD.json`'s
+  hours, unit names and zlib version validated as what they name; an
+  integer `gzip_size`; a non-UTF-8 file name in the private commit
+  refused) and the two missing tests, their validation and the second
+  re-review; then the owner's re-request run and the build. The code (owner ruling 15: the 27
   missing Coinbase and Bitfinex hours are re-requested through the BTC-020
   adapters first; then a window-bounded database reader, the V1 and V2
   builders, the frozen inputs and manifests in the private evidence
@@ -2992,8 +3007,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `2005d7c`; its re-review PASS `a7e9254`; the CoinGlass collection
   `545ad32`; owner ruling 15 `bd64bf1`; owner ruling 16 `3665152`; the
   re-request and dataset build code `7e4f871` with docs `6acc12c`; its
-  review FAIL (D1 to D6) `d0efcff`; the fixes D6 `0219a41` (documentation), D1 `8b25fc9`, D2 `8c98be8`, D3 `9bf4421`, D4 `18edd58` and D5 `2d0307b` with this
-  documentation commit.
+  review FAIL (D1 to D6) `d0efcff`; the fixes D6 `0219a41` (documentation), D1 `8b25fc9`, D2 `8c98be8`, D3 `9bf4421`, D4 `18edd58` and D5 `2d0307b` with docs
+  `e5051a0`; their re-review FAIL (DR1 to DR3) in this documentation
+  commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
