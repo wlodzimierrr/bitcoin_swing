@@ -88,6 +88,36 @@ def test_each_fund_launches_on_its_first_evidence_row_named_by_the_evidence_dige
     assert len(launches) == 11
 
 
+# Written out here, not read from the module (review F4): the public first US
+# trading dates and the documents establishing them.
+PUBLIC_FIRST_TRADING_DATES = {
+    "ARKB": (date(2024, 1, 11), "34-99306", "1869699/000101376225002798/"),
+    "BITB": (date(2024, 1, 11), "34-99306", "1763415/000095017025040572/"),
+    "BRRR": (date(2024, 1, 11), "34-99306", "1841175/000199937125003309/"),
+    "BTC": (date(2024, 7, 31), "34-100610", "2015034/000095017025029405/"),
+    "BTCO": (date(2024, 1, 11), "34-99306", "1855781/000095017025029444/"),
+    "BTCW": (date(2024, 1, 11), "34-99306", "1850391/000121465925004851/"),
+    "EZBC": (date(2024, 1, 11), "34-99306", "1992870/000119312524173040/"),
+    "FBTC": (date(2024, 1, 11), "34-99306", "1852317/000095017025039452/"),
+    "GBTC": (date(2024, 1, 11), "34-99306", "1588489/000095017025029408/"),
+    "HODL": (date(2024, 1, 11), "34-99306", "1838028/000162828024001064/"),
+    "IBIT": (date(2024, 1, 11), "34-99306", "1980994/000143774925006260/"),
+}
+
+
+def test_each_documented_date_cites_its_approval_order_and_the_funds_own_filing() -> None:
+    documented = pr.DOCUMENTED_FIRST_TRADING_DATES
+    assert set(documented) == set(PUBLIC_FIRST_TRADING_DATES)
+    for fund, (day, release, filing) in PUBLIC_FIRST_TRADING_DATES.items():
+        documented_day, citation = documented[fund]
+        assert documented_day == day, fund
+        assert f"SEC Release No. {release} " in citation and f"(https://www.sec.gov/Archives/edgar/data/{filing}" in citation, fund
+        assert re.search(r"\(\d{10}-\d{2}-\d{6}\)", citation), fund  # the filing's accession number
+        assert f"{day:%B} {day.day}, {day.year}" in citation, fund  # the filing's own statement of the date
+    assert "CONFLICT" in documented["HODL"][1] and "January 10, 2024" in documented["HODL"][1]
+    assert not [fund for fund, (_, citation) in documented.items() if fund != "HODL" and "CONFLICT" in citation]
+
+
 def test_launch_dates_read_no_value() -> None:
     assert pr.etf_fund_launches(documented_rows("1"), evidence_sha256=DIGEST) == pr.etf_fund_launches(
         documented_rows("-98765.4321"), evidence_sha256=DIGEST

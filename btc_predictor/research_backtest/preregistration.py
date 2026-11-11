@@ -155,26 +155,83 @@ def _refuse(code: str, message: str) -> PreregistrationRefused:
 
 # --- ruling 1: ETF fund launch dates ------------------------------------------------------------
 
-_SPOT_ETF_APPROVAL = (
-    "SEC accelerated approval of the US spot bitcoin ETP listings on 2024-01-10; "
-    "first US trading day 2024-01-11"
+_EDGAR = "https://www.sec.gov/Archives/edgar/data/"
+_JANUARY_ORDER = (
+    "SEC Release No. 34-99306 (Jan. 10, 2024), 89 FR 3008 (Jan. 17, 2024), approving the NYSE Arca, Nasdaq and Cboe BZX "
+    "listings of eleven spot bitcoin products"
 )
+_MINI_ORDER = "SEC Release No. 34-100610 (July 26, 2024), 89 FR 62821 (Aug. 1, 2024), SR-NYSEARCA-2024-45, approving its NYSE Arca listing"
+
+
+def _filing(order: str, document: str, statement: str, url: str) -> str:
+    return f"{order}; {document}: {statement} ({_EDGAR}{url})"
+
 
 # The documented first US trading date of every fund in RBT-003's CoinGlass
-# history. GBTC traded over the counter as a trust before; under ruling 1 its
-# launch is its first day as a listed ETF, its 2024-01-11 conversion.
+# history (review F4: each with the approval order and the fund's own filing).
+# GBTC traded over the counter as a trust before; under ruling 1 its launch is
+# its first day as a listed ETF, its 2024-01-11 uplisting. HODL's two annual
+# reports give 2024-01-10, the approval order's date; its launch announcement,
+# filed with the SEC, and every other fund give 2024-01-11, and the citation
+# records the conflict.
 DOCUMENTED_FIRST_TRADING_DATES: Mapping[str, tuple[date, str]] = {
-    "ARKB": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "BITB": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "BRRR": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "BTC": (date(2024, 7, 31), "Grayscale Bitcoin Mini Trust: first NYSE Arca trading day 2024-07-31"),
-    "BTCO": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "BTCW": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "EZBC": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "FBTC": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "GBTC": (date(2024, 1, 11), "converted from an OTC trust to a listed ETF on 2024-01-11; " + _SPOT_ETF_APPROVAL),
-    "HODL": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
-    "IBIT": (date(2024, 1, 11), _SPOT_ETF_APPROVAL),
+    "ARKB": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "ARK 21Shares Bitcoin ETF Form 10-K FY2024 (0001013762-25-002798), Item 1",
+        '"commenced on January 11, 2024 (the day the Trust\'s Shares were initially listed on the Exchange)", Cboe BZX',
+        "1869699/000101376225002798/ea0234790-10k_ark21shares.htm",
+    )),
+    "BITB": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "Bitwise Bitcoin ETF Form 10-K FY2024 (0000950170-25-040572)",
+        '"The Trust commenced operations on January 10, 2024 and commenced trading on the Exchange on January 11, 2024.", NYSE Arca',
+        "1763415/000095017025040572/bitb-20241231.htm",
+    )),
+    "BRRR": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "CoinShares Valkyrie Bitcoin Fund Form 10-K FY2024 (0001999371-25-003309), Item 5",
+        "the date the Shares began trading, January 11, 2024, Nasdaq",
+        "1841175/000199937125003309/brrr_10k-123124.htm",
+    )),
+    "BTC": (date(2024, 7, 31), _filing(
+        _MINI_ORDER, "Grayscale Bitcoin Mini Trust ETF Form 10-K FY2024 (0000950170-25-029405), Item 1",
+        '"which began trading on NYSE Arca on July 31, 2024"',
+        "2015034/000095017025029405/btc-20241231.htm",
+    )),
+    "BTCO": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "Invesco Galaxy Bitcoin ETF Form 10-K FY2024 (0000950170-25-029444), Item 1",
+        '"The Trust commenced trading on the Cboe BZX Exchange Inc. (the \u201cExchange\u201d) on January 11, 2024."',
+        "1855781/000095017025029444/btco-20241231.htm",
+    )),
+    "BTCW": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "WisdomTree Bitcoin Fund Form 10-K FY2024 (0001214659-25-004851), Item 1",
+        '"began trading under the ticker symbol \u201cBTCW\u201d on January 11, 2024", Cboe BZX',
+        "1850391/000121465925004851/wtb3242510k.htm",
+    )),
+    "EZBC": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "Franklin Templeton Digital Holdings Trust (Franklin Bitcoin ETF) Form 10-K for the fiscal year ended March 31, 2024 (0001193125-24-173040)",
+        '"The registrant\'s shares began trading on the Cboe BZX Exchange, Inc. on January 11, 2024."',
+        "1992870/000119312524173040/d772184d10k.htm",
+    )),
+    "FBTC": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "Fidelity Wise Origin Bitcoin Fund Form 10-K FY2024 (0000950170-25-039452), Note 1",
+        '"On January 11, 2024, the Trust commenced operations and Shares commenced trading on Cboe BZX Exchange, Inc."',
+        "1852317/000095017025039452/ck0001852317-20241231.htm",
+    )),
+    "GBTC": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "Grayscale Bitcoin Trust ETF Form 10-K FY2024 (0000950170-25-029408), Item 1",
+        '"began trading on NYSE Arca on January 11, 2024 (the \u201cUplisting Date\u201d)"; before it the Shares were quoted on the OTCQX Best Market',
+        "1588489/000095017025029408/gbtc-20241231.htm",
+    )),
+    "HODL": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "VanEck Bitcoin Trust launch announcement filed as Form FWP (0001628280-24-001064)",
+        '"NEW YORK, NY (January 11, 2024) ... VanEck is today launching the VanEck Bitcoin Trust", Cboe BZX. CONFLICT: its Forms 10-K '
+        "FY2023 (0000930413-24-001178) and FY2024 (0000930413-25-000995), Item 5, say \"On January 10, 2024, the Shares commenced "
+        "trading on Cboe BZX\", the approval order's own date; 2024-01-11 is kept with the announcement and the other ten funds",
+        "1838028/000162828024001064/hodlfundlaunchpressrelea.htm",
+    )),
+    "IBIT": (date(2024, 1, 11), _filing(
+        _JANUARY_ORDER, "iShares Bitcoin Trust ETF Form 10-K FY2024 (0001437749-25-006260), Item 5",
+        '"On January 11, 2024, the Shares commenced trading on NASDAQ under the ticker symbol IBIT."',
+        "1980994/000143774925006260/bit20241231_10k.htm",
+    )),
 }
 
 
