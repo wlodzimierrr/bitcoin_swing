@@ -1477,7 +1477,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   implementation `524fcbf`); **RBT-003 is DONE / independent xHigh closure
   review PASS WITH NON-BLOCKING FINDINGS** (2026-11-11; C1 corrected in the
   docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
-  is READY**. RBT-003's history (Part A, offline
+  is IN PROGRESS** (owner rulings 1-4, 2026-11-11; Part A, offline, next).
+  RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
   findings and its second re-review the same day with one P2; after the
@@ -1768,10 +1769,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-003
-  `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11 after its
-  independent xHigh closure review PASSED WITH NON-BLOCKING FINDINGS (one
-  P3, C1, corrected in the docs); RBT-006 is READY. RBT-003's history: Part A, the offline provider adapters and
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-006
+  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`. The owner's rulings 1-4
+  (2026-11-11) cover the ETF launch dates, the fold scheme, the sweep grid
+  and the metric definitions. Part A, offline, is next; Part B, the
+  completeness-only real-data pass and the freeze, follows its review.
+  RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
+  after its independent xHigh closure review PASSED WITH NON-BLOCKING
+  FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
   evidence writers, is implemented (`1427053`; synthetic fixtures; no network,
   database or purchase) under its five owner rulings (2026-11-04). Its
   independent xHigh review FAILED on 2026-11-04 and, after the review-fix
@@ -2371,11 +2376,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-006**
-  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` (READY: RBT-003 DONE
-  2026-11-11, RBT-005 DONE 2026-11-01, the closure-table dependency
-  SATISFIED). RBT-007 and RBT-008 remain blocked on their own
-  dependencies.
+- **Next dependency-satisfied EPIC Y action:** **RBT-006 Part A**
+  (offline) under owner rulings 1-4 (2026-11-11):
+  - the preregistration module;
+  - the frozen ETF launch dates, fold scheme, sweep grid, metric
+    definitions and Momentum Persistence ablation variant;
+  - the completeness-only driver;
+  - synthetic fixtures only.
+
+  Part B, the completeness pass over RBT-003's frozen datasets and the
+  freeze, follows Part A's review. RBT-007 and RBT-008 remain blocked on
+  their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
     Score that is incomplete once a trailed stop locks in zero risk; the
     provisional flow-deterioration trim firing often; `TRIM_INPUT_MISSING`
@@ -3033,7 +3044,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   header/default/decorator probes exposed the blocking fail-open binding
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
-- **Last relevant implementation/review commits:** EPIC Y RBT-003 rulings
+- **Last relevant implementation/review commits:** EPIC Y RBT-006 owner
+  rulings 1-4 in this documentation commit. Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
   `09ba259`, `d7bd11c`, `894bcc1`, `be01997`, `58e1248`, `ca09376`,
@@ -4005,6 +4017,20 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-11: RBT-006 rulings 1-4.** The owner chose every
+  recommended option:
+  1. ETF launch dates come from each fund's first row in the frozen CoinGlass
+     history, cross-checked against the documented first trading dates.
+  2. Expanding 182-period folds start at each venue's evaluation start, with
+     a short tail untested.
+  3. The threshold sweeps cover all ten BTC-185 parameters at ±10% and ±20%,
+     with the `mean_return_fraction` objective, a 0.005 tolerance and the
+     `base` rung.
+  4. RBT-006 freezes the metric definitions and the report version; RBT-007
+     builds the generator to them.
+
+  Details in the RBT-006 block.
 
 - **ANSWERED 2026-11-11: RBT-003 closure.** The owner chose the
   recommended options:
