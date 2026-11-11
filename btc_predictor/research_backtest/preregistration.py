@@ -511,7 +511,7 @@ _CONVENTIONS = {
     "runs": "each metric is computed for the headline evaluation-window run per venue and cost rung, and per BTC-182 fold",
 }
 
-_PRIMARY_METRICS: tuple[dict[str, str], ...] = (
+_PRIMARY_METRICS: tuple[dict[str, Any], ...] = (
     {
         "metric": "expectancy",
         "rulebook": "Expectancy",
@@ -632,7 +632,37 @@ _PRIMARY_METRICS: tuple[dict[str, str], ...] = (
         "rulebook": "Longest drawdown",
         "authority": _NEW,
         "owner": "",
-        "definition": "the longest span, in hours, from an equity point at a new NAV peak to the first later point at or above that peak, or to the run's last point if never regained (marked unrecovered)",
+        "definition": (
+            "the longest time underwater, in hours (seconds / 3600). The running peak starts at the run's starting NAV at the run's "
+            "started_at (its first bar's timestamp) and rises to each equity point's nav above it; an equity point whose nav is at or "
+            "above the running peak is at the peak. A drawdown begins at the latest at-peak instant (started_at for the starting NAV, "
+            "else that point's as_of) before an equity point whose nav is strictly below the running peak, and ends at the as_of of "
+            "the first later point at or above that peak (recovered) or, if none, at the run's last equity point's as_of "
+            "(unrecovered). A run with no point strictly below its running peak has longest drawdown 0 hours; of equal lengths the "
+            "first is reported, with its recovered or unrecovered mark. Per fold, the fold's run; the walk-forward reports the "
+            "longest fold value, as max_drawdown reports the worst fold"
+        ),
+        "examples": [
+            {"case": "steady rise", "starting_nav": "100", "points": [["1", "101"], ["2", "102"]], "hours": "0", "recovered": None},
+            {"case": "plateau at the peak", "starting_nav": "100", "points": [["1", "100"], ["2", "100"]], "hours": "0", "recovered": None},
+            {"case": "first point below the starting NAV", "starting_nav": "100", "points": [["1", "99"], ["2", "100"]], "hours": "2", "recovered": True},
+            {
+                "case": "recovered at an equal NAV",
+                "starting_nav": "100",
+                "points": [["1", "101"], ["2", "100.5"], ["3", "100.8"], ["4", "101"], ["5", "102"]],
+                "hours": "3",
+                "recovered": True,
+            },
+            {"case": "unrecovered at the run's end", "starting_nav": "100", "points": [["1", "102"], ["2", "101"], ["3", "100"]], "hours": "2", "recovered": False},
+            {
+                "case": "the longer of two drawdowns",
+                "starting_nav": "100",
+                "points": [["1", "99"], ["2", "100"], ["3", "101"], ["4", "100"], ["5", "100.5"], ["6", "101.5"]],
+                "hours": "3",
+                "recovered": True,
+            },
+        ],
+        "examples_note": "each point is [hours after started_at of its as_of, its nav]",
         "undefined": "UNAVAILABLE_NO_EQUITY_CURVE",
     },
     {
@@ -699,7 +729,7 @@ def metric_definitions() -> dict[str, Any]:
         "rulebook_section": "28 primary metrics",
         "conventions": dict(_CONVENTIONS),
         "trade_count_rule": "every rate is reported beside the trade count it is computed over (policy V7 section 8)",
-        "metrics": [dict(metric) for metric in _PRIMARY_METRICS],
+        "metrics": copy.deepcopy([dict(metric) for metric in _PRIMARY_METRICS]),
         "cross_venue_section": "policy V7 section 8 cross-venue source sensitivity (clarification 4a)",
         "cross_venue": [dict(measure) for measure in _CROSS_VENUE_MEASURES],
     }

@@ -420,6 +420,42 @@ def test_a_new_definition_names_a_shared_condition_as_its_owner_does() -> None:
     assert seen == set(shared)
 
 
+def _longest_underwater(starting_nav: Decimal, points: list[tuple[Decimal, Decimal]]) -> tuple[Decimal, bool | None]:
+    """A literal reading of the frozen longest-drawdown text, hours after started_at."""
+
+    peak, peak_at, began = starting_nav, Decimal("0"), None
+    longest: tuple[Decimal, bool | None] = (Decimal("0"), None)
+    for at, nav in points:
+        if nav >= peak:  # at the peak
+            if began is not None and at - began > longest[0]:
+                longest = (at - began, True)
+            peak, peak_at, began = nav, at, None
+        elif began is None:  # strictly below: a drawdown from the latest at-peak instant
+            began = peak_at
+    if began is not None and points[-1][0] - began > longest[0]:
+        longest = (points[-1][0] - began, False)
+    return longest
+
+
+def test_longest_drawdown_is_the_longest_time_underwater_and_its_examples_follow_the_text() -> None:
+    metric = next(metric for metric in pr.metric_definitions()["metrics"] if metric["metric"] == "longest_drawdown")
+    for rule in ("strictly below the running peak", "starting NAV at the run's started_at", "at or above that peak (recovered)", "(unrecovered)", "0 hours", "the first is reported"):
+        assert rule in metric["definition"], rule
+    cases = {example["case"]: example for example in metric["examples"]}
+    assert {"steady rise", "plateau at the peak", "first point below the starting NAV", "unrecovered at the run's end"} <= set(cases)
+    for example in metric["examples"]:
+        points = [(Decimal(at), Decimal(nav)) for at, nav in example["points"]]
+        assert _longest_underwater(Decimal(example["starting_nav"]), points) == (Decimal(example["hours"]), example["recovered"]), example["case"]
+    rise = cases["steady rise"]
+    assert len(rise["points"]) >= 2 and all(Decimal(b[1]) > Decimal(a[1]) for a, b in zip([["0", rise["starting_nav"]], *rise["points"]], rise["points"]))
+
+
+def test_the_metric_definitions_are_a_copy() -> None:
+    first = pr.metric_definitions()
+    first["metrics"][-2]["examples"].clear()
+    assert pr.metric_definitions() != first
+
+
 def test_the_stop_buffer_alone_uses_the_configured_grid_because_the_uniform_one_is_refused() -> None:
     base = pr._configuration_mapping()
     paths = pr.SWEEP_PARAMETER_PATHS["stop_buffer_atr_multiplier"]
@@ -449,7 +485,7 @@ def test_the_cross_venue_measures_cover_policy_section_8() -> None:
 def test_the_metric_definitions_are_frozen_by_digest() -> None:
     assert pr.metric_definitions_sha256() == pr.sha256_hex(pr.metric_definitions_bytes())
     assert json.loads(pr.metric_definitions_bytes()) == pr.metric_definitions()
-    assert pr.metric_definitions_sha256() == "c13adf73ed34925adf15263fe763a85dde4815c2380bd62b18a6bd4f25283dd3"
+    assert pr.metric_definitions_sha256() == "e7ee45c7238958a4cb6abccaa736332f8f2c24ddf83dacc66a4a8629c3f105c6"
 
 
 # --- the completeness-only pass ------------------------------------------------------------------
