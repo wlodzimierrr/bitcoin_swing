@@ -759,15 +759,16 @@ class _CompletenessRun(ec._DecisionRun):
     def completeness(self) -> InstantCompleteness:
         hourly = self.c._visible_hourly(self.t)
         if not hourly or hourly[-1].ingested_at != self.t:
-            missing = tuple(UnevaluableComponent(name, (CAUSE_DECISION_PRICE_BAR_MISSING,)) for name in COMPONENT_NAMES)
+            # the composer's own attribution (review F5): one cause, on the decision instant
+            self._cause("decision_instant", CAUSE_DECISION_PRICE_BAR_MISSING)
             return InstantCompleteness(
                 decision_at=self.t,
                 price_bar=False,
                 components=tuple((name, False) for name in COMPONENT_NAMES),
                 core_regime=False,
-                incomplete=missing,
+                incomplete=(UnevaluableComponent("decision_instant", (CAUSE_DECISION_PRICE_BAR_MISSING,)),),
                 structure_without_valid_stop=False,
-                unaccounted=(),
+                unaccounted=self._unaccounted(),
                 guard_refusals=(),
                 flow_calendar=None,
             )

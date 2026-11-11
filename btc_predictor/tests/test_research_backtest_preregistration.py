@@ -487,16 +487,38 @@ def test_the_pass_never_composes_conviction_flags_setups_or_an_intent(world) -> 
     assert len(calls["calculate_regime_score"]) == 2 and report.rows[-1].complete
 
 
-def test_a_missing_decision_bar_leaves_every_component_incomplete_with_the_accounted_cause() -> None:
+@pytest.mark.parametrize(
+    ("scenario", "first", "missing_at"),
+    [
+        (fx.Scenario(missing_hours=(datetime(2024, 3, 13, 23, tzinfo=UTC),)), utc(2024, 3, 13), [utc(2024, 3, 14)]),
+        (fx.Scenario(), utc(2021, 5, 30), [utc(2021, 5, 30), utc(2021, 5, 31), utc(2021, 6, 1)]),  # before the first bar
+    ],
+    ids=["missing-hour", "pre-history"],
+)
+def test_a_missing_decision_bar_is_recorded_as_the_composer_records_it(scenario, first, missing_at) -> None:
+    inputs = scenario.build()
+    report = pr.completeness_pass(inputs, days(first, 3), strategy_config=CONFIG)
+    full = fx.decide_consecutively(ec.EntryComposer(inputs, strategy_config=CONFIG), first, first + 2 * DAY)
+    assert [row.decision_at for row in report.rows if not row.price_bar] == missing_at
+    for mine, composed in zip(report.rows, full):
+        assert mine.decision_at == composed.decision_at
+        if mine.decision_at not in missing_at:
+            continue
+        assert composed.outcome == ec.OUTCOME_STRUCTURALLY_UNEVALUABLE and not mine.complete and not mine.core_regime
+        assert dict(mine.components) == {name: False for name in ec.COMPONENT_NAMES}
+        assert mine.incomplete == composed.unevaluable == (ec.UnevaluableComponent("decision_instant", (ec.CAUSE_DECISION_PRICE_BAR_MISSING,)),)
+        assert mine.unaccounted == tuple(composed.unaccounted) == ()
+    summary = report.summary()
+    assert summary["cause_instant_counts"][f"decision_instant:{ec.CAUSE_DECISION_PRICE_BAR_MISSING}"] == len(missing_at)
+    assert not [key for key in summary["cause_instant_counts"] if key.split(":")[0] in ec.COMPONENT_NAMES and ec.CAUSE_DECISION_PRICE_BAR_MISSING in key]
+
+
+def test_an_unaccounted_missing_bar_cause_blocks_the_freeze(monkeypatch: pytest.MonkeyPatch) -> None:
+    real = ec.accounted_cause
+    monkeypatch.setattr(ec, "accounted_cause", lambda code, feature_id=None: None if code == ec.CAUSE_DECISION_PRICE_BAR_MISSING else real(code, feature_id))
     inputs = fx.Scenario(missing_hours=(datetime(2024, 3, 13, 23, tzinfo=UTC),)).build()
-    report = pr.completeness_pass(inputs, days(utc(2024, 3, 13), 3), strategy_config=CONFIG)
-    missing = report.rows[1]
-    assert missing.decision_at == utc(2024, 3, 14) and not missing.price_bar and not missing.complete
-    assert {item.component: item.causes for item in missing.incomplete} == {
-        name: (ec.CAUSE_DECISION_PRICE_BAR_MISSING,) for name in ec.COMPONENT_NAMES
-    }
-    assert ec.accounted_cause(ec.CAUSE_DECISION_PRICE_BAR_MISSING) is not None
-    assert report.rows[0].price_bar and report.rows[2].price_bar
+    report = pr.completeness_pass(inputs, [utc(2024, 3, 14)], strategy_config=CONFIG)
+    assert report.unaccounted == (("2024-03-14T00:00:00+00:00", f"decision_instant:{ec.CAUSE_DECISION_PRICE_BAR_MISSING}"),)
 
 
 def test_an_unaccounted_cause_is_recorded_and_blocks_the_freeze(world, monkeypatch: pytest.MonkeyPatch) -> None:
