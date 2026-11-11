@@ -220,7 +220,8 @@ def test_one_sweep_per_distinct_configured_value(sweeps) -> None:
         ("structure_minimum", "60"),
         ("reward_risk_minimum", "2"),
         ("stop_buffer_atr_multiplier", "0.3"),
-        ("hold_threshold", "70"),
+        ("hold_threshold", "50"),
+        ("hold_threshold", "40"),
         ("add_threshold", "85"),
         ("risk_budget_fraction_nav", "0.0035"),
         ("risk_budget_fraction_nav", "0.005"),
@@ -234,6 +235,8 @@ def test_one_sweep_per_distinct_configured_value(sweeps) -> None:
     ]
     assert paths[("structure_minimum", "60")] == ["setup_requirements.capitulation_reversal.structure_min"]
     assert paths[("risk_budget_fraction_nav", "0.005")] == ["risk.schedule.1.risk_fraction_nav"]
+    assert paths[("hold_threshold", "50")] == ["hold_thresholds.defensive_min"]
+    assert paths[("hold_threshold", "40")] == ["hold_thresholds.exit_below", "hold_thresholds.trim_min"]
     assert all("bearish_distribution" not in path for sweep in sweeps for path in sweep["parameter_paths"])
 
 
@@ -251,10 +254,13 @@ def test_candidates_the_configuration_refuses_are_dropped_with_their_reason(swee
     assert [(item["value"], item["reason"]) for item in entry["dropped_candidates"]] == [
         (value, "STRATEGY_CONFIG: entry_thresholds values must be strictly increasing") for value in ("64", "88", "96")
     ]
-    hold = by[("hold_threshold", "70")]
-    assert hold["candidate_values"] == ["63", "70", "77", "84"]
-    assert [item["value"] for item in hold["dropped_candidates"]] == ["56"]
-    assert "strictly decreasing" in hold["dropped_candidates"][0]["reason"]
+    defensive = by[("hold_threshold", "50")]
+    assert defensive["candidate_values"] == ["45", "50", "55"]
+    assert [(item["value"], item["reason"]) for item in defensive["dropped_candidates"]] == [
+        (value, "STRATEGY_CONFIG: hold_thresholds values must be strictly decreasing") for value in ("40", "60")
+    ]
+    trim_exit = by[("hold_threshold", "40")]
+    assert trim_exit["candidate_values"] == ["32", "36", "40", "44", "48"] and trim_exit["dropped_candidates"] == []
     add = by[("add_threshold", "85")]
     assert add["candidate_values"] == ["68", "76.5", "85", "93.5"]
     assert [item["value"] for item in add["dropped_candidates"]] == ["102"]
@@ -306,14 +312,96 @@ def test_a_value_left_with_fewer_than_two_candidates_is_recorded_as_not_swept(mo
     real = pr._candidate_refusal
 
     def only_the_configured_hold(base, parameter, paths, value):
-        if parameter == "hold_threshold" and value != Decimal("70"):
+        if parameter == "hold_threshold" and value != Decimal(str(pr._get_path(base, paths[0]))):
             return "STRATEGY_CONFIG: synthetic refusal"
         return real(base, parameter, paths, value)
 
     monkeypatch.setattr(pr, "_candidate_refusal", only_the_configured_hold)
-    hold = next(sweep for sweep in pr.sweep_grid(CONFIG) if sweep["parameter"] == "hold_threshold")
-    assert (hold["status"], hold["spec"], hold["candidate_values"]) == ("NOT_SWEPT_FEWER_THAN_TWO_CANDIDATES", None, ["70"])
-    assert len(hold["dropped_candidates"]) == 4
+    holds = [sweep for sweep in pr.sweep_grid(CONFIG) if sweep["parameter"] == "hold_threshold"]
+    assert [(hold["status"], hold["spec"], hold["candidate_values"]) for hold in holds] == [
+        ("NOT_SWEPT_FEWER_THAN_TWO_CANDIDATES", None, ["50"]),
+        ("NOT_SWEPT_FEWER_THAN_TWO_CANDIDATES", None, ["40"]),
+    ]
+    assert [len(hold["dropped_candidates"]) for hold in holds] == [4, 4]
+
+
+def _trim_decisions(strategy_config: StrategyConfig) -> list[tuple[str, ...]]:
+    """The trim owner's reason codes at every half point of Hold Score, an open position and no other trigger."""
+
+    from btc_predictor.signals.trim import TrimRuleInput, evaluate_trim_rules
+
+    decisions = []
+    for half in range(0, 201):
+        inputs = TrimRuleInput(
+            position_open=True,
+            hold_score=Decimal(half) / 2,
+            euphoria_active=False,
+            crowding_active=False,
+            current_flow_score=Decimal("50"),
+            prior_flow_score=Decimal("50"),
+        )
+        decisions.append(tuple(evaluate_trim_rules(inputs, strategy_config=strategy_config).reason_codes))
+    return decisions
+
+
+def _configured(paths, value) -> StrategyConfig:
+    data = pr._configuration_mapping()
+    for path in paths:
+        pr._set_path(data, path, float(value))
+    return StrategyConfig.from_mapping(data)
+
+
+def test_every_hold_candidate_changes_a_decision_of_the_trim_owner(sweeps) -> None:
+    holds = [sweep for sweep in sweeps if sweep["parameter"] == "hold_threshold"]
+    assert len(holds) == 2
+    for sweep in holds:
+        decisions = [_trim_decisions(_configured(sweep["parameter_paths"], value)) for value in sweep["candidate_values"]]
+        assert all(first != second for first, second in zip(decisions, decisions[1:])), sweep["configured_value"]
+
+
+def test_the_unread_hold_thresholds_change_no_decision_and_are_recorded() -> None:
+    base = pr._configuration_mapping()
+    champion = _trim_decisions(_configured([], 0))
+    for path, value in (("hold_thresholds.possible_add_min", 88), ("hold_thresholds.hold_min", 77), ("hold_thresholds.no_add_min", 55)):
+        assert _trim_decisions(_configured([path], value)) == champion, path
+    assert pr.unread_sweep_paths() == [
+        {
+            "parameter": "hold_threshold",
+            "paths": {path: str(pr._get_path(base, path)) for path in ("hold_thresholds.possible_add_min", "hold_thresholds.hold_min", "hold_thresholds.no_add_min")},
+            "reason": pr.UNREAD_PATH_REASON,
+        }
+    ]
+    assert {item["paths"]["hold_thresholds.hold_min"] for item in pr.unread_sweep_paths()} == {"70"}
+
+
+_READER_EXCLUDED = ("tests/", "config/", "research_backtest/preregistration.py", "research_backtest/input_census_registry.py")
+
+
+def _readers(leaf: str) -> list[str]:
+    package = REPO / "btc_predictor"
+    pattern = re.compile(rf"\.{leaf}\b|[\"']{leaf}[\"']")
+    return sorted(
+        str(path.relative_to(package))
+        for path in package.rglob("*.py")
+        if not str(path.relative_to(package)).startswith(_READER_EXCLUDED[:2])
+        and str(path.relative_to(package)) not in _READER_EXCLUDED[2:]
+        and pattern.search(path.read_text())
+    )
+
+
+def test_every_swept_path_has_a_reader_and_no_unread_path_has_one(sweeps) -> None:
+    for sweep in sweeps:
+        for path in sweep["parameter_paths"]:
+            assert _readers(path.rsplit(".", 1)[-1]), path
+    unread = [path for paths in pr.SWEEP_UNREAD_PATHS.values() for path in paths]
+    assert unread and all(_readers(path.rsplit(".", 1)[-1]) == [] for path in unread)
+    assert _readers("defensive_min") == ["signals/trim.py"] and "signals/exit_rules.py" in _readers("exit_below")
+
+
+def test_an_unread_path_is_never_swept(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(pr.SWEEP_UNREAD_PATHS, "add_threshold", ("add_thresholds.add_min",))
+    with pytest.raises(pr.PreregistrationRefused, match="never swept"):
+        pr.sweep_grid(CONFIG)
 
 
 def test_the_grid_is_registered_only_against_the_champion() -> None:
@@ -758,7 +846,8 @@ def test_the_preregistration_binds_everything_the_ticket_lists(frozen) -> None:
     assert frozen["policy"] == "RESEARCH_BACKTEST_POLICY_V7" and frozen["evidence_class"] == "RESEARCH_BACKTEST_NON_CERTIFYING"
     assert frozen["report"]["metric_spec_sha256"] == pr.metric_definitions_sha256()
     assert frozen["ablation"] == pr.ablation_variant(CONFIG)
-    assert frozen["threshold_sweeps"]["sweeps"] == pr.sweep_grid(CONFIG)
+    assert frozen["threshold_sweeps"]["sweeps"] == pr.sweep_grid(CONFIG) and len(frozen["threshold_sweeps"]["sweeps"]) == 15
+    assert frozen["threshold_sweeps"]["unread_paths"] == pr.unread_sweep_paths()
     assert len(frozen["etf_fund_launches"]) == 11
     assert frozen["decision_schedule"] == {
         "rule": "every UTC midnight strictly inside the data window",

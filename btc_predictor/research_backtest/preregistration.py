@@ -379,10 +379,35 @@ SWEEP_PARAMETER_PATHS: Mapping[str, tuple[str, ...]] = {
         *(f"setup_requirements.{setup}.minimum_rr" for setup in _LONG_SETUPS),
     ),
     STOP_BUFFER: ("stop_buffers.atr_multiplier",),
-    HOLD_THRESHOLD: ("hold_thresholds.hold_min",),
+    # Ruling 3d (review F1): the Hold Score thresholds a decision owner of the
+    # champion reads -- the trim owner reads all three, the exit owner exit_below.
+    HOLD_THRESHOLD: ("hold_thresholds.defensive_min", "hold_thresholds.trim_min", "hold_thresholds.exit_below"),
     ADD_THRESHOLD: ("add_thresholds.add_min",),
     RISK_BUDGET: tuple(f"risk.schedule.{row}.risk_fraction_nav" for row in range(3)),
 }
+
+# Ruling 3d: configuration paths of a BTC-185 parameter that no decision owner
+# of the champion reads (only the configuration's ordering check does). They
+# are recorded and never swept: a sweep of them would report the stability of
+# an inert value.
+SWEEP_UNREAD_PATHS: Mapping[str, tuple[str, ...]] = {
+    HOLD_THRESHOLD: ("hold_thresholds.possible_add_min", "hold_thresholds.hold_min", "hold_thresholds.no_add_min"),
+}
+UNREAD_PATH_REASON = "NO_DECISION_READER: read only by the configuration's ordering check (ruling 3d)"
+
+
+def unread_sweep_paths() -> list[dict[str, Any]]:
+    """The recorded, unswept paths of ruling 3d, with their configured values."""
+
+    base = _configuration_mapping()
+    return [
+        {
+            "parameter": parameter,
+            "paths": {path: str(_decimal_of(_get_path(base, path), path)) for path in paths},
+            "reason": UNREAD_PATH_REASON,
+        }
+        for parameter, paths in SWEEP_UNREAD_PATHS.items()
+    ]
 
 
 def _configuration_mapping() -> dict[str, Any]:
@@ -438,6 +463,8 @@ def sweep_grid(strategy_config: StrategyConfig | None = None) -> list[dict[str, 
         raise _refuse("SWEEP_REFUSED", "the sweeps are registered against the champion's configuration")
     if set(SWEEP_PARAMETER_PATHS) != set(THRESHOLD_PARAMETERS):
         raise _refuse("SWEEP_REFUSED", "every BTC-185 parameter needs its configuration paths")
+    if {path for paths in SWEEP_UNREAD_PATHS.values() for path in paths} & {path for paths in SWEEP_PARAMETER_PATHS.values() for path in paths}:
+        raise _refuse("SWEEP_REFUSED", "a path without a decision reader is never swept (ruling 3d)")
     base = _configuration_mapping()
     if StrategyConfig.from_mapping(copy.deepcopy(base)) != config:
         raise _refuse("SWEEP_REFUSED", "the configuration file is not the champion's configuration")
@@ -1089,6 +1116,7 @@ def preregistration_record(
             "cost_rung": SWEEP_COST_RUNG,
             "label": SENSITIVITY_ONLY,
             "sweeps": sweep_grid(config),
+            "unread_paths": unread_sweep_paths(),
         },
         "ablation": ablation_variant(config),
         "report": {
