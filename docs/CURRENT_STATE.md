@@ -1478,8 +1478,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   review PASS WITH NON-BLOCKING FINDINGS** (2026-11-11; C1 corrected in the
   docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
   is IN PROGRESS** (owner rulings 1-4 and clarifications 3a-3c and 4a,
-  2026-11-11; Part A `b167d90` committed, awaiting its independent xHigh
-  review).
+  2026-11-11; Part A `b167d90`; its independent xHigh review FAILED on
+  2026-11-11, owner ruling 3d and review fixes next).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1775,9 +1775,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`. The owner's rulings 1-4
   (2026-11-11) cover the ETF launch dates, the fold scheme, the sweep grid
   and the metric definitions; clarifications 3a-3c and 4a followed the same
-  day. Part A, offline, is committed (`b167d90`) and awaits its independent
-  xHigh review; Part B, the completeness-only real-data pass and the
-  freeze, follows that review.
+  day. Part A, offline, is committed (`b167d90`). Its independent xHigh
+  review FAILED on 2026-11-11: four P2 (F1 the Hold sweep has no decision
+  reader, F2 a refused freeze can leave files written, F3 the longest
+  drawdown definition, F4 the ETF dates' citations) and two P3 (F5 a
+  missing bar's causes, F6 max drawdown's statuses). The owner ruled 3d,
+  sweeping the Hold Score thresholds the champion reads, and chose to fix
+  all. Part B, the completeness-only real-data pass and the freeze,
+  follows the re-review.
   RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
   after its independent xHigh closure review PASSED WITH NON-BLOCKING
   FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
@@ -2380,15 +2385,20 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **review of RBT-006 Part A** (`74d6720..` its record; code `b167d90`):
-  - the preregistration module;
-  - the ETF launch dates, decision schedule, fold plans, 14 sweeps,
-    ablation variant and metric definitions it freezes;
-  - the completeness-only pass;
-  - the freeze command.
+- **Next dependency-satisfied EPIC Y action:** the **RBT-006 Part A
+  review fixes** (review FAIL 2026-11-11, F1-F6; owner ruling 3d), each a
+  distinct commit, then Part A's re-review:
+  - F1, ruling 3d: the Hold sweep moves `defensive_min` (50) and the shared
+    40 of `trim_min` and `exit_below`, with 15 sweeps; the three Hold
+    thresholds with no reader are recorded;
+  - F2: every destination checked before anything is written;
+  - F3: longest drawdown as the longest time underwater;
+  - F4: identifiable public citations for the ETF dates;
+  - F5: a missing bar recorded as the composer records it;
+  - F6: the owner's exact statuses.
 
-  Part B, running that command on the private dataset, follows a PASS. RBT-007 and RBT-008 remain blocked on
+  Part B, running the freeze command on the private dataset, follows a
+  PASS. RBT-007 and RBT-008 remain blocked on
   their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
     Score that is incomplete once a trailed stop locks in zero risk; the
@@ -3057,7 +3067,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-006 owner
   rulings 1-4 `74d6720`, clarifications 3a and 3b `0d8acd8`, Part A code
-  `b167d90` with this documentation commit (clarifications 3c and 4a).
+  `b167d90` with `265c7e8` (clarifications 3c and 4a); the Part A review
+  FAIL and owner ruling 3d in this documentation commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4046,6 +4057,12 @@ unopened with no automatic dependency that would ever open it.
      builds the generator to them.
 
   Details in the RBT-006 block.
+- **ANSWERED 2026-11-11: RBT-006 Part A review (FAIL, F1-F6).** The owner
+  chose the recommended options. Ruling 3d: the Hold-threshold sweep moves
+  the Hold Score thresholds the champion reads (`defensive_min` 50; the
+  shared 40 of `trim_min` and `exit_below`). `possible_add_min`, `hold_min`
+  and `no_add_min` have no decision reader and are recorded unswept. Fix
+  F2-F6, then re-review. Details in the RBT-006 review outcome.
 - **ANSWERED 2026-11-11: RBT-006 clarifications 3c and 4a.** Asked during
   Part A; the owner chose the recommended options. The stop buffer is swept
   over the configuration's own `sweep_atr_multipliers`, since the
