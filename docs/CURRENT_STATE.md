@@ -1509,7 +1509,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   ruled, but their independent review on 2026-11-10 FAILED on five P2
   findings and one P3, D1 to D6, which the owner chose to fix; the six
   fixes `0219a41`..`2d0307b` FAILED their re-review on 2026-11-11 on one
-  P2 and two P3, DR1 to DR3, which the owner chose to fix and re-review)).
+  P2 and two P3, DR1 to DR3, which the owner chose to fix; those fixes
+  `9175a9c`..`5e78ab7` are committed and await the second re-review)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1839,8 +1840,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   findings, D1 to D5, and one P3, D6, all of which the owner chose to fix;
   the fixes `0219a41`..`2d0307b` FAILED their independent re-review on
   2026-11-11 on one P2, DR1 (arbitrary `BUILD.json` text reaches the public
-  index), and two P3, DR2 and DR3, all of which the owner chose to fix,
-  with two missing tests, then re-review).
+  index), and two P3, DR2 and DR3, all of which the owner chose to fix;
+  the fixes `9175a9c`..`5e78ab7`, with the two missing tests, are committed
+  and await the second re-review).
   RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
@@ -2308,12 +2310,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **RBT-003 Part B
-  re-request and dataset build re-review fixes DR1 to DR3** (`BUILD.json`'s
-  hours, unit names and zlib version validated as what they name; an
-  integer `gzip_size`; a non-UTF-8 file name in the private commit
-  refused) and the two missing tests, their validation and the second
-  re-review; then the owner's re-request run and the build. The code (owner ruling 15: the 27
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **second re-review of the RBT-003 Part B re-request and dataset build
+  fixes** (`e5051a0..` their record: DR1, `BUILD.json`'s hours, unit names
+  and zlib version validated as what they name; DR2, an integer
+  `gzip_size`; DR3, a non-UTF-8 file name in the private commit refused;
+  the two missing tests); then the owner's re-request run and the build. The code (owner ruling 15: the 27
   missing Coinbase and Bitfinex hours are re-requested through the BTC-020
   adapters first; then a window-bounded database reader, the V1 and V2
   builders, the frozen inputs and manifests in the private evidence
@@ -2343,6 +2345,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-003 Part B re-request and dataset build re-review-fix validation
+  (2026-11-11):** `.venv312` CPython 3.12.14. The adapter, run and two new
+  modules with the replay, database and coverage guard modules 1,658 passed, 1 xfailed;
+  the BTC-019 completion gate and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed. Full repository at
+  `5e78ab7`:
+  8,969 passed, 3 skipped, 1 xfailed, 0 failed (79 min).
 - **RBT-003 Part B re-request and dataset build review-fix validation
   (2026-11-10):** `.venv312` CPython 3.12.14. The adapter, run and two new
   modules with the replay, database and coverage guard modules 1,610 passed, 1 xfailed;
@@ -3008,8 +3018,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `545ad32`; owner ruling 15 `bd64bf1`; owner ruling 16 `3665152`; the
   re-request and dataset build code `7e4f871` with docs `6acc12c`; its
   review FAIL (D1 to D6) `d0efcff`; the fixes D6 `0219a41` (documentation), D1 `8b25fc9`, D2 `8c98be8`, D3 `9bf4421`, D4 `18edd58` and D5 `2d0307b` with docs
-  `e5051a0`; their re-review FAIL (DR1 to DR3) in this documentation
-  commit.
+  `e5051a0`; their re-review FAIL (DR1 to DR3) `2189575`; the fixes
+  DR1 `9175a9c`, DR2 `dea5ae0`, DR3 `4caa174` and the two tests `5e78ab7` with this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
