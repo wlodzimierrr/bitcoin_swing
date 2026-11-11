@@ -576,6 +576,19 @@ def test_a_stored_dataset_that_does_not_match_its_build_record_is_refused(world:
     refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
 
 
+def test_a_stored_file_with_another_gzip_header_is_refused_by_its_gzip_digest(world: Collected) -> None:
+    built(world)  # the re-review's test gap: the same bytes, the same length; only the gzip digest differs
+    entry = json.loads((world.root / build.DATASET_LAYOUT / "BUILD.json").read_bytes())["inputs"]["etf_flows"]
+    path = world.root / build.DATASET_LAYOUT / entry["file"]
+    data = path.read_bytes()
+    assert data[4:8] == bytes(4)  # the build's gzip modification time, zero
+    altered = data[:4] + (1).to_bytes(4, "little") + data[8:]
+    assert len(altered) == entry["gzip_size"] and build._gunzip(altered, entry["size"]) == build._gunzip(data, entry["size"]) is not None
+    path.write_bytes(altered)
+    error = refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+    assert "gzip digest" in str(error)
+
+
 # review D5: a malformed BUILD.json refuses, never raises
 NUMERALS = {"NaN": b"NaN", "Infinity": b"Infinity", "-Infinity": b"-Infinity", "1e999": b"1e999", "a fraction": b"0.0", "an exponent": b"0e0"}
 
@@ -1220,6 +1233,21 @@ def test_a_payload_committed_with_other_bytes_is_refused(world: Collected) -> No
     path.write_bytes(data)  # the working tree as stored, the commit not
     git(world.root, "update-index", "--assume-unchanged", "--", str(path.relative_to(world.root)))
     assert git(world.root, "status", "--porcelain") == ""
+    refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
+
+
+def test_a_payload_committed_as_a_symbolic_link_to_its_own_bytes_is_refused(world: Collected) -> None:
+    store = git_store(world)  # the re-review's test gap: only the committed-mode check refuses this
+    built(world)
+    stored = build.load_dataset(store)
+    relative = f"{build.DATASET_LAYOUT.as_posix()}/manifests/venue_coinbase.json.gz"
+    commit_all(world)
+    blob = git(world.root, "hash-object", "-w", "--", relative)
+    git(world.root, "update-index", "--cacheinfo", f"120000,{blob},{relative}")
+    git(world.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "link")
+    git(world.root, "update-index", "--assume-unchanged", "--", relative)  # the working tree keeps the regular file
+    assert git(world.root, "status", "--porcelain") == ""
+    assert git(world.root, "ls-tree", "HEAD", "--", relative) == f"120000 blob {blob}\t{relative}"  # the stored bytes, as a link
     refused(build.DatasetBuildRefused, "PRIVATE_COMMIT_REFUSED", build.private_commit, store, stored)
 
 
