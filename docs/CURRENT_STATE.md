@@ -1479,7 +1479,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
   is IN PROGRESS** (owner rulings 1-4 and clarifications 3a-3c and 4a,
   2026-11-11; Part A `b167d90`; its independent xHigh review FAILED on
-  2026-11-11, owner ruling 3d and review fixes next).
+  2026-11-11; owner ruling 3d; review fixes `00f832a`..`51f3d81` await the
+  re-review).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1781,8 +1782,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   drawdown definition, F4 the ETF dates' citations) and two P3 (F5 a
   missing bar's causes, F6 max drawdown's statuses). The owner ruled 3d,
   sweeping the Hold Score thresholds the champion reads, and chose to fix
-  all. Part B, the completeness-only real-data pass and the freeze,
-  follows the re-review.
+  all. The review fixes `00f832a`..`51f3d81` (one commit per finding) are
+  committed and validated, and await the independent xHigh re-review. Part
+  B, the completeness-only real-data pass and the freeze, follows a PASS.
   RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
   after its independent xHigh closure review PASSED WITH NON-BLOCKING
   FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
@@ -2385,9 +2387,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **RBT-006 Part A
-  review fixes** (review FAIL 2026-11-11, F1-F6; owner ruling 3d), each a
-  distinct commit, then Part A's re-review:
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **re-review of the RBT-006 Part A review fixes** `00f832a`..`51f3d81`
+  (review FAIL 2026-11-11, F1-F6; owner ruling 3d):
   - F1, ruling 3d: the Hold sweep moves `defensive_min` (50) and the shared
     40 of `trim_min` and `exit_below`, with 15 sweeps; the three Hold
     thresholds with no reader are recorded;
@@ -2420,6 +2422,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-006 Part A review-fix validation (2026-11-11):** `.venv312`
+  CPython 3.12.14. The adapter, run, dataset and new modules with the
+  replay, database and coverage guard modules 1,747 passed, 1 xfailed; the BTC-019
+  completion gate and coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed. Full repository at
+  `51f3d81`:
+  9,058 passed, 3 skipped, 1 xfailed, 0 failed (81 min).
 - **RBT-006 Part A validation (2026-11-11):** `.venv312` CPython 3.12.14.
   The adapter, run, dataset and new modules with the replay, database and
   coverage guard modules 1,728 passed, 1 xfailed; the BTC-019 completion gate and
@@ -3068,7 +3078,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Last relevant implementation/review commits:** EPIC Y RBT-006 owner
   rulings 1-4 `74d6720`, clarifications 3a and 3b `0d8acd8`, Part A code
   `b167d90` with `265c7e8` (clarifications 3c and 4a); the Part A review
-  FAIL and owner ruling 3d in this documentation commit.
+  FAIL and owner ruling 3d `919acab`; the review fixes `00f832a`..`51f3d81`
+  with this documentation commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
