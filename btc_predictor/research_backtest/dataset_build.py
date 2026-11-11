@@ -70,7 +70,7 @@ import typing
 import zlib
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Context, Decimal, InvalidOperation, localcontext
 from pathlib import Path
 from typing import Any
@@ -572,6 +572,7 @@ def _read_real_file(directory: Path, relative: str) -> bytes:
 
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 _COMMIT = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+_ZLIB_VERSION = re.compile(r"[0-9]{1,2}(?:\.[0-9]{1,2}){1,3}(?:[.-][a-z][a-z-]{0,15})?")  # 1.3.2, 1.2.13, 1.3.0.1-motley, 1.3.0.zlib-ng
 _UNIT_BOUND_KEYS = frozenset({"unit_count", "first_unit", "last_unit", "done_sha256"})
 _EVIDENCE_KEYS = frozenset(
     {"units", "withheld_liquidation_hours", "futures_basis_listing_sha256", "market_cap_evidence_sha256", "still_missing_hours"}
@@ -582,16 +583,50 @@ def _is_digest(value: Any) -> bool:
     return type(value) is str and _DIGEST.fullmatch(value) is not None
 
 
-def _is_texts(value: Any) -> bool:
-    return type(value) is list and all(type(item) is str for item in value)
-
-
 def _is_count(value: Any) -> bool:
     return type(value) is int and value >= 0
 
 
+def _hours(value: Any) -> tuple[datetime, ...] | None:
+    """Canonical whole-hour UTC instants inside the data window, ascending and distinct (review DR1); else ``None``."""
+
+    if type(value) is not list or not all(type(text) is str for text in value):
+        return None
+    hours = []
+    for text in value:
+        try:
+            hour = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if hour.utcoffset() != timedelta(0) or iso(hour) != text or (hour.minute, hour.second, hour.microsecond) != (0, 0, 0):
+            return None
+        if not v1.DATA_WINDOW.contains(hour):
+            return None
+        hours.append(hour)
+    return tuple(hours) if all(earlier < later for earlier, later in zip(hours, hours[1:])) else None
+
+
+def _scheduled_unit(source: str, value: Any) -> bool:
+    """A unit the collection schedules for ``source`` (review DR1): a unit name, never other text."""
+
+    return type(value) is str and value in run.SOURCES[source].units()
+
+
+def _scheduled_missing_hours(venue: str, value: Any) -> bool:
+    """Hours among those the re-request schedules for ``venue`` (review DR1)."""
+
+    hours = _hours(value)
+    return hours is not None and set(hours) <= set(ohlcv.MISSING_HOURS_VENUES[venue].hours())
+
+
 def _well_formed_evidence(evidence: Any) -> bool:
-    """The evidence section's shape, as ``load_build_evidence`` writes it: names, counts, digests and hours."""
+    """The evidence section as ``load_build_evidence`` writes it: scheduled unit names, counts, digests and hours.
+
+    Every text in it is what it names (review DR1): a unit the collection
+    schedules, or a canonical whole hour of the data window; the
+    still-missing hours are among their venue's scheduled ones. The index
+    publishes this section, so no other text may reach it.
+    """
 
     if type(evidence) is not dict or set(evidence) != _EVIDENCE_KEYS:
         return False
@@ -603,17 +638,17 @@ def _well_formed_evidence(evidence: Any) -> bool:
             type(bound) is dict
             and set(bound) == _UNIT_BOUND_KEYS
             and _is_count(bound["unit_count"])
-            and type(bound["first_unit"]) is str
-            and type(bound["last_unit"]) is str
+            and _scheduled_unit(source, bound["first_unit"])
+            and _scheduled_unit(source, bound["last_unit"])
             and _is_digest(bound["done_sha256"])
-            for bound in units.values()
+            for source, bound in units.items()
         )
-        and _is_texts(evidence["withheld_liquidation_hours"])
+        and _hours(evidence["withheld_liquidation_hours"]) is not None
         and _is_digest(evidence["futures_basis_listing_sha256"])
         and _is_digest(evidence["market_cap_evidence_sha256"])
         and type(missing) is dict
         and sorted(missing) == sorted(ohlcv.MISSING_HOURS_VENUES)
-        and all(_is_texts(hours) for hours in missing.values())
+        and all(_scheduled_missing_hours(venue, hours) for venue, hours in missing.items())
     )
 
 
@@ -632,6 +667,7 @@ def _well_formed_build_record(record: dict[str, Any]) -> bool:
         and type(gzip_record) is dict
         and set(gzip_record) == {"zlib_version", "compresslevel", "mtime"}
         and type(gzip_record["zlib_version"]) is str
+        and _ZLIB_VERSION.fullmatch(gzip_record["zlib_version"]) is not None  # review DR1: a version, never other text
         and type(gzip_record["compresslevel"]) is int
         and type(gzip_record["mtime"]) is int
         and (gzip_record["compresslevel"], gzip_record["mtime"]) == (9, 0)
@@ -656,7 +692,9 @@ def load_dataset(store: run.EvidenceStore) -> StoredDataset:
 
     ``BUILD.json`` must be its canonical bytes, with every value of the type
     and shape the build writes; anything else, a non-finite number among it,
-    refuses, never raises (review D5).
+    refuses, never raises (review D5). Every text in its metadata must be what
+    it names, a scheduled unit, a canonical hour or a version, since the index
+    publishes it (review DR1).
     """
 
     directory = dataset_directory(store)

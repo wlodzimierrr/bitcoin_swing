@@ -656,6 +656,124 @@ def test_a_canonically_rewritten_build_record_still_loads(world: Collected) -> N
     assert build.load_dataset(store_of(world)).record["gzip"]["compresslevel"] == 9
 
 
+# review DR1: every text in BUILD.json's metadata is what it names, so the index publishes nothing else
+SENTINEL = "synthetic collected price USD 98765.432109"
+SENTINEL_EDITS = {
+    "a withheld hour": lambda r: r["evidence"].update(withheld_liquidation_hours=[SENTINEL]),
+    "a still-missing hour": lambda r: r["evidence"]["still_missing_hours"].update(coinbase=[SENTINEL]),
+    "a first unit": lambda r: r["evidence"]["units"]["coinglass-etf"].update(first_unit=SENTINEL),
+    "a last unit": lambda r: r["evidence"]["units"]["kraken-liquidations"].update(last_unit=SENTINEL),
+    "the zlib version": lambda r: r["gzip"].update(zlib_version=SENTINEL),
+}
+
+
+def _index_through_the_command_line(world: Collected, monkeypatch: pytest.MonkeyPatch, public: Path) -> tuple[int, list[str]]:
+    (public / build.INDEX_PATH.parent).mkdir(parents=True)
+    monkeypatch.setattr(build, "PUBLIC_REPOSITORY", public)
+    lines: list[str] = []
+    return build.main(["index", "--store", str(world.root)], connect=_no_connect, out=lines.append), lines
+
+
+@pytest.mark.parametrize("edit", sorted(SENTINEL_EDITS))
+def test_text_in_the_build_record_never_reaches_the_index(world: Collected, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, edit: str) -> None:
+    built(world)
+    _edit_build_record(world, SENTINEL_EDITS[edit])
+    git_store(world)  # committed as stored: the private-commit proof holds, so only the text stands in the way
+    status, lines = _index_through_the_command_line(world, monkeypatch, tmp_path / "public")
+    assert status == 1 and lines[-1].startswith("REFUSED DATASET_FILE_REFUSED"), lines
+    assert SENTINEL not in "\n".join(lines)
+    assert not (tmp_path / "public" / build.INDEX_PATH).exists()
+
+
+def test_the_command_line_indexes_a_well_formed_build_record(world: Collected, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    built(world)  # the control: the same path writes the index when the metadata is the build's
+    git_store(world)
+    status, lines = _index_through_the_command_line(world, monkeypatch, tmp_path / "public")
+    assert status == 0, lines
+    index = json.loads((tmp_path / "public" / build.INDEX_PATH).read_bytes())
+    assert index["evidence"]["withheld_liquidation_hours"] == [DISAGREEING_HOUR.isoformat()]
+
+
+COINBASE_HOURS = build.ohlcv.MISSING_HOURS_VENUES["coinbase"].hours()
+BITFINEX_HOURS = build.ohlcv.MISSING_HOURS_VENUES["bitfinex"].hours()
+UNSCHEDULED_HOUR = utc(2020, 1, 1)
+assert UNSCHEDULED_HOUR not in COINBASE_HOURS and not set(COINBASE_HOURS) & set(BITFINEX_HOURS)
+
+
+def _withheld(*texts: str) -> Any:
+    return lambda r: r["evidence"].update(withheld_liquidation_hours=list(texts))
+
+
+def _still_missing(venue: str, *hours: datetime) -> Any:
+    return lambda r: r["evidence"]["still_missing_hours"].update({venue: [hour.isoformat() for hour in hours]})
+
+
+def _unit(source: str, end: str, unit: str) -> Any:
+    return lambda r: r["evidence"]["units"][source].update({end: unit})
+
+
+def _zlib(version: str) -> Any:
+    return lambda r: r["gzip"].update(zlib_version=version)
+
+
+HOUR = DISAGREEING_HOUR.isoformat()
+TEXT_FORMS = {
+    "a withheld hour in Z notation": _withheld(HOUR.replace("+00:00", "Z")),
+    "a withheld hour at another offset": _withheld(DISAGREEING_HOUR.astimezone(timezone(timedelta(hours=1))).isoformat()),
+    "a withheld hour without an offset": _withheld(DISAGREEING_HOUR.replace(tzinfo=None).isoformat()),
+    "a withheld hour spelling its microseconds": _withheld(DISAGREEING_HOUR.isoformat(timespec="microseconds")),
+    "a withheld day": _withheld(DISAGREEING_DAY.isoformat()),
+    "a withheld half hour": _withheld((DISAGREEING_HOUR + timedelta(minutes=30)).isoformat()),
+    "a withheld hour and a second": _withheld((DISAGREEING_HOUR + timedelta(seconds=1)).isoformat()),
+    "a withheld hour before the window": _withheld("2019-12-31T23:00:00+00:00"),
+    "a withheld hour at the window's end": _withheld("2026-01-01T00:00:00+00:00"),
+    "a withheld hour past the calendar's end": _withheld("9999-12-31T23:00:00-05:00"),
+    "a withheld hour that is no date": _withheld("2021-13-01T00:00:00+00:00"),
+    "a withheld hour twice": _withheld(HOUR, HOUR),
+    "withheld hours descending": _withheld((DISAGREEING_HOUR + timedelta(hours=1)).isoformat(), HOUR),
+    "a still-missing hour the re-request never schedules": _still_missing("coinbase", UNSCHEDULED_HOUR),
+    "a still-missing hour of the other venue": _still_missing("coinbase", BITFINEX_HOURS[0]),
+    "still-missing hours descending": _still_missing("bitfinex", BITFINEX_HOURS[1], BITFINEX_HOURS[0]),
+    "a first unit before the window": _unit("binance-funding", "first_unit", "2019-12"),
+    "a first unit of another source": _unit("coinglass-etf", "first_unit", "2020-01"),
+    "a last unit after the window": _unit("kraken-liquidations", "last_unit", "2026-01-01"),
+    "a last unit of another source": _unit("binance-funding", "last_unit", "all"),
+    "a zlib version with a space": _zlib("1.3.2 "),
+    "a zlib version with a prefix": _zlib("v1.3.2"),
+    "a zlib version of five parts": _zlib("1.3.2.1.1"),
+    "a zlib version of three digits": _zlib("100.3"),
+    "a zlib version in capitals": _zlib("1.3.0.1-MOTLEY"),
+    "an empty zlib version": _zlib(""),
+}
+
+
+@pytest.mark.parametrize("edit", sorted(TEXT_FORMS))
+def test_build_record_text_that_is_not_what_it_names_is_refused(world: Collected, edit: str) -> None:
+    built(world)
+    _edit_build_record(world, TEXT_FORMS[edit])
+    refused(build.DatasetBuildRefused, "DATASET_FILE_REFUSED", build.load_dataset, store_of(world))
+
+
+TEXT_CONTROLS = {
+    "no withheld hour": _withheld(),
+    "the window's first and last hours withheld": _withheld("2020-01-01T00:00:00+00:00", "2025-12-31T23:00:00+00:00"),
+    "no still-missing hour": _still_missing("coinbase"),
+    "every scheduled hour still missing": _still_missing("coinbase", *COINBASE_HOURS),
+    "the source's first and last scheduled units": lambda r: r["evidence"]["units"]["binance-funding"].update(first_unit="2020-01", last_unit="2025-12"),
+    "zlib 1.2.13": _zlib("1.2.13"),
+    "zlib 1.3": _zlib("1.3"),
+    "zlib 1.3.0.1-motley": _zlib("1.3.0.1-motley"),
+    "zlib-ng's 1.3.0.zlib-ng": _zlib("1.3.0.zlib-ng"),
+}
+
+
+@pytest.mark.parametrize("edit", sorted(TEXT_CONTROLS))
+def test_build_record_text_that_is_what_it_names_loads(world: Collected, edit: str) -> None:
+    built(world)  # the controls: the checks refuse other text, not the build's own forms
+    _edit_build_record(world, TEXT_CONTROLS[edit])
+    assert build.load_dataset(store_of(world)).record["gzip"]["compresslevel"] == 9
+
+
 # review D4: a file is never expanded past the size its record declares
 BOMB_SIZE = 96 << 20
 
