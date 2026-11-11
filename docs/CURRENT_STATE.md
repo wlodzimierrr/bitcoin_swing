@@ -4026,7 +4026,9 @@ unopened with no automatic dependency that would ever open it.
      a short tail untested.
   3. The threshold sweeps cover all ten BTC-185 parameters at ±10% and ±20%,
      with the `mean_return_fraction` objective, a 0.005 tolerance and the
-     `base` rung.
+     `base` rung. Clarified the same day: a candidate the configuration
+     refuses is dropped and recorded (3a), and each distinct configured
+     value is its own sweep, 14 in all (3b).
   4. RBT-006 freezes the metric definitions and the report version; RBT-007
      builds the generator to them.
 

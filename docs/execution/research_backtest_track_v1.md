@@ -8257,6 +8257,28 @@ open:
    - The `base` cost rung only.
    - Labelled `SENSITIVITY_ONLY_NOT_SELECTION`; a sweep never selects a
      value.
+
+   Two clarifications of ruling 3, asked the same day once the
+   configuration showed them (the recommended option each time):
+   - **3a. Invalid candidates are dropped and recorded.** The configuration
+     requires strictly ordered entry and hold bands and scores within
+     0-100, so some candidates cannot be configured. Examples: entry
+     conviction 80 keeps only 72; hold 70 loses 56; add 85 loses 102. A
+     candidate the configuration or the BTC-185 owner refuses is left out
+     and recorded with its reason. There is no clipping, no re-spacing and
+     no moving of a neighbouring band, so every sweep stays
+     one-dimensional. A parameter left with fewer than two valid candidates
+     is recorded as not swept.
+   - **3b. One sweep per distinct configured value.** Where a parameter
+     holds different values across the long setups, each distinct value is
+     its own one-scalar sweep, and the paths sharing that value move
+     together:
+     - trend minimum: 70 and 55;
+     - structure minimum: 70, shared by two setups, and 60;
+     - risk budget: one sweep per schedule row, 0.0035, 0.005 and 0.006.
+
+     That makes 14 sweeps. The short-only setup's values stay fixed,
+     because the champion is long-only.
 4. **The metric definitions and the report version (policy V7 §8).**
    - RBT-006 freezes a hash-bound metric-definition spec. Each Rulebook §28
      primary metric maps to its existing BTC-180..185 owner where one
