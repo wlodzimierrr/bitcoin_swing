@@ -1008,6 +1008,24 @@ admitted, now refused in `6e2433e`; N2 (P3) the record overstated the F4
 test's mutation coverage, now corrected. 162 tests; full repository at
 `6e2433e` 7,794 passed, 3 skipped, 1 xfailed, 0 failed (79 min). RBT-003 is READY.
 
+EPIC Y RBT-003 =
+DONE (2026-11-11), policy V7: independent xHigh closure review PASS WITH
+NON-BLOCKING FINDINGS (C1, P3, corrected in the docs), after Part A's and
+Part B's code reviews, the reviews of rulings 12 to 14 and the re-request
+and dataset build review closed. BACKFILL_HISTORICAL_INPUTS_V1:
+- the offline adapters, Part A `1427053`;
+- every Part B source collected, with private evidence `76496db` and
+  `b00e885`;
+- owner rulings 1 to 16;
+- the re-request and dataset build code `7e4f871`, with its fixes through
+  `5e78ab7`.
+The frozen inputs and the five replay manifests are built at `5e78ab7`,
+verified against the database and from the frozen inputs, committed
+privately at `f36ad14` and indexed publicly in `98d8e14`. The 27
+re-requested Coinbase and Bitfinex hours stay preserved gaps, and the 14
+disagreeing Kraken hours are withheld. Owner-accepted limitations: R12-10
+and the manifests' text. RBT-006 is READY.
+
 bootstrap-bound isolated scientific worker proof strategy =
 BOOTSTRAP_PRE_EXECUTION_SOURCE_BINDING_PLUS_CERTIFIED_SOURCE_AUTHORITY_PLUS_FROZEN_THIRD_PARTY_ARTIFACT_AUTHORITY_PLUS_FROZEN_CPYTHON_PLUS_FRESH_EMPTY_BYTECODE_CACHE_NAMESPACE_PLUS_CLOSED_STORE_GRAMMAR_PLUS_COMPILED_ROOT_WITNESS_PLUS_ONE_SHOT_EXEC_ISOLATED_SCIENTIFIC_WORKER_PLUS_TRUSTED_CONTROLLER_AUTHORITY_CONTEXT
 
@@ -1456,7 +1474,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   spec rebound to `9a619596...15f6313`); **RBT-001A is DONE / independent xHigh
   re-review PASS WITH NON-BLOCKING FINDINGS** (2026-11-04; review FAIL fixed in
   `f674284`, `9171d63`, `7cb11e0`, `3b88daf` and `f785d81`, N1 in `6e2433e`; rulings `4453b5c`,
-  implementation `524fcbf`); **RBT-003 is IN PROGRESS** (Part A, offline
+  implementation `524fcbf`); **RBT-003 is DONE / independent xHigh closure
+  review PASS WITH NON-BLOCKING FINDINGS** (2026-11-11; C1 corrected in the
+  docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
+  is READY**. RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
   findings and its second re-review the same day with one P2; after the
@@ -1514,7 +1535,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   new finding, closing the code review; on 2026-11-11 the re-request found
   every scheduled hour still missing (kept as gaps), and the dataset was
   built at `5e78ab7`, verified, committed privately (`f36ad14`) and indexed
-  publicly; RBT-003's closure is next)).
+  publicly (`98d8e14`); the closure review PASSED on 2026-11-11 with one
+  non-blocking P3, C1, corrected in the docs, and RBT-003 is DONE)).
   All four V4 data
   choices stay adopted. The rest of this field
   describes EPIC X. The ordinary exact-hash xHigh closure-table ticket review
@@ -1746,8 +1768,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** EPIC Y RBT-003
-  `BACKFILL_HISTORICAL_INPUTS_V1`: Part A, the offline provider adapters and
+- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-003
+  `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11 after its
+  independent xHigh closure review PASSED WITH NON-BLOCKING FINDINGS (one
+  P3, C1, corrected in the docs); RBT-006 is READY. RBT-003's history: Part A, the offline provider adapters and
   evidence writers, is implemented (`1427053`; synthetic fixtures; no network,
   database or purchase) under its five owner rulings (2026-11-04). Its
   independent xHigh review FAILED on 2026-11-04 and, after the review-fix
@@ -1852,11 +1876,27 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   gaps); the dataset was built at `5e78ab7`, `verify` passed against the
   database and from the frozen inputs, the private commit is `f36ad14` and
   the public index `rbt003_replay_dataset_index_v1.json` is committed after
-  the owner's review; RBT-003's closure is next).
+  the owner's review (`98d8e14`); the closure review PASSED on 2026-11-11
+  with one non-blocking P3, C1, corrected in the docs; RBT-003 is DONE).
   RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 Part B re-request
+- **Most recent completed review:** EPIC Y RBT-003 closure review,
+  2026-11-11, **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE**
+  (same Codex session, report-only) of `38e6c5a..98d8e14`: the public index
+  and the run's record. It found:
+  - no code change after `5e78ab7`;
+  - the index is the reviewed writer's, its schedules, withheld and
+    still-missing hours, manifest digests and coverage are consistent, and
+    it holds no value or row count;
+  - every RBT-003 acceptance criterion is met and every required review is
+    closed.
+
+  One P3, C1: the record said 2026-01-01 appears in the index only as the
+  window's bound, but it is also the market cap's last observation, day
+  2025-12-31's end-of-day stamp. C1 is corrected in the docs, and RBT-003
+  is DONE. Details in EPIC Y's RBT-003 closure review outcome.
+- **Preceding completed review (EPIC Y):** RBT-003 Part B re-request
   and dataset build second re-review, 2026-11-11, **independent xHigh
   PASS** (same Codex session, report-only) of the fixes `9175a9c`..`5e78ab7`
   and docs `eee2841` (`e5051a0..eee2841`), with no new finding: DR1 FIXED
@@ -2331,18 +2371,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-003's closure**
-  (Part B's dataset is built at `5e78ab7`, verified against the database
-  and from its frozen inputs, committed privately at `f36ad14` and indexed
-  publicly). The code (owner ruling 15: the 27
-  missing Coinbase and Bitfinex hours are re-requested through the BTC-020
-  adapters first; then a window-bounded database reader, the V1 and V2
-  builders, the frozen inputs and manifests in the private evidence
-  repository and a value-free index here; owner ruling 16: the 14 Kraken
-  hours that disagree with the series are withheld from the V2 builder).
-  Both are reviewed together. RBT-006 stays blocked
-  until
-  RBT-003 is done; RBT-007 and RBT-008 remain blocked on their own
+- **Next dependency-satisfied EPIC Y action:** **RBT-006**
+  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` (READY: RBT-003 DONE
+  2026-11-11, RBT-005 DONE 2026-11-01, the closure-table dependency
+  SATISFIED). RBT-007 and RBT-008 remain blocked on their own
   dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
     Score that is incomplete once a trailed stop locks in zero risk; the
@@ -3041,7 +3073,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   DR1 `9175a9c`, DR2 `dea5ae0`, DR3 `4caa174` and the two tests `5e78ab7` with docs
   `eee2841`; their second re-review PASS `38e6c5a`; the re-request run,
   the dataset build, its verification, the private commit `f36ad14` and
-  the public index in this commit.
+  the public index `98d8e14`; the closure review PASS WITH NON-BLOCKING
+  FINDINGS, C1's correction and RBT-003 DONE in this documentation commit.
   Before them,
   EPIC Y RBT-001A
   review-fix `f674284` (F1), `9171d63` (F3), `7cb11e0` (F1 follow-up),
@@ -3972,6 +4005,16 @@ EPIC T was not touched, and the BTC-019 sealed sample stays uncollected and
 unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
+
+- **ANSWERED 2026-11-11: RBT-003 closure.** The owner chose the
+  recommended options:
+  - an independent xHigh Codex closure review of the public index and the
+    run's record before DONE;
+  - after its PASS WITH NON-BLOCKING FINDINGS, correct C1 in the DONE
+    record and close RBT-003 without a further review. C1 is the record's
+    claim that 2026-01-01 appears in the index only as the window's bound.
+
+  Details in the RBT-003 closure review outcome.
 
 - **ANSWERED 2026-11-05: RBT-003 Part B rulings 9-11.** The owner chose
   every recommended option: value-bearing files (evidence, frozen datasets
