@@ -8174,7 +8174,7 @@ stays blocked on RBT-003.
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
-**Status:** `IN PROGRESS — owner rulings 1-4 (2026-11-11); Part A (offline) next — RBT-003 DONE (2026-11-11); RBT-005 DONE (2026-11-01); closure-table dependency SATISFIED`
+**Status:** `IN PROGRESS — Part A committed 2026-11-11 (b167d90), awaiting its independent xHigh review; owner rulings 1-4 and clarifications 3a-3c and 4a (2026-11-11) — RBT-003 DONE (2026-11-11); RBT-005 DONE (2026-11-01); closure-table dependency SATISFIED`
 **Dependencies:** RBT-003, RBT-005, `POSTP1-002V2A-T1` PASS (closure table,
 **SATISFIED 2026-09-30** at `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`)
 **Implementation effort:** high
@@ -8307,6 +8307,185 @@ each independently reviewed:
   - The preregistration artifact under
     `backtest_evidence/research_backtest_v1/`, then its freeze.
 
+**Owner clarifications during Part A (2026-11-11, asked; the recommended
+option each time).** Implementation surfaced two more points:
+- **3c. The stop buffer uses the configuration's own grid.** The
+  configuration accepts `stop_buffers.atr_multiplier` only from its own
+  `sweep_atr_multipliers` (0.25, 0.3, 0.5, 0.75), so every uniform candidate
+  (0.24, 0.27, 0.33, 0.36) is refused and, under 3a, the stop buffer would
+  go unswept. It is swept over that configured grid instead: the one
+  exception to the uniform rule, recorded with its reason.
+- **4a. The cross-venue measures are pre-registered.** Policy V7 §8 also
+  requires cross-venue source sensitivity. The metric spec now defines
+  trade-set overlap, matched-trade divergence, stop-touch divergence and
+  metric dispersion, each labelled as new.
+
+### RBT-006 Part A Implementation Notes (offline)
+
+**Status:** `PART A COMMITTED (2026-11-11)`; awaiting its independent xHigh
+review. Nothing has run on real data: no completeness pass, no freeze.
+
+**Commits:** the rulings `74d6720`, the clarifications 3a and 3b `0d8acd8`,
+the code `b167d90` and this record. They add one module and one test module:
+`btc_predictor/research_backtest/preregistration.py` and
+`btc_predictor/tests/test_research_backtest_preregistration.py`. No owner,
+composer, configuration, inventory, spec, builder or other test changed.
+
+**What it does.**
+- **ETF launches (ruling 1).** `etf_fund_launches` reads only each frozen
+  `EtfFlow` row's fund and date. A fund's launch is its first row, named by
+  the `etf_flows` input's uncompressed SHA-256 and cross-checked against
+  the documented first US trading dates: ten funds on 2024-01-11, after the
+  SEC's approval of the US spot bitcoin ETP listings the day before, and
+  Grayscale's mini trust on 2024-07-31. GBTC's launch is its conversion. A
+  mismatch, an undocumented fund or a documented fund absent from the
+  evidence refuses.
+- **The decision schedule.** Every UTC midnight strictly inside the data
+  window, from 2020-01-02 to 2025-12-31: 2,191 instants. The midnight at
+  the window's end is excluded, because its decision would execute on the
+  next bar, in the holdout.
+- **Folds (ruling 2).** `fold_plan` calls the BTC-182 owner with the
+  configured expanding scheme, 182-period test and step windows and no
+  embargo. The training periods are the instants before the venue's
+  evaluation start, so fold 1 begins there. For example, a start on
+  2024-03-15 gives three folds and 104 untested periods.
+- **Sweeps (ruling 3, 3a-3c).** `sweep_grid` builds the 14 sweeps from the
+  long setups' configuration paths, one sweep per distinct configured value.
+  It checks every candidate by building the real configuration and the
+  BTC-185 owner's value check. Dropped candidates and their reasons:
+  - entry conviction keeps only 72 and 80; 64, 88 and 96 break the strictly
+    increasing entry bands;
+  - hold loses 56, because the hold bands must strictly decrease;
+  - add loses 102, outside the BTC-185 owner's 0-100;
+  - the stop buffer uses its configured grid (3c).
+
+  All 14 sweeps are swept. Each is a BTC-185 `ThresholdSweepSpec` against
+  the champion's identity, with `mean_return_fraction`, a 0.005 plateau
+  tolerance, the `base` rung and `SENSITIVITY_ONLY_NOT_SELECTION`.
+- **The ablation (§6A.10).** The Hold weights without Momentum Persistence,
+  divided by the remaining 0.8666667 and rounded half-even to the
+  configuration's seven decimals: 0.3076923, 0.3076923, 0.2307692 and
+  0.1538461, with Momentum Persistence at 0. They sum to 0.9999999, inside
+  both the configuration's and the Hold owner's tolerance of 0.000001. A
+  test shows the Hold owner accepts the weights and ignores the term.
+- **Metrics (ruling 4, 4a).** `metric_definitions` freezes the 16 Rulebook
+  §28 primary metrics in the Rulebook's order, a test reading them from the
+  Rulebook.
+  - Owner conventions (7): expectancy, average R, Sharpe, Calmar, max
+    drawdown, profit factor and number of trades, each naming its owner.
+  - New definitions (9), consistent with those conventions (per equity
+    point, unannualized, zero risk-free rate): Sortino, return per trade,
+    win rate, average winner and loser, time in market, turnover, and the
+    longest drawdown and losing streak.
+  - The four §8 cross-venue measures (4a).
+
+  The spec names `RESEARCH_BACKTEST_REPORT_V1`, and its canonical JSON is
+  pinned by digest.
+- **The completeness-only pass.** `completeness_pass` runs the reviewed
+  RBT-004 composer's own steps through a subclass of its decision run. No
+  composer changes.
+  - Computed: trend, flow, positioning, volatility, the core regime score
+    and the structure.
+  - Recorded per instant: each component's completeness, the core regime's,
+    the accounted causes, any unaccounted cause, the guard refusals and the
+    span of the ETF publication calendar. Nothing else.
+  - Never composed: Entry Conviction, the entry action, the Rulebook 24
+    flags, regime smoothing and classification, a setup, a gate or an
+    intent.
+
+  A venue's evaluation start is its first instant at which all five
+  components and the core regime score are complete. A structure left
+  incomplete by a missing valid stop counts as incomplete, as the policy
+  reads.
+- **The freeze.** `preregistration_record` refuses unless every condition
+  holds:
+  - every venue's pass covers exactly the schedule;
+  - no venue has an unaccounted cause (the runtime guard) or an ETF
+    calendar date outside the closure table's coverage;
+  - every venue has an evaluation start;
+  - the code commit is a full id;
+  - the configuration is the champion's.
+
+  It binds:
+  - the code commit, the champion and its spec;
+  - both composers' versions and the closure table's hash;
+  - the dataset index's digest, the build record, the private commit and
+    the manifests;
+  - the cost ladder with `base` as the headline;
+  - the schedule, the ETF launches, each venue's completeness summary and
+    fold plan;
+  - the sweeps, the ablation and the metric spec.
+
+  Its canonical bytes carry no time.
+- **The command (Part B runs it).** `python -m
+  btc_predictor.research_backtest.preregistration freeze --store …` runs on
+  a clean commit. It loads the private dataset, proves the private commit
+  holds it as stored, and requires the public index to equal the stored
+  dataset's index byte for byte and the frozen inputs to rebuild the stored
+  manifests. Then it runs the three passes and writes into
+  `backtest_evidence/research_backtest_v1/`:
+  - the value-free completeness ledgers;
+  - `rbt006_preregistration_v1.json` with its `.sha256`.
+
+  A refusal writes nothing.
+
+**Surfaced for the review and RBT-007.**
+1. Entry conviction 72 is a valid configuration, but the risk schedule's
+   first band starts at 80, so an entry between 72 and 80 has no risk band.
+   RBT-007 must report how that candidate runs.
+2. Both composers refuse any configuration other than the champion's, so
+   RBT-007 needs an explicit composer path for the sweep candidates and the
+   ablation.
+3. The pass depends on the composer's decision-run internals. A test pins
+   its completeness, causes, unaccounted codes and guard refusals to the
+   full composer's ledger rows on the RBT-004 world, across the week in
+   which flow completes.
+4. On the synthetic world the pass takes about 0.75 s per instant. Three
+   venues over 2,191 instants is at least 80 minutes, likely longer on real
+   data.
+
+**Tests.** `test_research_backtest_preregistration.py`, 70 tests, all
+synthetic: the RBT-004 composer world, and the RBT-003 dataset tests' private
+store in a throwaway git repository. They cover:
+- the launches and their refusals, with value-blindness;
+- the schedule;
+- the folds, including a start with no fold and the scheme check;
+- every sweep record, each kept candidate building a configuration and each
+  dropped one refused, each spec rebuilt through the BTC-185 owner, and a
+  value left with one candidate recorded as not swept;
+- the ablation, against the Hold owner;
+- the metric list read from the Rulebook, every owner reference resolved,
+  and the digest pinned;
+- the cross-venue measures;
+- the pass, against the full composer across the week flow completes and at
+  the world's first instants (structure and the long windows still warming
+  up), with no call to a forbidden owner, the missing-bar case, an
+  unaccounted cause and a value-free ledger;
+- the freeze's 12 refusals and its bindings;
+- the command line's success and five refusals (an index of another commit,
+  a dataset not committed as stored, manifests that do not rebuild, an
+  unaccounted cause, code not on a clean commit), with nothing written, and
+  a real pass on the stored dataset.
+
+Mutants (`mutants_a.py`, one textual change at a time in a separate
+worktree, with an unchanged control passing): 40 of 40 caught: 37 on the first run; the three survivors (a parameter left with one valid candidate still recorded as swept, the structure component always counted complete, the public index not compared with the stored one) were caught after two added tests and one strengthened test.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-11).**
+- The adapter, run, dataset and new modules with the V1/V2 replay,
+  replay-review, database and four coverage guard modules: 1,728 passed, 1 xfailed; the
+  BTC-019 completion gate and the coverage review: 18 passed.
+- V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed, 112 deselected;
+  PAD4-R5 2 passed.
+- Full repository at `b167d90`:
+  9,039 passed, 3 skipped, 1 xfailed, 0 failed (80 min).
+- `git diff --check` clean. Synthetic fixtures only; no database, network
+  or private-evidence read; no real-data value.
+
+Next: Part A's independent xHigh review; then Part B, the freeze command
+on the private dataset.
+
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
 **Status:** `BLOCKED — awaiting RBT-006`
@@ -8375,7 +8554,7 @@ version or any version derived from inspecting its result.
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | DONE — independent xHigh closure review PASS WITH NON-BLOCKING FINDINGS (2026-11-11; one P3, C1, corrected in the docs); Part B dataset built, verified and indexed 2026-11-11 (re-request: every scheduled hour still missing, kept as gaps; build at `5e78ab7`, verify passed; private commit `f36ad14`; public index `rbt003_replay_dataset_index_v1.json` in `98d8e14`); Part B re-request and dataset build second re-review PASS 2026-11-11 (no new finding; the re-request and dataset build code review closed; the owner's re-request run and the build next on `5e78ab7`'s code); Part B re-request and dataset build re-review fixes DR1-DR3 `9175a9c`..`5e78ab7` committed 2026-11-11 (full suite 8,969 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B re-request and dataset build review-fix re-review FAIL 2026-11-11 (one P2, DR1, and two P3, DR2 and DR3; owner: fix all three and two test gaps, the manifests' text owner-accepted); review fixes D1-D6 `0219a41`..`2d0307b` committed 2026-11-10 (full suite 8,921 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); Part B re-request and dataset build code review FAIL 2026-11-10 (five P2, D1-D5, and one P3, D6; rulings 15 and 16 implemented as ruled; owner: fix all six, then re-review); Part B re-request and dataset build code `7e4f871` committed 2026-11-10 (full suite 8,834 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); Part B owner ruling 16 2026-11-10 (14 Kraken hours disagreeing with the series withheld, their 13 days incomplete); Part B owner ruling 15 2026-11-10 (the 27 missing Coinbase/Bitfinex hours re-requested before the dataset build, written and reviewed with it); Part B CoinGlass collected 2026-11-10 on d9e611f (every Part B source collected; evidence committed privately; dataset build next); Part B R14-1 re-review PASS 2026-11-10 (no new finding; ruling 14's code review closed; CoinGlass to be collected on d9e611f); Part B R14-1 fix `d9e611f` committed 2026-11-10 (914 tests; full suite 8,708 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 14 code review FAIL 2026-11-10 (R14-1 P2: a CoinGlass number no decimal can hold raises instead of refusing; ruling 14 implemented as ruled; owner: fix, then re-review); Part B ruling 14 code `87dc505` committed 2026-11-09 (854 tests; full suite 8,648 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B Kraken liquidations complete (four refused days collected on 3041d0c 2026-11-09); CoinGlass's first live responses omit two members; owner ruling 14 (the envelope's msg and a fund day's btc_holdings may be absent) to implement and re-review; Part B ruling 13 code review PASS 2026-11-09 (no new finding; ruling 13's code review closed; four refused Kraken days to be collected); Part B ruling 13 code `3041d0c` committed 2026-11-09 (773 tests; full suite 8,567 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B refused Kraken days collected on c5fa819 2026-11-09 except four (an identical repeated block of executions); owner ruling 13 (identical copies collapse and are counted, a differing repeat still refuses) to implement and re-review; CoinGlass may run meanwhile; Part B ruling 12 fourth re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-09 (one P3, R12-10, owner-accepted; ruling 12's code review closed; refused days to be collected); Part B ruling 12 third review-fix `c5fa819` committed 2026-11-08 (694 tests; full suite 8,488 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 12 third re-review FAIL 2026-11-08 (two P2, R12-6 and R12-7, with the implementer-found R12-8 and R12-9; owner: fix all four, then re-review); Part B ruling 12 second review-fix `7808213` committed 2026-11-08 (627 tests; full suite 8,421 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 12 second re-review FAIL 2026-11-08 (two P2, R12-2 and R12-3, with the implementer-found R12-4; owner: fix all three, then re-review); Part B ruling 12 review-fix `029057e` committed 2026-11-08 (584 tests; full suite 8,378 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 12 re-review FAIL 2026-11-08 (one P2, R12-1; owner: sum each side exactly, then re-review); Part B ruling 12 code `fd702fe` committed 2026-11-08 (566 tests; full suite 8,360 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B Kraken liquidation collection stopped 2026-11-08 at a day listed out of time order; owner ruling 12 (count such steps, do not refuse); collection continued past refused days; CoinGlass and the dataset build next; Part B fifth re-review PASS 2026-11-07 (no new finding), Part B code review closed; Part B fifth review-fix `197c8c5` committed 2026-11-07 (556 tests; full suite 8,350 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B fourth re-review FAIL 2026-11-07 (one P2, BR7; owner: fix value-blind, then re-review); Part B fourth review-fix `e866317` committed 2026-11-07 (513 tests; full suite 8,307 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B third re-review FAIL 2026-11-07 (one P2, BR6; owner: fix value-blind, then re-review); Part B third review-fix `25e4bcd`, `9875a7c`, `9644715` committed 2026-11-06 (486 tests; full suite 8,280 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B second re-review FAIL 2026-11-06 (three P2, BR3-BR5; owner: fix all three, then re-review); Part B second review-fix `15f0d92`, `75a60f8` committed 2026-11-06 (470 tests; full suite 8,264 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B re-review FAIL 2026-11-06 (two P2, BR1-BR2; owner: fix both, then re-review); Part B review-fix `43ddb46`..`7a9de7d` committed 2026-11-05 (456 tests; full suite 8,250 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); non-CoinGlass collection done on `4cf0993` (evidence `76496db`, private); Part B code review FAIL 2026-11-05 (one P1, five P2, two P3; owner: fix all eight, then re-review); Part B code `3301b16`..`4cf0993` committed 2026-11-05 (296 tests; full suite 8,090 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B started 2026-11-05 (live checks done; owner rulings 9-11: private evidence repository, CoinGlass projection, volume-based delivery check); Part A third independent xHigh re-review PASS 2026-11-05 (no new finding), Part A review closed; third review-fix `3f3a801` (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
-| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | IN PROGRESS — owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); Part A (offline) next; RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
+| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | IN PROGRESS — owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min), awaiting its independent xHigh review; RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
@@ -8415,8 +8594,8 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-006** (IN PROGRESS: owner rulings
-1-4 on 2026-11-11; Part A, offline, next).
+dependency-satisfied EPIC Y work is **RBT-006** (IN PROGRESS: Part A
+committed 2026-11-11, awaiting its independent xHigh review).
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

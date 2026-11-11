@@ -1477,7 +1477,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   implementation `524fcbf`); **RBT-003 is DONE / independent xHigh closure
   review PASS WITH NON-BLOCKING FINDINGS** (2026-11-11; C1 corrected in the
   docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
-  is IN PROGRESS** (owner rulings 1-4, 2026-11-11; Part A, offline, next).
+  is IN PROGRESS** (owner rulings 1-4 and clarifications 3a-3c and 4a,
+  2026-11-11; Part A `b167d90` committed, awaiting its independent xHigh
+  review).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1772,8 +1774,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-006
   `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`. The owner's rulings 1-4
   (2026-11-11) cover the ETF launch dates, the fold scheme, the sweep grid
-  and the metric definitions. Part A, offline, is next; Part B, the
-  completeness-only real-data pass and the freeze, follows its review.
+  and the metric definitions; clarifications 3a-3c and 4a followed the same
+  day. Part A, offline, is committed (`b167d90`) and awaits its independent
+  xHigh review; Part B, the completeness-only real-data pass and the
+  freeze, follows that review.
   RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
   after its independent xHigh closure review PASSED WITH NON-BLOCKING
   FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
@@ -2376,16 +2380,15 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-006 Part A**
-  (offline) under owner rulings 1-4 (2026-11-11):
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **review of RBT-006 Part A** (`74d6720..` its record; code `b167d90`):
   - the preregistration module;
-  - the frozen ETF launch dates, fold scheme, sweep grid, metric
-    definitions and Momentum Persistence ablation variant;
-  - the completeness-only driver;
-  - synthetic fixtures only.
+  - the ETF launch dates, decision schedule, fold plans, 14 sweeps,
+    ablation variant and metric definitions it freezes;
+  - the completeness-only pass;
+  - the freeze command.
 
-  Part B, the completeness pass over RBT-003's frozen datasets and the
-  freeze, follows Part A's review. RBT-007 and RBT-008 remain blocked on
+  Part B, running that command on the private dataset, follows a PASS. RBT-007 and RBT-008 remain blocked on
   their own dependencies.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
     Score that is incomplete once a trailed stop locks in zero risk; the
@@ -2407,6 +2410,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   no backtest or holdout outcome was produced. RBT-001 used synthetic offline
   fixtures only; RBT-002 ran a read-only database inventory and metadata
   probes only
+- **RBT-006 Part A validation (2026-11-11):** `.venv312` CPython 3.12.14.
+  The adapter, run, dataset and new modules with the replay, database and
+  coverage guard modules 1,728 passed, 1 xfailed; the BTC-019 completion gate and
+  coverage review 18 passed; V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 subset 5 passed, 112 deselected; PAD4-R5 2 passed. Full repository at
+  `b167d90`:
+  9,039 passed, 3 skipped, 1 xfailed, 0 failed (80 min).
 - **RBT-003 Part B re-request and dataset build re-review-fix validation
   (2026-11-11):** `.venv312` CPython 3.12.14. The adapter, run and two new
   modules with the replay, database and coverage guard modules 1,658 passed, 1 xfailed;
@@ -3045,7 +3056,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   omissions. No full-suite rerun was needed because production behavior is
   unchanged; the 5,202/3 baseline remains current
 - **Last relevant implementation/review commits:** EPIC Y RBT-006 owner
-  rulings 1-4 in this documentation commit. Before them, EPIC Y RBT-003 rulings
+  rulings 1-4 `74d6720`, clarifications 3a and 3b `0d8acd8`, Part A code
+  `b167d90` with this documentation commit (clarifications 3c and 4a).
+  Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
   `09ba259`, `d7bd11c`, `894bcc1`, `be01997`, `58e1248`, `ca09376`,
@@ -4033,6 +4046,11 @@ unopened with no automatic dependency that would ever open it.
      builds the generator to them.
 
   Details in the RBT-006 block.
+- **ANSWERED 2026-11-11: RBT-006 clarifications 3c and 4a.** Asked during
+  Part A; the owner chose the recommended options. The stop buffer is swept
+  over the configuration's own `sweep_atr_multipliers`, since the
+  configuration refuses every uniform candidate (3c). The policy §8
+  cross-venue measures are pre-registered in the metric spec (4a).
 
 - **ANSWERED 2026-11-11: RBT-003 closure.** The owner chose the
   recommended options:
