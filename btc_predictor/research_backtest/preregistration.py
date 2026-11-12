@@ -55,6 +55,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import re
 import sys
 import tomllib
@@ -64,6 +65,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_EVEN, Decimal
 from pathlib import Path
+from stat import S_ISLNK
 from typing import Any
 
 from btc_predictor.backtest.threshold_sweeps import (
@@ -1146,7 +1148,8 @@ def completeness_file(venue: str) -> str:
 def _require_fresh_destinations(public_repository: Path, names: Sequence[str]) -> Path:
     """Every destination checked before anything is written (review F2): a real directory, no file there yet.
 
-    A freeze is never overwritten, as the dataset build never overwrites a dataset.
+    A freeze is never overwritten, as the dataset build never overwrites a dataset. This finds what is already
+    there; ``_publish`` never replaces anything, so a change after this check refuses as well (review N1).
     """
 
     directory = public_repository / ARTIFACT_DIRECTORY
@@ -1159,7 +1162,117 @@ def _require_fresh_destinations(public_repository: Path, names: Sequence[str]) -
                 raise _refuse("FREEZE_DESTINATION_REFUSED", f"{path.name} is a symbolic link")
         if (directory / name).exists():
             raise _refuse("FREEZE_EXISTS", f"{name} exists; a freeze is never overwritten")
+        if (directory / f"{name}.partial").exists():
+            raise _refuse("FREEZE_DESTINATION_REFUSED", f"{name}.partial exists; a partial file is never reused")
     return directory
+
+
+def _open_artifact_directory(public_repository: Path) -> int:
+    """The artifact directory, each of its parts opened without following a link (review N1)."""
+
+    descriptor = os.open(public_repository, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for index, part in enumerate(ARTIFACT_DIRECTORY.parts):
+            try:
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
+            except OSError:
+                raise _refuse("FREEZE_DESTINATION_REFUSED", f"{Path(*ARTIFACT_DIRECTORY.parts[: index + 1])} is not a real directory") from None
+            parent, descriptor = descriptor, child
+            os.close(parent)
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _identity(status: os.stat_result) -> tuple[int, int]:
+    return status.st_dev, status.st_ino
+
+
+def _is_link(directory: int, name: str) -> bool:
+    try:
+        return S_ISLNK(os.stat(name, dir_fd=directory, follow_symlinks=False).st_mode)
+    except FileNotFoundError:
+        return False
+
+
+def _remove_own(directory: int, name: str, identity: tuple[int, int], data: bytes | None = None) -> None:
+    """Remove ``name`` only while it is still the file this run wrote: its identity and, given, its bytes.
+
+    A file another writer rewrote with the very same bytes cannot be told apart from this run's own.
+    """
+
+    try:
+        if _identity(os.stat(name, dir_fd=directory, follow_symlinks=False)) != identity:
+            return
+        if data is not None:
+            with os.fdopen(os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory), "rb") as handle:
+                if handle.read() != data:
+                    return
+    except FileNotFoundError:
+        return
+    os.unlink(name, dir_fd=directory)
+
+
+def _link(directory: int, partial: str, name: str) -> None:
+    """``link`` neither replaces nor follows anything at ``name``: a file or a link there refuses."""
+
+    try:
+        os.link(partial, name, src_dir_fd=directory, dst_dir_fd=directory, follow_symlinks=False)
+    except FileExistsError:
+        if _is_link(directory, name):
+            raise _refuse("FREEZE_DESTINATION_REFUSED", f"{name} is a symbolic link") from None
+        raise _refuse("FREEZE_EXISTS", f"{name} exists; a freeze is never overwritten") from None
+
+
+def _place(directory: int, name: str, data: bytes) -> int:
+    """Publish one file without ever replacing one (review N1): a fresh partial file, hard-linked to its name.
+
+    The partial file is removed either way. Returns a descriptor of the published file, held open until the
+    publication ends, so that its identity cannot pass to another file meanwhile.
+    """
+
+    partial = f"{name}.partial"
+    try:
+        descriptor = os.open(partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644, dir_fd=directory)
+    except FileExistsError:
+        raise _refuse("FREEZE_DESTINATION_REFUSED", f"{partial} exists; a partial file is never reused") from None
+    try:
+        identity = _identity(os.fstat(descriptor))
+        try:
+            view = memoryview(data)
+            while view:
+                view = view[os.write(descriptor, view) :]
+            _link(directory, partial, name)
+        finally:
+            _remove_own(directory, partial, identity)
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _publish(public_repository: Path, order: Sequence[str], files: Mapping[str, bytes]) -> None:
+    """Publish the freeze all or nothing (review N1).
+
+    Each file is placed in ``order`` without replacing anything, through the artifact directory opened without
+    following links. On any refusal or error, every file this run placed that is still as it wrote it is
+    removed, so nothing of a refused freeze stays and nothing another writer placed is touched.
+    """
+
+    directory = _open_artifact_directory(public_repository)
+    placed: list[tuple[str, int]] = []
+    try:
+        for name in order:
+            placed.append((name, _place(directory, name, files[name])))
+    except BaseException:
+        for name, descriptor in reversed(placed):
+            _remove_own(directory, name, _identity(os.fstat(descriptor)), files[name])
+        raise
+    finally:
+        for _, descriptor in placed:
+            os.close(descriptor)
+        os.close(directory)
 
 
 def freeze_from_store(
@@ -1244,9 +1357,8 @@ def main(
         order = (*ledgers, *artifacts)  # the preregistration last
         if sorted(order) != sorted(files):  # unreachable: freeze_from_store writes both artifacts
             raise _refuse("FREEZE_REFUSED", "the freeze's files are not its ledgers and two artifacts")
-        directory = _require_fresh_destinations(build.PUBLIC_REPOSITORY, order)
-        for name in order:
-            run._atomic_write(directory / name, files[name])
+        _require_fresh_destinations(build.PUBLIC_REPOSITORY, order)
+        _publish(build.PUBLIC_REPOSITORY, order, files)  # never replaces anything; all or nothing (review N1)
         for venue, item in sorted(record["venues"].items()):
             out(f"{venue}: evaluation start {item['evaluation_window']['start']}, folds {item['walk_forward']['fold_count']}")
         out(f"preregistration written: {ARTIFACT_DIRECTORY / PREREGISTRATION_FILE} sha256 {sha256_hex(files[PREREGISTRATION_FILE])} at code {code}")

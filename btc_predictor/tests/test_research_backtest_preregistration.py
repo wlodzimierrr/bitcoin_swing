@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import re
 import socket
 from dataclasses import replace
@@ -1100,15 +1101,214 @@ def test_a_linked_partial_or_directory_refuses(frozen_store, tmp_path: Path) -> 
 def test_the_preregistration_is_written_last(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
     world, _ = frozen_store
     order: list[str] = []
-    real = run_module()._atomic_write
+    real = pr._place
 
-    def recording(path: Path, data: bytes) -> None:
-        order.append(path.name)
-        real(path, data)
+    def recording(directory: int, name: str, data: bytes) -> int:
+        order.append(name)
+        return real(directory, name, data)
 
-    monkeypatch.setattr(run_module(), "_atomic_write", recording)
+    monkeypatch.setattr(pr, "_place", recording)
     assert run_freeze(world, run_pass=FakePass())[0] == 0
     assert order == [*(pr.completeness_file(venue) for venue in VENUES), pr.PREREGISTRATION_DIGEST_FILE, pr.PREREGISTRATION_FILE]
+
+
+# --- review N1: a change after the destination checks ----------------------------------------------
+
+FIRST, SECOND, THIRD = (pr.completeness_file(venue) for venue in VENUES)
+
+
+def interleave(monkeypatch: pytest.MonkeyPatch, at: str, change, *, before: bool = False) -> list[str]:
+    """Another writer's ``change``, once, just before or just after this run places ``at``; returns what was placed."""
+
+    real, placed = pr._place, []
+
+    def interleaved(directory: int, name: str, data: bytes) -> int:
+        if before and name == at:
+            change()
+        identity = real(directory, name, data)
+        placed.append(name)
+        if not before and name == at:
+            change()
+        return identity
+
+    monkeypatch.setattr(pr, "_place", interleaved)
+    return placed
+
+
+def names_in(public: Path) -> list[str]:
+    return sorted(path.name for path in (public / pr.ARTIFACT_DIRECTORY).iterdir())
+
+
+def test_a_link_made_after_the_checks_refuses_and_leaves_nothing_of_this_run(frozen_store, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    before = every_file(public)
+    target = tmp_path / "elsewhere.json"
+    link = public / pr.ARTIFACT_DIRECTORY / THIRD
+    placed = interleave(monkeypatch, FIRST, lambda: link.symlink_to(target))
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {THIRD} is a symbolic link"))
+    assert placed == [FIRST, SECOND]  # two files were placed, and both removed
+    assert every_file(public) == before and names_in(public) == sorted([build.INDEX_PATH.name, THIRD])
+    assert link.is_symlink() and not target.exists()
+
+
+def other_freeze(world) -> dict[str, bytes]:
+    record, files = pr.freeze_from_store(dt.store_of(world), code_commit="ef" * 20, evidence=store_evidence, run_pass=FakePass())
+    assert record["code_commit"] == "ef" * 20 and files[pr.PREREGISTRATION_FILE] != b""
+    return dict(files)
+
+
+def test_a_freeze_published_after_the_checks_is_never_overwritten(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    other = other_freeze(world)
+    directory = public / pr.ARTIFACT_DIRECTORY
+
+    def publish_other() -> None:
+        for name, content in other.items():
+            (directory / name).write_bytes(content)
+
+    placed = interleave(monkeypatch, FIRST, publish_other, before=True)
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_EXISTS: FREEZE_EXISTS: {FIRST} exists; a freeze is never overwritten"))
+    assert placed == [] and written(public) == other
+
+
+def test_a_refusal_after_a_placement_removes_only_this_runs_own_files(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    other = other_freeze(world)
+    directory = public / pr.ARTIFACT_DIRECTORY
+
+    def publish_the_rest() -> None:  # another writer that never overwrites places everything still free
+        for name, content in other.items():
+            if not (directory / name).exists():
+                (directory / name).write_bytes(content)
+
+    placed = interleave(monkeypatch, FIRST, publish_the_rest)
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_EXISTS: FREEZE_EXISTS: {SECOND} exists; a freeze is never overwritten"))
+    assert placed == [FIRST] and written(public) == {name: content for name, content in other.items() if name != FIRST}
+
+
+@pytest.mark.parametrize("rewrite", ["other bytes in place", "same bytes, another file"])
+def test_a_placed_file_another_writer_rewrote_is_left_to_it(frozen_store, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rewrite: str) -> None:
+    world, public = frozen_store
+    directory = public / pr.ARTIFACT_DIRECTORY
+    first = directory / FIRST
+    expected: list[bytes] = []
+
+    def rewrite_then_link() -> None:
+        if rewrite == "other bytes in place":
+            first.write_bytes(b"another writer's ledger")  # the same file, other bytes
+        else:
+            content = first.read_bytes()
+            first.unlink()
+            first.write_bytes(content)  # the same bytes, another file
+        expected.append(first.read_bytes())
+        (directory / THIRD).symlink_to(tmp_path / "elsewhere.json")
+
+    interleave(monkeypatch, FIRST, rewrite_then_link)
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {THIRD} is a symbolic link"))
+    assert first.read_bytes() == expected[0] and names_in(public) == sorted([build.INDEX_PATH.name, FIRST, THIRD])
+
+
+def test_each_placed_file_is_held_open_until_the_publication_ends(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An inode number is reused at once, so a placed file is held open until the end: its identity stays its own."""
+
+    world, public = frozen_store
+    directory = public / pr.ARTIFACT_DIRECTORY
+    real, held, checks = pr._place, [], []
+
+    def same(status: os.stat_result, other: os.stat_result) -> bool:
+        return (status.st_dev, status.st_ino) == (other.st_dev, other.st_ino)
+
+    def holding(dir_fd: int, name: str, data: bytes) -> int:
+        checks.extend(same(os.fstat(descriptor), os.stat(directory / earlier)) for earlier, descriptor in held)
+        descriptor = real(dir_fd, name, data)
+        held.append((name, descriptor))
+        return descriptor
+
+    monkeypatch.setattr(pr, "_place", holding)
+    open_before = sorted(os.listdir("/proc/self/fd"))
+    assert run_freeze(world, run_pass=FakePass())[0] == 0
+    assert len(checks) == 1 + 2 + 3 + 4 and all(checks)
+    assert sorted(os.listdir("/proc/self/fd")) == open_before  # and every descriptor is closed at the end
+
+
+def test_a_partial_file_made_after_the_checks_refuses_and_is_left_to_its_writer(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    partial = public / pr.ARTIFACT_DIRECTORY / f"{SECOND}.partial"
+    interleave(monkeypatch, FIRST, lambda: partial.write_bytes(b"theirs"))
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {partial.name} exists; a partial file is never reused"))
+    assert names_in(public) == sorted([build.INDEX_PATH.name, partial.name]) and partial.read_bytes() == b"theirs"
+
+
+def test_a_left_partial_file_refuses_before_the_pass_and_is_left_as_it_was(frozen_store) -> None:
+    world, public = frozen_store
+    partial = public / pr.ARTIFACT_DIRECTORY / f"{pr.PREREGISTRATION_FILE}.partial"
+    partial.write_bytes(b"left")
+    before = every_file(public)
+    fake = FakePass()
+    status, lines = run_freeze(world, run_pass=fake)
+    assert (status, lines) == (1, [refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {partial.name} exists; a partial file is never reused")])
+    assert fake.calls == [] and every_file(public) == before
+
+
+def test_an_error_while_publishing_removes_what_this_run_placed(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    before = every_file(public)
+    real = pr._place
+
+    def failing(directory: int, name: str, data: bytes) -> int:
+        if name == pr.PREREGISTRATION_FILE:
+            raise OSError("no space left")
+        return real(directory, name, data)
+
+    monkeypatch.setattr(pr, "_place", failing)
+    with pytest.raises(OSError, match="no space left"):
+        run_freeze(world, run_pass=FakePass())
+    assert every_file(public) == before and names_in(public) == [build.INDEX_PATH.name]
+
+
+def test_a_failed_link_leaves_no_partial_file(frozen_store, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    before = every_file(public)
+
+    def no_link(*args, **kwargs) -> None:
+        raise OSError("link refused")
+
+    monkeypatch.setattr(pr.os, "link", no_link)
+    with pytest.raises(OSError, match="link refused"):
+        run_freeze(world, run_pass=FakePass())
+    assert every_file(public) == before and names_in(public) == [build.INDEX_PATH.name]
+
+
+def test_a_directory_swapped_for_a_link_after_the_checks_is_never_followed(frozen_store, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    world, public = frozen_store
+    directory = public / pr.ARTIFACT_DIRECTORY
+    moved, elsewhere = tmp_path / "moved", tmp_path / "elsewhere"
+    elsewhere.mkdir()
+
+    def swap() -> None:
+        directory.rename(moved)
+        directory.symlink_to(elsewhere, target_is_directory=True)
+
+    # before publication opens the directory: refused, nothing written anywhere
+    opened = pr._open_artifact_directory
+    monkeypatch.setattr(pr, "_open_artifact_directory", lambda repository: (swap(), opened(repository))[1])
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert (status, lines[-1]) == (1, refused(f"REFUSED FREEZE_DESTINATION_REFUSED: FREEZE_DESTINATION_REFUSED: {pr.ARTIFACT_DIRECTORY} is not a real directory"))
+    assert list(elsewhere.iterdir()) == [] and sorted(path.name for path in moved.iterdir()) == [build.INDEX_PATH.name]
+    # while it publishes: every file goes on into the directory it opened, never through the link
+    directory.unlink()
+    moved.rename(directory)
+    monkeypatch.setattr(pr, "_open_artifact_directory", opened)
+    interleave(monkeypatch, FIRST, swap)
+    status, lines = run_freeze(world, run_pass=FakePass())
+    assert status == 0, lines
+    assert list(elsewhere.iterdir()) == []
+    assert sorted(path.name for path in moved.iterdir()) == sorted([build.INDEX_PATH.name, *(pr.completeness_file(venue) for venue in VENUES), pr.PREREGISTRATION_DIGEST_FILE, pr.PREREGISTRATION_FILE])
 
 
 def run_module():
