@@ -1431,7 +1431,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-11
+- **Last updated:** 2026-11-12
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1479,8 +1479,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
   is IN PROGRESS** (owner rulings 1-4 and clarifications 3a-3c and 4a,
   2026-11-11; Part A `b167d90`; its independent xHigh review FAILED on
-  2026-11-11; owner ruling 3d; review fixes `00f832a`..`51f3d81` await the
-  re-review).
+  2026-11-11; owner ruling 3d; review fixes `00f832a`..`51f3d81`; their
+  re-review FAILED on 2026-11-12 on one P2, N1, and the N1 fix is next).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1783,8 +1783,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   missing bar's causes, F6 max drawdown's statuses). The owner ruled 3d,
   sweeping the Hold Score thresholds the champion reads, and chose to fix
   all. The review fixes `00f832a`..`51f3d81` (one commit per finding) are
-  committed and validated, and await the independent xHigh re-review. Part
-  B, the completeness-only real-data pass and the freeze, follows a PASS.
+  committed and validated. Their re-review FAILED on 2026-11-12: F1 and
+  F3-F6 are fixed, F2 in part, and one new P2, N1, remains: a filesystem
+  change after the destination checks can leave files written on a
+  refusal, or overwrite another freeze. The owner chose to fix it. Part B,
+  the completeness-only real-data pass and the freeze, follows a PASS.
   RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
   after its independent xHigh closure review PASSED WITH NON-BLOCKING
   FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
@@ -2387,9 +2390,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **re-review of the RBT-006 Part A review fixes** `00f832a`..`51f3d81`
-  (review FAIL 2026-11-11, F1-F6; owner ruling 3d):
+- **Next dependency-satisfied EPIC Y action:** the **RBT-006 Part A N1
+  fix** (re-review FAIL 2026-11-12, one P2; owner: fix), a distinct commit,
+  then Part A's re-review. N1: a filesystem change after the destination
+  checks can leave files written on a refusal, or overwrite another freeze.
+  The fix publishes each file without replacing anything, through the
+  artifact directory opened without following links, and removes this
+  run's own files on any refusal. The re-review found the review fixes
+  `00f832a`..`51f3d81` (F1-F6; owner ruling 3d) fixed, F2 in part:
   - F1, ruling 3d: the Hold sweep moves `defensive_min` (50) and the shared
     40 of `trim_min` and `exit_below`, with 15 sweeps; the three Hold
     thresholds with no reader are recorded;
@@ -3079,7 +3087,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   rulings 1-4 `74d6720`, clarifications 3a and 3b `0d8acd8`, Part A code
   `b167d90` with `265c7e8` (clarifications 3c and 4a); the Part A review
   FAIL and owner ruling 3d `919acab`; the review fixes `00f832a`..`51f3d81`
-  with this documentation commit.
+  with `3d250ad`; the re-review FAIL (N1) in this documentation commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4053,6 +4061,11 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- **ANSWERED 2026-11-12: RBT-006 Part A re-review (FAIL, N1).** The owner
+  chose the recommended option: fix N1 in `preregistration.py` alone,
+  leaving the shared writer unchanged, as a distinct commit, then mutants,
+  the full validation and a re-review. Details in the RBT-006 re-review
+  outcome.
 - **ANSWERED 2026-11-11: RBT-006 rulings 1-4.** The owner chose every
   recommended option:
   1. ETF launch dates come from each fund's first row in the frozen CoinGlass
