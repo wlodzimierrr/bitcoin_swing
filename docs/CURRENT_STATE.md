@@ -1480,8 +1480,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   is IN PROGRESS** (owner rulings 1-4 and clarifications 3a-3c and 4a,
   2026-11-11; Part A `b167d90`; its independent xHigh review FAILED on
   2026-11-11; owner ruling 3d; review fixes `00f832a`..`51f3d81`; their
-  re-review FAILED on 2026-11-12 on one P2, N1; the N1 fix `b1171d4` awaits
-  the re-review).
+  re-review FAILED on 2026-11-12 on one P2, N1; the N1 fix `b1171d4`; its
+  re-review FAILED on 2026-11-12 on four P2, N2-N5, and two P3, N6-N7, and
+  their fix is next).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1787,10 +1788,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   committed and validated. Their re-review FAILED on 2026-11-12: F1 and
   F3-F6 are fixed, F2 in part, and one new P2, N1, remains: a filesystem
   change after the destination checks can leave files written on a
-  refusal, or overwrite another freeze. The owner chose to fix it: the fix
-  `b1171d4` is committed and validated, and awaits the independent xHigh
-  re-review. Part B, the completeness-only real-data pass and the freeze,
-  follows a PASS.
+  refusal, or overwrite another freeze. The owner chose to fix it, in
+  `b1171d4`. Its re-review FAILED on 2026-11-12: both of N1's interleavings
+  now refuse, but four P2, N2-N5, and two P3, N6-N7, remain in publication:
+  a partial file swapped before its link, a fault after a link, the
+  partial file's removal, a link at the repository directory, and cleanup
+  that stops at its first error. The owner chose to fix all six and
+  accepted the rollback's check-then-remove race as residual. Part B, the
+  completeness-only real-data pass and the freeze, follows a PASS.
   RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
   after its independent xHigh closure review PASSED WITH NON-BLOCKING
   FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
@@ -2393,9 +2398,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **re-review of the RBT-006 Part A N1 fix** `b1171d4` (re-review FAIL
-  2026-11-12, one P2; owner: fix). N1: a filesystem change after the destination
+- **Next dependency-satisfied EPIC Y action:** the **RBT-006 Part A N2-N7
+  fix** (second re-review FAIL 2026-11-12, four P2 and two P3; owner: fix
+  all six, the rollback race accepted), a distinct commit, then Part A's
+  re-review. The fix writes each file into an unnamed temporary file linked
+  to its name, registers it before the link, opens the whole path without
+  following links, carries the cleanup past an error, and checks every
+  name before reporting success. The N1 fix `b1171d4` fixed N1 in part. N1: a filesystem change after the destination
   checks can leave files written on a refusal, or overwrite another freeze.
   The fix publishes each file without replacing anything, through the
   artifact directory opened without following links, and removes this
@@ -3099,7 +3108,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `b167d90` with `265c7e8` (clarifications 3c and 4a); the Part A review
   FAIL and owner ruling 3d `919acab`; the review fixes `00f832a`..`51f3d81`
   with `3d250ad`; the re-review FAIL (N1) `f1fcb19`; the N1 fix `b1171d4`
-  with this documentation commit.
+  with `13a27f9`; the second re-review FAIL (N2-N7) in this documentation
+  commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4073,6 +4083,13 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- **ANSWERED 2026-11-12: RBT-006 Part A second re-review (FAIL, N2-N7).**
+  The owner chose the recommended options: fix all six in
+  `preregistration.py` alone, each file written into an unnamed temporary
+  file linked to its name, as a distinct commit, then mutants, the full
+  validation and a re-review; and accept the rollback's check-then-remove
+  race and the same-bytes rewrite as residual. Details in the RBT-006
+  second re-review outcome.
 - **ANSWERED 2026-11-12: RBT-006 Part A re-review (FAIL, N1).** The owner
   chose the recommended option: fix N1 in `preregistration.py` alone,
   leaving the shared writer unchanged, as a distinct commit, then mutants,
