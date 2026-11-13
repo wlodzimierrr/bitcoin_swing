@@ -8174,7 +8174,7 @@ stays blocked on RBT-003.
 
 ## RBT-006 — `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`
 
-**Status:** `IN PROGRESS — Part A N2-N7 fix d062eb5 committed 2026-11-12, awaiting the independent xHigh re-review; Part A second re-review FAIL 2026-11-12 (four P2, N2-N5, two P3, N6-N7; owner: fix all, the rollback race accepted); Part A N1 fix b1171d4 committed 2026-11-12; Part A re-review FAIL 2026-11-12 (one P2, N1; owner: fix); Part A review fixes 00f832a..51f3d81 committed 2026-11-11; Part A review FAIL 2026-11-11 (four P2, F1-F4, two P3, F5-F6; owner ruling 3d and fix all); Part A committed 2026-11-11 (b167d90); owner rulings 1-4 and clarifications 3a-3c and 4a (2026-11-11) — RBT-003 DONE (2026-11-11); RBT-005 DONE (2026-11-01); closure-table dependency SATISFIED`
+**Status:** `IN PROGRESS — Part A third re-review PASS 2026-11-13 (no finding; Part A code review closed), Part B next; Part A N2-N7 fix d062eb5 committed 2026-11-12; Part A second re-review FAIL 2026-11-12 (four P2, N2-N5, two P3, N6-N7; owner: fix all, the rollback race accepted); Part A N1 fix b1171d4 committed 2026-11-12; Part A re-review FAIL 2026-11-12 (one P2, N1; owner: fix); Part A review fixes 00f832a..51f3d81 committed 2026-11-11; Part A review FAIL 2026-11-11 (four P2, F1-F4, two P3, F5-F6; owner ruling 3d and fix all); Part A committed 2026-11-11 (b167d90); owner rulings 1-4 and clarifications 3a-3c and 4a (2026-11-11) — RBT-003 DONE (2026-11-11); RBT-005 DONE (2026-11-01); closure-table dependency SATISFIED`
 **Dependencies:** RBT-003, RBT-005, `POSTP1-002V2A-T1` PASS (closure table,
 **SATISFIED 2026-09-30** at `2292388e4a91c1617275ac20ed9d6b45e4b9678525c020e1ccc6fc36a01d1710`)
 **Implementation effort:** high
@@ -8328,8 +8328,9 @@ FAILED on 2026-11-11. The review fixes `00f832a`..`51f3d81` (see the
 review outcome below) were re-reviewed on 2026-11-12: FAIL on one P2, N1,
 which the owner chose to fix. The N1 fix `b1171d4` was re-reviewed on
 2026-11-12: FAIL on four P2, N2-N5, and two P3, N6-N7, which the owner
-chose to fix; the fix `d062eb5` awaits the re-review. Nothing has run on
-real data: no completeness pass, no freeze.
+chose to fix. The fix `d062eb5` was re-reviewed on 2026-11-13: PASS, with
+no finding, closing Part A's code review. Nothing has run on real data: no
+completeness pass, no freeze.
 
 **Commits:** the rulings `74d6720`, the clarifications 3a and 3b `0d8acd8`,
 the code `b167d90` and this record. They add one module and one test module:
@@ -8994,6 +8995,72 @@ an unchanged control passing): 21 of 21 caught.
 Next: Part A's independent xHigh re-review of the N2-N7 fix; Part B after a
 PASS.
 
+### RBT-006 Part A third re-review outcome
+
+**Date:** 2026-11-13. **Review:** the independent xHigh re-review of the
+N2-N7 fix, run by the OpenAI Codex CLI (0.162.1, reasoning `xhigh`)
+resuming its review session, in a new detached worktree at `1e48ba4`, over
+`13a27f9..1e48ba4` (`7980061`, the fix `d062eb5` and its record `1e48ba4`),
+with `98d8e14..13a27f9` as the base. Report-only, under the same sandbox and
+rules; its worktree stayed clean.
+**Result: PASS, with no new finding.** Part A's code review is closed, and
+no review-fix commit is needed.
+
+| Finding | Re-review |
+| --- | --- |
+| N2 | **FIXED.** Each file is written unnamed and its held descriptor is linked through `/proc/self/fd`. Probes confirm the published bytes and identity; a foreign partial file or link never becomes the artifact. |
+| N3 | **FIXED.** Registration precedes the link. A fault right after a link, an interrupt included, at the first file and at the last, removes this run's files. |
+| N4 | **FIXED.** No partial file is made or removed, and a late foreign partial file is left alone. The own-file check compares the identity, the exact size and the bytes. |
+| N5 | **FIXED.** The walk starts at the root and opens every component without following links. A relative path, a parent reference and a link on the path refuse. The checks use the directory descriptor that publication uses. |
+| N6 | **FIXED.** The rollback tries every file, then raises its first error, with the original error as its context and a note for each other one. |
+| N7 | **FIXED.** The exit stack closes every descriptor past a failed close; descriptor snapshots match before and after. |
+| N1, F2 | **FIXED.** Both original interleavings refuse, replacing nothing and leaving none of this run's removable files. The preregistration is still written last. |
+| F1, F3-F6 | **Still FIXED.** The Hold sweeps, the drawdown examples, the citations, the missing-bar parity and the exact statuses pass Codex's probes. |
+
+Codex found each behaviour change right:
+- a left partial file refuses at the checks, and one made afterwards is
+  left alone;
+- a linked or relative repository path refuses;
+- a failed close after a complete publication is raised, with the freeze
+  in place;
+- a failed rollback tries every file and raises its first error, with its
+  context and notes.
+
+It found no widening of the accepted residuals.
+
+**Checks that passed.**
+- Rulings 1-4, 3a-3d, 4a and the ablation are still met. Syntax-tree
+  comparisons show the completeness pass, the freeze's conditions and
+  bindings, the dataset checks, the strategy definitions and the top-level
+  constants unchanged. The metric spec digest stays `e7ee45c7...c3f105c6`.
+- The builders, composers, owners, configuration, protected paths and the
+  shared `backfill_run._atomic_write` are unchanged; the isolation and
+  coverage guards pass.
+- Synthetic probes refused pre-2020, holdout and reserve records, kept the
+  holdout guard closed and confirmed the 2,191-instant schedule. No
+  network, database, `.env*`, private store or sealed sample was read, and
+  no real-data value computed.
+- The record of the fix, its tests, mutants and validation is accurate.
+- Codex's runs (`.venv312`, one process at a time):
+  - the module: 119 passed;
+  - the current tests on `b1171d4`'s code: 22 failed, 97 passed, as
+    recorded;
+  - 61 adapted filesystem and preservation probes passed;
+  - 21 independently rebuilt mutants caught, each after a passing control,
+    the first run's two survivors included;
+  - selected regressions, with the two earlier reproducers that still
+    apply: 940 passed, 1 xfailed;
+  - git scope, protected paths and whitespace clean.
+
+  The full suite, PAD, ETF proof and BTC-019 modules were not rerun, so V5
+  and those totals remain the implementer's (the N2-N7 fix validation).
+
+No owner question.
+
+Next: Part B. The freeze command runs on RBT-003's frozen private dataset:
+the completeness-only real-data pass, then the value-free ledgers and the
+preregistration, then Part B's review.
+
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
 **Status:** `BLOCKED — awaiting RBT-006`
@@ -9062,7 +9129,7 @@ version or any version derived from inspecting its result.
 | RBT-003 | `BACKFILL_HISTORICAL_INPUTS_V1` | DONE — independent xHigh closure review PASS WITH NON-BLOCKING FINDINGS (2026-11-11; one P3, C1, corrected in the docs); Part B dataset built, verified and indexed 2026-11-11 (re-request: every scheduled hour still missing, kept as gaps; build at `5e78ab7`, verify passed; private commit `f36ad14`; public index `rbt003_replay_dataset_index_v1.json` in `98d8e14`); Part B re-request and dataset build second re-review PASS 2026-11-11 (no new finding; the re-request and dataset build code review closed; the owner's re-request run and the build next on `5e78ab7`'s code); Part B re-request and dataset build re-review fixes DR1-DR3 `9175a9c`..`5e78ab7` committed 2026-11-11 (full suite 8,969 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B re-request and dataset build review-fix re-review FAIL 2026-11-11 (one P2, DR1, and two P3, DR2 and DR3; owner: fix all three and two test gaps, the manifests' text owner-accepted); review fixes D1-D6 `0219a41`..`2d0307b` committed 2026-11-10 (full suite 8,921 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); Part B re-request and dataset build code review FAIL 2026-11-10 (five P2, D1-D5, and one P3, D6; rulings 15 and 16 implemented as ruled; owner: fix all six, then re-review); Part B re-request and dataset build code `7e4f871` committed 2026-11-10 (full suite 8,834 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); Part B owner ruling 16 2026-11-10 (14 Kraken hours disagreeing with the series withheld, their 13 days incomplete); Part B owner ruling 15 2026-11-10 (the 27 missing Coinbase/Bitfinex hours re-requested before the dataset build, written and reviewed with it); Part B CoinGlass collected 2026-11-10 on d9e611f (every Part B source collected; evidence committed privately; dataset build next); Part B R14-1 re-review PASS 2026-11-10 (no new finding; ruling 14's code review closed; CoinGlass to be collected on d9e611f); Part B R14-1 fix `d9e611f` committed 2026-11-10 (914 tests; full suite 8,708 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 14 code review FAIL 2026-11-10 (R14-1 P2: a CoinGlass number no decimal can hold raises instead of refusing; ruling 14 implemented as ruled; owner: fix, then re-review); Part B ruling 14 code `87dc505` committed 2026-11-09 (854 tests; full suite 8,648 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B Kraken liquidations complete (four refused days collected on 3041d0c 2026-11-09); CoinGlass's first live responses omit two members; owner ruling 14 (the envelope's msg and a fund day's btc_holdings may be absent) to implement and re-review; Part B ruling 13 code review PASS 2026-11-09 (no new finding; ruling 13's code review closed; four refused Kraken days to be collected); Part B ruling 13 code `3041d0c` committed 2026-11-09 (773 tests; full suite 8,567 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B refused Kraken days collected on c5fa819 2026-11-09 except four (an identical repeated block of executions); owner ruling 13 (identical copies collapse and are counted, a differing repeat still refuses) to implement and re-review; CoinGlass may run meanwhile; Part B ruling 12 fourth re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-09 (one P3, R12-10, owner-accepted; ruling 12's code review closed; refused days to be collected); Part B ruling 12 third review-fix `c5fa819` committed 2026-11-08 (694 tests; full suite 8,488 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 12 third re-review FAIL 2026-11-08 (two P2, R12-6 and R12-7, with the implementer-found R12-8 and R12-9; owner: fix all four, then re-review); Part B ruling 12 second review-fix `7808213` committed 2026-11-08 (627 tests; full suite 8,421 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 12 second re-review FAIL 2026-11-08 (two P2, R12-2 and R12-3, with the implementer-found R12-4; owner: fix all three, then re-review); Part B ruling 12 review-fix `029057e` committed 2026-11-08 (584 tests; full suite 8,378 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B ruling 12 re-review FAIL 2026-11-08 (one P2, R12-1; owner: sum each side exactly, then re-review); Part B ruling 12 code `fd702fe` committed 2026-11-08 (566 tests; full suite 8,360 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B Kraken liquidation collection stopped 2026-11-08 at a day listed out of time order; owner ruling 12 (count such steps, do not refuse); collection continued past refused days; CoinGlass and the dataset build next; Part B fifth re-review PASS 2026-11-07 (no new finding), Part B code review closed; Part B fifth review-fix `197c8c5` committed 2026-11-07 (556 tests; full suite 8,350 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B fourth re-review FAIL 2026-11-07 (one P2, BR7; owner: fix value-blind, then re-review); Part B fourth review-fix `e866317` committed 2026-11-07 (513 tests; full suite 8,307 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B third re-review FAIL 2026-11-07 (one P2, BR6; owner: fix value-blind, then re-review); Part B third review-fix `25e4bcd`, `9875a7c`, `9644715` committed 2026-11-06 (486 tests; full suite 8,280 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B second re-review FAIL 2026-11-06 (three P2, BR3-BR5; owner: fix all three, then re-review); Part B second review-fix `15f0d92`, `75a60f8` committed 2026-11-06 (470 tests; full suite 8,264 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B re-review FAIL 2026-11-06 (two P2, BR1-BR2; owner: fix both, then re-review); Part B review-fix `43ddb46`..`7a9de7d` committed 2026-11-05 (456 tests; full suite 8,250 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); non-CoinGlass collection done on `4cf0993` (evidence `76496db`, private); Part B code review FAIL 2026-11-05 (one P1, five P2, two P3; owner: fix all eight, then re-review); Part B code `3301b16`..`4cf0993` committed 2026-11-05 (296 tests; full suite 8,090 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); Part B started 2026-11-05 (live checks done; owner rulings 9-11: private evidence repository, CoinGlass projection, volume-based delivery check); Part A third independent xHigh re-review PASS 2026-11-05 (no new finding), Part A review closed; third review-fix `3f3a801` (196 tests; full suite 7,990 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); second re-review FAIL 2026-11-05 (one P2, N3); second review-fix `85cfc8f`, `d7d43a0` (owner re-review ruling 8; 193 tests; full suite 7,987 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); re-review FAIL 2026-11-05 (two P2); review-fix `a3bfa6e`..`00ba499` (owner review rulings 6-7; 187 tests; full suite 7,981 passed, 3 skipped, 1 xfailed, 0 failed in 79 min); review FAIL 2026-11-04 (one P1, eight P2, one P3); Part A IMPLEMENTED `1427053` (offline; 117 tests; full suite 7,911 passed, 3 skipped, 1 xfailed); owner rulings 2026-11-04; Part B collection awaits access, the purchase and the evidence-storage decision; plan total USD 29, nothing purchased |
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
-| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | IN PROGRESS — owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min), awaiting the re-review; Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
+| RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | IN PROGRESS — owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed), Part B next; Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | BLOCKED — RBT-006 |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
