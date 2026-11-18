@@ -1431,7 +1431,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-17
+- **Last updated:** 2026-11-18
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1477,14 +1477,16 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   implementation `524fcbf`); **RBT-003 is DONE / independent xHigh closure
   review PASS WITH NON-BLOCKING FINDINGS** (2026-11-11; C1 corrected in the
   docs; dataset private commit `f36ad14`, public index `98d8e14`); **RBT-006
-  is IN PROGRESS** (owner rulings 1-4 and clarifications 3a-3c and 4a,
-  2026-11-11; Part A `b167d90`; its independent xHigh review FAILED on
+  is DONE / independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS**
+  (2026-11-18; B1-B2 corrected in the docs; the preregistration
+  `224774e9...a006c` in `ca555d6`; owner rulings 1-4 and clarifications 3a-3c
+  and 4a, 2026-11-11; Part A `b167d90`; its independent xHigh review FAILED on
   2026-11-11; owner ruling 3d; review fixes `00f832a`..`51f3d81`; their
   re-review FAILED on 2026-11-12 on one P2, N1; the N1 fix `b1171d4`; its
-  re-review FAILED on 2026-11-12 on four P2, N2-N5, and two P3, N6-N7;
-  their fix `d062eb5`, whose re-review PASSED on 2026-11-13 with no
-  finding, closing Part A's code review; the Part B freeze, committed on
-  2026-11-17, awaits its review).
+  re-review FAILED on 2026-11-12 on four P2, N2-N5, and two P3, N6-N7; their
+  fix `d062eb5`, whose re-review PASSED on 2026-11-13 with no finding, closing
+  Part A's code review; the Part B freeze, committed on 2026-11-17, and its
+  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is READY**.
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1776,8 +1778,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** EPIC Y RBT-006
-  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1`. The owner's rulings 1-4
+- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-006
+  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` is **DONE** (2026-11-18), and
+  RBT-007 is READY. RBT-006's history: the owner's rulings 1-4
   (2026-11-11) cover the ETF launch dates, the fold scheme, the sweep grid
   and the metric definitions; clarifications 3a-3c and 4a followed the same
   day. Part A, offline, is committed (`b167d90`). Its independent xHigh
@@ -1803,7 +1806,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   every venue's evaluation starts on 2024-03-10, with 3 folds and no
   unaccounted cause, and 192-211 of its 662 evaluation days are complete,
   mostly because isolated ETF fund-days are missing. The owner chose to
-  commit the freeze as is; it awaits Part B's independent xHigh review.
+  commit the freeze as is. Part B's independent xHigh review PASSED WITH
+  NON-BLOCKING FINDINGS on 2026-11-18: the preregistration rebuilds byte
+  for byte from the public files, and two P3 inaccuracies in the record,
+  B1-B2, are corrected in `e77c37f`. RBT-006 closed DONE.
   RBT-003 `BACKFILL_HISTORICAL_INPUTS_V1` closed **DONE** on 2026-11-11
   after its independent xHigh closure review PASSED WITH NON-BLOCKING
   FINDINGS (one P3, C1, corrected in the docs). RBT-003's history: Part A, the offline provider adapters and
@@ -2406,18 +2412,18 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the independent xHigh
-  **review of RBT-006 Part B** (the freeze committed 2026-11-17, the
-  preregistration `224774e9...a006c`), then RBT-006's closure. Before
-  RBT-007 runs, the owner decides on the positioning owner's runtime,
-  which grows with the square of the history. Part A's code review closed
-  on 2026-11-13, when the independent xHigh re-review of the N2-N7 fix
-  `d062eb5` PASSED with no finding (second re-review FAIL 2026-11-12, four
-  P2 and two P3; owner: fix all six, the rollback race accepted). The fix
-  writes each file into
-  an unnamed temporary file linked to its name, registers it before the
-  link, opens the whole path without following links, carries the cleanup
-  past an error, and checks every name before reporting success. The N1
+- **Next dependency-satisfied EPIC Y action:** **RBT-007**
+  `RUN_FIRST_RESEARCH_BACKTEST_V1`, READY since RBT-006 closed DONE on
+  2026-11-18. Before its runs, the owner decides on the positioning
+  owner's runtime, which grows with the square of the history: one
+  completeness pass took about 23 hours per venue. RBT-006's history:
+  Part A's code review closed on 2026-11-13, when the independent xHigh
+  re-review of the N2-N7 fix `d062eb5` PASSED with no finding (second
+  re-review FAIL 2026-11-12, four P2 and two P3; owner: fix all six, the
+  rollback race accepted). The fix writes each file into an unnamed temporary
+  file linked to its name, registers it before the link, opens the whole path
+  without following links, carries the cleanup past an error, and checks every
+  name before reporting success. The N1
   fix `b1171d4` fixed N1 in part. N1: a filesystem change after the destination
   checks can leave files written on a refusal, or overwrite another freeze.
   The fix publishes each file without replacing anything, through the
@@ -2433,8 +2439,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   - F5: a missing bar recorded as the composer records it;
   - F6: the owner's exact statuses.
 
-  Part B's freeze is committed; its review is next. RBT-007 and RBT-008
-  remain blocked on their own dependencies.
+  RBT-006 is DONE and RBT-007 is READY; RBT-008 stays blocked on
+  RBT-007's review PASS.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
     Score that is incomplete once a trailed stop locks in zero risk; the
     provisional flow-deterioration trim firing often; `TRIM_INPUT_MISSING`
@@ -3137,7 +3143,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   with `3d250ad`; the re-review FAIL (N1) `f1fcb19`; the N1 fix `b1171d4`
   with `13a27f9`; the second re-review FAIL (N2-N7) `7980061`; the N2-N7
   fix `d062eb5` with `1e48ba4`; the third re-review PASS `2be45ad`;
-  the Part B freeze and its record in this commit.
+  the Part B freeze and its record `ca555d6`; the Part B review fixes
+  B1-B2 `e77c37f`; the Part B review PASS and RBT-006 DONE in this
+  commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4111,6 +4119,22 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- **OPEN: RBT-007's runtime.** The positioning owner
+  (`btc_predictor/features/positioning.py`: `_prior_open_interest`,
+  `_funding_averages_by_time`) rescans the whole history at each
+  instant, so an instant's time grows with the square of its position:
+  one RBT-006 completeness pass took about 23 hours per venue. RBT-007
+  composes every instant for each sweep candidate and the ablation, and
+  EPIC Y may not edit an owner. The owner decides how RBT-007's runs
+  proceed before they start. Details in the RBT-006 Part B record.
+- **ANSWERED 2026-11-18: RBT-006 Part B review (PASS WITH NON-BLOCKING
+  FINDINGS, B1-B2).** The owner chose the recommended option: correct
+  both in the record as a distinct commit and close RBT-006 as DONE
+  without a further review.
+- **ANSWERED 2026-11-17: RBT-006 Part B freeze.** Shown that 192-211 of
+  662 evaluation days per venue are complete, the owner chose the
+  recommended option: commit the freeze as is, rather than reopen
+  RBT-003 to fill the missing ETF fund-days.
 - **ANSWERED 2026-11-12: RBT-006 Part A second re-review (FAIL, N2-N7).**
   The owner chose the recommended options: fix all six in
   `preregistration.py` alone, each file written into an unnamed temporary
