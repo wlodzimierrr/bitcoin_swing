@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `READY — RBT-006 DONE (2026-11-18); owner runtime ruling 2026-11-18: the runner computes the positioning owner's results once per decision instant and shares them across every run`
+**Status:** `IN PROGRESS — started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit) and the runtime ruling (shared positioning results) recorded; Part A next; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -9356,6 +9356,36 @@ Estimate: about 16 hours of computing for the shared results (about 2 hours
 over 8 processes), then about 20-30 minutes per venue-run: under a day in
 all, against about two weeks for unshared runs over 8 processes.
 
+**Owner rulings 1-3 (2026-11-18, asked; each the recommended option).**
+1. **The results stay private.** Every RBT-007 output that holds a market
+   value, or a value derived from one, lives only in the private repository
+   `~/backtest_evidence`, under the same `research_backtest_v1/` layout
+   (Part B ruling 9). That covers the decision ledgers, the trades, the
+   equity curves, the metrics and the policy §8 report. This repository
+   keeps a value-free index under `backtest_evidence/research_backtest_v1/`:
+   digests, sizes, counts, statuses, the private commit, the evidence
+   class, the prohibited uses and the named limitations.
+2. **The sweep candidates and the ablation go through the runner; the
+   champion's code stays frozen.** The composers and the repository modules
+   they import stay byte-identical to the frozen commit `2be45ad`, and the
+   runner checks this before any run. `runner.py` builds each
+   configuration the preregistration lists (each kept sweep candidate and
+   the ablation variant). It passes them to the unchanged composers
+   through a narrow wrapper that accepts only those configurations.
+3. **The look-ahead audit recomputes on truncated inputs.** For each
+   sampled decision, the audit rebuilds the replay inputs, keeping only the
+   rows available at its instant. It recomputes the decision without the
+   shared positioning results and requires its ledger rows to equal the
+   run's byte for byte.
+   - The sample, per venue: every decision instant at which the champion's
+     `base` evaluation-window run issued an intent, plus 20 decision
+     instants drawn by a fixed seed from the evaluation window.
+   - The audit is also the runtime ruling's check against unshared
+     recomputation.
+
+Next: Part A, the runner and the report, offline on synthetic data, then
+its independent xHigh review. Part B runs it on the frozen dataset.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -9385,7 +9415,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | READY — RBT-006 DONE (2026-11-18); owner runtime ruling 2026-11-18 (the positioning owner's results computed once per instant and shared) |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — started 2026-11-18; owner rulings 1-3 and the runtime ruling recorded; Part A next |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A

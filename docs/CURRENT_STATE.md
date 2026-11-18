@@ -1486,8 +1486,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   re-review FAILED on 2026-11-12 on four P2, N2-N5, and two P3, N6-N7; their
   fix `d062eb5`, whose re-review PASSED on 2026-11-13 with no finding, closing
   Part A's code review; the Part B freeze, committed on 2026-11-17, and its
-  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is READY**,
-  with the owner's runtime ruling of 2026-11-18.
+  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is IN
+  PROGRESS** (started 2026-11-18; the owner's runtime ruling and rulings 1-3
+  recorded; Part A next).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1779,9 +1780,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none in EPIC Y. RBT-006
-  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` is **DONE** (2026-11-18), and
-  RBT-007 is READY. RBT-006's history: the owner's rulings 1-4
+- **Current IN_PROGRESS ticket:** EPIC Y RBT-007
+  `RUN_FIRST_RESEARCH_BACKTEST_V1` (started 2026-11-18; Part A next). Its
+  rulings: the positioning owner's results shared per instant (runtime);
+  every value-bearing result private, with a public value-free index (1);
+  the sweep candidates and the ablation through the runner, the composers
+  frozen at `2be45ad` (2); a truncated-input look-ahead audit (3). RBT-006
+  `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` is **DONE** (2026-11-18).
+  RBT-006's history: the owner's rulings 1-4
   (2026-11-11) cover the ETF launch dates, the fold scheme, the sweep grid
   and the metric definitions; clarifications 3a-3c and 4a followed the same
   day. Part A, offline, is committed (`b167d90`). Its independent xHigh
@@ -2413,9 +2419,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-007**
-  `RUN_FIRST_RESEARCH_BACKTEST_V1`, READY since RBT-006 closed DONE on
-  2026-11-18. The owner's runtime ruling (2026-11-18): the positioning
+- **Next dependency-satisfied EPIC Y action:** **RBT-007 Part A**, the
+  runner and the report, offline on synthetic data, then its independent
+  xHigh review (RBT-007 started 2026-11-18, after RBT-006 closed DONE;
+  owner rulings 1-3: results private with a public value-free index,
+  the sweep candidates and the ablation through the runner with the
+  composers frozen, a truncated-input look-ahead audit). The owner's
+  runtime ruling (2026-11-18): the positioning
   owner's cost grows with the square of the history, about 16 hours per
   venue-run over the evaluation window, and its inputs are equal on all
   three venues. So RBT-007's runner computes its results once per
@@ -2444,7 +2454,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   - F5: a missing bar recorded as the composer records it;
   - F6: the owner's exact statuses.
 
-  RBT-006 is DONE and RBT-007 is READY; RBT-008 stays blocked on
+  RBT-006 is DONE and RBT-007 is IN PROGRESS; RBT-008 stays blocked on
   RBT-007's review PASS.
   - RBT-005 surfaces for its review three frozen owner behaviours (an Add
     Score that is incomplete once a trailed stop locks in zero risk; the
@@ -3150,7 +3160,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   fix `d062eb5` with `1e48ba4`; the third re-review PASS `2be45ad`;
   the Part B freeze and its record `ca555d6`; the Part B review fixes
   B1-B2 `e77c37f`; the Part B review PASS and RBT-006 DONE `99ed30b`;
-  the owner's RBT-007 runtime ruling in this commit.
+  the owner's RBT-007 runtime ruling `3217fbf`; RBT-007's start and
+  owner rulings 1-3 in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4124,6 +4135,17 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- **ANSWERED 2026-11-18: RBT-007 rulings 1-3.** The owner chose every
+  recommended option. (1) Every value-bearing RBT-007 output, the §8
+  report included, lives in the private repository, and this repository
+  keeps a value-free index. (2) The sweep candidates and the ablation
+  reach the unchanged composers through a narrow wrapper in the runner
+  that accepts only the preregistered configurations, with the composers
+  checked byte-identical to `2be45ad`. (3) The look-ahead audit
+  recomputes sampled decisions on inputs truncated at their instant,
+  unshared, and requires byte-identical rows: every intent instant of
+  the champion's base run plus 20 seeded instants per venue. Details in
+  the RBT-007 ticket block.
 - **ANSWERED 2026-11-18: RBT-007's runtime.** The positioning owner
   (`btc_predictor/features/positioning.py`) rescans the whole history at
   each instant: 98% of an instant's time, about 16 hours per venue-run
