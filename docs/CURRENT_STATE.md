@@ -1785,7 +1785,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   rulings: the positioning owner's results shared per instant (runtime);
   every value-bearing result private, with a public value-free index (1);
   the sweep candidates and the ablation through the runner, the composers
-  frozen at `2be45ad` (2); a truncated-input look-ahead audit (3). RBT-006
+  frozen at `2be45ad` (2); a truncated-input look-ahead audit (3);
+  walk-forward folds by bar count, Bitfinex's shifted two hours by its
+  missing hours (4); mechanical named-limitation exposure counts (5).
+  RBT-006
   `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` is **DONE** (2026-11-18).
   RBT-006's history: the owner's rulings 1-4
   (2026-11-11) cover the ETF launch dates, the fold scheme, the sweep grid
@@ -3161,7 +3164,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the Part B freeze and its record `ca555d6`; the Part B review fixes
   B1-B2 `e77c37f`; the Part B review PASS and RBT-006 DONE `99ed30b`;
   the owner's RBT-007 runtime ruling `3217fbf`; RBT-007's start and
-  owner rulings 1-3 in this commit.
+  owner rulings 1-3 `c14e320`; rulings 4-5 in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4135,6 +4138,14 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
+- **ANSWERED 2026-11-18: RBT-007 rulings 4-5.** The owner chose the
+  recommended options. (4) Every venue's walk-forward uses the BTC-182
+  to BTC-185 owners unchanged, with 4,368-bar folds; Bitstamp's and
+  Coinbase's equal the preregistered daily folds, and Bitfinex's shift
+  two hours after its missing hours of 2024-05-05, a recorded deviation.
+  (5) Each named limitation's exposure count follows one mechanical
+  rule over the champion's base evaluation-window run. Details in the
+  RBT-007 ticket block.
 - **ANSWERED 2026-11-18: RBT-007 rulings 1-3.** The owner chose every
   recommended option. (1) Every value-bearing RBT-007 output, the §8
   report included, lives in the private repository, and this repository

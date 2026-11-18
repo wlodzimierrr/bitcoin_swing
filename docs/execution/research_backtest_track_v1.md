@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit) and the runtime ruling (shared positioning results) recorded; Part A next; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts) and the runtime ruling (shared positioning results) recorded; Part A next; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -9383,6 +9383,31 @@ all, against about two weeks for unshared runs over 8 processes.
    - The audit is also the runtime ruling's check against unshared
      recomputation.
 
+**Owner rulings 4-5 (2026-11-18, asked before any evaluation-window
+composition; each the recommended option).**
+4. **Walk-forward folds by bar count.** The BTC-182 owner requires every
+   fold to replay the same number of bars, while ruling 2 counts folds in
+   daily decision instants and the engine replays hourly bars.
+   - Every venue's walk-forward uses the BTC-182 to BTC-185 owners
+     unchanged: expanding folds of 4,368 hourly bars (182 days of 24 hours)
+     from the venue's evaluation start, a 4,368-bar step and no embargo.
+   - Bitstamp and Coinbase miss no hour inside a fold, so their folds equal
+     the preregistered daily folds exactly; the runner checks this.
+   - Bitfinex misses two hours inside fold 1 (2024-05-05 10:00 and 11:00),
+     so its later boundaries shift by two hours. Fold 1 also holds the
+     2024-09-08 decision, folds 2 and 3 each start one decision later, and
+     its untested tail holds 115 decision instants instead of 116. The
+     report records this deviation from the preregistered Bitfinex fold
+     dates.
+5. **Named-limitation exposure counts by a mechanical rule.** Per venue,
+   over the champion's `base` evaluation-window run, each named limitation
+   (policy V7 §7 and the completion spec's) counts the decision instants at
+   which its condition is recorded in the ledgers (its cause, guard or
+   reason code) or detectable from the inputs that decision read (for
+   example a row-based lookback spanning a gap). A limitation that applies
+   to every composition (an owner's table or unit) is reported as applying
+   to every evaluated instant, with that count.
+
 Next: Part A, the runner and the report, offline on synthetic data, then
 its independent xHigh review. Part B runs it on the frozen dataset.
 
@@ -9415,7 +9440,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — started 2026-11-18; owner rulings 1-3 and the runtime ruling recorded; Part A next |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — started 2026-11-18; owner rulings 1-5 and the runtime ruling recorded; Part A next |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
