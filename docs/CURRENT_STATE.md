@@ -1486,7 +1486,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   re-review FAILED on 2026-11-12 on four P2, N2-N5, and two P3, N6-N7; their
   fix `d062eb5`, whose re-review PASSED on 2026-11-13 with no finding, closing
   Part A's code review; the Part B freeze, committed on 2026-11-17, and its
-  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is READY**.
+  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is READY**,
+  with the owner's runtime ruling of 2026-11-18.
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -2414,9 +2415,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   PAD5-R1 or PAD6 is authorized
 - **Next dependency-satisfied EPIC Y action:** **RBT-007**
   `RUN_FIRST_RESEARCH_BACKTEST_V1`, READY since RBT-006 closed DONE on
-  2026-11-18. Before its runs, the owner decides on the positioning
-  owner's runtime, which grows with the square of the history: one
-  completeness pass took about 23 hours per venue. RBT-006's history:
+  2026-11-18. The owner's runtime ruling (2026-11-18): the positioning
+  owner's cost grows with the square of the history, about 16 hours per
+  venue-run over the evaluation window, and its inputs are equal on all
+  three venues. So RBT-007's runner computes its results once per
+  decision instant and shares them across every venue, cost rung, sweep
+  candidate and the ablation: about 171 venue-runs in under a day,
+  instead of about 114 days in one process. RBT-006's history:
   Part A's code review closed on 2026-11-13, when the independent xHigh
   re-review of the N2-N7 fix `d062eb5` PASSED with no finding (second
   re-review FAIL 2026-11-12, four P2 and two P3; owner: fix all six, the
@@ -3144,8 +3149,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   with `13a27f9`; the second re-review FAIL (N2-N7) `7980061`; the N2-N7
   fix `d062eb5` with `1e48ba4`; the third re-review PASS `2be45ad`;
   the Part B freeze and its record `ca555d6`; the Part B review fixes
-  B1-B2 `e77c37f`; the Part B review PASS and RBT-006 DONE in this
-  commit.
+  B1-B2 `e77c37f`; the Part B review PASS and RBT-006 DONE `99ed30b`;
+  the owner's RBT-007 runtime ruling in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
@@ -4119,14 +4124,19 @@ unopened with no automatic dependency that would ever open it.
 
 ## Important Unresolved Decisions
 
-- **OPEN: RBT-007's runtime.** The positioning owner
-  (`btc_predictor/features/positioning.py`: `_prior_open_interest`,
-  `_funding_averages_by_time`) rescans the whole history at each
-  instant, so an instant's time grows with the square of its position:
-  one RBT-006 completeness pass took about 23 hours per venue. RBT-007
-  composes every instant for each sweep candidate and the ablation, and
-  EPIC Y may not edit an owner. The owner decides how RBT-007's runs
-  proceed before they start. Details in the RBT-006 Part B record.
+- **ANSWERED 2026-11-18: RBT-007's runtime.** The positioning owner
+  (`btc_predictor/features/positioning.py`) rescans the whole history at
+  each instant: 98% of an instant's time, about 16 hours per venue-run
+  over the evaluation window, about 114 days for RBT-007's 171
+  venue-runs in one process. Its inputs are equal on all three venues,
+  and nothing a run varies reaches them. The owner chose the
+  recommended option: RBT-007's runner computes the four positioning
+  owner results once per decision instant and shares them across every
+  run. Each is the unchanged owner's return value for the same
+  arguments, proven byte-identical to an unshared run, and any file
+  holding them stays in the private store. The runs stay on the owner's
+  PC (ruling 9 unchanged; the cluster and cloud computing not chosen).
+  Details in the RBT-007 ticket block.
 - **ANSWERED 2026-11-18: RBT-006 Part B review (PASS WITH NON-BLOCKING
   FINDINGS, B1-B2).** The owner chose the recommended option: correct
   both in the record as a distinct commit and close RBT-006 as DONE
