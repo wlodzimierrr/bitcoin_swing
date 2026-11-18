@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — Part A badbe00 and 0b32e94 committed 2026-11-18, awaiting its independent xHigh review; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), awaiting the owner's choice on F2, the fixes and a re-review; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -9588,6 +9588,63 @@ the exclusion's pin catches 3 of 3.
 Next: Part A's independent xHigh review. Part B runs the command on the
 frozen dataset after a PASS.
 
+### RBT-007 Part A review outcome
+
+**Date:** 2026-11-18. **Review:** independent xHigh ticket review, run at the
+owner's request by the OpenAI Codex CLI (0.162.1, reasoning `xhigh`) in a
+detached worktree at `ad3a7c6`, over `99ed30b..ad3a7c6` (the runtime ruling
+and rulings 1-7, the code `badbe00`, the test fix `0b32e94` and the record
+`ad3a7c6`). Report-only: a workspace-write sandbox with network disabled, no
+database, no `.env*` file, no private evidence, synthetic fixtures only; its
+worktree stayed clean.
+**Result: FAIL**, with four P1, six P2 and three P3 findings. Part B waits for
+the owner's choice on F2, the fixes and a re-review.
+
+**Findings.** All confirmed by a synthetic or scratch probe. Locations refer
+to `ad3a7c6`.
+
+| ID / severity | Location | Current versus expected behavior; impact | Reproducer and required correction |
+| --- | --- | --- | --- |
+| F1 / **P1** | `runner.py:370`, `:537` | A walk-forward fold seeds its history at its first bar's availability and requires the last history row one day earlier. After an omitted hour a fold starts at 02:00, which no daily row can precede by a day, so every later fold refuses `HISTORY_REFUSED`. Ruling 4's shifted Bitfinex walk-forwards and sweeps cannot run. | A synthetic two-hour gap: fold 1 accepted, folds 2 and 3 refused. Seed at the fold's first decision instant. |
+| F2 / **P1** | `runner.py:998`, `:1018` | The audit truncates the raw inputs but seeds the recomputation with the run's earlier rows and reuses its lifecycle, NAV and armed entry. Its result is conditional on that reused state being point-in-time; ruling 7's memory carries the whole history into every decision. | Future ETF, liquidation, market-cap, volume, hourly and derived-bar values injected into a row before the window passed the audit (`passed=True`, 10 of 10 audited). Establish the reused state's provenance (owner choice below). |
+| F3 / **P1** | `runner.py:650`, `:1141`, `:1167`, `:1185` | A resumed run record is accepted by its `run_id` alone, which binds no dataset, window, code, configuration contents, capital or fold plan; history and audit files are skipped when present. | A record marked `FOREIGN` with an invented metric was read back. A history file holding `()` loaded, and the memory check then reported 0 rows compared and `matches_history=True`. Bind and validate each record's identity and completeness; an empty history must fail. |
+| F4 / **P1** | `runner.py:1322`, `runner_report.py:448` | A failed audit, a memory mismatch, an unaccounted cause, a fold-date mismatch and a golden refusal are recorded, but the command still writes every output and exits 0. | `build_report` wrote all four files from such records. A required check must fail the command. |
+| F5 / **P2** | `runner.py:755`, `:797` | The frozen-code check compares disk source of the loaded `.py` modules only. It misses modules loaded later or from elsewhere, and cached bytecode can execute code the source no longer holds. | A same-length change compiled to bytecode, then the source restored with matching size and timestamp: the code executed the change and the check returned no mismatch. Import from a fresh bytecode cache before any owner loads, and check the loaded modules again after the runs. |
+| F6 / **P2** | `runner_report.py:129`, `:211`, `:216`, `:225` | Exposure counts: the 20-observation z-score history is 20 rows before the current one, so 49, 105, 40 and 72 rows (the code reads one fewer); the volatility percentile's historical RV_20 windows are not counted; simultaneous funding and OI guard refusals count one instant twice; a per-owner `max` is not the union of exposed instants. | Boundary-gap, January-gap and double-refusal probes. Follow every history actually read and count distinct instants. |
+| F7 / **P2** | `runner_metrics.py:364`, `runner_report.py:413` | Trade-set overlap is built from every armed entry, before any fill, so missed or refused entries count as trades. | Matching intents on two venues with no trade: overlap 1, `AVAILABLE`, beside `NO_MATCHED_TRADES`. Build the sets from filled trades (clarification 4a). |
+| F8 / **P2** | `test_research_backtest_preregistration.py:430` | The pin's import pattern misses `from btc_predictor.research_backtest import runner as bridge`, so a decision module could read the thresholds through the runner without naming one. The current report has no such reader. | Both scans passed on that in-memory source. Check imports structurally and at run time. |
+| F9 / **P2** | `runner_metrics.py:473`, `runner_report.py:520` | Metric dispersion drops each venue's counts, and the Markdown walk-forward section prints Calmar without counts. | The synthetic report. Keep a trade count beside every rate. |
+| F10 / **P2** | `runner_report.py:477`, `:502`, `:526` | Canonical serialization sorts keys, so the emitted JSON opens with `ablation`, not `evidence`; the Markdown lists the named limitations after the headline and the audit. The test checks the dictionary's order before serialization. | The emitted files. Put the evidence class, prohibited uses and named limitations first in both, and test the emitted bytes. |
+| F11 / **P3** | `runner_report.py:37`, `:464` | The report's `identity.report_version` is `RBT007_RESEARCH_BACKTEST_REPORT_V1`; the preregistration freezes `RESEARCH_BACKTEST_REPORT_V1`. | Keep the frozen version, with any schema identifier beside it. |
+| F12 / **P3** | `runner_metrics.py:297` | With no drawdown the longest drawdown reports `recovered=True`; the frozen steady-rise and plateau examples give `null`. The duration is correct. | A steadily rising curve. Follow the frozen examples. |
+| F13 / **P3** | track doc, Part A point 4 | Point 4 says every run record counts the engine's events; golden records keep the engine's aggregate reason codes instead. | Add the counts to the golden records or narrow the statement. |
+
+**Checks that passed.**
+- The runtime ruling and ruling 6: exact type-tagged keys, source and
+  position identity, `Decimal` exponents and mapping order kept, a fresh copy
+  served, a foreign key refused, the owners restored on an exception, and
+  nothing beyond the eight names replaced.
+- Ruling 1: every value-bearing output is private; the index holds no price,
+  metric or trade count.
+- Ruling 2's registered variants, the ablation's frozen weights and its
+  rescoring at the configured §20 bands; the 243-run plan; the windows (no
+  decision after `last`, no bar available at or after `last + 1 day`); the
+  sweeps' configuration costs and `base` check; the primary metric formulas
+  and `RunView` (except F12).
+- Fresh-process report rebuilds under two hash seeds gave identical files;
+  six runs recomputed by one worker in reverse order were byte-identical to
+  the four-worker records, and their audit passed.
+- No composer, owner, configuration, BTC-180 to BTC-185 module,
+  preregistration module, frozen artifact, EPIC X file, `data/` or
+  `research_artifacts/` file changed; BTC-019 untouched.
+- Codex's runs (`.venv312`, one process at a time): the runner module 47
+  passed; the preregistration module 120 passed. No real-data value; the
+  holdout is NOT COLLECTED.
+
+**Owner question (F2).** Codex: "If the intended audit explicitly trusts prior
+history and engine state, that would narrow the existing 'every input'
+acceptance criterion and needs an owner ruling."
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -9617,7 +9674,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A `badbe00` and `0b32e94` committed 2026-11-18, awaiting its independent xHigh review; owner rulings 1-7 and the runtime ruling |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3), awaiting the owner's choice on F2, the fixes and a re-review; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
