@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; Part A next; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — Part A badbe00 and 0b32e94 committed 2026-11-18, awaiting its independent xHigh review; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -9442,6 +9442,152 @@ this memory.
 Next: Part A, the runner and the report, offline on synthetic data, then
 its independent xHigh review. Part B runs it on the frozen dataset.
 
+### RBT-007 Part A: the runner and the report (offline)
+
+**Implementation:** `badbe00`, with the test fix `0b32e94` (2026-11-18). Four
+new modules, and one RBT-006 test's exclusions widened (point 8 below); no
+composer, owner, configuration, `data/` or EPIC X file changes (ruling 2):
+- `btc_predictor/research_backtest/runner.py`: the run plan, the windows and
+  folds, the continuous history, the registered-configuration wrapper, the
+  frozen-input checks, the look-ahead audit, the resumable orchestration and
+  the command line (`python -m btc_predictor.research_backtest.runner run
+  --store ~/backtest_evidence --workers N`);
+- `runner_shared.py`: the shared positioning results (the runtime ruling
+  and ruling 6);
+- `runner_metrics.py`: the frozen metric definitions (RBT-006 ruling 4) and
+  the cross-venue measures (clarification 4a);
+- `runner_report.py`: the policy §8 report, the ablation's band count, the
+  named limitations' exposure (ruling 5) and the public index (ruling 1).
+
+**The runs.** On the frozen dataset the plan holds 243 runs:
+- per venue and cost rung, the champion's headline run over the evaluation
+  window and its BTC-182 walk-forward (18);
+- per venue, the 68 preregistered sweep candidates as walk-forwards under
+  `base` (204), the ablation over the evaluation window under `base` (3) and
+  the six golden periods (18).
+
+A run composes the decision instants `[first, last]` and replays the bars
+whose engine availability lies in `[first, last + 1 day)`, so no decision
+follows the last one and no bar is available in the holdout.
+
+**How each ruling is implemented.**
+- **Rulings 1-2.** The private files are the report, its Markdown summary
+  and a decision ledger per venue. The public index holds digests, sizes,
+  counts and statuses only. Before any run the runner checks:
+  - every loaded repository module (the runner's own and the tests
+    excepted), the strategy configuration and the golden fixture equal
+    `2be45ad` byte for byte;
+  - the preregistration matches its digest, and its sweeps, ablation,
+    metric definitions, cost ladder and schedule re-derive exactly;
+  - the dataset is the one it binds, under the freeze's own checks.
+
+  `RegisteredEntryComposer` builds the unchanged composer with the champion
+  and then gives it a registered configuration, accepted by object
+  identity.
+- **Ruling 3.** The audit shards each reproduce the champion's base
+  headline run, which must equal its record byte for byte. Each sampled
+  decision is then recomputed unshared on inputs truncated at its instant
+  (bars by `ingested_at`, every other family by `available_at`). Its entry
+  row and any management row must match byte for byte, as must the prior
+  flow it read. The ETF launch table is a frozen static input and is kept.
+- **Ruling 4.** Each fold's decision range is compared with the
+  preregistered dates; Bitfinex's shift is reported.
+- **Ruling 5.** Each named limitation's exposure count is computed by its
+  own rule, over the champion's base evaluation-window run:
+  - a recorded code, guard refusal or flag, counted per instant;
+  - every composition, where the limitation applies everywhere;
+  - a row-counting owner whose rows span an omitted bar. The rows are each
+    owner's own counts, on the series BTC-040 derives at each instant,
+    counted both for the latest value and with the 20-observation z-score
+    history.
+- **Ruling 6 and the runtime ruling.** The eight positioning names are
+  replaced in the entry composer module's namespace, for the block and the
+  process only (the RBT-004 tests' `recording` pattern).
+  - A call's key digests its name and exact, type-tagged arguments. Rows are
+    keyed by their source's content digest and positions, after an identity
+    check. A mapping keeps its order, and a `Decimal` its exponent.
+  - An argument the encoder cannot encode exactly is never served.
+  - Results are pickled one per key in the private work directory, and
+    each one served is a fresh copy.
+- **Ruling 7.** Per venue, the champion composes every scheduled instant
+  once, consecutively from 2020-01-02. Every run's composer, each walk-
+  forward fold's included, starts holding the rows before its first
+  decision. After every run the runner checks each composed row's regime
+  and capitulation state against that history.
+
+**Found while implementing (for the review).**
+1. BTC-182 refuses a split with fewer than two folds. The headline,
+   ablation and golden runs are therefore single engine runs, and their
+   metrics use `runner_metrics.RunView`. That is a read-only view carrying
+   BTC-182's own fold-return and mean-fold-return conventions, so the
+   owner metric functions apply unchanged.
+   - The BTC-183 regime and BTC-184 setup breakdowns need a validation, so
+     they are reported on each venue's walk-forward.
+2. BTC-185's comparability signature includes a selected BTC-181 profile's
+   record, which carries each candidate's identity. The sweeps therefore
+   run with no profile selected, on the configuration's own costs. Those
+   costs are the `base` rung's, which the runner checks on every sweep
+   run.
+3. The RBT-007 criterion says all six BTC-224 golden periods lie in the
+   evaluation window. Four of them lie before each venue's evaluation start
+   (2024-03-10) or straddle it. They run as the criterion's last sentence
+   provides, and the report marks each as before or within the evaluation
+   start.
+4. RBT-006's entry-conviction candidate 72 has no risk band below 80. The
+   engine's sizing gives no budget, so the entry does not execute. Every
+   run record counts the engine's events by type, action and status, with
+   each refusal's reasons.
+5. The ablation's band count rescores each champion Hold evaluation on its
+   own recorded inputs with the variant's weights. It uses Rulebook §20's
+   bands at the configured hold thresholds, and refuses if a recorded score
+   does not rescore to itself.
+6. The metrics' `NEW_DEFINITION`s are computed in the BTC-188 owner's
+   decimal context and quantized like its metrics (`1E-12`, half-even).
+7. A reproducible record holds no duration or share counts; those go to an
+   operational log in the work directory.
+8. RBT-006's reader scan counts any module naming a Hold threshold as a
+   decision reader. The ablation's band count (point 5) names all five, so
+   the full suite at `badbe00` failed that scan. `0b32e94` adds the report to
+   the scan's non-decision exclusions, beside the preregistration and the
+   census registry. A new test pins the exclusion: the report names the
+   thresholds only inside `hold_band`, and no module outside the runner
+   imports the report or the runner.
+
+**Tests.** `test_research_backtest_runner.py`, 47 tests, all synthetic (the
+RBT-004/005 worlds, the committed preregistration, throwaway directories).
+They cover:
+- the share's exactness, including byte-identical ledgers shared across
+  two venues;
+- the variants and the registry;
+- the frozen checks;
+- the windows and folds;
+- the continuous history and the memory check;
+- every metric definition, and the cross-venue measures;
+- the audit: it passes on the champion and catches an injected read of a
+  later bar;
+- the report and the value-free index;
+- one end-to-end execution with four workers, its resume and a
+  byte-identical rebuild of the report.
+
+Mutants: 31 of 31 caught, each by its named tests after a passing control;
+the exclusion's pin catches 3 of 3.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-18).**
+- Full repository at `badbe00`: 9,134 passed, 1 failed, 3 skipped,
+  1 xfailed in 5,508.99s. The one failure is the reader scan of point 8; at
+  `0b32e94` the preregistration module has 120 passed. The runner module's
+  47 tests passed in that run.
+- The BTC-019 completion gate and the coverage modules: 140 passed,
+  1 xfailed (the recorded P2 owner defect).
+- V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed; PAD4-R5 2 passed.
+- Synthetic fixtures only; no database, network or private-evidence read;
+  no real-data value. Nothing has run on the frozen dataset.
+
+Next: Part A's independent xHigh review. Part B runs the command on the
+frozen dataset after a PASS.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -9471,7 +9617,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — started 2026-11-18; owner rulings 1-7 and the runtime ruling recorded; Part A next |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A `badbe00` and `0b32e94` committed 2026-11-18, awaiting its independent xHigh review; owner rulings 1-7 and the runtime ruling |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A

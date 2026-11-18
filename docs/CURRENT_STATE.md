@@ -1487,8 +1487,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   fix `d062eb5`, whose re-review PASSED on 2026-11-13 with no finding, closing
   Part A's code review; the Part B freeze, committed on 2026-11-17, and its
   review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is IN
-  PROGRESS** (started 2026-11-18; the owner's runtime ruling and rulings 1-3
-  recorded; Part A next).
+  PROGRESS** (started 2026-11-18; the owner's runtime ruling and rulings 1-7
+  recorded; Part A `badbe00` and `0b32e94` committed, awaiting its
+  independent xHigh review).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1781,7 +1782,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
 - **Current IN_PROGRESS ticket:** EPIC Y RBT-007
-  `RUN_FIRST_RESEARCH_BACKTEST_V1` (started 2026-11-18; Part A next). Its
+  `RUN_FIRST_RESEARCH_BACKTEST_V1` (started 2026-11-18; Part A `badbe00` and
+  `0b32e94` committed, awaiting its independent xHigh review). Its
   rulings: the positioning owner's results shared per instant (runtime);
   every value-bearing result private, with a public value-free index (1);
   the sweep candidates and the ablation through the runner, the composers
@@ -2425,9 +2427,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-007 Part A**, the
-  runner and the report, offline on synthetic data, then its independent
-  xHigh review (RBT-007 started 2026-11-18, after RBT-006 closed DONE;
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **review of RBT-007 Part A** (`badbe00`: the runner, the shared results,
+  the metrics and the report, offline; 47 tests, mutants 31/31; full suite
+  9,134 passed, 1 failed, 3 skipped, 1 xfailed in 5,508.99s, its one
+  reader-scan failure fixed in `0b32e94`), then Part B on the frozen dataset
+  (RBT-007 started 2026-11-18, after RBT-006 closed DONE;
   owner rulings 1-3: results private with a public value-free index,
   the sweep candidates and the ablation through the runner with the
   composers frozen, a truncated-input look-ahead audit). The owner's
@@ -3167,7 +3172,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the Part B freeze and its record `ca555d6`; the Part B review fixes
   B1-B2 `e77c37f`; the Part B review PASS and RBT-006 DONE `99ed30b`;
   the owner's RBT-007 runtime ruling `3217fbf`; RBT-007's start and
-  owner rulings 1-3 `c14e320`; rulings 4-5 `233eb90`; ruling 6 `d50e33e`; ruling 7 in this commit.
+  owner rulings 1-3 `c14e320`; rulings 4-5 `233eb90`; ruling 6
+  `d50e33e`; ruling 7 `9f85ed5`; Part A `badbe00` and `0b32e94`, and its
+  record in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
