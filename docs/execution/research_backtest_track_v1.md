@@ -9120,7 +9120,10 @@ by component (a day can lack several):
   it, since a missing row is never filled. These windows cover the 395 days,
   spread evenly across weekdays.
 - **Volatility.** The liquidation percentile is missing
-  (`LIQUIDATION_PERCENTILE_INPUT_MISSING`).
+  (`LIQUIDATION_PERCENTILE_INPUT_MISSING`) on 172 days on every venue.
+  Coinbase's and Bitfinex's other day lacks the range percentile instead
+  (`RANGE_PERCENTILE_INPUT_MISSING`: Coinbase 2025-10-27, Bitfinex
+  2024-05-07) (review B2).
 - **Structure.** Mostly no valid stop (190-195 days per venue): a market
   condition, not missing data.
 - Coinbase's one decision instant without its price bar
@@ -9135,8 +9138,9 @@ another source, a new dataset and another multi-day run.
    (the composer's `UnevaluableComponent.as_record`).
    - So `REALIZED_VOLATILITY_INSUFFICIENT_HISTORY`, which the composer
      accounts per feature (the RV_7, RV_20 and RV_60 minimum-history rows),
-     shows `accounted: null` on 60-61 instants per venue, from 2020-01-02 to
-     2020-03-01, before the evaluation start.
+     shows `accounted: null` from 2020-01-02, before the evaluation start:
+     on 60 instants to 2020-03-01 for Bitstamp, and on 61 to 2020-03-02 for
+     Coinbase and Bitfinex (review B1).
    - The runtime guard and the component causes check it per feature, so
      it is accounted.
 2. **Runtime.** An instant's time grows with the square of its position in
