@@ -376,7 +376,14 @@ def test_the_unread_hold_thresholds_change_no_decision_and_are_recorded() -> Non
     assert {item["paths"]["hold_thresholds.hold_min"] for item in pr.unread_sweep_paths()} == {"70"}
 
 
-_READER_EXCLUDED = ("tests/", "config/", "research_backtest/preregistration.py", "research_backtest/input_census_registry.py")
+_READER_EXCLUDED = (
+    "tests/",
+    "config/",
+    "research_backtest/preregistration.py",
+    "research_backtest/input_census_registry.py",
+    "research_backtest/runner_report.py",
+)
+_HOLD_THRESHOLD_LEAVES = ("possible_add_min", "hold_min", "no_add_min", "defensive_min", "exit_below")
 
 
 def _readers(leaf: str) -> list[str]:
@@ -398,6 +405,31 @@ def test_every_swept_path_has_a_reader_and_no_unread_path_has_one(sweeps) -> Non
     unread = [path for paths in pr.SWEEP_UNREAD_PATHS.values() for path in paths]
     assert unread and all(_readers(path.rsplit(".", 1)[-1]) == [] for path in unread)
     assert _readers("defensive_min") == ["signals/trim.py"] and "signals/exit_rules.py" in _readers("exit_below")
+
+
+def test_the_report_reads_the_hold_thresholds_only_for_its_band_count() -> None:
+    """RBT-007's report is excluded as a non-decision reader: its §20 band count, and nothing decides on it."""
+
+    import ast
+
+    package = REPO / "btc_predictor"
+    report = package / "research_backtest" / "runner_report.py"
+    source = report.read_text()
+    (band,) = [node for node in ast.walk(ast.parse(source)) if isinstance(node, ast.FunctionDef) and node.name == "hold_band"]
+    lines = [
+        number
+        for leaf in _HOLD_THRESHOLD_LEAVES
+        for number, line in enumerate(source.splitlines(), start=1)
+        if re.search(rf"\.{leaf}\b|[\"']{leaf}[\"']", line)
+    ]
+    assert lines and all(band.lineno <= number <= band.end_lineno for number in lines)
+    importers = sorted(
+        str(path.relative_to(package))
+        for path in package.rglob("*.py")
+        if not str(path.relative_to(package)).startswith("tests/")
+        and re.search(r"\brunner_report\b|research_backtest\.runner\b|from \.runner\b|from \. import runner\b", path.read_text())
+    )
+    assert importers == ["research_backtest/runner.py"]
 
 
 def test_an_unread_path_is_never_swept(monkeypatch: pytest.MonkeyPatch) -> None:
