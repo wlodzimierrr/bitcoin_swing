@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19, awaiting the independent xHigh re-review; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4), awaiting the owner's choice, the fixes and another re-review; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -9732,6 +9732,70 @@ first pass is point 6's loader check, caught after `68e1055`.
 Next: the independent xHigh re-review of the fixes. Part B runs the command
 on the frozen dataset after a PASS.
 
+### RBT-007 Part A review-fix re-review outcome
+
+**Date:** 2026-11-19. **Review:** independent xHigh re-review, run at the
+owner's request by the OpenAI Codex CLI (0.162.1, reasoning `xhigh`) in a
+detached worktree at `ae5d461`, over `ad3a7c6..ae5d461` (the review FAIL
+record, review ruling 3a, the fixes `5ca17ca`..`68e1055` and their record).
+Report-only: a workspace-write sandbox with network disabled, no database,
+no `.env*` file, no private evidence, synthetic fixtures only; its worktree
+stayed clean.
+**Result: FAIL**, with two P1 and two P2 findings, RR1-RR4. Part B waits for
+the owner's choice, the fixes and another re-review.
+
+**F1-F13 and ruling 3a.** F1 and F6-F13 FIXED, each with its reproducer or
+a stronger probe and a reverted-behavior control. F2 (ruling 3a), F3, F4 and
+F5 PARTLY: the fresh audit links reject every injection, but resumed audit
+files can drop the proof (RR1); nested run contents are not validated (RR2);
+an inherited import hook runs other code (RR3); golden unaccounted causes
+are not gated (RR4).
+
+**Findings.** All confirmed by a synthetic or scratch probe. Locations refer
+to `ae5d461`.
+
+| ID / severity | Location | Current versus expected behavior; impact | Reproducer and required correction |
+| --- | --- | --- | --- |
+| RR1 / **P1** | `runner.py:1423`, `:1780` | `read_audit` takes the run instants and ruling 3's sample from the audit's own stored metadata, and `_link_failed` fails a link only on a literal `False`, so a missing check passes. Resumed audit files can report a passing audit without the proof ruling 3a requires. | From a passing synthetic work directory, bindings kept: emptying the metadata's run instants and sample gave `run_links=0`, `audited=0`, `complete=True`, `passed=True`; removing the equality checks from the stored links still passed. Both published. Derive the run instants and the sample from the bound base run, require every check of its kind to be present and true, and test both on resume. |
+| RR2 / **P1** | `runner.py:761` | `read_run` checks a record's binding and its top-level keys but not their contents. A correctly bound record with empty ledgers and a win rate `AVAILABLE` beside zero closed trades was read, reported and published; the audit covers only the base headline run. | A rewritten optimistic headline record. Validate each record's ledgers and payload against its binding and its own engine result, and test a record whose nested contents are emptied or inconsistent under a kept binding. |
+| RR3 / **P2** | `runner.py:885`, `:961` | The re-executed process inherits the whole environment, so a startup customization on `PYTHONPATH` runs before the check, and the loader check accepts a `SourceFileLoader` subclass that changes the code while reporting the frozen `.py` origin. | A scratch `sitecustomize` installed such a loader and replaced `positioning.open_interest_intensity`; through `run_with_fresh_bytecode(["--help"])` the child's frozen check passed and the replaced function ran. Control the child's startup and import system so that only source loading can run, and keep the reproducer as a test. |
+| RR4 / **P2** | `runner.py:677`, `runner_report.py:521` | Golden records carry no `unaccounted` field and the report reads its absence as none, so a golden run's unaccounted cause publishes. | An unknown management cause injected into a synthetic golden run: six management rows held it, `_unaccounted` returned all six, the report published with `integrity.unaccounted={}`. Record golden unaccounted causes, require the field, and test that an entry, management or follow-up cause refuses publication. |
+
+**Checks that passed.**
+- Ruling 3a's fresh links: future ETF, liquidation, market-cap, volume,
+  hourly and derived-daily values, and funding, OI, basis and
+  perpetual-volume values, in a history row were all rejected; an altered
+  position, lifecycle, NAV, armed entry or prior flow was detected; a TRAIL
+  with a pending ADD passed, and a changed pending ADD or an omitted
+  follow-up failed; an omitted midnight with a position open, and the first
+  and last decisions, passed. The engine replay gets only the bars available
+  at its cutoff; reusing the recorded decisions is sound because each is its
+  own link and the replay's state and follow-ups are checked; the sample is
+  unshared and the other links use the separate audit store.
+- F3's foreign bindings, missing top-level keys, empty histories and
+  incomplete schedules refuse; F4's six failure summaries refuse and the
+  moved boundaries give the ruled dates on all three venues; F5's stale
+  bytecode, outside paths, sourceless loaders and late modules refuse.
+- No regression: six headline runs recomputed by one worker in reverse
+  order were byte-identical to the four-worker records; fresh report
+  rebuilds under two hash seeds gave identical files; the plan holds 243
+  runs, 204 of them sweeps of 68 candidates; the windows and the
+  preregistration digest are unchanged.
+- The record: the commits, the scope, the status and the 66 and 121 test
+  counts reproduced; found-while-fixing points 1, 4, 5 and 6 verified,
+  point 2 qualified as stated (nested windows), point 3 an estimate. The
+  full suite and the 37 mutants were not rerun under the review's rules.
+- No composer, owner, configuration, BTC-180 to BTC-185 module,
+  preregistration module or artifact, EPIC X file, `data/` or
+  `research_artifacts/` file changed; BTC-019 untouched.
+- Codex's runs (`.venv312`, one process at a time): the runner module 66
+  passed; the preregistration module 121 passed. No real-data value; the
+  holdout is NOT COLLECTED.
+
+**Owner questions.** None from Codex: "The existing rulings provide
+sufficient authority to correct RR1-RR4 before another independent
+re-review."
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -9761,7 +9825,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s), awaiting the independent xHigh re-review; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2), awaiting the owner's choice, the fixes and another re-review; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
