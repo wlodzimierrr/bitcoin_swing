@@ -23,11 +23,12 @@ from btc_predictor.backtest.walk_forward import restore_walk_forward_validation
 from btc_predictor.config.strategy import StrategyConfig
 from btc_predictor.features.hold import HoldScoreInput, calculate_hold_score
 from btc_predictor.features.momentum import FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS, TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS
+from btc_predictor.features.volatility import DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS
 from btc_predictor.features.trend import FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS, TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS
 from btc_predictor.research_backtest import preregistration as prereg
 from btc_predictor.research_backtest import runner as rn
 from btc_predictor.research_backtest import runner_metrics as rm
-from btc_predictor.research_backtest.completion_spec import RETURN_HORIZON_DAILY_BARS
+from btc_predictor.research_backtest.completion_spec import RETURN_HORIZON_DAILY_BARS, UNIFORM_ZSCORE_WINDOW_OBSERVATIONS
 from btc_predictor.research_backtest.entry_composer import CAUSE_DECISION_PRICE_BAR_MISSING, EntryComposerInputs
 from btc_predictor.research_backtest.replay_inputs import REVISION_HISTORY_UNAVAILABLE, canonical_json_bytes, replay_market_bars_at
 
@@ -126,17 +127,34 @@ def _gapped(rows: Sequence[Any], step_days: int) -> bool:
     return any((later.timestamp - earlier.timestamp).days != step_days for earlier, later in zip(rows, rows[1:]))
 
 
+# the uniform z-score's history: 20 native observations strictly before the current one
+ZSCORE_PRIOR_OBSERVATIONS = UNIFORM_ZSCORE_WINDOW_OBSERVATIONS
 ROW_LOOKBACKS = (
-    # (owner, timeframe, rows read for its latest value, rows read with its 20-observation z-score history)
-    ("four_week_momentum_from_daily_bars", "1d", FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS + 1, FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS + 20),
-    ("twelve_week_momentum_from_daily_bars", "1d", TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS + 1, TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS + 20),
-    ("twenty_week_ma_distance_from_weekly_bars", "1w", TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS, TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS + 19),
-    ("fifty_two_week_high_distance_from_weekly_bars", "1w", FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS, FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS + 19),
+    # (owner, timeframe, rows read for its latest value, rows read with its z-score history)
+    ("four_week_momentum_from_daily_bars", "1d", FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS + 1, FOUR_WEEK_MOMENTUM_LOOKBACK_DAYS + 1 + ZSCORE_PRIOR_OBSERVATIONS),
+    ("twelve_week_momentum_from_daily_bars", "1d", TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS + 1, TWELVE_WEEK_MOMENTUM_LOOKBACK_DAYS + 1 + ZSCORE_PRIOR_OBSERVATIONS),
+    ("twenty_week_ma_distance_from_weekly_bars", "1w", TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS, TWENTY_WEEK_MA_DISTANCE_LOOKBACK_WEEKS + ZSCORE_PRIOR_OBSERVATIONS),
+    ("fifty_two_week_high_distance_from_weekly_bars", "1w", FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS, FIFTY_TWO_WEEK_HIGH_DISTANCE_LOOKBACK_WEEKS + ZSCORE_PRIOR_OBSERVATIONS),
     ("price_momentum_from_daily_bars R_7", "1d", RETURN_HORIZON_DAILY_BARS + 1, RETURN_HORIZON_DAILY_BARS + 1),
     ("realized_volatility_from_daily_bars RV_7", "1d", 8, 8),
     ("realized_volatility_from_daily_bars RV_20", "1d", 21, 21),
     ("realized_volatility_from_daily_bars RV_60", "1d", 61, 61),
 )
+RV20_ROWS = 21
+
+
+def _percentile_rows(daily: Sequence[Any]) -> Sequence[Any]:
+    """The daily rows the two-year volatility percentile reads: each past RV_20 window, and the current one.
+
+    The composer computes RV_20 at every daily bar from its last bar's
+    timestamp minus 731 days, each over its own 21 rows.
+    """
+
+    if not daily:
+        return ()
+    start = daily[-1].timestamp - timedelta(days=DEFAULT_VOLATILITY_PERCENTILE_WINDOW_DAYS + 1)
+    first = next(index for index, bar in enumerate(daily) if bar.timestamp >= start)
+    return daily[max(0, first - (RV20_ROWS - 1)) :]
 
 
 def gap_exposure(inputs: EntryComposerInputs, instants: Sequence[datetime]) -> dict[str, Any]:
@@ -144,13 +162,15 @@ def gap_exposure(inputs: EntryComposerInputs, instants: Sequence[datetime]) -> d
 
     The rows are the composer's own derived series at each instant (BTC-040 at
     the decision instant): a missing hour omits its day's and week's bars, and
-    a row-counting owner reads the rows either side as contiguous.
+    a row-counting owner reads the rows either side as contiguous. The union
+    counts are of distinct instants (review F6).
     """
 
     hourly = tuple(sorted(inputs.dataset.price_bars, key=lambda bar: bar.timestamp))
-    latest: Counter[str] = Counter()
-    history: Counter[str] = Counter()
-    weekly_series = 0
+    latest: dict[str, set[datetime]] = {owner: set() for owner, *_ in ROW_LOOKBACKS}
+    history: dict[str, set[datetime]] = {owner: set() for owner, *_ in ROW_LOOKBACKS}
+    percentile: set[datetime] = set()
+    weekly: set[datetime] = set()
     omitted_days: set[str] = set()
     for instant in instants:
         visible = tuple(bar for bar in hourly if bar.ingested_at <= instant)
@@ -165,17 +185,24 @@ def gap_exposure(inputs: EntryComposerInputs, instants: Sequence[datetime]) -> d
         for owner, timeframe, rows, rows_with_history in ROW_LOOKBACKS:
             step = 1 if timeframe == "1d" else 7
             if _gapped(series[timeframe][-rows:], step):
-                latest[owner] += 1
+                latest[owner].add(instant)
             if _gapped(series[timeframe][-rows_with_history:], step):
-                history[owner] += 1
+                history[owner].add(instant)
+        if _gapped(_percentile_rows(series["1d"]), 1):
+            percentile.add(instant)
         if _gapped(series["1w"], 7):
-            weekly_series += 1
+            weekly.add(instant)
+    volatility = set(percentile).union(*(latest[owner] for owner in latest if owner.startswith("realized_volatility")))
+    rows_anywhere = set(percentile).union(*history.values())
     return {
         "instants": len(instants),
         "days_before_an_omitted_daily_bar": sorted(omitted_days),
-        "latest_value": {owner: latest[owner] for owner, *_ in ROW_LOOKBACKS},
-        "with_zscore_history": {owner: history[owner] for owner, *_ in ROW_LOOKBACKS},
-        "weekly_swing_series": weekly_series,
+        "latest_value": {owner: len(latest[owner]) for owner, *_ in ROW_LOOKBACKS},
+        "with_zscore_history": {owner: len(history[owner]) for owner, *_ in ROW_LOOKBACKS},
+        "volatility_percentile_history": len(percentile),
+        "any_row_owner": len(rows_anywhere),
+        "any_realized_volatility": len(volatility),
+        "weekly_swing_series": len(weekly),
     }
 
 
@@ -203,17 +230,17 @@ def limitation_exposure(entry_rows: Sequence[Mapping[str, Any]], management_rows
     def coded(rows: Sequence[Mapping[str, Any]], *codes: str) -> int:
         return sum(1 for row in rows if any(_contains(row, code) for code in codes))
 
-    def guard(guard_id: str) -> int:
-        return sum(1 for row in entry_rows if any(item["guard_id"] == guard_id for item in row.get("guard_refusals", ())))
+    def guard(*guard_ids: str) -> int:
+        return sum(1 for row in entry_rows if any(item["guard_id"] in guard_ids for item in row.get("guard_refusals", ())))
 
     rows = [
         ("E1_FUTURES_BASIS_ZERO_VARIANCE", "spec", "RECORDED", guard("FUTURES_BASIS_ZERO_VARIANCE_GUARD_V1"), "entry rows with the guard's refusal"),
-        ("E1_CLASS_FUNDING_AND_OI_GROWTH", "spec", "RECORDED", guard("FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1") + guard("OI_GROWTH_ZERO_VARIANCE_GUARD_V1"), "entry rows with either guard's refusal (an instant with both counts twice)"),
+        ("E1_CLASS_FUNDING_AND_OI_GROWTH", "spec", "RECORDED", guard("FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1", "OI_GROWTH_ZERO_VARIANCE_GUARD_V1"), "entry rows with either guard's refusal, each instant once"),
         ("MOMENTUM_PERSISTENCE_OVERLAP", "spec", "EVERY_COMPOSITION", holds, "every Hold evaluation"),
         ("REACTION_UNIT", "spec", "EVERY_COMPOSITION", evaluated, "every evaluated instant"),
         ("LEVEL_STRENGTH_OWNER_TABLES", "spec", "EVERY_COMPOSITION", evaluated, "every evaluated instant"),
         ("FLOW_OWNER_BANDS", "spec", "EVERY_COMPOSITION", evaluated, "every evaluated instant"),
-        ("ROW_BASED_LOOKBACKS", "spec", "DETECTED", max(gaps["with_zscore_history"].values(), default=0), "instants at which a row-counting owner's rows, with its z-score history, span an omitted bar (per owner in gap_exposure)"),
+        ("ROW_BASED_LOOKBACKS", "spec", "DETECTED", gaps["any_row_owner"], "distinct instants at which any row-counting owner's rows, with its z-score history or the volatility percentile's RV_20 history, span an omitted bar (per owner in gap_exposure)"),
         ("SEVERE_CROWDING_IS_CROWDING", "spec", "RECORDED", sum(1 for row in entry_rows if (row.get("flags") or {}).get("crowding", {}).get("flagged") is True), "entry rows with CROWDING flagged"),
         ("LEVEL_VOLUME_PRE_WARM_UP_PIVOTS", "spec", "RECORDED", coded(entry_rows, "LEVEL_VOLUME_PERCENTILE_WARM_UP"), "entry rows recording LEVEL_VOLUME_PERCENTILE_WARM_UP"),
         ("STRESS_NON_DISCRETIONARY_MISSING", "spec", "RECORDED", sum(1 for row in entry_rows if _evaluated(row) and (row.get("flags") or {}).get("stress", {}).get("mapped", False) is None), "evaluated entry rows whose STRESS veto input is None (fails closed)"),
@@ -222,7 +249,7 @@ def limitation_exposure(entry_rows: Sequence[Mapping[str, Any]], management_rows
         ("ONE_ADD_PER_STRUCTURE", "spec", "RECORDED", sum(1 for row in management_rows if (row.get("intent") or {}).get("action") == TRAIL_ACTION and (row.get("add") or {}).get("outcome") not in ("ADD", "PENDING_TRAIL")), "management rows whose TRAIL consumed a higher low while the add did not pass"),
         ("TRANCHE_SCHEDULE_EXHAUSTED", "spec", "RECORDED", coded(management_rows, "TRANCHE_SIZING_SCHEDULE_EXHAUSTED"), "management rows recording TRANCHE_SIZING_SCHEDULE_EXHAUSTED"),
         ("WEEKLY_SWING_ROW_VS_SESSION", "policy V7 section 7", "DETECTED", gaps["weekly_swing_series"], "instants whose weekly series, which the swing detector reads whole, holds an omitted week"),
-        ("REALIZED_VOLATILITY_GAPPED_SERIES", "policy V7 section 7", "DETECTED", max(gaps["latest_value"][owner] for owner in gaps["latest_value"] if owner.startswith("realized_volatility")), "instants whose RV 7/20/60 rows span an omitted day"),
+        ("REALIZED_VOLATILITY_GAPPED_SERIES", "policy V7 section 7", "DETECTED", gaps["any_realized_volatility"], "distinct instants whose RV 7/20/60 rows, or the RV_20 windows the volatility percentile reads, span an omitted day"),
         ("BTC186_FIFTH_CANDIDATE", "policy V7 section 7", "NOT_COMPOSED", 0, "the champion does not compose the BTC-186 fifth candidate"),
         ("RULEBOOK_24_NO_ADDING_ENFORCED", "policy V7 section 7", "RECORDED", coded(management_rows, "RULEBOOK_24_NO_ADDING_ENFORCED"), "management rows recording the enforced NO ADDING"),
         ("STRESS_MAPPING_EUPHORIA_TRIMS_NEVER_FIRE", "policy V7 section 7", "EVERY_COMPOSITION", managed, "every management evaluation (trim_rules_from_results passes None)"),

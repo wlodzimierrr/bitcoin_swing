@@ -940,21 +940,43 @@ def test_gap_exposure_counts_lookbacks_that_span_an_omitted_bar():
     assert exposed["weekly_swing_series"] == 1
 
 
+def test_exposure_follows_the_rows_each_owner_reads_with_its_history():
+    # review F6: the z-score history is 20 observations before the current one, so 4-week momentum reads
+    # 29 + 20 = 49 daily rows; the volatility percentile reads RV_20 windows over two years
+    assert {owner: rows for owner, _timeframe, _latest, rows in rr.ROW_LOOKBACKS if "momentum" in owner or "weekly" in owner} == {
+        "four_week_momentum_from_daily_bars": 49,
+        "twelve_week_momentum_from_daily_bars": 105,
+        "twenty_week_ma_distance_from_weekly_bars": 40,
+        "fifty_two_week_high_distance_from_weekly_bars": 72,
+        "price_momentum_from_daily_bars R_7": 8,
+    }
+    gapped = Scenario(start=utc(2024, 1, 1), end=utc(2024, 4, 10), missing_hours=(utc(2024, 2, 5, 10),)).build()
+    # on 2024-03-25 the 49 rows reach back to 2024-02-04, across the omitted 2024-02-05; a day later they do not
+    exposed = rr.gap_exposure(gapped, [utc(2024, 3, 25), utc(2024, 3, 26)])
+    assert exposed["with_zscore_history"]["four_week_momentum_from_daily_bars"] == 1
+    assert exposed["latest_value"]["realized_volatility_from_daily_bars RV_20"] == 0
+    assert exposed["volatility_percentile_history"] == 2 and exposed["any_realized_volatility"] == 2
+    assert exposed["any_row_owner"] == 2
+
+
 def test_limitation_exposure_counts_recorded_codes_and_every_composition():
     entry = [
         {"reasons": ["NO_TRADE"], "flags": {"crowding": {"flagged": True}, "stress": {"mapped": None}}, "guard_refusals": [{"guard_id": "OI_GROWTH_ZERO_VARIANCE_GUARD_V1"}], "owner_reason_codes": {"x": {"reason_codes": ["LEVEL_VOLUME_PERCENTILE_WARM_UP"]}}},
         {"reasons": [ec.CAUSE_DECISION_PRICE_BAR_MISSING], "flags": {}, "guard_refusals": []},
     ]
     management = [{"hold": {"score": "70"}, "reasons": ["RULEBOOK_24_NO_ADDING_ENFORCED"], "intent": {"action": "TRAIL"}, "add": {"outcome": "NOT_EVALUATED"}}]
-    gaps = {"latest_value": {"realized_volatility_from_daily_bars RV_7": 0}, "with_zscore_history": {"x": 0}, "weekly_swing_series": 0}
+    entry.append({"reasons": ["NO_TRADE"], "flags": {}, "guard_refusals": [{"guard_id": "FUNDING_HEALTH_ZERO_VARIANCE_GUARD_V1"}, {"guard_id": "OI_GROWTH_ZERO_VARIANCE_GUARD_V1"}]})
+    gaps = {"latest_value": {"realized_volatility_from_daily_bars RV_7": 0}, "with_zscore_history": {"x": 0}, "weekly_swing_series": 0, "any_row_owner": 3, "any_realized_volatility": 2}
     rows = {row["limitation_id"]: row for row in rr.limitation_exposure(entry, management, gaps)}
     assert rows["SEVERE_CROWDING_IS_CROWDING"]["exposed_instants"] == 1
     assert rows["STRESS_NON_DISCRETIONARY_MISSING"]["exposed_instants"] == 1
-    assert rows["E1_CLASS_FUNDING_AND_OI_GROWTH"]["exposed_instants"] == 1
+    # one instant with both guards' refusals counts once (review F6)
+    assert rows["E1_CLASS_FUNDING_AND_OI_GROWTH"]["exposed_instants"] == 2
+    assert rows["ROW_BASED_LOOKBACKS"]["exposed_instants"] == 3 and rows["REALIZED_VOLATILITY_GAPPED_SERIES"]["exposed_instants"] == 2
     assert rows["LEVEL_VOLUME_PRE_WARM_UP_PIVOTS"]["exposed_instants"] == 1
     assert rows["RULEBOOK_24_NO_ADDING_ENFORCED"]["exposed_instants"] == 1
     assert rows["ONE_ADD_PER_STRUCTURE"]["exposed_instants"] == 1
-    assert rows["REACTION_UNIT"]["exposed_instants"] == 1  # the missing-bar row composed nothing
+    assert rows["REACTION_UNIT"]["exposed_instants"] == 2  # two evaluated rows; the missing-bar row composed nothing
     assert rows["BTC186_FIFTH_CANDIDATE"]["kind"] == "NOT_COMPOSED"
 
 
