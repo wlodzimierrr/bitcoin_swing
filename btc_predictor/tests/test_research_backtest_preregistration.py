@@ -6,6 +6,7 @@ no real-data value. The completeness tests run the reviewed RBT-004 composer.
 
 from __future__ import annotations
 
+import ast
 import copy
 import errno
 import json
@@ -410,8 +411,6 @@ def test_every_swept_path_has_a_reader_and_no_unread_path_has_one(sweeps) -> Non
 def test_the_report_reads_the_hold_thresholds_only_for_its_band_count() -> None:
     """RBT-007's report is excluded as a non-decision reader: its §20 band count, and nothing decides on it."""
 
-    import ast
-
     package = REPO / "btc_predictor"
     report = package / "research_backtest" / "runner_report.py"
     source = report.read_text()
@@ -423,13 +422,86 @@ def test_the_report_reads_the_hold_thresholds_only_for_its_band_count() -> None:
         if re.search(rf"\.{leaf}\b|[\"']{leaf}[\"']", line)
     ]
     assert lines and all(band.lineno <= number <= band.end_lineno for number in lines)
-    importers = sorted(
-        str(path.relative_to(package))
-        for path in package.rglob("*.py")
-        if not str(path.relative_to(package)).startswith("tests/")
-        and re.search(r"\brunner_report\b|research_backtest\.runner\b|from \.runner\b|from \. import runner\b", path.read_text())
+    assert _runner_importers() == []
+
+
+_RUNNER_MODULES = frozenset(f"btc_predictor.research_backtest.{name}" for name in ("runner", "runner_report", "runner_metrics", "runner_shared"))
+
+
+def _imported_names(tree, module: str, is_package: bool) -> set[str]:
+    """Every module name an import statement may bind, relative imports resolved (review F8)."""
+
+    package = module if is_package else module.rpartition(".")[0]
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                parts = alias.name.split(".")
+                names.update(".".join(parts[: index + 1]) for index in range(len(parts)))
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                base = package.split(".")
+                base = base[: len(base) - (node.level - 1)]
+                source = ".".join([*base, node.module] if node.module else base)
+            else:
+                source = node.module or ""
+            names.add(source)
+            names.update(f"{source}.{alias.name}" for alias in node.names)
+    return names
+
+
+def _runner_importers(sources: dict[str, str] | None = None) -> list[str]:
+    """Modules outside the runner and the tests that import, or name, a runner module."""
+
+    package = REPO / "btc_predictor"
+    if sources is None:
+        sources = {str(path.relative_to(REPO)): path.read_text() for path in package.rglob("*.py")}
+    found = []
+    for relative, text in sorted(sources.items()):
+        parts = Path(relative).with_suffix("").parts
+        is_package = parts[-1] == "__init__"
+        module = ".".join(parts[:-1] if is_package else parts)
+        if module.startswith("btc_predictor.tests") or module in _RUNNER_MODULES:
+            continue
+        tree = ast.parse(text)
+        strings = [node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)]
+        if _imported_names(tree, module, is_package) & _RUNNER_MODULES or any(
+            "research_backtest.runner" in value or re.search(r"\brunner_(report|metrics|shared)\b", value) for value in strings
+        ):
+            found.append(relative)
+    return found
+
+
+def test_no_decision_module_can_reach_the_runner() -> None:
+    """The exclusion's other half: nothing outside the runner imports it, by any import form or name."""
+
+    real = REPO / "btc_predictor" / "signals" / "trim.py"
+    for injected in (
+        "from btc_predictor.research_backtest import runner as bridge\n",
+        "from btc_predictor.research_backtest import runner_report\n",
+        "import btc_predictor.research_backtest.runner_report as report\n",
+        "from btc_predictor.research_backtest.runner import hold_band\n",
+        "from ..research_backtest import runner\n",
+        "import importlib\nreport = importlib.import_module('btc_predictor.research_backtest.runner_report')\n",
+    ):
+        sources = {"btc_predictor/signals/trim.py": real.read_text() + injected}
+        assert _runner_importers(sources) == ["btc_predictor/signals/trim.py"], injected
+    assert _runner_importers({"btc_predictor/research_backtest/runner_report.py": "from btc_predictor.research_backtest import runner\n"}) == []
+    # at run time, importing the composers and every signal and feature owner loads no runner module
+    probe = (
+        "import importlib, pkgutil, sys\n"
+        "import btc_predictor.research_backtest.entry_composer, btc_predictor.research_backtest.management_composer\n"
+        "import btc_predictor.signals, btc_predictor.features\n"
+        "for package in (btc_predictor.signals, btc_predictor.features):\n"
+        "    for info in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):\n"
+        "        importlib.import_module(info.name)\n"
+        "print(sorted(name for name in sys.modules if name.startswith('btc_predictor.research_backtest.runner')))\n"
     )
-    assert importers == ["research_backtest/runner.py"]
+    import subprocess
+    import sys
+
+    completed = subprocess.run([sys.executable, "-c", probe], cwd=REPO, capture_output=True, text=True, check=True)
+    assert completed.stdout.strip() == "[]"
 
 
 def test_an_unread_path_is_never_swept(monkeypatch: pytest.MonkeyPatch) -> None:
