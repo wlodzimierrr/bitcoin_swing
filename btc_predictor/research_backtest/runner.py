@@ -1084,7 +1084,8 @@ def frozen_code_paths(repository: Path, modules: Iterable[tuple[str, Any]], *, p
             continue
         spec = getattr(module, "__spec__", None)
         origin = getattr(spec, "origin", None) or getattr(module, "__file__", None)
-        if not origin or not isinstance(getattr(spec, "loader", None), importlib.machinery.SourceFileLoader):
+        # review RR3: the source loader itself, not a subclass that may change the code it loads
+        if not origin or type(getattr(spec, "loader", None)) is not importlib.machinery.SourceFileLoader:
             raise RunnerRefused("FROZEN_CODE_REFUSED", f"{name} was not loaded from its source file")
         resolved = Path(origin).resolve()
         if root not in resolved.parents or resolved.suffix != ".py":
@@ -1128,43 +1129,136 @@ def frozen_code_mismatches(repository: Path, commit: str, paths: Sequence[str]) 
 
 
 FRESH_BYTECODE_ENV = "RBT007_FRESH_PYCACHE"
+# review RR3: the only variables the re-executed process inherits (git reads PATH and HOME)
+CHILD_ENVIRONMENT = ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR")
+_PATH_SETUP = "import json, sys\npaths = json.loads(sys.argv.pop(1))\nsys.path[:0] = paths[:1]\nsys.path.extend(paths[1:])\n"
+_ENTRY = "from btc_predictor.research_backtest import runner\nraise SystemExit(runner.main(sys.argv[1:]))\n"
 
 
 def fresh_bytecode_process() -> bool:
-    """True in the process the command re-executes: no bytecode written, an empty private cache read."""
+    """True in the process the command re-executes: isolated, without ``site``, no bytecode written, an empty private cache read."""
 
     import os
     import sys
 
     prefix = os.environ.get(FRESH_BYTECODE_ENV)
-    return bool(prefix) and bool(sys.flags.dont_write_bytecode) and sys.pycache_prefix == prefix
+    return (
+        bool(prefix)
+        and bool(sys.flags.dont_write_bytecode)
+        and sys.pycache_prefix == prefix
+        and bool(sys.flags.isolated)
+        and bool(sys.flags.no_site)
+    )
+
+
+def fresh_python_command(code: str, args: Sequence[str], prefix: str) -> list[str]:
+    """A fresh interpreter running ``code`` (review F5, RR3).
+
+    Isolated (``-I``: no ``PYTHON*`` variable, user site or current
+    directory) and without ``site`` (``-S``: no ``.pth`` file and no
+    ``sitecustomize``), so no code but the interpreter's own runs before
+    ``code``; it writes no bytecode and reads an empty private cache. Its
+    path is this repository, the interpreter's standard library and this
+    environment's site-packages, set by the command itself.
+    """
+
+    import site
+    import sys
+
+    paths = [str(Path(__file__).resolve().parents[2]), *site.getsitepackages()]
+    return [sys.executable, "-I", "-S", "-B", "-X", f"pycache_prefix={prefix}", "-c", _PATH_SETUP + code, json.dumps(paths), *args]
 
 
 def fresh_bytecode_command(argv: Sequence[str], prefix: str) -> list[str]:
-    import sys
+    return fresh_python_command(_ENTRY, argv, prefix)
 
-    return [sys.executable, "-B", "-X", f"pycache_prefix={prefix}", "-m", "btc_predictor.research_backtest.runner", *argv]
+
+def child_environment(prefix: str) -> dict[str, str]:
+    import os
+
+    environment = {name: os.environ[name] for name in CHILD_ENVIRONMENT if name in os.environ}
+    environment[FRESH_BYTECODE_ENV] = prefix
+    return environment
 
 
 def run_with_fresh_bytecode(argv: Sequence[str]) -> int:
-    """Run the command again in a process that compiles every module from its source (review F5).
+    """Run the command again in a process that compiles every module from its source (review F5, RR3).
 
     Its bytecode cache is a new empty directory and nothing is written to it,
-    so no cached bytecode anywhere can stand in for a source file.
+    so no cached bytecode anywhere can stand in for a source file; it starts
+    isolated, without ``site`` and with a minimal environment, so no startup
+    customization or import hook can run before the command's checks.
     """
 
-    import os
     import shutil
     import subprocess
     import tempfile
 
     prefix = tempfile.mkdtemp(prefix="rbt007-pycache-")
     try:
-        environment = {**os.environ, FRESH_BYTECODE_ENV: prefix}
         repository = Path(__file__).resolve().parents[2]
-        return subprocess.run(fresh_bytecode_command(argv, prefix), env=environment, cwd=repository, check=False).returncode
+        return subprocess.run(fresh_bytecode_command(argv, prefix), env=child_environment(prefix), cwd=repository, check=False).returncode
     finally:
         shutil.rmtree(prefix, ignore_errors=True)
+
+
+_FROZEN_BOOTSTRAP = ("<frozen importlib._bootstrap_external>", "<frozen importlib._bootstrap>")
+_SOURCE_LOADER_METHODS = ("create_module", "exec_module", "get_code", "get_data", "get_filename", "path_stats", "source_to_code")
+
+
+def startup_refusals(
+    *,
+    flags: Any = None,
+    modules: Mapping[str, Any] | None = None,
+    meta_path: Sequence[Any] | None = None,
+    path_hooks: Sequence[Any] | None = None,
+    loader: Any = None,
+    builtins_module: Any = None,
+) -> list[str]:
+    """What in this process could run code other than the source files' (review RR3); empty if nothing.
+
+    The process must be isolated and without ``site``, no startup
+    customization module loaded, and its import system the interpreter's own:
+    the three built-in meta-path finders, the two built-in path hooks, the
+    source loader's methods from the frozen bootstrap, and the built-in
+    ``compile`` and ``exec``. The arguments default to this process's.
+    """
+
+    import builtins
+    import importlib.machinery as machinery
+    import sys
+    import types
+    import zipimport
+
+    flags = sys.flags if flags is None else flags
+    modules = sys.modules if modules is None else modules
+    meta_path = sys.meta_path if meta_path is None else meta_path
+    path_hooks = sys.path_hooks if path_hooks is None else path_hooks
+    loader = machinery.SourceFileLoader if loader is None else loader
+    builtins_module = builtins if builtins_module is None else builtins_module
+    problems = []
+    if not (flags.isolated and flags.no_site and flags.ignore_environment and flags.safe_path):
+        problems.append("the process is not isolated and without site")
+    problems += [f"{name} was loaded" for name in ("sitecustomize", "usercustomize") if name in modules]
+    if list(meta_path) != [machinery.BuiltinImporter, machinery.FrozenImporter, machinery.PathFinder]:
+        problems.append("the meta path is not the interpreter's own")
+    hook = path_hooks[1] if len(path_hooks) == 2 else None
+    if (
+        len(path_hooks) != 2
+        or path_hooks[0] is not zipimport.zipimporter
+        or getattr(hook, "__qualname__", None) != "FileFinder.path_hook.<locals>.path_hook_for_FileFinder"
+        or getattr(getattr(hook, "__code__", None), "co_filename", None) not in _FROZEN_BOOTSTRAP
+    ):
+        problems.append("the path hooks are not the interpreter's own")
+    for name in _SOURCE_LOADER_METHODS:
+        code = getattr(getattr(loader, name, None), "__code__", None)
+        if getattr(code, "co_filename", None) not in _FROZEN_BOOTSTRAP:
+            problems.append(f"the source loader's {name} is not the interpreter's own")
+    for name in ("compile", "exec"):
+        function = getattr(builtins_module, name, None)
+        if not isinstance(function, types.BuiltinFunctionType) or function.__module__ != "builtins":
+            problems.append(f"{name} is not the built-in")
+    return problems
 
 
 def require_fresh_bytecode() -> str:
@@ -1175,6 +1269,9 @@ def require_fresh_bytecode() -> str:
     prefix = Path(sys.pycache_prefix)
     if not prefix.is_dir() or any(prefix.iterdir()):
         raise RunnerRefused("FROZEN_CODE_REFUSED", "the fresh bytecode cache is not an empty directory")
+    problems = startup_refusals()
+    if problems:
+        raise RunnerRefused("FROZEN_CODE_REFUSED", f"the import system is not the interpreter's own: {problems}")
     return str(sys.pycache_prefix)
 
 
@@ -1205,6 +1302,9 @@ def verify_loaded_code() -> None:
     if frozen is None:
         return
     repository, commit = frozen
+    problems = startup_refusals()
+    if problems:
+        raise RunnerRefused("FROZEN_CODE_REFUSED", f"the import system changed during the run: {problems}")
     checked: set[str] = _STATE["checked_modules"]
     new = [(name, module) for name, module in list(sys.modules.items()) if _repository_module(name) and name not in checked]
     if not new:

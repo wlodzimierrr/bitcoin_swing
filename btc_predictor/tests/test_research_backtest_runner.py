@@ -357,6 +357,8 @@ def test_a_repository_module_not_loaded_from_its_source_refuses(tmp_path):
         # another loader reporting the real .py file as its origin (an import hook that runs other code)
         _module("btc_predictor.features.positioning", owner, importlib.machinery.SourcelessFileLoader),
         _module("btc_predictor.features.positioning", owner, cached=str(tmp_path / "stale" / "positioning.cpython-312.pyc")),
+        # review RR3: a source loader subclass reporting the real origin may change the code it loads
+        _module("btc_predictor.features.positioning", owner, type("Transforming", (importlib.machinery.SourceFileLoader,), {})),
     ]
     for module in cases:
         with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
@@ -375,9 +377,10 @@ def test_the_command_runs_itself_again_with_a_fresh_bytecode_cache(tmp_path):
     assert not rn.fresh_bytecode_process()
     with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
         rn.require_fresh_bytecode()
-    assert rn.fresh_bytecode_command(["run", "--workers", "2"], "/p") == [
-        sys.executable, "-B", "-X", "pycache_prefix=/p", "-m", "btc_predictor.research_backtest.runner", "run", "--workers", "2"
-    ]
+    command = rn.fresh_bytecode_command(["run", "--workers", "2"], "/p")
+    assert command[:7] == [sys.executable, "-I", "-S", "-B", "-X", "pycache_prefix=/p", "-c"] and command[-2:] == ["--workers", "2"]
+    assert json.loads(command[8])[0] == str(REPOSITORY) and command[9] == "run"
+    assert set(rn.child_environment("/p")) <= {*rn.CHILD_ENVIRONMENT, rn.FRESH_BYTECODE_ENV}
     # the module's command line re-executes itself; the child parses the arguments
     shown = subprocess.run([sys.executable, "-m", "btc_predictor.research_backtest.runner", "--help"], cwd=REPOSITORY, capture_output=True, text=True, check=False)
     assert shown.returncode == 0 and shown.stdout.startswith("usage: runner")
@@ -386,14 +389,14 @@ def test_the_command_runs_itself_again_with_a_fresh_bytecode_cache(tmp_path):
     prefix.mkdir()
     probe = (
         "import sys; from pathlib import Path; from btc_predictor.research_backtest import runner as rn; "
-        "assert rn.fresh_bytecode_process() and rn.require_fresh_bytecode() == sys.pycache_prefix; "
+        "assert rn.fresh_bytecode_process() and rn.require_fresh_bytecode() == sys.pycache_prefix and rn.startup_refusals() == []; "
         "paths = rn.frozen_code_paths(Path('.').resolve(), list(sys.modules.items()), pycache_prefix=sys.pycache_prefix); "
         "print(len(paths))"
     )
     child = subprocess.run(
-        rn.fresh_bytecode_command([], str(prefix))[:4] + ["-c", probe],
+        rn.fresh_python_command(probe, [], str(prefix)),
         cwd=REPOSITORY,
-        env={**os.environ, rn.FRESH_BYTECODE_ENV: str(prefix)},
+        env=rn.child_environment(str(prefix)),
         capture_output=True,
         text=True,
         check=False,
@@ -407,14 +410,124 @@ def test_the_command_runs_itself_again_with_a_fresh_bytecode_cache(tmp_path):
         "try:\n    rn.require_fresh_bytecode()\nexcept rn.RunnerRefused as error:\n    print(error.code)\n"
     )
     planted = subprocess.run(
-        rn.fresh_bytecode_command([], str(prefix))[:4] + ["-c", refusal],
+        rn.fresh_python_command(refusal, [], str(prefix)),
         cwd=REPOSITORY,
-        env={**os.environ, rn.FRESH_BYTECODE_ENV: str(prefix)},
+        env=rn.child_environment(str(prefix)),
         capture_output=True,
         text=True,
         check=True,
     )
     assert planted.stdout.strip() == "FROZEN_CODE_REFUSED"
+    # review RR3: a process with the cache but not isolated, or with site, is not the command's process
+    (prefix / "planted.pyc").unlink()
+    for flag in ("-I", "-S"):
+        command = rn.fresh_python_command("from btc_predictor.research_backtest import runner as rn\nprint(rn.fresh_bytecode_process())\n", [], str(prefix))
+        command.remove(flag)
+        other = subprocess.run(command, cwd=REPOSITORY, env=rn.child_environment(str(prefix)), capture_output=True, text=True, check=True)
+        assert other.stdout.strip() == "False", flag
+
+
+_HOOK = """
+import importlib.machinery, sys
+from pathlib import Path
+Path({marker!r}).write_text("ran")
+
+
+class Transforming(importlib.machinery.SourceFileLoader):
+    def source_to_code(self, data, path, *, _optimize=-1):
+        data = data + b"\\ndef open_interest_intensity(*args, **kwargs):\\n    return 136\\n"
+        return super().source_to_code(data, path)
+
+
+class Finder:
+    @classmethod
+    def find_spec(cls, name, path=None, target=None):
+        if name != "btc_predictor.features.positioning":
+            return None
+        spec = importlib.machinery.PathFinder.find_spec(name, path, target)
+        spec.loader = Transforming(name, spec.origin)
+        return spec
+
+
+sys.meta_path.insert(0, Finder)
+"""
+
+
+def test_an_inherited_startup_hook_never_runs_in_the_command(monkeypatch, tmp_path):
+    # review RR3: a sitecustomize on PYTHONPATH installed a transforming source loader and the check passed
+    import os
+    import sys
+
+    hooks = tmp_path / "hooks"
+    hooks.mkdir()
+    marker = tmp_path / "hook-ran"
+    (hooks / "sitecustomize.py").write_text(_HOOK.format(marker=str(marker)))
+    probe = (
+        "import sys; from pathlib import Path; from btc_predictor.research_backtest import runner as rn; "
+        "from btc_predictor.features import positioning; "
+        "rn.frozen_code_paths(Path('.').resolve(), list(sys.modules.items()))"
+    )
+    # in an ordinary process the hook runs, and the loader check refuses its subclass
+    hooked = subprocess.run(
+        [sys.executable, "-B", "-c", probe], cwd=REPOSITORY, env={**os.environ, "PYTHONPATH": str(hooks)}, capture_output=True, text=True, check=False
+    )
+    assert marker.exists() and hooked.returncode != 0 and "FROZEN_CODE_REFUSED" in hooked.stderr
+    marker.unlink()
+    # the command's own process never runs it: not inherited, and ignored even when given
+    monkeypatch.setenv("PYTHONPATH", str(hooks))
+    assert rn.run_with_fresh_bytecode(["--help"]) == 0 and not marker.exists()
+    prefix = tmp_path / "fresh"
+    prefix.mkdir()
+    check = "from btc_predictor.research_backtest import runner as rn\nfrom btc_predictor.features import positioning\nprint(rn.require_fresh_bytecode() and rn.startup_refusals())\n"
+    given = subprocess.run(
+        rn.fresh_python_command(check, [], str(prefix)),
+        cwd=REPOSITORY,
+        env={**rn.child_environment(str(prefix)), "PYTHONPATH": str(hooks), "PYTHONSTARTUP": str(hooks / "sitecustomize.py")},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert given.returncode == 0 and given.stdout.strip() == "[]" and not marker.exists(), given.stderr
+
+
+def test_the_startup_check_needs_the_interpreters_own_import_system(monkeypatch, tmp_path):
+    import builtins
+    import importlib.machinery as machinery
+    import sys
+    import zipimport
+
+    file_finder = next(hook for hook in sys.path_hooks if getattr(hook, "__qualname__", "").startswith("FileFinder.path_hook"))
+    clean = {
+        "flags": SimpleNamespace(isolated=1, no_site=1, ignore_environment=1, safe_path=True),
+        "modules": {},
+        "meta_path": [machinery.BuiltinImporter, machinery.FrozenImporter, machinery.PathFinder],
+        "path_hooks": [zipimport.zipimporter, file_finder],
+        "loader": machinery.SourceFileLoader,
+        "builtins_module": builtins,
+    }
+    assert rn.startup_refusals(**clean) == []
+
+    class Patched(machinery.SourceFileLoader):
+        def get_code(self, fullname):
+            return super().get_code(fullname)
+
+    changes = [
+        ("flags", SimpleNamespace(isolated=1, no_site=0, ignore_environment=1, safe_path=True)),
+        ("modules", {"sitecustomize": object()}),
+        ("meta_path", [object, *clean["meta_path"]]),
+        ("path_hooks", [zipimport.zipimporter, file_finder, lambda path: None]),
+        ("path_hooks", [lambda path: None, file_finder]),
+        ("loader", Patched),
+        ("builtins_module", SimpleNamespace(compile=lambda *args: None, exec=builtins.exec)),
+    ]
+    for name, value in changes:
+        assert rn.startup_refusals(**{**clean, name: value}), name
+    # this test process (pytest's own import hook, no isolation) is not such a process, even with a fresh cache
+    assert rn.startup_refusals()
+    monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
+    monkeypatch.setattr(sys, "pycache_prefix", str(tmp_path))
+    with pytest.raises(rn.RunnerRefused, match="import system"):
+        rn.require_fresh_bytecode()
 
 
 def test_main_runs_itself_again_outside_the_fresh_process(monkeypatch):
@@ -450,6 +563,10 @@ def test_a_module_loaded_during_the_run_is_checked_where_it_loads(monkeypatch, p
 
     loaded = {name for name in sys.modules if rn._repository_module(name)}
     monkeypatch.setattr(rn, "_STATE", {"frozen": (REPOSITORY, preregistration["code_commit"]), "checked_modules": set(loaded)})
+    # review RR3: an import system changed during the run refuses (pytest's own hook is one)
+    with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
+        rn.verify_loaded_code()
+    monkeypatch.setattr(rn, "startup_refusals", lambda: [])
     rn.verify_loaded_code()
     # a real owner seen for the first time is compared with the frozen commit and then remembered
     rn._STATE["checked_modules"].discard("btc_predictor.features.positioning")
