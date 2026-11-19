@@ -1050,6 +1050,8 @@ def test_the_report_states_the_evidence_class_first(end_to_end):
     assert evidence["evidence_class"] == "RESEARCH_BACKTEST_NON_CERTIFYING" and evidence["canonical_reference"] == "UNRESOLVED"
     assert len(evidence["prohibited_uses"]) == 5 and evidence["holdout"] == "NOT COLLECTED"
     assert set(evidence["named_limitations"]) == {"BITSTAMP", "COINBASE"}
+    assert report["identity"]["report_version"] == "RESEARCH_BACKTEST_REPORT_V1" == rn.prereg.REPORT_VERSION
+    assert report["identity"]["report_artifact_version"] == rr.REPORT_ARTIFACT_VERSION
     # review F10: in the files as written, not only in the dictionary
     written = end_to_end.files[rr.REPORT_FILE]
     assert written.startswith(b'[["evidence",{') and json.loads(written)[0] == ["evidence", json.loads(canonical_json_bytes(evidence))]

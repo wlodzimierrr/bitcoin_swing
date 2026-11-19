@@ -417,6 +417,8 @@ def build_report(
 ) -> tuple[dict[str, Any], dict[str, bytes]]:
     """The report and every private file: the decision ledgers and the report itself."""
 
+    if preregistration["report"]["report_version"] != prereg.REPORT_VERSION:
+        raise rn.RunnerRefused("REPORT_REFUSED", "the preregistration freezes another report version")
     venues = [venue for venue in rm.VENUE_ORDER if venue in context.inputs]
     by_id = {spec.run_id: spec for spec in specs}
 
@@ -529,7 +531,13 @@ def build_report(
             "sensitivity_label": prereg.SENSITIVITY_ONLY,
             "holdout": "NOT COLLECTED",
         },
-        "identity": {**dict(identity), "report_version": REPORT_ARTIFACT_VERSION, "preregistration_sha256": preregistration_sha256},
+        # review F11: the frozen report version, with this artifact's schema beside it
+        "identity": {
+            **dict(identity),
+            "report_version": preregistration["report"]["report_version"],
+            "report_artifact_version": REPORT_ARTIFACT_VERSION,
+            "preregistration_sha256": preregistration_sha256,
+        },
         "headline": headline,
         "walk_forward": walk_forward,
         "breakdowns": breakdowns,
