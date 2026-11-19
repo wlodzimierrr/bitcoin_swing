@@ -680,6 +680,8 @@ def _golden_run(spec: RunSpec, context: RunContext, variant: Variant, inputs: En
         "engine_reason_codes": list(result.reason_codes),
         "engine_refused": "BACKTEST_INTENT_REFUSED" in result.reason_codes,
         "engine_events": event_counts([result]),
+        # review RR4: a golden run's unaccounted causes are gated like every other run's
+        "unaccounted": _unaccounted([strategy]),
         "decisions_beside_scripted": beside,
         "result": result.as_record(),
         "entry_ledger": entry.run_records(),
@@ -740,7 +742,7 @@ RECORD_KEYS = {
     ABLATION: _SINGLE_KEYS,
     WALK_FORWARD: (*_FOLDED_KEYS, "regime_breakdown", "setup_report"),
     SWEEP: _FOLDED_KEYS,
-    GOLDEN: ("run", "run_id", "window", "engine_reason_codes", "engine_refused", "engine_events", "decisions_beside_scripted", "result", "entry_ledger", "management_ledger", "memory", "binding"),
+    GOLDEN: ("run", "run_id", "window", "engine_reason_codes", "engine_refused", "engine_events", "unaccounted", "decisions_beside_scripted", "result", "entry_ledger", "management_ledger", "memory", "binding"),
 }
 
 

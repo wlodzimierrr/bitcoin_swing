@@ -518,7 +518,8 @@ def build_report(
 
     integrity = {
         "memory_matches_history": {run_id: records[run_id]["memory"]["matches_history"] for run_id in sorted(records)},
-        "unaccounted": {run_id: records[run_id].get("unaccounted", []) for run_id in sorted(records) if records[run_id].get("unaccounted")},
+        # review RR4: every record carries its causes, the golden runs' too; none is read as empty
+        "unaccounted": {run_id: records[run_id]["unaccounted"] for run_id in sorted(records) if records[run_id]["unaccounted"]},
         "runs": len(records),
         "planned_runs": len(by_id),
     }

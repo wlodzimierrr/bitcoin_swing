@@ -1067,8 +1067,9 @@ def end_to_end(markets, preregistration, tmp_path_factory):
             for number in range(3)
         ]
 
-    def build():
+    def build(substituted=None):
         records = {spec.run_id: rn.read_run(workspace.directory, spec, rn.run_binding(spec, context)) for spec in specs}
+        records.update(substituted or {})
         audits = {
             venue: rn.read_audit(workspace, venue, context, rn.audit_binding(context, venue, records[f"HEADLINE:{venue}:champion:base"]))
             for venue in markets
@@ -1230,6 +1231,60 @@ def test_a_failed_required_check_publishes_nothing(end_to_end, tmp_path):
             rn.publish(failing, files, private=tmp_path / f"private{number}", public=tmp_path / f"public{number}", workspace=work)
         assert not (tmp_path / f"private{number}").exists() and not (tmp_path / f"public{number}").exists()
         assert json.loads((work.directory / rn.REFUSED_REPORT_FILE).read_bytes())["refusals"] == [refusal]
+
+
+def _injected_golden(monkeypatch, context, where):
+    """A synthetic golden run whose composers record one unaccounted cause, as a real row or follow-up holds it."""
+
+    from btc_predictor.research_backtest import management_composer as mc
+
+    class Entry(rn.RegisteredEntryComposer):
+        def decide(self, as_of, *, position_open=False):
+            decision = super().decide(as_of, position_open=position_open)
+            if where == "entry" and as_of == utc(2024, 3, 31):
+                self._ledger[-1] = replace(self._ledger[-1], unaccounted=("INJECTED_ENTRY",))
+            return decision
+
+    class Management(mc.ManagementComposer):
+        def record(self, decision):
+            super().record(decision)
+            if where == "management" and not any(row.unaccounted for row in self._ledger):
+                self._ledger[-1] = replace(self._ledger[-1], unaccounted=("INJECTED_MANAGEMENT",))
+            if where == "followup" and not self._followups:
+                self._followups.append(mc.AddFollowUp(decision.row.decision_at, decision.row.decision_at, "INJECTED", (), None, None, ("INJECTED_FOLLOWUP",)))
+
+    monkeypatch.setattr(rn, "RegisteredEntryComposer", Entry)
+    monkeypatch.setattr(rn, "ManagementComposer", Management)
+    spec = rn.RunSpec(rn.GOLDEN, "BITSTAMP", rn.CHAMPION, "base", "synthetic_golden")
+    outcome = rn.execute_run(spec, context)
+    monkeypatch.undo()
+    return spec, outcome
+
+
+def test_a_golden_runs_unaccounted_cause_refuses_publication(end_to_end, monkeypatch, tmp_path):
+    # review RR4: golden records carried no causes, and the report read their absence as none
+    context = end_to_end.context
+    spec = rn.RunSpec(rn.GOLDEN, "BITSTAMP", rn.CHAMPION, "base", "synthetic_golden")
+    assert rn.read_run(end_to_end.workspace.directory, spec, rn.run_binding(spec, context))["unaccounted"] == []
+    for where, label in (("entry", "entry:"), ("management", "management:"), ("followup", "management:")):
+        spec, outcome = _injected_golden(monkeypatch, context, where)
+        causes = outcome.record["unaccounted"]
+        assert len(causes) == 1 and causes[0].startswith(label) and causes[0].endswith(f"INJECTED_{where.upper()}"), causes
+        report, files = end_to_end.build({spec.run_id: outcome.record})
+        assert report["integrity"]["unaccounted"] == {spec.run_id: causes}
+        assert rr.publication_refusals(report) == [f"UNACCOUNTED_CAUSES:{spec.run_id}"]
+        with pytest.raises(rn.RunnerRefused, match="PUBLICATION_REFUSED"):
+            rn.publish(report, files, private=tmp_path / f"private-{where}", public=tmp_path / f"public-{where}", workspace=rn.Workspace(tmp_path / f"work-{where}"))
+        assert not (tmp_path / f"private-{where}").exists() and not (tmp_path / f"public-{where}").exists()
+    # a golden record without the field is not read as one without causes
+    stored = rn.read_run(end_to_end.workspace.directory, spec, rn.run_binding(spec, context))
+    path = rn.run_file(tmp_path / "work", spec)
+    path.parent.mkdir(parents=True)
+    path.write_bytes(gzip.compress(canonical_json_bytes({key: value for key, value in stored.items() if key != "unaccounted"})))
+    with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+        rn.read_run(tmp_path / "work", spec, rn.run_binding(spec, context))
+    with pytest.raises(KeyError):
+        end_to_end.build({spec.run_id: {key: value for key, value in stored.items() if key != "unaccounted"}})
 
 
 def test_the_public_index_is_value_free(end_to_end):
