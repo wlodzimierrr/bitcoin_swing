@@ -397,12 +397,26 @@ class RunContext:
     history: Mapping[str, Sequence[Any]] = field(default_factory=dict)
     # the decision schedule the history composes; only synthetic tests shorten it
     schedule: Sequence[datetime] = field(default_factory=prereg.decision_schedule)
+    # review F3: what every checkpoint binds (the code, the preregistration, the dataset, the windows)
+    binding: Mapping[str, Any] = field(default_factory=dict)
+    _history_digests: dict[str, tuple[Any, str]] = field(default_factory=dict, repr=False, compare=False)
 
     def seed(self, venue: str, first: datetime) -> tuple[Any, ...]:
-        rows = tuple(row for row in self.history.get(venue, ()) if row.decision_at < first)
-        if rows and rows[-1].decision_at != first - _DAY:
+        history = self.history.get(venue)
+        if not history:
+            raise RunnerRefused("HISTORY_REFUSED", f"{venue} has no continuous history")
+        rows = tuple(row for row in history if row.decision_at < first)
+        if (rows and rows[-1].decision_at != first - _DAY) or (not rows and history[0].decision_at != first):
             raise RunnerRefused("HISTORY_REFUSED", f"{venue}'s history does not reach {first.isoformat()}")
         return rows
+
+    def history_sha256(self, venue: str) -> str:
+        rows = self.history.get(venue, ())
+        known = self._history_digests.get(venue)
+        if known is None or known[0] is not rows:
+            known = (rows, hashlib.sha256(canonical_json_bytes([row.as_record() for row in rows])).hexdigest())
+            self._history_digests[venue] = known
+        return known[1]
 
 
 @dataclass
@@ -438,7 +452,9 @@ def memory_check(context: RunContext, venue: str, composers: Sequence[Management
             ours, theirs = row.as_record(), reference.as_record()
             if any(ours[name] != theirs[name] for name in MEMORY_FIELDS):
                 mismatches.append(row.decision_at.isoformat())
-    return {"compared_rows": compared, "mismatches": mismatches, "matches_history": not mismatches and compared > 0 or not history}
+    composed = sum(len(strategy.entry.run_rows()) for strategy in composers)
+    # review F3: every composed row must have its history row; an empty history never matches
+    return {"compared_rows": compared, "mismatches": mismatches, "matches_history": not mismatches and compared > 0 and compared == composed}
 
 
 def _contexts(validation: WalkForwardValidation, composers: Sequence[ManagementComposer]) -> list[Any]:
@@ -559,6 +575,7 @@ def execute_run(spec: RunSpec, context: RunContext, *, record_management: bool =
             "unaccounted": _unaccounted([strategy]),
             "memory": memory_check(context, spec.venue, [strategy]),
             "engine_events": event_counts([result]),
+            "binding": run_binding(spec, context),
         }
         return RunOutcome(spec, record, result=result, composers=[strategy])
 
@@ -600,6 +617,7 @@ def execute_run(spec: RunSpec, context: RunContext, *, record_management: bool =
         "unaccounted": _unaccounted(composers),
         "memory": memory_check(context, spec.venue, composers),
         "engine_events": event_counts(fold.result for fold in validation.folds),
+        "binding": run_binding(spec, context),
     }
     if spec.kind == WALK_FORWARD:
         # BTC-183 and BTC-184 attribute each filled out-of-sample trade (a BTC-182 validation)
@@ -655,6 +673,7 @@ def _golden_run(spec: RunSpec, context: RunContext, variant: Variant, inputs: En
         "entry_ledger": entry.run_records(),
         "management_ledger": strategy.ledger_records(),
         "memory": memory_check(context, spec.venue, [strategy]),
+        "binding": run_binding(spec, context),
     }
     return RunOutcome(spec, record, result=result, composers=[strategy])
 
@@ -679,13 +698,57 @@ def write_run(directory: Path, outcome: RunOutcome) -> Path:
     return path
 
 
-def read_run(directory: Path, spec: RunSpec) -> dict[str, Any] | None:
+def configuration_sha256(config: StrategyConfig) -> str:
+    """The whole configuration's digest: its frozen dataclass representation."""
+
+    return hashlib.sha256(repr(config).encode()).hexdigest()
+
+
+def run_binding(spec: RunSpec, context: RunContext) -> dict[str, Any]:
+    """What a run record holds, so a resumed run never reads another one's (review F3)."""
+
+    variant = context.registry.variants[spec.variant]
+    first, last = spec_window(spec, context)
+    return {
+        "context": dict(context.binding),
+        "run": spec.as_record(),
+        "variant": variant.as_record(),
+        "configuration_sha256": configuration_sha256(variant.config),
+        "window": [first.isoformat(), last.isoformat()],
+        "fold_bars": context.fold_bars,
+        "starting_nav": context.golden[spec.scenario]["starting_nav"] if spec.kind == GOLDEN else None,
+        "history_sha256": context.history_sha256(spec.venue),
+    }
+
+
+_SINGLE_KEYS = ("run", "run_id", "variant", "window", "metrics", "result", "entry_ledger", "management_ledger", "trade_entries", "unaccounted", "memory", "engine_events", "binding")
+_FOLDED_KEYS = ("run", "run_id", "variant", "plan", "folds", "metrics", "fold_metrics", "validation", "entry_ledgers", "management_ledgers", "trade_entries", "unaccounted", "memory", "engine_events", "binding")
+RECORD_KEYS = {
+    HEADLINE: _SINGLE_KEYS,
+    ABLATION: _SINGLE_KEYS,
+    WALK_FORWARD: (*_FOLDED_KEYS, "regime_breakdown", "setup_report"),
+    SWEEP: _FOLDED_KEYS,
+    GOLDEN: ("run", "run_id", "window", "engine_reason_codes", "engine_refused", "decisions_beside_scripted", "result", "entry_ledger", "management_ledger", "memory", "binding"),
+}
+
+
+def read_run(directory: Path, spec: RunSpec, binding: Mapping[str, Any]) -> dict[str, Any] | None:
+    """A run's complete record, only if it is this run's under this binding; None if not written."""
+
     path = run_file(directory, spec)
     if not path.exists():
         return None
-    record = json.loads(gzip.decompress(path.read_bytes()))
-    if record.get("run_id") != spec.run_id:
+    try:
+        record = json.loads(gzip.decompress(path.read_bytes()))
+    except (OSError, EOFError, ValueError) as error:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} is not a readable record: {error}") from error
+    if not isinstance(record, dict) or record.get("run_id") != spec.run_id:
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} does not hold {spec.run_id}")
+    if record.get("binding") != json.loads(canonical_json_bytes(binding)):
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} was written under another binding")
+    missing = [key for key in RECORD_KEYS[spec.kind] if key not in record]
+    if missing:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} lacks {missing}")
     return record
 
 
@@ -1348,39 +1411,66 @@ def history_file(workspace: Workspace, venue: str) -> Path:
     return workspace.directory / "history" / f"{venue.lower()}.pickle"
 
 
+def history_binding(context: RunContext, venue: str, last: datetime) -> dict[str, Any]:
+    instants = [instant for instant in context.schedule if instant <= last]
+    champion = context.registry.champion
+    return {
+        "context": dict(context.binding),
+        "venue": venue,
+        "champion": champion.run_metadata(),
+        "configuration_sha256": configuration_sha256(champion),
+        "schedule": [instants[0].isoformat(), instants[-1].isoformat(), len(instants)],
+    }
+
+
+def read_history(workspace: Workspace, venue: str, context: RunContext, last: datetime) -> tuple[Any, ...]:
+    """A venue's continuous history, only if it is this binding's and holds every scheduled instant (review F3)."""
+
+    import pickle
+
+    path = history_file(workspace, venue)
+    try:
+        data = pickle.loads(path.read_bytes())
+    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError) as error:
+        raise RunnerRefused("HISTORY_REFUSED", f"{venue}'s history file is not readable: {error}") from error
+    if not isinstance(data, dict) or data.get("binding") != history_binding(context, venue, last):
+        raise RunnerRefused("HISTORY_REFUSED", f"{venue}'s history file was written under another binding")
+    rows = tuple(data.get("rows") or ())
+    expected = [instant for instant in context.schedule if instant <= last]
+    if not rows or [row.decision_at for row in rows] != expected or any(row.venue != venue for row in rows):
+        raise RunnerRefused("HISTORY_REFUSED", f"{venue}'s history does not hold every scheduled instant")
+    return rows
+
+
 def _history_task(venue: str) -> str:
     import pickle
     import time
 
     workspace: Workspace = _STATE["workspace"]
-    path = history_file(workspace, venue)
-    if path.exists():
+    context: RunContext = _STATE["context"]
+    last = _STATE["history_last"]
+    if history_file(workspace, venue).exists():
+        read_history(workspace, venue, context, last)
         return venue
     _STATE["statistics"] = ShareStatistics()
     share = _share_factory()
     started = time.monotonic()
     with share():
-        context = _STATE["context"]
-        rows = continuous_history(context.inputs[venue], context.registry.champion, _STATE["history_last"], context.schedule)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    partial = path.with_name(path.name + ".partial")
-    partial.write_bytes(pickle.dumps(rows, protocol=5))
-    partial.replace(path)
+        rows = continuous_history(context.inputs[venue], context.registry.champion, last, context.schedule)
+    _write_whole(history_file(workspace, venue), pickle.dumps({"binding": history_binding(context, venue, last), "rows": rows}, protocol=5))
     _log({"event": "history", "venue": venue, "rows": len(rows), "seconds": round(time.monotonic() - started, 1), "share": _STATE["statistics"].as_record()})
     return venue
 
 
-def load_history(workspace: Workspace, venues: Iterable[str]) -> dict[str, tuple[Any, ...]]:
-    import pickle
-
-    return {venue: pickle.loads(history_file(workspace, venue).read_bytes()) for venue in venues}
+def load_history(workspace: Workspace, venues: Iterable[str], context: RunContext, last: datetime) -> dict[str, tuple[Any, ...]]:
+    return {venue: read_history(workspace, venue, context, last) for venue in venues}
 
 
 def _run_spec(spec: RunSpec) -> str:
     import time
 
     workspace: Workspace = _STATE["workspace"]
-    if run_file(workspace.directory, spec).exists():
+    if read_run(workspace.directory, spec, run_binding(spec, _STATE["context"])) is not None:
         return spec.run_id
     _STATE["statistics"] = ShareStatistics()
     share = _share_factory()
@@ -1411,6 +1501,32 @@ def _write_whole(path: Path, data: bytes) -> None:
     partial.replace(path)
 
 
+def audit_binding(context: RunContext, venue: str, checkpoint: Mapping[str, Any]) -> dict[str, Any]:
+    """What a venue's audit files hold: the history and the base run they audit (review F3)."""
+
+    return {
+        "context": dict(context.binding),
+        "audit_version": AUDIT_VERSION,
+        "venue": venue,
+        "history_sha256": context.history_sha256(venue),
+        "base_run_record_sha256": hashlib.sha256(canonical_json_bytes(checkpoint)).hexdigest(),
+    }
+
+
+def link_binding(context: RunContext, kind: str, instant: datetime, venues: Mapping[str, Any]) -> dict[str, Any]:
+    return {"context": dict(context.binding), "audit_version": AUDIT_VERSION, "kind": kind, "instant": instant.isoformat(), "venues": dict(venues)}
+
+
+def _read_links(path: Path, expected: Mapping[str, Any]) -> list[dict[str, Any]]:
+    try:
+        data = json.loads(path.read_bytes())
+    except (OSError, ValueError) as error:
+        raise RunnerRefused("AUDIT_REFUSED", f"{path.name} is not readable: {error}") from error
+    if not isinstance(data, dict) or data.get("binding") != json.loads(canonical_json_bytes(expected)):
+        raise RunnerRefused("AUDIT_REFUSED", f"{path.name} was written under another binding")
+    return list(data["links"])
+
+
 def _audit_share(truncated: Iterable[EntryComposerInputs]) -> Callable[[], Any]:
     """Ruling 3a: positioning results shared among the audit's own truncated recomputations only."""
 
@@ -1428,42 +1544,49 @@ def _audit_state_task(venue: str) -> None:
     import pickle
 
     workspace: Workspace = _STATE["workspace"]
-    path = audit_state_file(workspace, venue)
-    if path.exists():
+    binding = _STATE["audit_bindings"][venue]
+    if audit_state_file(workspace, venue).exists():
+        load_audit_state(workspace, venue, binding)
         return
-    checkpoint = read_run(workspace.directory, RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG))
+    context: RunContext = _STATE["context"]
+    spec = RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG)
+    checkpoint = read_run(workspace.directory, spec, run_binding(spec, context))
     if checkpoint is None:
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s base headline run has no record yet")
-    state = audit_state(venue, _STATE["context"], checkpoint, share=_share_factory())
-    _write_whole(audit_meta_file(workspace, venue), canonical_json_bytes(state.meta()))
-    _write_whole(path, pickle.dumps(state, protocol=5))
+    state = audit_state(venue, context, checkpoint, share=_share_factory())
+    _write_whole(audit_meta_file(workspace, venue), canonical_json_bytes({**state.meta(), "binding": binding}))
+    _write_whole(audit_state_file(workspace, venue), pickle.dumps({"binding": binding, "state": state}, protocol=5))
 
 
 def _history_links_task(instant: datetime) -> None:
     workspace: Workspace = _STATE["workspace"]
-    path = audit_links_file(workspace, HISTORY_LINK, instant)
-    if path.exists():
-        return
     context: RunContext = _STATE["context"]
     venues = [venue for venue in context.inputs if any(row.decision_at == instant for row in context.history[venue])]
+    binding = link_binding(context, HISTORY_LINK, instant, {venue: context.history_sha256(venue) for venue in venues})
+    path = audit_links_file(workspace, HISTORY_LINK, instant)
+    if path.exists():
+        _read_links(path, binding)
+        return
     truncated = {venue: truncated_inputs(context.inputs[venue], instant) for venue in venues}
     _STATE["statistics"] = ShareStatistics()
     share = _audit_share(truncated.values())
     with share():
         links = [{**history_link(venue, context, instant, truncated=truncated[venue]), "shared": True} for venue in venues]
-    _write_whole(path, canonical_json_bytes(links))
+    _write_whole(path, canonical_json_bytes({"binding": binding, "links": links}))
 
 
 def _run_links_task(instant: datetime) -> None:
     from contextlib import nullcontext
 
     workspace: Workspace = _STATE["workspace"]
-    path = audit_links_file(workspace, RUN_LINK, instant)
-    if path.exists():
-        return
     context: RunContext = _STATE["context"]
     states: Mapping[str, AuditState] = _STATE["audit_states"]
     venues = [venue for venue, state in states.items() if instant in state.run_instants]
+    binding = link_binding(context, RUN_LINK, instant, {venue: _STATE["audit_bindings"][venue] for venue in venues})
+    path = audit_links_file(workspace, RUN_LINK, instant)
+    if path.exists():
+        _read_links(path, binding)
+        return
     truncated = {venue: truncated_inputs(context.inputs[venue], instant) for venue in venues}
     _STATE["statistics"] = ShareStatistics()
     share = _audit_share(truncated.values())
@@ -1473,7 +1596,7 @@ def _run_links_task(instant: datetime) -> None:
         shared = instant not in dict(states[venue].sample)
         with (share() if shared else nullcontext()):
             links.append({**run_link(states[venue], context, instant, truncated=truncated[venue]), "shared": shared})
-    _write_whole(path, canonical_json_bytes(links))
+    _write_whole(path, canonical_json_bytes({"binding": binding, "links": links}))
 
 
 def _audit_phase_one(task: tuple[str, Any]) -> str:
@@ -1498,31 +1621,53 @@ def _audit_phase_two(instant: datetime) -> str:
     return instant.isoformat()
 
 
-def load_audit_state(workspace: Workspace, venue: str) -> AuditState:
+def load_audit_state(workspace: Workspace, venue: str, binding: Mapping[str, Any]) -> AuditState:
     import pickle
 
     path = audit_state_file(workspace, venue)
     if not path.exists():
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state has not been written")
-    return pickle.loads(path.read_bytes())
+    try:
+        data = pickle.loads(path.read_bytes())
+    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError) as error:
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state is not readable: {error}") from error
+    if not isinstance(data, dict) or data.get("binding") != binding or not isinstance(data.get("state"), AuditState):
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state was written under another binding")
+    return data["state"]
 
 
-def read_audit(workspace: Workspace, venue: str, context: RunContext) -> dict[str, Any]:
-    """Ruling 3a's summary for one venue, from its state and every link file."""
+def read_audit(workspace: Workspace, venue: str, context: RunContext, binding: Mapping[str, Any]) -> dict[str, Any]:
+    """Ruling 3a's summary for one venue, from its state and every link file, each under its binding."""
 
     meta_path = audit_meta_file(workspace, venue)
     if not meta_path.exists():
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state has not been written")
     meta = json.loads(meta_path.read_bytes())
+    if meta.get("binding") != json.loads(canonical_json_bytes(binding)):
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state was written under another binding")
     history_instants = [row.decision_at for row in context.history[venue]]
     links: list[dict[str, Any]] = []
-    for kind, instants in ((HISTORY_LINK, history_instants), (RUN_LINK, [datetime.fromisoformat(item) for item in meta["run_instants"]])):
+    for kind, instants, own in (
+        (HISTORY_LINK, history_instants, context.history_sha256(venue)),
+        (RUN_LINK, [datetime.fromisoformat(item) for item in meta["run_instants"]], binding),
+    ):
         for instant in instants:
             path = audit_links_file(workspace, kind, instant)
             if not path.exists():
                 raise RunnerRefused("AUDIT_REFUSED", f"the {kind.lower()} link at {instant.isoformat()} has not been written")
-            links.extend(item for item in json.loads(path.read_bytes()) if item["venue"] == venue)
+            data = json.loads(path.read_bytes())
+            stored = data.get("binding") if isinstance(data, dict) else None
+            expected = link_binding(context, kind, instant, {**(stored or {}).get("venues", {}), venue: own})
+            links.extend(item for item in _read_links(path, expected) if item["venue"] == venue)
     return audit_summary(venue, meta, history_instants, links)
+
+
+def _base_record(workspace: Workspace, context: RunContext, venue: str) -> dict[str, Any]:
+    spec = RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG)
+    record = read_run(workspace.directory, spec, run_binding(spec, context))
+    if record is None:
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s base headline run has no record yet")
+    return record
 
 
 def _expected_cost(spec: RunSpec) -> int:
@@ -1558,20 +1703,21 @@ def execute_all(
     with pool_context.Pool(min(workers, len(venues))) as pool:
         for venue in pool.imap_unordered(_history_task, venues):
             progress(f"history: {venue} done")
-    context.history = load_history(workspace, venues)
+    context.history = load_history(workspace, venues, context, _STATE["history_last"])
     ordered = sorted(specs, key=lambda spec: -_expected_cost(spec))
     progress(f"runs: {len(ordered)}")
     with pool_context.Pool(workers) as pool:
         for done, run_id in enumerate(pool.imap_unordered(_run_spec, ordered), 1):
             progress(f"runs: {done}/{len(ordered)} ({run_id})")
     # ruling 3a: the run states and every history link, then every run link
+    _STATE["audit_bindings"] = {venue: audit_binding(context, venue, _base_record(workspace, context, venue)) for venue in venues}
     history_instants = sorted({row.decision_at for venue in venues for row in context.history[venue]}, reverse=True)
     tasks: list[tuple[str, Any]] = [("state", venue) for venue in venues] + [("history", instant) for instant in history_instants]
     progress(f"audit: {len(venues)} run states and {len(history_instants)} history instants")
     with pool_context.Pool(workers) as pool:
         for done, name in enumerate(pool.imap_unordered(_audit_phase_one, tasks), 1):
             progress(f"audit: {done}/{len(tasks)} ({name})")
-    _STATE["audit_states"] = {venue: load_audit_state(workspace, venue) for venue in venues}
+    _STATE["audit_states"] = {venue: load_audit_state(workspace, venue, _STATE["audit_bindings"][venue]) for venue in venues}
     run_instants = sorted({instant for state in _STATE["audit_states"].values() for instant in state.run_instants}, reverse=True)
     progress(f"audit: {len(run_instants)} run instants")
     with pool_context.Pool(workers) as pool:
@@ -1629,8 +1775,22 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         verify_preregistration(preregistration, champion, frozen)
         registry = build_registry(preregistration, champion)
         venues = [venue for venue in rm.VENUE_ORDER if venue in frozen.inputs]
+        digest = (repository / PREREGISTRATION_DIGEST_PATH).read_text().split()[0]
+        binding = {
+            "runner_version": RUNNER_VERSION,
+            "run_code_commit": code,
+            "frozen_code_commit": preregistration["code_commit"],
+            "preregistration_sha256": digest,
+            "private_dataset_commit": frozen.private_commit,
+            "dataset_index_sha256": frozen.index_sha256,
+            "venues": venues,
+        }
         context = RunContext(
-            inputs=frozen.inputs, registry=registry, evaluation=evaluation_windows(preregistration), golden=golden_scenarios(repository)
+            inputs=frozen.inputs,
+            registry=registry,
+            evaluation=evaluation_windows(preregistration),
+            golden=golden_scenarios(repository),
+            binding=binding,
         )
         specs = run_plan(venues, registry, context.golden)
         private = store.root / prereg.ARTIFACT_DIRECTORY.name  # research_backtest_v1/, the public layout (ruling 9)
@@ -1639,18 +1799,20 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         execute_all(context, specs, workspace, workers=args.workers, precompute_venue=venues[0], progress=out)
         records = {}
         for spec in specs:
-            record = read_run(workspace.directory, spec)
+            record = read_run(workspace.directory, spec, run_binding(spec, context))
             if record is None:
                 raise RunnerRefused("RUN_REFUSED", f"{spec.run_id} has no record")
             records[spec.run_id] = record
-        audits = {venue: read_audit(workspace, venue, context) for venue in venues}
+        audits = {
+            venue: read_audit(workspace, venue, context, audit_binding(context, venue, records[RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG).run_id]))
+            for venue in venues
+        }
         gaps = {}
         for venue in venues:
             start, last = context.evaluation[venue]
             instants = [instant for instant in prereg.decision_schedule() if start <= instant <= last]
             gaps[venue] = report_module.gap_exposure(context.inputs[venue], instants)
         index = json.loads((repository / build.INDEX_PATH).read_bytes())
-        digest = (repository / PREREGISTRATION_DIGEST_PATH).read_text().split()[0]
         identity = {
             "runner_version": RUNNER_VERSION,
             "ticket": RUNNER_TICKET,

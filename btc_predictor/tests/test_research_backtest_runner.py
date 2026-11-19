@@ -8,7 +8,9 @@ computed, and nothing touches the private store, the holdout or BTC-019.
 from __future__ import annotations
 
 import copy
+import gzip
 import json
+import shutil
 import pickle
 import subprocess
 from dataclasses import replace
@@ -408,6 +410,74 @@ def test_a_history_that_stops_short_of_a_window_refuses(context):
         short.seed("BITSTAMP", START)
 
 
+def test_an_empty_history_refuses_every_seed(context):
+    # review F3: an empty history once seeded nothing and matched itself
+    for history in ({}, {"BITSTAMP": ()}):
+        with pytest.raises(rn.RunnerRefused, match="HISTORY_REFUSED"):
+            replace(context, history=history).seed("BITSTAMP", START)
+    assert context.seed("BITSTAMP", SCHEDULE[0]) == ()
+    with pytest.raises(rn.RunnerRefused, match="HISTORY_REFUSED"):
+        replace(context, history={"BITSTAMP": context.history["BITSTAMP"][1:]}).seed("BITSTAMP", SCHEDULE[0])
+
+
+def test_the_memory_check_needs_every_composed_row_compared(context, headline):
+    rows = context.history["BITSTAMP"]
+    assert rn.memory_check(context, "BITSTAMP", headline.composers)["matches_history"]
+    short = replace(context, history={"BITSTAMP": tuple(row for row in rows if row.decision_at != START + 3 * DAY)})
+    check = rn.memory_check(short, "BITSTAMP", headline.composers)
+    assert not check["matches_history"] and check["mismatches"] == []
+    assert not rn.memory_check(replace(context, history={}), "BITSTAMP", headline.composers)["matches_history"]
+
+
+def test_a_checkpoint_is_read_back_only_under_its_own_binding(tmp_path, context, headline):
+    spec = rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base")
+    binding = rn.run_binding(spec, context)
+    stored = json.loads(canonical_json_bytes(headline.record))
+    assert stored["binding"] == json.loads(canonical_json_bytes(binding))
+    assert rn.read_run(tmp_path, spec, binding) is None
+    rn.write_run(tmp_path, headline)
+    assert rn.read_run(tmp_path, spec, binding) == stored
+    for changed in (
+        {**binding, "context": {"other_dataset": True}},
+        {**binding, "window": [START.isoformat(), (LAST - DAY).isoformat()]},
+        {**binding, "configuration_sha256": "0" * 64},
+        {**binding, "history_sha256": "0" * 64},
+    ):
+        with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+            rn.read_run(tmp_path, spec, changed)
+    path = rn.run_file(tmp_path, spec)
+    for record in (
+        {**stored, "metrics": {"invented": 1}, "binding": {"FOREIGN": True}},
+        {key: value for key, value in stored.items() if key != "binding"},
+        {key: value for key, value in stored.items() if key != "memory"},
+        {**stored, "run_id": "HEADLINE:COINBASE:champion:base"},
+    ):
+        path.write_bytes(gzip.compress(canonical_json_bytes(record)))
+        with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+            rn.read_run(tmp_path, spec, binding)
+    path.write_bytes(b"not a record")
+    with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+        rn.read_run(tmp_path, spec, binding)
+
+
+def test_a_history_file_must_be_its_bindings_and_hold_every_instant(tmp_path, context):
+    workspace = rn.Workspace(tmp_path)
+    rows = context.history["BITSTAMP"]
+    good = rn.history_binding(context, "BITSTAMP", LAST)
+
+    def written(binding, held):
+        rn._write_whole(rn.history_file(workspace, "BITSTAMP"), pickle.dumps({"binding": binding, "rows": held}))
+        return lambda: rn.read_history(workspace, "BITSTAMP", context, LAST)
+
+    assert written(good, rows)() == tuple(rows)
+    for binding, held in ((good, ()), (good, rows[:-1]), (good, (*rows[:3], *rows[4:])), ({**good, "context": {"x": 1}}, rows), ({**good, "venue": "COINBASE"}, rows)):
+        with pytest.raises(rn.RunnerRefused, match="HISTORY_REFUSED"):
+            written(binding, held)()
+    rn.history_file(workspace, "BITSTAMP").write_bytes(pickle.dumps(()))
+    with pytest.raises(rn.RunnerRefused, match="HISTORY_REFUSED"):
+        rn.read_history(workspace, "BITSTAMP", context, LAST)
+
+
 def test_a_cold_start_differs_from_the_continuous_history(context, markets):
     seeded = rn.RegisteredEntryComposer(
         markets["BITSTAMP"], variant=context.registry.variants[rn.CHAMPION], registry=context.registry, history=context.seed("BITSTAMP", START)
@@ -768,14 +838,18 @@ def end_to_end(markets, preregistration, tmp_path_factory):
         golden=GOLDEN,
         fold_bars=SYNTHETIC_FOLD_BARS,
         schedule=SCHEDULE,
+        binding={"synthetic": "end_to_end"},
     )
     specs = rn.run_plan(list(markets), registry, GOLDEN)
     workspace = rn.Workspace(tmp_path_factory.mktemp("work"))
     rn.execute_all(context, specs, workspace, workers=4, precompute_venue="BITSTAMP")
 
     def build():
-        records = {spec.run_id: rn.read_run(workspace.directory, spec) for spec in specs}
-        audits = {venue: rn.read_audit(workspace, venue, context) for venue in markets}
+        records = {spec.run_id: rn.read_run(workspace.directory, spec, rn.run_binding(spec, context)) for spec in specs}
+        audits = {
+            venue: rn.read_audit(workspace, venue, context, rn.audit_binding(context, venue, records[f"HEADLINE:{venue}:champion:base"]))
+            for venue in markets
+        }
         instants = [instant for instant in SCHEDULE if START <= instant <= LAST]
         gaps = {venue: rr.gap_exposure(markets[venue], instants) for venue in markets}
         return rr.build_report(
@@ -845,6 +919,36 @@ def test_a_resumed_run_skips_complete_work_and_reproduces_the_report(end_to_end)
     assert before == after
     _report, files = end_to_end.build()
     assert files == end_to_end.files
+
+
+def test_an_audit_file_from_another_binding_or_missing_refuses(end_to_end, tmp_path):
+    context = end_to_end.context
+    base = rn.read_run(end_to_end.workspace.directory, rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), rn.run_binding(rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), context))
+    binding = rn.audit_binding(context, "BITSTAMP", base)
+
+    def copied():
+        target = tmp_path / f"copy{len(list(tmp_path.iterdir()))}"
+        shutil.copytree(end_to_end.workspace.directory, target)
+        return rn.Workspace(target)
+
+    assert rn.read_audit(copied(), "BITSTAMP", context, binding)["passed"]
+    with pytest.raises(rn.RunnerRefused, match="AUDIT_REFUSED"):
+        rn.read_audit(copied(), "BITSTAMP", context, {**binding, "base_run_record_sha256": "0" * 64})
+    workspace = copied()
+    path = rn.audit_links_file(workspace, rn.HISTORY_LINK, SCHEDULE[5])
+    data = json.loads(path.read_bytes())
+    data["binding"]["context"] = {"foreign": True}
+    path.write_bytes(canonical_json_bytes(data))
+    with pytest.raises(rn.RunnerRefused, match="AUDIT_REFUSED"):
+        rn.read_audit(workspace, "BITSTAMP", context, binding)
+    workspace = copied()
+    rn.audit_links_file(workspace, rn.RUN_LINK, START + 2 * DAY).unlink()
+    with pytest.raises(rn.RunnerRefused, match="AUDIT_REFUSED"):
+        rn.read_audit(workspace, "BITSTAMP", context, binding)
+    workspace = copied()
+    rn.audit_state_file(workspace, "BITSTAMP").write_bytes(pickle.dumps({"binding": {"foreign": True}, "state": None}))
+    with pytest.raises(rn.RunnerRefused, match="AUDIT_REFUSED"):
+        rn.load_audit_state(workspace, "BITSTAMP", binding)
 
 
 def test_the_public_index_is_value_free(end_to_end):
