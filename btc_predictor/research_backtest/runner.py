@@ -74,6 +74,7 @@ from btc_predictor.research_backtest import runner_metrics as rm
 from btc_predictor.research_backtest.entry_composer import (
     EntryComposer,
     EntryComposerInputs,
+    CAUSE_DECISION_PRICE_BAR_MISSING,
     EntryDecision,
     is_daily_decision_instant,
     next_decision_instant,
@@ -1618,28 +1619,77 @@ def run_link(state: AuditState, context: RunContext, instant: datetime, *, trunc
     return item
 
 
-_LINK_CHECKS = ("entry_row_equal", "intent_equal", "composition_equal", "replay_prefix_equal", "engine_state_equal", "management_row_equal")
+_HISTORY_CHECKS = ("entry_row_equal",)
+_RUN_CHECKS = ("entry_row_equal", "intent_equal", "composition_equal", "replay_prefix_equal", "engine_state_equal")
 
 
-def _link_failed(item: Mapping[str, Any]) -> bool:
-    return any(item.get(name) is False for name in _LINK_CHECKS)
+def _link_failed(item: Mapping[str, Any], managed: bool | None = None) -> bool:
+    """A link proves its instant only if every check of its kind is present and true (review RR1).
+
+    A run link's management check is true at an instant the composer managed
+    and absent (None) at any other; ``managed`` says which, else either passes.
+    """
+
+    checks = _HISTORY_CHECKS if item.get("kind") == HISTORY_LINK else _RUN_CHECKS
+    if item.get("kind") not in (HISTORY_LINK, RUN_LINK) or any(item.get(name) is not True for name in checks):
+        return True
+    if item["kind"] == HISTORY_LINK:
+        return False
+    if "management_row_equal" not in item:
+        return True
+    management = item["management_row_equal"]
+    if managed is None:
+        return not (management is True or management is None)
+    return management is not (True if managed else None)
 
 
-def audit_summary(venue: str, meta: Mapping[str, Any], history_instants: Sequence[datetime], links: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    """Ruling 3a's verdict for one venue: every link present once, and every one equal."""
+def audit_expectation(venue: str, context: RunContext, record: Mapping[str, Any]) -> dict[str, Any]:
+    """What ruling 3a must prove for a venue, from its bound base run alone (review RR1).
 
-    history = sorted((item for item in links if item["kind"] == HISTORY_LINK), key=lambda item: item["decision_at"])
-    run = sorted((item for item in links if item["kind"] == RUN_LINK), key=lambda item: item["decision_at"])
-    sample = {instant: reason for instant, reason in meta["sample"]}
+    Every decision instant of the champion's base evaluation-window run gets a
+    run link; ruling 3's sample is its intent instants plus the seeded draw;
+    management is checked wherever the composer managed: an open position at
+    an instant with its decision bar.
+    """
+
+    start, last = context.evaluation[venue]
+    rows = record["entry_ledger"]
+    instants = sorted(datetime.fromisoformat(row["decision_at"]) for row in rows if start <= datetime.fromisoformat(row["decision_at"]) <= last)
+    intents = {datetime.fromisoformat(row["decision_at"]) for row in (*rows, *record["management_ledger"]) if row["intent"] is not None}
+    managed = [row["decision_at"] for row in rows if row["position_open"] and list(row["reasons"]) != [CAUSE_DECISION_PRICE_BAR_MISSING]]
+    return {
+        "run_instants": [instant.isoformat() for instant in instants],
+        "sample": [[instant.isoformat(), reason] for instant, reason in audit_sample(venue, instants, intents)],
+        "managed": managed,
+    }
+
+
+def audit_summary(
+    venue: str, meta: Mapping[str, Any], history_instants: Sequence[datetime], links: Sequence[Mapping[str, Any]], expected: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Ruling 3a's verdict for one venue: every link the base run requires present once, and every one equal.
+
+    Review RR1: what is required comes from the bound base run
+    (:func:`audit_expectation`), never from the audit's own stored list.
+    """
+
+    history = sorted((item for item in links if item.get("kind") == HISTORY_LINK), key=lambda item: item["decision_at"])
+    run = sorted((item for item in links if item.get("kind") == RUN_LINK), key=lambda item: item["decision_at"])
+    sample = {instant: reason for instant, reason in expected["sample"]}
+    managed = set(expected["managed"])
     sampled = [item for item in run if item["decision_at"] in sample]
     complete = (
-        [item["decision_at"] for item in history] == [instant.isoformat() for instant in history_instants]
-        and [item["decision_at"] for item in run] == list(meta["run_instants"])
-        and all(item["sample"] == sample.get(item["decision_at"]) for item in run)
+        bool(expected["run_instants"])
+        and [item["decision_at"] for item in history] == [instant.isoformat() for instant in history_instants]
+        and [item["decision_at"] for item in run] == list(expected["run_instants"])
+        and list(meta.get("run_instants", ())) == list(expected["run_instants"])
+        and [list(pair) for pair in meta.get("sample", ())] == [list(pair) for pair in expected["sample"]]
+        and all(item.get("sample") == sample.get(item["decision_at"]) for item in run)
         and len(sampled) == len(sample)
         and all(item.get("shared") is False for item in sampled)
     )
-    failures = [f"{item['kind']}:{item['decision_at']}" for item in (*history, *run) if _link_failed(item)]
+    failures = [f"{item['kind']}:{item['decision_at']}" for item in history if _link_failed(item)]
+    failures += [f"{item['kind']}:{item['decision_at']}" for item in run if _link_failed(item, item["decision_at"] in managed)]
     return {
         "venue": venue,
         "audit_version": AUDIT_VERSION,
@@ -1650,12 +1700,12 @@ def audit_summary(venue: str, meta: Mapping[str, Any], history_instants: Sequenc
         "audited": len(sampled),
         "intent_instants": sum(1 for reason in sample.values() if reason == "INTENT"),
         "seeded_instants": sum(1 for reason in sample.values() if reason == "SEEDED"),
-        "management_checked": sum(1 for item in run if item["management_row_equal"] is not None),
-        "reproduced": meta["reproduced"],
-        "replay_reproduces_run": meta["replay_reproduces_run"],
+        "management_checked": sum(1 for item in run if item["decision_at"] in managed and item.get("management_row_equal") is True),
+        "reproduced": meta.get("reproduced") is True,
+        "replay_reproduces_run": meta.get("replay_reproduces_run") is True,
         "complete": complete,
         "failures": failures,
-        "passed": complete and not failures and meta["reproduced"] and meta["replay_reproduces_run"],
+        "passed": complete and not failures and meta.get("reproduced") is True and meta.get("replay_reproduces_run") is True,
         "sampled_instants": sampled,
     }
 
@@ -1851,7 +1901,11 @@ def _read_links(path: Path, expected: Mapping[str, Any]) -> list[dict[str, Any]]
         raise RunnerRefused("AUDIT_REFUSED", f"{path.name} is not readable: {error}") from error
     if not isinstance(data, dict) or data.get("binding") != json.loads(canonical_json_bytes(expected)):
         raise RunnerRefused("AUDIT_REFUSED", f"{path.name} was written under another binding")
-    return list(data["links"])
+    links = data.get("links")
+    # review RR1: each link is its file's instant's; a missing or malformed one proves nothing
+    if not isinstance(links, list) or not all(isinstance(item, dict) and item.get("decision_at") == expected["instant"] for item in links):
+        raise RunnerRefused("AUDIT_REFUSED", f"{path.name} does not hold its instant's links")
+    return list(links)
 
 
 def _audit_share(truncated: Iterable[EntryComposerInputs]) -> Callable[[], Any]:
@@ -1974,11 +2028,16 @@ def read_audit(workspace: Workspace, venue: str, context: RunContext, binding: M
     meta = json.loads(meta_path.read_bytes())
     if meta.get("binding") != json.loads(canonical_json_bytes(binding)):
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state was written under another binding")
+    # review RR1: the links required are the bound base run's, not the stored metadata's
+    base = _base_record(workspace, context, venue)
+    if json.loads(canonical_json_bytes(binding)) != json.loads(canonical_json_bytes(audit_binding(context, venue, base))):
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit is not bound to its base run's record")
+    required = audit_expectation(venue, context, base)
     history_instants = [row.decision_at for row in context.history[venue]]
     links: list[dict[str, Any]] = []
     for kind, instants, own in (
         (HISTORY_LINK, history_instants, context.history_sha256(venue)),
-        (RUN_LINK, [datetime.fromisoformat(item) for item in meta["run_instants"]], binding),
+        (RUN_LINK, [datetime.fromisoformat(item) for item in required["run_instants"]], binding),
     ):
         for instant in instants:
             path = audit_links_file(workspace, kind, instant)
@@ -1987,8 +2046,8 @@ def read_audit(workspace: Workspace, venue: str, context: RunContext, binding: M
             data = json.loads(path.read_bytes())
             stored = data.get("binding") if isinstance(data, dict) else None
             expected = link_binding(context, kind, instant, {**(stored or {}).get("venues", {}), venue: own})
-            links.extend(item for item in _read_links(path, expected) if item["venue"] == venue)
-    return audit_summary(venue, meta, history_instants, links)
+            links.extend(item for item in _read_links(path, expected) if item.get("venue") == venue)
+    return audit_summary(venue, meta, history_instants, links, required)
 
 
 def _base_record(workspace: Workspace, context: RunContext, venue: str) -> dict[str, Any]:

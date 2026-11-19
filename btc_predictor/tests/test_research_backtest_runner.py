@@ -1065,23 +1065,108 @@ def test_an_engine_state_not_from_the_available_bars_fails_its_link(context, sha
 
 def test_the_audit_summary_needs_every_link_once_and_an_unshared_sample():
     history = [START - DAY, START]
-    meta = {
-        "reproduced": True,
-        "replay_reproduces_run": True,
-        "run_instants": [START.isoformat()],
-        "sample": [[START.isoformat(), "INTENT"]],
-    }
+    second = (START + DAY).isoformat()
+    expected = {"run_instants": [START.isoformat(), second], "sample": [[START.isoformat(), "INTENT"]], "managed": [second]}
+    meta = {"reproduced": True, "replay_reproduces_run": True, "run_instants": expected["run_instants"], "sample": expected["sample"]}
+    checks = {"entry_row_equal": True, "intent_equal": True, "composition_equal": True, "replay_prefix_equal": True, "engine_state_equal": True}
     good = [
         {"venue": "V", "kind": rn.HISTORY_LINK, "decision_at": (START - DAY).isoformat(), "entry_row_equal": True, "shared": True},
         {"venue": "V", "kind": rn.HISTORY_LINK, "decision_at": START.isoformat(), "entry_row_equal": True, "shared": True},
-        {"venue": "V", "kind": rn.RUN_LINK, "decision_at": START.isoformat(), "sample": "INTENT", "entry_row_equal": True, "engine_state_equal": True, "management_row_equal": None, "shared": False},
+        {"venue": "V", "kind": rn.RUN_LINK, "decision_at": START.isoformat(), "sample": "INTENT", **checks, "management_row_equal": None, "shared": False},
+        {"venue": "V", "kind": rn.RUN_LINK, "decision_at": second, "sample": None, **checks, "management_row_equal": True, "shared": True},
     ]
-    assert rn.audit_summary("V", meta, history, good)["passed"]
-    assert not rn.audit_summary("V", meta, history, good[1:])["passed"]
-    assert not rn.audit_summary("V", meta, history, [*good[:2], {**good[2], "shared": True}])["passed"]
-    failed = rn.audit_summary("V", meta, history, [*good[:2], {**good[2], "engine_state_equal": False}])
+
+    def passed(links=good, meta=meta, expected=expected):
+        return rn.audit_summary("V", meta, history, links, expected)["passed"]
+
+    summary = rn.audit_summary("V", meta, history, good, expected)
+    assert summary["passed"] and summary["management_checked"] == 1 and summary["audited"] == 1
+    assert not passed(good[1:])
+    assert not passed([*good[:2], {**good[2], "shared": True}, good[3]])
+    failed = rn.audit_summary("V", meta, history, [*good[:2], {**good[2], "engine_state_equal": False}, good[3]], expected)
     assert not failed["passed"] and failed["failures"] == [f"RUN:{START.isoformat()}"]
-    assert not rn.audit_summary("V", {**meta, "replay_reproduces_run": False}, history, good)["passed"]
+    assert not passed(meta={**meta, "replay_reproduces_run": False})
+    # review RR1: the required links are the base run's; the stored lists cannot shrink them
+    assert not passed(meta={**meta, "run_instants": [], "sample": []})
+    assert not passed(meta={**meta, "run_instants": expected["run_instants"][:1]})
+    assert not passed(meta={**meta, "sample": []})
+    assert not passed(meta={key: value for key, value in meta.items() if key != "reproduced"})
+    # a base run with no instant proves nothing, though its history links are all there
+    assert not passed(good[:2], {**meta, "run_instants": [], "sample": []}, {"run_instants": [], "sample": [], "managed": []})
+    # a link missing any check of its kind, or with a management check where none belongs, proves nothing
+    for name in ("entry_row_equal", "intent_equal", "composition_equal", "replay_prefix_equal", "engine_state_equal", "management_row_equal"):
+        assert not passed([*good[:3], {key: value for key, value in good[3].items() if key != name}]), name
+        assert not passed([*good[:3], {**good[3], name: "True"}]), name
+    assert not passed([{key: value for key, value in good[0].items() if key != "entry_row_equal"}, *good[1:]])
+    assert not passed([*good[:3], {**good[3], "management_row_equal": None}])
+    assert not passed([*good[:2], {**good[2], "management_row_equal": True}, good[3]])
+    assert not passed([*good[:2], {**good[2], "kind": "OTHER"}, good[3]])
+
+
+def test_the_audit_expects_management_where_the_composer_managed():
+    # review RR1: an open position at an instant without its decision bar is a missing-bar row, never managed
+    def row(day, *, intent=None, open_=False, missing=False):
+        reasons = [ec.CAUSE_DECISION_PRICE_BAR_MISSING] if missing else ["SOMETHING"]
+        return {"decision_at": (START + day * DAY).isoformat(), "intent": intent, "position_open": open_, "reasons": reasons}
+
+    record = {
+        "entry_ledger": [row(-1), row(0), row(1, intent={"source_id": "arm"}), row(2, open_=True), row(3, open_=True, missing=True), row(4, open_=True)],
+        "management_ledger": [{"decision_at": (START + 2 * DAY).isoformat(), "intent": None}, {"decision_at": (START + 4 * DAY).isoformat(), "intent": {"source_id": "trim"}}],
+    }
+    context = SimpleNamespace(evaluation={"V": (START, START + 4 * DAY)})
+    expected = rn.audit_expectation("V", context, record)
+    assert expected["run_instants"] == [(START + day * DAY).isoformat() for day in range(5)]
+    assert expected["managed"] == [(START + 2 * DAY).isoformat(), (START + 4 * DAY).isoformat()]
+    intents = [instant for instant, reason in expected["sample"] if reason == "INTENT"]
+    assert intents == [(START + DAY).isoformat(), (START + 4 * DAY).isoformat()] and len(expected["sample"]) == 5
+
+
+def test_resumed_audit_files_cannot_drop_the_proof(end_to_end, tmp_path):
+    # review RR1: emptied stored instants, or links without their checks, passed and published
+    context = end_to_end.context
+    base = rn.read_run(end_to_end.workspace.directory, rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), context)
+    binding = rn.audit_binding(context, "BITSTAMP", base)
+    expected = rn.audit_expectation("BITSTAMP", context, base)
+    assert expected["run_instants"] == [(START + DAY * index).isoformat() for index in range((LAST - START) // DAY + 1)]
+    assert expected["managed"] and len(expected["sample"]) == len(expected["run_instants"])
+
+    def copied():
+        target = tmp_path / f"copy{len(list(tmp_path.iterdir()))}"
+        shutil.copytree(end_to_end.workspace.directory, target)
+        return rn.Workspace(target)
+
+    def rewritten(path, change):
+        data = json.loads(path.read_bytes())
+        change(data)
+        path.write_bytes(canonical_json_bytes(data))
+
+    control = rn.read_audit(copied(), "BITSTAMP", context, binding)
+    assert control["passed"] and control["run_links"] == len(expected["run_instants"]) and control["management_checked"] == len(expected["managed"])
+    workspace = copied()
+    rewritten(rn.audit_meta_file(workspace, "BITSTAMP"), lambda meta: meta.update(run_instants=[], sample=[]))
+    emptied = rn.read_audit(workspace, "BITSTAMP", context, binding)
+    assert not emptied["passed"] and not emptied["complete"] and emptied["run_links"] == control["run_links"]
+    assert emptied["sample_size"] == control["sample_size"]
+
+    workspace = copied()
+    stripped = [(rn.HISTORY_LINK, SCHEDULE[5]), (rn.RUN_LINK, START + 2 * DAY)]
+    for kind, instant in stripped:
+        rewritten(rn.audit_links_file(workspace, kind, instant), lambda data: data.update(links=[{key: value for key, value in item.items() if not key.endswith("_equal")} for item in data["links"]]))
+    failed = rn.read_audit(workspace, "BITSTAMP", context, binding)
+    assert not failed["passed"] and failed["failures"] == [f"{kind}:{instant.isoformat()}" for kind, instant in stripped]
+
+    workspace = copied()
+    rewritten(rn.audit_links_file(workspace, rn.RUN_LINK, START + 3 * DAY), lambda data: data.update(links=[]))
+    assert not rn.read_audit(workspace, "BITSTAMP", context, binding)["passed"]
+    for change in (
+        lambda data: data.update(links=[{**item, "decision_at": (START + 4 * DAY).isoformat()} for item in data["links"]]),
+        lambda data: data.pop("links"),
+        lambda data: data.update(links=["not a link"]),
+    ):
+        workspace = copied()
+        rewritten(rn.audit_links_file(workspace, rn.RUN_LINK, START + 3 * DAY), change)
+        with pytest.raises(rn.RunnerRefused, match="AUDIT_REFUSED"):
+            rn.read_audit(workspace, "BITSTAMP", context, binding)
 
 
 # --- the report ---------------------------------------------------------------------------------------
