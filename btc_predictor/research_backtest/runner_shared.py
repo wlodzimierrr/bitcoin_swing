@@ -91,9 +91,26 @@ def _owner_function(name: str) -> Callable[..., Any]:
 # --- exact argument keys ------------------------------------------------------------------------
 
 
-def _row_record_bytes(row: Any) -> bytes:
-    """Every field of a frozen replay row, type-tagged, so equal bytes mean equal rows."""
+_ROW_BYTES: dict[int, tuple[Any, bytes]] = {}
 
+
+def _row_record_bytes(row: Any) -> bytes:
+    """Every field of a frozen replay row, type-tagged, so equal bytes mean equal rows.
+
+    A row's bytes are kept per process, held with the row itself so its id
+    cannot be reused: the audit registers many truncated sources of the same
+    frozen rows (review ruling 3a).
+    """
+
+    known = _ROW_BYTES.get(id(row))
+    if known is not None and known[0] is row:
+        return known[1]
+    data = _row_record_bytes_uncached(row)
+    _ROW_BYTES[id(row)] = (row, data)
+    return data
+
+
+def _row_record_bytes_uncached(row: Any) -> bytes:
     if not is_dataclass(row) or isinstance(row, type):
         raise SharedPositioningError(f"a replay source holds a {type(row).__name__}, not a row")
     payload = [type(row).__module__ + "." + type(row).__qualname__]

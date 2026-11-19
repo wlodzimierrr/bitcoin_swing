@@ -522,7 +522,10 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         )
     lines += ["", "## Look-ahead audit", ""]
     for venue, audit in report["lookahead_audit"].items():
-        lines.append(f"- {venue}: {audit['audited']} of {audit['sample_size']} audited, failures {len(audit['failures'])}, passed {audit['passed']}")
+        lines.append(
+            f"- {venue}: {audit['history_links']} history and {audit['run_links']} run links; ruling 3's sample "
+            f"{audit['audited']} of {audit['sample_size']} unshared; failures {len(audit['failures'])}, passed {audit['passed']}"
+        )
     lines += ["", "## Named limitations (exposed instants, base run)", ""]
     for venue, rows in report["evidence"]["named_limitations"].items():
         lines.append(f"- {venue}: " + ", ".join(f"{row['limitation_id']} {row['exposed_instants']}" for row in rows))
@@ -550,7 +553,14 @@ def public_index(report: Mapping[str, Any], files: Mapping[str, bytes], *, priva
         "memory_check_failures": sum(1 for value in integrity["memory_matches_history"].values() if not value),
         "runs_with_unaccounted_causes": len(integrity["unaccounted"]),
         "lookahead_audit": {
-            venue: {"sample_size": audit["sample_size"], "audited": audit["audited"], "failures": len(audit["failures"]), "passed": audit["passed"]}
+            venue: {
+                "history_links": audit["history_links"],
+                "run_links": audit["run_links"],
+                "sample_size": audit["sample_size"],
+                "audited": audit["audited"],
+                "failures": len(audit["failures"]),
+                "passed": audit["passed"],
+            }
             for venue, audit in audits.items()
         },
         "ruling_4_fold_dates_equal": {venue: entry["ruling_4"]["equal"] for venue, entry in report["walk_forward"].items()},

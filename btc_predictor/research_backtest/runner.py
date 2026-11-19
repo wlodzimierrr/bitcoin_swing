@@ -260,22 +260,36 @@ class RegisteredEntryComposer(EntryComposer):
         return decision
 
 
+class RecordingEntryComposer(RegisteredEntryComposer):
+    """The registered composer, keeping every decision it composes for the audit's replay (ruling 3a)."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.decisions: dict[datetime, EntryDecision] = {}
+
+    def decide(self, as_of: datetime, *, position_open: bool = False) -> EntryDecision:
+        decision = super().decide(as_of, position_open=position_open)
+        self.decisions[decision.row.decision_at] = decision
+        return decision
+
+
+MANAGEMENT_INPUTS = ("lifecycle", "nav", "armed", "prior_flow")
+
+
 class RecordingManagementComposer(ManagementComposer):
-    """The unchanged RBT-005 composer, keeping each management call's inputs for the audit."""
+    """The unchanged RBT-005 composer, keeping each management call's inputs and decision for the audit."""
 
     def __init__(self, entry: EntryComposer) -> None:
         super().__init__(entry)
         self.calls: dict[datetime, dict[str, Any]] = {}
+        self.managed: dict[datetime, Any] = {}
 
     def decide(self, decision: EntryDecision, *, lifecycle: Any, nav: Decimal, armed: Any, prior_flow: Any | None) -> Any:
-        self.calls[decision.row.decision_at] = {
-            "decision": decision,
-            "lifecycle": lifecycle,
-            "nav": nav,
-            "armed": armed,
-            "prior_flow": prior_flow,
-        }
-        return super().decide(decision, lifecycle=lifecycle, nav=nav, armed=armed, prior_flow=prior_flow)
+        instant = decision.row.decision_at
+        self.calls[instant] = {"lifecycle": lifecycle, "nav": nav, "armed": armed, "prior_flow": prior_flow}
+        managed = super().decide(decision, lifecycle=lifecycle, nav=nav, armed=armed, prior_flow=prior_flow)
+        self.managed[instant] = managed
+        return managed
 
 
 # --- windows and plans ------------------------------------------------------------------------
@@ -471,7 +485,8 @@ def _trade_entries(validation: WalkForwardValidation, composers: Sequence[Manage
 
 
 def _single_run(spec: RunSpec, context: RunContext, variant: Variant, inputs: EntryComposerInputs, window: Sequence[OhlcvBar], *, first: datetime, record_management: bool, starting_nav: Decimal | None = None) -> tuple[BacktestResult, ManagementComposer]:
-    entry = RegisteredEntryComposer(inputs, variant=variant, registry=context.registry, history=context.seed(spec.venue, first))
+    composer = RecordingEntryComposer if record_management else RegisteredEntryComposer
+    entry = composer(inputs, variant=variant, registry=context.registry, history=context.seed(spec.venue, first))
     strategy = RecordingManagementComposer(entry) if record_management else ManagementComposer(entry)
     result = run_backtest(
         window,
@@ -925,10 +940,20 @@ def precompute_blocks(instants: Sequence[datetime], parts: int) -> list[tuple[da
     return blocks
 
 
-# --- the look-ahead audit (ruling 3) -----------------------------------------------------------------
+# --- the look-ahead audit (ruling 3, amended by review ruling 3a) ----------------------------------------
 
-AUDIT_VERSION = "RBT007_LOOKAHEAD_AUDIT_V1"
+AUDIT_VERSION = "RBT007_LOOKAHEAD_AUDIT_V2"
 AUDIT_SEEDED_INSTANTS = 20
+AUDIT_RULE = (
+    "review ruling 3a: every continuous-history row and every decision instant of the champion's base "
+    "evaluation-window run, each recomputed on inputs truncated at its own instant and seeded only with the "
+    "recorded rows before it; the engine state each decision received replayed from only the bars available "
+    "at its instant and the run's earlier decisions; ruling 3's sample (every intent instant plus 20 seeded "
+    "instants) recomputed unshared, every other link sharing positioning results only among the audit's own "
+    "truncated recomputations"
+)
+HISTORY_LINK = "HISTORY"
+RUN_LINK = "RUN"
 
 
 def truncated_inputs(inputs: EntryComposerInputs, instant: datetime) -> EntryComposerInputs:
@@ -960,7 +985,7 @@ def truncated_inputs(inputs: EntryComposerInputs, instant: datetime) -> EntryCom
 
 
 def audit_sample(venue: str, instants: Sequence[datetime], intent_instants: Iterable[datetime]) -> list[tuple[datetime, str]]:
-    """Every intent instant, plus 20 instants drawn by a fixed seed from the rest of the window."""
+    """Every intent instant, plus 20 instants drawn by a fixed seed from the rest of the window (ruling 3)."""
 
     intents = set(intent_instants)
     rest = [instant for instant in instants if instant not in intents]
@@ -973,19 +998,131 @@ def _same(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
     return canonical_json_bytes(a) == canonical_json_bytes(b)
 
 
-def audit_shard(
-    venue: str,
-    context: RunContext,
-    checkpoint: Mapping[str, Any],
-    shard: int,
-    shards: int,
-    share: Callable[[], Any] | None = None,
-) -> dict[str, Any]:
-    """Reproduce the champion's base headline run, then audit one shard of its sample unshared.
+@dataclass(frozen=True)
+class _ReplayComposition:
+    """What the management composer's engine adapter reads from a composition."""
 
-    ``share`` returns a context manager serving the shared positioning
-    results; it wraps only the reproduction and the prior-flow recomputation,
-    never an audited decision.
+    flow: Any
+    decision_bar: Any
+
+
+def _slim(decision: EntryDecision) -> EntryDecision:
+    if decision.composition is None:
+        return decision
+    return replace(decision, composition=_ReplayComposition(decision.composition.flow, decision.composition.decision_bar))
+
+
+def _composed(decision: EntryDecision) -> tuple[Any, Any] | None:
+    composition = decision.composition
+    return None if composition is None else (composition.flow, composition.decision_bar)
+
+
+class _ReplayEntryComposer(EntryComposer):
+    """Gives back the run's recorded decisions; records the position each was offered."""
+
+    def __init__(self, inputs: EntryComposerInputs, champion: StrategyConfig, decisions: Mapping[datetime, EntryDecision]) -> None:
+        super().__init__(inputs, strategy_config=champion)
+        self._decisions = decisions
+        self.offered: dict[datetime, bool] = {}
+
+    def decide(self, as_of: datetime, *, position_open: bool = False) -> EntryDecision:
+        self.offered[as_of] = position_open
+        return self._decisions[as_of]
+
+
+class _ReplayManagementComposer(ManagementComposer):
+    """The unchanged engine adapter over recorded decisions; records what management received."""
+
+    def __init__(self, entry: EntryComposer, managed: Mapping[datetime, Any]) -> None:
+        super().__init__(entry)
+        self._managed = managed
+        self.received: dict[datetime, dict[str, Any]] = {}
+        self.positions: dict[datetime, bool] = {}
+
+    def __call__(self, context: Any) -> Any:
+        self.positions[context.as_of] = context.position_open
+        return super().__call__(context)
+
+    def decide(self, decision: EntryDecision, *, lifecycle: Any, nav: Decimal, armed: Any, prior_flow: Any | None) -> Any:
+        instant = decision.row.decision_at
+        self.received[instant] = {"lifecycle": lifecycle, "nav": nav, "armed": armed, "prior_flow": prior_flow}
+        return self._managed[instant]
+
+
+@dataclass(frozen=True)
+class AuditState:
+    """The reproduced champion base run, as the chain's run links read it (ruling 3a)."""
+
+    venue: str
+    reproduced: bool
+    first: datetime
+    last: datetime
+    strategy_id: str
+    ledger: tuple[Any, ...]  # the run composer's rows: its seeded history, then the run's own
+    decisions: Mapping[datetime, EntryDecision]  # every decision the run composed, slim
+    calls: Mapping[datetime, Mapping[str, Any]]  # the management inputs the composer received
+    managed: Mapping[datetime, Any]
+    management_rows: tuple[Any, ...]
+    followups: tuple[Any, ...]
+    sample: tuple[tuple[datetime, str], ...]
+    replay_reproduces_run: bool = False
+
+    @property
+    def run_instants(self) -> list[datetime]:
+        return sorted(instant for instant in self.decisions if self.first <= instant <= self.last)
+
+    def meta(self) -> dict[str, Any]:
+        intents = [instant.isoformat() for instant, reason in self.sample if reason == "INTENT"]
+        return {
+            "venue": self.venue,
+            "reproduced": self.reproduced,
+            "replay_reproduces_run": self.replay_reproduces_run,
+            "run_instants": [instant.isoformat() for instant in self.run_instants],
+            "sample": [[instant.isoformat(), reason] for instant, reason in self.sample],
+            "intent_instants": intents,
+        }
+
+
+def _replay(
+    state: AuditState, context: RunContext, until: datetime, *, inclusive: bool = True, truncated: EntryComposerInputs | None = None
+) -> tuple[_ReplayEntryComposer, _ReplayManagementComposer]:
+    """The engine over the run's bars available by ``until``, replaying the run's recorded decisions.
+
+    Nothing after ``until`` is given to the engine or the composers, so the
+    state it hands the composer at ``until`` comes from those bars and the
+    earlier decisions alone.
+    """
+
+    inputs = context.inputs[state.venue]
+    bars = tuple(
+        bar
+        for bar in venue_bars(inputs)
+        if state.first <= _bar_available_at(bar) and (_bar_available_at(bar) <= until if inclusive else _bar_available_at(bar) < until)
+    )
+    entry = _ReplayEntryComposer(truncated if truncated is not None else truncated_inputs(inputs, until), context.registry.champion, state.decisions)
+    strategy = _ReplayManagementComposer(entry, state.managed)
+    if not bars:  # the instant's own bar omitted at the window's start: no callback yet, flat
+        return entry, strategy
+    run_backtest(
+        bars,
+        strategy=strategy,
+        symbol=bars[0].symbol,
+        strategy_config=context.registry.champion,
+        cost_profile=prereg.HEADLINE_COST_RUNG,
+        strategy_id=state.strategy_id,
+    )
+    return entry, strategy
+
+
+def _inputs_equal(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
+    return all(a[name] == b[name] for name in MANAGEMENT_INPUTS)
+
+
+def audit_state(venue: str, context: RunContext, checkpoint: Mapping[str, Any], share: Callable[[], Any] | None = None) -> AuditState:
+    """Reproduce the champion's base headline run, which must equal its record, and keep its state.
+
+    ``share`` serves the run's shared positioning results to the
+    reproduction only; no audited recomputation uses them.
     """
 
     from contextlib import nullcontext
@@ -993,84 +1130,146 @@ def audit_shard(
     spec = RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG)
     with (share() if share is not None else nullcontext()):
         outcome = execute_run(spec, context, record_management=True)
-    reproduced = _same(outcome.record, checkpoint)
     strategy = outcome.composers[0]
-    entry_rows = {row.decision_at: row for row in strategy.entry.run_rows()}
-    all_rows = tuple(strategy.entry.ledger)
-    all_rows_by_instant = {row.decision_at: row for row in all_rows}
-    management_rows = {row.decision_at: row for row in strategy.ledger}
-    intents = {row.decision_at for row in entry_rows.values() if row.intent is not None}
-    intents |= {row.decision_at for row in management_rows.values() if row.intent is not None}
+    entry = strategy.entry
     start, last = context.evaluation[venue]
-    instants = sorted(instant for instant in entry_rows if start <= instant <= last)
-    sample = audit_sample(venue, instants, intents)
-    champion = context.registry.variants[CHAMPION]
-    results = []
-    for position, (instant, reason) in enumerate(sample):
-        if position % shards != shard:
-            continue
-        truncated = truncated_inputs(context.inputs[venue], instant)
-        row = entry_rows[instant]
-        # the composer's own earlier rows are its state at the instant (ruling 7)
-        before = tuple(item for item in all_rows if item.decision_at < instant)
-        fresh = RegisteredEntryComposer(truncated, variant=champion, registry=context.registry, history=before)
-        decision = fresh.decide(instant, position_open=row.position_open)
-        entry_equal = _same(decision.row.as_record(), row.as_record())
-        item: dict[str, Any] = {"decision_at": instant.isoformat(), "reason": reason, "entry_row_equal": entry_equal}
-        call = getattr(strategy, "calls", {}).get(instant)
-        if call is not None:
-            prior = call["prior_flow"]
-            prior_equal = None
-            if prior is not None:
-                previous = instant - _DAY
-                with (share() if share is not None else nullcontext()):
-                    earlier = RegisteredEntryComposer(
-                        truncated,
-                        variant=champion,
-                        registry=context.registry,
-                        history=tuple(item for item in all_rows if item.decision_at < previous),
-                    ).decide(previous, position_open=all_rows_by_instant[previous].position_open)
-                prior_equal = earlier.composition is not None and earlier.composition.flow == prior
-            managed = ManagementComposer(fresh).decide(
-                decision, lifecycle=call["lifecycle"], nav=call["nav"], armed=call["armed"], prior_flow=prior
-            )
-            item["management_row_equal"] = _same(managed.row.as_record(), management_rows[instant].as_record())
-            item["prior_flow_equal"] = prior_equal
-        results.append(item)
-    return {
-        "venue": venue,
-        "shard": shard,
-        "shards": shards,
-        "reproduced": reproduced,
-        "sample_size": len(sample),
-        "intent_instants": len(intents),
-        "audited": results,
+    run_rows = entry.run_rows()
+    intents = {row.decision_at for row in run_rows if row.intent is not None}
+    intents |= {row.decision_at for row in strategy.ledger if row.intent is not None}
+    instants = sorted(row.decision_at for row in run_rows if start <= row.decision_at <= last)
+    state = AuditState(
+        venue=venue,
+        reproduced=_same(outcome.record, checkpoint),
+        first=start,
+        last=last,
+        strategy_id=f"rbt007:{spec.run_id}",
+        ledger=tuple(entry.ledger),
+        decisions={instant: _slim(decision) for instant, decision in entry.decisions.items()},
+        calls={instant: dict(call) for instant, call in strategy.calls.items()},
+        managed=dict(strategy.managed),
+        management_rows=tuple(strategy.ledger),
+        followups=tuple(strategy.add_followups),
+        sample=tuple(audit_sample(venue, instants, intents)),
+    )
+    # the replay machinery, over the whole window, must give back the run itself
+    _entry, replay = _replay(state, context, last + _DAY, inclusive=False)
+    whole = (
+        [row.as_record() for row in replay.ledger] == [row.as_record() for row in state.management_rows]
+        and [followup.as_record() for followup in replay.add_followups] == [followup.as_record() for followup in state.followups]
+        and set(replay.received) == set(state.calls)
+        and all(_inputs_equal(replay.received[instant], call) for instant, call in state.calls.items())
+    )
+    return replace(state, replay_reproduces_run=whole)
+
+
+def history_link(venue: str, context: RunContext, instant: datetime, *, truncated: EntryComposerInputs | None = None) -> dict[str, Any]:
+    """One continuous-history row, recomputed on inputs truncated at its instant, seeded with the rows before it."""
+
+    rows = context.history[venue]
+    reference = next(row for row in rows if row.decision_at == instant)
+    fresh = RegisteredEntryComposer(
+        truncated if truncated is not None else truncated_inputs(context.inputs[venue], instant),
+        variant=context.registry.variants[CHAMPION],
+        registry=context.registry,
+        history=tuple(row for row in rows if row.decision_at < instant),
+    )
+    decision = fresh.decide(instant)
+    return {"venue": venue, "kind": HISTORY_LINK, "decision_at": instant.isoformat(), "entry_row_equal": _same(decision.row.as_record(), reference.as_record())}
+
+
+def run_link(state: AuditState, context: RunContext, instant: datetime, *, truncated: EntryComposerInputs | None = None) -> dict[str, Any]:
+    """One decision instant of the champion's base run, proven from what was available at it.
+
+    The engine replay to ``instant`` gives the position, and at a management
+    instant the lifecycle, NAV, armed entry and prior flow, from the bars
+    available at it and the run's earlier decisions (each its own link). The
+    decision is then recomputed on inputs truncated at ``instant``, seeded
+    with the run's rows before it, and must equal the run's: its row, intent,
+    flow and decision bar, and its management row, intent and pending add.
+    """
+
+    truncated = truncated if truncated is not None else truncated_inputs(context.inputs[state.venue], instant)
+    replay_entry, replay = _replay(state, context, instant, truncated=truncated)
+    callbacks = [moment for moment in replay.positions if moment <= instant]
+    position_open = replay_entry.offered.get(instant, replay.positions[max(callbacks)] if callbacks else False)
+    original = state.decisions[instant]
+    fresh = RegisteredEntryComposer(
+        truncated,
+        variant=context.registry.variants[CHAMPION],
+        registry=context.registry,
+        history=tuple(row for row in state.ledger if row.decision_at < instant),
+    )
+    decision = fresh.decide(instant, position_open=position_open)
+    item: dict[str, Any] = {
+        "venue": state.venue,
+        "kind": RUN_LINK,
+        "decision_at": instant.isoformat(),
+        "sample": dict(state.sample).get(instant),
+        "entry_row_equal": _same(decision.row.as_record(), original.row.as_record()),
+        "intent_equal": decision.intent == original.intent,
+        "composition_equal": _composed(decision) == _composed(original),
+        "replay_prefix_equal": (
+            [row.as_record() for row in replay.ledger if row.decision_at < instant]
+            == [row.as_record() for row in state.management_rows if row.decision_at < instant]
+            and [followup.as_record() for followup in replay.add_followups if followup.resolved_at <= instant]
+            == [followup.as_record() for followup in state.followups if followup.resolved_at <= instant]
+        ),
+        "engine_state_equal": None,
+        "management_row_equal": None,
     }
+    call, received = state.calls.get(instant), replay.received.get(instant)
+    if call is None:
+        item["engine_state_equal"] = received is None
+    else:
+        item["engine_state_equal"] = received is not None and _inputs_equal(received, call)
+        if received is not None:
+            managed = ManagementComposer(fresh).decide(decision, **received)
+            saved = state.managed[instant]
+            item["management_row_equal"] = (
+                _same(managed.row.as_record(), saved.row.as_record()) and managed.intent == saved.intent and managed.pending_add == saved.pending_add
+            )
+    return item
 
 
-def audit_summary(venue: str, shards: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    audited = sorted((item for shard in shards for item in shard["audited"]), key=lambda item: item["decision_at"])
-    failures = [
-        item["decision_at"]
-        for item in audited
-        if not item["entry_row_equal"] or item.get("management_row_equal") is False or item.get("prior_flow_equal") is False
-    ]
-    sizes = {shard["sample_size"] for shard in shards}
-    sample_size = next(iter(sizes)) if len(sizes) == 1 else None
-    reproduced = all(shard["reproduced"] for shard in shards)
+_LINK_CHECKS = ("entry_row_equal", "intent_equal", "composition_equal", "replay_prefix_equal", "engine_state_equal", "management_row_equal")
+
+
+def _link_failed(item: Mapping[str, Any]) -> bool:
+    return any(item.get(name) is False for name in _LINK_CHECKS)
+
+
+def audit_summary(venue: str, meta: Mapping[str, Any], history_instants: Sequence[datetime], links: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Ruling 3a's verdict for one venue: every link present once, and every one equal."""
+
+    history = sorted((item for item in links if item["kind"] == HISTORY_LINK), key=lambda item: item["decision_at"])
+    run = sorted((item for item in links if item["kind"] == RUN_LINK), key=lambda item: item["decision_at"])
+    sample = {instant: reason for instant, reason in meta["sample"]}
+    sampled = [item for item in run if item["decision_at"] in sample]
+    complete = (
+        [item["decision_at"] for item in history] == [instant.isoformat() for instant in history_instants]
+        and [item["decision_at"] for item in run] == list(meta["run_instants"])
+        and all(item["sample"] == sample.get(item["decision_at"]) for item in run)
+        and len(sampled) == len(sample)
+        and all(item.get("shared") is False for item in sampled)
+    )
+    failures = [f"{item['kind']}:{item['decision_at']}" for item in (*history, *run) if _link_failed(item)]
     return {
         "venue": venue,
         "audit_version": AUDIT_VERSION,
-        "rule": "every intent instant of the champion's base evaluation-window run, plus 20 instants drawn by a fixed seed; each recomputed unshared on inputs truncated at its instant",
-        "sample_size": sample_size,
-        "audited": len(audited),
-        "intent_instants": sum(1 for item in audited if item["reason"] == "INTENT"),
-        "seeded_instants": sum(1 for item in audited if item["reason"] == "SEEDED"),
-        "management_checked": sum(1 for item in audited if "management_row_equal" in item),
-        "reproduced_by_every_shard": reproduced,
+        "rule": AUDIT_RULE,
+        "history_links": len(history),
+        "run_links": len(run),
+        "sample_size": len(sample),
+        "audited": len(sampled),
+        "intent_instants": sum(1 for reason in sample.values() if reason == "INTENT"),
+        "seeded_instants": sum(1 for reason in sample.values() if reason == "SEEDED"),
+        "management_checked": sum(1 for item in run if item["management_row_equal"] is not None),
+        "reproduced": meta["reproduced"],
+        "replay_reproduces_run": meta["replay_reproduces_run"],
+        "complete": complete,
         "failures": failures,
-        "passed": not failures and reproduced and sample_size is not None and len(audited) == sample_size,
-        "instants": audited,
+        "passed": complete and not failures and meta["reproduced"] and meta["replay_reproduces_run"],
+        "sampled_instants": sampled,
     }
 
 
@@ -1193,32 +1392,137 @@ def _run_spec(spec: RunSpec) -> str:
     return spec.run_id
 
 
-def _audit_task(task: tuple[str, int, int]) -> str:
-    import time
+def audit_state_file(workspace: Workspace, venue: str) -> Path:
+    return workspace.directory / "audit" / f"state_{venue.lower()}.pickle"
 
-    venue, shard, shards = task
-    name = f"audit:{venue}:{shard}:{shards}"
-    path = _marker(name)
-    if path.exists():
-        return name
+
+def audit_meta_file(workspace: Workspace, venue: str) -> Path:
+    return workspace.directory / "audit" / f"state_{venue.lower()}.json"
+
+
+def audit_links_file(workspace: Workspace, kind: str, instant: datetime) -> Path:
+    return workspace.directory / "audit" / kind.lower() / f"{instant.strftime('%Y%m%dT%H%M')}.json"
+
+
+def _write_whole(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    partial = path.with_name(path.name + ".partial")
+    partial.write_bytes(data)
+    partial.replace(path)
+
+
+def _audit_share(truncated: Iterable[EntryComposerInputs]) -> Callable[[], Any]:
+    """Ruling 3a: positioning results shared among the audit's own truncated recomputations only."""
+
+    from btc_predictor.research_backtest import runner_shared as rs
+
+    encoder = rs.ArgumentEncoder()
+    for inputs in truncated:
+        rs.register_positioning_sources(encoder, inputs)
+    store = rs.SharedResultStore(_STATE["workspace"].directory / "audit_shared")
+    statistics = _STATE.setdefault("statistics", ShareStatistics())
+    return lambda: rs.shared_positioning(store, encoder, statistics)
+
+
+def _audit_state_task(venue: str) -> None:
+    import pickle
+
     workspace: Workspace = _STATE["workspace"]
+    path = audit_state_file(workspace, venue)
+    if path.exists():
+        return
     checkpoint = read_run(workspace.directory, RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG))
     if checkpoint is None:
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s base headline run has no record yet")
+    state = audit_state(venue, _STATE["context"], checkpoint, share=_share_factory())
+    _write_whole(audit_meta_file(workspace, venue), canonical_json_bytes(state.meta()))
+    _write_whole(path, pickle.dumps(state, protocol=5))
+
+
+def _history_links_task(instant: datetime) -> None:
+    workspace: Workspace = _STATE["workspace"]
+    path = audit_links_file(workspace, HISTORY_LINK, instant)
+    if path.exists():
+        return
+    context: RunContext = _STATE["context"]
+    venues = [venue for venue in context.inputs if any(row.decision_at == instant for row in context.history[venue])]
+    truncated = {venue: truncated_inputs(context.inputs[venue], instant) for venue in venues}
+    _STATE["statistics"] = ShareStatistics()
+    share = _audit_share(truncated.values())
+    with share():
+        links = [{**history_link(venue, context, instant, truncated=truncated[venue]), "shared": True} for venue in venues]
+    _write_whole(path, canonical_json_bytes(links))
+
+
+def _run_links_task(instant: datetime) -> None:
+    from contextlib import nullcontext
+
+    workspace: Workspace = _STATE["workspace"]
+    path = audit_links_file(workspace, RUN_LINK, instant)
+    if path.exists():
+        return
+    context: RunContext = _STATE["context"]
+    states: Mapping[str, AuditState] = _STATE["audit_states"]
+    venues = [venue for venue, state in states.items() if instant in state.run_instants]
+    truncated = {venue: truncated_inputs(context.inputs[venue], instant) for venue in venues}
+    _STATE["statistics"] = ShareStatistics()
+    share = _audit_share(truncated.values())
+    links = []
+    for venue in venues:
+        # ruling 3's sample is recomputed with no shared result at all
+        shared = instant not in dict(states[venue].sample)
+        with (share() if shared else nullcontext()):
+            links.append({**run_link(states[venue], context, instant, truncated=truncated[venue]), "shared": shared})
+    _write_whole(path, canonical_json_bytes(links))
+
+
+def _audit_phase_one(task: tuple[str, Any]) -> str:
+    import time
+
+    kind, value = task
     started = time.monotonic()
-    result = audit_shard(venue, _STATE["context"], checkpoint, shard, shards, share=_share_factory())
-    _write_marker(name, {"result": result})
-    _log({"event": "audit", "task": name, "seconds": round(time.monotonic() - started, 1)})
-    return name
+    if kind == "state":
+        _audit_state_task(value)
+    else:
+        _history_links_task(value)
+    _log({"event": f"audit:{kind}", "task": str(value), "seconds": round(time.monotonic() - started, 1)})
+    return f"{kind}:{value}"
 
 
-def read_audit(workspace: Workspace, venue: str, shards: int) -> list[dict[str, Any]]:
-    out = []
-    for shard in range(shards):
-        _STATE.setdefault("workspace", workspace)
-        path = workspace.markers / f"{hashlib.sha256(f'audit:{venue}:{shard}:{shards}'.encode()).hexdigest()[:24]}.json"
-        out.append(json.loads(path.read_bytes())["result"])
-    return out
+def _audit_phase_two(instant: datetime) -> str:
+    import time
+
+    started = time.monotonic()
+    _run_links_task(instant)
+    _log({"event": "audit:run", "task": instant.isoformat(), "seconds": round(time.monotonic() - started, 1)})
+    return instant.isoformat()
+
+
+def load_audit_state(workspace: Workspace, venue: str) -> AuditState:
+    import pickle
+
+    path = audit_state_file(workspace, venue)
+    if not path.exists():
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state has not been written")
+    return pickle.loads(path.read_bytes())
+
+
+def read_audit(workspace: Workspace, venue: str, context: RunContext) -> dict[str, Any]:
+    """Ruling 3a's summary for one venue, from its state and every link file."""
+
+    meta_path = audit_meta_file(workspace, venue)
+    if not meta_path.exists():
+        raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state has not been written")
+    meta = json.loads(meta_path.read_bytes())
+    history_instants = [row.decision_at for row in context.history[venue]]
+    links: list[dict[str, Any]] = []
+    for kind, instants in ((HISTORY_LINK, history_instants), (RUN_LINK, [datetime.fromisoformat(item) for item in meta["run_instants"]])):
+        for instant in instants:
+            path = audit_links_file(workspace, kind, instant)
+            if not path.exists():
+                raise RunnerRefused("AUDIT_REFUSED", f"the {kind.lower()} link at {instant.isoformat()} has not been written")
+            links.extend(item for item in json.loads(path.read_bytes()) if item["venue"] == venue)
+    return audit_summary(venue, meta, history_instants, links)
 
 
 def _expected_cost(spec: RunSpec) -> int:
@@ -1232,11 +1536,10 @@ def execute_all(
     workspace: Workspace,
     *,
     workers: int,
-    audit_shards: int,
     precompute_venue: str,
     progress: Callable[[str], None] = lambda line: None,
 ) -> None:
-    """The precompute, every run and the audit, each skipped when its complete file exists."""
+    """The precompute, the history, every run and the audit, each skipped when its complete file exists."""
 
     import multiprocessing
 
@@ -1261,17 +1564,22 @@ def execute_all(
     with pool_context.Pool(workers) as pool:
         for done, run_id in enumerate(pool.imap_unordered(_run_spec, ordered), 1):
             progress(f"runs: {done}/{len(ordered)} ({run_id})")
-    tasks = [(venue, shard, audit_shards) for venue in context.inputs for shard in range(audit_shards)]
-    progress(f"audit: {len(tasks)} shards")
+    # ruling 3a: the run states and every history link, then every run link
+    history_instants = sorted({row.decision_at for venue in venues for row in context.history[venue]}, reverse=True)
+    tasks: list[tuple[str, Any]] = [("state", venue) for venue in venues] + [("history", instant) for instant in history_instants]
+    progress(f"audit: {len(venues)} run states and {len(history_instants)} history instants")
     with pool_context.Pool(workers) as pool:
-        for done, name in enumerate(pool.imap_unordered(_audit_task, tasks), 1):
+        for done, name in enumerate(pool.imap_unordered(_audit_phase_one, tasks), 1):
             progress(f"audit: {done}/{len(tasks)} ({name})")
+    _STATE["audit_states"] = {venue: load_audit_state(workspace, venue) for venue in venues}
+    run_instants = sorted({instant for state in _STATE["audit_states"].values() for instant in state.run_instants}, reverse=True)
+    progress(f"audit: {len(run_instants)} run instants")
+    with pool_context.Pool(workers) as pool:
+        for done, name in enumerate(pool.imap_unordered(_audit_phase_two, run_instants), 1):
+            progress(f"audit: run {done}/{len(run_instants)} ({name})")
 
 
 # --- the command line -------------------------------------------------------------------------------
-
-DEFAULT_AUDIT_SHARDS = 3
-
 
 def build_registry(preregistration: Mapping[str, Any], champion: StrategyConfig) -> Registry:
     registry = Registry(champion=champion)
@@ -1308,7 +1616,6 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
     parser.add_argument("command", choices=("run",))
     parser.add_argument("--store", default="~/backtest_evidence", help="the private evidence repository (Part B ruling 9)")
     parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) // 2))
-    parser.add_argument("--audit-shards", type=int, default=DEFAULT_AUDIT_SHARDS)
     args = parser.parse_args(argv)
     try:
         repository = build.PUBLIC_REPOSITORY
@@ -1329,14 +1636,14 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         private = store.root / prereg.ARTIFACT_DIRECTORY.name  # research_backtest_v1/, the public layout (ruling 9)
         workspace = Workspace(private / "rbt007_work")
         out(f"RBT-007 run at {code[:7]}: {len(specs)} runs on {len(venues)} venues, {args.workers} workers")
-        execute_all(context, specs, workspace, workers=args.workers, audit_shards=args.audit_shards, precompute_venue=venues[0], progress=out)
+        execute_all(context, specs, workspace, workers=args.workers, precompute_venue=venues[0], progress=out)
         records = {}
         for spec in specs:
             record = read_run(workspace.directory, spec)
             if record is None:
                 raise RunnerRefused("RUN_REFUSED", f"{spec.run_id} has no record")
             records[spec.run_id] = record
-        audits = {venue: audit_summary(venue, read_audit(workspace, venue, args.audit_shards)) for venue in venues}
+        audits = {venue: read_audit(workspace, venue, context) for venue in venues}
         gaps = {}
         for venue in venues:
             start, last = context.evaluation[venue]
@@ -1354,7 +1661,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
             "dataset_index_sha256": frozen.index_sha256,
             "fold_bars": context.fold_bars,
             "venues": venues,
-            "rulings": "RBT-007 owner rulings 1-7 and the runtime ruling (2026-11-18)",
+            "rulings": "RBT-007 owner rulings 1-7, the runtime ruling and review ruling 3a (2026-11-18)",
         }
         report, files = report_module.build_report(
             preregistration=preregistration,

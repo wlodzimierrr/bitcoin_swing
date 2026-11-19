@@ -597,12 +597,39 @@ def test_the_audit_sample_is_every_intent_plus_twenty_seeded_instants():
     assert sample != rn.audit_sample("COINBASE", instants, intents)
 
 
-def test_the_audit_passes_on_the_champion(context, headline, share):
-    shards = [rn.audit_shard("BITSTAMP", context, headline.record, shard, 2, share=share) for shard in range(2)]
-    summary = rn.audit_summary("BITSTAMP", shards)
-    assert summary["passed"] and summary["reproduced_by_every_shard"]
-    assert summary["audited"] == summary["sample_size"] == 25
-    assert summary["management_checked"] > 0 and summary["intent_instants"] > 0
+@pytest.fixture(scope="module")
+def audit_state(context, headline, share):
+    return rn.audit_state("BITSTAMP", context, headline.record, share=share)
+
+
+def test_the_audit_state_reproduces_the_run_and_the_replay_gives_it_back(audit_state):
+    assert audit_state.reproduced and audit_state.replay_reproduces_run
+    assert audit_state.run_instants == [START + DAY * index for index in range((LAST - START) // DAY + 1)]
+    assert audit_state.calls and set(audit_state.calls) == set(audit_state.managed)
+    assert audit_state.ledger[0].decision_at == SCHEDULE[0]
+    intents = {instant for instant, reason in audit_state.sample if reason == "INTENT"}
+    # the synthetic window is short: its sample is every intent plus all that is left, up to 20
+    assert intents and len(audit_state.sample) == min(len(audit_state.run_instants), len(intents) + rn.AUDIT_SEEDED_INSTANTS)
+
+
+def test_every_link_passes_on_the_champion(context, audit_state, tmp_path):
+    management = sorted(audit_state.calls)
+    intent = next(instant for instant, reason in audit_state.sample if reason == "INTENT")
+    for instant in sorted({START, intent, management[0], management[-1], LAST}):
+        item = rn.run_link(audit_state, context, instant)
+        assert not rn._link_failed(item) and item["entry_row_equal"] and item["replay_prefix_equal"] and item["engine_state_equal"], item
+        assert (item["management_row_equal"] is not None) == (instant in audit_state.calls)
+    for instant in (SCHEDULE[0], SCHEDULE[7], START - DAY, LAST):
+        assert rn.history_link("BITSTAMP", context, instant)["entry_row_equal"]
+    # a link outside ruling 3's sample may take the audit's own shared results (review ruling 3a)
+    truncated = rn.truncated_inputs(context.inputs["BITSTAMP"], management[-1])
+    encoder = rs.ArgumentEncoder()
+    rs.register_positioning_sources(encoder, truncated)
+    statistics = rs.ShareStatistics()
+    with rs.shared_positioning(rs.SharedResultStore(tmp_path), encoder, statistics):
+        computed = rn.run_link(audit_state, context, management[-1], truncated=truncated)
+        served = rn.run_link(audit_state, context, management[-1], truncated=rn.truncated_inputs(context.inputs["BITSTAMP"], management[-1]))
+    assert sum(statistics.served.values()) > 0 and not rn._link_failed(computed) and computed == served
 
 
 def test_the_audit_catches_an_injected_look_ahead(context, share, monkeypatch):
@@ -618,9 +645,61 @@ def test_the_audit_catches_an_injected_look_ahead(context, share, monkeypatch):
     monkeypatch.setattr(ec._DecisionRun, "run", peeking)
     with share():
         outcome = rn.execute_run(rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), context)
-    shard = rn.audit_shard("BITSTAMP", context, outcome.record, 0, 4, share=None)
-    assert shard["reproduced"]
-    assert shard["audited"] and all(not item["entry_row_equal"] for item in shard["audited"])
+    state = rn.audit_state("BITSTAMP", context, outcome.record, share=share)
+    assert state.reproduced
+    for instant in (START, START + 5 * DAY, LAST):
+        item = rn.run_link(state, context, instant)
+        assert not item["entry_row_equal"] and rn._link_failed(item)
+
+
+def test_a_contaminated_history_row_fails_its_own_link(context):
+    # review F2: a later value carried into the market memory before the window passed the sampled audit
+    instant = START - 5 * DAY
+    rows = context.history["BITSTAMP"]
+    position = next(index for index, row in enumerate(rows) if row.decision_at == instant)
+    regime = dict(rows[position].regime)
+    regime["smoothed_score"] = "99.5"
+    tampered = (*rows[:position], replace(rows[position], regime=regime), *rows[position + 1 :])
+    contaminated = replace(context, history={"BITSTAMP": tampered})
+    assert not rn.history_link("BITSTAMP", contaminated, instant)["entry_row_equal"]
+    assert rn.history_link("BITSTAMP", context, instant)["entry_row_equal"]
+
+
+def test_an_engine_state_not_from_the_available_bars_fails_its_link(context, share, monkeypatch):
+    real = rn.RecordingManagementComposer.decide
+
+    def elsewhere(self, decision, *, lifecycle, nav, armed, prior_flow):
+        # management receives a NAV the engine never computed from the bars available
+        return real(self, decision, lifecycle=lifecycle, nav=nav + 1, armed=armed, prior_flow=prior_flow)
+
+    monkeypatch.setattr(rn.RecordingManagementComposer, "decide", elsewhere)
+    with share():
+        outcome = rn.execute_run(rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), context, record_management=True)
+    state = rn.audit_state("BITSTAMP", context, outcome.record, share=share)
+    assert state.reproduced and not state.replay_reproduces_run
+    item = rn.run_link(state, context, min(state.calls))
+    assert item["engine_state_equal"] is False and rn._link_failed(item)
+
+
+def test_the_audit_summary_needs_every_link_once_and_an_unshared_sample():
+    history = [START - DAY, START]
+    meta = {
+        "reproduced": True,
+        "replay_reproduces_run": True,
+        "run_instants": [START.isoformat()],
+        "sample": [[START.isoformat(), "INTENT"]],
+    }
+    good = [
+        {"venue": "V", "kind": rn.HISTORY_LINK, "decision_at": (START - DAY).isoformat(), "entry_row_equal": True, "shared": True},
+        {"venue": "V", "kind": rn.HISTORY_LINK, "decision_at": START.isoformat(), "entry_row_equal": True, "shared": True},
+        {"venue": "V", "kind": rn.RUN_LINK, "decision_at": START.isoformat(), "sample": "INTENT", "entry_row_equal": True, "engine_state_equal": True, "management_row_equal": None, "shared": False},
+    ]
+    assert rn.audit_summary("V", meta, history, good)["passed"]
+    assert not rn.audit_summary("V", meta, history, good[1:])["passed"]
+    assert not rn.audit_summary("V", meta, history, [*good[:2], {**good[2], "shared": True}])["passed"]
+    failed = rn.audit_summary("V", meta, history, [*good[:2], {**good[2], "engine_state_equal": False}])
+    assert not failed["passed"] and failed["failures"] == [f"RUN:{START.isoformat()}"]
+    assert not rn.audit_summary("V", {**meta, "replay_reproduces_run": False}, history, good)["passed"]
 
 
 # --- the report ---------------------------------------------------------------------------------------
@@ -692,11 +771,11 @@ def end_to_end(markets, preregistration, tmp_path_factory):
     )
     specs = rn.run_plan(list(markets), registry, GOLDEN)
     workspace = rn.Workspace(tmp_path_factory.mktemp("work"))
-    rn.execute_all(context, specs, workspace, workers=4, audit_shards=2, precompute_venue="BITSTAMP")
+    rn.execute_all(context, specs, workspace, workers=4, precompute_venue="BITSTAMP")
 
     def build():
         records = {spec.run_id: rn.read_run(workspace.directory, spec) for spec in specs}
-        audits = {venue: rn.audit_summary(venue, rn.read_audit(workspace, venue, 2)) for venue in markets}
+        audits = {venue: rn.read_audit(workspace, venue, context) for venue in markets}
         instants = [instant for instant in SCHEDULE if START <= instant <= LAST]
         gaps = {venue: rr.gap_exposure(markets[venue], instants) for venue in markets}
         return rr.build_report(
@@ -730,7 +809,10 @@ def test_every_run_has_a_record_and_the_checks_pass(end_to_end):
     assert integrity["runs"] == integrity["planned_runs"] == len(end_to_end.specs) == 2 * 10
     assert all(integrity["memory_matches_history"].values())
     assert integrity["unaccounted"] == {}
-    assert all(audit["passed"] for audit in end_to_end.report["lookahead_audit"].values())
+    for audit in end_to_end.report["lookahead_audit"].values():
+        assert audit["passed"] and audit["complete"] and audit["failures"] == []
+        assert audit["history_links"] == len(SCHEDULE) and audit["run_links"] == (LAST - START) // DAY + 1
+        assert audit["audited"] == audit["sample_size"] > rn.AUDIT_SEEDED_INSTANTS and audit["management_checked"] > 0
 
 
 def test_every_rate_has_its_trade_count(end_to_end):
@@ -758,7 +840,7 @@ def test_the_golden_replay_reports_its_decisions_beside_the_scripted_ones(end_to
 
 def test_a_resumed_run_skips_complete_work_and_reproduces_the_report(end_to_end):
     before = {spec.run_id: rn.run_file(end_to_end.workspace.directory, spec).read_bytes() for spec in end_to_end.specs}
-    rn.execute_all(end_to_end.context, end_to_end.specs, end_to_end.workspace, workers=2, audit_shards=2, precompute_venue="BITSTAMP")
+    rn.execute_all(end_to_end.context, end_to_end.specs, end_to_end.workspace, workers=2, precompute_venue="BITSTAMP")
     after = {spec.run_id: rn.run_file(end_to_end.workspace.directory, spec).read_bytes() for spec in end_to_end.specs}
     assert before == after
     _report, files = end_to_end.build()
