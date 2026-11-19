@@ -398,6 +398,27 @@ def test_the_command_runs_itself_again_with_a_fresh_bytecode_cache(tmp_path):
     )
     assert child.returncode == 0, child.stderr
     assert int(child.stdout) > 50 and not any(prefix.iterdir())
+    # a cache that already holds anything is refused
+    (prefix / "planted.pyc").write_bytes(b"")
+    refusal = (
+        "from btc_predictor.research_backtest import runner as rn\n"
+        "try:\n    rn.require_fresh_bytecode()\nexcept rn.RunnerRefused as error:\n    print(error.code)\n"
+    )
+    planted = subprocess.run(
+        rn.fresh_bytecode_command([], str(prefix))[:4] + ["-c", refusal],
+        cwd=REPOSITORY,
+        env={**os.environ, rn.FRESH_BYTECODE_ENV: str(prefix)},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert planted.stdout.strip() == "FROZEN_CODE_REFUSED"
+
+
+def test_main_runs_itself_again_outside_the_fresh_process(monkeypatch):
+    calls = []
+    monkeypatch.setattr(rn, "run_with_fresh_bytecode", lambda argv: calls.append(list(argv)) or 7)
+    assert rn.main(["run", "--workers", "3"]) == 7 and calls == [["run", "--workers", "3"]]
 
 
 def test_stale_bytecode_runs_in_a_normal_import_but_never_in_the_fresh_process(tmp_path):
@@ -855,6 +876,22 @@ def test_every_link_passes_on_the_champion(context, audit_state, tmp_path):
         computed = rn.run_link(audit_state, context, management[-1], truncated=truncated)
         served = rn.run_link(audit_state, context, management[-1], truncated=rn.truncated_inputs(context.inputs["BITSTAMP"], management[-1]))
     assert sum(statistics.served.values()) > 0 and not rn._link_failed(computed) and computed == served
+
+
+def test_the_replay_gives_the_engine_only_the_bars_available_at_the_instant(context, audit_state, monkeypatch):
+    seen = []
+    real = rn.run_backtest
+
+    def capture(bars, **kwargs):
+        seen.append(max(rn._bar_available_at(bar) for bar in bars))
+        return real(bars, **kwargs)
+
+    monkeypatch.setattr(rn, "run_backtest", capture)
+    instant = START + 4 * DAY
+    entry, replay = rn._replay(audit_state, context, instant)
+    assert seen == [instant] and max(replay.positions) == instant
+    rn._replay(audit_state, context, LAST + DAY, inclusive=False)
+    assert seen[-1] < LAST + DAY
 
 
 def test_the_audit_catches_an_injected_look_ahead(context, share, monkeypatch):
