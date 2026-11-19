@@ -354,6 +354,8 @@ def test_a_repository_module_not_loaded_from_its_source_refuses(tmp_path):
     cases = [
         _module("btc_predictor.features.positioning", elsewhere),
         _module("btc_predictor.features.positioning", owner.with_suffix(".pyc"), importlib.machinery.SourcelessFileLoader),
+        # another loader reporting the real .py file as its origin (an import hook that runs other code)
+        _module("btc_predictor.features.positioning", owner, importlib.machinery.SourcelessFileLoader),
         _module("btc_predictor.features.positioning", owner, cached=str(tmp_path / "stale" / "positioning.cpython-312.pyc")),
     ]
     for module in cases:
