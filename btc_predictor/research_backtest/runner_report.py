@@ -511,6 +511,7 @@ def build_report(
             golden.setdefault(scenario_id, {})[venue] = {
                 "window": item["window"],
                 "engine_refused": item["engine_refused"],
+                "engine_events": item["engine_events"],
                 "decisions_beside_scripted": item["decisions_beside_scripted"],
                 "before_evaluation_start": datetime.fromisoformat(item["window"]["first_decision"]) < context.evaluation[venue][0],
             }

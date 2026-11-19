@@ -1114,6 +1114,9 @@ def test_the_sweeps_and_the_ablation_are_labelled_sensitivity_only(end_to_end):
 def test_the_golden_replay_reports_its_decisions_beside_the_scripted_ones(end_to_end):
     golden = end_to_end.report["golden_replays"]["synthetic_golden"]["BITSTAMP"]
     assert not golden["engine_refused"]
+    # review F13: the golden runs count the engine's events as every other run does
+    assert golden["engine_events"] and all(key.count(":") >= 2 for key in golden["engine_events"])
+    assert all("engine_events" in record for spec, record in ((spec, rn.read_run(end_to_end.workspace.directory, spec, rn.run_binding(spec, end_to_end.context))) for spec in end_to_end.specs))
     assert golden["decisions_beside_scripted"][0]["scripted_action"] == "ARM_ENTRY"
     assert golden["decisions_beside_scripted"][0]["decision_at"] == "2024-03-31T00:00:00+00:00"
 
