@@ -759,8 +759,11 @@ def test_the_cross_venue_measures_follow_clarification_4a():
         "BITSTAMP": [{"decision_at": "d1", "setup": "A"}, {"decision_at": "d2", "setup": "A"}],
         "COINBASE": [{"decision_at": "d1", "setup": "A"}, {"decision_at": "d3", "setup": "B"}],
     }
-    trades = {"BITSTAMP": [_fake_trade("100", "90", "2", "-1")], "COINBASE": [_fake_trade("101", "90", "1.5", "-1", exit_reason="EXIT")]}
-    trade_entries = {"BITSTAMP": {0: "d1"}, "COINBASE": {0: "d1"}}
+    trades = {
+        "BITSTAMP": [_fake_trade("100", "90", "2", "-1"), _fake_trade("100", "90", "1", "-1")],
+        "COINBASE": [_fake_trade("101", "90", "1.5", "-1", exit_reason="EXIT"), _fake_trade("100", "90", "1", "-1")],
+    }
+    trade_entries = {"BITSTAMP": {0: "d1", 1: "d2"}, "COINBASE": {0: "d1", 1: "d3"}}
     metric = {"value": "1", "status": "AVAILABLE"}
     undefined = {"value": None, "status": "NO_CLOSED_TRADES"}
     metrics = {"base": {"BITSTAMP": {name: metric for name in rm.PRIMARY_METRICS}, "COINBASE": {name: undefined for name in rm.PRIMARY_METRICS}}}
@@ -774,6 +777,14 @@ def test_the_cross_venue_measures_follow_clarification_4a():
     touch = result["stop_touch_divergence"][0]
     assert (touch["matched_closed"], touch["exactly_one_structural_stop"]) == (1, 1)
     assert result["metric_dispersion"]["base"]["expectancy"]["status"] == "UNDEFINED_ON_SOME_VENUE"
+    # review F7: matching intents that filled no trade are no trades
+    unfilled = rm.cross_venue(entries, {"BITSTAMP": [], "COINBASE": []}, {"BITSTAMP": {}, "COINBASE": {}}, metrics)
+    overlap = unfilled["trade_set_overlap"]["pairs"][0]
+    assert (overlap["matched"], overlap["only_first"], overlap["only_second"], overlap["status"]) == (0, 0, 0, "NO_TRADES")
+    assert unfilled["trade_set_overlap"]["matched_on_all_venues"] == 0
+    one_side = rm.cross_venue(entries, {"BITSTAMP": trades["BITSTAMP"][:1], "COINBASE": []}, {"BITSTAMP": {0: "d1"}, "COINBASE": {}}, metrics)
+    overlap = one_side["trade_set_overlap"]["pairs"][0]
+    assert (overlap["matched"], overlap["only_first"], overlap["only_second"], overlap["overlap"]) == (0, 1, 0, "0E-12")
 
 
 # --- the look-ahead audit (ruling 3) ----------------------------------------------------------------------

@@ -354,14 +354,16 @@ def cross_venue(
 
     ``entries`` maps each venue to its ARM_ENTRY ledger records,
     ``trade_entries`` maps each venue's trade index to the decision instant of
-    the ARM_ENTRY row that opened it, and ``metrics`` maps each cost rung to
+    the ARM_ENTRY row that opened it (the trade sets are these trades), and ``metrics`` maps each cost rung to
     each venue's primary metrics.
     """
 
     venues = [venue for venue in VENUE_ORDER if venue in entries]
     keyed: dict[str, dict[tuple[str, str], dict[str, Any]]] = {}
     for venue in venues:
-        keyed[venue] = {(row["decision_at"], row["setup"]): row for row in entries[venue]}
+        # review F7: the sets hold filled trades, each by the ARM_ENTRY row that opened it; an unfilled intent is no trade
+        rows = {row["decision_at"]: row for row in entries[venue]}
+        keyed[venue] = {(instant, rows[instant]["setup"]): rows[instant] for instant in trade_entries[venue].values()}
     trade_by_entry: dict[str, dict[str, Any]] = {
         venue: {instant: trades[venue][index] for index, instant in trade_entries[venue].items()} for venue in venues
     }
