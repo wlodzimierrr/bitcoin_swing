@@ -542,12 +542,24 @@ def build_report(
         "lookahead_audit": audits,
         "integrity": integrity,
     }
-    files[REPORT_FILE] = canonical_json_bytes(report)
+    files[REPORT_FILE] = report_bytes(report)
     files[REPORT_MARKDOWN_FILE] = report_markdown(report).encode()
     return report, files
 
 
 # --- the human-readable summary and the public index -------------------------------------------------
+
+
+def report_bytes(report: Mapping[str, Any]) -> bytes:
+    """The report as written: its sections in order, as [name, section] pairs, the evidence first (review F10).
+
+    Canonical JSON sorts an object's keys, so the sections are a list.
+    """
+
+    if next(iter(report)) != "evidence":
+        raise rn.RunnerRefused("REPORT_REFUSED", "the report's first section must be its evidence")
+    return canonical_json_bytes([[name, section] for name, section in report.items()])
+
 
 
 def _cell(metric: Mapping[str, Any]) -> str:
@@ -573,9 +585,14 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         "",
         "Prohibited uses: " + "; ".join(report["evidence"]["prohibited_uses"]) + ".",
         "",
-        "## Headline (evaluation window), primary metrics with trade counts",
+        f"Holdout: {report['evidence']['holdout']}. Sweeps and the ablation: `{report['evidence']['sensitivity_label']}`.",
+        "",
+        "## Named limitations (exposed instants, base run)",
         "",
     ]
+    for venue, rows in report["evidence"]["named_limitations"].items():
+        lines.append(f"- {venue}: " + ", ".join(f"{row['limitation_id']} {row['exposed_instants']}" for row in rows))
+    lines += ["", "## Headline (evaluation window), primary metrics with trade counts", ""]
     for venue, rungs in report["headline"].items():
         lines += [f"### {venue}", "", "| Metric | " + " | ".join(rungs) + " |", "| --- |" + " --- |" * len(rungs)]
         for name in rm.PRIMARY_METRICS:
@@ -599,9 +616,6 @@ def report_markdown(report: Mapping[str, Any]) -> str:
             f"- {venue}: {audit['history_links']} history and {audit['run_links']} run links; ruling 3's sample "
             f"{audit['audited']} of {audit['sample_size']} unshared; failures {len(audit['failures'])}, passed {audit['passed']}"
         )
-    lines += ["", "## Named limitations (exposed instants, base run)", ""]
-    for venue, rows in report["evidence"]["named_limitations"].items():
-        lines.append(f"- {venue}: " + ", ".join(f"{row['limitation_id']} {row['exposed_instants']}" for row in rows))
     lines.append("")
     return "\n".join(lines)
 

@@ -1050,6 +1050,17 @@ def test_the_report_states_the_evidence_class_first(end_to_end):
     assert evidence["evidence_class"] == "RESEARCH_BACKTEST_NON_CERTIFYING" and evidence["canonical_reference"] == "UNRESOLVED"
     assert len(evidence["prohibited_uses"]) == 5 and evidence["holdout"] == "NOT COLLECTED"
     assert set(evidence["named_limitations"]) == {"BITSTAMP", "COINBASE"}
+    # review F10: in the files as written, not only in the dictionary
+    written = end_to_end.files[rr.REPORT_FILE]
+    assert written.startswith(b'[["evidence",{') and json.loads(written)[0] == ["evidence", json.loads(canonical_json_bytes(evidence))]
+    assert [name for name, _section in json.loads(written)] == list(report)
+    markdown = end_to_end.files[rr.REPORT_MARKDOWN_FILE].decode().splitlines()
+    first_metric = next(index for index, line in enumerate(markdown) if line.startswith("## Headline"))
+    opening = "\n".join(markdown[:first_metric])
+    assert "RESEARCH_BACKTEST_NON_CERTIFYING" in opening and "Prohibited uses:" in opening and "## Named limitations" in opening
+    assert all(row["limitation_id"] in opening for rows in evidence["named_limitations"].values() for row in rows)
+    with pytest.raises(rn.RunnerRefused, match="REPORT_REFUSED"):
+        rr.report_bytes({"identity": {}, **report})
 
 
 def test_every_run_has_a_record_and_the_checks_pass(end_to_end):
