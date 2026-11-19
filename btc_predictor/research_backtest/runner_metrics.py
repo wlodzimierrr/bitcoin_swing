@@ -284,8 +284,8 @@ def _turnover(validation: RunView, trades: Sequence[Any], equity: Sequence[Any],
     return _metric(_q(traded / mean_nav), AVAILABLE, run_days=length_days, trades=len(trades), closed_trades=closed_count)
 
 
-def _fold_longest_drawdown(fold: Any) -> tuple[Decimal, bool] | None:
-    """One fold's longest time underwater in hours, and whether it recovered."""
+def _fold_longest_drawdown(fold: Any) -> tuple[Decimal, bool | None] | None:
+    """One fold's longest time underwater in hours, and whether it recovered (None with no drawdown, review F12)."""
 
     result = fold.result
     if not result.equity_curve or result.started_at is None:
@@ -294,7 +294,7 @@ def _fold_longest_drawdown(fold: Any) -> tuple[Decimal, bool] | None:
     at_peak = result.started_at
     start: datetime | None = None
     longest = timedelta(0)
-    recovered = True
+    recovered: bool | None = None
     for point in result.equity_curve:
         if point.nav >= peak:
             if start is not None:
@@ -314,7 +314,7 @@ def _fold_longest_drawdown(fold: Any) -> tuple[Decimal, bool] | None:
 
 
 def _longest_drawdown(validation: RunView) -> dict[str, Any]:
-    best: tuple[Decimal, bool, int] | None = None
+    best: tuple[Decimal, bool | None, int] | None = None
     for fold in validation.folds:
         found = _fold_longest_drawdown(fold)
         if found is None:

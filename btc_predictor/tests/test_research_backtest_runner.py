@@ -669,8 +669,18 @@ def test_the_longest_drawdown_follows_its_frozen_definition():
     assert rm._fold_longest_drawdown(_equity([(1, "101"), (2, "100"), (9, "100.5")])) == (Decimal(8), False)
     # equal lengths: the first is reported, recovered, before an equally long unrecovered one
     assert rm._fold_longest_drawdown(_equity([(1, "99"), (2, "100"), (3, "99"), (4, "99.5")])) == (Decimal(2), True)
-    # never strictly below the running peak: zero hours
-    assert rm._fold_longest_drawdown(_equity([(1, "100"), (2, "100"), (3, "102")])) == (Decimal(0), True)
+    # never strictly below the running peak: zero hours, and no recovery mark (review F12)
+    assert rm._fold_longest_drawdown(_equity([(1, "100"), (2, "100"), (3, "102")])) == (Decimal(0), None)
+
+
+def test_the_longest_drawdown_gives_every_frozen_example(preregistration):
+    metric = next(item for item in preregistration["report"]["metric_spec"]["metrics"] if item["metric"] == "longest_drawdown")
+    assert len(metric["examples"]) == 6
+    for example in metric["examples"]:
+        fold = _equity([(int(hour), nav) for hour, nav in example["points"]], nav=example["starting_nav"])
+        assert rm._fold_longest_drawdown(fold) == (Decimal(example["hours"]), example["recovered"]), example["case"]
+        reported = rm._longest_drawdown(rm.RunView((fold,)))
+        assert (Decimal(reported["value"]), reported["recovered"]) == (Decimal(example["hours"]), example["recovered"]), example["case"]
 
 
 def test_the_memory_check_finds_a_history_that_differs(context, headline):
