@@ -858,18 +858,37 @@ def evaluation_windows(record: Mapping[str, Any]) -> dict[str, tuple[datetime, d
     }
 
 
-def frozen_code_paths(repository: Path, modules: Iterable[Any]) -> list[str]:
-    """Every loaded repository module outside the runner and the tests, and the frozen data files."""
+def _repository_module(name: str) -> bool:
+    return name == "btc_predictor" or name.startswith("btc_predictor.")
+
+
+def frozen_code_paths(repository: Path, modules: Iterable[tuple[str, Any]], *, pycache_prefix: str | None = None) -> list[str]:
+    """Every loaded repository module outside the runner and the tests, and the frozen data files.
+
+    Every repository module but the tests must have been loaded by the source
+    loader from its ``.py`` file in this repository, and, in the command's
+    fresh process, compiled into its empty private cache: no bytecode from
+    elsewhere ran (review F5). Anything else refuses.
+    """
+
+    import importlib.machinery
 
     root = (repository / "btc_predictor").resolve()
+    prefix = Path(pycache_prefix).resolve() if pycache_prefix is not None else None
     paths = set()
-    for module in modules:
-        location = getattr(module, "__file__", None)
-        if not location:
+    for name, module in modules:
+        if not _repository_module(name) or name == "btc_predictor.tests" or name.startswith("btc_predictor.tests."):
             continue
-        resolved = Path(location).resolve()
+        spec = getattr(module, "__spec__", None)
+        origin = getattr(spec, "origin", None) or getattr(module, "__file__", None)
+        if not origin or not isinstance(getattr(spec, "loader", None), importlib.machinery.SourceFileLoader):
+            raise RunnerRefused("FROZEN_CODE_REFUSED", f"{name} was not loaded from its source file")
+        resolved = Path(origin).resolve()
         if root not in resolved.parents or resolved.suffix != ".py":
-            continue
+            raise RunnerRefused("FROZEN_CODE_REFUSED", f"{name} was loaded from outside {root}")
+        cached = getattr(spec, "cached", None)
+        if prefix is not None and cached is not None and prefix not in Path(cached).resolve().parents:
+            raise RunnerRefused("FROZEN_CODE_REFUSED", f"{name}'s bytecode is not in the fresh cache")
         relative = resolved.relative_to(repository.resolve())
         if relative.parts[1] == "tests" or (relative.parts[1] == "research_backtest" and relative.name in RUNNER_MODULES):
             continue
@@ -905,16 +924,108 @@ def frozen_code_mismatches(repository: Path, commit: str, paths: Sequence[str]) 
     return mismatches
 
 
-def require_frozen_code(repository: Path, commit: str) -> list[str]:
-    """Refuse unless every loaded repository module and frozen file equals ``commit``'s; return the paths."""
+FRESH_BYTECODE_ENV = "RBT007_FRESH_PYCACHE"
+
+
+def fresh_bytecode_process() -> bool:
+    """True in the process the command re-executes: no bytecode written, an empty private cache read."""
+
+    import os
+    import sys
+
+    prefix = os.environ.get(FRESH_BYTECODE_ENV)
+    return bool(prefix) and bool(sys.flags.dont_write_bytecode) and sys.pycache_prefix == prefix
+
+
+def fresh_bytecode_command(argv: Sequence[str], prefix: str) -> list[str]:
+    import sys
+
+    return [sys.executable, "-B", "-X", f"pycache_prefix={prefix}", "-m", "btc_predictor.research_backtest.runner", *argv]
+
+
+def run_with_fresh_bytecode(argv: Sequence[str]) -> int:
+    """Run the command again in a process that compiles every module from its source (review F5).
+
+    Its bytecode cache is a new empty directory and nothing is written to it,
+    so no cached bytecode anywhere can stand in for a source file.
+    """
+
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+
+    prefix = tempfile.mkdtemp(prefix="rbt007-pycache-")
+    try:
+        environment = {**os.environ, FRESH_BYTECODE_ENV: prefix}
+        repository = Path(__file__).resolve().parents[2]
+        return subprocess.run(fresh_bytecode_command(argv, prefix), env=environment, cwd=repository, check=False).returncode
+    finally:
+        shutil.rmtree(prefix, ignore_errors=True)
+
+
+def require_fresh_bytecode() -> str:
+    import sys
+
+    if not fresh_bytecode_process():
+        raise RunnerRefused("FROZEN_CODE_REFUSED", "the command must run in its fresh-bytecode process")
+    prefix = Path(sys.pycache_prefix)
+    if not prefix.is_dir() or any(prefix.iterdir()):
+        raise RunnerRefused("FROZEN_CODE_REFUSED", "the fresh bytecode cache is not an empty directory")
+    return str(sys.pycache_prefix)
+
+
+def require_frozen_code(repository: Path, commit: str) -> tuple[list[str], set[str]]:
+    """Refuse unless every loaded repository module and frozen file equals ``commit``'s.
+
+    Returns the paths compared and the modules checked; modules loaded later
+    are checked by :func:`verify_loaded_code`.
+    """
 
     import sys
 
-    paths = frozen_code_paths(repository, list(sys.modules.values()))
+    prefix = require_fresh_bytecode()
+    modules = list(sys.modules.items())
+    paths = frozen_code_paths(repository, modules, pycache_prefix=prefix)
     mismatches = frozen_code_mismatches(repository, commit, paths)
     if mismatches:
         raise RunnerRefused("FROZEN_CODE_REFUSED", f"{len(mismatches)} file(s) differ from {commit[:7]}: {mismatches[:5]}")
-    return paths
+    return paths, {name for name, _module in modules if _repository_module(name)}
+
+
+def verify_loaded_code() -> None:
+    """Check every repository module loaded since the last check, in this process (review F5)."""
+
+    import sys
+
+    frozen = _STATE.get("frozen")
+    if frozen is None:
+        return
+    repository, commit = frozen
+    checked: set[str] = _STATE["checked_modules"]
+    new = [(name, module) for name, module in list(sys.modules.items()) if _repository_module(name) and name not in checked]
+    if not new:
+        return
+    prefix = sys.pycache_prefix if fresh_bytecode_process() else None
+    paths = frozen_code_paths(repository, new, pycache_prefix=prefix)
+    mismatches = frozen_code_mismatches(repository, commit, paths)
+    if mismatches:
+        raise RunnerRefused("FROZEN_CODE_REFUSED", f"a module loaded during the run differs from {commit[:7]}: {mismatches[:5]}")
+    checked.update(name for name, _module in new)
+
+
+def _verified(task: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    """A pool task that checks the modules it loaded before it returns."""
+
+    import functools
+
+    @functools.wraps(task)
+    def run(argument: Any) -> Any:
+        result = task(argument)
+        verify_loaded_code()
+        return result
+
+    return run
 
 
 def golden_scenarios(repository: Path) -> dict[str, dict[str, Any]]:
@@ -1400,6 +1511,7 @@ def _log(entry: Mapping[str, Any]) -> None:
         stream.write(json.dumps(entry, sort_keys=True) + "\n")
 
 
+@_verified
 def _precompute_block(block: tuple[datetime, ...]) -> str:
     import time
 
@@ -1453,6 +1565,7 @@ def read_history(workspace: Workspace, venue: str, context: RunContext, last: da
     return rows
 
 
+@_verified
 def _history_task(venue: str) -> str:
     import pickle
     import time
@@ -1477,6 +1590,7 @@ def load_history(workspace: Workspace, venues: Iterable[str], context: RunContex
     return {venue: read_history(workspace, venue, context, last) for venue in venues}
 
 
+@_verified
 def _run_spec(spec: RunSpec) -> str:
     import time
 
@@ -1610,6 +1724,7 @@ def _run_links_task(instant: datetime) -> None:
     _write_whole(path, canonical_json_bytes({"binding": binding, "links": links}))
 
 
+@_verified
 def _audit_phase_one(task: tuple[str, Any]) -> str:
     import time
 
@@ -1623,6 +1738,7 @@ def _audit_phase_one(task: tuple[str, Any]) -> str:
     return f"{kind}:{value}"
 
 
+@_verified
 def _audit_phase_two(instant: datetime) -> str:
     import time
 
@@ -1694,6 +1810,7 @@ def execute_all(
     workers: int,
     precompute_venue: str,
     progress: Callable[[str], None] = lambda line: None,
+    frozen_code: tuple[Path, str, set[str]] | None = None,
 ) -> None:
     """The precompute, the history, every run and the audit, each skipped when its complete file exists."""
 
@@ -1702,6 +1819,11 @@ def execute_all(
     workspace.directory.mkdir(parents=True, exist_ok=True)
     _STATE.clear()
     _STATE.update({"context": context, "workspace": workspace, "precompute_inputs": context.inputs[precompute_venue]})
+    if frozen_code is not None:
+        # review F5: modules loaded after the command's check are checked where they load
+        repository, commit, checked = frozen_code
+        _STATE.update({"frozen": (repository, commit), "checked_modules": set(checked)})
+        verify_loaded_code()
     pool_context = multiprocessing.get_context("fork")
     blocks = precompute_blocks(precompute_instants(specs, context), workers * 4)
     progress(f"precompute: {len(blocks)} blocks over {sum(len(block) for block in blocks)} instants")
@@ -1786,6 +1908,10 @@ def publish(report: Mapping[str, Any], files: Mapping[str, bytes], *, private: P
 def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = print) -> int:
     import argparse
     import os
+    import sys
+
+    if not fresh_bytecode_process():
+        return run_with_fresh_bytecode(list(sys.argv[1:] if argv is None else argv))
 
     from btc_predictor.config.strategy import load_strategy_config
     from btc_predictor.research_backtest import backfill_run as run
@@ -1801,7 +1927,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         repository = build.PUBLIC_REPOSITORY
         code = build.code_commit(repository)  # refuses uncommitted tracked changes
         preregistration = read_preregistration(repository)
-        frozen_paths = require_frozen_code(repository, preregistration["code_commit"])
+        frozen_paths, checked = require_frozen_code(repository, preregistration["code_commit"])
         champion = load_strategy_config()
         verify_preregistration(preregistration, champion)
         store = run.EvidenceStore(Path(args.store).expanduser(), public_repository=repository)
@@ -1830,7 +1956,15 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         private = store.root / prereg.ARTIFACT_DIRECTORY.name  # research_backtest_v1/, the public layout (ruling 9)
         workspace = Workspace(private / "rbt007_work")
         out(f"RBT-007 run at {code[:7]}: {len(specs)} runs on {len(venues)} venues, {args.workers} workers")
-        execute_all(context, specs, workspace, workers=args.workers, precompute_venue=venues[0], progress=out)
+        execute_all(
+            context,
+            specs,
+            workspace,
+            workers=args.workers,
+            precompute_venue=venues[0],
+            progress=out,
+            frozen_code=(repository, preregistration["code_commit"], checked),
+        )
         records = {}
         for spec in specs:
             record = read_run(workspace.directory, spec, run_binding(spec, context))
@@ -1871,6 +2005,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
             sweep_specs=sweep_specs(preregistration["threshold_sweeps"]["sweeps"], champion),
             coverage_index=index["coverage"],
         )
+        verify_loaded_code()
         publish(report, files, private=private, public=repository / prereg.ARTIFACT_DIRECTORY, workspace=workspace)
         out(f"report written: {sorted(files)} (private), {report_module.INDEX_FILE} (public)")
         return 0
@@ -1880,4 +2015,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # run the imported module, not this __main__ copy: one set of classes and one state
+    from btc_predictor.research_backtest import runner as _runner
+
+    raise SystemExit(_runner.main())

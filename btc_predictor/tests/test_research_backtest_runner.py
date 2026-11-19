@@ -320,13 +320,125 @@ def test_the_frozen_code_check_finds_a_changed_or_missing_file(tmp_path):
 def test_the_loaded_repository_code_is_the_frozen_commit(preregistration):
     import sys
 
-    paths = rn.frozen_code_paths(REPOSITORY, list(sys.modules.values()))
+    paths = rn.frozen_code_paths(REPOSITORY, list(sys.modules.items()))
     assert "btc_predictor/research_backtest/entry_composer.py" in paths
     assert "btc_predictor/research_backtest/management_composer.py" in paths
     assert "btc_predictor/features/positioning.py" in paths
     assert rn.STRATEGY_CONFIG_PATH.as_posix() in paths and rn.GOLDEN_FIXTURE_PATH.as_posix() in paths
     assert not any((path.startswith("btc_predictor/tests/") and path.endswith(".py")) or Path(path).name in rn.RUNNER_MODULES for path in paths)
     assert rn.frozen_code_mismatches(REPOSITORY, preregistration["code_commit"], paths) == []
+
+
+def _module(name, origin, loader_type=None, cached=None):
+    import importlib.machinery
+    import importlib.util
+    import types
+
+    module = types.ModuleType(name)
+    loader = (loader_type or importlib.machinery.SourceFileLoader)(name, str(origin))
+    module.__spec__ = importlib.util.spec_from_loader(name, loader, origin=str(origin))
+    module.__spec__.cached = cached
+    module.__file__ = str(origin)
+    return module
+
+
+def test_a_repository_module_not_loaded_from_its_source_refuses(tmp_path):
+    import importlib.machinery
+
+    owner = REPOSITORY / "btc_predictor" / "features" / "positioning.py"
+    assert rn.frozen_code_paths(REPOSITORY, [("btc_predictor.features.positioning", _module("btc_predictor.features.positioning", owner))]) == sorted(
+        ["btc_predictor/features/positioning.py", rn.STRATEGY_CONFIG_PATH.as_posix(), rn.GOLDEN_FIXTURE_PATH.as_posix()]
+    )
+    elsewhere = tmp_path / "positioning.py"
+    elsewhere.write_text("VALUE = 1\n")
+    cases = [
+        _module("btc_predictor.features.positioning", elsewhere),
+        _module("btc_predictor.features.positioning", owner.with_suffix(".pyc"), importlib.machinery.SourcelessFileLoader),
+        _module("btc_predictor.features.positioning", owner, cached=str(tmp_path / "stale" / "positioning.cpython-312.pyc")),
+    ]
+    for module in cases:
+        with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
+            rn.frozen_code_paths(REPOSITORY, [(module.__name__, module)], pycache_prefix=str(tmp_path / "fresh"))
+    # the runner's own modules are checked for their loader too, though not against the frozen commit
+    runner = _module("btc_predictor.research_backtest.runner", elsewhere)
+    with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
+        rn.frozen_code_paths(REPOSITORY, [(runner.__name__, runner)])
+    assert rn.frozen_code_paths(REPOSITORY, [("numpy", _module("numpy", elsewhere))]) == sorted([rn.STRATEGY_CONFIG_PATH.as_posix(), rn.GOLDEN_FIXTURE_PATH.as_posix()])
+
+
+def test_the_command_runs_itself_again_with_a_fresh_bytecode_cache(tmp_path):
+    import os
+    import sys
+
+    assert not rn.fresh_bytecode_process()
+    with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
+        rn.require_fresh_bytecode()
+    assert rn.fresh_bytecode_command(["run", "--workers", "2"], "/p") == [
+        sys.executable, "-B", "-X", "pycache_prefix=/p", "-m", "btc_predictor.research_backtest.runner", "run", "--workers", "2"
+    ]
+    # the module's command line re-executes itself; the child parses the arguments
+    shown = subprocess.run([sys.executable, "-m", "btc_predictor.research_backtest.runner", "--help"], cwd=REPOSITORY, capture_output=True, text=True, check=False)
+    assert shown.returncode == 0 and shown.stdout.startswith("usage: runner")
+    # in such a process every repository module was compiled from its source into the empty cache
+    prefix = tmp_path / "fresh"
+    prefix.mkdir()
+    probe = (
+        "import sys; from pathlib import Path; from btc_predictor.research_backtest import runner as rn; "
+        "assert rn.fresh_bytecode_process() and rn.require_fresh_bytecode() == sys.pycache_prefix; "
+        "paths = rn.frozen_code_paths(Path('.').resolve(), list(sys.modules.items()), pycache_prefix=sys.pycache_prefix); "
+        "print(len(paths))"
+    )
+    child = subprocess.run(
+        rn.fresh_bytecode_command([], str(prefix))[:4] + ["-c", probe],
+        cwd=REPOSITORY,
+        env={**os.environ, rn.FRESH_BYTECODE_ENV: str(prefix)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert child.returncode == 0, child.stderr
+    assert int(child.stdout) > 50 and not any(prefix.iterdir())
+
+
+def test_stale_bytecode_runs_in_a_normal_import_but_never_in_the_fresh_process(tmp_path):
+    import os
+    import py_compile
+    import sys
+
+    # review F5's probe: a same-length change compiled, then the source restored with its size and time
+    package = tmp_path / "package"
+    package.mkdir()
+    source = package / "frozen_value.py"
+    source.write_text("VALUE = 29\n")
+    os.utime(source, (1_700_000_000, 1_700_000_000))
+    py_compile.compile(str(source), doraise=True)
+    source.write_text("VALUE = 28\n")
+    os.utime(source, (1_700_000_000, 1_700_000_000))
+    probe = ["-c", "import frozen_value; print(frozen_value.VALUE)"]
+    normal = subprocess.run([sys.executable, *probe], cwd=package, capture_output=True, text=True, check=True)
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    isolated = subprocess.run([sys.executable, "-B", "-X", f"pycache_prefix={fresh}", *probe], cwd=package, capture_output=True, text=True, check=True)
+    assert normal.stdout.strip() == "29" and isolated.stdout.strip() == "28" and not any(fresh.iterdir())
+
+
+def test_a_module_loaded_during_the_run_is_checked_where_it_loads(monkeypatch, preregistration, tmp_path):
+    import sys
+
+    loaded = {name for name in sys.modules if rn._repository_module(name)}
+    monkeypatch.setattr(rn, "_STATE", {"frozen": (REPOSITORY, preregistration["code_commit"]), "checked_modules": set(loaded)})
+    rn.verify_loaded_code()
+    # a real owner seen for the first time is compared with the frozen commit and then remembered
+    rn._STATE["checked_modules"].discard("btc_predictor.features.positioning")
+    rn.verify_loaded_code()
+    assert "btc_predictor.features.positioning" in rn._STATE["checked_modules"]
+    elsewhere = tmp_path / "late.py"
+    elsewhere.write_text("VALUE = 1\n")
+    monkeypatch.setitem(sys.modules, "btc_predictor.late_module", _module("btc_predictor.late_module", elsewhere))
+    with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
+        rn.verify_loaded_code()
+    with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
+        rn._verified(lambda argument: argument)(1)
 
 
 # --- windows, folds and runs ----------------------------------------------------------------------------
@@ -1036,6 +1148,7 @@ def test_main_refuses_when_the_code_is_not_frozen(monkeypatch, tmp_path):
         raise rn.RunnerRefused("FROZEN_CODE_REFUSED", "test")
 
     monkeypatch.setattr(rn, "require_frozen_code", refused)
+    monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
     lines = []
     assert rn.main(["run", "--store", str(tmp_path)], out=lines.append) == 2
     assert lines == ["refused: FROZEN_CODE_REFUSED: test"]
