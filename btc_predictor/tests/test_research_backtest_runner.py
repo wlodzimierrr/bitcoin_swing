@@ -372,6 +372,7 @@ def test_a_fold_shifted_by_omitted_hours_starts_from_the_history_before_its_firs
     assert [start.hour for start in starts] == [0, 2, 2]
     assert [fold["first_decision"] for fold in folds] == [day.isoformat() for day in (START, utc(2024, 4, 2), utc(2024, 4, 9))]
     assert [fold["decisions"] for fold in folds] == [8, 7, 7]
+    assert [(fold["omitted_hours_before_start"], fold["omitted_hours_before_end"]) for fold in folds] == [(0, 2), (2, 2), (2, 2)]
     for fold, ledger, strategy in zip(folds, outcome.record["entry_ledgers"], outcome.composers, strict=True):
         first = rn.datetime.fromisoformat(fold["first_decision"])
         assert ledger[0]["decision_at"] == fold["first_decision"]
@@ -382,17 +383,37 @@ def test_a_fold_shifted_by_omitted_hours_starts_from_the_history_before_its_firs
 
 
 def test_the_ruling_4_check_compares_the_preregistered_fold_dates(preregistration):
-    frozen = preregistration["venues"]["BITSTAMP"]
-    same = [
-        {"fold_number": item["fold_number"], "first_decision": item["test_start"], "last_decision": item["test_end"], "decisions": 182}
-        for item in frozen["walk_forward"]["folds"]
-    ]
-    assert rn_report_check("BITSTAMP", same, frozen)["equal"]
-    shifted = copy.deepcopy(same)
-    shifted[0]["last_decision"] = "2024-09-08T00:00:00+00:00"
-    shifted[0]["decisions"] = 183
-    check = rn_report_check("BITFINEX", shifted, frozen)
-    assert not check["equal"] and check["decisions_per_fold"] == [183, 182, 182]
+    frozen = preregistration["venues"]["BITSTAMP"]["walk_forward"]["folds"]
+
+    def folds(hours):
+        # each fold: its preregistered boundaries moved by the hours omitted before them
+        out = []
+        for item, (before_start, before_end) in zip(frozen, hours, strict=True):
+            first = rn.first_decision_at(rn.datetime.fromisoformat(item["test_start"]) + timedelta(hours=before_start))
+            last = rn.first_decision_at(rn.datetime.fromisoformat(item["test_end"]) + DAY + timedelta(hours=before_end)) - DAY
+            out.append(
+                {
+                    "fold_number": item["fold_number"],
+                    "first_decision": first.isoformat(),
+                    "last_decision": last.isoformat(),
+                    "decisions": (last - first) // DAY + 1,
+                    "omitted_hours_before_start": before_start,
+                    "omitted_hours_before_end": before_end,
+                }
+            )
+        return out
+
+    same = rn_report_check("BITSTAMP", folds([(0, 0)] * 3), preregistration["venues"]["BITSTAMP"])
+    assert same["equal"] and same["consistent"]
+    # ruling 4's Bitfinex case: two hours omitted inside fold 1
+    shifted = rn_report_check("BITFINEX", folds([(0, 2), (2, 2), (2, 2)]), preregistration["venues"]["BITSTAMP"])
+    assert not shifted["equal"] and shifted["consistent"] and shifted["decisions_per_fold"] == [183, 182, 182]
+    assert shifted["run"][0]["last_decision"] == "2024-09-08T00:00:00+00:00" and shifted["run"][1]["first_decision"] == "2024-09-09T00:00:00+00:00"
+    # a shift no omitted hour explains, or a missing fold, must fail
+    moved = folds([(0, 0)] * 3)
+    moved[1]["first_decision"] = "2024-09-09T00:00:00+00:00"
+    assert not rn_report_check("BITSTAMP", moved, preregistration["venues"]["BITSTAMP"])["consistent"]
+    assert not rn_report_check("BITSTAMP", folds([(0, 0)] * 3)[:2], preregistration["venues"]["BITSTAMP"])["consistent"]
 
 
 def rn_report_check(venue, folds, frozen):
@@ -843,6 +864,13 @@ def end_to_end(markets, preregistration, tmp_path_factory):
     specs = rn.run_plan(list(markets), registry, GOLDEN)
     workspace = rn.Workspace(tmp_path_factory.mktemp("work"))
     rn.execute_all(context, specs, workspace, workers=4, precompute_venue="BITSTAMP")
+    # the synthetic plan's three weekly folds stand for the preregistered folds (ruling 4's comparison)
+    synthetic = copy.deepcopy(preregistration)
+    for venue in markets:
+        synthetic["venues"][venue]["walk_forward"]["folds"] = [
+            {"fold_number": number + 1, "test_start": (START + 7 * DAY * number).isoformat(), "test_end": (START + 7 * DAY * number + 6 * DAY).isoformat()}
+            for number in range(3)
+        ]
 
     def build():
         records = {spec.run_id: rn.read_run(workspace.directory, spec, rn.run_binding(spec, context)) for spec in specs}
@@ -853,7 +881,7 @@ def end_to_end(markets, preregistration, tmp_path_factory):
         instants = [instant for instant in SCHEDULE if START <= instant <= LAST]
         gaps = {venue: rr.gap_exposure(markets[venue], instants) for venue in markets}
         return rr.build_report(
-            preregistration=preregistration,
+            preregistration=synthetic,
             preregistration_sha256="synthetic",
             identity={"synthetic": True},
             context=context,
@@ -949,6 +977,39 @@ def test_an_audit_file_from_another_binding_or_missing_refuses(end_to_end, tmp_p
     rn.audit_state_file(workspace, "BITSTAMP").write_bytes(pickle.dumps({"binding": {"foreign": True}, "state": None}))
     with pytest.raises(rn.RunnerRefused, match="AUDIT_REFUSED"):
         rn.load_audit_state(workspace, "BITSTAMP", binding)
+
+
+def test_a_failed_required_check_publishes_nothing(end_to_end, tmp_path):
+    # review F4: failures were recorded, but every output was still written and the command succeeded
+    report, files = end_to_end.report, end_to_end.files
+    assert rr.publication_refusals(report) == []
+    workspace = rn.Workspace(tmp_path / "work")
+    rn.publish(report, files, private=tmp_path / "private", public=tmp_path / "public", workspace=workspace)
+    assert sorted(path.name for path in (tmp_path / "private").iterdir()) == sorted(files)
+    assert [path.name for path in (tmp_path / "public").iterdir()] == [rr.INDEX_FILE]
+
+    def broken(change):
+        copy_ = copy.deepcopy(report)
+        change(copy_)
+        return copy_
+
+    venue = "BITSTAMP"
+    cases = {
+        "LOOKAHEAD_AUDIT_FAILED:BITSTAMP": lambda r: r["lookahead_audit"][venue].update(passed=False),
+        "MEMORY_MISMATCH:HEADLINE:BITSTAMP:champion:base": lambda r: r["integrity"]["memory_matches_history"].update({"HEADLINE:BITSTAMP:champion:base": False}),
+        "UNACCOUNTED_CAUSES:SWEEP:x": lambda r: r["integrity"]["unaccounted"].update({"SWEEP:x": ["entry:BITSTAMP:CODE"]}),
+        "FOLD_DATES_INCONSISTENT:BITSTAMP": lambda r: r["walk_forward"][venue]["ruling_4"].update(consistent=False),
+        "GOLDEN_ENGINE_REFUSED:synthetic_golden:BITSTAMP": lambda r: r["golden_replays"]["synthetic_golden"][venue].update(engine_refused=True),
+        "RUNS_INCOMPLETE": lambda r: r["integrity"].update(runs=r["integrity"]["runs"] - 1),
+    }
+    for number, (refusal, change) in enumerate(cases.items()):
+        failing = broken(change)
+        assert rr.publication_refusals(failing) == [refusal]
+        work = rn.Workspace(tmp_path / f"work{number}")
+        with pytest.raises(rn.RunnerRefused, match="PUBLICATION_REFUSED"):
+            rn.publish(failing, files, private=tmp_path / f"private{number}", public=tmp_path / f"public{number}", workspace=work)
+        assert not (tmp_path / f"private{number}").exists() and not (tmp_path / f"public{number}").exists()
+        assert json.loads((work.directory / rn.REFUSED_REPORT_FILE).read_bytes())["refusals"] == [refusal]
 
 
 def test_the_public_index_is_value_free(end_to_end):

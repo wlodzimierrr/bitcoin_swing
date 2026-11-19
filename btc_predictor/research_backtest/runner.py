@@ -93,6 +93,7 @@ RUN_KINDS = (HEADLINE, WALK_FORWARD, SWEEP, ABLATION, GOLDEN)
 HOURS_PER_DAY = 24
 FOLD_BARS = prereg.FOLD_TEST_PERIODS * HOURS_PER_DAY  # ruling 4: 182 days of 24 hourly bars
 _DAY = timedelta(days=1)
+_HOUR = timedelta(hours=1)
 
 
 class RunnerRefused(ValueError):
@@ -341,13 +342,21 @@ def first_decision_at(available: datetime) -> datetime:
     return available if is_daily_decision_instant(available) else next_decision_instant(available)
 
 
-def fold_decisions(bars: Sequence[OhlcvBar], plan: Any) -> list[dict[str, Any]]:
-    """Each fold's first and last decision instant, from its bars' engine availability."""
+def fold_decisions(bars: Sequence[OhlcvBar], plan: Any, evaluation_start: datetime) -> list[dict[str, Any]]:
+    """Each fold's first and last decision instant, from its bars' engine availability.
 
+    Each fold also records the hourly bars omitted between the evaluation
+    start and its first bar, and its end: ruling 4's folds count bars, so
+    omitted hours shift them from the preregistered daily folds.
+    """
+
+    train = plan.train_periods
     folds = []
     for window in walk_forward_windows([bar.timestamp for bar in bars], plan=plan):
         available = [_bar_available_at(bar) for bar in bars[window.test_start_index : window.test_stop_index]]
         instants = [moment for moment in available if moment.hour == 0 and moment.minute == 0]
+        before_start = (available[0] - evaluation_start) // _HOUR - (window.test_start_index - train)
+        before_end = (available[-1] + _HOUR - evaluation_start) // _HOUR - (window.test_stop_index - train)
         folds.append(
             {
                 "fold_number": window.fold_number,
@@ -355,6 +364,8 @@ def fold_decisions(bars: Sequence[OhlcvBar], plan: Any) -> list[dict[str, Any]]:
                 "last_decision": instants[-1].isoformat() if instants else None,
                 "decisions": len(instants),
                 "bars": window.test_periods,
+                "omitted_hours_before_start": before_start,
+                "omitted_hours_before_end": before_end,
             }
         )
     return folds
@@ -607,7 +618,7 @@ def execute_run(spec: RunSpec, context: RunContext, *, record_management: bool =
         "run_id": spec.run_id,
         "variant": variant.as_record(),
         "plan": plan.as_record(),
-        "folds": fold_decisions(window, plan),
+        "folds": fold_decisions(window, plan, start),
         "metrics": rm.run_metrics(view),
         "fold_metrics": rm.fold_metrics(view),
         "validation": validation.as_record(),
@@ -1749,6 +1760,29 @@ def _write_fresh(directory: Path, files: Mapping[str, bytes]) -> None:
         partial.replace(directory / name)
 
 
+REFUSED_REPORT_FILE = "refused_report.json"
+
+
+def publish(report: Mapping[str, Any], files: Mapping[str, bytes], *, private: Path, public: Path, workspace: Workspace) -> None:
+    """Write the private files and the public index, only if every required check passed (review F4).
+
+    Otherwise nothing is published: the report and its refusals go to the
+    private work directory alone, and the command fails.
+    """
+
+    from btc_predictor.research_backtest import runner_report as report_module
+
+    refusals = report_module.publication_refusals(report)
+    if refusals:
+        _write_whole(workspace.directory / REFUSED_REPORT_FILE, canonical_json_bytes({"refusals": refusals, "report": report}))
+        raise RunnerRefused(
+            "PUBLICATION_REFUSED", f"{len(refusals)} required check(s) failed, nothing published: {refusals[:5]} (see {REFUSED_REPORT_FILE})"
+        )
+    _write_fresh(private, files)
+    index_file = report_module.public_index(report, files, private_commit=None)
+    _write_fresh(public, {report_module.INDEX_FILE: canonical_json_bytes(index_file)})
+
+
 def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = print) -> int:
     import argparse
     import os
@@ -1837,9 +1871,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
             sweep_specs=sweep_specs(preregistration["threshold_sweeps"]["sweeps"], champion),
             coverage_index=index["coverage"],
         )
-        _write_fresh(private, files)
-        index_file = report_module.public_index(report, files, private_commit=None)
-        _write_fresh(repository / prereg.ARTIFACT_DIRECTORY, {report_module.INDEX_FILE: canonical_json_bytes(index_file)})
+        publish(report, files, private=private, public=repository / prereg.ARTIFACT_DIRECTORY, workspace=workspace)
         out(f"report written: {sorted(files)} (private), {report_module.INDEX_FILE} (public)")
         return 0
     except RunnerRefused as error:

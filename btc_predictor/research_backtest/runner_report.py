@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -318,20 +318,61 @@ def _sweep_summary(report: Any) -> dict[str, Any]:
 
 
 def ruling4_check(venue: str, folds: Sequence[Mapping[str, Any]], frozen: Mapping[str, Any]) -> dict[str, Any]:
-    """Each fold's decision range against the preregistered daily folds (ruling 4)."""
+    """Each fold's decision range against the preregistered daily folds (ruling 4).
 
+    ``equal`` compares the dates as they are. ``consistent`` is the required
+    comparison: each preregistered boundary, moved by the hourly bars omitted
+    before it, gives the run's first and last decision; a venue without
+    omitted hours must equal its preregistered folds.
+    """
+
+    hour = timedelta(hours=1)
     expected = [
         {"fold_number": item["fold_number"], "first_decision": item["test_start"], "last_decision": item["test_end"]}
         for item in frozen["walk_forward"]["folds"]
     ]
     actual = [{key: fold[key] for key in ("fold_number", "first_decision", "last_decision")} for fold in folds]
+    shifted = []
+    for item, fold in zip(frozen["walk_forward"]["folds"], folds, strict=False):
+        start = datetime.fromisoformat(item["test_start"]) + fold["omitted_hours_before_start"] * hour
+        end = datetime.fromisoformat(item["test_end"]) + timedelta(days=1) + fold["omitted_hours_before_end"] * hour
+        shifted.append(
+            {
+                "fold_number": item["fold_number"],
+                "first_decision": rn.first_decision_at(start).isoformat(),
+                "last_decision": (rn.first_decision_at(end) - timedelta(days=1)).isoformat(),
+            }
+        )
     return {
         "venue": venue,
         "preregistered": expected,
         "run": actual,
         "equal": expected == actual,
+        "omitted_hours": [[fold["omitted_hours_before_start"], fold["omitted_hours_before_end"]] for fold in folds],
+        "preregistered_moved_by_omitted_hours": shifted,
+        "consistent": len(folds) == len(expected) and shifted == actual,
         "decisions_per_fold": [fold["decisions"] for fold in folds],
     }
+
+
+def publication_refusals(report: Mapping[str, Any]) -> list[str]:
+    """Every required check that failed (review F4); the report is published only when there is none."""
+
+    integrity = report["integrity"]
+    refusals = []
+    if integrity["runs"] != integrity["planned_runs"]:
+        refusals.append("RUNS_INCOMPLETE")
+    refusals += [f"MEMORY_MISMATCH:{run_id}" for run_id, matches in integrity["memory_matches_history"].items() if not matches]
+    refusals += [f"UNACCOUNTED_CAUSES:{run_id}" for run_id in integrity["unaccounted"]]
+    refusals += [f"LOOKAHEAD_AUDIT_FAILED:{venue}" for venue, audit in report["lookahead_audit"].items() if not audit["passed"]]
+    refusals += [f"FOLD_DATES_INCONSISTENT:{venue}" for venue, entry in report["walk_forward"].items() if not entry["ruling_4"]["consistent"]]
+    refusals += [
+        f"GOLDEN_ENGINE_REFUSED:{scenario}:{venue}"
+        for scenario, venues in report["golden_replays"].items()
+        for venue, item in venues.items()
+        if item["engine_refused"]
+    ]
+    return refusals
 
 
 def build_report(
@@ -518,7 +559,8 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         check = rungs["ruling_4"]
         lines.append(
             f"- {venue}: folds {[fold['fold_number'] for fold in folds]}, calmar per fold "
-            f"{[_cell(fold['metrics']['calmar']) for fold in folds]}; preregistered fold dates equal: {check['equal']}"
+            f"{[_cell(fold['metrics']['calmar']) for fold in folds]}; preregistered fold dates equal: {check['equal']}, "
+            f"consistent with the omitted hours: {check['consistent']}"
         )
     lines += ["", "## Look-ahead audit", ""]
     for venue, audit in report["lookahead_audit"].items():
