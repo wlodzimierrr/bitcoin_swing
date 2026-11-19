@@ -351,6 +351,34 @@ def test_ruling_4_folds_are_4368_hourly_bars_from_the_evaluation_start(walk_forw
     assert "regime_breakdown" in walk_forward.record and "validation" not in walk_forward.record["regime_breakdown"]
 
 
+def test_a_fold_shifted_by_omitted_hours_starts_from_the_history_before_its_first_decision(preregistration):
+    # review F1: two omitted hours shift every later fold to start at 02:00 (ruling 4's Bitfinex case)
+    gapped = management_market(end=utc(2024, 4, 20), missing_hours=(utc(2024, 3, 26, 10), utc(2024, 3, 26, 11))).build()
+    history = {"BITSTAMP": rn.continuous_history(gapped, CONFIG, LAST, SCHEDULE)}
+    context = rn.RunContext(
+        inputs={"BITSTAMP": gapped},
+        registry=_registry(preregistration),
+        evaluation={"BITSTAMP": (START, LAST)},
+        fold_bars=SYNTHETIC_FOLD_BARS,
+        history=history,
+        schedule=SCHEDULE,
+    )
+    outcome = rn.execute_run(rn.RunSpec(rn.WALK_FORWARD, "BITSTAMP", rn.CHAMPION, "base"), context)
+    folds = outcome.record["folds"]
+    window = rn.bars_before(rn.venue_bars(gapped), LAST + DAY)
+    starts = [rn._bar_available_at(window[w.test_start_index]) for w in rn.walk_forward_windows([bar.timestamp for bar in window], plan=rn.fold_plan_bars(CONFIG, window, START, SYNTHETIC_FOLD_BARS))]
+    assert [start.hour for start in starts] == [0, 2, 2]
+    assert [fold["first_decision"] for fold in folds] == [day.isoformat() for day in (START, utc(2024, 4, 2), utc(2024, 4, 9))]
+    assert [fold["decisions"] for fold in folds] == [8, 7, 7]
+    for fold, ledger, strategy in zip(folds, outcome.record["entry_ledgers"], outcome.composers, strict=True):
+        first = rn.datetime.fromisoformat(fold["first_decision"])
+        assert ledger[0]["decision_at"] == fold["first_decision"]
+        seeded = strategy.entry.ledger[: strategy.entry.seeded]
+        assert seeded == tuple(row for row in history["BITSTAMP"] if row.decision_at < first) and seeded[-1].decision_at == first - DAY
+    assert outcome.record["memory"]["matches_history"] and outcome.record["unaccounted"] == []
+    assert rn.first_decision_at(utc(2024, 4, 1, 2)) == utc(2024, 4, 2) and rn.first_decision_at(START) == START
+
+
 def test_the_ruling_4_check_compares_the_preregistered_fold_dates(preregistration):
     frozen = preregistration["venues"]["BITSTAMP"]
     same = [

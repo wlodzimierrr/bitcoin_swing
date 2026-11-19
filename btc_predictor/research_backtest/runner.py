@@ -70,7 +70,13 @@ from btc_predictor.config.strategy import StrategyConfig
 from btc_predictor.data import OhlcvBar
 from btc_predictor.research_backtest import preregistration as prereg
 from btc_predictor.research_backtest import runner_metrics as rm
-from btc_predictor.research_backtest.entry_composer import EntryComposer, EntryComposerInputs, EntryDecision
+from btc_predictor.research_backtest.entry_composer import (
+    EntryComposer,
+    EntryComposerInputs,
+    EntryDecision,
+    is_daily_decision_instant,
+    next_decision_instant,
+)
 from btc_predictor.research_backtest.management_composer import ManagementComposer
 from btc_predictor.research_backtest.replay_inputs import canonical_json_bytes
 from btc_predictor.research_backtest.runner_shared import ShareStatistics
@@ -310,6 +316,17 @@ def fold_plan_bars(config: StrategyConfig, bars: Sequence[OhlcvBar], evaluation_
     )
 
 
+def first_decision_at(available: datetime) -> datetime:
+    """The first decision instant composed from a bar available at ``available``.
+
+    A fold whose first bar becomes available after midnight (after omitted
+    hours, ruling 4) composes its first decision at the next midnight, as the
+    entry composer's ``step`` does; its history is the rows before that instant.
+    """
+
+    return available if is_daily_decision_instant(available) else next_decision_instant(available)
+
+
 def fold_decisions(bars: Sequence[OhlcvBar], plan: Any) -> list[dict[str, Any]]:
     """Each fold's first and last decision instant, from its bars' engine availability."""
 
@@ -535,7 +552,7 @@ def execute_run(spec: RunSpec, context: RunContext, *, record_management: bool =
     composers: list[ManagementComposer] = []
 
     def factory(training: TrainingWindow) -> FoldStrategy:
-        first = _bar_available_at(window[training.window.test_start_index])
+        first = first_decision_at(_bar_available_at(window[training.window.test_start_index]))
         entry = RegisteredEntryComposer(inputs, variant=variant, registry=context.registry, history=context.seed(spec.venue, first))
         strategy = ManagementComposer(entry)
         composers.append(strategy)
