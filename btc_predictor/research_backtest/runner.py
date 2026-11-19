@@ -50,6 +50,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from btc_predictor.backtest.costs import cost_profile
@@ -437,6 +438,7 @@ class RunOutcome:
     validation: WalkForwardValidation | None = None
     result: BacktestResult | None = None
     composers: list[ManagementComposer] = field(default_factory=list)
+    snapshot: RunSnapshot | None = None
 
 
 MEMORY_FIELDS = ("regime", "capitulation_flag_state")
@@ -451,11 +453,17 @@ def memory_check(context: RunContext, venue: str, composers: Sequence[Management
     that memory would fail here.
     """
 
+    return memory_of_rows(context, venue, [strategy.entry.run_rows() for strategy in composers])
+
+
+def memory_of_rows(context: RunContext, venue: str, row_sets: Sequence[Sequence[Any]]) -> dict[str, Any]:
+    """:func:`memory_check` over each composer's own rows (a run snapshot's, review RR2)."""
+
     history = {row.decision_at: row for row in context.history.get(venue, ())}
     compared = 0
     mismatches = []
-    for strategy in composers:
-        for row in strategy.entry.run_rows():
+    for rows in row_sets:
+        for row in rows:
             reference = history.get(row.decision_at)
             if reference is None:
                 continue
@@ -463,7 +471,7 @@ def memory_check(context: RunContext, venue: str, composers: Sequence[Management
             ours, theirs = row.as_record(), reference.as_record()
             if any(ours[name] != theirs[name] for name in MEMORY_FIELDS):
                 mismatches.append(row.decision_at.isoformat())
-    composed = sum(len(strategy.entry.run_rows()) for strategy in composers)
+    composed = sum(len(rows) for rows in row_sets)
     # review F3: every composed row must have its history row; an empty history never matches
     return {"compared_rows": compared, "mismatches": mismatches, "matches_history": not mismatches and compared > 0 and compared == composed}
 
@@ -501,14 +509,57 @@ def _drop_embedded(record: Mapping[str, Any], key: str) -> dict[str, Any]:
     return out
 
 
-def _trade_entries(validation: WalkForwardValidation, composers: Sequence[ManagementComposer]) -> list[dict[str, str]]:
+@dataclass(frozen=True)
+class ComposerSnapshot:
+    """One run composer's rows, as its run's record reads them (review RR2).
+
+    The entry rows are the run's own; the composer was seeded with the
+    context's continuous history before ``first`` (ruling 7).
+    """
+
+    first: datetime
+    entry_rows: tuple[Any, ...]
+    management_rows: tuple[Any, ...]
+    followups: tuple[Any, ...]
+
+    @classmethod
+    def of(cls, strategy: ManagementComposer, first: datetime) -> ComposerSnapshot:
+        return cls(first, tuple(strategy.entry.run_rows()), tuple(strategy.ledger), tuple(strategy.add_followups))
+
+    def armed(self) -> dict[str, datetime]:
+        """Each ARM_ENTRY row's decision instant, by its intent's source id."""
+
+        return {row.intent["source_id"]: row.decision_at for row in self.entry_rows if row.intent is not None}
+
+
+@dataclass(frozen=True)
+class RunSnapshot:
+    """What a run's record is built from: its engine objects and its composers' rows (review RR2).
+
+    It is written beside the record under the same binding; a resumed record
+    is read only if this snapshot is complete and gives that record exactly.
+    """
+
+    result: BacktestResult | None
+    validation: WalkForwardValidation | None
+    composers: tuple[ComposerSnapshot, ...]
+    trade_contexts: tuple[Any, ...] = ()  # a walk-forward's BTC-183 entry contexts
+
+    def results(self) -> tuple[BacktestResult, ...]:
+        if self.validation is None:
+            return (self.result,) if self.result is not None else ()
+        return tuple(fold.result for fold in self.validation.folds)
+
+
+def _armed_instants(result: BacktestResult, composer: ComposerSnapshot) -> dict[str, str]:
+    armed = composer.armed()
+    return {str(index): armed[trade.fills[0].source_event_id].isoformat() for index, trade in enumerate(result.trades)}
+
+
+def _trade_entries(validation: WalkForwardValidation, composers: Sequence[ComposerSnapshot]) -> list[dict[str, str]]:
     """Per fold, each trade's index and the decision instant of the ARM_ENTRY row that opened it."""
 
-    out = []
-    for fold, strategy in zip(validation.folds, composers, strict=True):
-        armed = strategy.entry.armed
-        out.append({str(index): armed[trade.fills[0].source_event_id].row.decision_at.isoformat() for index, trade in enumerate(fold.result.trades)})
-    return out
+    return [_armed_instants(fold.result, composer) for fold, composer in zip(validation.folds, composers, strict=True)]
 
 
 def _single_run(spec: RunSpec, context: RunContext, variant: Variant, inputs: EntryComposerInputs, window: Sequence[OhlcvBar], *, first: datetime, record_management: bool, starting_nav: Decimal | None = None) -> tuple[BacktestResult, ManagementComposer]:
@@ -544,61 +595,76 @@ def event_counts(results: Iterable[BacktestResult]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def _unaccounted(composers: Sequence[ManagementComposer]) -> list[str]:
-    return sorted(
-        {f"entry:{venue}:{code}" for strategy in composers for venue, code in strategy.entry.unaccounted_causes()}
-        | {f"management:{venue}:{code}" for strategy in composers for venue, code in strategy.unaccounted_causes()}
-    )
+def _unaccounted(context: RunContext, venue: str, composers: Sequence[ComposerSnapshot]) -> list[str]:
+    """Every cause a run's composers left unaccounted, their seeded history's too, by the composers' own methods."""
+
+    entry: set[str] = set()
+    management: set[str] = set()
+    for composer in composers:
+        ledger = SimpleNamespace(_ledger=[*context.seed(venue, composer.first), *composer.entry_rows])
+        entry |= {f"entry:{instant}:{code}" for instant, code in EntryComposer.unaccounted_causes(ledger)}
+        managed = SimpleNamespace(_ledger=list(composer.management_rows), _followups=list(composer.followups))
+        management |= {f"management:{instant}:{code}" for instant, code in ManagementComposer.unaccounted_causes(managed)}
+    return sorted(entry | management)
 
 
-def _armed_instants(result: BacktestResult, strategy: ManagementComposer) -> dict[str, str]:
-    armed = strategy.entry.armed
-    return {str(index): armed[trade.fills[0].source_event_id].row.decision_at.isoformat() for index, trade in enumerate(result.trades)}
+def run_bars(spec: RunSpec, context: RunContext) -> tuple[OhlcvBar, ...]:
+    """The bars a run's engine reads: its window's, or for walk-forward folds every bar before its end."""
+
+    bars = venue_bars(context.inputs[spec.venue])
+    first, last = spec_window(spec, context)
+    if spec.kind in (WALK_FORWARD, SWEEP):
+        return bars_before(bars, last + _DAY)
+    return tuple(bar for bar in bars if first <= _bar_available_at(bar) < last + _DAY)
+
+
+def _fold_runs(spec: RunSpec, context: RunContext, window: Sequence[OhlcvBar]) -> list[tuple[tuple[OhlcvBar, ...], datetime]]:
+    """Each fold's engine bars and first decision instant (ruling 4; review F1)."""
+
+    variant = context.registry.variants[spec.variant]
+    plan = fold_plan_bars(variant.config, window, context.evaluation[spec.venue][0], context.fold_bars)
+    return [
+        (tuple(window[item.test_start_index : item.test_stop_index]), first_decision_at(_bar_available_at(window[item.test_start_index])))
+        for item in walk_forward_windows([bar.timestamp for bar in window], plan=plan)
+    ]
 
 
 def execute_run(spec: RunSpec, context: RunContext, *, record_management: bool = False) -> RunOutcome:
-    """Run one spec and return its record (and, in process, its objects)."""
+    """Run one spec and return its record (and, in process, its objects and snapshot)."""
 
     if spec.kind not in RUN_KINDS:
         raise RunnerRefused("RUN_REFUSED", f"unknown run kind {spec.kind}")
     variant = context.registry.variants[spec.variant]
     inputs = context.inputs[spec.venue]
-    bars = venue_bars(inputs)
-    if spec.kind == GOLDEN:
-        return _golden_run(spec, context, variant, inputs, bars)
-    start, last = context.evaluation[spec.venue]
-    end = last + _DAY
-    if spec.kind in (HEADLINE, ABLATION):
-        # one continuous engine run over the evaluation window, from flat
-        window = tuple(bar for bar in bars if start <= _bar_available_at(bar) < end)
-        result, strategy = _single_run(spec, context, variant, inputs, window, first=start, record_management=record_management)
-        view = rm.single_view(result)
-        record = {
-            "run": spec.as_record(),
-            "run_id": spec.run_id,
-            "variant": variant.as_record(),
-            "window": {"first_decision": start.isoformat(), "last_decision": last.isoformat(), "bars": len(window)},
-            "metrics": rm.run_metrics(view),
-            "result": result.as_record(),
-            "entry_ledger": strategy.entry.run_records(),
-            "management_ledger": strategy.ledger_records(),
-            "trade_entries": _armed_instants(result, strategy),
-            "unaccounted": _unaccounted([strategy]),
-            "memory": memory_check(context, spec.venue, [strategy]),
-            "engine_events": event_counts([result]),
-            "binding": run_binding(spec, context),
-        }
-        return RunOutcome(spec, record, result=result, composers=[strategy])
+    window = run_bars(spec, context)
+    if spec.kind in (HEADLINE, ABLATION, GOLDEN):
+        # one continuous engine run over the window, from flat
+        first = spec_window(spec, context)[0]
+        golden = spec.kind == GOLDEN
+        result, strategy = _single_run(
+            spec,
+            context,
+            variant,
+            inputs,
+            window,
+            first=first,
+            record_management=record_management and not golden,
+            starting_nav=Decimal(context.golden[spec.scenario]["starting_nav"]) if golden else None,
+        )
+        snapshot = RunSnapshot(result, None, (ComposerSnapshot.of(strategy, first),))
+        return RunOutcome(spec, run_record(spec, context, snapshot), result=result, composers=[strategy], snapshot=snapshot)
 
-    window = bars_before(bars, end)
+    start = context.evaluation[spec.venue][0]
     plan = fold_plan_bars(variant.config, window, start, context.fold_bars)
     composers: list[ManagementComposer] = []
+    firsts: list[datetime] = []
 
     def factory(training: TrainingWindow) -> FoldStrategy:
         first = first_decision_at(_bar_available_at(window[training.window.test_start_index]))
         entry = RegisteredEntryComposer(inputs, variant=variant, registry=context.registry, history=context.seed(spec.venue, first))
         strategy = ManagementComposer(entry)
         composers.append(strategy)
+        firsts.append(first)
         return FoldStrategy(strategy=strategy, strategy_id=f"rbt007:{spec.run_id}:fold-{training.window.fold_number}")
 
     # BTC-185 compares candidates only without a selected BTC-181 profile, whose
@@ -612,30 +678,124 @@ def execute_run(spec: RunSpec, context: RunContext, *, record_management: bool =
         rung = cost_profile(spec.cost_rung, config=variant.config)
         if validation.effective_costs.as_record() != rung.costs.as_record():
             raise RunnerRefused("SWEEP_REFUSED", f"a sweep's costs are not the {spec.cost_rung} rung's")
+    snapshot = RunSnapshot(
+        None,
+        validation,
+        tuple(ComposerSnapshot.of(strategy, first) for strategy, first in zip(composers, firsts, strict=True)),
+        # BTC-183 and BTC-184 attribute each filled out-of-sample trade (a BTC-182 validation)
+        tuple(_contexts(validation, composers)) if spec.kind == WALK_FORWARD else (),
+    )
+    return RunOutcome(spec, run_record(spec, context, snapshot), validation=validation, composers=composers, snapshot=snapshot)
+
+
+def run_record(spec: RunSpec, context: RunContext, snapshot: RunSnapshot) -> dict[str, Any]:
+    """A run's record, built from its snapshot and the context it binds alone (review RR2).
+
+    The run writes it; a resumed run rebuilds it from the stored snapshot and
+    reads the stored record only if the two are equal.
+    """
+
+    variant = context.registry.variants[spec.variant]
+    first, last = spec_window(spec, context)
+    composers = snapshot.composers
+    if spec.kind in (HEADLINE, ABLATION, GOLDEN):
+        result, (composer,) = snapshot.result, composers
+        window = {"first_decision": first.isoformat(), "last_decision": last.isoformat(), "bars": len(result.input_bars)}
+        if spec.kind == GOLDEN:
+            return _golden_record(spec, context, result, composer, window)
+        return {
+            "run": spec.as_record(),
+            "run_id": spec.run_id,
+            "variant": variant.as_record(),
+            "window": window,
+            "metrics": rm.run_metrics(rm.single_view(result)),
+            "result": result.as_record(),
+            "entry_ledger": [row.as_record() for row in composer.entry_rows],
+            "management_ledger": [row.as_record() for row in composer.management_rows],
+            "trade_entries": _armed_instants(result, composer),
+            "unaccounted": _unaccounted(context, spec.venue, composers),
+            "memory": memory_of_rows(context, spec.venue, [composer.entry_rows]),
+            "engine_events": event_counts([result]),
+            "binding": run_binding(spec, context),
+        }
+
+    validation = snapshot.validation
+    window_bars = run_bars(spec, context)
+    plan = fold_plan_bars(variant.config, window_bars, first, context.fold_bars)
     view = rm.validation_view(validation)
     record = {
         "run": spec.as_record(),
         "run_id": spec.run_id,
         "variant": variant.as_record(),
         "plan": plan.as_record(),
-        "folds": fold_decisions(window, plan, start),
+        "folds": fold_decisions(window_bars, plan, first),
         "metrics": rm.run_metrics(view),
         "fold_metrics": rm.fold_metrics(view),
         "validation": validation.as_record(),
-        "entry_ledgers": [strategy.entry.run_records() for strategy in composers],
-        "management_ledgers": [strategy.ledger_records() for strategy in composers],
+        "entry_ledgers": [[row.as_record() for row in composer.entry_rows] for composer in composers],
+        "management_ledgers": [[row.as_record() for row in composer.management_rows] for composer in composers],
         "trade_entries": _trade_entries(validation, composers),
-        "unaccounted": _unaccounted(composers),
-        "memory": memory_check(context, spec.venue, composers),
-        "engine_events": event_counts(fold.result for fold in validation.folds),
+        "unaccounted": _unaccounted(context, spec.venue, composers),
+        "memory": memory_of_rows(context, spec.venue, [composer.entry_rows for composer in composers]),
+        "engine_events": event_counts(snapshot.results()),
         "binding": run_binding(spec, context),
     }
     if spec.kind == WALK_FORWARD:
-        # BTC-183 and BTC-184 attribute each filled out-of-sample trade (a BTC-182 validation)
-        breakdown = run_regime_performance_breakdown(validation, _contexts(validation, composers))
+        breakdown = run_regime_performance_breakdown(validation, list(snapshot.trade_contexts))
         record["regime_breakdown"] = _drop_embedded(breakdown.as_record(), "validation")
         record["setup_report"] = _drop_embedded(setup_performance_report_from_breakdown(breakdown).as_record(), "source_breakdown")
-    return RunOutcome(spec, record, validation=validation, composers=composers)
+    return record
+
+
+def snapshot_refusals(spec: RunSpec, context: RunContext, snapshot: Any) -> list[str]:
+    """Why a run's snapshot is not a complete run of its bound window (review RR2); empty if it is.
+
+    Each engine run must have read exactly the bars its window gives, and its
+    composer been seeded at its first decision. The entry ledger must hold a
+    row at every daily decision instant from the engine's first callback to
+    its last (RBT-004 records each crossed instant), the management ledger a
+    row exactly where the entry row has the position open (RBT-005 decides,
+    or records the missing-bar row, while a position is open), and the
+    intents the ledgers and follow-ups returned must be exactly the ones the
+    engine received.
+    """
+
+    if not isinstance(snapshot, RunSnapshot) or not all(isinstance(item, ComposerSnapshot) for item in snapshot.composers):
+        return ["not a run snapshot"]
+    window = run_bars(spec, context)
+    if spec.kind in (HEADLINE, ABLATION, GOLDEN):
+        if snapshot.validation is not None or snapshot.result is None or len(snapshot.composers) != 1:
+            return ["not a single engine run"]
+        expected = [(window, spec_window(spec, context)[0])]
+    else:
+        if snapshot.result is not None or snapshot.validation is None:
+            return ["not a walk-forward validation"]
+        expected = _fold_runs(spec, context, window)
+        if len(expected) != len(snapshot.validation.folds) or len(snapshot.composers) != len(expected):
+            return ["not one composer per fold"]
+    if spec.kind != WALK_FORWARD and snapshot.trade_contexts:
+        return ["entry contexts outside a walk-forward"]
+    problems = []
+    for number, (result, composer, (bars, first)) in enumerate(zip(snapshot.results(), snapshot.composers, expected, strict=True), start=1):
+        if tuple(result.input_bars) != tuple(bars):
+            problems.append(f"engine run {number} read other bars than its window's")
+        if composer.first != first:
+            problems.append(f"engine run {number}'s composer was not seeded at its first decision")
+        crossed: list[datetime] = []
+        if bars:
+            instant, end = first_decision_at(_bar_available_at(bars[0])), _bar_available_at(bars[-1])
+            while instant <= end:
+                crossed.append(instant)
+                instant += _DAY
+        if [row.decision_at for row in composer.entry_rows] != crossed:
+            problems.append(f"engine run {number}'s entry ledger is not one row per decision instant crossed")
+        if [row.decision_at for row in composer.management_rows] != [row.decision_at for row in composer.entry_rows if row.position_open]:
+            problems.append(f"engine run {number}'s management ledger is not one row per instant with the position open")
+        returned = [item.intent["source_id"] for item in (*composer.entry_rows, *composer.management_rows, *composer.followups) if item.intent is not None]
+        received = {event.source_id for event in result.events if event.event_type == "INTENT"}
+        if len(returned) != len(set(returned)) or set(returned) != received:
+            problems.append(f"engine run {number}'s intents are not the ones its ledgers returned")
+    return problems
 
 
 def golden_window(scenario: Mapping[str, Any]) -> tuple[datetime, datetime]:
@@ -648,21 +808,17 @@ def golden_window(scenario: Mapping[str, Any]) -> tuple[datetime, datetime]:
     return first, last
 
 
-def _golden_run(spec: RunSpec, context: RunContext, variant: Variant, inputs: EntryComposerInputs, bars: Sequence[OhlcvBar]) -> RunOutcome:
+def _golden_record(
+    spec: RunSpec, context: RunContext, result: BacktestResult, composer: ComposerSnapshot, window: Mapping[str, Any]
+) -> dict[str, Any]:
     scenario = context.golden[spec.scenario]
-    first, last = golden_window(scenario)
-    window = tuple(bar for bar in bars if first <= _bar_available_at(bar) < last + _DAY)
-    result, strategy = _single_run(
-        spec, context, variant, inputs, window, first=first, record_management=False, starting_nav=Decimal(scenario["starting_nav"])
-    )
-    entry = strategy.entry
-    rows = {row.decision_at: row for row in entry.run_rows()}
+    rows = {row.decision_at: row for row in composer.entry_rows}
     beside = []
     for scripted in scenario["plan"]["decisions"]:
         day = date.fromisoformat(scripted["on"])
         instant = datetime(day.year, day.month, day.day, tzinfo=UTC) + _DAY
         row = rows.get(instant)
-        managed = next((item for item in strategy.ledger if item.decision_at == instant), None)
+        managed = next((item for item in composer.management_rows if item.decision_at == instant), None)
         beside.append(
             {
                 "on": scripted["on"],
@@ -673,23 +829,22 @@ def _golden_run(spec: RunSpec, context: RunContext, variant: Variant, inputs: En
                 "management_outcome": managed.outcome if managed is not None else None,
             }
         )
-    record = {
+    return {
         "run": spec.as_record(),
         "run_id": spec.run_id,
-        "window": {"first_decision": first.isoformat(), "last_decision": last.isoformat(), "bars": len(window)},
+        "window": dict(window),
         "engine_reason_codes": list(result.reason_codes),
         "engine_refused": "BACKTEST_INTENT_REFUSED" in result.reason_codes,
         "engine_events": event_counts([result]),
         # review RR4: a golden run's unaccounted causes are gated like every other run's
-        "unaccounted": _unaccounted([strategy]),
+        "unaccounted": _unaccounted(context, spec.venue, [composer]),
         "decisions_beside_scripted": beside,
         "result": result.as_record(),
-        "entry_ledger": entry.run_records(),
-        "management_ledger": strategy.ledger_records(),
-        "memory": memory_check(context, spec.venue, [strategy]),
+        "entry_ledger": [row.as_record() for row in composer.entry_rows],
+        "management_ledger": [row.as_record() for row in composer.management_rows],
+        "memory": memory_of_rows(context, spec.venue, [composer.entry_rows]),
         "binding": run_binding(spec, context),
     }
-    return RunOutcome(spec, record, result=result, composers=[strategy])
 
 
 # --- checkpoint files ---------------------------------------------------------------------------
@@ -700,15 +855,32 @@ def run_file(directory: Path, spec: RunSpec) -> Path:
     return Path(directory) / "runs" / f"{name}.json.gz"
 
 
-def write_run(directory: Path, outcome: RunOutcome) -> Path:
-    """Write a run's record whole, then rename: a resumed run reads complete records only."""
+def run_snapshot_file(directory: Path, spec: RunSpec) -> Path:
+    return run_file(directory, spec).with_name(run_file(directory, spec).name.replace(".json.gz", ".snapshot.pickle.gz"))
 
-    path = run_file(directory, outcome.spec)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    data = gzip.compress(canonical_json_bytes(outcome.record), mtime=0)
+
+def _replace_whole(path: Path, data: bytes) -> None:
     partial = path.with_name(path.name + ".partial")
     partial.write_bytes(data)
     partial.replace(path)
+
+
+def write_run(directory: Path, outcome: RunOutcome) -> Path:
+    """Write a run's snapshot, then its record, each whole, then renamed: a resumed run reads complete records only.
+
+    The snapshot goes first, under the record's binding, so a record on disk
+    always has the snapshot it is rebuilt from (review RR2).
+    """
+
+    import pickle
+
+    if outcome.snapshot is None:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{outcome.spec.run_id} has no snapshot to write")
+    path = run_file(directory, outcome.spec)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    stored = {"run_id": outcome.spec.run_id, "binding": json.loads(canonical_json_bytes(outcome.record["binding"])), "snapshot": outcome.snapshot}
+    _replace_whole(run_snapshot_file(directory, outcome.spec), gzip.compress(pickle.dumps(stored, protocol=pickle.HIGHEST_PROTOCOL), mtime=0))
+    _replace_whole(path, gzip.compress(canonical_json_bytes(outcome.record), mtime=0))
     return path
 
 
@@ -746,9 +918,18 @@ RECORD_KEYS = {
 }
 
 
-def read_run(directory: Path, spec: RunSpec, binding: Mapping[str, Any]) -> dict[str, Any] | None:
-    """A run's complete record, only if it is this run's under this binding; None if not written."""
+def read_run(directory: Path, spec: RunSpec, context: RunContext, *, binding: Mapping[str, Any] | None = None) -> dict[str, Any] | None:
+    """A run's complete record, only if it is this run's under this binding and its snapshot gives it; None if not written.
 
+    ``binding`` is the run's binding under ``context`` unless a test gives
+    another. Review RR2: the run's snapshot, stored under the same binding,
+    must be a complete run of the bound window (:func:`snapshot_refusals`),
+    and the record rebuilt from it must equal the stored record byte for byte.
+    """
+
+    import pickle
+
+    binding = run_binding(spec, context) if binding is None else binding
     path = run_file(directory, spec)
     if not path.exists():
         return None
@@ -763,6 +944,24 @@ def read_run(directory: Path, spec: RunSpec, binding: Mapping[str, Any]) -> dict
     missing = [key for key in RECORD_KEYS[spec.kind] if key not in record]
     if missing:
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} lacks {missing}")
+    snapshot_path = run_snapshot_file(directory, spec)
+    try:
+        stored = pickle.loads(gzip.decompress(snapshot_path.read_bytes()))
+    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError, TypeError) as error:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} has no readable snapshot: {error}") from error
+    if not isinstance(stored, dict) or stored.get("run_id") != spec.run_id or stored.get("binding") != record["binding"]:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{snapshot_path.name} is not {spec.run_id}'s under this binding")
+    problems = snapshot_refusals(spec, context, stored.get("snapshot"))
+    if problems:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{snapshot_path.name} is not a complete run: {'; '.join(problems)}")
+    try:
+        rebuilt = canonical_json_bytes(run_record(spec, context, stored["snapshot"]))
+    except RunnerRefused:
+        raise
+    except Exception as error:  # anything an incomplete snapshot makes an owner raise
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name}'s snapshot does not give a record: {error}") from error
+    if rebuilt != canonical_json_bytes(record):
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} is not the record its snapshot gives")
     return record
 
 
@@ -1598,7 +1797,7 @@ def _run_spec(spec: RunSpec) -> str:
     import time
 
     workspace: Workspace = _STATE["workspace"]
-    if read_run(workspace.directory, spec, run_binding(spec, _STATE["context"])) is not None:
+    if read_run(workspace.directory, spec, _STATE["context"]) is not None:
         return spec.run_id
     _STATE["statistics"] = ShareStatistics()
     share = _share_factory()
@@ -1678,7 +1877,7 @@ def _audit_state_task(venue: str) -> None:
         return
     context: RunContext = _STATE["context"]
     spec = RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG)
-    checkpoint = read_run(workspace.directory, spec, run_binding(spec, context))
+    checkpoint = read_run(workspace.directory, spec, context)
     if checkpoint is None:
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s base headline run has no record yet")
     state = audit_state(venue, context, checkpoint, share=_share_factory())
@@ -1794,7 +1993,7 @@ def read_audit(workspace: Workspace, venue: str, context: RunContext, binding: M
 
 def _base_record(workspace: Workspace, context: RunContext, venue: str) -> dict[str, Any]:
     spec = RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG)
-    record = read_run(workspace.directory, spec, run_binding(spec, context))
+    record = read_run(workspace.directory, spec, context)
     if record is None:
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s base headline run has no record yet")
     return record
@@ -1970,7 +2169,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         )
         records = {}
         for spec in specs:
-            record = read_run(workspace.directory, spec, run_binding(spec, context))
+            record = read_run(workspace.directory, spec, context)
             if record is None:
                 raise RunnerRefused("RUN_REFUSED", f"{spec.run_id} has no record")
             records[spec.run_id] = record

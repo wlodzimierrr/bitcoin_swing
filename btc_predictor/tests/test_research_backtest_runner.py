@@ -590,9 +590,9 @@ def test_a_checkpoint_is_read_back_only_under_its_own_binding(tmp_path, context,
     binding = rn.run_binding(spec, context)
     stored = json.loads(canonical_json_bytes(headline.record))
     assert stored["binding"] == json.loads(canonical_json_bytes(binding))
-    assert rn.read_run(tmp_path, spec, binding) is None
+    assert rn.read_run(tmp_path, spec, context) is None
     rn.write_run(tmp_path, headline)
-    assert rn.read_run(tmp_path, spec, binding) == stored
+    assert rn.read_run(tmp_path, spec, context) == stored
     for changed in (
         {**binding, "context": {"other_dataset": True}},
         {**binding, "window": [START.isoformat(), (LAST - DAY).isoformat()]},
@@ -600,7 +600,7 @@ def test_a_checkpoint_is_read_back_only_under_its_own_binding(tmp_path, context,
         {**binding, "history_sha256": "0" * 64},
     ):
         with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
-            rn.read_run(tmp_path, spec, changed)
+            rn.read_run(tmp_path, spec, context, binding=changed)
     path = rn.run_file(tmp_path, spec)
     for record in (
         {**stored, "metrics": {"invented": 1}, "binding": {"FOREIGN": True}},
@@ -610,10 +610,128 @@ def test_a_checkpoint_is_read_back_only_under_its_own_binding(tmp_path, context,
     ):
         path.write_bytes(gzip.compress(canonical_json_bytes(record)))
         with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
-            rn.read_run(tmp_path, spec, binding)
+            rn.read_run(tmp_path, spec, context)
     path.write_bytes(b"not a record")
     with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
-        rn.read_run(tmp_path, spec, binding)
+        rn.read_run(tmp_path, spec, context)
+
+
+def test_a_checkpoint_is_read_only_if_its_snapshot_gives_it(tmp_path, context, headline, walk_forward):
+    # review RR2: a correctly bound record with emptied ledgers and an invented rate was read and published
+    spec = rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base")
+    rn.write_run(tmp_path, headline)
+    stored = rn.read_run(tmp_path, spec, context)
+    path = rn.run_file(tmp_path, spec)
+    assert rn.run_snapshot_file(tmp_path, spec).exists()
+
+    def refused(record, match="CHECKPOINT_REFUSED"):
+        path.write_bytes(gzip.compress(canonical_json_bytes(record)))
+        with pytest.raises(rn.RunnerRefused, match=match):
+            rn.read_run(tmp_path, spec, context)
+
+    invented = copy.deepcopy(stored)
+    invented["entry_ledger"], invented["management_ledger"] = [], []
+    invented["metrics"]["win_rate"] = {**invented["metrics"]["win_rate"], "status": "AVAILABLE", "value": "0.987650000000"}
+    assert invented["metrics"]["win_rate"]["closed_trades"] == stored["metrics"]["win_rate"]["closed_trades"]
+    for change in (
+        lambda r: r.update(entry_ledger=[]),
+        lambda r: r.update(management_ledger=r["management_ledger"][:-1]),
+        lambda r: r["metrics"]["win_rate"].update(value="0.987650000000"),
+        lambda r: r.update(trade_entries={}),
+        lambda r: r["engine_events"].update({"INTENT:ARM_ENTRY:QUEUED": 2}),
+        lambda r: r.update(unaccounted=["entry:x:CODE"]),
+        lambda r: r["memory"].update(compared_rows=1),
+        lambda r: r["result"].update(ending_nav="1"),
+        lambda r: r["entry_ledger"][3].update(outcome="ARMED"),
+    ):
+        record = copy.deepcopy(stored)
+        change(record)
+        refused(record)
+    refused(invented)
+
+    # the snapshot must be there, this run's, under this binding
+    path.write_bytes(gzip.compress(canonical_json_bytes(stored)))
+    snapshot_path = rn.run_snapshot_file(tmp_path, spec)
+    good = pickle.loads(gzip.decompress(snapshot_path.read_bytes()))
+    for data in (None, {**good, "run_id": "HEADLINE:COINBASE:champion:base"}, {**good, "binding": {"foreign": True}}, {**good, "snapshot": None}):
+        snapshot_path.write_bytes(gzip.compress(pickle.dumps(data)))
+        with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+            rn.read_run(tmp_path, spec, context)
+    snapshot_path.unlink()
+    with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+        rn.read_run(tmp_path, spec, context)
+
+    # a snapshot that is not a complete run refuses, even beside the record it gives
+    from btc_predictor.research_backtest import management_composer as mc
+
+    def incomplete(run, variant, fallback):
+        assert rn.snapshot_refusals(run, context, variant)
+        try:
+            consistent = rn.run_record(run, context, variant)
+        except Exception:
+            consistent = fallback
+        rn.run_snapshot_file(tmp_path, run).write_bytes(gzip.compress(pickle.dumps({**good, "run_id": run.run_id, "binding": fallback["binding"], "snapshot": variant})))
+        rn.run_file(tmp_path, run).write_bytes(gzip.compress(canonical_json_bytes(consistent)))
+        with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+            rn.read_run(tmp_path, run, context)
+
+    snapshot, (composer,) = good["snapshot"], good["snapshot"].composers
+    arm = next(index for index, row in enumerate(composer.entry_rows) if row.intent is not None)
+    managed = composer.management_rows[0].decision_at
+    # one bar changed mid-window: the span, and so the ledgers' coverage, unchanged
+    altered = list(rn.run_bars(spec, context))
+    altered[10] = replace(altered[10], volume=altered[10].volume + 1)
+    shortened = copy.copy(snapshot.result)
+    object.__setattr__(shortened, "input_bars", tuple(altered))
+    cases = {
+        "entry ledger": replace(composer, entry_rows=composer.entry_rows[:-1]),
+        "entry ledger gap": replace(composer, entry_rows=composer.entry_rows[:4] + composer.entry_rows[5:]),
+        "management ledger": replace(composer, management_rows=composer.management_rows[1:]),
+        "position": replace(composer, entry_rows=tuple(replace(row, position_open=False) if row.decision_at == managed else row for row in composer.entry_rows)),
+        "intents": replace(composer, entry_rows=tuple(replace(row, intent=None) if index == arm else row for index, row in enumerate(composer.entry_rows))),
+        "follow-ups": replace(composer, followups=(*composer.followups, mc.AddFollowUp(managed, managed, "INVENTED", (), {"source_id": "invented"}))),
+        "seeding": replace(composer, first=START + DAY),
+    }
+    variants = {name: replace(snapshot, composers=(item,)) for name, item in cases.items()}
+    variants["engine bars"] = replace(snapshot, result=shortened)
+    variants["shape"] = replace(snapshot, validation=walk_forward.snapshot.validation)
+    variants["contexts"] = replace(snapshot, trade_contexts=("invented",))
+    for name, variant in variants.items():
+        incomplete(spec, variant, stored)
+
+    # every synthetic run kind reads back; a fold's snapshot is checked fold by fold
+    folded = rn.RunSpec(rn.WALK_FORWARD, "BITSTAMP", rn.CHAMPION, "base")
+    rn.write_run(tmp_path, walk_forward)
+    folded_record = rn.read_run(tmp_path, folded, context)
+    assert folded_record == json.loads(canonical_json_bytes(walk_forward.record))
+    assert rn.snapshot_refusals(folded, context, walk_forward.snapshot) == []
+    composers = walk_forward.snapshot.composers
+    for variant in (
+        replace(walk_forward.snapshot, composers=composers[:-1]),
+        replace(walk_forward.snapshot, composers=(composers[0], replace(composers[1], entry_rows=composers[1].entry_rows[1:]), composers[2])),
+        replace(walk_forward.snapshot, composers=(composers[1], composers[0], composers[2])),
+        replace(walk_forward.snapshot, result=snapshot.result),
+    ):
+        incomplete(folded, variant, folded_record)
+
+
+def test_a_snapshot_reads_the_composers_as_they_hold_themselves(monkeypatch, context, headline, walk_forward):
+    # the armed entries and the unaccounted causes a record is built from are the composers' own
+    for outcome in (headline, walk_forward):
+        for strategy, composer in zip(outcome.composers, outcome.snapshot.composers, strict=True):
+            assert composer.armed() == {source: decision.row.decision_at for source, decision in strategy.entry.armed.items()}
+            assert composer.entry_rows == strategy.entry.run_rows() and composer.management_rows == strategy.ledger
+    for where in ("entry", "management", "followup"):
+        _spec, outcome = _injected_golden(monkeypatch, context, where)
+        (strategy,) = outcome.composers
+        own = {f"entry:{instant}:{code}" for instant, code in strategy.entry.unaccounted_causes()}
+        own |= {f"management:{instant}:{code}" for instant, code in strategy.unaccounted_causes()}
+        assert outcome.record["unaccounted"] == sorted(own) and own
+    # a cause in the seeded history counts too, as the composer's own ledger holds it
+    rows = context.history["BITSTAMP"]
+    seeded = (replace(rows[0], unaccounted=("SEEDED_CAUSE",)), *rows[1:])
+    record = rn.run_record(rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), replace(context, history={"BITSTAMP": seeded}), headline.snapshot)
+    assert record["unaccounted"] == [f"entry:{rows[0].decision_at.isoformat()}:SEEDED_CAUSE"]
 
 
 def test_a_history_file_must_be_its_bindings_and_hold_every_instant(tmp_path, context):
@@ -1068,7 +1186,7 @@ def end_to_end(markets, preregistration, tmp_path_factory):
         ]
 
     def build(substituted=None):
-        records = {spec.run_id: rn.read_run(workspace.directory, spec, rn.run_binding(spec, context)) for spec in specs}
+        records = {spec.run_id: rn.read_run(workspace.directory, spec, context) for spec in specs}
         records.update(substituted or {})
         audits = {
             venue: rn.read_audit(workspace, venue, context, rn.audit_binding(context, venue, records[f"HEADLINE:{venue}:champion:base"]))
@@ -1156,7 +1274,7 @@ def test_the_golden_replay_reports_its_decisions_beside_the_scripted_ones(end_to
     assert not golden["engine_refused"]
     # review F13: the golden runs count the engine's events as every other run does
     assert golden["engine_events"] and all(key.count(":") >= 2 for key in golden["engine_events"])
-    assert all("engine_events" in record for spec, record in ((spec, rn.read_run(end_to_end.workspace.directory, spec, rn.run_binding(spec, end_to_end.context))) for spec in end_to_end.specs))
+    assert all("engine_events" in record for spec, record in ((spec, rn.read_run(end_to_end.workspace.directory, spec, end_to_end.context)) for spec in end_to_end.specs))
     assert golden["decisions_beside_scripted"][0]["scripted_action"] == "ARM_ENTRY"
     assert golden["decisions_beside_scripted"][0]["decision_at"] == "2024-03-31T00:00:00+00:00"
 
@@ -1172,7 +1290,7 @@ def test_a_resumed_run_skips_complete_work_and_reproduces_the_report(end_to_end)
 
 def test_an_audit_file_from_another_binding_or_missing_refuses(end_to_end, tmp_path):
     context = end_to_end.context
-    base = rn.read_run(end_to_end.workspace.directory, rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), rn.run_binding(rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), context))
+    base = rn.read_run(end_to_end.workspace.directory, rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base"), context)
     binding = rn.audit_binding(context, "BITSTAMP", base)
 
     def copied():
@@ -1265,7 +1383,7 @@ def test_a_golden_runs_unaccounted_cause_refuses_publication(end_to_end, monkeyp
     # review RR4: golden records carried no causes, and the report read their absence as none
     context = end_to_end.context
     spec = rn.RunSpec(rn.GOLDEN, "BITSTAMP", rn.CHAMPION, "base", "synthetic_golden")
-    assert rn.read_run(end_to_end.workspace.directory, spec, rn.run_binding(spec, context))["unaccounted"] == []
+    assert rn.read_run(end_to_end.workspace.directory, spec, context)["unaccounted"] == []
     for where, label in (("entry", "entry:"), ("management", "management:"), ("followup", "management:")):
         spec, outcome = _injected_golden(monkeypatch, context, where)
         causes = outcome.record["unaccounted"]
@@ -1277,12 +1395,12 @@ def test_a_golden_runs_unaccounted_cause_refuses_publication(end_to_end, monkeyp
             rn.publish(report, files, private=tmp_path / f"private-{where}", public=tmp_path / f"public-{where}", workspace=rn.Workspace(tmp_path / f"work-{where}"))
         assert not (tmp_path / f"private-{where}").exists() and not (tmp_path / f"public-{where}").exists()
     # a golden record without the field is not read as one without causes
-    stored = rn.read_run(end_to_end.workspace.directory, spec, rn.run_binding(spec, context))
+    stored = rn.read_run(end_to_end.workspace.directory, spec, context)
     path = rn.run_file(tmp_path / "work", spec)
     path.parent.mkdir(parents=True)
     path.write_bytes(gzip.compress(canonical_json_bytes({key: value for key, value in stored.items() if key != "unaccounted"})))
     with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
-        rn.read_run(tmp_path / "work", spec, rn.run_binding(spec, context))
+        rn.read_run(tmp_path / "work", spec, context)
     with pytest.raises(KeyError):
         end_to_end.build({spec.run_id: {key: value for key, value in stored.items() if key != "unaccounted"}})
 
