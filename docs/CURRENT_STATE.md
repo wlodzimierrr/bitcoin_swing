@@ -1793,7 +1793,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   missing hours (4); mechanical named-limitation exposure counts (5); the
   runtime ruling extended to the positioning helpers the composer's
   guards call (6); every run starting from the continuous market history,
-  composed once per venue from 2020-01-02 (7).
+  composed once per venue from 2020-01-02 (7); after the Part A review,
+  the look-ahead audit proving the whole chain, every history row and
+  every base-run decision on inputs truncated at its own instant (review
+  ruling 3a, 2026-11-18; the owner: fix all twelve other findings).
   RBT-006
   `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` is **DONE** (2026-11-18).
   RBT-006's history: the owner's rulings 1-4
@@ -2428,12 +2431,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the owner's choice on
-  **RBT-007 Part A review finding F2** (the look-ahead audit trusts the
-  seeded history and the run's engine state), then the review fixes and
-  a re-review, then Part B on the frozen dataset (Part A `badbe00` and
-  `0b32e94`, the full suite at `badbe00` 9,134 passed, 1 failed, 3 skipped,
-  1 xfailed, the one failure fixed in `0b32e94`; RBT-007 started
+- **Next dependency-satisfied EPIC Y action:** the **RBT-007 Part A review
+  fixes** (F1-F13; F2 under owner review ruling 3a: the look-ahead audit
+  proves the whole chain), then a re-review, then Part B on the frozen
+  dataset (Part A `badbe00` and `0b32e94`, the full suite at `badbe00`
+  9,134 passed, 1 failed, 3 skipped, 1 xfailed, the one failure fixed in
+  `0b32e94`; RBT-007 started
   2026-11-18, after RBT-006 closed DONE;
   owner rulings 1-3: results private with a public value-free index,
   the sweep candidates and the ablation through the runner with the
@@ -3176,7 +3179,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the owner's RBT-007 runtime ruling `3217fbf`; RBT-007's start and
   owner rulings 1-3 `c14e320`; rulings 4-5 `233eb90`; ruling 6
   `d50e33e`; ruling 7 `9f85ed5`; Part A `badbe00` and `0b32e94`, and its
-  record `ad3a7c6`; the Part A review FAIL in this commit.
+  record `ad3a7c6`; the Part A review FAIL `3f5c9f8`; review ruling 3a in
+  this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
