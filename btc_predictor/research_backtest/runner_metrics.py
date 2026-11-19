@@ -469,16 +469,20 @@ def _dispersion(metrics: Mapping[str, Mapping[str, Mapping[str, Any]]], venues: 
         for name in PRIMARY_METRICS:
             values = {venue: by_venue[venue][name] for venue in venues}
             defined = all(item["status"] == AVAILABLE and item["value"] is not None for item in values.values())
+            # review F9: each venue's trade counts stay beside its rate
+            counts = {venue: {key: item[key] for key in sorted(item) if key not in ("value", "status")} for venue, item in values.items()}
             if defined:
                 numbers = [Decimal(item["value"]) for item in values.values()]
                 rows[name] = {
                     "values": {venue: item["value"] for venue, item in values.items()},
+                    "counts": counts,
                     "max_minus_min": str(_q(max(numbers) - min(numbers))),
                     "status": AVAILABLE,
                 }
             else:
                 rows[name] = {
                     "statuses": {venue: item["status"] for venue, item in values.items()},
+                    "counts": counts,
                     "status": "UNDEFINED_ON_SOME_VENUE",
                 }
         out[rung] = rows

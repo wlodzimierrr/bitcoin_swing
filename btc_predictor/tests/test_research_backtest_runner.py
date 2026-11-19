@@ -764,8 +764,8 @@ def test_the_cross_venue_measures_follow_clarification_4a():
         "COINBASE": [_fake_trade("101", "90", "1.5", "-1", exit_reason="EXIT"), _fake_trade("100", "90", "1", "-1")],
     }
     trade_entries = {"BITSTAMP": {0: "d1", 1: "d2"}, "COINBASE": {0: "d1", 1: "d3"}}
-    metric = {"value": "1", "status": "AVAILABLE"}
-    undefined = {"value": None, "status": "NO_CLOSED_TRADES"}
+    metric = {"value": "1", "status": "AVAILABLE", "closed_trades": 4}
+    undefined = {"value": None, "status": "NO_CLOSED_TRADES", "closed_trades": 0}
     metrics = {"base": {"BITSTAMP": {name: metric for name in rm.PRIMARY_METRICS}, "COINBASE": {name: undefined for name in rm.PRIMARY_METRICS}}}
     result = rm.cross_venue(entries, trades, trade_entries, metrics)
     overlap = result["trade_set_overlap"]["pairs"][0]
@@ -777,6 +777,7 @@ def test_the_cross_venue_measures_follow_clarification_4a():
     touch = result["stop_touch_divergence"][0]
     assert (touch["matched_closed"], touch["exactly_one_structural_stop"]) == (1, 1)
     assert result["metric_dispersion"]["base"]["expectancy"]["status"] == "UNDEFINED_ON_SOME_VENUE"
+    assert result["metric_dispersion"]["base"]["expectancy"]["counts"] == {"BITSTAMP": {"closed_trades": 4}, "COINBASE": {"closed_trades": 0}}
     # review F7: matching intents that filled no trade are no trades
     unfilled = rm.cross_venue(entries, {"BITSTAMP": [], "COINBASE": []}, {"BITSTAMP": {}, "COINBASE": {}}, metrics)
     overlap = unfilled["trade_set_overlap"]["pairs"][0]
@@ -1063,10 +1064,19 @@ def test_every_run_has_a_record_and_the_checks_pass(end_to_end):
 
 
 def test_every_rate_has_its_trade_count(end_to_end):
-    for rungs in end_to_end.report["headline"].values():
+    report = end_to_end.report
+    for rungs in report["headline"].values():
         for entry in rungs.values():
             for name, metric in entry["metrics"].items():
                 assert any(key in metric for key in ("closed_trades", "trades")), name
+    # review F9: the dispersion and the summary's per-fold rates keep theirs too
+    for rows in report["cross_venue"]["metric_dispersion"].values():
+        for name, row in rows.items():
+            assert set(row["counts"]) == {"BITSTAMP", "COINBASE"}
+            assert all(any(key in counts for key in ("closed_trades", "trades")) for counts in row["counts"].values()), name
+    markdown = end_to_end.files[rr.REPORT_MARKDOWN_FILE].decode()
+    folds = [line for line in markdown.splitlines() if "calmar per fold" in line]
+    assert len(folds) == 2 and all(line.count("(n=") == 3 for line in folds)
 
 
 def test_the_sweeps_and_the_ablation_are_labelled_sensitivity_only(end_to_end):

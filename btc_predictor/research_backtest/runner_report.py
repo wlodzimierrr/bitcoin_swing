@@ -556,6 +556,12 @@ def _cell(metric: Mapping[str, Any]) -> str:
     return metric["value"]
 
 
+def _counted(metric: Mapping[str, Any]) -> str:
+    """A rate with its trade count beside it (review F9)."""
+
+    return f"{_cell(metric)} (n={metric.get('closed_trades', metric.get('trades'))})"
+
+
 def report_markdown(report: Mapping[str, Any]) -> str:
     """A readable summary of the report's main tables; the JSON report is authoritative."""
 
@@ -575,9 +581,7 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         for name in rm.PRIMARY_METRICS:
             cells = []
             for rung in rungs:
-                metric = rungs[rung]["metrics"][name]
-                trades = metric.get("closed_trades", metric.get("trades"))
-                cells.append(f"{_cell(metric)} (n={trades})")
+                cells.append(_counted(rungs[rung]["metrics"][name]))
             lines.append(f"| {name} | " + " | ".join(cells) + " |")
         lines.append("")
     lines += ["## Walk-forward (base), fold returns", ""]
@@ -586,7 +590,7 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         check = rungs["ruling_4"]
         lines.append(
             f"- {venue}: folds {[fold['fold_number'] for fold in folds]}, calmar per fold "
-            f"{[_cell(fold['metrics']['calmar']) for fold in folds]}; preregistered fold dates equal: {check['equal']}, "
+            f"{[_counted(fold['metrics']['calmar']) for fold in folds]}; preregistered fold dates equal: {check['equal']}, "
             f"consistent with the omitted hours: {check['consistent']}"
         )
     lines += ["", "## Look-ahead audit", ""]
