@@ -2438,11 +2438,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the owner's choice on the
+- **Next dependency-satisfied EPIC Y action:** the fixes of the
   **RBT-007 Part A second re-review findings N1-N3** (the snapshot
   deserialized before it is checked; the ordinary parent builds the
-  isolated child's command; a dropped ADD follow-up removable), then their
-  fixes and another re-review (the fixes `5685a49`..`be33733`, RR1-RR4;
+  isolated child's command; a dropped ADD follow-up removable; owner: fix
+  all three, N1 one restricted loader for every store file with the
+  snapshot's digest checked first, N2 launched isolated from the start),
+  then another re-review (the fixes `5685a49`..`be33733`, RR1-RR4;
   full suite at `be33733` 9,163 passed, 3 skipped, 1 xfailed, 0 failed in
   5,808.06s), then Part B on the frozen dataset (Part A `badbe00` and `0b32e94`;
   RBT-007 started
@@ -3192,7 +3194,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `97b4ee8`; the review fixes `5ca17ca`..`68e1055` and their record
   `ae5d461`; the re-review FAIL `aee2958`; the owner's choice `8756808`;
   the re-review fixes `5685a49`..`be33733` and their record `59b2734`;
-  the second re-review FAIL in this commit.
+  the second re-review FAIL `09c6325`; the owner's choice in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
