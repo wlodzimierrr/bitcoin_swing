@@ -6,18 +6,27 @@
 # imports no function from the environment, and ignores SHELLOPTS, BASHOPTS,
 # CDPATH and GLOBIGNORE, so nothing the caller's environment names runs before
 # this script. Its helpers come from bash's fixed standard path (command -p),
-# never the inherited PATH. Started any other way (bash runner_launch.sh), it
-# refuses. Dynamic-loader variables such as LD_PRELOAD act on any program
-# before its first line; no launcher can control them.
+# never the inherited PATH. Started unprivileged (bash runner_launch.sh or
+# sh runner_launch.sh), it refuses; bash -p runner_launch.sh is the same
+# privileged start. Dynamic-loader variables such as LD_PRELOAD act on any
+# program before its first line; no launcher can control them.
+#
+# Git (review Q1; the owner's choice of 2026-11-20): the interpreter, and the
+# git that checks the commit and compares the frozen source, get bash's fixed
+# standard path, never the caller's PATH, and no HOME. GIT_CONFIG_NOSYSTEM and
+# GIT_CONFIG_GLOBAL=/dev/null leave git only each repository's own .git
+# configuration, part of the repository the owner runs. The runner refuses
+# unless its environment is exactly this one.
 #
 # Python starts isolated (-I: no PYTHON* variable, user site or current
 # directory on its path) and without site (-S: no .pth file, sitecustomize or
 # usercustomize), writing no bytecode (-B) and reading an empty private
 # bytecode cache, so no startup file, project import or cached bytecode runs
-# before the runner's own checks. Only PATH and HOME (git reads them), LANG,
-# LC_ALL, TMPDIR and the cache's name reach it. Its path is set by the fixed
-# entry below: this repository, the interpreter's standard library and its
-# environment's site-packages. No other Python process builds anything for it.
+# before the runner's own checks. Only the fixed PATH, the two git variables,
+# LANG, LC_ALL, TMPDIR and the cache's name reach it. Its path is set by the
+# fixed entry below: this repository, the interpreter's standard library and
+# its environment's site-packages. No other Python process builds anything
+# for it.
 #
 #   btc_predictor/research_backtest/runner_launch.sh run --store ~/backtest_evidence --workers N
 #   btc_predictor/research_backtest/runner_launch.sh preflight
@@ -34,6 +43,7 @@ set -euo pipefail
 
 repository="$(cd -- "$(command -p dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 python="${RBT007_PYTHON:-$repository/.venv312/bin/python}"
+fixed_path="$(command -p getconf PATH)"
 cache="$(command -p mktemp -d "${TMPDIR:-/tmp}/rbt007-pycache-XXXXXXXX")"
 trap 'command -p rm -rf -- "$cache"' EXIT
 
@@ -47,7 +57,7 @@ from btc_predictor.research_backtest import runner
 raise SystemExit(runner.main(sys.argv[1:]))
 '
 
-variables=("PATH=$PATH" "HOME=$HOME" "RBT007_FRESH_PYCACHE=$cache")
+variables=("PATH=$fixed_path" "GIT_CONFIG_NOSYSTEM=1" "GIT_CONFIG_GLOBAL=/dev/null" "RBT007_FRESH_PYCACHE=$cache")
 for name in LANG LC_ALL TMPDIR; do
     if [[ -n "${!name+set}" ]]; then
         variables+=("$name=${!name}")

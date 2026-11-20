@@ -398,9 +398,14 @@ def _entry_command(args, prefix, drop=()):
 
 
 def _entry_environment(prefix, **extra):
+    """The environment the launcher gives its interpreter (review Q1)."""
+
     import os
 
-    return {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"], rn.FRESH_BYTECODE_ENV: str(prefix), **extra}
+    return {"PATH": os.confstr("CS_PATH"), **rn.LAUNCH_GIT_ENVIRONMENT, rn.FRESH_BYTECODE_ENV: str(prefix), **extra}
+
+
+_LAUNCHED_ENVIRONMENT = {"PATH", "TMPDIR", "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", rn.FRESH_BYTECODE_ENV}
 
 
 def test_the_launcher_starts_the_command_isolated_with_a_fresh_bytecode_cache(tmp_path):
@@ -420,9 +425,9 @@ def test_the_launcher_starts_the_command_isolated_with_a_fresh_bytecode_cache(tm
     assert checked.returncode == 0, checked.stdout + checked.stderr
     report = json.loads(checked.stdout)
     assert report["launched"] is True and report["modules_from_source"] > 50 and report["path"][0] == str(REPOSITORY)
-    # only the launcher's own variables reach it: not the interpreter's name, nor anything else the caller had
-    # (under the C locale the interpreter sets LC_CTYPE itself, PEP 538)
-    assert set(report["environment"]) - {"LC_CTYPE"} == {"HOME", "PATH", "TMPDIR", rn.FRESH_BYTECODE_ENV}
+    # only the launcher's own variables reach it: not the interpreter's name, nor HOME, nor anything else the
+    # caller had (under the C locale the interpreter sets LC_CTYPE itself, PEP 538)
+    assert set(report["environment"]) - {"LC_CTYPE"} == _LAUNCHED_ENVIRONMENT
     # each launch's cache is a new private directory, never a name another process could know or fill first
     again = json.loads(_launched(["preflight"], tmp_path).stdout)
     caches = [Path(item["cache"]["path"]) for item in (report, again)]
@@ -498,7 +503,8 @@ def test_an_inherited_startup_hook_never_runs_in_the_command(monkeypatch, tmp_pa
     given = subprocess.run(
         _entry_command(["preflight"], prefix), cwd=REPOSITORY, env=_entry_environment(prefix, **hooked_environment), capture_output=True, text=True, check=False
     )
-    assert given.returncode == 0 and not marker.exists(), given.stdout + given.stderr
+    # given them directly, the interpreter still never runs the hook; review Q1's check then refuses the variables
+    assert given.returncode == 2 and "PYTHONPATH is set" in given.stdout and not marker.exists(), given.stdout + given.stderr
 
 
 def test_the_launchers_shell_runs_nothing_its_caller_names(tmp_path):
@@ -531,14 +537,91 @@ def test_the_launchers_shell_runs_nothing_its_caller_names(tmp_path):
     assert launched.returncode == 0 and not marker.exists() and launched.stderr == "", launched.stdout + launched.stderr
     report = json.loads(launched.stdout)
     assert report["path"] == clean["path"] and report["modules_from_source"] == clean["modules_from_source"]
-    assert set(report["environment"]) - {"LC_CTYPE"} == {"HOME", "PATH", "TMPDIR", rn.FRESH_BYTECODE_ENV}
+    assert set(report["environment"]) - {"LC_CTYPE"} == _LAUNCHED_ENVIRONMENT
     assert not any((tmp_path / "launcher-tmp").iterdir())
-    # started any other way the shell is not privileged, and the launcher refuses before anything else
+    # started unprivileged, the launcher refuses before anything else
     assert LAUNCHER.read_text().splitlines()[0] == "#!/bin/bash -p"
     for shell in (["/bin/bash"], ["/bin/sh"]):
         other = _launched(["preflight"], tmp_path, shell=shell)
         assert other.returncode == 2 and other.stdout == "" and "so bash runs privileged (-p) from its first line" in other.stderr, shell
     assert not any((tmp_path / "launcher-tmp").iterdir())
+
+
+def test_the_commit_checks_run_the_systems_git_with_no_caller_configuration(tmp_path):
+    import os
+
+    # review Q1: the interpreter inherited the caller's PATH and HOME, so the caller chose the git that checks the
+    # commit and compares the frozen source, and that git read the caller's global configuration
+    marker = tmp_path / "git-ran"
+    planted = tmp_path / "planted"
+    planted.mkdir()
+    (planted / "git").write_text(f'#!/bin/sh\necho git >> {marker}\nexec /usr/bin/git "$@"\n')
+    (planted / "git").chmod(0o755)
+    monitor = tmp_path / "fsmonitor"
+    monitor.write_text(f"#!/bin/sh\necho fsmonitor >> {marker}\nexit 1\n")
+    monitor.chmod(0o755)
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / ".gitconfig").write_text(f"[core]\n\tfsmonitor = {monitor}\n")
+    named = {"PATH": f"{planted}:{os.environ['PATH']}", "HOME": str(home)}
+    # each acts in an ordinary process: the planted git runs, and the real one runs the configured hook
+    status = ["git", "-C", str(REPOSITORY), "status", "--porcelain", "--untracked-files=no"]
+    subprocess.run(status, env=named, capture_output=True, check=True)
+    assert set(marker.read_text().split()) == {"git", "fsmonitor"}
+    marker.unlink()
+    # the launcher's run: neither acts, and the run goes exactly as far as a clean launch, whatever stops it
+    store = tmp_path / "store"
+    store.mkdir()
+    command = ["run", "--store", str(store), "--workers", "1"]
+    clean = _launched(command, tmp_path)
+    launched = _launched(command, tmp_path, named)
+    assert not marker.exists(), launched.stdout + launched.stderr
+    assert (launched.returncode, launched.stdout, launched.stderr) == (clean.returncode, clean.stdout, clean.stderr)
+    assert "the environment is not the launcher's" not in clean.stdout + clean.stderr  # it reaches the commit checks
+    assert not any(store.iterdir()) and not any((tmp_path / "launcher-tmp").iterdir())
+    # started without the launcher's environment, the run refuses before any git runs
+    prefix = tmp_path / "fresh"
+    prefix.mkdir()
+    for environment in ({**named, rn.FRESH_BYTECODE_ENV: str(prefix)}, _entry_environment(prefix, HOME=str(home)), {**_entry_environment(prefix), "PATH": named["PATH"]}):
+        entry = subprocess.run(_entry_command(command, prefix), cwd=REPOSITORY, env=environment, capture_output=True, text=True, check=False)
+        assert entry.returncode == 2 and "refused: FROZEN_CODE_REFUSED: the environment is not the launcher's" in entry.stdout, entry.stdout + entry.stderr
+        assert not marker.exists() and not any(prefix.iterdir())
+
+
+def test_the_launch_environment_check_accepts_only_the_launchers(monkeypatch, tmp_path):
+    import os
+    import sys
+
+    # review Q1: the fixed standard path, both git variables, and nothing else but the locale and TMPDIR
+    launched = _entry_environment(tmp_path)
+    assert rn.launch_environment_refusals(launched) == []
+    assert rn.launch_environment_refusals({**launched, "LANG": "C.UTF-8", "LC_ALL": "C", "LC_CTYPE": "C.UTF-8", "TMPDIR": "/tmp"}) == []
+    assert os.confstr("CS_PATH") == subprocess.run(["/bin/bash", "-c", "command -p getconf PATH"], env={}, capture_output=True, text=True, check=True).stdout.strip()
+    without = {name: {key: value for key, value in launched.items() if key != name} for name in ("PATH", *rn.LAUNCH_GIT_ENVIRONMENT)}
+    changes = {
+        "PATH elsewhere": {**launched, "PATH": f"{tmp_path}:{launched['PATH']}"},
+        "no PATH": without["PATH"],
+        "system configuration": without["GIT_CONFIG_NOSYSTEM"],
+        "system configuration read": {**launched, "GIT_CONFIG_NOSYSTEM": "0"},
+        "global configuration": without["GIT_CONFIG_GLOBAL"],
+        "global configuration named": {**launched, "GIT_CONFIG_GLOBAL": str(tmp_path / ".gitconfig")},
+        "HOME": {**launched, "HOME": str(tmp_path)},
+        "XDG_CONFIG_HOME": {**launched, "XDG_CONFIG_HOME": str(tmp_path)},
+        "GIT_DIR": {**launched, "GIT_DIR": str(tmp_path)},
+        "GIT_CONFIG_COUNT": {**launched, "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.fsmonitor", "GIT_CONFIG_VALUE_0": "true"},
+        "LD_PRELOAD": {**launched, "LD_PRELOAD": str(tmp_path / "x.so")},
+    }
+    for name, environment in changes.items():
+        assert rn.launch_environment_refusals(environment), name
+    # this test process is not the launcher's, and the fresh-process check names its environment
+    assert rn.launch_environment_refusals()
+    monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
+    monkeypatch.setattr(rn, "startup_refusals", lambda: [])
+    monkeypatch.setattr(sys, "pycache_prefix", str(tmp_path))
+    with pytest.raises(rn.RunnerRefused, match="the environment is not the launcher's"):
+        rn.require_fresh_bytecode()
+    monkeypatch.setattr(os, "environ", launched)
+    assert rn.require_fresh_bytecode() == str(tmp_path)
 
 
 def test_the_startup_check_needs_the_interpreters_own_import_system(monkeypatch, tmp_path):
@@ -1929,6 +2012,7 @@ def test_main_refuses_when_the_code_is_not_frozen(monkeypatch, tmp_path):
 
     monkeypatch.setattr(rn, "require_frozen_code", refused)
     monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
+    monkeypatch.setattr(rn, "require_fresh_bytecode", lambda: str(tmp_path))  # review Q1: main's first check
     lines = []
     assert rn.main(["run", "--store", str(tmp_path)], out=lines.append) == 2
     assert lines == ["refused: FROZEN_CODE_REFUSED: test"]

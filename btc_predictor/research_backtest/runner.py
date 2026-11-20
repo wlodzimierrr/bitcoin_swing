@@ -31,7 +31,11 @@ checks this before any run. It runs only in the process its launcher,
 no bytecode and reading an empty private cache, so nothing but the
 interpreter runs before the checks (review N2). The launcher's bash runs
 privileged from its first line, reading no startup file and importing no
-function, and finds its helpers on bash's fixed path (review T1). A sweep
+function, and finds its helpers on bash's fixed path (review T1). The
+interpreter, and the ``git`` that checks the commit and compares the frozen
+source, get that fixed path, no ``HOME`` and no system or global Git
+configuration; before anything runs ``git`` the runner refuses unless its
+environment is exactly the launcher's (review Q1). A sweep
 candidate or the ablation variant reaches the unchanged composers through
 :class:`RegisteredEntryComposer`, which accepts only the configurations the
 preregistration lists.
@@ -1201,6 +1205,9 @@ def frozen_code_mismatches(repository: Path, commit: str, paths: Sequence[str]) 
 
 
 FRESH_BYTECODE_ENV = "RBT007_FRESH_PYCACHE"
+# review Q1: what the launcher passes on, so git is bash's fixed path's and reads no configuration outside the repository
+LAUNCH_GIT_ENVIRONMENT = {"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null"}
+LAUNCH_OPTIONAL_ENVIRONMENT = frozenset({"LANG", "LC_ALL", "TMPDIR", "LC_CTYPE"})  # LC_CTYPE: PEP 538's coercion
 # review N2: the only supported launch; it starts Python isolated, without site, with an empty bytecode cache
 LAUNCHER = Path("btc_predictor") / "research_backtest" / "runner_launch.sh"
 
@@ -1280,6 +1287,27 @@ def startup_refusals(
     return problems
 
 
+def launch_environment_refusals(environ: Mapping[str, str] | None = None) -> list[str]:
+    """How this process's environment differs from the launcher's (review Q1); empty if it is exactly that.
+
+    ``PATH`` is the system's fixed standard path, the one bash's ``command -p``
+    uses, and the two Git variables leave ``git`` no system, global or
+    per-user configuration. No ``HOME`` and nothing else: only ``LANG``,
+    ``LC_ALL``, ``TMPDIR`` and the interpreter's own ``LC_CTYPE`` may be there.
+    """
+
+    import os
+
+    environ = os.environ if environ is None else environ
+    problems = []
+    if environ.get("PATH") != os.confstr("CS_PATH"):
+        problems.append("PATH is not the fixed standard path")
+    problems += [f"{name} is not {value}" for name, value in LAUNCH_GIT_ENVIRONMENT.items() if environ.get(name) != value]
+    allowed = {"PATH", FRESH_BYTECODE_ENV, *LAUNCH_GIT_ENVIRONMENT, *LAUNCH_OPTIONAL_ENVIRONMENT}
+    problems += [f"{name} is set" for name in sorted(set(environ) - allowed)]
+    return problems
+
+
 def require_fresh_bytecode() -> str:
     import sys
 
@@ -1291,6 +1319,9 @@ def require_fresh_bytecode() -> str:
     problems = startup_refusals()
     if problems:
         raise RunnerRefused("FROZEN_CODE_REFUSED", f"the import system is not the interpreter's own: {problems}")
+    problems = launch_environment_refusals()
+    if problems:
+        raise RunnerRefused("FROZEN_CODE_REFUSED", f"the environment is not the launcher's: {problems}")
     return str(sys.pycache_prefix)
 
 
@@ -2327,6 +2358,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
     if args.command == "preflight":
         return preflight(build.PUBLIC_REPOSITORY, out)
     try:
+        require_fresh_bytecode()  # review Q1: the launcher's environment before any git runs
         repository = build.PUBLIC_REPOSITORY
         code = build.code_commit(repository)  # refuses uncommitted tracked changes
         preregistration = read_preregistration(repository)
