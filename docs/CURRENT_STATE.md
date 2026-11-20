@@ -1431,7 +1431,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-19
+- **Last updated:** 2026-11-20
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1493,7 +1493,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `5ca17ca`..`68e1055`, committed on 2026-11-19; their re-review FAILED on
   2026-11-19 with two P1 and two P2 findings, RR1-RR4; their fixes
   `5685a49`..`be33733`, committed on 2026-11-19; their re-review FAILED
-  on 2026-11-19 with one P1 and two P2 findings, N1-N3).
+  on 2026-11-19 with one P1 and two P2 findings, N1-N3; their fixes
+  `29368db`..`69765f0`, committed on 2026-11-20, await their re-review).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1791,7 +1792,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   F1-F4, six P2, F5-F10, and three P3, F11-F13; the fixes' re-review
   FAILED on 2026-11-19: two P1, RR1-RR2, and two P2, RR3-RR4, fixed in
   `5685a49`..`be33733`, whose re-review FAILED on 2026-11-19: one P1,
-  N1, and two P2, N2-N3). Its
+  N1, and two P2, N2-N3, fixed in `29368db`..`69765f0`). Its
   rulings: the positioning owner's results shared per instant (runtime);
   every value-bearing result private, with a public value-free index (1);
   the sweep candidates and the ablation through the runner, the composers
@@ -2438,15 +2439,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the fixes of the
-  **RBT-007 Part A second re-review findings N1-N3** (the snapshot
-  deserialized before it is checked; the ordinary parent builds the
-  isolated child's command; a dropped ADD follow-up removable; owner: fix
-  all three, N1 one restricted loader for every store file with the
-  snapshot's digest checked first, N2 launched isolated from the start),
-  then another re-review (the fixes `5685a49`..`be33733`, RR1-RR4;
-  full suite at `be33733` 9,163 passed, 3 skipped, 1 xfailed, 0 failed in
-  5,808.06s), then Part B on the frozen dataset (Part A `badbe00` and `0b32e94`;
+- **Next dependency-satisfied EPIC Y action:** the independent xHigh
+  **re-review of the RBT-007 Part A second re-review fixes**
+  (`29368db`..`69765f0`, N1-N3: one restricted loader for every store file,
+  the snapshot's digest checked first; the run started isolated by its
+  launcher, `btc_predictor/research_backtest/runner_launch.sh`; one
+  resolution per pending ADD; full suite at `69765f0` 9,165 passed,
+  3 skipped, 1 xfailed, 0 failed in 5,850.45s),
+  then Part B on the frozen dataset (Part A `badbe00` and `0b32e94`;
   RBT-007 started
   2026-11-18, after RBT-006 closed DONE;
   owner rulings 1-3: results private with a public value-free index,
@@ -3194,7 +3194,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `97b4ee8`; the review fixes `5ca17ca`..`68e1055` and their record
   `ae5d461`; the re-review FAIL `aee2958`; the owner's choice `8756808`;
   the re-review fixes `5685a49`..`be33733` and their record `59b2734`;
-  the second re-review FAIL `09c6325`; the owner's choice in this commit.
+  the second re-review FAIL `09c6325`; the owner's choice `2b5fb89`; the
+  second re-review fixes `29368db`..`69765f0` and their record in this
+  commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,

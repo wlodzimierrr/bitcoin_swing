@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4); owner: fix all four (RR2: a resumed record checked against its own run); fixes 5685a49..be33733 committed 2026-11-19; their re-review FAIL 2026-11-19 (one P1, N1; two P2, N2-N3); owner: fix all three (N1 one restricted loader for every store file, the snapshot's digest checked first; N2 launched isolated from the start), then another re-review; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4); owner: fix all four (RR2: a resumed record checked against its own run); fixes 5685a49..be33733 committed 2026-11-19; their re-review FAIL 2026-11-19 (one P1, N1; two P2, N2-N3); owner: fix all three (N1 one restricted loader for every store file, the snapshot's digest checked first; N2 launched isolated from the start); fixes 29368db..69765f0 committed 2026-11-20, awaiting the independent xHigh re-review; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -9948,6 +9948,68 @@ file or project import; the runner no longer re-executes itself and
 refuses, naming the command, unless it was started that way. Part B's
 command changes accordingly. N3: fixed as the review requires.
 
+### RBT-007 Part A second re-review fixes
+
+**Fixes** (2026-11-20), one commit per finding, each with its tests, from
+`29368db` to `69765f0`. No composer, owner, configuration, BTC-180 to
+BTC-185 module, preregistration module, `data/` or EPIC X file changed; the
+one new file is the launcher.
+
+| Finding | Commit | Fix |
+| --- | --- | --- |
+| N1 / P1 (owner choice) | `29368db` | Every private-store file the runner deserializes (the run snapshots, the continuous histories, the audit states and the shared positioning results) is read by one restricted loader, `runner_shared.load_store_pickle`, which resolves only `STORE_CLASSES`: 47 frozen dataclasses of the owners, none with pickling methods of its own, and `datetime`, `timedelta`, `timezone` and `Decimal`. Any other name refuses the file before anything is built from it. The writer loads what it writes the same way, so a class outside the list refuses at its first write, not on resume. Each run record names its snapshot file's SHA-256 (`snapshot_sha256`); `read_run` refuses a snapshot whose bytes differ before reading it, and returns the record without the digest, as the run gave it. A test shows other bytes never reach the loader, and each of the four readers refuses a file naming another class with its own refusal. |
+| N2 / P2 (owner choice) | `d9c6354` | The only supported launch is the committed `btc_predictor/research_backtest/runner_launch.sh`: it starts the interpreter with `-I -S -B` and an empty private bytecode cache under `env -i` (`PATH`, `HOME`, `LANG`, `LC_ALL`, `TMPDIR` and the cache's name only), with a fixed entry that puts the repository and the interpreter's own environment's site-packages on the path. No other Python process runs or builds anything for it. The runner no longer runs itself again: outside the launcher's process `main` refuses, naming the launcher. `preflight` runs the launch checks alone (the flags, the empty cache, the interpreter's own import system, every repository module from its source) without the store or the commit, and names the variables its process received and its cache with that directory's permissions. The tests run the launcher itself: only its own variables reach the process, and each launch's cache is a new private directory, removed afterwards; an inherited and a given startup hook never run; and they run the launcher's own entry with a planted cache, without `-I` and without `-S`. |
+| N3 / P2 | `69765f0` | `snapshot_refusals` requires, per engine run, exactly one follow-up for each management row that left an ADD pending, at the engine's first callback after it, and none where the run ended first (RBT-005 resolves the ADD there, owner ruling 1). An emitted follow-up must carry that pending ADD's intent and no reasons; a dropped one its reasons and no intent. RBT-005's trail-and-add instant runs through the runner, emitted and dropped (the risk at the stop over the ceiling at the callback): both read back; the reviewer's removal, a duplicate, a later callback, another instant, a missing reason, another outcome and an emitted ADD's changed intent each refuse; a run that ends at the TRAIL is complete without one. |
+
+**Found while fixing (for the re-review).**
+1. The class list comes from the store files themselves: every file of the
+   synthetic end-to-end run (1,600 files, 44 classes); the objects of
+   RBT-005's trail, ADD, trim and exit runs (four more: the follow-up, the
+   trailing stop, and the ADD requirements' input and result); and the
+   declared types of every listed dataclass's fields (three more: the guard
+   refusal and the two unevaluable records). `EntryComposition` is
+   reachable by a declared type but never stored, since the audit stores
+   slim decisions; it is not listed.
+2. Every listed owner class is a frozen dataclass without pickling methods
+   of its own, so loading one sets its fields and calls nothing; a test
+   pins this.
+3. The histories, the audit states and the shared results have no record
+   to name their digest; as before, each is bound by the binding or key it
+   holds, now checked after the restricted loader built it.
+4. Under `env -i` without `LANG` the interpreter coerces the C locale and
+   sets `LC_CTYPE` itself (PEP 538); the launcher's test allows that one
+   variable.
+5. The launcher needs `bash`, `env` and `mktemp`. `RBT007_PYTHON` names the
+   interpreter, by default the repository's `.venv312` (a worktree has
+   none).
+6. Mutants: 23, each caught by its named tests after a passing control;
+   the reused-cache mutant first survived and gained the test that each
+   launch's cache is a new private directory; the launcher's isolation,
+   site and environment mutants are also caught without the test's checks
+   of its text.
+
+**Part B's command** is now
+`btc_predictor/research_backtest/runner_launch.sh run --store ~/backtest_evidence --workers N`;
+`runner_launch.sh preflight` runs the launch checks alone.
+
+**Tests.** The runner module has 75 tests (73 at `be33733`); the
+preregistration module 121, unchanged.
+
+**Validation (`.venv312`, CPython 3.12.14, 2026-11-20).**
+- Full repository at `69765f0`: 9,165 passed, 3 skipped, 1 xfailed,
+  0 failed in 5,850.45s; the runner module's 75 and the preregistration
+  module's 121 tests among them.
+- The BTC-019 completion gate and the coverage modules: 140 passed,
+  1 xfailed (the recorded P2 owner defect).
+- V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed; PAD4-R5 2 passed.
+- Synthetic fixtures only; no database, network or private-evidence read;
+  no real-data value. Nothing has run on the frozen dataset.
+
+Next: the independent xHigh re-review of N1-N3. Part B runs the launcher on
+the frozen dataset after a PASS.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -9977,7 +10039,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three, then another re-review; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s), awaiting the independent xHigh re-review; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
