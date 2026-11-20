@@ -2444,10 +2444,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the owner's choice on the
+- **Next dependency-satisfied EPIC Y action:** the fix of the
   **RBT-007 Part A fourth re-review finding Q1** (the inherited `PATH`
   selects the `git` that verifies the frozen source, and `HOME` its global
-  configuration), then its fix and another re-review (the fixes
+  configuration; owner: fix it, the interpreter given bash's fixed path
+  and no caller Git configuration), then another re-review (the fixes
   `0375ce0`..`8fa396b`, T1-T2; full suite at `8fa396b`
   9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s),
   then Part B on the frozen dataset (Part A `badbe00` and `0b32e94`;
@@ -3202,7 +3203,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   second re-review fixes `29368db`..`69765f0` and their record `5fdb9c8`;
   the third re-review FAIL `e2974c0`; the owner's choice `30b398b`; the
   third re-review fixes `0375ce0`..`8fa396b` and their record `1c471c5`;
-  the fourth re-review FAIL in this commit.
+  the fourth re-review FAIL `0a9d005`; the owner's choice in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
