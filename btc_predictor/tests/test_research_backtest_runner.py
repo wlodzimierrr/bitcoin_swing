@@ -7,6 +7,7 @@ computed, and nothing touches the private store, the holdout or BTC-019.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import gzip
 import hashlib
@@ -962,33 +963,43 @@ def test_store_files_are_read_with_only_the_classes_they_hold(tmp_path, context,
     assert loads == []
 
 
+@contextlib.contextmanager
+def _trail_and_add(run_context, share, *, dropped):
+    """RBT-005's trail-and-add instant through the runner; dropped, the risk at the stop exceeds the ceiling at the callback."""
+
+    from btc_predictor.research_backtest import management_composer as mc
+    from btc_predictor.tests.rbt005_management_fixtures import TRAIL_AT, Interventions, add_score_lifted, higher_low_at
+
+    inputs = run_context.inputs["BITSTAMP"]
+    with pytest.MonkeyPatch.context() as patch:
+        changes = Interventions(patch)
+        higher_low_at(changes, inputs, {TRAIL_AT})
+        add_score_lifted(changes, {TRAIL_AT})
+        if dropped:
+            changes.result(mc, "calculate_risk_at_stop", {TRAIL_AT + timedelta(hours=1)}, within_maximum=False)
+        call = mc.ManagementComposer.__call__
+
+        def serving(self, engine_context):
+            changes.instant = engine_context.as_of
+            return call(self, engine_context)
+
+        patch.setattr(mc.ManagementComposer, "__call__", serving)
+        with share():
+            yield
+
+
 def test_every_pending_add_has_exactly_its_one_resolution(tmp_path, context, share):
     # review N3: a dropped ADD follow-up returns no intent and reaches the record only through its causes,
     # so removing it from a snapshot left the rebuilt record unchanged and the checkpoint was read
     from btc_predictor.research_backtest import management_composer as mc
-    from btc_predictor.tests.rbt005_management_fixtures import TRAIL_AT, Interventions, add_score_lifted, higher_low_at
+    from btc_predictor.tests.rbt005_management_fixtures import TRAIL_AT
 
     hour = timedelta(hours=1)
     spec = rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base")
 
     def trail_and_add(run_context, *, dropped):
-        # the trail-and-add instant of RBT-005's fixtures; dropped, the risk at the stop exceeds the ceiling at the callback
-        inputs = run_context.inputs["BITSTAMP"]
-        with pytest.MonkeyPatch.context() as patch:
-            changes = Interventions(patch)
-            higher_low_at(changes, inputs, {TRAIL_AT})
-            add_score_lifted(changes, {TRAIL_AT})
-            if dropped:
-                changes.result(mc, "calculate_risk_at_stop", {TRAIL_AT + hour}, within_maximum=False)
-            call = mc.ManagementComposer.__call__
-
-            def serving(self, engine_context):
-                changes.instant = engine_context.as_of
-                return call(self, engine_context)
-
-            patch.setattr(mc.ManagementComposer, "__call__", serving)
-            with share():
-                return rn.execute_run(spec, run_context, record_management=True)
+        with _trail_and_add(run_context, share, dropped=dropped):
+            return rn.execute_run(spec, run_context, record_management=True)
 
     emitted, dropped = trail_and_add(context, dropped=False), trail_and_add(context, dropped=True)
     for outcome, kind in ((emitted, mc.FOLLOWUP_ADD_EMITTED), (dropped, mc.FOLLOWUP_ADD_DROPPED)):
@@ -1032,6 +1043,69 @@ def test_every_pending_add_has_exactly_its_one_resolution(tmp_path, context, sha
     pending = trail_and_add(ending, dropped=False)
     assert pending.composers[0]._pending is not None and pending.snapshot.composers[0].followups == ()
     assert rn.snapshot_refusals(spec, ending, pending.snapshot) == []
+
+
+def test_a_resumed_run_is_accepted_only_if_running_it_again_gives_it(monkeypatch, tmp_path, context, share):
+    # review T2: a dropped ADD's reason and risk re-check reach no record, so changing them in a snapshot whose
+    # digest the record then named was read; a resumed run is now run again and compared (the owner's choice)
+    from btc_predictor.research_backtest import management_composer as mc
+
+    spec = rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base")
+    runs = []
+    execute = rn.execute_run
+    monkeypatch.setattr(rn, "execute_run", lambda *args, **kwargs: runs.append(args[0]) or execute(*args, **kwargs))
+    with _trail_and_add(context, share, dropped=True):
+        assert rn.checkpointed_run(tmp_path, spec, context) is False
+        written = {path: path.read_bytes() for path in (rn.run_file(tmp_path, spec), rn.run_snapshot_file(tmp_path, spec))}
+        assert rn.checkpointed_run(tmp_path, spec, context) is True
+    # the written run was run again, found to be this run, and kept as it was written
+    assert runs == [spec, spec] and {path: path.read_bytes() for path in written} == written
+    record, snapshot = rn.read_checkpoint(tmp_path, spec, context)
+    (composer,) = snapshot.composers
+    (followup,) = composer.followups
+    assert followup.outcome == mc.FOLLOWUP_ADD_DROPPED and followup.reasons == (mc.DROP_RISK_EXCEEDED_AT_CALLBACK,)
+    assert followup.risk_recheck["within_maximum"] is False and followup.risk_recheck["projected_risk_fraction_nav"] is not None
+
+    def stored(changed):
+        # the snapshot changed, and the record naming its new digest, as the writer names it
+        altered = replace(snapshot, composers=(replace(composer, followups=(changed,)),))
+        rn.write_run(tmp_path, rn.RunOutcome(spec, record, snapshot=altered))
+
+    for name, changed in {
+        "the reviewer's closed position": replace(followup, reasons=(mc.DROP_POSITION_CLOSED,)),
+        "the reviewer's invented reason": replace(followup, reasons=("INVENTED",)),
+        "the reviewer's missing re-check": replace(followup, risk_recheck=None),
+        "another projected risk": replace(followup, risk_recheck={**followup.risk_recheck, "projected_risk_fraction_nav": Decimal("0.5")}),
+    }.items():
+        stored(changed)
+        # every check of the stored files alone still passes
+        assert rn.read_run(tmp_path, spec, context) == record, name
+        with _trail_and_add(context, share, dropped=True):
+            with pytest.raises(rn.RunnerRefused, match=f"CHECKPOINT_REFUSED.*is not the run {spec.run_id} gives when run again"):
+                rn.checkpointed_run(tmp_path, spec, context)
+    # the record is compared too: a feature written with one more trailing zero is an equal snapshot, not the record
+    row = composer.entry_rows[-1]
+    key, value = next((key, value) for key, value in row.features.items() if value is not None)
+    sign, digits, exponent = value.as_tuple()
+    longer = Decimal((sign, (*digits, 0), exponent - 1))
+    widened = replace(snapshot, composers=(replace(composer, entry_rows=(*composer.entry_rows[:-1], replace(row, features={**row.features, key: longer}))),))
+    assert widened == snapshot and format(longer, "f") != format(value, "f")
+    rn.write_run(tmp_path, rn.RunOutcome(spec, rn.run_record(spec, context, widened), snapshot=widened))
+    assert rn.read_run(tmp_path, spec, context) not in (None, record)
+    with _trail_and_add(context, share, dropped=True):
+        with pytest.raises(rn.RunnerRefused, match="gives when run again"):
+            rn.checkpointed_run(tmp_path, spec, context)
+    # a complete run of the same binding that running it again does not give (here the ADD emitted) is refused too
+    with _trail_and_add(context, share, dropped=False):
+        emitted = execute(spec, context)
+    assert emitted.snapshot.composers[0].followups[0].outcome == mc.FOLLOWUP_ADD_EMITTED
+    rn.write_run(tmp_path, emitted)
+    assert rn.read_run(tmp_path, spec, context) == json.loads(canonical_json_bytes(emitted.record))
+    with _trail_and_add(context, share, dropped=True):
+        with pytest.raises(rn.RunnerRefused, match="gives when run again"):
+            rn.checkpointed_run(tmp_path, spec, context)
+        rn.write_run(tmp_path, rn.RunOutcome(spec, record, snapshot=snapshot))
+        assert rn.checkpointed_run(tmp_path, spec, context) is True
 
 
 def test_a_snapshot_reads_the_composers_as_they_hold_themselves(monkeypatch, context, headline, walk_forward):
@@ -1683,11 +1757,32 @@ def test_the_golden_replay_reports_its_decisions_beside_the_scripted_ones(end_to
     assert golden["decisions_beside_scripted"][0]["decision_at"] == "2024-03-31T00:00:00+00:00"
 
 
-def test_a_resumed_run_skips_complete_work_and_reproduces_the_report(end_to_end):
-    before = {spec.run_id: rn.run_file(end_to_end.workspace.directory, spec).read_bytes() for spec in end_to_end.specs}
+def test_a_resumed_run_runs_every_run_again_and_reproduces_the_report(end_to_end, monkeypatch, tmp_path):
+    files = [path(end_to_end.workspace.directory, spec) for spec in end_to_end.specs for path in (rn.run_file, rn.run_snapshot_file)]
+    before = {path: path.read_bytes() for path in files}
+    logged = len(end_to_end.workspace.log.read_text().splitlines())
+    calls = tmp_path / "executed"
+    execute = rn.execute_run
+
+    def executed(spec, context, **options):
+        # the workers are forked from this process, so each one runs this and appends its own line
+        with calls.open("a") as stream:
+            stream.write(spec.run_id + "\n")
+        return execute(spec, context, **options)
+
+    monkeypatch.setattr(rn, "execute_run", executed)
     rn.execute_all(end_to_end.context, end_to_end.specs, end_to_end.workspace, workers=2, precompute_venue="BITSTAMP")
-    after = {spec.run_id: rn.run_file(end_to_end.workspace.directory, spec).read_bytes() for spec in end_to_end.specs}
+    after = {path: path.read_bytes() for path in files}
     assert before == after
+    # review T2: every written run was run again, once, and found to be the stored run, which stays as written
+    assert sorted(calls.read_text().split()) == sorted(spec.run_id for spec in end_to_end.specs)
+    entries = [json.loads(line) for line in end_to_end.workspace.log.read_text().splitlines()[logged:]]
+    runs = [entry for entry in entries if entry["event"] == "run"]
+    assert sorted(entry["run_id"] for entry in runs) == sorted(spec.run_id for spec in end_to_end.specs)
+    assert all(entry["resumed"] is True for entry in runs)
+    # with the stored shared positioning results: nothing shared was computed again
+    assert all(counts["computed"] == 0 for entry in runs for counts in entry["share"].values())
+    assert sum(counts["served"] for entry in runs for counts in entry["share"].values()) > 0
     _report, files = end_to_end.build()
     assert files == end_to_end.files
 

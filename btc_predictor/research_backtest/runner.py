@@ -959,8 +959,19 @@ def read_run(directory: Path, spec: RunSpec, context: RunContext, *, binding: Ma
     and the record rebuilt from it must equal the stored record byte for byte.
     Review N1: the snapshot file must have the digest the record names before
     it is read, and it is read with only the classes the store files hold.
-    The record is returned as the run gave it, without that digest.
+    The record is returned as the run gave it, without that digest. The run
+    command reads a record only after :func:`checkpointed_run` ran it again
+    in the same command (review T2).
     """
+
+    checkpoint = read_checkpoint(directory, spec, context, binding=binding)
+    return None if checkpoint is None else checkpoint[0]
+
+
+def read_checkpoint(
+    directory: Path, spec: RunSpec, context: RunContext, *, binding: Mapping[str, Any] | None = None
+) -> tuple[dict[str, Any], RunSnapshot] | None:
+    """:func:`read_run`'s record and the snapshot it was rebuilt from, after every check; None if not written."""
 
     import pickle
 
@@ -1003,7 +1014,28 @@ def read_run(directory: Path, spec: RunSpec, context: RunContext, *, binding: Ma
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name}'s snapshot does not give a record: {error}") from error
     if rebuilt != canonical_json_bytes(record):
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} is not the record its snapshot gives")
-    return record
+    return record, stored["snapshot"]
+
+
+def checkpointed_run(directory: Path, spec: RunSpec, context: RunContext) -> bool:
+    """Run one spec, then write it, or, if it was written, require it to be this run; True if it was (review T2).
+
+    The owner's choice of 2026-11-20: a resumed run is run again. With the
+    shared positioning results the store holds, the run must give the stored
+    record byte for byte and a snapshot equal to the stored one, every field
+    of every dataclass in it compared; otherwise the checkpoint is refused. A
+    stored run that is this run stays as it was written.
+    """
+
+    stored = read_checkpoint(directory, spec, context)
+    outcome = execute_run(spec, context)
+    if stored is None:
+        write_run(directory, outcome)
+        return False
+    record, snapshot = stored
+    if canonical_json_bytes(record) != canonical_json_bytes(outcome.record) or snapshot != outcome.snapshot:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{run_file(directory, spec).name} is not the run {spec.run_id} gives when run again")
+    return True
 
 
 # --- the frozen inputs and their checks -----------------------------------------------------------
@@ -1956,15 +1988,12 @@ def _run_spec(spec: RunSpec) -> str:
     import time
 
     workspace: Workspace = _STATE["workspace"]
-    if read_run(workspace.directory, spec, _STATE["context"]) is not None:
-        return spec.run_id
     _STATE["statistics"] = ShareStatistics()
     share = _share_factory()
     started = time.monotonic()
     with share():
-        outcome = execute_run(spec, _STATE["context"])
-    write_run(workspace.directory, outcome)
-    _log({"event": "run", "run_id": spec.run_id, "seconds": round(time.monotonic() - started, 1), "share": _STATE["statistics"].as_record()})
+        resumed = checkpointed_run(workspace.directory, spec, _STATE["context"])
+    _log({"event": "run", "run_id": spec.run_id, "resumed": resumed, "seconds": round(time.monotonic() - started, 1), "share": _STATE["statistics"].as_record()})
     return spec.run_id
 
 
@@ -2180,7 +2209,10 @@ def execute_all(
     progress: Callable[[str], None] = lambda line: None,
     frozen_code: tuple[Path, str, set[str]] | None = None,
 ) -> None:
-    """The precompute, the history, every run and the audit, each skipped when its complete file exists."""
+    """The precompute, the history, every run and the audit, each skipped when its complete file exists.
+
+    A written run is not skipped but run again and compared (review T2).
+    """
 
     import multiprocessing
 
