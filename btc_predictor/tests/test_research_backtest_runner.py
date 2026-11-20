@@ -374,8 +374,8 @@ def test_a_repository_module_not_loaded_from_its_source_refuses(tmp_path):
 LAUNCHER = REPOSITORY / rn.LAUNCHER
 
 
-def _launched(args, tmp_path, environment=None):
-    """The committed launcher itself, with this interpreter and a private TMPDIR."""
+def _launched(args, tmp_path, environment=None, shell=()):
+    """The committed launcher itself, started as the owner starts it (by its first line), with this interpreter and a private TMPDIR."""
 
     import os
     import sys
@@ -383,7 +383,7 @@ def _launched(args, tmp_path, environment=None):
     temporary = tmp_path / "launcher-tmp"
     temporary.mkdir(exist_ok=True)
     variables = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"], "TMPDIR": str(temporary), "RBT007_PYTHON": sys.executable}
-    return subprocess.run(["bash", str(LAUNCHER), *args], env={**variables, **(environment or {})}, capture_output=True, text=True, check=False)
+    return subprocess.run([*shell, str(LAUNCHER), *args], env={**variables, **(environment or {})}, capture_output=True, text=True, check=False)
 
 
 def _entry_command(args, prefix, drop=()):
@@ -410,7 +410,7 @@ def test_the_launcher_starts_the_command_isolated_with_a_fresh_bytecode_cache(tm
     with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
         rn.require_fresh_bytecode()
     text = LAUNCHER.read_text()
-    assert os.access(LAUNCHER, os.X_OK) and "env -i " in text and f'"{rn.FRESH_BYTECODE_ENV}=$cache"' in text
+    assert os.access(LAUNCHER, os.X_OK) and "command -p env -i " in text and f'"{rn.FRESH_BYTECODE_ENV}=$cache"' in text
     assert '"$python" -I -S -B -X "pycache_prefix=$cache" -c "$entry" "$repository" "$@"' in text
     shown = _launched(["--help"], tmp_path)
     assert shown.returncode == 0 and shown.stdout.startswith("usage: runner"), shown.stdout + shown.stderr
@@ -498,6 +498,46 @@ def test_an_inherited_startup_hook_never_runs_in_the_command(monkeypatch, tmp_pa
         _entry_command(["preflight"], prefix), cwd=REPOSITORY, env=_entry_environment(prefix, **hooked_environment), capture_output=True, text=True, check=False
     )
     assert given.returncode == 0 and not marker.exists(), given.stdout + given.stderr
+
+
+def test_the_launchers_shell_runs_nothing_its_caller_names(tmp_path):
+    import os
+
+    # review T1: an ordinary bash runs a BASH_ENV file and imports exported functions before the script's first line
+    marker = tmp_path / "shell-ran"
+    startup = tmp_path / "bash_env.sh"
+    startup.write_text(f"echo bash_env >> {marker}\n")
+    planted = tmp_path / "planted"
+    planted.mkdir()
+    for name in ("env", "mktemp", "rm", "dirname"):
+        (planted / name).write_text(f'#!/bin/sh\necho {name} >> {marker}\nexec /usr/bin/{name} "$@"\n')
+        (planted / name).chmod(0o755)
+    named = {
+        "BASH_ENV": str(startup),
+        "ENV": str(startup),
+        "BASH_FUNC_env%%": f"() {{  echo function >> {marker}; }}",
+        "BASH_FUNC_command%%": f"() {{  echo function >> {marker}; }}",
+        "SHELLOPTS": "xtrace",
+        "PATH": f"{planted}:{os.environ['PATH']}",
+    }
+    # each would act in an ordinary bash: the startup file, the functions, the planted helpers and the inherited option
+    ordinary = subprocess.run(["/bin/bash", "-c", "env true; command true; mktemp -u >/dev/null"], env=named, capture_output=True, text=True, check=False)
+    assert marker.read_text().split() == ["bash_env", "function", "function", "mktemp"] and "+ " in ordinary.stderr
+    marker.unlink()
+    # the launcher, started by its first line: none of them acts, and its process is the one an empty environment gives
+    clean = json.loads(_launched(["preflight"], tmp_path).stdout)
+    launched = _launched(["preflight"], tmp_path, named)
+    assert launched.returncode == 0 and not marker.exists() and launched.stderr == "", launched.stdout + launched.stderr
+    report = json.loads(launched.stdout)
+    assert report["path"] == clean["path"] and report["modules_from_source"] == clean["modules_from_source"]
+    assert set(report["environment"]) - {"LC_CTYPE"} == {"HOME", "PATH", "TMPDIR", rn.FRESH_BYTECODE_ENV}
+    assert not any((tmp_path / "launcher-tmp").iterdir())
+    # started any other way the shell is not privileged, and the launcher refuses before anything else
+    assert LAUNCHER.read_text().splitlines()[0] == "#!/bin/bash -p"
+    for shell in (["/bin/bash"], ["/bin/sh"]):
+        other = _launched(["preflight"], tmp_path, shell=shell)
+        assert other.returncode == 2 and other.stdout == "" and "so bash runs privileged (-p) from its first line" in other.stderr, shell
+    assert not any((tmp_path / "launcher-tmp").iterdir())
 
 
 def test_the_startup_check_needs_the_interpreters_own_import_system(monkeypatch, tmp_path):

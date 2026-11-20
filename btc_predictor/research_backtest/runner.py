@@ -29,8 +29,10 @@ import stay byte-identical to the preregistration's code commit; the runner
 checks this before any run. It runs only in the process its launcher,
 ``runner_launch.sh``, starts: Python isolated and without ``site``, writing
 no bytecode and reading an empty private cache, so nothing but the
-interpreter runs before the checks (review N2). A sweep candidate or the
-ablation variant reaches the unchanged composers through
+interpreter runs before the checks (review N2). The launcher's bash runs
+privileged from its first line, reading no startup file and importing no
+function, and finds its helpers on bash's fixed path (review T1). A sweep
+candidate or the ablation variant reaches the unchanged composers through
 :class:`RegisteredEntryComposer`, which accepts only the configurations the
 preregistration lists.
 

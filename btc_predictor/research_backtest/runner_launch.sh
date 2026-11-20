@@ -1,5 +1,14 @@
-#!/usr/bin/env bash
+#!/bin/bash -p
 # RBT-007's only supported launch (review N2; the owner's choice of 2026-11-19).
+#
+# The shell (review T1; the owner's choice of 2026-11-20): started by this
+# first line, bash runs privileged (-p). It reads no BASH_ENV or ENV file,
+# imports no function from the environment, and ignores SHELLOPTS, BASHOPTS,
+# CDPATH and GLOBIGNORE, so nothing the caller's environment names runs before
+# this script. Its helpers come from bash's fixed standard path (command -p),
+# never the inherited PATH. Started any other way (bash runner_launch.sh), it
+# refuses. Dynamic-loader variables such as LD_PRELOAD act on any program
+# before its first line; no launcher can control them.
 #
 # Python starts isolated (-I: no PYTHON* variable, user site or current
 # directory on its path) and without site (-S: no .pth file, sitecustomize or
@@ -14,12 +23,19 @@
 #   btc_predictor/research_backtest/runner_launch.sh preflight
 #
 # RBT007_PYTHON names the interpreter; the default is this repository's .venv312.
+case $- in
+    *p*) ;;
+    *)
+        printf 'refused: start %s itself, so bash runs privileged (-p) from its first line\n' "$0" >&2
+        exit 2
+        ;;
+esac
 set -euo pipefail
 
-repository="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+repository="$(cd -- "$(command -p dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 python="${RBT007_PYTHON:-$repository/.venv312/bin/python}"
-cache="$(mktemp -d "${TMPDIR:-/tmp}/rbt007-pycache-XXXXXXXX")"
-trap 'rm -rf -- "$cache"' EXIT
+cache="$(command -p mktemp -d "${TMPDIR:-/tmp}/rbt007-pycache-XXXXXXXX")"
+trap 'command -p rm -rf -- "$cache"' EXIT
 
 entry='import sys
 from pathlib import Path
@@ -39,5 +55,5 @@ for name in LANG LC_ALL TMPDIR; do
 done
 cd -- "$repository"
 status=0
-env -i "${variables[@]}" "$python" -I -S -B -X "pycache_prefix=$cache" -c "$entry" "$repository" "$@" || status=$?
+command -p env -i "${variables[@]}" "$python" -I -S -B -X "pycache_prefix=$cache" -c "$entry" "$repository" "$@" || status=$?
 exit "$status"
