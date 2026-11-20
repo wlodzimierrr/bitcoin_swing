@@ -83,7 +83,12 @@ from btc_predictor.research_backtest.entry_composer import (
     is_daily_decision_instant,
     next_decision_instant,
 )
-from btc_predictor.research_backtest.management_composer import ManagementComposer
+from btc_predictor.research_backtest.management_composer import (
+    FOLLOWUP_ADD_DROPPED,
+    FOLLOWUP_ADD_EMITTED,
+    REASON_ADD_PENDING_TRAIL,
+    ManagementComposer,
+)
 from btc_predictor.research_backtest.replay_inputs import canonical_json_bytes
 from btc_predictor.research_backtest.runner_shared import ShareStatistics, dump_store_pickle, load_store_pickle
 
@@ -762,7 +767,10 @@ def snapshot_refusals(spec: RunSpec, context: RunContext, snapshot: Any) -> list
     row exactly where the entry row has the position open (RBT-005 decides,
     or records the missing-bar row, while a position is open), and the
     intents the ledgers and follow-ups returned must be exactly the ones the
-    engine received.
+    engine received. Review N3: every TRAIL that left an ADD pending has
+    exactly one follow-up, at the engine's next callback, unless the run ended
+    first (RBT-005 resolves it there, owner ruling 1); an emitted ADD is that
+    pending ADD's intent, and a dropped one has its reasons and no intent.
     """
 
     if not isinstance(snapshot, RunSnapshot) or not all(isinstance(item, ComposerSnapshot) for item in snapshot.composers):
@@ -796,6 +804,21 @@ def snapshot_refusals(spec: RunSpec, context: RunContext, snapshot: Any) -> list
             problems.append(f"engine run {number}'s entry ledger is not one row per decision instant crossed")
         if [row.decision_at for row in composer.management_rows] != [row.decision_at for row in composer.entry_rows if row.position_open]:
             problems.append(f"engine run {number}'s management ledger is not one row per instant with the position open")
+        callbacks = [_bar_available_at(bar) for bar in bars]
+        pending = []
+        for row in composer.management_rows:
+            if REASON_ADD_PENDING_TRAIL in row.reasons:
+                resolved = next((at for at in callbacks if at > row.decision_at), None)
+                if resolved is not None:  # else the run ended before the ADD's callback
+                    pending.append((row, resolved))
+        if [(item.decision_at, item.resolved_at) for item in composer.followups] != [(row.decision_at, resolved) for row, resolved in pending]:
+            problems.append(f"engine run {number}'s follow-ups are not one per pending ADD whose next callback came")
+        else:
+            for item, (row, _resolved) in zip(composer.followups, pending, strict=True):
+                emitted = item.outcome == FOLLOWUP_ADD_EMITTED and not item.reasons and item.intent == row.add["intent"]
+                dropped = item.outcome == FOLLOWUP_ADD_DROPPED and bool(item.reasons) and item.intent is None
+                if not (emitted or dropped):
+                    problems.append(f"engine run {number}'s follow-up at {item.resolved_at.isoformat()} is not its pending ADD's resolution")
         returned = [item.intent["source_id"] for item in (*composer.entry_rows, *composer.management_rows, *composer.followups) if item.intent is not None]
         received = {event.source_id for event in result.events if event.event_type == "INTENT"}
         if len(returned) != len(set(returned)) or set(returned) != received:

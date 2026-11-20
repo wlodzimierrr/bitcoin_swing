@@ -922,6 +922,78 @@ def test_store_files_are_read_with_only_the_classes_they_hold(tmp_path, context,
     assert loads == []
 
 
+def test_every_pending_add_has_exactly_its_one_resolution(tmp_path, context, share):
+    # review N3: a dropped ADD follow-up returns no intent and reaches the record only through its causes,
+    # so removing it from a snapshot left the rebuilt record unchanged and the checkpoint was read
+    from btc_predictor.research_backtest import management_composer as mc
+    from btc_predictor.tests.rbt005_management_fixtures import TRAIL_AT, Interventions, add_score_lifted, higher_low_at
+
+    hour = timedelta(hours=1)
+    spec = rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base")
+
+    def trail_and_add(run_context, *, dropped):
+        # the trail-and-add instant of RBT-005's fixtures; dropped, the risk at the stop exceeds the ceiling at the callback
+        inputs = run_context.inputs["BITSTAMP"]
+        with pytest.MonkeyPatch.context() as patch:
+            changes = Interventions(patch)
+            higher_low_at(changes, inputs, {TRAIL_AT})
+            add_score_lifted(changes, {TRAIL_AT})
+            if dropped:
+                changes.result(mc, "calculate_risk_at_stop", {TRAIL_AT + hour}, within_maximum=False)
+            call = mc.ManagementComposer.__call__
+
+            def serving(self, engine_context):
+                changes.instant = engine_context.as_of
+                return call(self, engine_context)
+
+            patch.setattr(mc.ManagementComposer, "__call__", serving)
+            with share():
+                return rn.execute_run(spec, run_context, record_management=True)
+
+    emitted, dropped = trail_and_add(context, dropped=False), trail_and_add(context, dropped=True)
+    for outcome, kind in ((emitted, mc.FOLLOWUP_ADD_EMITTED), (dropped, mc.FOLLOWUP_ADD_DROPPED)):
+        ((followup,),) = [composer.followups for composer in outcome.snapshot.composers]
+        assert (followup.outcome, followup.decision_at, followup.resolved_at) == (kind, TRAIL_AT, TRAIL_AT + hour)
+        assert rn.snapshot_refusals(spec, context, outcome.snapshot) == []
+        rn.write_run(tmp_path / kind, outcome)
+        assert rn.read_run(tmp_path / kind, spec, context) == json.loads(canonical_json_bytes(outcome.record))
+
+    def refusals(outcome, followups):
+        (composer,) = outcome.snapshot.composers
+        return rn.snapshot_refusals(spec, context, replace(outcome.snapshot, composers=(replace(composer, followups=followups),)))
+
+    (followup,) = dropped.snapshot.composers[0].followups
+    assert followup.reasons == (mc.DROP_RISK_EXCEEDED_AT_CALLBACK,) and followup.intent is None
+    # the reviewer's case: without its dropped follow-up the snapshot still gives the same record
+    gone = replace(dropped.snapshot, composers=(replace(dropped.snapshot.composers[0], followups=()),))
+    assert canonical_json_bytes(rn.run_record(spec, context, gone)) == canonical_json_bytes(dropped.record)
+    for name, followups in {
+        "removed": (),
+        "twice": (followup, followup),
+        "at a later callback": (replace(followup, resolved_at=TRAIL_AT + 2 * hour),),
+        "of another instant": (replace(followup, decision_at=TRAIL_AT - DAY),),
+        "without its reasons": (replace(followup, reasons=()),),
+        "emitted without an intent": (replace(followup, outcome=mc.FOLLOWUP_ADD_EMITTED, reasons=()),),
+        "of another outcome": (replace(followup, outcome="INVENTED"),),
+    }.items():
+        assert refusals(dropped, followups), name
+    (followup,) = emitted.snapshot.composers[0].followups
+    for name, item in {
+        "another action": replace(followup, intent={**followup.intent, "action": "EXIT"}),
+        "with reasons": replace(followup, reasons=(mc.DROP_POSITION_CHANGED,)),
+        "called dropped": replace(followup, outcome=mc.FOLLOWUP_ADD_DROPPED),
+    }.items():
+        assert refusals(emitted, (item,)), name
+
+    # a run that ends at the TRAIL leaves its ADD pending, with no follow-up, and is complete
+    inputs = context.inputs["BITSTAMP"]
+    shortened = replace(inputs, dataset=replace(inputs.dataset, price_bars=tuple(bar for bar in inputs.dataset.price_bars if bar.ingested_at <= TRAIL_AT)))
+    ending = replace(context, inputs={"BITSTAMP": shortened}, evaluation={"BITSTAMP": (START, TRAIL_AT)})
+    pending = trail_and_add(ending, dropped=False)
+    assert pending.composers[0]._pending is not None and pending.snapshot.composers[0].followups == ()
+    assert rn.snapshot_refusals(spec, ending, pending.snapshot) == []
+
+
 def test_a_snapshot_reads_the_composers_as_they_hold_themselves(monkeypatch, context, headline, walk_forward):
     # the armed entries and the unaccounted causes a record is built from are the composers' own
     for outcome in (headline, walk_forward):
