@@ -81,7 +81,7 @@ from btc_predictor.research_backtest.entry_composer import (
 )
 from btc_predictor.research_backtest.management_composer import ManagementComposer
 from btc_predictor.research_backtest.replay_inputs import canonical_json_bytes
-from btc_predictor.research_backtest.runner_shared import ShareStatistics
+from btc_predictor.research_backtest.runner_shared import ShareStatistics, dump_store_pickle, load_store_pickle
 
 RUNNER_VERSION = "RBT007_RESEARCH_BACKTEST_RUNNER_V1"
 RUNNER_TICKET = "RUN_FIRST_RESEARCH_BACKTEST_V1"
@@ -870,18 +870,19 @@ def write_run(directory: Path, outcome: RunOutcome) -> Path:
     """Write a run's snapshot, then its record, each whole, then renamed: a resumed run reads complete records only.
 
     The snapshot goes first, under the record's binding, so a record on disk
-    always has the snapshot it is rebuilt from (review RR2).
+    always has the snapshot it is rebuilt from (review RR2). The record names
+    the snapshot file's SHA-256 (review N1).
     """
-
-    import pickle
 
     if outcome.snapshot is None:
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{outcome.spec.run_id} has no snapshot to write")
     path = run_file(directory, outcome.spec)
     path.parent.mkdir(parents=True, exist_ok=True)
     stored = {"run_id": outcome.spec.run_id, "binding": json.loads(canonical_json_bytes(outcome.record["binding"])), "snapshot": outcome.snapshot}
-    _replace_whole(run_snapshot_file(directory, outcome.spec), gzip.compress(pickle.dumps(stored, protocol=pickle.HIGHEST_PROTOCOL), mtime=0))
-    _replace_whole(path, gzip.compress(canonical_json_bytes(outcome.record), mtime=0))
+    snapshot = gzip.compress(dump_store_pickle(stored), mtime=0)
+    _replace_whole(run_snapshot_file(directory, outcome.spec), snapshot)
+    record = {**outcome.record, SNAPSHOT_DIGEST: hashlib.sha256(snapshot).hexdigest()}
+    _replace_whole(path, gzip.compress(canonical_json_bytes(record), mtime=0))
     return path
 
 
@@ -908,6 +909,7 @@ def run_binding(spec: RunSpec, context: RunContext) -> dict[str, Any]:
     }
 
 
+SNAPSHOT_DIGEST = "snapshot_sha256"  # review N1: the stored record's name for its snapshot file's digest
 _SINGLE_KEYS = ("run", "run_id", "variant", "window", "metrics", "result", "entry_ledger", "management_ledger", "trade_entries", "unaccounted", "memory", "engine_events", "binding")
 _FOLDED_KEYS = ("run", "run_id", "variant", "plan", "folds", "metrics", "fold_metrics", "validation", "entry_ledgers", "management_ledgers", "trade_entries", "unaccounted", "memory", "engine_events", "binding")
 RECORD_KEYS = {
@@ -926,6 +928,9 @@ def read_run(directory: Path, spec: RunSpec, context: RunContext, *, binding: Ma
     another. Review RR2: the run's snapshot, stored under the same binding,
     must be a complete run of the bound window (:func:`snapshot_refusals`),
     and the record rebuilt from it must equal the stored record byte for byte.
+    Review N1: the snapshot file must have the digest the record names before
+    it is read, and it is read with only the classes the store files hold.
+    The record is returned as the run gave it, without that digest.
     """
 
     import pickle
@@ -942,12 +947,18 @@ def read_run(directory: Path, spec: RunSpec, context: RunContext, *, binding: Ma
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} does not hold {spec.run_id}")
     if record.get("binding") != json.loads(canonical_json_bytes(binding)):
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} was written under another binding")
-    missing = [key for key in RECORD_KEYS[spec.kind] if key not in record]
+    missing = [key for key in (*RECORD_KEYS[spec.kind], SNAPSHOT_DIGEST) if key not in record]
     if missing:
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} lacks {missing}")
     snapshot_path = run_snapshot_file(directory, spec)
     try:
-        stored = pickle.loads(gzip.decompress(snapshot_path.read_bytes()))
+        snapshot = snapshot_path.read_bytes()
+    except OSError as error:
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} has no readable snapshot: {error}") from error
+    if hashlib.sha256(snapshot).hexdigest() != record.pop(SNAPSHOT_DIGEST):
+        raise RunnerRefused("CHECKPOINT_REFUSED", f"{snapshot_path.name} is not the snapshot {path.name} names")
+    try:
+        stored = load_store_pickle(gzip.decompress(snapshot))
     except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError, TypeError) as error:
         raise RunnerRefused("CHECKPOINT_REFUSED", f"{path.name} has no readable snapshot: {error}") from error
     if not isinstance(stored, dict) or stored.get("run_id") != spec.run_id or stored.get("binding") != record["binding"]:
@@ -1905,8 +1916,8 @@ def read_history(workspace: Workspace, venue: str, context: RunContext, last: da
 
     path = history_file(workspace, venue)
     try:
-        data = pickle.loads(path.read_bytes())
-    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError) as error:
+        data = load_store_pickle(path.read_bytes())
+    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError, TypeError) as error:
         raise RunnerRefused("HISTORY_REFUSED", f"{venue}'s history file is not readable: {error}") from error
     if not isinstance(data, dict) or data.get("binding") != history_binding(context, venue, last):
         raise RunnerRefused("HISTORY_REFUSED", f"{venue}'s history file was written under another binding")
@@ -1919,7 +1930,6 @@ def read_history(workspace: Workspace, venue: str, context: RunContext, last: da
 
 @_verified
 def _history_task(venue: str) -> str:
-    import pickle
     import time
 
     workspace: Workspace = _STATE["workspace"]
@@ -1933,7 +1943,7 @@ def _history_task(venue: str) -> str:
     started = time.monotonic()
     with share():
         rows = continuous_history(context.inputs[venue], context.registry.champion, last, context.schedule)
-    _write_whole(history_file(workspace, venue), pickle.dumps({"binding": history_binding(context, venue, last), "rows": rows}, protocol=5))
+    _write_whole(history_file(workspace, venue), dump_store_pickle({"binding": history_binding(context, venue, last), "rows": rows}))
     _log({"event": "history", "venue": venue, "rows": len(rows), "seconds": round(time.monotonic() - started, 1), "share": _STATE["statistics"].as_record()})
     return venue
 
@@ -2022,8 +2032,6 @@ def _audit_share(truncated: Iterable[EntryComposerInputs]) -> Callable[[], Any]:
 
 
 def _audit_state_task(venue: str) -> None:
-    import pickle
-
     workspace: Workspace = _STATE["workspace"]
     binding = _STATE["audit_bindings"][venue]
     if audit_state_file(workspace, venue).exists():
@@ -2036,7 +2044,7 @@ def _audit_state_task(venue: str) -> None:
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s base headline run has no record yet")
     state = audit_state(venue, context, checkpoint, share=_share_factory())
     _write_whole(audit_meta_file(workspace, venue), canonical_json_bytes({**state.meta(), "binding": binding}))
-    _write_whole(audit_state_file(workspace, venue), pickle.dumps({"binding": binding, "state": state}, protocol=5))
+    _write_whole(audit_state_file(workspace, venue), dump_store_pickle({"binding": binding, "state": state}))
 
 
 def _history_links_task(instant: datetime) -> None:
@@ -2111,8 +2119,8 @@ def load_audit_state(workspace: Workspace, venue: str, binding: Mapping[str, Any
     if not path.exists():
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state has not been written")
     try:
-        data = pickle.loads(path.read_bytes())
-    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError) as error:
+        data = load_store_pickle(path.read_bytes())
+    except (OSError, EOFError, pickle.UnpicklingError, AttributeError, ValueError, TypeError) as error:
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state is not readable: {error}") from error
     if not isinstance(data, dict) or data.get("binding") != binding or not isinstance(data.get("state"), AuditState):
         raise RunnerRefused("AUDIT_REFUSED", f"{venue}'s audit state was written under another binding")

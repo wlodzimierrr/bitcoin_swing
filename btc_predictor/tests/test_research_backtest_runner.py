@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import gzip
+import hashlib
 import json
 import shutil
 import pickle
@@ -741,8 +742,12 @@ def test_a_checkpoint_is_read_only_if_its_snapshot_gives_it(tmp_path, context, h
     path = rn.run_file(tmp_path, spec)
     assert rn.run_snapshot_file(tmp_path, spec).exists()
 
+    def named(record, run=spec):
+        # each record names its snapshot file's digest (review N1), so the checks after it are reached
+        return {**record, rn.SNAPSHOT_DIGEST: hashlib.sha256(rn.run_snapshot_file(tmp_path, run).read_bytes()).hexdigest()}
+
     def refused(record, match="CHECKPOINT_REFUSED"):
-        path.write_bytes(gzip.compress(canonical_json_bytes(record)))
+        path.write_bytes(gzip.compress(canonical_json_bytes(named(record))))
         with pytest.raises(rn.RunnerRefused, match=match):
             rn.read_run(tmp_path, spec, context)
 
@@ -767,11 +772,11 @@ def test_a_checkpoint_is_read_only_if_its_snapshot_gives_it(tmp_path, context, h
     refused(invented)
 
     # the snapshot must be there, this run's, under this binding
-    path.write_bytes(gzip.compress(canonical_json_bytes(stored)))
     snapshot_path = rn.run_snapshot_file(tmp_path, spec)
     good = pickle.loads(gzip.decompress(snapshot_path.read_bytes()))
     for data in (None, {**good, "run_id": "HEADLINE:COINBASE:champion:base"}, {**good, "binding": {"foreign": True}}, {**good, "snapshot": None}):
         snapshot_path.write_bytes(gzip.compress(pickle.dumps(data)))
+        path.write_bytes(gzip.compress(canonical_json_bytes(named(stored))))
         with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
             rn.read_run(tmp_path, spec, context)
     snapshot_path.unlink()
@@ -788,7 +793,7 @@ def test_a_checkpoint_is_read_only_if_its_snapshot_gives_it(tmp_path, context, h
         except Exception:
             consistent = fallback
         rn.run_snapshot_file(tmp_path, run).write_bytes(gzip.compress(pickle.dumps({**good, "run_id": run.run_id, "binding": fallback["binding"], "snapshot": variant})))
-        rn.run_file(tmp_path, run).write_bytes(gzip.compress(canonical_json_bytes(consistent)))
+        rn.run_file(tmp_path, run).write_bytes(gzip.compress(canonical_json_bytes(named(consistent, run))))
         with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
             rn.read_run(tmp_path, run, context)
 
@@ -830,6 +835,76 @@ def test_a_checkpoint_is_read_only_if_its_snapshot_gives_it(tmp_path, context, h
         replace(walk_forward.snapshot, result=snapshot.result),
     ):
         incomplete(folded, variant, folded_record)
+
+
+def test_store_files_are_read_with_only_the_classes_they_hold(tmp_path, context, headline, monkeypatch):
+    # review N1: the snapshot was unpickled before anything checked it, and a pickle builds whatever it names
+    import collections
+    import dataclasses
+    import importlib
+
+    spec = rn.RunSpec(rn.HEADLINE, "BITSTAMP", rn.CHAMPION, "base")
+    hooks = {"__reduce__", "__reduce_ex__", "__setstate__", "__getstate__", "__getnewargs__", "__getnewargs_ex__", "__new__", "__slots__"}
+    for module, name in rs.STORE_CLASSES:
+        cls = getattr(importlib.import_module(module), name)
+        if module not in ("datetime", "decimal"):
+            assert dataclasses.is_dataclass(cls) and cls.__dataclass_params__.frozen and not hooks & set(vars(cls)), name
+    # the store's objects come back whole; any other name is refused on write and on read, and named
+    loaded = rs.load_store_pickle(rs.dump_store_pickle(headline.snapshot))
+    assert canonical_json_bytes(rn.run_record(spec, context, loaded)) == canonical_json_bytes(headline.record)
+    for other in (Path("/elsewhere"), len, collections.Counter(), spec, [Decimal("1"), json.dumps]):
+        with pytest.raises(pickle.UnpicklingError, match="is not a class the store files hold"):
+            rs.load_store_pickle(pickle.dumps(other))
+        with pytest.raises(pickle.UnpicklingError, match="is not a class the store files hold"):
+            rs.dump_store_pickle(other)
+
+    # each of the four readers refuses a file naming another class, with its own refusal
+    rn.write_run(tmp_path, headline)
+    stored = rn.read_run(tmp_path, spec, context)
+    snapshot_path = rn.run_snapshot_file(tmp_path, spec)
+    good_bytes = snapshot_path.read_bytes()
+    good = pickle.loads(gzip.decompress(good_bytes))
+    raw = gzip.compress(pickle.dumps({**good, "snapshot": replace(good["snapshot"], trade_contexts=(spec,))}))
+    snapshot_path.write_bytes(raw)
+    rn.run_file(tmp_path, spec).write_bytes(gzip.compress(canonical_json_bytes({**stored, rn.SNAPSHOT_DIGEST: hashlib.sha256(raw).hexdigest()})))
+    workspace = rn.Workspace(tmp_path / "work")
+    rn._write_whole(rn.history_file(workspace, "BITSTAMP"), pickle.dumps({"binding": rn.history_binding(context, "BITSTAMP", LAST), "rows": (spec,)}))
+    rn._write_whole(rn.audit_state_file(workspace, "BITSTAMP"), pickle.dumps({"binding": {}, "state": spec}))
+    for code, read in (
+        ("CHECKPOINT_REFUSED", lambda: rn.read_run(tmp_path, spec, context)),
+        ("HISTORY_REFUSED", lambda: rn.read_history(workspace, "BITSTAMP", context, LAST)),
+        ("AUDIT_REFUSED", lambda: rn.load_audit_state(workspace, "BITSTAMP", {})),
+    ):
+        with pytest.raises(rn.RunnerRefused, match="RunSpec is not a class the store files hold") as refusal:
+            read()
+        assert refusal.value.code == code
+    store = rs.SharedResultStore(tmp_path / "shared")
+    key = "ab" * 32
+    store._path(key).parent.mkdir(parents=True)
+    store._path(key).write_bytes(pickle.dumps((rs._FILE_TAG, key, "funding_health", spec)))
+    with pytest.raises(rs.SharedPositioningError, match="RunSpec is not a class the store files hold"):
+        store.get(key, "funding_health")
+    with pytest.raises(pickle.UnpicklingError):
+        store.put("cd" * 32, "funding_health", spec)
+    assert not store._path("cd" * 32).exists()
+
+    # the snapshot is read only if it is the file its record names: other bytes never reach the loader
+    snapshot_path.write_bytes(good_bytes)
+    rn.run_file(tmp_path, spec).write_bytes(gzip.compress(canonical_json_bytes({**stored, rn.SNAPSHOT_DIGEST: hashlib.sha256(good_bytes).hexdigest()})))
+    loads = []
+    monkeypatch.setattr(rn, "load_store_pickle", lambda data: loads.append(data) or rs.load_store_pickle(data))
+    assert rn.read_run(tmp_path, spec, context) == stored and len(loads) == 1
+    loads.clear()
+    for replaced in (gzip.compress(pickle.dumps({**good, "binding": {"foreign": True}})), good_bytes + b"\0", b""):
+        snapshot_path.write_bytes(replaced)
+        with pytest.raises(rn.RunnerRefused, match="is not the snapshot"):
+            rn.read_run(tmp_path, spec, context)
+    snapshot_path.write_bytes(good_bytes)
+    for record in ({**stored, rn.SNAPSHOT_DIGEST: "0" * 64}, {**stored, rn.SNAPSHOT_DIGEST: None}, stored):
+        rn.run_file(tmp_path, spec).write_bytes(gzip.compress(canonical_json_bytes(record)))
+        with pytest.raises(rn.RunnerRefused, match="CHECKPOINT_REFUSED"):
+            rn.read_run(tmp_path, spec, context)
+    assert loads == []
 
 
 def test_a_snapshot_reads_the_composers_as_they_hold_themselves(monkeypatch, context, headline, walk_forward):

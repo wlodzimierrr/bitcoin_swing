@@ -19,7 +19,9 @@ unchanged owner function's own return value for exactly the same arguments:
 - **The store.** Each result is pickled to its own file, named by its key,
   in the private work directory (Part B ruling 9: the results hold
   market-derived values). A served result is a fresh copy read from those
-  bytes, so no caller can change another's result.
+  bytes, so no caller can change another's result. Every private-store file
+  the runner reads is read by :func:`load_store_pickle`, which builds only
+  the classes those files hold (review N1).
 - **Scope.** :func:`shared_positioning` replaces those names in the entry
   composer module's namespace for its ``with`` block only, in this process
   only. No file changes: the composer and the owner stay byte-identical to
@@ -32,6 +34,7 @@ requires byte-identical rows (ruling 3), which checks all of this end to end.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import pickle
@@ -72,6 +75,92 @@ _FILE_TAG = SHARED_POSITIONING_VERSION + ":RESULT"
 
 class SharedPositioningError(RuntimeError):
     """The share cannot be trusted: a corrupt file or a misbound name."""
+
+
+# --- the private store's files (review N1) ----------------------------------------------------
+
+# Every class the runner's private-store files hold: the run snapshots, the
+# continuous histories, the audit states and the shared results. Each is a
+# frozen dataclass of the repository's owners without its own pickling
+# methods, or a datetime or Decimal; nothing else is ever built from a file.
+STORE_CLASSES = frozenset(
+    {
+        ("btc_predictor.backtest.costs", "CostProfile"),
+        ("btc_predictor.backtest.engine", "BacktestEvent"),
+        ("btc_predictor.backtest.engine", "BacktestIntent"),
+        ("btc_predictor.backtest.engine", "BacktestResult"),
+        ("btc_predictor.backtest.engine", "EquityPoint"),
+        ("btc_predictor.backtest.regime_performance", "RegimePerformanceContext"),
+        ("btc_predictor.backtest.walk_forward", "WalkForwardFold"),
+        ("btc_predictor.backtest.walk_forward", "WalkForwardPlan"),
+        ("btc_predictor.backtest.walk_forward", "WalkForwardValidation"),
+        ("btc_predictor.backtest.walk_forward", "WalkForwardWindow"),
+        ("btc_predictor.data.ohlcv", "OhlcvBar"),
+        ("btc_predictor.features.flow", "FlowScoreInput"),
+        ("btc_predictor.features.flow", "FlowScoreResult"),
+        ("btc_predictor.features.positioning", "FundingHealthResult"),
+        ("btc_predictor.features.positioning", "FuturesBasisHealthResult"),
+        ("btc_predictor.features.positioning", "OpenInterestGrowthHealthResult"),
+        ("btc_predictor.features.positioning", "OpenInterestIntensityResult"),
+        ("btc_predictor.portfolio.account", "ExecutionCosts"),
+        ("btc_predictor.portfolio.account", "PaperAccount"),
+        ("btc_predictor.portfolio.accounting", "FundingEvent"),
+        ("btc_predictor.portfolio.accounting", "PaperTradeAccounting"),
+        ("btc_predictor.portfolio.accounting", "TradeFill"),
+        ("btc_predictor.portfolio.state_machine", "PositionLifecycle"),
+        ("btc_predictor.portfolio.state_machine", "PositionTransition"),
+        ("btc_predictor.portfolio.state_machine", "Tranche"),
+        ("btc_predictor.research_backtest.entry_composer", "EntryDecision"),
+        ("btc_predictor.research_backtest.entry_composer", "EntryDecisionRow"),
+        ("btc_predictor.research_backtest.entry_composer", "GuardRefusal"),
+        ("btc_predictor.research_backtest.entry_composer", "UnevaluableComponent"),
+        ("btc_predictor.research_backtest.management_composer", "AddFollowUp"),
+        ("btc_predictor.research_backtest.management_composer", "ArmedEntry"),
+        ("btc_predictor.research_backtest.management_composer", "ManagementDecision"),
+        ("btc_predictor.research_backtest.management_composer", "ManagementDecisionRow"),
+        ("btc_predictor.research_backtest.management_composer", "UnevaluableInput"),
+        ("btc_predictor.research_backtest.runner", "AuditState"),
+        ("btc_predictor.research_backtest.runner", "ComposerSnapshot"),
+        ("btc_predictor.research_backtest.runner", "RunSnapshot"),
+        ("btc_predictor.research_backtest.runner", "_ReplayComposition"),
+        ("btc_predictor.risk.budget", "RiskBudgetBand"),
+        ("btc_predictor.risk.budget", "RiskBudgetResult"),
+        ("btc_predictor.risk.sizing", "InitialPositionSizeResult"),
+        ("btc_predictor.risk.stop", "InitialStopResult"),
+        ("btc_predictor.risk.trailing", "TrailingStopResult"),
+        ("btc_predictor.signals.add_requirements", "AddRequirementsInput"),
+        ("btc_predictor.signals.add_requirements", "AddRequirementsResult"),
+        ("btc_predictor.signals.trim", "TrimRuleInput"),
+        ("btc_predictor.signals.trim", "TrimSignalResult"),
+        ("datetime", "datetime"),
+        ("datetime", "timedelta"),
+        ("datetime", "timezone"),
+        ("decimal", "Decimal"),
+    }
+)
+
+
+class _StoreUnpickler(pickle.Unpickler):
+    """Resolves only :data:`STORE_CLASSES`: any other name refuses the file before anything is built from it."""
+
+    def find_class(self, module: str, name: str) -> Any:
+        if (module, name) not in STORE_CLASSES:
+            raise pickle.UnpicklingError(f"{module}.{name} is not a class the store files hold")
+        return super().find_class(module, name)
+
+
+def load_store_pickle(data: bytes) -> Any:
+    """A private-store file's contents, built only from :data:`STORE_CLASSES` and pickle's own types (review N1)."""
+
+    return _StoreUnpickler(io.BytesIO(data)).load()
+
+
+def dump_store_pickle(value: Any) -> bytes:
+    """``value`` pickled for the private store, refused now if :func:`load_store_pickle` would refuse it on read."""
+
+    data = pickle.dumps(value, protocol=_PICKLE_PROTOCOL)
+    load_store_pickle(data)
+    return data
 
 
 class Unencodable(TypeError):
@@ -271,13 +360,16 @@ class SharedResultStore:
             self._remember(key, data)
         else:
             self._memory.move_to_end(key)
-        tag, stored_key, stored_name, result = pickle.loads(data)
+        try:
+            tag, stored_key, stored_name, result = load_store_pickle(data)
+        except (EOFError, pickle.UnpicklingError, AttributeError, ValueError, TypeError) as error:
+            raise SharedPositioningError(f"the shared result {key} is not readable: {error}") from error
         if tag != _FILE_TAG or stored_key != key or stored_name != name:
             raise SharedPositioningError(f"the shared result {key} is not {name}'s")
         return result
 
     def put(self, key: str, name: str, result: Any) -> None:
-        data = pickle.dumps((_FILE_TAG, key, name, result), protocol=_PICKLE_PROTOCOL)
+        data = dump_store_pickle((_FILE_TAG, key, name, result))
         path = self._path(key)
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
