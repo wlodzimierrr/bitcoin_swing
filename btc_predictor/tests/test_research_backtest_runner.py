@@ -371,61 +371,75 @@ def test_a_repository_module_not_loaded_from_its_source_refuses(tmp_path):
     assert rn.frozen_code_paths(REPOSITORY, [("numpy", _module("numpy", elsewhere))]) == sorted([rn.STRATEGY_CONFIG_PATH.as_posix(), rn.GOLDEN_FIXTURE_PATH.as_posix()])
 
 
-def test_the_command_runs_itself_again_with_a_fresh_bytecode_cache(tmp_path):
+LAUNCHER = REPOSITORY / rn.LAUNCHER
+
+
+def _launched(args, tmp_path, environment=None):
+    """The committed launcher itself, with this interpreter and a private TMPDIR."""
+
     import os
     import sys
 
+    temporary = tmp_path / "launcher-tmp"
+    temporary.mkdir(exist_ok=True)
+    variables = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"], "TMPDIR": str(temporary), "RBT007_PYTHON": sys.executable}
+    return subprocess.run(["bash", str(LAUNCHER), *args], env={**variables, **(environment or {})}, capture_output=True, text=True, check=False)
+
+
+def _entry_command(args, prefix, drop=()):
+    """The launcher's own interpreter command and entry, for the variants the launcher never makes."""
+
+    import sys
+
+    entry = LAUNCHER.read_text().split("entry='", 1)[1].split("'\n", 1)[0]
+    command = [sys.executable, "-I", "-S", "-B", "-X", f"pycache_prefix={prefix}", "-c", entry, str(REPOSITORY), *args]
+    return [part for part in command if part not in drop]
+
+
+def _entry_environment(prefix, **extra):
+    import os
+
+    return {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"], rn.FRESH_BYTECODE_ENV: str(prefix), **extra}
+
+
+def test_the_launcher_starts_the_command_isolated_with_a_fresh_bytecode_cache(tmp_path):
+    import os
+
+    # review N2: the command's process is started by the committed launcher, never by an ordinary interpreter
     assert not rn.fresh_bytecode_process()
     with pytest.raises(rn.RunnerRefused, match="FROZEN_CODE_REFUSED"):
         rn.require_fresh_bytecode()
-    command = rn.fresh_bytecode_command(["run", "--workers", "2"], "/p")
-    assert command[:7] == [sys.executable, "-I", "-S", "-B", "-X", "pycache_prefix=/p", "-c"] and command[-2:] == ["--workers", "2"]
-    assert json.loads(command[8])[0] == str(REPOSITORY) and command[9] == "run"
-    assert set(rn.child_environment("/p")) <= {*rn.CHILD_ENVIRONMENT, rn.FRESH_BYTECODE_ENV}
-    # the module's command line re-executes itself; the child parses the arguments
-    shown = subprocess.run([sys.executable, "-m", "btc_predictor.research_backtest.runner", "--help"], cwd=REPOSITORY, capture_output=True, text=True, check=False)
-    assert shown.returncode == 0 and shown.stdout.startswith("usage: runner")
-    # in such a process every repository module was compiled from its source into the empty cache
+    text = LAUNCHER.read_text()
+    assert os.access(LAUNCHER, os.X_OK) and "env -i " in text and f'"{rn.FRESH_BYTECODE_ENV}=$cache"' in text
+    assert '"$python" -I -S -B -X "pycache_prefix=$cache" -c "$entry" "$repository" "$@"' in text
+    shown = _launched(["--help"], tmp_path)
+    assert shown.returncode == 0 and shown.stdout.startswith("usage: runner"), shown.stdout + shown.stderr
+    # in its process every repository module was compiled from its source into the new, empty cache, then removed
+    checked = _launched(["preflight"], tmp_path, {"RBT007_PROBE_INHERITED": "1"})
+    assert checked.returncode == 0, checked.stdout + checked.stderr
+    report = json.loads(checked.stdout)
+    assert report["launched"] is True and report["modules_from_source"] > 50 and report["path"][0] == str(REPOSITORY)
+    # only the launcher's own variables reach it: not the interpreter's name, nor anything else the caller had
+    # (under the C locale the interpreter sets LC_CTYPE itself, PEP 538)
+    assert set(report["environment"]) - {"LC_CTYPE"} == {"HOME", "PATH", "TMPDIR", rn.FRESH_BYTECODE_ENV}
+    # each launch's cache is a new private directory, never a name another process could know or fill first
+    again = json.loads(_launched(["preflight"], tmp_path).stdout)
+    caches = [Path(item["cache"]["path"]) for item in (report, again)]
+    assert caches[0] != caches[1] and {item["cache"]["mode"] for item in (report, again)} == {"0o700"}
+    assert all(cache.parent == tmp_path / "launcher-tmp" and cache.name.startswith("rbt007-pycache-") for cache in caches)
+    assert not any((tmp_path / "launcher-tmp").iterdir())
+    # a cache that already holds anything is refused; without -I or -S the process is not the command's
     prefix = tmp_path / "fresh"
     prefix.mkdir()
-    probe = (
-        "import sys; from pathlib import Path; from btc_predictor.research_backtest import runner as rn; "
-        "assert rn.fresh_bytecode_process() and rn.require_fresh_bytecode() == sys.pycache_prefix and rn.startup_refusals() == []; "
-        "paths = rn.frozen_code_paths(Path('.').resolve(), list(sys.modules.items()), pycache_prefix=sys.pycache_prefix); "
-        "print(len(paths))"
-    )
-    child = subprocess.run(
-        rn.fresh_python_command(probe, [], str(prefix)),
-        cwd=REPOSITORY,
-        env=rn.child_environment(str(prefix)),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert child.returncode == 0, child.stderr
-    assert int(child.stdout) > 50 and not any(prefix.iterdir())
-    # a cache that already holds anything is refused
+    entry = subprocess.run(_entry_command(["preflight"], prefix), cwd=REPOSITORY, env=_entry_environment(prefix), capture_output=True, text=True, check=False)
+    assert entry.returncode == 0 and not any(prefix.iterdir()), entry.stdout + entry.stderr
     (prefix / "planted.pyc").write_bytes(b"")
-    refusal = (
-        "from btc_predictor.research_backtest import runner as rn\n"
-        "try:\n    rn.require_fresh_bytecode()\nexcept rn.RunnerRefused as error:\n    print(error.code)\n"
-    )
-    planted = subprocess.run(
-        rn.fresh_python_command(refusal, [], str(prefix)),
-        cwd=REPOSITORY,
-        env=rn.child_environment(str(prefix)),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    assert planted.stdout.strip() == "FROZEN_CODE_REFUSED"
-    # review RR3: a process with the cache but not isolated, or with site, is not the command's process
+    planted = subprocess.run(_entry_command(["preflight"], prefix), cwd=REPOSITORY, env=_entry_environment(prefix), capture_output=True, text=True, check=False)
+    assert planted.returncode == 2 and "the fresh bytecode cache is not an empty directory" in planted.stdout
     (prefix / "planted.pyc").unlink()
     for flag in ("-I", "-S"):
-        command = rn.fresh_python_command("from btc_predictor.research_backtest import runner as rn\nprint(rn.fresh_bytecode_process())\n", [], str(prefix))
-        command.remove(flag)
-        other = subprocess.run(command, cwd=REPOSITORY, env=rn.child_environment(str(prefix)), capture_output=True, text=True, check=True)
-        assert other.stdout.strip() == "False", flag
+        other = subprocess.run(_entry_command(["preflight"], prefix, drop=(flag,)), cwd=REPOSITORY, env=_entry_environment(prefix), capture_output=True, text=True, check=False)
+        assert other.returncode == 2 and f"start the runner with {rn.LAUNCHER}" in other.stdout, flag
 
 
 _HOOK = """
@@ -474,21 +488,16 @@ def test_an_inherited_startup_hook_never_runs_in_the_command(monkeypatch, tmp_pa
     )
     assert marker.exists() and hooked.returncode != 0 and "FROZEN_CODE_REFUSED" in hooked.stderr
     marker.unlink()
-    # the command's own process never runs it: not inherited, and ignored even when given
-    monkeypatch.setenv("PYTHONPATH", str(hooks))
-    assert rn.run_with_fresh_bytecode(["--help"]) == 0 and not marker.exists()
+    # review N2: no ordinary interpreter runs first, so the launcher's process never runs it, inherited or given
+    hooked_environment = {"PYTHONPATH": str(hooks), "PYTHONSTARTUP": str(hooks / "sitecustomize.py")}
+    launched = _launched(["preflight"], tmp_path, hooked_environment)
+    assert launched.returncode == 0 and not marker.exists(), launched.stdout + launched.stderr
     prefix = tmp_path / "fresh"
     prefix.mkdir()
-    check = "from btc_predictor.research_backtest import runner as rn\nfrom btc_predictor.features import positioning\nprint(rn.require_fresh_bytecode() and rn.startup_refusals())\n"
     given = subprocess.run(
-        rn.fresh_python_command(check, [], str(prefix)),
-        cwd=REPOSITORY,
-        env={**rn.child_environment(str(prefix)), "PYTHONPATH": str(hooks), "PYTHONSTARTUP": str(hooks / "sitecustomize.py")},
-        capture_output=True,
-        text=True,
-        check=False,
+        _entry_command(["preflight"], prefix), cwd=REPOSITORY, env=_entry_environment(prefix, **hooked_environment), capture_output=True, text=True, check=False
     )
-    assert given.returncode == 0 and given.stdout.strip() == "[]" and not marker.exists(), given.stderr
+    assert given.returncode == 0 and not marker.exists(), given.stdout + given.stderr
 
 
 def test_the_startup_check_needs_the_interpreters_own_import_system(monkeypatch, tmp_path):
@@ -531,10 +540,16 @@ def test_the_startup_check_needs_the_interpreters_own_import_system(monkeypatch,
         rn.require_fresh_bytecode()
 
 
-def test_main_runs_itself_again_outside_the_fresh_process(monkeypatch):
-    calls = []
-    monkeypatch.setattr(rn, "run_with_fresh_bytecode", lambda argv: calls.append(list(argv)) or 7)
-    assert rn.main(["run", "--workers", "3"]) == 7 and calls == [["run", "--workers", "3"]]
+def test_main_refuses_outside_the_launchers_process():
+    import sys
+
+    # review N2: the parent the command ran itself again from had already run its startup; now nothing runs again
+    lines = []
+    assert rn.main(["run", "--workers", "3"], out=lines.append) == 2
+    assert len(lines) == 1 and lines[0].startswith(f"refused: FROZEN_CODE_REFUSED: start the runner with {rn.LAUNCHER}")
+    module = subprocess.run([sys.executable, "-m", "btc_predictor.research_backtest.runner", "--help"], cwd=REPOSITORY, capture_output=True, text=True, check=False)
+    assert module.returncode == 2 and str(rn.LAUNCHER) in module.stdout and "usage" not in module.stdout
+    assert not hasattr(rn, "run_with_fresh_bytecode") and not hasattr(rn, "fresh_python_command")
 
 
 def test_stale_bytecode_runs_in_a_normal_import_but_never_in_the_fresh_process(tmp_path):

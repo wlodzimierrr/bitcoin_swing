@@ -26,9 +26,13 @@ ever composed after the last one, and no bar is available in the holdout.
 
 **Frozen code (ruling 2).** The composers and every repository module they
 import stay byte-identical to the preregistration's code commit; the runner
-checks this before any run. A sweep candidate or the ablation variant
-reaches the unchanged composers through :class:`RegisteredEntryComposer`,
-which accepts only the configurations the preregistration lists.
+checks this before any run. It runs only in the process its launcher,
+``runner_launch.sh``, starts: Python isolated and without ``site``, writing
+no bytecode and reading an empty private cache, so nothing but the
+interpreter runs before the checks (review N2). A sweep candidate or the
+ablation variant reaches the unchanged composers through
+:class:`RegisteredEntryComposer`, which accepts only the configurations the
+preregistration lists.
 
 **Shared positioning results** (the runtime ruling and ruling 6) come from
 :mod:`runner_shared`; the look-ahead audit (ruling 3) recomputes sampled
@@ -1140,14 +1144,12 @@ def frozen_code_mismatches(repository: Path, commit: str, paths: Sequence[str]) 
 
 
 FRESH_BYTECODE_ENV = "RBT007_FRESH_PYCACHE"
-# review RR3: the only variables the re-executed process inherits (git reads PATH and HOME)
-CHILD_ENVIRONMENT = ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR")
-_PATH_SETUP = "import json, sys\npaths = json.loads(sys.argv.pop(1))\nsys.path[:0] = paths[:1]\nsys.path.extend(paths[1:])\n"
-_ENTRY = "from btc_predictor.research_backtest import runner\nraise SystemExit(runner.main(sys.argv[1:]))\n"
+# review N2: the only supported launch; it starts Python isolated, without site, with an empty bytecode cache
+LAUNCHER = Path("btc_predictor") / "research_backtest" / "runner_launch.sh"
 
 
 def fresh_bytecode_process() -> bool:
-    """True in the process the command re-executes: isolated, without ``site``, no bytecode written, an empty private cache read."""
+    """True in the process the launcher starts: isolated, without ``site``, no bytecode written, an empty private cache read (review N2)."""
 
     import os
     import sys
@@ -1160,57 +1162,6 @@ def fresh_bytecode_process() -> bool:
         and bool(sys.flags.isolated)
         and bool(sys.flags.no_site)
     )
-
-
-def fresh_python_command(code: str, args: Sequence[str], prefix: str) -> list[str]:
-    """A fresh interpreter running ``code`` (review F5, RR3).
-
-    Isolated (``-I``: no ``PYTHON*`` variable, user site or current
-    directory) and without ``site`` (``-S``: no ``.pth`` file and no
-    ``sitecustomize``), so no code but the interpreter's own runs before
-    ``code``; it writes no bytecode and reads an empty private cache. Its
-    path is this repository, the interpreter's standard library and this
-    environment's site-packages, set by the command itself.
-    """
-
-    import site
-    import sys
-
-    paths = [str(Path(__file__).resolve().parents[2]), *site.getsitepackages()]
-    return [sys.executable, "-I", "-S", "-B", "-X", f"pycache_prefix={prefix}", "-c", _PATH_SETUP + code, json.dumps(paths), *args]
-
-
-def fresh_bytecode_command(argv: Sequence[str], prefix: str) -> list[str]:
-    return fresh_python_command(_ENTRY, argv, prefix)
-
-
-def child_environment(prefix: str) -> dict[str, str]:
-    import os
-
-    environment = {name: os.environ[name] for name in CHILD_ENVIRONMENT if name in os.environ}
-    environment[FRESH_BYTECODE_ENV] = prefix
-    return environment
-
-
-def run_with_fresh_bytecode(argv: Sequence[str]) -> int:
-    """Run the command again in a process that compiles every module from its source (review F5, RR3).
-
-    Its bytecode cache is a new empty directory and nothing is written to it,
-    so no cached bytecode anywhere can stand in for a source file; it starts
-    isolated, without ``site`` and with a minimal environment, so no startup
-    customization or import hook can run before the command's checks.
-    """
-
-    import shutil
-    import subprocess
-    import tempfile
-
-    prefix = tempfile.mkdtemp(prefix="rbt007-pycache-")
-    try:
-        repository = Path(__file__).resolve().parents[2]
-        return subprocess.run(fresh_bytecode_command(argv, prefix), env=child_environment(prefix), cwd=repository, check=False).returncode
-    finally:
-        shutil.rmtree(prefix, ignore_errors=True)
 
 
 _FROZEN_BOOTSTRAP = ("<frozen importlib._bootstrap_external>", "<frozen importlib._bootstrap>")
@@ -1302,6 +1253,29 @@ def require_frozen_code(repository: Path, commit: str) -> tuple[list[str], set[s
     if mismatches:
         raise RunnerRefused("FROZEN_CODE_REFUSED", f"{len(mismatches)} file(s) differ from {commit[:7]}: {mismatches[:5]}")
     return paths, {name for name, _module in modules if _repository_module(name)}
+
+
+def preflight(repository: Path, out: Callable[[str], None] = print) -> int:
+    """The run's first checks, reading neither the store nor the commit (review N2): 0 in the launcher's process.
+
+    The process flags, the empty bytecode cache, the interpreter's own import
+    system, and every repository module loaded so far from its source file;
+    it also names the environment variables the process received, and its
+    bytecode cache with that directory's permissions.
+    """
+
+    import os
+    import sys
+
+    try:
+        prefix = require_fresh_bytecode()
+        paths = frozen_code_paths(repository, list(sys.modules.items()), pycache_prefix=prefix)
+    except RunnerRefused as error:
+        out(f"refused: {error}")
+        return 2
+    cache = {"path": prefix, "mode": oct(Path(prefix).stat().st_mode & 0o777)}
+    out(json.dumps({"launched": True, "modules_from_source": len(paths), "path": sys.path, "environment": sorted(os.environ), "cache": cache}))
+    return 0
 
 
 def verify_loaded_code() -> None:
@@ -2277,10 +2251,11 @@ def publish(report: Mapping[str, Any], files: Mapping[str, bytes], *, private: P
 def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = print) -> int:
     import argparse
     import os
-    import sys
 
     if not fresh_bytecode_process():
-        return run_with_fresh_bytecode(list(sys.argv[1:] if argv is None else argv))
+        # review N2: never run again from an ordinary process, whose startup has already run
+        out(f"refused: FROZEN_CODE_REFUSED: start the runner with {LAUNCHER}, which starts Python isolated, without site and with an empty bytecode cache")
+        return 2
 
     from btc_predictor.config.strategy import load_strategy_config
     from btc_predictor.research_backtest import backfill_run as run
@@ -2288,10 +2263,12 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
     from btc_predictor.research_backtest import runner_report as report_module
 
     parser = argparse.ArgumentParser(prog="runner", description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=("run",))
+    parser.add_argument("command", choices=("run", "preflight"), help="run: the backtest; preflight: the launch checks alone")
     parser.add_argument("--store", default="~/backtest_evidence", help="the private evidence repository (Part B ruling 9)")
     parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     args = parser.parse_args(argv)
+    if args.command == "preflight":
+        return preflight(build.PUBLIC_REPOSITORY, out)
     try:
         repository = build.PUBLIC_REPOSITORY
         code = build.code_commit(repository)  # refuses uncommitted tracked changes
