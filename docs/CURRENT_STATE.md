@@ -1505,7 +1505,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   order of addition fails; owner ruling 8: the runner accepts that
   rounding only, for fees and funding, and counts it; its fix `091ac73`,
   committed on 2026-11-21, whose review PASSED on 2026-11-21 with no
-  finding; Part B resumes with 12 workers).
+  finding; Part B's second run, on 2026-11-21, stopped after 12 runs at
+  the BTC-184 setup-costs check, the same rounding; owner ruling 9: the
+  runner accepts it only at the BTC-183 and BTC-184 owners' three row
+  checks, and counts it).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1809,7 +1812,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   whose re-review PASSED WITH NON-BLOCKING FINDINGS on 2026-11-21: one
   P3, D1, corrected in `fd6a223`; Part B's first run, on 2026-11-21,
   stopped at the engine's exact fee check; the owner ruling 8 fix
-  `091ac73` PASSED its review on 2026-11-21 with no finding).
+  `091ac73` PASSED its review on 2026-11-21 with no finding; Part B's
+  second run stopped at the BTC-184 setup-costs check; owner ruling 9).
   Its rulings: the positioning owner's results shared per instant (runtime);
   every value-bearing result private, with a public value-free index (1);
   the sweep candidates and the ablation through the runner, the composers
@@ -1821,7 +1825,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   composed once per venue from 2020-01-02 (7); the runner accepting the
   engine's fee and funding refusals only for rounding in the order of
   addition, counted, and Part B resumed with 12 workers (8, 2026-11-21,
-  after Part B's first run stopped there); after the Part A review,
+  after Part B's first run stopped there); the same rounding accepted
+  at the BTC-183 and BTC-184 owners' three row checks only, counted,
+  the two report-level checks left to the owners (9, 2026-11-21, after
+  Part B's second run stopped there); after the Part A review,
   the look-ahead audit proving the whole chain, every history row and
   every base-run decision on inputs truncated at its own instant (review
   ruling 3a, 2026-11-18; the owner: fix all twelve other findings).
@@ -2459,9 +2466,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-007 Part B**
-  resumed on the owner's PC, the histories written at `e3be415` set
-  aside (`btc_predictor/research_backtest/runner_launch.sh run --store
+- **Next dependency-satisfied EPIC Y action:** the **RBT-007 owner
+  ruling 9** fix (Part B's second run, on 2026-11-21, stopped after 12
+  runs at the BTC-184 setup-costs check, the same rounding in the order
+  of addition; the runner accepts it only at the BTC-183 and BTC-184
+  owners' three row checks, and counts it), its validation and
+  independent xHigh review; then **RBT-007 Part B** resumed on the
+  owner's PC, its checkpoints and the histories written at `d0903b2`
+  set aside (`btc_predictor/research_backtest/runner_launch.sh run --store
   ~/backtest_evidence --workers 12`, started by its path), then
   RBT-007's independent xHigh review. Part B's first run, on
   2026-11-21, stopped at the BTC-180 engine's exact fee check, which
@@ -3229,7 +3241,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   fourth re-review fix `1cf27ce` and its record `fa4f24b`; the D1 fix
   `fd6a223`; the fifth re-review outcome `e3be415`; Part B's first run
   and owner ruling 8 `6d6f14c`; the ruling 8 fix `091ac73` and its record
-  `ee10b9b`; its review outcome in this commit.
+  `ee10b9b`; its review outcome `d0903b2`; Part B's second run and
+  owner ruling 9 in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
