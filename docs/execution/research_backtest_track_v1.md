@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4); owner: fix all four (RR2: a resumed record checked against its own run); fixes 5685a49..be33733 committed 2026-11-19; their re-review FAIL 2026-11-19 (one P1, N1; two P2, N2-N3); owner: fix all three (N1 one restricted loader for every store file, the snapshot's digest checked first; N2 launched isolated from the start); fixes 29368db..69765f0 committed 2026-11-20; their re-review FAIL 2026-11-20 (two P2, T1-T2); owner: fix both (T1 the launcher under privileged bash; T2 a resumed run run again and compared); fixes 0375ce0..8fa396b committed 2026-11-20; their re-review FAIL 2026-11-20 (one P2, Q1); owner: fix Q1 (the launcher's fixed path and no caller Git configuration for the interpreter; each repository's own configuration part of it); fix 1cf27ce committed 2026-11-20; its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, an older docs footer, corrected in fd6a223; Part A's code review closed); Part B, the run on the frozen dataset, next; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4); owner: fix all four (RR2: a resumed record checked against its own run); fixes 5685a49..be33733 committed 2026-11-19; their re-review FAIL 2026-11-19 (one P1, N1; two P2, N2-N3); owner: fix all three (N1 one restricted loader for every store file, the snapshot's digest checked first; N2 launched isolated from the start); fixes 29368db..69765f0 committed 2026-11-20; their re-review FAIL 2026-11-20 (two P2, T1-T2); owner: fix both (T1 the launcher under privileged bash; T2 a resumed run run again and compared); fixes 0375ce0..8fa396b committed 2026-11-20; their re-review FAIL 2026-11-20 (one P2, Q1); owner: fix Q1 (the launcher's fixed path and no caller Git configuration for the interpreter; each repository's own configuration part of it); fix 1cf27ce committed 2026-11-20; its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, an older docs footer, corrected in fd6a223; Part A's code review closed); Part B's first run 2026-11-21 stopped at the engine's exact fee check (rounding in the order of addition); owner ruling 8 (the runner accepts that rounding only, for fees and funding, counted; 12 workers); Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -10435,6 +10435,88 @@ started by its path. Its value-bearing outputs stay in the private store,
 with a value-free index here (ruling 1); then RBT-007's independent xHigh
 review.
 
+### RBT-007 Part B first run: stopped at the engine's fee check; owner ruling 8
+
+**The run.** On 2026-11-21 at 08:34:38 GMT, on the owner's PC, from the main
+checkout at `e3be415`, after `preflight` passed:
+`btc_predictor/research_backtest/runner_launch.sh run --store ~/backtest_evidence --workers 8`.
+- The shared positioning results were computed in about 5 hours: 32 blocks
+  over the 2,191 scheduled instants.
+- The three venues' continuous histories followed, about 46 minutes each,
+  in parallel.
+- At 15:10:47 GMT the run phase stopped with status 1. In a headline run, the
+  BTC-180 engine's own result check raised
+  `ValueError: account fees do not reconcile with trade evidence`
+  (`engine.py:1693`).
+- Nothing was published: no run record, report or index was written. The
+  private work directory holds the shared results, the histories and the
+  operational log.
+
+**Diagnosis (value-free).** The first eight planned runs were re-run in
+separate processes: the champion's three headline runs and the ablation on
+Bitstamp and on Coinbase. Each process read the shared results and wrote
+nothing, and printed only counts, booleans and digit counts.
+- Five refused at the same check, and three passed.
+- In each refused run:
+  - the account's fee total is exactly its fills' fees added in order;
+  - each trade's fee total is exactly its own fills' fees added in order;
+  - the fills' fees carry 28 significant digits;
+  - added at 400 digits, the account's and the trades' totals are
+    identical. They differ only at the 28th significant digit, far below
+    the engine's 1E-12 reconciliation tolerance.
+- Funding reconciled exactly; the realized P&L and the cash were within
+  tolerance.
+
+So the defect is the frozen engine's own, in what it requires rather than
+in any value:
+- The account adds its fees one charge at a time, while the check adds the
+  trades' totals trade by trade.
+- Under Python's default 28-digit `Decimal` context, the two orders of
+  addition can round differently.
+- The check applies the engine's tolerance to the realized P&L and the cash,
+  but requires the fee and funding totals to be exactly equal.
+
+The synthetic fixtures' charges carry few digits, so no test met it. Two
+round trips whose fee or funding rate has 28 significant digits reproduce
+both refusals.
+
+**Owner ruling 8 (2026-11-21, asked; each the recommended option).**
+1. **The runner accepts only rounding in the order of addition.** On the
+   engine's fee refusal, the runner accepts the result only when all three
+   hold:
+   - the account's total is exactly its charges added in order;
+   - each trade's total is exactly its own charges added in order;
+   - the trades' total lies within the engine's own reconciliation
+     tolerance of the account's.
+
+   The engine's whole check then runs again on a copy whose account total
+   is the trades' total, so every other condition stays the engine's. The
+   result itself is never changed, and any other refusal is the engine's,
+   unchanged. The rule lives in `runner.py`. No owner, composer or
+   configuration file changes, and the frozen-code check is unchanged.
+2. **The same rule covers the engine's funding check**, which has the same
+   exact form.
+3. **Every accepted case is counted.** Each run records how many of its
+   engine results the rule accepted, and the report and the public index
+   count them.
+4. **The resumed run uses 12 workers** of the PC's 16 logical CPUs.
+
+Considered and not chosen:
+- leaving RBT-007 blocked for a versioned engine fix, which would change
+  the frozen code and so RBT-006's preregistration;
+- running the engine under a wider `Decimal` context, which would change
+  every composition's arithmetic and the shared results'.
+
+**The resumed run.**
+- The shared results are keyed by their arguments alone, so they are kept.
+- The histories are bound to the commit a run starts from. The ones written
+  at `e3be415` are set aside, and the resumed run writes them again.
+- The first runs took about 46 minutes each on 8 workers. The 243 runs need
+  about 21 hours on 8 workers, less on 12, before the audit.
+
+Next: ruling 8 in `runner.py` with its tests, its validation and an
+independent xHigh review; then Part B resumes with 12 workers.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -10464,7 +10546,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s); their re-review FAIL 2026-11-20 (two P2); owner: fix both; fixes `0375ce0`..`8fa396b` committed 2026-11-20 (9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s); their re-review FAIL 2026-11-20 (one P2); owner: fix Q1; fix `1cf27ce` committed 2026-11-20 (9,169 passed, 3 skipped, 1 xfailed, 0 failed in 6,140.07s); its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, corrected in `fd6a223`; Part A's code review closed); Part B next; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s); their re-review FAIL 2026-11-20 (two P2); owner: fix both; fixes `0375ce0`..`8fa396b` committed 2026-11-20 (9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s); their re-review FAIL 2026-11-20 (one P2); owner: fix Q1; fix `1cf27ce` committed 2026-11-20 (9,169 passed, 3 skipped, 1 xfailed, 0 failed in 6,140.07s); its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, corrected in `fd6a223`; Part A's code review closed); Part B's first run 2026-11-21 stopped at the engine's exact fee check (rounding in the order of addition); owner ruling 8; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
