@@ -9273,7 +9273,7 @@ positioning owner's runtime (surfaced point 2).
 
 ## RBT-007 — `RUN_FIRST_RESEARCH_BACKTEST_V1`
 
-**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4); owner: fix all four (RR2: a resumed record checked against its own run); fixes 5685a49..be33733 committed 2026-11-19; their re-review FAIL 2026-11-19 (one P1, N1; two P2, N2-N3); owner: fix all three (N1 one restricted loader for every store file, the snapshot's digest checked first; N2 launched isolated from the start); fixes 29368db..69765f0 committed 2026-11-20; their re-review FAIL 2026-11-20 (two P2, T1-T2); owner: fix both (T1 the launcher under privileged bash; T2 a resumed run run again and compared); fixes 0375ce0..8fa396b committed 2026-11-20; their re-review FAIL 2026-11-20 (one P2, Q1); owner: fix Q1 (the launcher's fixed path and no caller Git configuration for the interpreter; each repository's own configuration part of it); fix 1cf27ce committed 2026-11-20, awaiting the independent xHigh re-review; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
+**Status:** `IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, F1-F4; six P2, F5-F10; three P3, F11-F13), owner review ruling 3a (the audit proves the whole chain) and fix all; fixes 5ca17ca..68e1055 committed 2026-11-19; their re-review FAIL 2026-11-19 (two P1, RR1-RR2; two P2, RR3-RR4); owner: fix all four (RR2: a resumed record checked against its own run); fixes 5685a49..be33733 committed 2026-11-19; their re-review FAIL 2026-11-19 (one P1, N1; two P2, N2-N3); owner: fix all three (N1 one restricted loader for every store file, the snapshot's digest checked first; N2 launched isolated from the start); fixes 29368db..69765f0 committed 2026-11-20; their re-review FAIL 2026-11-20 (two P2, T1-T2); owner: fix both (T1 the launcher under privileged bash; T2 a resumed run run again and compared); fixes 0375ce0..8fa396b committed 2026-11-20; their re-review FAIL 2026-11-20 (one P2, Q1); owner: fix Q1 (the launcher's fixed path and no caller Git configuration for the interpreter; each repository's own configuration part of it); fix 1cf27ce committed 2026-11-20; its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, an older docs footer, corrected in fd6a223; Part A's code review closed); Part B, the run on the frozen dataset, next; Part A badbe00 and 0b32e94 committed 2026-11-18; started 2026-11-18; owner rulings 1-3 (results private with a public value-free index; sweep candidates and the ablation through the runner, the composers frozen; a truncated-input look-ahead audit), rulings 4-5 (bar-count walk-forward folds, Bitfinex shifted two hours; mechanical exposure counts), the runtime ruling (shared positioning results) ruling 6 (extended to the guards' positioning helpers) and ruling 7 (runs start from the continuous market history) recorded; RBT-006 DONE (2026-11-18)`
 **Dependencies:** RBT-006
 **Implementation effort:** high
 **Review:** independent xHigh review, including a look-ahead audit and full
@@ -10334,6 +10334,107 @@ preregistration module 121, unchanged.
 Next: the independent xHigh re-review of Q1. Part B runs the launcher on the
 frozen dataset after a PASS.
 
+### RBT-007 Part A fifth re-review outcome
+
+**Date:** 2026-11-21. **Review:** independent xHigh fifth re-review, run at
+the owner's request by the OpenAI Codex CLI (0.162.1, reasoning `xhigh`) in
+a detached worktree at `fa4f24b`, over `1c471c5..fa4f24b` (the fourth
+re-review FAIL record, the owner's choice, the fix `1cf27ce` and its
+record). Report-only: a workspace-write sandbox with network disabled, no
+database, no `.env*` file, no private evidence, synthetic fixtures only, and
+no probe whose loading runs code (no pickle hook, startup module, shell
+startup file, exported function, planted executable, Git hook or Git
+configuration naming a program); its worktree stayed clean.
+**Result: PASS WITH NON-BLOCKING FINDINGS**, with one P3 finding, D1, in the
+documentation, older than the reviewed commits and corrected in `fd6a223`.
+No P0-P2 finding. Part A's code review is closed; Part B runs the launcher
+on the frozen dataset.
+
+**Q1, T1-T2, N1-N3, RR1-RR4, F1-F13 and ruling 3a.** All FIXED.
+- **Q1.** The interpreter receives the fixed standard `PATH`, no `HOME` and
+  the two pinned Git settings; an unexpected name or a changed pinned value
+  refuses. `main` checks this before `code_commit`, and the frozen-source
+  checks and `preflight` enforce it too. Codex found the regression
+  substantive: the environment test fails when only the previous
+  `require_fresh_bytecode` is restored in memory. It inspected the
+  commit-check test, which plants a program, instead of running it; its
+  failure against the old behavior is CONFIRMED from the code. Within the
+  owner's boundary, the caller's `PATH`, `HOME`, `XDG_*` and `GIT_*` cannot
+  select `git`, redirect its view of the repository or its objects, or supply
+  its configuration. A data-only configuration check confirmed that
+  `/dev/null` excludes both global configuration locations. The locale and
+  `TMPDIR` the launcher still passes control localization and where
+  temporary files go; Codex found no route from them to choosing a program
+  or to a changed commit or blob. The interpreter's choice, the
+  dynamic-loader boundary and the repository's own `.git` state are stated
+  accurately. Codex did not inspect the private repository's configuration.
+- **T1.** A privileged start succeeds and unprivileged `bash` and `sh` starts
+  refuse; the corrected wording, `bash -p` included, is accurate. The
+  startup-file and function protection is CONFIRMED from the code, the local
+  Bash documentation and the inspected tests.
+- **T2, N3, RR2 and F3.** A checkpoint's digest, binding, completeness and
+  reconstruction are checked, then the run is run again and its record and
+  snapshot compared. Altered dropped-ADD reasons refuse. The 20 synthetic
+  resumed runs each ran again exactly once and kept identical files.
+- **N1.** All four store readers use the restricted loader, and a snapshot is
+  hashed before it is read. The 47 listed dataclasses have no custom or
+  inherited restoring method and compare every field.
+- **N2, RR3 and F5.** Isolation starts at the launch (`-I -S -B`, a fresh
+  cache); the import-system, source-loader and late-import checks remain.
+  Q1 closes the gap of an external `git`'s lookup and configuration.
+- **RR1, F2 and ruling 3a.** The required audit links derive from the bound
+  run; an omitted or corrupted proof refuses. The synthetic report passed
+  all 130 history and run links, the engine-state and management checks
+  included.
+- **RR4, F4, F1 and F6-F13.** FIXED, their regressions passing.
+
+**Findings.** The location refers to `fa4f24b`.
+
+| ID / severity | Location | Current versus expected behavior; impact | Evidence and correction |
+| --- | --- | --- | --- |
+| D1 / P3 | `docs/execution/research_backtest_track_v1.md:10405` | The "Next EPIC Y tasks" footer still named RBT-006 as in progress, awaiting its Part A review, where RBT-006's own block marks it DONE and CURRENT_STATE names the RBT-007 re-review next. A fresh session following that summary gets the wrong frontier. | CONFIRMED; older than the reviewed commits (`265c7e8`). Corrected in `fd6a223`: the footer adds RBT-006 DONE (2026-11-18) and names RBT-007 Part B as the next work. No strategy or code change. |
+
+**The record.** The Q1 record and the CURRENT_STATE fields it changed
+describe the implementation, the commits, the pending status and T1's
+corrected wording accurately, apart from D1. The "found while fixing"
+points are supported by the source and targeted checks; the full suite, the
+mutants, the timings, the file counts and the private repository's
+configuration were not reproduced. Only the five declared files changed.
+Against `2be45ad`, no composer, owner, configuration, BTC-180 to BTC-185
+module, protected path, EPIC X or BTC-019 file changed; the preregistration
+is byte-identical (SHA-256
+`224774e9d395a49756559d9db6ff95f36d36d3a37f0d13bfbb854a28dcaa006c`).
+
+**Checks that passed.**
+- The 243-run plan regenerated exactly: 9 headline, 9 walk-forward, 204
+  sweep, 3 ablation and 18 golden runs. The planned decisions stay inside
+  the permitted window, and no execution bar is available at or after the
+  final cutoff; twenty synthetic boundary tests passed.
+- Fresh report rebuilds under hash seeds `0` and `8675309` gave four
+  byte-identical files. Six headline runs recomputed in reverse order in one
+  process matched the four-worker records and snapshot bytes. A two-worker
+  resume ran the 20 runs again, with 0 shared results computed again and
+  4,798 served.
+- In their syntax trees, 119 existing definitions are unchanged; only the
+  two guard and entry functions changed, beside the new check.
+- The launcher's `--help` and `preflight`, and its privileged and
+  unprivileged starts, gave the expected results.
+- Codex's runs (`.venv312`, one process at a time): in the runner module
+  72 passed and 7 were deselected in 1,191.72s (the scratch git-commit test
+  and six startup, module-loading and planted-program probes, inspected
+  instead); 83 selected preregistration, boundary and isolation tests and
+  14 completeness cases passed. No real-data value; the holdout is NOT
+  COLLECTED; BTC-019 and its sealed sample untouched.
+
+**Owner questions.** None. In Codex's words: "The next authorized work is
+RBT-007 Part B, under the frozen preregistration and existing rulings."
+
+Next: Part B on the owner's PC,
+`btc_predictor/research_backtest/runner_launch.sh run --store ~/backtest_evidence --workers N`,
+started by its path. Its value-bearing outputs stay in the private store,
+with a value-free index here (ruling 1); then RBT-007's independent xHigh
+review.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `BLOCKED — awaiting RBT-007 review PASS`
@@ -10363,7 +10464,7 @@ version or any version derived from inspecting its result.
 | RBT-004 | `COMPOSE_CHAMPION_ENTRY_DECISION_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-10-31); review FAIL (three P1, three P2, F5 owner-accepted) fixed in `514449c`, N1/N2 in `6318234` — Part A `8ce3e74` (14 roots, inventory `250f9470...a061cb17`, spec rebound `787ddfa2...ca2620f0`), Part B `910dec7` + `e158de9`; 193 composer tests; full suite 7,526 passed, 3 skipped, 1 xfailed, 0 failed in 4295.40s |
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
-| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s); their re-review FAIL 2026-11-20 (two P2); owner: fix both; fixes `0375ce0`..`8fa396b` committed 2026-11-20 (9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s); their re-review FAIL 2026-11-20 (one P2); owner: fix Q1; fix `1cf27ce` committed 2026-11-20 (9,169 passed, 3 skipped, 1 xfailed, 0 failed in 6,140.07s), awaiting the independent xHigh re-review; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
+| RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | IN PROGRESS — Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s); their re-review FAIL 2026-11-20 (two P2); owner: fix both; fixes `0375ce0`..`8fa396b` committed 2026-11-20 (9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s); their re-review FAIL 2026-11-20 (one P2); owner: fix Q1; fix `1cf27ce` committed 2026-11-20 (9,169 passed, 3 skipped, 1 xfailed, 0 failed in 6,140.07s); its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, corrected in `fd6a223`; Part A's code review closed); Part B next; Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | BLOCKED — RBT-007 review PASS |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
