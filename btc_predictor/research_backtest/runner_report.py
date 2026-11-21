@@ -522,6 +522,12 @@ def build_report(
         "unaccounted": {run_id: records[run_id]["unaccounted"] for run_id in sorted(records) if records[run_id]["unaccounted"]},
         # owner ruling 8: each run's engine results whose fee or funding total the runner accepted
         "engine_rounding": {run_id: records[run_id]["engine_rounding"] for run_id in sorted(records) if any(records[run_id]["engine_rounding"].values())},
+        # owner ruling 9: each walk-forward run's report rows whose total the runner accepted
+        "report_rounding": {
+            run_id: records[run_id]["report_rounding"]
+            for run_id in sorted(records)
+            if by_id[run_id].kind == rn.WALK_FORWARD and any(records[run_id]["report_rounding"].values())
+        },
         "runs": len(records),
         "planned_runs": len(by_id),
     }
@@ -637,6 +643,16 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         f"its trades' total by the order of addition alone, accepted under owner ruling 8: fees in "
         f"{sum(item['fees'] for item in accepted.values())} and funding in {sum(item['funding'] for item in accepted.values())} engine results.",
     ]
+    rows = report["integrity"]["report_rounding"]
+    lines += [
+        "",
+        "## The regime and setup reports' row checks (owner ruling 9)",
+        "",
+        f"- {len(rows)} of {report['integrity']['runs']} runs had a report row whose total differed from the sum of its "
+        f"parts by the order of addition alone, accepted under owner ruling 9: bucket P&L in "
+        f"{sum(item['bucket_pnl'] for item in rows.values())}, setup P&L in {sum(item['setup_pnl'] for item in rows.values())} "
+        f"and setup costs in {sum(item['setup_costs'] for item in rows.values())} rows.",
+    ]
     lines.append("")
     return "\n".join(lines)
 
@@ -661,6 +677,7 @@ def public_index(report: Mapping[str, Any], files: Mapping[str, bytes], *, priva
         "memory_check_failures": sum(1 for value in integrity["memory_matches_history"].values() if not value),
         "runs_with_unaccounted_causes": len(integrity["unaccounted"]),
         "runs_with_engine_rounding_accepted": len(integrity["engine_rounding"]),
+        "runs_with_report_rounding_accepted": len(integrity["report_rounding"]),
         "lookahead_audit": {
             venue: {
                 "history_links": audit["history_links"],

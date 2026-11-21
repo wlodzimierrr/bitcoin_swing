@@ -51,6 +51,15 @@ equal its trades' totals, added trade by trade, exactly; under 28-digit
 :func:`engine_rounding_rule` accepts exactly that case and nothing else, and
 every run records how many of its engine results it covered.
 
+**The regime and setup reports' row checks (owner ruling 9).** The BTC-183
+and BTC-184 owners require a row's total to equal the sum of its two parts
+exactly: a regime bucket's or a setup's P&L, and a setup's costs. Each side
+is summed over the row's trades in its own grouping, and under 28-digit
+arithmetic the groupings can round differently. :func:`report_rounding_rule`
+accepts exactly that case at those three checks and nothing else, and every
+walk-forward run records how many rows it covered. The owners' two
+report-level checks stay theirs.
+
 **Outputs (ruling 1).** Every value-bearing output (ledgers, trades, equity
 curves, metrics, the report) lives only in the private repository; this
 repository keeps a value-free index.
@@ -72,6 +81,8 @@ from types import SimpleNamespace
 from typing import Any
 
 from btc_predictor.backtest import engine as backtest_engine
+from btc_predictor.backtest import regime_performance as regime_owner
+from btc_predictor.backtest import setup_performance as setup_owner
 from btc_predictor.backtest.costs import cost_profile
 from btc_predictor.backtest.engine import BacktestResult, _bar_available_at, run_backtest
 from btc_predictor.backtest.regime_performance import regime_performance_context, run_regime_performance_breakdown
@@ -733,6 +744,189 @@ def engine_rounding(results: Iterable[BacktestResult]) -> dict[str, int]:
     return counts
 
 
+# --- owner ruling 9: the BTC-183 and BTC-184 row checks under 28-digit rounding ----------------
+
+# The owner's message -> (the name counted, the row's total, the two fields whose sum the owner requires it to equal)
+REPORT_ROUNDING_CHECKS: dict[str, tuple[str, str, tuple[str, str]]] = {
+    "bucket P&L does not reconcile": ("bucket_pnl", "total_pnl", ("realized_net_pnl", "marked_unrealized_pnl")),
+    "setup P&L does not reconcile": ("setup_pnl", "total_pnl", ("realized_net_pnl", "marked_unrealized_pnl")),
+    "setup costs do not reconcile": ("setup_costs", "total_costs", ("fees", "funding")),
+}
+_BUCKET_CHECKS = ("bucket P&L does not reconcile",)
+_SETUP_CHECKS = ("setup P&L does not reconcile", "setup costs do not reconcile")
+
+# Inside :func:`report_rounding_rule`, every row the owners build whose check will refuse, keyed by what it is
+# and its totals as the rule summed them from the row's own trades: None if the ruling accepts it, else why not.
+_REPORT_ROWS: dict[tuple[Any, ...], str | None] = {}
+
+
+def _differs(total: Decimal, first: Decimal, second: Decimal) -> bool:
+    # the owner's own row check
+    return total != first + second
+
+
+def _note_row(key: tuple[Any, ...], total: Decimal, first: Decimal, second: Decimal) -> None:
+    if not _differs(total, first, second):
+        return
+    within = abs(total - (first + second)) <= backtest_engine.BACKTEST_RECONCILIATION_TOLERANCE
+    # the key holds every value the verdict reads, so a row noted again gets the same verdict
+    _REPORT_ROWS[key] = None if within else "the row's total differs from the sum of its parts by more than the engine's tolerance"
+
+
+def _note_bucket(dimension: str, bucket: str, attributions: Sequence[Any]) -> None:
+    """A BTC-183 bucket's totals from its own trades, summed in order as the owner sums them."""
+
+    total = _added_in_order(item.total_pnl for item in attributions)
+    realized = _added_in_order(item.realized_net_pnl for item in attributions)
+    marked = _added_in_order(item.marked_unrealized_pnl for item in attributions)
+    _note_row(("pnl", dimension, bucket, total, realized, marked), total, realized, marked)
+
+
+def _setup_trades(source: Any) -> dict[str, list[Any]] | None:
+    """Each setup's trades, found from the breakdown's attributions as BTC-184 finds them; None where it refuses them."""
+
+    folds = {fold.fold_number: fold for fold in source.validation.folds}
+    trades: dict[str, list[Any]] = {setup: [] for setup in setup_owner.SETUP_BUCKETS}
+    for attribution in source.attributions:
+        fold = folds.get(attribution.fold_number)
+        if fold is None or attribution.setup not in trades or not 1 <= attribution.trade_number <= len(fold.result.trades):
+            return None
+        trade = fold.result.trades[attribution.trade_number - 1]
+        if trade.evidence_digest != attribution.trade_evidence_digest:
+            return None
+        trades[attribution.setup].append(trade)
+    return trades
+
+
+def _note_setup_costs(source: Any) -> None:
+    """Each BTC-184 setup's costs from its own trades, summed in order as the owner sums them."""
+
+    for setup, trades in (_setup_trades(source) or {}).items():
+        fees = _added_in_order(trade.fees for trade in trades)
+        funding = _added_in_order(trade.funding for trade in trades)
+        total = _added_in_order(trade.fees + trade.funding for trade in trades)
+        _note_row(("costs", setup, total, fees, funding), total, fees, funding)
+
+
+def _row_key(message: str, row: Any) -> tuple[Any, ...]:
+    if message == "bucket P&L does not reconcile":
+        return ("pnl", row.dimension, row.bucket, row.total_pnl, row.realized_net_pnl, row.marked_unrealized_pnl)
+    if message == "setup P&L does not reconcile":  # a setup's P&L is its BTC-183 setup bucket's
+        return ("pnl", regime_owner.SETUP_DIMENSION, row.setup, row.total_pnl, row.realized_net_pnl, row.marked_unrealized_pnl)
+    return ("costs", row.setup, row.total_costs, row.fees, row.funding)
+
+
+def report_rounding_refusal(row: Any, message: str) -> str | None:
+    """Why a refused row total is more than rounding in the order of addition; ``None`` if it is not.
+
+    Owner ruling 9: each of the row's totals must be exactly the in-order sum
+    of its own trades' values, as the owner adds them, and the total within
+    the engine's own reconciliation tolerance of the sum of its parts. The
+    rule sums each row from its own trades when the owner builds it.
+    """
+
+    if message not in REPORT_ROUNDING_CHECKS:
+        return "not an owner row check under ruling 9"
+    key = _row_key(message, row)
+    if key not in _REPORT_ROWS:
+        return "the row's totals are not its own trades' values added in order"
+    return _REPORT_ROWS[key]
+
+
+def validate_report_row(row: Any, validate: Callable[[Any], None], messages: Sequence[str]) -> None:
+    """An owner's own row check, accepting the refusals ``messages`` names only under owner ruling 9.
+
+    On such a refusal the original row must pass :func:`report_rounding_refusal`;
+    the owner's whole row check then runs again on a copy whose total is the
+    sum of its parts, so every other condition is still the owner's. The row
+    itself is never changed. Any other refusal is the owner's, unchanged.
+    """
+
+    candidate = row
+    accepted: set[str] = set()
+    while True:
+        try:
+            validate(candidate)
+            return
+        except ValueError as error:
+            message = str(error)
+            if message not in messages or message in accepted:
+                raise
+            refusal = report_rounding_refusal(row, message)
+            if refusal is not None:
+                raise ValueError(f"{message}: {refusal} (owner ruling 9)") from error
+            _name, total_field, (first, second) = REPORT_ROUNDING_CHECKS[message]
+            candidate = replace(candidate, **{total_field: getattr(row, first) + getattr(row, second)})
+            accepted.add(message)
+
+
+@contextmanager
+def report_rounding_rule() -> Iterator[None]:
+    """Owner ruling 9, for the block and the process: the BTC-183 and BTC-184 row checks through :func:`validate_report_row`.
+
+    The owners' own builders, a bucket's and the setups', first note the
+    rows whose check will refuse, summed from each row's own trades. Pool
+    workers forked inside the block inherit the rule.
+    """
+
+    if getattr(regime_owner._validate_bucket_performance, "owner_ruling_9", False):
+        yield
+        return
+    build_bucket = regime_owner._bucket_performance
+    check_bucket = regime_owner._validate_bucket_performance
+    derive_setups = setup_owner._derive_setup_performance
+    check_setup = setup_owner._validate_setup_performance
+
+    def bucket_performance(dimension: str, bucket: str, attributions: Sequence[Any]) -> Any:
+        attributions = tuple(attributions)
+        _note_bucket(dimension, bucket, attributions)
+        return build_bucket(dimension, bucket, attributions)
+
+    def validate_bucket(bucket: Any) -> None:
+        validate_report_row(bucket, check_bucket, _BUCKET_CHECKS)
+
+    def derive_setup_performance(source: Any) -> Any:
+        _note_setup_costs(source)
+        return derive_setups(source)
+
+    def validate_setup(item: Any) -> None:
+        validate_report_row(item, check_setup, _SETUP_CHECKS)
+
+    replacements = (
+        (regime_owner, "_bucket_performance", bucket_performance, build_bucket),
+        (regime_owner, "_validate_bucket_performance", validate_bucket, check_bucket),
+        (setup_owner, "_derive_setup_performance", derive_setup_performance, derive_setups),
+        (setup_owner, "_validate_setup_performance", validate_setup, check_setup),
+    )
+    _REPORT_ROWS.clear()
+    for module, name, replacement, _original in replacements:
+        replacement.owner_ruling_9 = True  # type: ignore[attr-defined]
+        setattr(module, name, replacement)
+    try:
+        yield
+    finally:
+        for module, name, _replacement, original in replacements:
+            setattr(module, name, original)
+        _REPORT_ROWS.clear()
+
+
+def report_rounding(breakdown: Any, report: Any) -> dict[str, int]:
+    """Value-free (owner ruling 9): how many rows of a walk-forward run's two reports differ from the sum of their parts.
+
+    A row that differs was accepted under the ruling: the owner refuses any difference.
+    """
+
+    rows = {
+        "bucket_pnl": (breakdown.overall, *(bucket for item in breakdown.breakdowns for bucket in item.buckets)),
+        "setup_pnl": report.setups,
+        "setup_costs": report.setups,
+    }
+    return {
+        name: sum(_differs(getattr(row, total), getattr(row, first), getattr(row, second)) for row in rows[name])
+        for name, total, (first, second) in REPORT_ROUNDING_CHECKS.values()
+    }
+
+
 def _unaccounted(context: RunContext, venue: str, composers: Sequence[ComposerSnapshot]) -> list[str]:
     """Every cause a run's composers left unaccounted, their seeded history's too, by the composers' own methods."""
 
@@ -883,7 +1077,9 @@ def run_record(spec: RunSpec, context: RunContext, snapshot: RunSnapshot) -> dic
     if spec.kind == WALK_FORWARD:
         breakdown = run_regime_performance_breakdown(validation, list(snapshot.trade_contexts))
         record["regime_breakdown"] = _drop_embedded(breakdown.as_record(), "validation")
-        record["setup_report"] = _drop_embedded(setup_performance_report_from_breakdown(breakdown).as_record(), "source_breakdown")
+        setups = setup_performance_report_from_breakdown(breakdown)
+        record["setup_report"] = _drop_embedded(setups.as_record(), "source_breakdown")
+        record["report_rounding"] = report_rounding(breakdown, setups)
     return record
 
 
@@ -2516,7 +2712,8 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         private = store.root / prereg.ARTIFACT_DIRECTORY.name  # research_backtest_v1/, the public layout (ruling 9)
         workspace = Workspace(private / "rbt007_work")
         out(f"RBT-007 run at {code[:7]}: {len(specs)} runs on {len(venues)} venues, {args.workers} workers")
-        with engine_rounding_rule():  # owner ruling 8: every engine result of the run, the audit and the report
+        # owner rulings 8 and 9: every engine result and report row of the run, the audit and the report
+        with engine_rounding_rule(), report_rounding_rule():
             execute_all(
                 context,
                 specs,
@@ -2552,7 +2749,7 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
                 "dataset_index_sha256": frozen.index_sha256,
                 "fold_bars": context.fold_bars,
                 "venues": venues,
-                "rulings": "RBT-007 owner rulings 1-7, the runtime ruling and review ruling 3a (2026-11-18); owner ruling 8 (2026-11-21)",
+                "rulings": "RBT-007 owner rulings 1-7, the runtime ruling and review ruling 3a (2026-11-18); owner rulings 8 and 9 (2026-11-21)",
             }
             report, files = report_module.build_report(
                 preregistration=preregistration,

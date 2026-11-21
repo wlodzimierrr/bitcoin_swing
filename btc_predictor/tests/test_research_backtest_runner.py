@@ -1484,6 +1484,264 @@ def test_main_runs_the_backtest_under_ruling_8(monkeypatch, tmp_path):
     assert backtest_engine._validate_result is original
 
 
+# --- owner ruling 9: the BTC-183 and BTC-184 row checks under 28-digit rounding ----------------------
+
+BUCKET_MESSAGE = "bucket P&L does not reconcile"
+SETUP_PNL_MESSAGE = "setup P&L does not reconcile"
+COSTS_MESSAGE = "setup costs do not reconcile"
+# each found by search on the owners' own synthetic walk-forward runs: (strategy, fee bps, funding bps, test periods)
+ROUNDING_PNL = ("enter_and_hold", "6.26018159083016613186091390", "0", 2)  # four open trades: bucket and setup P&L
+ROUNDING_COSTS = ("enter_then_exit", "5.36469748212378991433014673", "1.02458921527589290075400917", 3)  # three closed trades: costs
+ROUNDING_ROW = ("enter_and_hold", "6.91289494616467631239538346", "3.75669245185261999618842087", 3)  # one setup row: P&L and costs
+
+
+def _owner_reports(strategy="enter_and_hold", fee_bps="10", funding_bps="0", test_periods=2):
+    """A walk-forward run's BTC-183 breakdown and BTC-184 report, as those owners' own tests build them."""
+
+    from btc_predictor.backtest import run_regime_performance_breakdown, run_walk_forward, setup_performance_report_from_breakdown, walk_forward_plan
+    from btc_predictor.portfolio.account import ExecutionCosts
+    from btc_predictor.tests import test_backtest_regime_performance as owner_tests
+
+    costs = ExecutionCosts(
+        policy_version="EXECUTION_COST_V1", fee_bps=Decimal(fee_bps), slippage_bps=Decimal("0"), funding_cost_bps_per_day=Decimal(funding_bps)
+    )
+    plan = walk_forward_plan(owner_tests.CONFIG, train_periods=3, test_periods=test_periods, step_periods=test_periods)
+    source = run_walk_forward(
+        owner_tests.BARS,
+        strategy_factory=owner_tests.factory(getattr(owner_tests, strategy)),
+        plan=plan,
+        starting_nav=owner_tests.NAV,
+        strategy_config=owner_tests.CONFIG,
+        costs=costs,
+    )
+    breakdown = run_regime_performance_breakdown(source, owner_tests.contexts_for(source))
+    return breakdown, setup_performance_report_from_breakdown(breakdown)
+
+
+def _buckets(breakdown):
+    return (breakdown.overall, *(bucket for item in breakdown.breakdowns for bucket in item.buckets))
+
+
+def _ruling_9_functions():
+    from btc_predictor.backtest import regime_performance as regime_owner
+    from btc_predictor.backtest import setup_performance as setup_owner
+
+    return (
+        regime_owner._bucket_performance,
+        regime_owner._validate_bucket_performance,
+        setup_owner._derive_setup_performance,
+        setup_owner._validate_setup_performance,
+    )
+
+
+def test_the_owners_refuse_rounding_in_the_order_of_addition_and_ruling_9_accepts_it():
+    from btc_predictor.backtest import regime_performance as regime_owner
+    from btc_predictor.backtest import setup_performance as setup_owner
+
+    originals = _ruling_9_functions()
+    report_checks = (regime_owner._validate_result, setup_owner._validate_report)
+    # the frozen owners alone: rows summed in two groupings of 28-digit values refuse
+    plain_breakdown, plain = _owner_reports()
+    assert rn.report_rounding(plain_breakdown, plain) == {"bucket_pnl": 0, "setup_pnl": 0, "setup_costs": 0}
+    with pytest.raises(ValueError, match=f"^{BUCKET_MESSAGE}$"):
+        _owner_reports(*ROUNDING_PNL)
+    with pytest.raises(ValueError, match=f"^{COSTS_MESSAGE}$"):
+        _owner_reports(*ROUNDING_COSTS)
+    with pytest.raises(ValueError, match=f"^{BUCKET_MESSAGE}$"):
+        _owner_reports(*ROUNDING_ROW)
+
+    with rn.report_rounding_rule():
+        assert all(getattr(function, "owner_ruling_9", False) for function in _ruling_9_functions())
+        pnl_breakdown, pnl = _owner_reports(*ROUNDING_PNL)
+        costs_breakdown, costs = _owner_reports(*ROUNDING_COSTS)
+        row_breakdown, row_report = _owner_reports(*ROUNDING_ROW)
+        installed, noted = _ruling_9_functions(), dict(rn._REPORT_ROWS)
+        assert noted and all(verdict is None for verdict in noted.values())
+        with rn.report_rounding_rule():  # nested: the same rule and its noted rows, kept when the inner block ends
+            assert _ruling_9_functions() == installed and rn._REPORT_ROWS == noted
+        assert _ruling_9_functions() == installed and rn._REPORT_ROWS == noted
+        # the two report-level checks stay the owners'
+        assert (regime_owner._validate_result, setup_owner._validate_report) == report_checks
+        # the owners' own record checks, run again: every report and its digest unchanged
+        for report in (pnl_breakdown, pnl, costs_breakdown, costs, row_breakdown, row_report):
+            assert report.as_record()["evidence_digest"] == report.evidence_digest
+        for breakdown in (pnl_breakdown, row_breakdown):
+            refused = [bucket for bucket in _buckets(breakdown) if bucket.total_pnl != bucket.realized_net_pnl + bucket.marked_unrealized_pnl]
+            assert refused and all(rn.report_rounding_refusal(bucket, BUCKET_MESSAGE) is None for bucket in refused)
+        (costs_row,) = [item for item in costs.setups if item.trade_count]
+        (both_row,) = [item for item in row_report.setups if item.trade_count]
+        assert rn.report_rounding_refusal(costs_row, COSTS_MESSAGE) is None
+        assert rn.report_rounding_refusal(both_row, SETUP_PNL_MESSAGE) is None and rn.report_rounding_refusal(both_row, COSTS_MESSAGE) is None
+    assert _ruling_9_functions() == originals
+    assert rn._REPORT_ROWS == {}
+
+    assert rn.report_rounding(pnl_breakdown, pnl) == {"bucket_pnl": 5, "setup_pnl": 1, "setup_costs": 0}
+    assert rn.report_rounding(costs_breakdown, costs) == {"bucket_pnl": 0, "setup_pnl": 0, "setup_costs": 1}
+    assert rn.report_rounding(row_breakdown, row_report) == {"bucket_pnl": 5, "setup_pnl": 1, "setup_costs": 1}
+    # each accepted row's totals are its own trades' values added in order, carrying 28 significant digits
+    attributions = pnl_breakdown.attributions
+    overall = pnl_breakdown.overall
+    assert len(attributions) == 4 and not any(item.closed for item in attributions)
+    fields = ("total_pnl", "realized_net_pnl", "marked_unrealized_pnl")
+    assert tuple(getattr(overall, field) for field in fields) == tuple(_in_order(getattr(item, field) for item in attributions) for field in fields)
+    assert overall.total_pnl != overall.realized_net_pnl + overall.marked_unrealized_pnl
+    assert max(len(item.realized_net_pnl.as_tuple().digits) for item in attributions) == 28
+    for breakdown, row in ((costs_breakdown, costs_row), (row_breakdown, both_row)):
+        assert all(len(fold.result.trades) == 1 for fold in breakdown.validation.folds)
+        trades = [fold.result.trades[0] for fold in breakdown.validation.folds]
+        assert row.trade_count == len(trades) == 3 and all(trade.funding != 0 for trade in trades)
+        assert (row.fees, row.funding, row.total_costs) == (
+            _in_order(trade.fees for trade in trades),
+            _in_order(trade.funding for trade in trades),
+            _in_order(trade.fees + trade.funding for trade in trades),
+        )
+        assert row.total_costs != row.fees + row.funding
+    assert all(trade.closed for trade in (fold.result.trades[0] for fold in costs_breakdown.validation.folds))
+    # outside the rule the owners refuse the same reports again
+    with pytest.raises(ValueError, match=f"^{BUCKET_MESSAGE}$"):
+        pnl_breakdown.as_record()
+    with pytest.raises(ValueError, match=f"^{COSTS_MESSAGE}$"):
+        costs.as_record()
+
+
+def test_ruling_9_refuses_anything_but_the_order_of_addition():
+    from decimal import localcontext
+
+    from btc_predictor.backtest import regime_performance as regime_owner
+
+    def attribution(realized, marked, total=None):
+        realized, marked = Decimal(realized), Decimal(marked)
+        return SimpleNamespace(
+            closed=False, realized_net_pnl=realized, marked_unrealized_pnl=marked, total_pnl=realized + marked if total is None else Decimal(total), r_multiple=None
+        )
+
+    with rn.report_rounding_rule():
+        # a 3-digit context: the bucket's two groupings differ by far more than the engine's tolerance
+        with localcontext() as coarse:
+            coarse.prec = 3
+            wide = regime_owner._bucket_performance("overall", "ALL", (attribution("1.00", "1.00"), attribution("0.004", "0.004")))
+        assert (wide.total_pnl, wide.realized_net_pnl, wide.marked_unrealized_pnl) == (Decimal("2.01"), Decimal("1.00"), Decimal("1.00"))
+        assert rn.report_rounding_refusal(wide, BUCKET_MESSAGE) == "the row's total differs from the sum of its parts by more than the engine's tolerance"
+        with pytest.raises(ValueError, match=r"^bucket P&L does not reconcile: the row's total differs .* \(owner ruling 9\)$") as refused:
+            regime_owner._validate_bucket_performance(wide)
+        assert str(refused.value.__cause__) == BUCKET_MESSAGE
+        assert rn.report_rounding_refusal(wide, "bucket trade counts do not reconcile") == "not an owner row check under ruling 9"
+        # a row whose check passes is not noted at all
+        exact = regime_owner._bucket_performance("overall", "ALL", (attribution("1.5", "2.25"), attribution("0.125", "0")))
+        assert exact.total_pnl == exact.realized_net_pnl + exact.marked_unrealized_pnl
+        assert rn.report_rounding_refusal(exact, BUCKET_MESSAGE) == "the row's totals are not its own trades' values added in order"
+
+        _row_breakdown, row_report = _owner_reports(*ROUNDING_ROW)
+        costs_breakdown, costs = _owner_reports(*ROUNDING_COSTS)
+        (row,) = [item for item in row_report.setups if item.trade_count]
+        (costs_row,) = [item for item in costs.setups if item.trade_count]
+        # a total that is not its own trades' values added in order, or parts that are not, are refused
+        for moved, message in (
+            (replace(costs_row, total_costs=costs_row.total_costs + Decimal("1E-20")), COSTS_MESSAGE),
+            (replace(costs_row, funding=costs_row.funding + Decimal("1E-20")), COSTS_MESSAGE),
+            (replace(row, total_pnl=row.total_pnl + Decimal("1E-20")), SETUP_PNL_MESSAGE),
+            (replace(row, setup=next(name for name in rn.setup_owner.SETUP_BUCKETS if name != row.setup)), SETUP_PNL_MESSAGE),
+        ):
+            assert rn.report_rounding_refusal(moved, message) == "the row's totals are not its own trades' values added in order"
+        # a setup's costs are its own trades', found from the breakdown's attributions as the owner finds them
+        trades = rn._setup_trades(costs_breakdown)
+        assert trades[costs_row.setup] == [fold.result.trades[0] for fold in costs_breakdown.validation.folds]
+        assert sum(len(items) for items in trades.values()) == costs_row.trade_count
+        first, *rest = costs_breakdown.attributions
+        for changed in (
+            replace(first, fold_number=99),
+            replace(first, trade_number=0),
+            replace(first, trade_number=2),
+            replace(first, setup="NO_SUCH_SETUP"),
+            replace(first, trade_evidence_digest="0" * 64),
+        ):
+            assert rn._setup_trades(replace(costs_breakdown, attributions=(changed, *rest))) is None
+    # outside the rule nothing is noted, so nothing is accepted
+    assert rn.report_rounding_refusal(costs_row, COSTS_MESSAGE) == "the row's totals are not its own trades' values added in order"
+
+
+def test_ruling_9_runs_the_owners_whole_row_check_again():
+    from btc_predictor.backtest import regime_performance as regime_owner
+    from btc_predictor.backtest import setup_performance as setup_owner
+
+    with rn.report_rounding_rule():
+        row_breakdown, row_report = _owner_reports(*ROUNDING_ROW)
+        (row,) = [item for item in row_report.setups if item.trade_count]
+        bucket = row_breakdown.overall
+        # the real owners' row checks: both of a setup row's checks accepted in turn, its other conditions still the owner's
+        setup_owner._validate_setup_performance(row)
+        regime_owner._validate_bucket_performance(bucket)
+        with pytest.raises(ValueError, match="^setup outcome signs are invalid$"):  # after the costs check
+            setup_owner._validate_setup_performance(replace(row, closed_net_loss=Decimal("1")))
+        with pytest.raises(ValueError, match="^setup trade counts do not reconcile$"):  # before both
+            setup_owner._validate_setup_performance(replace(row, trade_count=row.trade_count + 1))
+        with pytest.raises(ValueError, match="^win-rate availability must match closed-trade count$"):  # after the P&L check
+            regime_owner._validate_bucket_performance(replace(bucket, closed_trade_win_rate=Decimal("1")))
+        with pytest.raises(ValueError, match="^bucket closed-trade outcomes do not reconcile$"):  # before it
+            regime_owner._validate_bucket_performance(replace(bucket, winning_closed_trades=1))
+        moved = replace(row, total_costs=row.total_costs + Decimal("1E-20"))
+        with pytest.raises(ValueError, match=r"^setup costs do not reconcile: the row's totals are not .* \(owner ruling 9\)$") as refused:
+            setup_owner._validate_setup_performance(moved)
+        assert str(refused.value.__cause__) == COSTS_MESSAGE
+
+        # the loop: each accepted check runs the owner's check again on a copy holding the sum of the parts
+        passes = []
+
+        def staged(*messages):
+            def check(item):
+                passes.append(item)
+                message = messages[len(passes) - 1]
+                if message is not None:
+                    raise ValueError(message)
+
+            return check
+
+        assert rn.validate_report_row(row, staged(SETUP_PNL_MESSAGE, COSTS_MESSAGE, None), rn._SETUP_CHECKS) is None
+        assert passes[0] is row and passes[1].total_pnl == row.realized_net_pnl + row.marked_unrealized_pnl
+        assert passes[1].total_costs == row.total_costs and passes[2].total_costs == row.fees + row.funding
+        assert passes[2].total_pnl == passes[1].total_pnl and row.total_pnl != passes[1].total_pnl  # the row itself unchanged
+        passes.clear()
+        with pytest.raises(ValueError, match=f"^{SETUP_PNL_MESSAGE}$"):  # accepted once; the same refusal after it is the owner's
+            rn.validate_report_row(row, staged(SETUP_PNL_MESSAGE, SETUP_PNL_MESSAGE), rn._SETUP_CHECKS)
+        other = ValueError("setup closed-trade outcomes do not reconcile")
+
+        def refuses_otherwise(item):
+            raise other
+
+        with pytest.raises(ValueError) as caught:
+            rn.validate_report_row(row, refuses_otherwise, rn._SETUP_CHECKS)
+        assert caught.value is other
+        passes.clear()
+        with pytest.raises(ValueError, match=f"^{COSTS_MESSAGE}$"):  # a check the validator's own list does not name
+            rn.validate_report_row(row, staged(COSTS_MESSAGE), rn._BUCKET_CHECKS)
+
+
+def test_main_runs_the_backtest_under_ruling_9(monkeypatch, tmp_path):
+    from btc_predictor.research_backtest import backfill_run
+    from btc_predictor.research_backtest import dataset_build as build
+
+    originals = _ruling_9_functions()
+    seen = []
+
+    def execute_all(context, specs, workspace, **kwargs):
+        seen.append(all(getattr(function, "owner_ruling_9", False) for function in _ruling_9_functions()))
+        raise rn.RunnerRefused("RUN_REFUSED", "stopped by the test")
+
+    monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
+    monkeypatch.setattr(rn, "require_fresh_bytecode", lambda: str(tmp_path))
+    monkeypatch.setattr(build, "code_commit", lambda repository=None: "0" * 40)
+    monkeypatch.setattr(rn, "require_frozen_code", lambda repository, commit: ([], set()))
+    monkeypatch.setattr(rn, "verify_preregistration", lambda *args: None)
+    monkeypatch.setattr(backfill_run, "EvidenceStore", lambda root, public_repository: SimpleNamespace(root=root))
+    monkeypatch.setattr(rn, "load_frozen_inputs", lambda store: SimpleNamespace(inputs={"BITSTAMP": None}, private_commit="p", index_sha256="i"))
+    monkeypatch.setattr(rn, "execute_all", execute_all)
+    lines = []
+    assert rn.main(["run", "--store", str(tmp_path), "--workers", "1"], out=lines.append) == 2
+    assert seen == [True]
+    assert lines[-1] == "refused: RUN_REFUSED: stopped by the test"
+    assert _ruling_9_functions() == originals
+
+
 def test_sweep_runs_execute_on_the_base_rungs_costs(context, share):
     variant = next(variant for variant in context.registry.variants.values() if variant.role == rn.SWEEP)
     with share():
@@ -2037,6 +2295,12 @@ def test_every_run_has_a_record_and_the_checks_pass(end_to_end):
     assert all(record["engine_rounding"] == {"fees": 0, "funding": 0} for record in records)
     markdown = end_to_end.files[rr.REPORT_MARKDOWN_FILE].decode()
     assert "## The engine's fee and funding checks (owner ruling 8)" in markdown and "- 0 of 20 runs had an engine result" in markdown
+    # owner ruling 9: every walk-forward record counts its report rows the rule accepted; the synthetic runs need none
+    assert integrity["report_rounding"] == {}
+    walk_forward = [record for spec, record in zip(end_to_end.specs, records, strict=True) if spec.kind == rn.WALK_FORWARD]
+    assert walk_forward and all(record["report_rounding"] == {"bucket_pnl": 0, "setup_pnl": 0, "setup_costs": 0} for record in walk_forward)
+    assert all("report_rounding" not in record for spec, record in zip(end_to_end.specs, records, strict=True) if spec.kind != rn.WALK_FORWARD)
+    assert "## The regime and setup reports' row checks (owner ruling 9)" in markdown and "- 0 of 20 runs had a report row" in markdown
     for audit in end_to_end.report["lookahead_audit"].values():
         assert audit["passed"] and audit["complete"] and audit["failures"] == []
         assert audit["history_links"] == len(SCHEDULE) and audit["run_links"] == (LAST - START) // DAY + 1
@@ -2233,6 +2497,7 @@ def test_the_public_index_is_value_free(end_to_end):
     assert set(index["files"]) == set(end_to_end.files)
     assert index["memory_check_failures"] == 0 and index["runs"] == 20
     assert index["runs_with_engine_rounding_accepted"] == 0
+    assert index["runs_with_report_rounding_accepted"] == 0
 
 
 def test_engine_rounding_is_counted_in_the_report_and_the_index(end_to_end):
@@ -2247,6 +2512,21 @@ def test_engine_rounding_is_counted_in_the_report_and_the_index(end_to_end):
     markdown = files[rr.REPORT_MARKDOWN_FILE].decode()
     assert "- 1 of 20 runs had an engine result whose account total differed from its trades' total" in markdown
     assert "fees in 2 and funding in 1 engine results." in markdown
+
+
+def test_report_rounding_is_counted_in_the_report_and_the_index(end_to_end):
+    # owner ruling 9: a walk-forward run whose report rows the rule accepted is listed and counted, value-free
+    spec = next(spec for spec in end_to_end.specs if spec.kind == rn.WALK_FORWARD)
+    stored = rn.read_run(end_to_end.workspace.directory, spec, end_to_end.context)
+    counts = {"bucket_pnl": 3, "setup_pnl": 1, "setup_costs": 2}
+    report, files = end_to_end.build({spec.run_id: {**stored, "report_rounding": counts}})
+    assert report["integrity"]["report_rounding"] == {spec.run_id: counts}
+    assert rr.publication_refusals(report) == []
+    index = rr.public_index(report, files, private_commit=None)
+    assert index["runs_with_report_rounding_accepted"] == 1 and index["runs_with_engine_rounding_accepted"] == 0
+    markdown = files[rr.REPORT_MARKDOWN_FILE].decode()
+    assert "- 1 of 20 runs had a report row whose total differed from the sum of its parts" in markdown
+    assert "bucket P&L in 3, setup P&L in 1 and setup costs in 2 rows." in markdown
 
 
 def test_the_decision_ledgers_are_the_champions_base_run(end_to_end):
