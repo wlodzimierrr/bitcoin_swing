@@ -10392,7 +10392,8 @@ DONE after its independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS
 NON-BLOCKING FINDINGS (2026-11-01); RBT-001A is DONE after its independent
 xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-04); RBT-003 is
 DONE after its independent xHigh closure review PASS WITH NON-BLOCKING
-FINDINGS (2026-11-11);
+FINDINGS (2026-11-11); RBT-006 is DONE after its independent xHigh Part B
+review PASS WITH NON-BLOCKING FINDINGS (2026-11-18);
 the four
 adopted data choices stay fixed.
 
@@ -10402,8 +10403,9 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-006** (IN PROGRESS: Part A
-committed 2026-11-11, awaiting its independent xHigh review).
+dependency-satisfied EPIC Y work is **RBT-007** Part B (IN PROGRESS: Part A's
+review fixes passed their independent xHigh re-review on 2026-11-21; the run
+on the frozen dataset next).
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
