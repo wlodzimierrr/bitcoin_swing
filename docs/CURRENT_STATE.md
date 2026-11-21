@@ -1504,7 +1504,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   stopped at the BTC-180 engine's exact fee check, which rounding in the
   order of addition fails; owner ruling 8: the runner accepts that
   rounding only, for fees and funding, and counts it; its fix `091ac73`,
-  committed on 2026-11-21, awaits its review).
+  committed on 2026-11-21, whose review PASSED on 2026-11-21 with no
+  finding; Part B resumes with 12 workers).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1806,7 +1807,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   FAILED on 2026-11-20: two P2, T1-T2, fixed in `0375ce0`..`8fa396b`,
   whose re-review FAILED on 2026-11-20: one P2, Q1, fixed in `1cf27ce`,
   whose re-review PASSED WITH NON-BLOCKING FINDINGS on 2026-11-21: one
-  P3, D1, corrected in `fd6a223`).
+  P3, D1, corrected in `fd6a223`; Part B's first run, on 2026-11-21,
+  stopped at the engine's exact fee check; the owner ruling 8 fix
+  `091ac73` PASSED its review on 2026-11-21 with no finding).
   Its rulings: the positioning owner's results shared per instant (runtime);
   every value-bearing result private, with a public value-free index (1);
   the sweep candidates and the ablation through the runner, the composers
@@ -2456,17 +2459,17 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the **RBT-007 owner
-  ruling 8** fix (Part B's first run, on 2026-11-21, stopped at the
-  BTC-180 engine's exact fee check, which rounding in the order of
-  addition fails; the runner accepts that rounding only, for fees and
-  funding, and counts it; the fix `091ac73`, full suite 9,174 passed,
-  3 skipped, 1 xfailed, 0 failed in 6,181.93s), its independent xHigh
-  review;
-  then **RBT-007 Part B** resumed on the owner's PC
-  (`btc_predictor/research_backtest/runner_launch.sh run --store
+- **Next dependency-satisfied EPIC Y action:** **RBT-007 Part B**
+  resumed on the owner's PC, the histories written at `e3be415` set
+  aside (`btc_predictor/research_backtest/runner_launch.sh run --store
   ~/backtest_evidence --workers 12`, started by its path), then
-  RBT-007's independent xHigh review. Part A's code review closed on
+  RBT-007's independent xHigh review. Part B's first run, on
+  2026-11-21, stopped at the BTC-180 engine's exact fee check, which
+  rounding in the order of addition fails; under owner ruling 8 the
+  runner accepts that rounding only, for fees and funding, and counts
+  it (the fix `091ac73`, full suite 9,174 passed, 3 skipped,
+  1 xfailed, 0 failed in 6,181.93s; its independent xHigh review
+  PASSED on 2026-11-21 with no finding). Part A's code review closed on
   2026-11-21, when the fifth re-review of the fixes PASSED WITH
   NON-BLOCKING FINDINGS (one P3, D1, corrected in `fd6a223`; the Q1
   fix `1cf27ce`, full suite 9,169 passed, 3 skipped, 1 xfailed,
@@ -3226,7 +3229,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   fourth re-review fix `1cf27ce` and its record `fa4f24b`; the D1 fix
   `fd6a223`; the fifth re-review outcome `e3be415`; Part B's first run
   and owner ruling 8 `6d6f14c`; the ruling 8 fix `091ac73` and its record
-  in this commit.
+  `ee10b9b`; its review outcome in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
