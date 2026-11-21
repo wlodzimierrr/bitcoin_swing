@@ -520,6 +520,8 @@ def build_report(
         "memory_matches_history": {run_id: records[run_id]["memory"]["matches_history"] for run_id in sorted(records)},
         # review RR4: every record carries its causes, the golden runs' too; none is read as empty
         "unaccounted": {run_id: records[run_id]["unaccounted"] for run_id in sorted(records) if records[run_id]["unaccounted"]},
+        # owner ruling 8: each run's engine results whose fee or funding total the runner accepted
+        "engine_rounding": {run_id: records[run_id]["engine_rounding"] for run_id in sorted(records) if any(records[run_id]["engine_rounding"].values())},
         "runs": len(records),
         "planned_runs": len(by_id),
     }
@@ -626,6 +628,15 @@ def report_markdown(report: Mapping[str, Any]) -> str:
             f"- {venue}: {audit['history_links']} history and {audit['run_links']} run links; ruling 3's sample "
             f"{audit['audited']} of {audit['sample_size']} unshared; failures {len(audit['failures'])}, passed {audit['passed']}"
         )
+    accepted = report["integrity"]["engine_rounding"]
+    lines += [
+        "",
+        "## The engine's fee and funding checks (owner ruling 8)",
+        "",
+        f"- {len(accepted)} of {report['integrity']['runs']} runs had an engine result whose account total differed from "
+        f"its trades' total by the order of addition alone, accepted under owner ruling 8: fees in "
+        f"{sum(item['fees'] for item in accepted.values())} and funding in {sum(item['funding'] for item in accepted.values())} engine results.",
+    ]
     lines.append("")
     return "\n".join(lines)
 
@@ -649,6 +660,7 @@ def public_index(report: Mapping[str, Any], files: Mapping[str, bytes], *, priva
         "planned_runs": integrity["planned_runs"],
         "memory_check_failures": sum(1 for value in integrity["memory_matches_history"].values() if not value),
         "runs_with_unaccounted_causes": len(integrity["unaccounted"]),
+        "runs_with_engine_rounding_accepted": len(integrity["engine_rounding"]),
         "lookahead_audit": {
             venue: {
                 "history_links": audit["history_links"],

@@ -1252,6 +1252,238 @@ def test_engine_events_are_counted_with_each_refusals_reasons():
     }
 
 
+# --- owner ruling 8: the engine's fee and funding checks under 28-digit rounding ---------------------
+
+RULING_8_START = utc(2024, 1, 1)
+FEE_MESSAGE = "account fees do not reconcile with trade evidence"
+FUNDING_MESSAGE = "account funding does not reconcile with trade evidence"
+# each found by search on the two round trips below: the totals' order of addition rounds differently
+ROUNDING_FEE_BPS = "9.87654321987654321987654321"
+ROUNDING_FUNDING_BPS = "2.123456789012345678901234567"
+ROUNDING_BOTH_BPS = ("9.64199666597511634889612635", "1.90553592925370077597764620")
+
+
+def _two_round_trips(fee_bps: str = "10", funding_bps: str = "0"):
+    """Two entries and exits on flat synthetic daily bars, as the BTC-180 engine tests build them."""
+
+    from btc_predictor.backtest.engine import ARM_ENTRY_ACTION, EXIT_ACTION, BacktestIntent, run_backtest
+    from btc_predictor.config.strategy import load_strategy_config
+    from btc_predictor.data import OhlcvBar
+    from btc_predictor.portfolio.account import ExecutionCosts
+    from btc_predictor.risk.stop import calculate_initial_stop
+
+    config = load_strategy_config()
+
+    def bar(day):
+        timestamp = RULING_8_START + day * DAY
+        return OhlcvBar(
+            timestamp=timestamp, exchange="coinbase", symbol="BTC-USD", timeframe="1d", open=Decimal("100000"), high=Decimal("101000"),
+            low=Decimal("99000"), close=Decimal("100500"), volume=Decimal("100"), provider="coinbase", ingested_at=timestamp + DAY,
+        )
+
+    stop = calculate_initial_stop(
+        invalidation_price=Decimal("95000"), buffer=Decimal("0"), direction="long", entry_price=Decimal("101000"), config_metadata=config.run_metadata()
+    )
+
+    def strategy(context):
+        day = (context.bar.timestamp - RULING_8_START) // DAY
+        if day in (0, 5) and not context.position_open:
+            return BacktestIntent(
+                action=ARM_ENTRY_ACTION, entry_zone_lower=Decimal("99000"), entry_zone_upper=Decimal("101000"), initial_stop=stop, entry_conviction=Decimal("90")
+            )
+        if day in (3, 8) and context.position_open:
+            return BacktestIntent(action=EXIT_ACTION, exit_reason="HOLD_SCORE_COLLAPSE")
+        return None
+
+    costs = ExecutionCosts(
+        policy_version="EXECUTION_COST_V1", fee_bps=Decimal(fee_bps), slippage_bps=Decimal("0"), funding_cost_bps_per_day=Decimal(funding_bps)
+    )
+    return run_backtest(
+        tuple(bar(day) for day in range(12)), strategy=strategy, starting_nav="1000000", strategy_config=config, strategy_id="rbt007-ruling-8", costs=costs
+    )
+
+
+def _in_order(items):
+    total = Decimal("0")
+    for item in items:
+        total += item
+    return total
+
+
+def test_the_engine_refuses_rounding_in_the_order_of_addition_and_ruling_8_accepts_it():
+    from btc_predictor.backtest import engine as backtest_engine
+
+    original = backtest_engine._validate_result
+    # the frozen engine alone: two round trips whose fees or funding have 28 significant digits refuse
+    assert rn.engine_rounding([_two_round_trips()]) == {"fees": 0, "funding": 0}
+    with pytest.raises(ValueError, match=f"^{FEE_MESSAGE}$"):
+        _two_round_trips(ROUNDING_FEE_BPS)
+    with pytest.raises(ValueError, match=f"^{FUNDING_MESSAGE}$"):
+        _two_round_trips(funding_bps=ROUNDING_FUNDING_BPS)
+    with pytest.raises(ValueError, match=f"^{FEE_MESSAGE}$"):
+        _two_round_trips(*ROUNDING_BOTH_BPS)
+
+    with rn.engine_rounding_rule():
+        assert backtest_engine._validate_result is not original
+        fee = _two_round_trips(ROUNDING_FEE_BPS)
+        funding = _two_round_trips(funding_bps=ROUNDING_FUNDING_BPS)
+        both = _two_round_trips(*ROUNDING_BOTH_BPS)
+        with rn.engine_rounding_rule():  # nested: the same rule, kept when the inner block ends
+            pass
+        assert getattr(backtest_engine._validate_result, "owner_ruling_8", False)
+        assert fee.as_record()["evidence_digest"] == fee.evidence_digest  # the engine's own record check, re-validated
+        assert both.as_record()["evidence_digest"] == both.evidence_digest
+    assert backtest_engine._validate_result is original
+
+    assert rn.engine_rounding([fee]) == {"fees": 1, "funding": 0}
+    assert rn.engine_rounding([funding]) == {"fees": 0, "funding": 1}
+    assert rn.engine_rounding([both]) == {"fees": 1, "funding": 1}
+    assert rn.engine_rounding([fee, funding, both]) == {"fees": 2, "funding": 2}
+    for result in (fee, both):
+        fills = [fill.fee for trade in result.trades for fill in trade.fills]
+        assert len(result.trades) == 2 and result.account.fees_paid == _in_order(fills)
+        assert sum((trade.fees for trade in result.trades), Decimal("0")) != result.account.fees_paid
+        assert max(len(item.as_tuple().digits) for item in fills) == 28
+        assert rn.engine_rounding_refusal(result, FEE_MESSAGE) is None
+    for result in (funding, both):
+        charges = [event.funding_cost for trade in result.trades for event in trade.funding_events]
+        assert result.account.funding_paid == _in_order(charges)
+        assert rn.engine_rounding_refusal(result, FUNDING_MESSAGE) is None
+    # outside the rule the engine refuses the same result again
+    with pytest.raises(ValueError, match=f"^{FEE_MESSAGE}$"):
+        fee.as_record()
+
+
+def test_ruling_8_refuses_anything_but_the_order_of_addition():
+    from dataclasses import dataclass
+    from decimal import localcontext
+
+    @dataclass(frozen=True)
+    class Account:
+        fees_paid: Decimal
+        funding_paid: Decimal = Decimal("0")
+
+    @dataclass(frozen=True)
+    class Result:
+        account: Account
+        trades: tuple
+
+    def trade(*fees, total=None, funding=()):
+        fills = tuple(SimpleNamespace(fee=Decimal(item)) for item in fees)
+        events = tuple(SimpleNamespace(funding_cost=Decimal(item)) for item in funding)
+        return SimpleNamespace(
+            fills=fills, fees=_in_order(fill.fee for fill in fills) if total is None else Decimal(total), funding_events=events, funding=_in_order(event.funding_cost for event in events)
+        )
+
+    trades = (trade("1.5", "2.25"), trade("0.125"))
+    exact = Result(Account(Decimal("3.875")), trades)
+    assert rn.engine_rounding_refusal(exact, FEE_MESSAGE) is None
+    assert rn.engine_rounding_refusal(exact, "ending_nav does not match final marked equity") == "not an engine fee or funding check"
+    assert rn.engine_rounding_refusal(Result(Account(Decimal("3.875000000000001")), trades), FEE_MESSAGE) == "the account's total is not its charges added in order"
+    assert rn.engine_rounding_refusal(Result(Account(Decimal("3.875")), (trade("1.5", "2.25", total="3.7"), trade("0.125"))), FEE_MESSAGE) == (
+        "a trade's total is not its own charges added in order"
+    )
+    # in-order sums within each total, yet rounding beyond the engine's tolerance (a 3-digit context exaggerates it)
+    with localcontext() as coarse:
+        coarse.prec = 3
+        coarse_trades = (trade("1.00", "0.004"), trade("0.004", "0.004"))
+        coarse_result = Result(Account(_in_order([Decimal("1.00"), Decimal("0.004"), Decimal("0.004"), Decimal("0.004")])), coarse_trades)
+        assert rn.engine_rounding_refusal(coarse_result, FEE_MESSAGE) == "the trades' total differs from the account's by more than the engine's tolerance"
+    # funding reads each trade's funding events, not its fills
+    funded = (trade("1", funding=("0.5", "0.25")), trade("1", funding=("0.125",)))
+    assert rn.engine_rounding_refusal(Result(Account(Decimal("2"), Decimal("0.875")), funded), FUNDING_MESSAGE) is None
+    assert rn.engine_rounding_refusal(Result(Account(Decimal("2"), Decimal("0.75")), funded), FUNDING_MESSAGE) == "the account's total is not its charges added in order"
+
+    # the loop: an accepted check runs the engine's check again with the trades' total; anything else is the engine's
+    calls = []
+
+    def engine_check(result):
+        calls.append(result)
+        if len(calls) == 1:
+            raise ValueError(FEE_MESSAGE)
+        raise ValueError("summary counters must reconcile with event evidence")
+
+    rounded = Result(Account(Decimal("3.875")), trades)
+    with pytest.raises(ValueError, match="^summary counters must reconcile"):
+        rn.validate_engine_result(rounded, engine_check)
+    assert calls[0] is rounded and calls[1] is not rounded and calls[1].account.fees_paid == Decimal("3.875") and rounded.account.fees_paid == Decimal("3.875")
+    staged = [FEE_MESSAGE, FUNDING_MESSAGE, None]
+    passes = []
+
+    def fee_then_funding(result):
+        message = staged[len(passes)]
+        passes.append(result.account)
+        if message is not None:
+            raise ValueError(message)
+
+    assert rn.validate_engine_result(Result(Account(Decimal("2"), Decimal("0.875")), funded), fee_then_funding) is None
+    assert passes == [Account(Decimal("2"), Decimal("0.875"))] * 3
+    other = ValueError("events must be in deterministic chronological order")
+
+    def refuses_otherwise(result):
+        raise other
+
+    with pytest.raises(ValueError) as caught:
+        rn.validate_engine_result(rounded, refuses_otherwise)
+    assert caught.value is other
+
+    def refuses_again(result):
+        raise ValueError(FEE_MESSAGE)
+
+    with pytest.raises(ValueError, match=f"^{FEE_MESSAGE}$"):
+        rn.validate_engine_result(rounded, refuses_again)  # accepted once; the same refusal after it is the engine's
+    with pytest.raises(ValueError, match=r"the account's total is not its charges added in order \(owner ruling 8\)") as refused:
+        rn.validate_engine_result(Result(Account(Decimal("4")), trades), refuses_again)
+    assert str(refused.value.__cause__) == FEE_MESSAGE
+
+
+def test_ruling_8_leaves_every_other_engine_check_to_the_engine():
+    from btc_predictor.backtest import engine as backtest_engine
+
+    with rn.engine_rounding_rule():
+        fee = _two_round_trips(ROUNDING_FEE_BPS)
+        both = _two_round_trips(*ROUNDING_BOTH_BPS)
+        # a check after the fee check still refuses: the second pass is the engine's whole check
+        with pytest.raises(ValueError, match="^summary counters must reconcile with event evidence$"):
+            backtest_engine._validate_result(replace(fee, missed_entries=fee.missed_entries + 1))
+        with pytest.raises(ValueError, match="^summary counters must reconcile with event evidence$"):
+            backtest_engine._validate_result(replace(both, missed_entries=both.missed_entries + 1))
+        # an account total that is not its fills added in order is refused, with the engine's refusal as its cause
+        moved = replace(fee, account=replace(fee.account, fees_paid=fee.account.fees_paid + Decimal("1E-20")))
+        with pytest.raises(ValueError, match=r"not its charges added in order \(owner ruling 8\)"):
+            backtest_engine._validate_result(moved)
+        # a check before the fee check is the engine's, unchanged
+        with pytest.raises(ValueError, match="^ending_nav does not match final marked equity$"):
+            backtest_engine._validate_result(replace(fee, ending_nav=fee.ending_nav + 1))
+
+
+def test_main_runs_the_backtest_under_ruling_8(monkeypatch, tmp_path):
+    from btc_predictor.backtest import engine as backtest_engine
+    from btc_predictor.research_backtest import backfill_run
+    from btc_predictor.research_backtest import dataset_build as build
+
+    original = backtest_engine._validate_result
+    seen = []
+
+    def execute_all(context, specs, workspace, **kwargs):
+        seen.append((getattr(backtest_engine._validate_result, "owner_ruling_8", False), len(specs)))
+        raise rn.RunnerRefused("RUN_REFUSED", "stopped by the test")
+
+    monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
+    monkeypatch.setattr(rn, "require_fresh_bytecode", lambda: str(tmp_path))
+    monkeypatch.setattr(build, "code_commit", lambda repository=None: "0" * 40)
+    monkeypatch.setattr(rn, "require_frozen_code", lambda repository, commit: ([], set()))
+    monkeypatch.setattr(rn, "verify_preregistration", lambda *args: None)
+    monkeypatch.setattr(backfill_run, "EvidenceStore", lambda root, public_repository: SimpleNamespace(root=root))
+    monkeypatch.setattr(rn, "load_frozen_inputs", lambda store: SimpleNamespace(inputs={"BITSTAMP": None}, private_commit="p", index_sha256="i"))
+    monkeypatch.setattr(rn, "execute_all", execute_all)
+    lines = []
+    assert rn.main(["run", "--store", str(tmp_path), "--workers", "1"], out=lines.append) == 2
+    assert seen and seen[0][0] is True and seen[0][1] > 0
+    assert lines[-1] == "refused: RUN_REFUSED: stopped by the test"
+    assert backtest_engine._validate_result is original
+
+
 def test_sweep_runs_execute_on_the_base_rungs_costs(context, share):
     variant = next(variant for variant in context.registry.variants.values() if variant.role == rn.SWEEP)
     with share():
@@ -1799,6 +2031,12 @@ def test_every_run_has_a_record_and_the_checks_pass(end_to_end):
     assert integrity["runs"] == integrity["planned_runs"] == len(end_to_end.specs) == 2 * 10
     assert all(integrity["memory_matches_history"].values())
     assert integrity["unaccounted"] == {}
+    # owner ruling 8: every record counts its engine results the rule accepted; the synthetic runs need none
+    assert integrity["engine_rounding"] == {}
+    records = [rn.read_run(end_to_end.workspace.directory, spec, end_to_end.context) for spec in end_to_end.specs]
+    assert all(record["engine_rounding"] == {"fees": 0, "funding": 0} for record in records)
+    markdown = end_to_end.files[rr.REPORT_MARKDOWN_FILE].decode()
+    assert "## The engine's fee and funding checks (owner ruling 8)" in markdown and "- 0 of 20 runs had an engine result" in markdown
     for audit in end_to_end.report["lookahead_audit"].values():
         assert audit["passed"] and audit["complete"] and audit["failures"] == []
         assert audit["history_links"] == len(SCHEDULE) and audit["run_links"] == (LAST - START) // DAY + 1
@@ -1994,6 +2232,21 @@ def test_the_public_index_is_value_free(end_to_end):
         assert f'"{word}' not in text
     assert set(index["files"]) == set(end_to_end.files)
     assert index["memory_check_failures"] == 0 and index["runs"] == 20
+    assert index["runs_with_engine_rounding_accepted"] == 0
+
+
+def test_engine_rounding_is_counted_in_the_report_and_the_index(end_to_end):
+    # owner ruling 8: a run whose engine results the rule accepted is listed and counted, value-free
+    spec = end_to_end.specs[0]
+    stored = rn.read_run(end_to_end.workspace.directory, spec, end_to_end.context)
+    report, files = end_to_end.build({spec.run_id: {**stored, "engine_rounding": {"fees": 2, "funding": 1}}})
+    assert report["integrity"]["engine_rounding"] == {spec.run_id: {"fees": 2, "funding": 1}}
+    assert rr.publication_refusals(report) == []
+    index = rr.public_index(report, files, private_commit=None)
+    assert index["runs_with_engine_rounding_accepted"] == 1
+    markdown = files[rr.REPORT_MARKDOWN_FILE].decode()
+    assert "- 1 of 20 runs had an engine result whose account total differed from its trades' total" in markdown
+    assert "fees in 2 and funding in 1 engine results." in markdown
 
 
 def test_the_decision_ledgers_are_the_champions_base_run(end_to_end):

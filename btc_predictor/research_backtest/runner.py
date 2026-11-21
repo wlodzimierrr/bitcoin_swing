@@ -44,6 +44,13 @@ preregistration lists.
 :mod:`runner_shared`; the look-ahead audit (ruling 3) recomputes sampled
 decisions on truncated inputs without them.
 
+**The engine's fee and funding checks (owner ruling 8).** The BTC-180 engine
+requires its account's fee and funding totals, added charge by charge, to
+equal its trades' totals, added trade by trade, exactly; under 28-digit
+``Decimal`` arithmetic the two orders of addition can round differently.
+:func:`engine_rounding_rule` accepts exactly that case and nothing else, and
+every run records how many of its engine results it covered.
+
 **Outputs (ruling 1).** Every value-bearing output (ledgers, trades, equity
 curves, metrics, the report) lives only in the private repository; this
 repository keeps a value-free index.
@@ -55,7 +62,8 @@ import copy
 import gzip
 import hashlib
 import json
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -63,6 +71,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+from btc_predictor.backtest import engine as backtest_engine
 from btc_predictor.backtest.costs import cost_profile
 from btc_predictor.backtest.engine import BacktestResult, _bar_available_at, run_backtest
 from btc_predictor.backtest.regime_performance import regime_performance_context, run_regime_performance_breakdown
@@ -611,6 +620,119 @@ def event_counts(results: Iterable[BacktestResult]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+# --- owner ruling 8: the engine's fee and funding checks under 28-digit rounding ---------------
+
+# The engine's message -> (the name counted, the account's field, the trade's field, a trade's own charges in order)
+ENGINE_ROUNDING_CHECKS: dict[str, tuple[str, str, str, Callable[[Any], list[Decimal]]]] = {
+    "account fees do not reconcile with trade evidence": ("fees", "fees_paid", "fees", lambda trade: [fill.fee for fill in trade.fills]),
+    "account funding does not reconcile with trade evidence": (
+        "funding",
+        "funding_paid",
+        "funding",
+        lambda trade: [event.funding_cost for event in trade.funding_events],
+    ),
+}
+
+
+def _added_in_order(items: Iterable[Decimal]) -> Decimal:
+    # the account's and the trade accounting's own arithmetic: from zero, one charge at a time
+    total = Decimal("0")
+    for item in items:
+        total += item
+    return total
+
+
+def _trades_total(result: BacktestResult, trade_field: str) -> Decimal:
+    # the engine's own sum in its check, trade by trade
+    return sum((getattr(trade, trade_field) for trade in result.trades), Decimal("0"))
+
+
+def engine_rounding_refusal(result: BacktestResult, message: str) -> str | None:
+    """Why a refused fee or funding total is more than rounding in the order of addition; ``None`` if it is not.
+
+    Owner ruling 8: the account's total must be exactly its charges added in
+    order, each trade's exactly its own charges, and the trades' total within
+    the engine's own reconciliation tolerance of the account's.
+    """
+
+    if message not in ENGINE_ROUNDING_CHECKS:
+        return "not an engine fee or funding check"
+    _name, account_field, trade_field, charges = ENGINE_ROUNDING_CHECKS[message]
+    account = getattr(result.account, account_field)
+    if account != _added_in_order(item for trade in result.trades for item in charges(trade)):
+        return "the account's total is not its charges added in order"
+    if any(getattr(trade, trade_field) != _added_in_order(charges(trade)) for trade in result.trades):
+        return "a trade's total is not its own charges added in order"
+    if abs(_trades_total(result, trade_field) - account) > backtest_engine.BACKTEST_RECONCILIATION_TOLERANCE:
+        return "the trades' total differs from the account's by more than the engine's tolerance"
+    return None
+
+
+def validate_engine_result(result: BacktestResult, validate: Callable[[BacktestResult], None]) -> None:
+    """The engine's own check, accepting its fee or funding refusal only under owner ruling 8.
+
+    On such a refusal the original result must pass :func:`engine_rounding_refusal`;
+    the engine's full check then runs again on a copy whose account total is
+    the trades' total, so every other condition is still the engine's. The
+    result itself is never changed. Any other refusal is the engine's, unchanged.
+    """
+
+    candidate = result
+    accepted: set[str] = set()
+    while True:
+        try:
+            validate(candidate)
+            return
+        except ValueError as error:
+            message = str(error)
+            check = ENGINE_ROUNDING_CHECKS.get(message)
+            if check is None or check[0] in accepted:
+                raise
+            refusal = engine_rounding_refusal(result, message)
+            if refusal is not None:
+                raise ValueError(f"{message}: {refusal} (owner ruling 8)") from error
+            name, account_field, trade_field, _charges = check
+            candidate = replace(candidate, account=replace(candidate.account, **{account_field: _trades_total(result, trade_field)}))
+            accepted.add(name)
+
+
+@contextmanager
+def engine_rounding_rule() -> Iterator[None]:
+    """Owner ruling 8, for the block and the process: the engine checks each result through :func:`validate_engine_result`.
+
+    Pool workers forked inside the block inherit it.
+    """
+
+    original = backtest_engine._validate_result
+    if getattr(original, "owner_ruling_8", False):
+        yield
+        return
+
+    def validate(result: BacktestResult) -> None:
+        validate_engine_result(result, original)
+
+    validate.owner_ruling_8 = True  # type: ignore[attr-defined]
+    backtest_engine._validate_result = validate
+    try:
+        yield
+    finally:
+        backtest_engine._validate_result = original
+
+
+def engine_rounding(results: Iterable[BacktestResult]) -> dict[str, int]:
+    """Value-free (owner ruling 8): how many engine results' account total differs from their trades' total.
+
+    A result that differs was accepted under the ruling: the engine refuses
+    any difference.
+    """
+
+    counts = {name: 0 for name, _account, _trade, _charges in ENGINE_ROUNDING_CHECKS.values()}
+    for result in results:
+        for name, account_field, trade_field, _charges in ENGINE_ROUNDING_CHECKS.values():
+            counts[name] += _trades_total(result, trade_field) != getattr(result.account, account_field)
+    return counts
+
+
 def _unaccounted(context: RunContext, venue: str, composers: Sequence[ComposerSnapshot]) -> list[str]:
     """Every cause a run's composers left unaccounted, their seeded history's too, by the composers' own methods."""
 
@@ -732,6 +854,7 @@ def run_record(spec: RunSpec, context: RunContext, snapshot: RunSnapshot) -> dic
             "unaccounted": _unaccounted(context, spec.venue, composers),
             "memory": memory_of_rows(context, spec.venue, [composer.entry_rows]),
             "engine_events": event_counts([result]),
+            "engine_rounding": engine_rounding([result]),
             "binding": run_binding(spec, context),
         }
 
@@ -754,6 +877,7 @@ def run_record(spec: RunSpec, context: RunContext, snapshot: RunSnapshot) -> dic
         "unaccounted": _unaccounted(context, spec.venue, composers),
         "memory": memory_of_rows(context, spec.venue, [composer.entry_rows for composer in composers]),
         "engine_events": event_counts(snapshot.results()),
+        "engine_rounding": engine_rounding(snapshot.results()),
         "binding": run_binding(spec, context),
     }
     if spec.kind == WALK_FORWARD:
@@ -870,6 +994,7 @@ def _golden_record(
         "engine_reason_codes": list(result.reason_codes),
         "engine_refused": "BACKTEST_INTENT_REFUSED" in result.reason_codes,
         "engine_events": event_counts([result]),
+        "engine_rounding": engine_rounding([result]),
         # review RR4: a golden run's unaccounted causes are gated like every other run's
         "unaccounted": _unaccounted(context, spec.venue, [composer]),
         "decisions_beside_scripted": beside,
@@ -2391,57 +2516,58 @@ def main(argv: Sequence[str] | None = None, *, out: Callable[[str], None] = prin
         private = store.root / prereg.ARTIFACT_DIRECTORY.name  # research_backtest_v1/, the public layout (ruling 9)
         workspace = Workspace(private / "rbt007_work")
         out(f"RBT-007 run at {code[:7]}: {len(specs)} runs on {len(venues)} venues, {args.workers} workers")
-        execute_all(
-            context,
-            specs,
-            workspace,
-            workers=args.workers,
-            precompute_venue=venues[0],
-            progress=out,
-            frozen_code=(repository, preregistration["code_commit"], checked),
-        )
-        records = {}
-        for spec in specs:
-            record = read_run(workspace.directory, spec, context)
-            if record is None:
-                raise RunnerRefused("RUN_REFUSED", f"{spec.run_id} has no record")
-            records[spec.run_id] = record
-        audits = {
-            venue: read_audit(workspace, venue, context, audit_binding(context, venue, records[RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG).run_id]))
-            for venue in venues
-        }
-        gaps = {}
-        for venue in venues:
-            start, last = context.evaluation[venue]
-            instants = [instant for instant in prereg.decision_schedule() if start <= instant <= last]
-            gaps[venue] = report_module.gap_exposure(context.inputs[venue], instants)
-        index = json.loads((repository / build.INDEX_PATH).read_bytes())
-        identity = {
-            "runner_version": RUNNER_VERSION,
-            "ticket": RUNNER_TICKET,
-            "run_code_commit": code,
-            "frozen_code_commit": preregistration["code_commit"],
-            "frozen_code_files_checked": len(frozen_paths),
-            "private_dataset_commit": frozen.private_commit,
-            "dataset_index_sha256": frozen.index_sha256,
-            "fold_bars": context.fold_bars,
-            "venues": venues,
-            "rulings": "RBT-007 owner rulings 1-7, the runtime ruling and review ruling 3a (2026-11-18)",
-        }
-        report, files = report_module.build_report(
-            preregistration=preregistration,
-            preregistration_sha256=digest,
-            identity=identity,
-            context=context,
-            specs=specs,
-            records=records,
-            audits=audits,
-            gaps=gaps,
-            sweep_specs=sweep_specs(preregistration["threshold_sweeps"]["sweeps"], champion),
-            coverage_index=index["coverage"],
-        )
-        verify_loaded_code()
-        publish(report, files, private=private, public=repository / prereg.ARTIFACT_DIRECTORY, workspace=workspace)
+        with engine_rounding_rule():  # owner ruling 8: every engine result of the run, the audit and the report
+            execute_all(
+                context,
+                specs,
+                workspace,
+                workers=args.workers,
+                precompute_venue=venues[0],
+                progress=out,
+                frozen_code=(repository, preregistration["code_commit"], checked),
+            )
+            records = {}
+            for spec in specs:
+                record = read_run(workspace.directory, spec, context)
+                if record is None:
+                    raise RunnerRefused("RUN_REFUSED", f"{spec.run_id} has no record")
+                records[spec.run_id] = record
+            audits = {
+                venue: read_audit(workspace, venue, context, audit_binding(context, venue, records[RunSpec(HEADLINE, venue, CHAMPION, prereg.HEADLINE_COST_RUNG).run_id]))
+                for venue in venues
+            }
+            gaps = {}
+            for venue in venues:
+                start, last = context.evaluation[venue]
+                instants = [instant for instant in prereg.decision_schedule() if start <= instant <= last]
+                gaps[venue] = report_module.gap_exposure(context.inputs[venue], instants)
+            index = json.loads((repository / build.INDEX_PATH).read_bytes())
+            identity = {
+                "runner_version": RUNNER_VERSION,
+                "ticket": RUNNER_TICKET,
+                "run_code_commit": code,
+                "frozen_code_commit": preregistration["code_commit"],
+                "frozen_code_files_checked": len(frozen_paths),
+                "private_dataset_commit": frozen.private_commit,
+                "dataset_index_sha256": frozen.index_sha256,
+                "fold_bars": context.fold_bars,
+                "venues": venues,
+                "rulings": "RBT-007 owner rulings 1-7, the runtime ruling and review ruling 3a (2026-11-18); owner ruling 8 (2026-11-21)",
+            }
+            report, files = report_module.build_report(
+                preregistration=preregistration,
+                preregistration_sha256=digest,
+                identity=identity,
+                context=context,
+                specs=specs,
+                records=records,
+                audits=audits,
+                gaps=gaps,
+                sweep_specs=sweep_specs(preregistration["threshold_sweeps"]["sweeps"], champion),
+                coverage_index=index["coverage"],
+            )
+            verify_loaded_code()
+            publish(report, files, private=private, public=repository / prereg.ARTIFACT_DIRECTORY, workspace=workspace)
         out(f"report written: {sorted(files)} (private), {report_module.INDEX_FILE} (public)")
         return 0
     except RunnerRefused as error:
