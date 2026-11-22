@@ -1508,7 +1508,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   finding; Part B's second run, on 2026-11-21, stopped after 12 runs at
   the BTC-184 setup-costs check, the same rounding; owner ruling 9: the
   runner accepts it only at the BTC-183 and BTC-184 owners' three row
-  checks, and counts it).
+  checks, and counts it; its fix `6e2334f`, committed on 2026-11-21,
+  awaits its review).
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -2470,7 +2471,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   ruling 9** fix (Part B's second run, on 2026-11-21, stopped after 12
   runs at the BTC-184 setup-costs check, the same rounding in the order
   of addition; the runner accepts it only at the BTC-183 and BTC-184
-  owners' three row checks, and counts it), its validation and
+  owners' three row checks, and counts it; the fix `6e2334f`, full suite
+  9,179 passed, 3 skipped, 1 xfailed, 0 failed in 6,215.01s), its
   independent xHigh review; then **RBT-007 Part B** resumed on the
   owner's PC, its checkpoints and the histories written at `d0903b2`
   set aside (`btc_predictor/research_backtest/runner_launch.sh run --store
@@ -3242,7 +3244,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `fd6a223`; the fifth re-review outcome `e3be415`; Part B's first run
   and owner ruling 8 `6d6f14c`; the ruling 8 fix `091ac73` and its record
   `ee10b9b`; its review outcome `d0903b2`; Part B's second run and
-  owner ruling 9 in this commit.
+  owner ruling 9 `40ae482`; the ruling 9 fix `6e2334f` and its record
+  in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
