@@ -11017,8 +11017,13 @@ owner's PC.
 - **Set aside.** Before the start, the second run's 12 checkpoints and the
   histories written at `d0903b2` were set aside in the private work
   directory, since both are bound to their commit.
-- **Preflight.** `preflight` passed first: the checkout was clean, and 136
-  modules were checked against the frozen code.
+- **Preflight and the run's startup checks.** `preflight` passed first.
+  It checks the launch's isolation and that each module loaded so far
+  comes from its source file; it reads no commit. The run's own startup
+  then refused any uncommitted tracked change, and found its 136 checked
+  paths, configuration and fixture files included, byte-identical to the
+  frozen commit `2be45ad`. (Corrected for review C2: an earlier wording
+  gave both checks to `preflight`.)
 
 **Its phases** (GMT):
 1. **The shared results.** The first run's shared positioning results were
