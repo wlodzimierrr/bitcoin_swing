@@ -1431,7 +1431,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-23
+- **Last updated:** 2026-11-24
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -2471,7 +2471,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
 - **Next dependency-satisfied EPIC Y action:** **RBT-007's independent
-  xHigh review.** Part B's third run completed on the owner's PC on
+  xHigh review**, then, after its PASS, a full reproduction of Part B on
+  the owner's PC compared byte-for-byte with the first run (owner
+  choice of 2026-11-24). Part B's third run completed on the owner's PC on
   2026-11-23 at `05bda40`, started on 2026-11-22: 243 of 243 runs,
   no unaccounted cause, and the look-ahead audit passed on every
   venue. Its five value-bearing files are in private commit
@@ -3254,7 +3256,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `ee10b9b`; its review outcome `d0903b2`; Part B's second run and
   owner ruling 9 `40ae482`; the ruling 9 fix `6e2334f` and its record
   `c14ef37`; its review outcome `05bda40`; Part B's run, its public
-  index and its record in this commit.
+  index and its record `7cfd8ea`; the closure review plan in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
