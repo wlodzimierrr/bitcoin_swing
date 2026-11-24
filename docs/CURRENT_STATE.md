@@ -2473,7 +2473,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 - **Next dependency-satisfied EPIC Y action:** the fixes of **RBT-007's
   closure review** step 1, which FAILED on 2026-11-24 (C1, P2: a runner
   test the committed index broke; C2, P3: the Part B record), their
-  validation and re-review (owner choice); then, after its PASS, a full
+  validation and re-review (owner choice; the fixes `f6b0082` and
+  `1475140`, full suite 9,180 passed); then, after its PASS, a full
   reproduction of Part B on the owner's PC compared byte-for-byte with
   the first run (owner choice of 2026-11-24). Part B's third run
   completed on the owner's PC on
@@ -3260,7 +3261,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   owner ruling 9 `40ae482`; the ruling 9 fix `6e2334f` and its record
   `c14ef37`; its review outcome `05bda40`; Part B's run, its public
   index and its record `7cfd8ea`; the closure review plan `e12889c`;
-  the closure review's FAIL and the owner's choice in this commit.
+  the closure review's FAIL and the owner's choice `2706620`; the C1
+  and C2 fixes `f6b0082` and `1475140` and their record in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
