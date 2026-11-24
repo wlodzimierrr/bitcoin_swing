@@ -2535,18 +2535,37 @@ def test_the_decision_ledgers_are_the_champions_base_run(end_to_end):
     assert ledger["entry_rows"][0]["decision_at"] == START.isoformat()
 
 
-def test_main_refuses_when_the_code_is_not_frozen(monkeypatch, tmp_path):
+@pytest.mark.parametrize("existing", [False, True], ids=["no_index", "existing_index"])
+def test_main_refuses_when_the_code_is_not_frozen(monkeypatch, tmp_path, existing):
     from btc_predictor.research_backtest import dataset_build as build
 
+    # review C1: the repository's own index is committed, so the public destination is an isolated copy
+    public = tmp_path / "public"
+    index = public / rn.prereg.ARTIFACT_DIRECTORY / rr.INDEX_FILE
+    index.parent.mkdir(parents=True)
+    if existing:
+        index.write_bytes(b'{"published": "earlier"}')
+    before = {path: path.read_bytes() for path in public.rglob("*") if path.is_file()}
+    committed = REPOSITORY / rn.prereg.ARTIFACT_DIRECTORY / rr.INDEX_FILE
+    committed_before = committed.read_bytes() if committed.exists() else None
+    preregistration = rn.read_preregistration(REPOSITORY)
+    monkeypatch.setattr(build, "PUBLIC_REPOSITORY", public)
+    monkeypatch.setattr(rn, "read_preregistration", lambda repository: preregistration)
     monkeypatch.setattr(build, "code_commit", lambda repository=None: "0" * 40)
+    checked = []
 
     def refused(repository, commit):
+        checked.append(repository)
         raise rn.RunnerRefused("FROZEN_CODE_REFUSED", "test")
 
     monkeypatch.setattr(rn, "require_frozen_code", refused)
     monkeypatch.setattr(rn, "fresh_bytecode_process", lambda: True)
     monkeypatch.setattr(rn, "require_fresh_bytecode", lambda: str(tmp_path))  # review Q1: main's first check
     lines = []
-    assert rn.main(["run", "--store", str(tmp_path)], out=lines.append) == 2
+    assert rn.main(["run", "--store", str(tmp_path / "store")], out=lines.append) == 2
     assert lines == ["refused: FROZEN_CODE_REFUSED: test"]
-    assert not (REPOSITORY / rn.prereg.ARTIFACT_DIRECTORY / rr.INDEX_FILE).exists()
+    assert checked == [public]
+    # nothing published: an absent index stays absent, an existing one unchanged, and no other file appears
+    assert index.exists() is existing
+    assert {path: path.read_bytes() for path in public.rglob("*") if path.is_file()} == before
+    assert (committed.read_bytes() if committed.exists() else None) == committed_before
