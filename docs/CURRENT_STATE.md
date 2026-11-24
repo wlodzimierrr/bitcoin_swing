@@ -2470,13 +2470,14 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** the fixes of **RBT-007's
-  closure review** step 1, which FAILED on 2026-11-24 (C1, P2: a runner
-  test the committed index broke; C2, P3: the Part B record), their
-  validation and re-review (owner choice; the fixes `f6b0082` and
-  `1475140`, full suite 9,180 passed); then, after its PASS, a full
-  reproduction of Part B on the owner's PC compared byte-for-byte with
-  the first run (owner choice of 2026-11-24). Part B's third run
+- **Next dependency-satisfied EPIC Y action:** **RBT-007's closure
+  review step 2**: a full reproduction of Part B on the owner's PC at
+  `05bda40`, compared byte-for-byte with the first run (owner choice
+  of 2026-11-24). Step 1 FAILED on 2026-11-24 (C1, P2: a runner test
+  the committed index broke; C2, P3: the Part B record); the fixes
+  `f6b0082` and `1475140` (full suite 9,180 passed) PASSED their
+  independent xHigh re-review on 2026-11-24 with no finding, closing
+  step 1. Part B's third run
   completed on the owner's PC on
   2026-11-23 at `05bda40`, started on 2026-11-22: 243 of 243 runs,
   no unaccounted cause, and the look-ahead audit passed on every
@@ -3262,7 +3263,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   `c14ef37`; its review outcome `05bda40`; Part B's run, its public
   index and its record `7cfd8ea`; the closure review plan `e12889c`;
   the closure review's FAIL and the owner's choice `2706620`; the C1
-  and C2 fixes `f6b0082` and `1475140` and their record in this commit.
+  and C2 fixes `f6b0082` and `1475140` and their record `242c72c`;
+  their re-review outcome in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
