@@ -1431,7 +1431,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-24
+- **Last updated:** 2026-11-26
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -2470,10 +2470,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-007's closure
-  review step 2**: a full reproduction of Part B on the owner's PC at
-  `05bda40`, compared byte-for-byte with the first run (owner choice
-  of 2026-11-24). Step 1 FAILED on 2026-11-24 (C1, P2: a runner test
+- **Next dependency-satisfied EPIC Y action:** Codex's check of the
+  record of **RBT-007's closure review step 2**, the last part of the
+  closure review. Step 2's full reproduction of Part B ran on the
+  owner's PC at `05bda40` from 2026-11-24 to 2026-11-26 (owner choice
+  of 2026-11-24). All six files, the five private files and the
+  public index, are byte-identical to the first run's. Step 1 FAILED
+  on 2026-11-24 (C1, P2: a runner test
   the committed index broke; C2, P3: the Part B record); the fixes
   `f6b0082` and `1475140` (full suite 9,180 passed) PASSED their
   independent xHigh re-review on 2026-11-24 with no finding, closing
@@ -3264,7 +3267,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   index and its record `7cfd8ea`; the closure review plan `e12889c`;
   the closure review's FAIL and the owner's choice `2706620`; the C1
   and C2 fixes `f6b0082` and `1475140` and their record `242c72c`;
-  their re-review outcome in this commit.
+  their re-review outcome `ee2df5c`; step 2's reproduction and its
+  record in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
