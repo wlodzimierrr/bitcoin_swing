@@ -1486,8 +1486,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   re-review FAILED on 2026-11-12 on four P2, N2-N5, and two P3, N6-N7; their
   fix `d062eb5`, whose re-review PASSED on 2026-11-13 with no finding, closing
   Part A's code review; the Part B freeze, committed on 2026-11-17, and its
-  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is IN
-  PROGRESS** (started 2026-11-18; the owner's runtime ruling and rulings 1-7
+  review PASS WITH NON-BLOCKING FINDINGS on 2026-11-18); **RBT-007 is DONE /
+  independent xHigh closure review PASS** (2026-11-26; started 2026-11-18;
+  the owner's runtime ruling and rulings 1-7
   recorded; Part A `badbe00` and `0b32e94`; its review FAILED on 2026-11-18
   with four P1, six P2 and three P3 findings; review ruling 3a; the fixes
   `5ca17ca`..`68e1055`, committed on 2026-11-19; their re-review FAILED on
@@ -1512,7 +1513,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   whose review PASSED WITH NON-BLOCKING FINDINGS on 2026-11-22: one
   P3, R9-1, accepted by the owner; Part B's third run completed on
   2026-11-23 at `05bda40`: 243 of 243 runs, the look-ahead audit
-  passed; private commit `c62d9e8`, public index committed).
+  passed; private commit `c62d9e8`, public index committed; the
+  closure review's step 1 FAILED on 2026-11-24 on C1-C2, whose fixes
+  `f6b0082` and `1475140` PASSED their re-review; step 2's full
+  reproduction on the owner's PC, 2026-11-24 to 2026-11-26, gave all
+  six files byte-identical, and its record PASSED Codex's check on
+  2026-11-26). **RBT-008 is READY**; it spends the holdout once and for
+  good, so it starts only after the owner's decision.
   RBT-003's history (Part A, offline
   adapters `1427053`; owner rulings 2026-11-04; its independent xHigh review
   FAILED on 2026-11-04; its re-review FAILED on 2026-11-05 with two P2
@@ -1804,8 +1811,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** EPIC Y RBT-007
-  `RUN_FIRST_RESEARCH_BACKTEST_V1` (started 2026-11-18; Part A `badbe00` and
+- **Current IN_PROGRESS ticket:** none. EPIC Y **RBT-007**
+  `RUN_FIRST_RESEARCH_BACKTEST_V1` closed **DONE** on 2026-11-26, and
+  RBT-008 is READY, after the owner's holdout decision. RBT-007's
+  history (started 2026-11-18; Part A `badbe00` and
   `0b32e94`; its independent xHigh review FAILED on 2026-11-18: four P1,
   F1-F4, six P2, F5-F10, and three P3, F11-F13; the fixes' re-review
   FAILED on 2026-11-19: two P1, RR1-RR2, and two P2, RR3-RR4, fixed in
@@ -1817,7 +1826,10 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   P3, D1, corrected in `fd6a223`; Part B's first run, on 2026-11-21,
   stopped at the engine's exact fee check; the owner ruling 8 fix
   `091ac73` PASSED its review on 2026-11-21 with no finding; Part B's
-  second run stopped at the BTC-184 setup-costs check; owner ruling 9).
+  second run stopped at the BTC-184 setup-costs check; owner ruling 9,
+  whose fix `6e2334f` PASSED WITH NON-BLOCKING FINDINGS; Part B's third
+  run completed on 2026-11-23; the closure review PASSED in two steps,
+  on 2026-11-24 and 2026-11-26).
   Its rulings: the positioning owner's results shared per instant (runtime);
   every value-bearing result private, with a public value-free index (1);
   the sweep candidates and the ablation through the runner, the composers
@@ -1980,7 +1992,22 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   RBT-001A closed DONE on 2026-11-04, RBT-005 on
   2026-11-01 and RBT-004 on 2026-10-31. EPIC X's separate next action remains
   POSTP1-001V2R1; T1 remains COMPLETE / PASS.
-- **Most recent completed review:** EPIC Y RBT-003 closure review,
+- **Most recent completed review:** EPIC Y RBT-007 closure review,
+  2026-11-24 to 2026-11-26, **independent xHigh PASS / DONE** (Codex,
+  report-only), in two steps (owner choice of 2026-11-24):
+  - step 1, the code, the Part B record and the public index, FAILED
+    at `e12889c` on C1 (P2: a runner test the committed index broke)
+    and C2 (P3: the Part B record); the fixes `f6b0082` and `1475140`
+    PASSED their re-review at `242c72c` with no finding;
+  - step 2, a full reproduction of Part B on the owner's PC at
+    `05bda40` from a fresh clone at `f36ad14`, gave all six files, the
+    five private files and the public index, byte-identical to the
+    first run's. Its record PASSED Codex's check at `2670916` with no
+    finding.
+
+  RBT-007's earlier reviews are recorded in EPIC Y. Details in EPIC
+  Y's RBT-007 closure review outcomes.
+- **Preceding completed review (EPIC Y):** RBT-003 closure review,
   2026-11-11, **independent xHigh PASS WITH NON-BLOCKING FINDINGS / DONE**
   (same Codex session, report-only) of `38e6c5a..98d8e14`: the public index
   and the run's record. It found:
@@ -2470,9 +2497,12 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** Codex's check of the
-  record of **RBT-007's closure review step 2**, the last part of the
-  closure review. Step 2's full reproduction of Part B ran on the
+- **Next dependency-satisfied EPIC Y action:** **RBT-008**
+  `EVALUATE_HOLDOUT_ONCE_V1`, READY since RBT-007 closed DONE on
+  2026-11-26. It spends the 2026-H1 holdout once and for good, so the
+  owner decides on it before it starts. RBT-007's closure review
+  PASSED: step 2's record passed Codex's check on 2026-11-26 with no
+  finding. Step 2's full reproduction of Part B ran on the
   owner's PC at `05bda40` from 2026-11-24 to 2026-11-26 (owner choice
   of 2026-11-24). All six files, the five private files and the
   public index, are byte-identical to the first run's. Step 1 FAILED
@@ -3268,7 +3298,8 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   the closure review's FAIL and the owner's choice `2706620`; the C1
   and C2 fixes `f6b0082` and `1475140` and their record `242c72c`;
   their re-review outcome `ee2df5c`; step 2's reproduction and its
-  record in this commit.
+  record `2670916`; its check's outcome and RBT-007's closure in this
+  commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
