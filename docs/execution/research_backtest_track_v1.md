@@ -11475,9 +11475,77 @@ NOT COLLECTED; BTC-019 and its sealed sample untouched.
 READY. It lifts the holdout guard and spends the 2026-H1 holdout once and
 for good, so it starts only after the owner's decision.
 
+## RBT-007A — `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1`
+
+**Status:** `READY — RBT-007 DONE (2026-11-26); owner choice 2026-11-26: diagnose before the holdout decision`
+**Dependencies:** RBT-007
+**Implementation effort:** medium
+**Review:** independent xHigh ticket review
+**Owner module:** `btc_predictor/research_backtest/diagnosis.py` (new)
+
+**Owner choice (2026-11-26, asked; the recommended option).** RBT-007's
+report finds the frozen champion structurally unevaluable on most
+evaluation days, and without a detected setup on most of the rest. Before
+deciding on RBT-008, which spends the holdout once and for good, the owner
+chose a read-only diagnosis of why. RBT-008 stays READY and unstarted, and
+the holdout stays NOT COLLECTED, until the owner decides after this ticket.
+
+Explain, changing nothing, why each RBT-007 decision was structurally
+unevaluable or found no setup:
+
+- **Structurally unevaluable decisions.** For every such decision on every
+  venue, trace each incomplete component through its owners to the first
+  missing or refused upstream observation: the owner, the feature, the
+  input series, and the missing timestamps or the rule that refuses.
+- **No detected setup.** For every evaluable decision without a setup,
+  attribute each setup to its first failing predicate or incomplete input.
+- **Classification.** Classify each cause mechanically:
+  - absent from the frozen dataset (the source supplied nothing);
+  - present in the collected evidence but left out by a build rule or a
+    recorded ruling (for example a withheld or gap hour);
+  - a definition that cannot be complete on the data as it is (for example
+    one that needs every fund on every day);
+  - warm-up or lookback;
+  - any other cause, named.
+
+Inputs and boundaries:
+
+- **Read-only.** The only inputs are the frozen dataset (private commit
+  `f36ad14`), RBT-007's private report and ledgers (private commit
+  `c62d9e8`), and the frozen code at `2be45ad` and `05bda40`. No database,
+  network or collection.
+- **No change and no selection.** No owner, composer, configuration,
+  completion spec, preregistration, `data/`, `research_artifacts/` or EPIC X
+  file changes. No strategy run, sweep or counterfactual with filled-in
+  data, and no parameter or rule recommendation framed as a selection. The
+  findings are evidence for a later versioned policy only. Under policy V7
+  §6, a successor version never claims evidence from the evaluation window.
+- **Windows.** The evaluation window and its warm-up from the data window
+  only. The prohibited window and the holdout stay untouched; the holdout
+  is NOT COLLECTED, and BTC-019 and its sealed sample stay untouched.
+- **Publication (ruling 1 carried over).** The diagnosis's value-bearing
+  outputs stay in the private repository. The public repository receives a
+  value-free index (digests, sizes, counts of traced and untraced
+  decisions, statuses and commits) and a value-free record.
+
+Acceptance criteria:
+
+- Every structurally unevaluable decision on every venue is traced to named
+  upstream causes, with 0 untraced. Any decision that cannot be traced is
+  listed with the reason.
+- Every evaluable decision without a setup is attributed, per setup, to its
+  first failing predicate or incomplete input.
+- Every cause is classified, with its owner, feature and series named.
+- The diagnosis reads the frozen inputs at each decision's own instant,
+  through the frozen owners, and agrees with RBT-007's ledgers on which
+  components were incomplete.
+- The diagnosis reproduces byte-for-byte in a fresh process.
+- No forbidden change, no evaluation-window value in the public
+  repository, and no holdout or prohibited-window read; tests guard each.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
-**Status:** `READY — RBT-007 DONE (2026-11-26); it spends the holdout once and for good, so it starts only after the owner's decision`
+**Status:** `READY — RBT-007 DONE (2026-11-26); it spends the holdout once and for good, so it starts only after the owner's decision, which follows RBT-007A's diagnosis (owner choice 2026-11-26)`
 **Dependencies:** RBT-007 independent review PASS
 **Implementation effort:** high
 **Review:** independent xHigh ticket review
@@ -11505,7 +11573,8 @@ version or any version derived from inspecting its result.
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | DONE (2026-11-26) — independent xHigh closure review PASS (step 1 after the C1-C2 fixes; step 2's full reproduction 6 of 6 files byte-identical, its record's check PASS); Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s); their re-review FAIL 2026-11-20 (two P2); owner: fix both; fixes `0375ce0`..`8fa396b` committed 2026-11-20 (9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s); their re-review FAIL 2026-11-20 (one P2); owner: fix Q1; fix `1cf27ce` committed 2026-11-20 (9,169 passed, 3 skipped, 1 xfailed, 0 failed in 6,140.07s); its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, corrected in `fd6a223`; Part A's code review closed); Part B's first run 2026-11-21 stopped at the engine's exact fee check (rounding in the order of addition); owner ruling 8; its fix `091ac73` committed 2026-11-21 (9,174 passed, 3 skipped, 1 xfailed, 0 failed in 6,181.93s); its review PASS 2026-11-21 (no finding); Part B's second run 2026-11-21 stopped at the BTC-184 setup-costs check (the same rounding); owner ruling 9; its fix `6e2334f` committed 2026-11-21 (9,179 passed, 3 skipped, 1 xfailed, 0 failed in 6,215.01s); its review PASS WITH NON-BLOCKING FINDINGS 2026-11-22 (one P3, R9-1, owner-accepted); Part B completed 2026-11-23 at `05bda40` (243 of 243 runs, the look-ahead audit passed; private commit `c62d9e8`, public index committed); the closure review in two steps, the review then a full reproduction on the owner's PC (owner choice 2026-11-24); step 1 FAIL 2026-11-24 (one P2, C1, a test the committed index broke; one P3, C2, in the record), owner: fix both and re-review; fixes C1 `f6b0082` and C2 `1475140` committed 2026-11-24 (9,180 passed, 3 skipped, 1 xfailed, 0 failed in 6,200.25s), their re-review PASS 2026-11-24 (no finding; step 1 closed); step 2's reproduction completed 2026-11-26 at 05bda40 (6 of 6 files byte-identical); its record's check PASS 2026-11-26 (no finding); Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
-| RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | READY — RBT-007 DONE (2026-11-26); the owner's holdout decision before it starts |
+| RBT-007A | `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1` | READY — RBT-007 DONE (2026-11-26); owner choice 2026-11-26: a read-only diagnosis before the holdout decision |
+| RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | READY — RBT-007 DONE (2026-11-26); the owner's holdout decision, after RBT-007A, before it starts |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
 enumeration finds that four Entry Conviction components (trend, flow,
@@ -11544,8 +11613,9 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-008** (READY since RBT-007 closed
-DONE on 2026-11-26; the owner decides on spending the holdout first).
+dependency-satisfied EPIC Y work is **RBT-007A** (READY: a read-only
+diagnosis, owner choice of 2026-11-26); RBT-008 waits for it and the
+owner's holdout decision.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.
