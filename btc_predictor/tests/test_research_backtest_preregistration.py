@@ -426,6 +426,10 @@ def test_the_report_reads_the_hold_thresholds_only_for_its_band_count() -> None:
 
 
 _RUNNER_MODULES = frozenset(f"btc_predictor.research_backtest.{name}" for name in ("runner", "runner_report", "runner_metrics", "runner_shared"))
+# RBT-007A's read-only diagnosis uses the runner's reviewed checks, so it may import the runner; like the runner it
+# is a leaf, which nothing outside the runner, the diagnosis and the tests may import or name (owner choice 2026-11-27).
+_DIAGNOSIS_MODULE = "btc_predictor.research_backtest.diagnosis"
+_RUNNER_REACHING = _RUNNER_MODULES | {_DIAGNOSIS_MODULE}
 
 
 def _imported_names(tree, module: str, is_package: bool) -> set[str]:
@@ -451,7 +455,7 @@ def _imported_names(tree, module: str, is_package: bool) -> set[str]:
 
 
 def _runner_importers(sources: dict[str, str] | None = None) -> list[str]:
-    """Modules outside the runner and the tests that import, or name, a runner module."""
+    """Modules outside the runner, the diagnosis and the tests that import, or name, a runner module or the diagnosis."""
 
     package = REPO / "btc_predictor"
     if sources is None:
@@ -461,12 +465,15 @@ def _runner_importers(sources: dict[str, str] | None = None) -> list[str]:
         parts = Path(relative).with_suffix("").parts
         is_package = parts[-1] == "__init__"
         module = ".".join(parts[:-1] if is_package else parts)
-        if module.startswith("btc_predictor.tests") or module in _RUNNER_MODULES:
+        if module.startswith("btc_predictor.tests") or module in _RUNNER_REACHING:
             continue
         tree = ast.parse(text)
         strings = [node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)]
-        if _imported_names(tree, module, is_package) & _RUNNER_MODULES or any(
-            "research_backtest.runner" in value or re.search(r"\brunner_(report|metrics|shared)\b", value) for value in strings
+        if _imported_names(tree, module, is_package) & _RUNNER_REACHING or any(
+            "research_backtest.runner" in value
+            or re.search(r"\brunner_(report|metrics|shared)\b", value)
+            or re.search(r"(^|\.)diagnosis$|research_backtest\.diagnosis\b", value)
+            for value in strings
         ):
             found.append(relative)
     return found
@@ -483,11 +490,19 @@ def test_no_decision_module_can_reach_the_runner() -> None:
         "from btc_predictor.research_backtest.runner import hold_band\n",
         "from ..research_backtest import runner\n",
         "import importlib\nreport = importlib.import_module('btc_predictor.research_backtest.runner_report')\n",
+        # RBT-007A's diagnosis imports the runner, so reaching it reaches the runner (owner choice 2026-11-27)
+        "from btc_predictor.research_backtest import diagnosis\n",
+        "import btc_predictor.research_backtest.diagnosis as dg\n",
+        "from btc_predictor.research_backtest.diagnosis import main\n",
+        "from ..research_backtest import diagnosis\n",
+        "import importlib\ndg = importlib.import_module('btc_predictor.research_backtest.diagnosis')\n",
+        "import importlib\ndg = importlib.import_module('.diagnosis', 'btc_predictor.research_backtest')\n",
     ):
         sources = {"btc_predictor/signals/trim.py": real.read_text() + injected}
         assert _runner_importers(sources) == ["btc_predictor/signals/trim.py"], injected
     assert _runner_importers({"btc_predictor/research_backtest/runner_report.py": "from btc_predictor.research_backtest import runner\n"}) == []
-    # at run time, importing the composers and every signal and feature owner loads no runner module
+    assert _runner_importers({"btc_predictor/research_backtest/diagnosis.py": "from btc_predictor.research_backtest import runner\n"}) == []
+    # at run time, importing the composers and every signal and feature owner loads no runner module and no diagnosis
     probe = (
         "import importlib, pkgutil, sys\n"
         "import btc_predictor.research_backtest.entry_composer, btc_predictor.research_backtest.management_composer\n"
@@ -495,7 +510,7 @@ def test_no_decision_module_can_reach_the_runner() -> None:
         "for package in (btc_predictor.signals, btc_predictor.features):\n"
         "    for info in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):\n"
         "        importlib.import_module(info.name)\n"
-        "print(sorted(name for name in sys.modules if name.startswith('btc_predictor.research_backtest.runner')))\n"
+        "print(sorted(name for name in sys.modules if name.startswith('btc_predictor.research_backtest.runner') or name == 'btc_predictor.research_backtest.diagnosis'))\n"
     )
     import subprocess
     import sys

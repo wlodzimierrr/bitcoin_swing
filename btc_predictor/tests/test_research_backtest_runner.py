@@ -319,16 +319,27 @@ def test_the_frozen_code_check_finds_a_changed_or_missing_file(tmp_path):
     assert rn.frozen_code_mismatches(tmp_path, commit, ["a.py", "b.py", "c.py"]) == ["b.py", "c.py"]
 
 
+# RBT-007A's read-only diagnosis, added after the freeze: the one repository module absent from the frozen commit
+# (owner choice 2026-11-27). Its tests load it into a shared process; every other loaded module is still checked.
+_POST_FREEZE_MODULES = ("btc_predictor/research_backtest/diagnosis.py",)
+
+
 def test_the_loaded_repository_code_is_the_frozen_commit(preregistration):
+    import importlib
     import sys
 
+    importlib.import_module("btc_predictor.research_backtest.diagnosis")  # as in a full run, whatever the test order
     paths = rn.frozen_code_paths(REPOSITORY, list(sys.modules.items()))
     assert "btc_predictor/research_backtest/entry_composer.py" in paths
     assert "btc_predictor/research_backtest/management_composer.py" in paths
     assert "btc_predictor/features/positioning.py" in paths
     assert rn.STRATEGY_CONFIG_PATH.as_posix() in paths and rn.GOLDEN_FIXTURE_PATH.as_posix() in paths
     assert not any((path.startswith("btc_predictor/tests/") and path.endswith(".py")) or Path(path).name in rn.RUNNER_MODULES for path in paths)
-    assert rn.frozen_code_mismatches(REPOSITORY, preregistration["code_commit"], paths) == []
+    commit = preregistration["code_commit"]
+    assert set(_POST_FREEZE_MODULES) <= set(paths)
+    for path in _POST_FREEZE_MODULES:  # absent from the frozen commit, never a frozen module set aside
+        assert subprocess.run(["git", "cat-file", "-e", f"{commit}:{path}"], cwd=REPOSITORY, capture_output=True).returncode != 0, path
+    assert rn.frozen_code_mismatches(REPOSITORY, commit, [path for path in paths if path not in _POST_FREEZE_MODULES]) == []
 
 
 def _module(name, origin, loader_type=None, cached=None):
