@@ -11477,7 +11477,7 @@ for good, so it starts only after the owner's decision.
 
 ## RBT-007A — `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1`
 
-**Status:** `READY — RBT-007 DONE (2026-11-26); owner choice 2026-11-26: diagnose before the holdout decision`
+**Status:** `IN PROGRESS — implementation 82b6d23 committed 2026-11-27; its full suite failed two RBT-007 guards (the diagnosis imports the runner, and is new since the frozen commit); owner: extend both guards exactly; guard fix 514330c committed 2026-11-27 (tests only); its run on the frozen dataset completed 2026-11-27 (every decision traced: 0 untraced, 0 ledger disagreements; reproduced byte-for-byte in a fresh process); private commit c5224b2, public index committed; awaiting its independent xHigh review; owner choice 2026-11-26: diagnose before the holdout decision`
 **Dependencies:** RBT-007
 **Implementation effort:** medium
 **Review:** independent xHigh ticket review
@@ -11543,6 +11543,213 @@ Acceptance criteria:
 - No forbidden change, no evaluation-window value in the public
   repository, and no holdout or prohibited-window read; tests guard each.
 
+### RBT-007A implementation
+
+**Commit** `82b6d23` (2026-11-27): the new owner module
+`btc_predictor/research_backtest/diagnosis.py` and its test module
+`btc_predictor/tests/test_research_backtest_diagnosis.py`. No other file
+changed: no owner, composer, runner, configuration, completion spec,
+preregistration, `data/`, `research_artifacts/` or EPIC X file.
+
+**What it does**, for every evaluation-window decision in RBT-007's three
+decision ledgers (each venue's champion headline run at the base cost):
+1. **Replays the decision's components at its own instant.** A
+   `_DiagnosisRun` subclasses the frozen composer's `_DecisionRun`, as
+   RBT-006's reviewed `_CompletenessRun` does. It runs the composer's own
+   preamble (the visible hourly bars, then the daily, weekly and monthly
+   bars through `replay_market_bars_at`), then the trend, flow,
+   volatility, geometry and structure components, and reads each
+   component's causes through the composer's `_component_causes`.
+   Positioning is replayed only where the ledger marks it incomplete,
+   since it costs almost all of an instant.
+2. **Requires agreement with RBT-007's ledger.** Each decision's replayed
+   incomplete components and their causes must equal its ledger row. A
+   no-trade decision without a valid structural stop must replay a
+   structure gap of stop geometry alone. Any disagreement is recorded per
+   decision, and the command then publishes nothing.
+3. **Traces each root cause to its upstream observations**, through the
+   frozen owners' own inputs:
+   - the ETF flow windows: each launched fund's missing publication day in
+     the owner's windows, and what CoinGlass's frozen flow history holds for
+     it (the day absent, the fund not listed, listed without a value,
+     listed with a value the dataset lacks, or a row stored but not yet
+     available);
+   - the liquidation percentile: the previous day's unobserved Kraken
+     hours, each with its origin (withheld under ruling 16, a reported
+     incident, no execution in the hour, or absent from the evidence), or
+     the day's too-short history;
+   - the volatility buffer and the range percentile: the daily sessions
+     absent from the canonical series, and their missing hours, still
+     missing after ruling 15's re-request or never re-requested;
+   - the open-interest growth prior: the observation the owner reads, and
+     why it is unusable;
+   - a structure gap without a stop input: the stop owners' geometry codes.
+4. **Classifies each traced observation** as `SOURCE_ABSENT`,
+   `BUILD_RULE`, `WARM_UP` or `OTHER` (named), and names for each root the
+   definition (`DEFINITION`) that turns the missing observation into an
+   incomplete component, with its owner. Codes an owner derives from a root
+   in the same component are listed beside it, each with its reason.
+5. **Attributes each evaluable decision without a setup**, per setup, to
+   the setup owner's reason codes from the ledger, its first code first.
+6. **Reports any cause it cannot trace**, per decision, with its reason,
+   rather than refusing.
+
+**Its guards.**
+- **Window.** Any decision instant outside 2020-01-01 to 2025-12-31
+  refuses; the holdout from 2026-01-01 is never read.
+- **RBT-007's ledgers.** Each is read from the private store and refused
+  unless its SHA-256 and size equal those the committed RBT-007 index
+  binds, and its rows are exactly the venue's evaluation-window instants.
+- **The dataset.** The frozen inputs load under the runner's
+  `load_frozen_inputs` checks, the preregistration under its digest, and
+  RBT-007's index must name the same dataset commit and index digest.
+- **The code.** No tracked file may differ from the commit. Every path
+  the frozen composer reads, the diagnosis module aside, must be
+  byte-identical to `2be45ad`, and the runner's four modules to RBT-007's
+  run commit `05bda40`.
+- **Read-only.** No database, network or backfill-transport import, and no
+  direct file write, deletion or `open`; its outputs go through the
+  runner's write-once `_write_fresh`. A static test checks both.
+- **Publication (ruling 1).** The private report (JSON and Markdown) goes
+  to the `--out` directory in the private repository. The public
+  repository receives a value-free index: the identity commits and
+  digests, each private file's SHA-256 and size, and per venue the counts
+  of decisions examined, of untraced decisions and of ledger
+  disagreements.
+
+**Tests.** 28 tests on synthetic fixtures only, in about a minute: each
+tracer on a synthetic world with a removed fund-day, a late-available
+row, unobserved and short-history liquidation days, a missing price hour,
+a missing decision bar and zero open interest; the classification,
+geometry, untraced and setup paths; the window, ledger, dataset and code
+refusals; the evidence loader on the synthetic collected store; `main`
+publishing once, and nothing on any refusal or disagreement; the report
+byte-for-byte in a fresh process under another hash seed; the index
+value-free; and the static read-only check. Mutants: 26 of 26 caught, each
+a deliberate break of a tracer, a classification, an agreement check, a
+binding, the code check, the window, the evidence loader, the publication
+order or the index.
+
+**Validation at `82b6d23` (`.venv312`, CPython 3.12.14, 2026-11-27).**
+- The full repository, the new public index present untracked: 9,206
+  passed, **2 failed**, 3 skipped, 1 xfailed in 6,292.55s. Both failures
+  are RBT-007 guards that the diagnosis breaks; see the guard fix below.
+- The BTC-019 completion gate and the coverage modules: 140 passed, 1
+  xfailed. V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed; PAD4-R5 2 passed.
+
+### RBT-007A guard fix (owner choice, 2026-11-27)
+
+**The failures.** Two existing guards failed in the full suite:
+1. `test_the_report_reads_the_hold_thresholds_only_for_its_band_count`
+   (the preregistration tests). A static scan of the package's sources:
+   nothing outside the runner and the tests may import or name a runner
+   module, so no decision module can reach the report's hold-threshold
+   band count. The diagnosis imports the runner for its reviewed checks,
+   so this guard fails however it runs.
+2. `test_the_loaded_repository_code_is_the_frozen_commit` (the runner
+   tests). Every loaded repository module outside the runner and the tests
+   must equal the frozen commit `2be45ad`. The diagnosis is new, and its
+   tests load it into the suite's process, so this guard fails only when
+   it shares a process with them.
+
+**Owner choice (2026-11-27, asked; the recommended option): extend both
+guards exactly**, in the tests alone. The diagnosis is unchanged, so its
+run at `82b6d23` stands. The alternatives were copying the runner's
+helpers into the diagnosis, which duplicates reviewed code and leaves
+guard 2 failing for any new module, and moving the diagnosis out of
+`btc_predictor`, which departs from the ticket's owner module and
+sidesteps both guards.
+
+**The fix** (`514330c`, the two test modules only; its commit message says
+both guards fail in a shared test process, which holds for guard 2 only):
+1. **The diagnosis joins the runner as a leaf.** It may import the runner.
+   Any other module outside the tests that imports the diagnosis, in any
+   import form, or names it in a string, is flagged. Six injected forms
+   join the existing six. The runtime probe also requires that importing
+   the composers and every signal and feature owner loads no diagnosis.
+2. **The loaded-code check exempts the diagnosis alone.** The test imports
+   the diagnosis first, so its result no longer depends on test order. It
+   asserts that the diagnosis is absent from `2be45ad`, and compares every
+   other loaded module with `2be45ad` as before.
+
+**Mutants:** 11 of 11 caught. Seven break the guard tests: the import
+check, the name check, the exemption and the relative name in guard 1; the
+exempted list, the import first and the exemption in guard 2. Four are
+production changes the guards must catch: a decision module importing the
+diagnosis, one naming it, a changed composer, and a changed owner the
+diagnosis loads.
+
+**Validation at `514330c` (`.venv312`, CPython 3.12.14, 2026-11-27).**
+- The full repository, the new public index present untracked:
+  9,208 passed, 3 skipped, 1 xfailed, 0 failed in 6,343.29s.
+- The BTC-019 completion gate and the coverage modules: 140 passed, 1 xfailed.
+- V5 definition
+  `95e43ee10441909f710e3efbb85e196ba5fb6ed536e9902570eeb42605775a89`
+  unchanged; PAD5 preserved-authority subset 5 passed; PAD4-R5 2 passed.
+- Synthetic fixtures only for the tests; no database, network or
+  private-evidence read by them, and no real-data value in this record.
+
+### RBT-007A run
+
+**The run.** The diagnosis ran on the owner's PC at `82b6d23`:
+`python -m btc_predictor.research_backtest.diagnosis --store <store> --out ~/backtest_evidence/research_backtest_v1`.
+It started at 08:14:10 GMT on 2026-11-27 and exited 0 at 09:10:18.
+- **The store.** The private clone at `f36ad14` that RBT-007's step 2
+  reproduction used, outside the public tree. `load_frozen_inputs` needs
+  the store at the dataset's commit `f36ad14`; the private repository's
+  head is RBT-007's `c62d9e8`. The clone holds RBT-007's ledgers as step 2
+  reproduced them, and the diagnosis read each only after its SHA-256 and
+  size matched the committed RBT-007 index, so they are byte-identical to
+  the ledgers in `c62d9e8`.
+- **Its checks passed:** the clean tree, the preregistration, the frozen
+  inputs, the three ledgers' bindings, the dataset binding and the frozen
+  code (136 paths against `2be45ad`, 4 runner modules against `05bda40`).
+
+**What it reports** (the public index's value-free fields): on each venue,
+all 662 evaluation-window decisions examined, 0 untraced and 0
+disagreements with RBT-007's ledger.
+
+**The reproduction (owner choice 2026-11-27).** A second run in a fresh
+process, from a clean detached worktree at `82b6d23` (no tracked change,
+no diagnosis output present) on the same store, with fresh output
+directories, started at 11:00:08 GMT on 2026-11-27 and exited 0 at
+11:57:42. A comparison script then read both sides' SHA-256 and size. All
+three files, the two private files and the reproduction's own public
+index, are byte-identical to the first run's, with the digests and sizes
+the committed index binds.
+
+**The outputs.**
+- **The private commit**
+  `c5224b288d8105247bd16f03183f5ac3d9354dea`, pushed to the private
+  repository on 2026-11-27, holds the two private files in
+  `research_backtest_v1/`: `rbt007a_diagnosis_v1.json` and `.md`.
+- **The public index.**
+  `backtest_evidence/research_backtest_v1/rbt007a_diagnosis_index_v1.json`
+  (SHA-256
+  `810e0bb0014f670e959560defa7dd2a9bf47a29e35af775fd2a2bc214d0c0fcd`,
+  1,568 bytes) is committed here as the diagnosis wrote it. It binds each
+  private file by its SHA-256 and size and names the code, frozen code and
+  RBT-007 run commits, the dataset's private commit, the dataset index and
+  RBT-007's index. Its `private_repository_commit` is `null`; this record
+  binds it to the private commit above.
+
+**Owner choices (2026-11-27, asked; each the recommended option).**
+1. **The private commit holds the two diagnosis files only.** RBT-007's
+   work directory stays uncommitted on the PC, as before.
+2. **The public index keeps the diagnosis's bytes,** as for RBT-007, with
+   the private commit recorded here.
+3. **The run reproduced once on the real data** before this record, beyond
+   the synthetic fresh-process test.
+
+No value is in this record or the index. The holdout is NOT COLLECTED;
+BTC-019 and its sealed sample untouched. The diagnosis's value-bearing
+outputs stay in the private repository (ruling 1).
+
+Next: RBT-007A's independent xHigh review. After it, the owner decides on
+RBT-008 and any successor version.
+
 ## RBT-008 — `EVALUATE_HOLDOUT_ONCE_V1`
 
 **Status:** `READY — RBT-007 DONE (2026-11-26); it spends the holdout once and for good, so it starts only after the owner's decision, which follows RBT-007A's diagnosis (owner choice 2026-11-26)`
@@ -11573,7 +11780,7 @@ version or any version derived from inspecting its result.
 | RBT-005 | `COMPOSE_CHAMPION_POSITION_MANAGEMENT_V1` | DONE — independent xHigh re-review PASS WITH NON-BLOCKING FINDINGS (2026-11-01); review FAIL (three P1, two P2) fixed in `56ab0ca`, `f69140f` and `5052cbb`, N1 in `dddd6a6` — rulings `1b52760`, Part A `0856352`, Part B `8fdd5a3`; spec rebound `9a619596...15f6313`; 100 management tests (+4 RBT-004, +1 coverage guard); full suite at `dddd6a6` 7,632 passed, 3 skipped, 1 xfailed, 0 failed in 4711.30s |
 | RBT-006 | `FREEZE_RESEARCH_CHAMPION_AND_PREREGISTER_V1` | DONE (2026-11-18) — independent xHigh Part B review PASS WITH NON-BLOCKING FINDINGS (B1-B2 corrected in the docs); owner rulings 1-4 (2026-11-11: ETF launch dates from the frozen CoinGlass history, cross-checked; 182-period folds from each venue's evaluation start; a uniform ±10/±20% sweep grid on all ten BTC-185 parameters; frozen metric definitions); clarifications 3a-3c and 4a; Part A review fixes `00f832a`..`51f3d81` committed 2026-11-11 (full suite 9,058 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); re-review FAIL 2026-11-12 (one P2, N1: a filesystem change after the destination checks; owner: fix); N1 fix `b1171d4` committed 2026-11-12 (full suite 9,069 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); second re-review FAIL 2026-11-12 (four P2, N2-N5, and two P3, N6-N7: a swapped partial file, faults after a link, the repository directory's link, cleanup stopping at an error; owner: fix all six, the rollback race accepted); N2-N7 fix `d062eb5` committed 2026-11-12 (full suite 9,088 passed, 3 skipped, 1 xfailed, 0 failed in 81 min); third re-review PASS 2026-11-13 (no finding; Part A code review closed); Part B freeze committed 2026-11-17 (evaluation start 2024-03-10 on every venue, 3 folds each, 0 unaccounted; 192-211 of 662 evaluation days complete; owner: commit as is); Part A review FAIL 2026-11-11 (four P2, F1-F4, and two P3, F5-F6; owner ruling 3d: sweep the Hold Score thresholds the champion reads; owner: fix all, then re-review); Part A `b167d90` committed 2026-11-11 (full suite 9,039 passed, 3 skipped, 1 xfailed, 0 failed in 80 min); RBT-003 DONE (2026-11-11); RBT-005 DONE; POSTP1-002V2A-T1 PASS / table dependency SATISFIED |
 | RBT-007 | `RUN_FIRST_RESEARCH_BACKTEST_V1` | DONE (2026-11-26) — independent xHigh closure review PASS (step 1 after the C1-C2 fixes; step 2's full reproduction 6 of 6 files byte-identical, its record's check PASS); Part A review FAIL 2026-11-18 (four P1, six P2, three P3); owner review ruling 3a (the whole-chain audit) and fix all; fixes `5ca17ca`..`68e1055` committed 2026-11-19 (9,156 passed, 3 skipped, 1 xfailed, 0 failed in 5,547.37s); their re-review FAIL 2026-11-19 (two P1, two P2); owner: fix all four; fixes `5685a49`..`be33733` committed 2026-11-19 (9,163 passed, 3 skipped, 1 xfailed, 0 failed in 5,808.06s); their re-review FAIL 2026-11-19 (one P1, two P2); owner: fix all three; fixes `29368db`..`69765f0` committed 2026-11-20 (9,165 passed, 3 skipped, 1 xfailed, 0 failed in 5,850.45s); their re-review FAIL 2026-11-20 (two P2); owner: fix both; fixes `0375ce0`..`8fa396b` committed 2026-11-20 (9,167 passed, 3 skipped, 1 xfailed, 0 failed in 6,156.21s); their re-review FAIL 2026-11-20 (one P2); owner: fix Q1; fix `1cf27ce` committed 2026-11-20 (9,169 passed, 3 skipped, 1 xfailed, 0 failed in 6,140.07s); its re-review PASS WITH NON-BLOCKING FINDINGS 2026-11-21 (one P3, D1, corrected in `fd6a223`; Part A's code review closed); Part B's first run 2026-11-21 stopped at the engine's exact fee check (rounding in the order of addition); owner ruling 8; its fix `091ac73` committed 2026-11-21 (9,174 passed, 3 skipped, 1 xfailed, 0 failed in 6,181.93s); its review PASS 2026-11-21 (no finding); Part B's second run 2026-11-21 stopped at the BTC-184 setup-costs check (the same rounding); owner ruling 9; its fix `6e2334f` committed 2026-11-21 (9,179 passed, 3 skipped, 1 xfailed, 0 failed in 6,215.01s); its review PASS WITH NON-BLOCKING FINDINGS 2026-11-22 (one P3, R9-1, owner-accepted); Part B completed 2026-11-23 at `05bda40` (243 of 243 runs, the look-ahead audit passed; private commit `c62d9e8`, public index committed); the closure review in two steps, the review then a full reproduction on the owner's PC (owner choice 2026-11-24); step 1 FAIL 2026-11-24 (one P2, C1, a test the committed index broke; one P3, C2, in the record), owner: fix both and re-review; fixes C1 `f6b0082` and C2 `1475140` committed 2026-11-24 (9,180 passed, 3 skipped, 1 xfailed, 0 failed in 6,200.25s), their re-review PASS 2026-11-24 (no finding; step 1 closed); step 2's reproduction completed 2026-11-26 at 05bda40 (6 of 6 files byte-identical); its record's check PASS 2026-11-26 (no finding); Part A `badbe00` and `0b32e94`; owner rulings 1-7 and the runtime ruling |
-| RBT-007A | `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1` | READY — RBT-007 DONE (2026-11-26); owner choice 2026-11-26: a read-only diagnosis before the holdout decision |
+| RBT-007A | `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1` | IN PROGRESS — implementation `82b6d23` committed 2026-11-27 (9,206 passed, 2 failed: two RBT-007 guards); owner: extend both guards exactly; guard fix `514330c` committed 2026-11-27 (9,208 passed, 3 skipped, 1 xfailed, 0 failed in 6,343.29s); its run on the frozen dataset completed 2026-11-27 (0 untraced, 0 ledger disagreements; reproduced byte-for-byte); private commit `c5224b2`, public index committed; awaiting its independent xHigh review; owner choice 2026-11-26: a read-only diagnosis before the holdout decision |
 | RBT-008 | `EVALUATE_HOLDOUT_ONCE_V1` | READY — RBT-007 DONE (2026-11-26); the owner's holdout decision, after RBT-007A, before it starts |
 
 **Pre-review findings recorded by RBT-002 (2026-10-01).** The section 5A
@@ -11613,9 +11820,9 @@ neither an availability rule, so as specified every Entry Conviction would be
 structurally incomplete. Policy V3 answered this before any run: RBT-002
 enumerates the full input surface and RBT-001A extends the reviewed builder.
 See the RBT-001 Implementation Notes and review outcome. Next
-dependency-satisfied EPIC Y work is **RBT-007A** (READY: a read-only
-diagnosis, owner choice of 2026-11-26); RBT-008 waits for it and the
-owner's holdout decision.
+dependency-satisfied EPIC Y work is **RBT-007A**'s independent xHigh
+review (IN PROGRESS: its run on the frozen dataset completed on
+2026-11-27); RBT-008 waits for it and the owner's holdout decision.
 RBT-002A closed after independent xHigh review PASS and the separate V7
 owner-ruled conformance update (2026-10-03).
 EPIC X's next ticket remains **POSTP1-001V2R1**.

@@ -1431,7 +1431,7 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
 
 ## Snapshot
 
-- **Last updated:** 2026-11-26
+- **Last updated:** 2026-11-27
 - **Current phase:** Phase-1 deterministic implementation is COMPLETE. Every
   Phase-1 implementation ticket except BTC-019 is DONE, and BTC-019 itself is
   terminal at `BTC019_TERMINALLY_BLOCKED_BY_MISSING_INTEGRATION_EVIDENCE`: its
@@ -1519,8 +1519,11 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   reproduction on the owner's PC, 2026-11-24 to 2026-11-26, gave all
   six files byte-identical, and its record PASSED Codex's check on
   2026-11-26). **RBT-007A** `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1` is
-  **READY** (owner choice of 2026-11-26: a read-only diagnosis of
-  RBT-007's structurally unevaluable and setup-less decisions first).
+  **IN PROGRESS** (owner choice of 2026-11-26: a read-only diagnosis of
+  RBT-007's structurally unevaluable and setup-less decisions first;
+  implementation `82b6d23` and its guard fix `514330c`; its run on the
+  frozen dataset on 2026-11-27 traced every decision and reproduced
+  byte-for-byte; awaiting its independent xHigh review).
   **RBT-008 is READY** but waits: it spends the holdout once and for
   good, so it starts only after the owner's decision, after RBT-007A.
   RBT-003's history (Part A, offline
@@ -1814,10 +1817,13 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   (2026-09-04), PASS WITH NON-BLOCKING FINDINGS after two P2 review fixes.
   EPIC S2 was audited earlier the same day; EPIC S, EPIC Q, EPIC P, EPIC O,
   EPIC E and EPIC E2 were audited on 2026-09-03
-- **Current IN_PROGRESS ticket:** none. EPIC Y **RBT-007**
-  `RUN_FIRST_RESEARCH_BACKTEST_V1` closed **DONE** on 2026-11-26, and
-  RBT-007A, a read-only diagnosis, is READY (owner choice of
-  2026-11-26); RBT-008 is READY, after RBT-007A and the owner's
+- **Current IN_PROGRESS ticket:** EPIC Y **RBT-007A**
+  `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1`, a read-only diagnosis (owner
+  choice of 2026-11-26): its implementation `82b6d23`, its guard fix
+  `514330c` and its run on the frozen dataset done on 2026-11-27,
+  awaiting its independent xHigh review. **RBT-007**
+  `RUN_FIRST_RESEARCH_BACKTEST_V1` closed **DONE**
+  on 2026-11-26; RBT-008 is READY, after RBT-007A and the owner's
   holdout decision. RBT-007's
   history (started 2026-11-18; Part A `badbe00` and
   `0b32e94`; its independent xHigh review FAILED on 2026-11-18: four P1,
@@ -2502,11 +2508,24 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   The T1 exact-hash review **PASS** at `2292388e...1d1710` satisfies its
   prerequisite. No successor corpus or collector is certified, and no
   PAD5-R1 or PAD6 is authorized
-- **Next dependency-satisfied EPIC Y action:** **RBT-007A**
-  `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1` (READY; owner choice of
-  2026-11-26): explain, changing nothing, why RBT-007's decisions were
+- **Next dependency-satisfied EPIC Y action:** **RBT-007A**'s
+  independent xHigh review. RBT-007A
+  `DIAGNOSE_STRUCTURAL_INCOMPLETENESS_V1` (IN PROGRESS; owner choice of
+  2026-11-26) explains, changing nothing, why RBT-007's decisions were
   structurally unevaluable or found no setup, from the frozen dataset
-  and RBT-007's private outputs only. **RBT-008**
+  and RBT-007's private outputs only. Its implementation `82b6d23`
+  (28 tests) failed two RBT-007 guards in the full suite: the
+  diagnosis imports the runner, and is new since the frozen commit.
+  The owner chose to extend both guards exactly; the tests-only fix
+  `514330c` (full suite 9,208 passed, 3 skipped, 1 xfailed, 0 failed in 6,343.29s) leaves the diagnosis
+  unchanged. The diagnosis ran on the frozen dataset on 2026-11-27:
+  on each venue, all 662 decisions examined, 0 untraced
+  and 0 disagreements with RBT-007's ledgers. A second run in a fresh
+  process gave all three files byte-identical. Its two value-bearing
+  files are in private commit `c5224b2`; its value-free public index,
+  `backtest_evidence/research_backtest_v1/rbt007a_diagnosis_index_v1.json`,
+  is committed as the diagnosis wrote it (owner choices of
+  2026-11-27). **RBT-008**
   `EVALUATE_HOLDOUT_ONCE_V1` is READY but waits for RBT-007A and the
   owner's decision, since it spends the 2026-H1 holdout once and for
   good. RBT-007 closed DONE on 2026-11-26. RBT-007's closure review
@@ -3308,7 +3327,9 @@ BTC-019 sealed sample = STILL NOT COLLECTED / NOT OPENED
   and C2 fixes `f6b0082` and `1475140` and their record `242c72c`;
   their re-review outcome `ee2df5c`; step 2's reproduction and its
   record `2670916`; its check's outcome and RBT-007's closure
-  `3c980a0`; the RBT-007A ticket (owner choice) in this commit.
+  `3c980a0`; the RBT-007A ticket (owner choice) `2a6f0f0`; its
+  implementation `82b6d23`; its guard fix `514330c`; its run, public
+  index and record in this commit.
   Before them, EPIC Y RBT-003 rulings
   `239578c` and Part A `1427053` with docs `5ec5cad`; the review FAIL and
   owner review rulings 6-7 `7faea78`; the review-fix `a3bfa6e`, `22bef37`,
